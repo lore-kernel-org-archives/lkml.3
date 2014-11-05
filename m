@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaKEN2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:28:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46300 "EHLO mx1.redhat.com"
+	id S1754867AbaKENbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:31:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50379 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754534AbaKEN2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:28:50 -0500
-Date: Wed, 5 Nov 2014 11:28:17 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        acme@kernel.org
-Subject: Re: Re: Re: Re: [PATCH v4 5/5] perf/sdt: Add support to perf record
- to trace SDT events
-Message-ID: <20141105132817.GE2487@redhat.com>
-References: <5458CD15.4010101@hitachi.com>
- <5459BD3E.7010804@linux.vnet.ibm.com>
- <5459C8BE.30809@linux.vnet.ibm.com>
- <5459E8BC.8030500@hitachi.com>
+	id S1754821AbaKENbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 08:31:04 -0500
+Date: Wed, 5 Nov 2014 14:31:00 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Message-ID: <20141105133100.GC4527@dhcp22.suse.cz>
+References: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
+ <2156351.pWp6MNRoWm@vostro.rjw.lan>
+ <20141021141159.GE9415@dhcp22.suse.cz>
+ <4766859.KSKPTm3b0x@vostro.rjw.lan>
+ <20141021142939.GG9415@dhcp22.suse.cz>
+ <20141104192705.GA22163@htj.dyndns.org>
+ <20141105124620.GB4527@dhcp22.suse.cz>
+ <20141105130247.GA14386@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5459E8BC.8030500@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20141105130247.GA14386@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 05, 2014 at 06:07:08PM +0900, Masami Hiramatsu escreveu:
-> (2014/11/05 15:50), Hemant Kumar wrote:
-> >> And also, user interface is a discussion point. This series defines new
-> >> sdt-cache command, and we already have buildid-cache command. We should
-> >> have probe-cache command too? or consolidate those cache managing 
-> >> commands?
-> >> This question should be involving your series too.
+On Wed 05-11-14 08:02:47, Tejun Heo wrote:
+> Hello, Michal.
+> 
+> On Wed, Nov 05, 2014 at 01:46:20PM +0100, Michal Hocko wrote:
+> > As I've said I wasn't entirely happy with this half solution but it helped
+> > the current situation at the time. The full solution would require to
+> 
+> I don't think this helps the situation.  It just makes the bug more
+> obscure and the race window while reduced is still pretty big and
+> there seems to be an actual not too low chance of the bug triggering
+> out in the wild.  How does this level of obscuring help anything?  In
+> addition to making the bug more difficult to reproduce, it also adds a
+> bunch of code which *pretends* to address the issue but ultimately
+> just lowers visibility into what's going on and hinders tracking down
+> the issue when something actually goes wrong.  This is *NOT* making
+> the situation better.  The patch is net negative.
 
-> > I think, we need not have multiple sub-commands to manage the cache. We 
-> > can consolidate the cache management of probe events (including SDT 
-> > events) to a single command.
+The patch was a compromise. It was needed to catch the most common
+OOM conditions while the tasks are getting frozen. The race window
+between the counter increment and the check in the PM path is negligible
+compared to the freezing process. And it is safe from OOM point of view
+because nothing can block it away.
 
-> Agreed. maybe perf-cache --buildid/--sdt/--probe would be good.
+> > I think the patch below should be safe. Would you prefer this solution
+> > instead? It is race free but there is the risk that exposing a lock which
+> 
+> Yes, this is an a lot saner approach in general.
+> 
+> > completely blocks OOM killer from the allocation path will kick us
+> > later.
+> 
+> Can you please spell it out?  How would it kick us?  We already have
+> oom_killer_disable/enable(), how is this any different in terms of
+> correctness from them? 
 
-We have it already, its called 'perf buildid-cache':
+As already said in the part of email you haven't quoted.
+oom_killer_disable will cause allocations to _fail_. With the lock you are
+_blocking_ OOM killer completely. This is error prone because no part of
+system should be able to block the last resort memory shortage actions.
 
-[root@zoo ~]# perf buildid-cache --hell
-  Error: unknown option `hell'
+> Also, why isn't this part of
+> oom_killer_disable/enable()?  The way they're implemented is really
+> silly now.  It just sets a flag and returns whether there's a
+> currently running instance or not.  How were these even useful? 
+> Why can't you just make disable/enable to what they were supposed to
+> do from the beginning?
 
- usage: perf buildid-cache [<options>]
-
-    -a, --add <file list>
-                          file(s) to add
-    -k, --kcore <file>    kcore file to add
-    -r, --remove <file list>
-                          file(s) to remove
-    -M, --missing <file>  to find missing build ids in the cache
-    -f, --force           don't complain, do it
-    -u, --update <file list>
-                          file(s) to update
-    -v, --verbose         be more verbose
-
-[root@zoo ~]#
-
-We can rename it at some point to 'perf cache', perhaps.
-
-'perf cache --buildid'  makes no sense, everything is keyed by build-id
-(hence the name, which is albeit long, admit), I guess what you meant
-was 'elf'.
-
-It currently stores content of the form:
-
-- ELF
-- kcore (which is also ELF, but has no pathname)
-- kallsyms
-
-We would be adding other types of content, from this discussion:
-
-- sdt
-- [ku]probes (built from some other content, like ELF or kallsyms)
- 
-- Arnaldo
+Because then we would block all the potential allocators coming from
+workqueues or kernel threads which are not frozen yet rather than fail
+the allocation. I am not familiar with the PM code and all the paths
+this might get called from enough to tell whether failing the allocation
+is better approach than failing the suspend operation on a timeout.
+-- 
+Michal Hocko
+SUSE Labs
