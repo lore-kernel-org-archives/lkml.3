@@ -1,33 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890AbaKEN56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:57:58 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44089 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaKEN55 (ORCPT
+	id S1754740AbaKEOAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:00:15 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:50785 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaKEOAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:57:57 -0500
-Date: Wed, 5 Nov 2014 13:57:55 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs.git
-Message-ID: <20141105135754.GQ7996@ZenIV.linux.org.uk>
+	Wed, 5 Nov 2014 09:00:12 -0500
+Message-ID: <545A2D69.8090003@plexistor.com>
+Date: Wed, 05 Nov 2014 16:00:09 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCHSET 0/5 v3] brd: partition fixes
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another overlayfs fix.  Please, pull from the usual place:
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+Jens Hi
 
-Shortlog:
-Miklos Szeredi (1):
-      ovl: don't poison cursor
+Currently brd has multiple bugs when trying to use partitions. After this
+set all known problems are solved. Please see individual patch for description
+of the problem.
 
-Diffstat:
- fs/overlayfs/readdir.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+[v3]
+Same exact code but some commit messages changed to try and explain better
+what was fixed and why. (Rebased on 3.18-rc3 but nothing changed in brd.c
+since then)
+
+[v2]
+Based on Jens's linux-next [30e996a] incorporating the brd patch by Dmitry Monakhov.
+Dmitry has introduced a new part_show parameter, this parameter is now removed
+and we always "part_show=1".
+Scripts that did part_show=1 will work just the same but will display a
+message in logs. This is harmless. (And scripts can be modified to
+remove this parameter)
+
+[v1]
+Current situation is that any attempt to use partitions with brd device would
+create the partition but then any use will trash the data.
+
+See: http://www.spinics.net/lists/linux-scsi/msg76737.html
+
+So these patches fixes up all the problems we saw with the code, but not sacrificing
+any of the old fixtures. See [patch 4/5] for more explanations.
+
+list of patches:
+[PATCH 1/5] axonram: Fix bug in direct_access
+[PATCH 2/5] block: Change direct_access calling convention
+
+	These 2 above are from Matthew's DAX series latest version.
+	Exactly as is, taken from the 01org/prd.git tree
+	They are needed so to support direct_access with partitions.
+
+[PATCH 3/5] brd: Fix all partitions BUGs
+
+	This one fixes all the very HARD bugs, which today
+	cause data corruption.
+
+[PATCH 4/5] brd: Request from fdisk 4k alignment
+[PATCH 5/5] brd: Add getgeo to block ops for fdisk
+
+	And the last two are to try and make fdisk work
+	properly with a direct_access() device.
+
+One can fetch/view these patches from a public tree here:
+  git: git://git.open-osd.org/pmem.git brd-partitions branch
+  web: http://git.open-osd.org/gitweb.cgi?p=pmem.git;a=shortlog;h=refs/heads/brd-partitions
+
+Thanks
+Boaz
+
