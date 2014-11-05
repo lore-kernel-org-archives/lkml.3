@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994AbaKEROQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:14:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41734 "EHLO
+	id S1756015AbaKEROd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:14:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41752 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438AbaKEROL (ORCPT
+	with ESMTP id S1755366AbaKEROa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:14:11 -0500
-Date: Wed, 5 Nov 2014 09:12:46 -0800
+	Wed, 5 Nov 2014 12:14:30 -0500
+Date: Wed, 5 Nov 2014 09:13:03 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-ba28a8505a43074cceab7b5f454cb1a107159b00@git.kernel.org>
-Cc: rdunlap@infradead.org, gregkh@linuxfoundation.org, yinghai@kernel.org,
-        konrad.wilk@oracle.com, pavel@ucw.cz, tglx@linutronix.de, bp@alien8.de,
-        benh@kernel.crashing.org, joro@8bytes.org, bhelgaas@google.com,
-        hpa@zytor.com, jiang.liu@linux.intel.com, mingo@kernel.org,
-        rjw@rjwysocki.net, len.brown@intel.com, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org
-Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, rjw@rjwysocki.net,
-        len.brown@intel.com, tony.luck@intel.com, tglx@linutronix.de,
-        bp@alien8.de, joro@8bytes.org, benh@kernel.crashing.org,
-        bhelgaas@google.com, hpa@zytor.com, jiang.liu@linux.intel.com,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org,
-        konrad.wilk@oracle.com, yinghai@kernel.org, pavel@ucw.cz
-In-Reply-To: <1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-a4aad01aa04e405dc41b6c8e75bed3a9b63327d7@git.kernel.org>
+Cc: bp@alien8.de, benh@kernel.crashing.org, pavel@ucw.cz,
+        gregkh@linuxfoundation.org, bhelgaas@google.com, tony.luck@intel.com,
+        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, jiang.liu@linux.intel.com,
+        rjw@rjwysocki.net, hpa@zytor.com, len.brown@intel.com, joro@8bytes.org,
+        rdunlap@infradead.org
+Reply-To: jiang.liu@linux.intel.com, rjw@rjwysocki.net, rdunlap@infradead.org,
+        len.brown@intel.com, joro@8bytes.org, hpa@zytor.com, bp@alien8.de,
+        pavel@ucw.cz, benh@kernel.crashing.org, gregkh@linuxfoundation.org,
+        tony.luck@intel.com, bhelgaas@google.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, yinghai@kernel.org
+In-Reply-To: <1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] ACPI, irq, x86:
-  Get rid of special handling of GSI for ACPI SCI
-Git-Commit-ID: ba28a8505a43074cceab7b5f454cb1a107159b00
+Subject: [tip:x86/apic] x86, irq, ACPI:
+  Fix building warning of unused code
+Git-Commit-ID: a4aad01aa04e405dc41b6c8e75bed3a9b63327d7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,18 +40,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ba28a8505a43074cceab7b5f454cb1a107159b00
-Gitweb:     http://git.kernel.org/tip/ba28a8505a43074cceab7b5f454cb1a107159b00
+Commit-ID:  a4aad01aa04e405dc41b6c8e75bed3a9b63327d7
+Gitweb:     http://git.kernel.org/tip/a4aad01aa04e405dc41b6c8e75bed3a9b63327d7
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:11:52 +0800
+AuthorDate: Mon, 27 Oct 2014 16:11:53 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 5 Nov 2014 18:10:45 +0100
 
-ACPI, irq, x86: Get rid of special handling of GSI for ACPI SCI
+x86, irq, ACPI: Fix building warning of unused code
 
-The IOAPIC has logic to track IOAPIC pin status, so there's no need for
-special treatment for GSI used by ACPI SCI in function mp_register_gsi()
-and mp_unregister_gsi().
+Fix building warning when CONFIG_X86_LOCAL_APIC is disabled.
+arch/x86/kernel/acpi/boot.c:699:20: warning: ‘acpi_set_irq_model_ioapic’ defined but not used [-Wunused-function]
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -66,44 +65,29 @@ Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Len Brown <len.brown@intel.com>
 Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/acpi/boot.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ arch/x86/kernel/acpi/boot.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 1ae52e0..a0e095f 100644
+index a0e095f..4433a4b 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -408,10 +408,6 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
- 		return gsi;
+@@ -703,6 +703,7 @@ void acpi_unregister_gsi(u32 gsi)
+ }
+ EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
  
--	/* Don't set up the ACPI SCI because it's already set up */
--	if (acpi_gbl_FADT.sci_interrupt == gsi)
--		return mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
--
- 	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
- 	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
- 	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
-@@ -424,7 +420,8 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (irq < 0)
- 		return irq;
++#ifdef CONFIG_X86_LOCAL_APIC
+ static void __init acpi_set_irq_model_ioapic(void)
+ {
+ 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+@@ -710,6 +711,7 @@ static void __init acpi_set_irq_model_ioapic(void)
+ 	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
+ 	acpi_ioapic = 1;
+ }
++#endif
  
--	if (enable_update_mptable)
-+	/* Don't set up the ACPI SCI because it's already set up */
-+	if (enable_update_mptable && acpi_gbl_FADT.sci_interrupt != gsi)
- 		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
- 
- 	return irq;
-@@ -437,9 +434,6 @@ static void mp_unregister_gsi(u32 gsi)
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
- 		return;
- 
--	if (acpi_gbl_FADT.sci_interrupt == gsi)
--		return;
--
- 	irq = mp_map_gsi_to_irq(gsi, 0);
- 	if (irq > 0)
- 		mp_unmap_irq(irq);
+ /*
+  *  ACPI based hotplug support for CPU
