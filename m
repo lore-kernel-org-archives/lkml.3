@@ -1,293 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaKEK2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:28:12 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59406 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338AbaKEK2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:28:07 -0500
-Date: Wed, 5 Nov 2014 11:28:01 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [for-next][PATCH 1/4] ftrace/x86: Add dynamic allocated
- trampoline for ftrace_ops
-Message-ID: <20141105102801.GA5245@pd.tnic>
-References: <20141027182702.778680710@goodmis.org>
- <20141027182948.284867581@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141027182948.284867581@goodmis.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754667AbaKEK21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:28:27 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49836 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640AbaKEK2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:28:18 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH 3.18-rc3 v7 1/4] irqchip: gic: Make gic_raise_softirq() FIQ-safe
+Date: Wed,  5 Nov 2014 10:27:37 +0000
+Message-Id: <1415183260-6389-2-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 02:27:03PM -0400, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> The current method of handling multiple function callbacks is to register
-> a list function callback that calls all the other callbacks based on
-> their hash tables and compare it to the function that the callback was
-> called on. But this is very inefficient.
-> 
-> For example, if you are tracing all functions in the kernel and then
-> add a kprobe to a function such that the kprobe uses ftrace, the
-> mcount trampoline will switch from calling the function trace callback
-> to calling the list callback that will iterate over all registered
-> ftrace_ops (in this case, the function tracer and the kprobes callback).
-> That means for every function being traced it checks the hash of the
-> ftrace_ops for function tracing and kprobes, even though the kprobes
-> is only set at a single function. The kprobes ftrace_ops is checked
-> for every function being traced!
-> 
-> Instead of calling the list function for functions that are only being
-> traced by a single callback, we can call a dynamically allocated
-> trampoline that calls the callback directly. The function graph tracer
-> already uses a direct call trampoline when it is being traced by itself
-> but it is not dynamically allocated. It's trampoline is static in the
-> kernel core. The infrastructure that called the function graph trampoline
-> can also be used to call a dynamically allocated one.
-> 
-> For now, only ftrace_ops that are not dynamically allocated can have
-> a trampoline. That is, users such as function tracer or stack tracer.
-> kprobes and perf allocate their ftrace_ops, and until there's a safe
-> way to free the trampoline, it can not be used. The dynamically allocated
-> ftrace_ops may, although, use the trampoline if the kernel is not
-> compiled with CONFIG_PREEMPT. But that will come later.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kernel/ftrace.c    | 195 ++++++++++++++++++++++++++++++++++++++++++--
->  arch/x86/kernel/mcount_64.S |  25 +++++-
->  include/linux/ftrace.h      |   8 ++
->  kernel/trace/ftrace.c       |  40 ++++++++-
->  4 files changed, 254 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index 3386dc9aa333..e4d48f6cad86 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -17,6 +17,7 @@
->  #include <linux/ftrace.h>
->  #include <linux/percpu.h>
->  #include <linux/sched.h>
-> +#include <linux/slab.h>
->  #include <linux/init.h>
->  #include <linux/list.h>
->  #include <linux/module.h>
-> @@ -644,13 +645,8 @@ int __init ftrace_dyn_arch_init(void)
->  {
->  	return 0;
->  }
-> -#endif
-> -
-> -#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> -
-> -#ifdef CONFIG_DYNAMIC_FTRACE
-> -extern void ftrace_graph_call(void);
->  
-> +#if defined(CONFIG_X86_64) || defined(CONFIG_FUNCTION_GRAPH_TRACER)
->  static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
->  {
->  	static union ftrace_code_union calc;
-> @@ -664,6 +660,193 @@ static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
->  	 */
->  	return calc.code;
->  }
-> +#endif
-> +
-> +/* Currently only x86_64 supports dynamic trampolines */
-> +#ifdef CONFIG_X86_64
-> +
-> +#ifdef CONFIG_MODULES
-> +#include <linux/moduleloader.h>
-> +/* Module allocation simplifies allocating memory for code */
+Currently calling printk() from a FIQ can result in deadlock on
+irq_controller_lock within gic_raise_softirq(). This occurs because
+printk(), which is otherwise structured to survive calls from FIQ/NMI,
+calls this function to raise an IPI when it needs to wake_up_klogd().
 
-... because it makes it EXEC too?
+This patch fixes the problem by introducing an additional rwlock and
+using that to prevent softirqs being raised whilst the b.L switcher
+is updating the cpu map.
 
-> +static inline void *alloc_tramp(unsigned long size)
+Other parts of the code are not updated to use the new
+fiq_safe_cpu_map_lock because other users of gic_cpu_map either rely on
+external locking or upon irq_controller_lock. Both locks are held by the
+b.L switcher code.
 
-Yeah, naming is, hmm, rated R. But we talked about it :-)
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-> +{
-> +	return module_alloc(size);
-> +}
-> +static inline void tramp_free(void *tramp)
-> +{
-> +	module_free(NULL, tramp);
-> +}
-> +#else
-> +/* Trampolines can only be created if modules are supported */
-
-Just for my own understanding: why? You're not loading additional .ko's
-right?
-
-> +static inline void *alloc_tramp(unsigned long size)
-> +{
-> +	return NULL;
-> +}
-> +static inline void tramp_free(void *tramp) { }
-> +#endif
-> +
-> +/* Defined as markers to the end of the ftrace default trampolines */
-> +extern void ftrace_caller_end(void);
-> +extern void ftrace_regs_caller_end(void);
-> +extern void ftrace_return(void);
-> +extern void ftrace_caller_op_ptr(void);
-> +extern void ftrace_regs_caller_op_ptr(void);
-> +
-> +/* movq function_trace_op(%rip), %rdx */
-> +/* 0x48 0x8b 0x15 <offset-to-ftrace_trace_op (4 bytes)> */
-> +#define OP_REF_SIZE	7
-> +
-> +/*
-> + * The ftrace_ops is passed to the function callback. Since the
-> + * trampoline only services a single ftrace_ops, we can pass in
-> + * that ops directly.
-> + *
-> + * The ftrace_op_code_union is used to create a pointer to the
-> + * ftrace_ops that will be passed to the callback function.
-> + */
-> +union ftrace_op_code_union {
-> +	char code[OP_REF_SIZE];
-> +	struct {
-> +		char op[3];
-> +		int offset;
-> +	} __attribute__((packed));
-> +};
-> +
-> +static unsigned long create_trampoline(struct ftrace_ops *ops)
-> +{
-> +	unsigned const char *jmp;
-> +	unsigned long start_offset;
-> +	unsigned long end_offset;
-> +	unsigned long op_offset;
-> +	unsigned long offset;
-> +	unsigned long size;
-> +	unsigned long ip;
-> +	unsigned long *ptr;
-> +	void *trampoline;
-> +	/* 48 8b 15 <offset> is movq <offset>(%rip), %rdx */
-> +	unsigned const char op_ref[] = { 0x48, 0x8b, 0x15 };
-
-Ok, this 0x15 is the ModRM which says that the destination register is
-hammered to be %rdx. I guess this has something to do with the magic
-third parameter thing where ftrace_ops go into...
-
-> +	union ftrace_op_code_union op_ptr;
-> +	int ret;
-> +
-> +	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS) {
-> +		start_offset = (unsigned long)ftrace_regs_caller;
-> +		end_offset = (unsigned long)ftrace_regs_caller_end;
-> +		op_offset = (unsigned long)ftrace_regs_caller_op_ptr;
-> +	} else {
-> +		start_offset = (unsigned long)ftrace_caller;
-> +		end_offset = (unsigned long)ftrace_caller_end;
-> +		op_offset = (unsigned long)ftrace_caller_op_ptr;
-> +	}
-> +
-> +	size = end_offset - start_offset;
-> +
-> +	/*
-> +	 * Allocate enough size to store the ftrace_caller code,
-> +	 * the jmp to ftrace_return, as well as the address of
-> +	 * the ftrace_ops this trampoline is used for.
-> +	 */
-> +	trampoline = alloc_tramp(size + MCOUNT_INSN_SIZE + sizeof(void *));
-> +	if (!trampoline)
-> +		return 0;
-> +
-> +	/* Copy ftrace_caller onto the trampoline memory */
-> +	ret = probe_kernel_read(trampoline, (void *)start_offset, size);
-> +	if (WARN_ON(ret < 0)) {
-> +		tramp_free(trampoline);
-
-A tramp-free trampoline? :-P
-
-Btw, "trmp" could be a good, short and politically correct prefix to
-this stuff:
-
-trmp_alloc()
-trmp_free()
-...
-
-:-)
-
-> +		return 0;
-> +	}
-> +
-> +	ip = (unsigned long)trampoline + size;
-> +
-> +	/* The trampoline ends with a jmp to ftrace_return */
-> +	jmp = ftrace_jmp_replace(ip, (unsigned long)ftrace_return);
-> +	memcpy(trampoline + size, jmp, MCOUNT_INSN_SIZE);
-> +
-> +	/*
-> +	 * The address of the ftrace_ops that is used for this trampoline
-> +	 * is stored at the end of the trampoline. This will be used to
-> +	 * load the third parameter for the callback. Basically, that
-> +	 * location at the end of the trampoline takes the place of
-> +	 * the global function_trace_op variable.
-> +	 */
-> +
-
-Spurious newline.
-
-> +	ptr = (unsigned long *)(trampoline + size + MCOUNT_INSN_SIZE);
-
-Maybe we should call this variable ftrace_ops_ptr to be more clear?
-
-> +	*ptr = (unsigned long)ops;
-> +
-> +	op_offset -= start_offset;
-> +	memcpy(&op_ptr, trampoline + op_offset, OP_REF_SIZE);
-
-I guess we can copy only 3 bytes here and not OP_REF_SIZE as we
-overwrite op_ptr.offset later anyway.
-
-> +
-> +	/* Are we pointing to the reference? */
-
-"Are we pointing to the movq" is what we ask here, no?
-
-> +	if (WARN_ON(memcmp(op_ptr.op, op_ref, 3) != 0)) {
-> +		tramp_free(trampoline);
-> +		return 0;
-> +	}
-> +
-> +	/* Load the contents of ptr into the callback parameter */
-> +	offset = (unsigned long)ptr;
-> +	offset -= (unsigned long)trampoline + op_offset + OP_REF_SIZE;
-> +
-> +	op_ptr.offset = offset;
-> +
-> +	/* put in the new offset to the ftrace_ops */
-> +	memcpy(trampoline + op_offset, &op_ptr, OP_REF_SIZE);
-> +
-> +	/* ALLOC_TRAMP flags lets us know we created it */
-> +	ops->flags |= FTRACE_OPS_FL_ALLOC_TRAMP;
-> +
-> +	return (unsigned long)trampoline;
-> +}
-> +
-
-Yeah, it looks ok as far as I can tell by looking around and trying to
-piece it together from staring at ftrace-design.txt and the rest of the
-fun.
-
-But don't take my word for it :-)
-
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 38493ff..0db62a6 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -73,6 +73,13 @@ struct gic_chip_data {
+ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+ 
+ /*
++ * This lock may be locked for reading by FIQ handlers. Thus although
++ * read locking may be used liberally, write locking must only take
++ * place only when local FIQ handling is disabled.
++ */
++static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
++
++/*
+  * The GIC mapping of CPU interfaces does not necessarily match
+  * the logical CPU numbering.  Let's use a mapping as returned
+  * by the GIC itself.
+@@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	int cpu;
+ 	unsigned long flags, map = 0;
+ 
+-	raw_spin_lock_irqsave(&irq_controller_lock, flags);
++	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
+ 
+ 	/* Convert our logical CPU mask into a physical one. */
+ 	for_each_cpu(cpu, mask)
+@@ -639,7 +646,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	/* this always happens on GIC0 */
+ 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+ 
+-	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
++	read_unlock_irqrestore(&fiq_safe_cpu_map_lock, flags);
+ }
+ #endif
+ 
+@@ -687,7 +694,7 @@ int gic_get_cpu_id(unsigned int cpu)
+  * Migrate all peripheral interrupts with a target matching the current CPU
+  * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
+  * is also updated.  Targets to other CPU interfaces are unchanged.
+- * This must be called with IRQs locally disabled.
++ * This must be called with IRQ and FIQ locally disabled.
+  */
+ void gic_migrate_target(unsigned int new_cpu_id)
+ {
+@@ -709,6 +716,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
+ 	ror_val = (cur_cpu_id - new_cpu_id) & 31;
+ 
+ 	raw_spin_lock(&irq_controller_lock);
++	write_lock(&fiq_safe_cpu_map_lock);
+ 
+ 	/* Update the target interface for this logical CPU */
+ 	gic_cpu_map[cpu] = 1 << new_cpu_id;
+@@ -728,6 +736,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
+ 		}
+ 	}
+ 
++	write_unlock(&fiq_safe_cpu_map_lock);
+ 	raw_spin_unlock(&irq_controller_lock);
+ 
+ 	/*
 -- 
-Regards/Gruss,
-    Boris.
+1.9.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
