@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805AbaKEI1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:27:25 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55649 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaKEI1X (ORCPT
+	id S1753766AbaKEIdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:33:39 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:61734 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751077AbaKEIdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:27:23 -0500
-Date: Wed, 5 Nov 2014 00:27:21 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Rannaud <e@nanocritical.com>, Andy Lutomirski <luto@amacapital.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-Message-ID: <20141105082721.GB19607@infradead.org>
-References: <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
- <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
- <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
- <20141031084220.GA29085@infradead.org>
- <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
- <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
- <20141103083447.GA8617@infradead.org>
- <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
- <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
- <CA+55aFw29MUj+w46yneut2yxXOH1RQmDud5KL8V-SPyPWm1WqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw29MUj+w46yneut2yxXOH1RQmDud5KL8V-SPyPWm1WqA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 5 Nov 2014 03:33:36 -0500
+Message-ID: <1415176413.20372.206.camel@x220>
+Subject: Re: linux-next: manual merge of the usb tree with the usb.current
+ tree
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Date: Wed, 05 Nov 2014 09:33:33 +0100
+In-Reply-To: <20141105043030.GB10613@kroah.com>
+References: <20141105151825.26c53948@canb.auug.org.au>
+	 <20141105043030.GB10613@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Nov 2014 08:33:33.0485 (UTC) FILETIME=[2F726DD0:01CFF8D3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 11:04:27AM -0800, Linus Torvalds wrote:
-> Oh, so you don't actually need any file contents at all?
+On Tue, 2014-11-04 at 20:30 -0800, Greg KH wrote:
+> On Wed, Nov 05, 2014 at 03:18:25PM +1100, Stephen Rothwell wrote: 
+> > Today's linux-next merge of the usb tree got a conflict in
+> > drivers/usb/host/Kconfig between commit cd6e245a2d06 ("usb: Remove
+> > references to non-existent PLAT_S5P symbol") from the usb.current tree
+> > and commit dd3cf17488b1 ("usb: host: Remove optional dependencies on
+> > PLAT_S5P") from the usb tree.
+> > 
+> > I fixed it up (I used the usb tree version) and can carry the fix as
+> > necessary (no action is required).
 > 
-> If that is actually a real usage, then maybe we should just say that
-> "O_TMPFILE|O_RDONLY" is fine, and remove the check that it has to be
-> writable.
+> That's the correct fix, thanks for doing that.
 
-Wasn't this disallowed to prevent problems on old kernels that don't use
-O_TMPFILE?  In that case we'd ignore the flag and would just get a file
-handle for the directory instead.
+Shouldn't that be the other way round? I thought we would choose
+Sylwester's commit from the usb.current tree over my commit from the usb
+tree. Or will Sylwester's commit end up in linux-next through yet
+another usb tree?
+
+
+Paul Bolle
 
