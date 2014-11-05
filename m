@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978AbaKEQGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:06:05 -0500
-Received: from mga14.intel.com ([192.55.52.115]:54341 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754949AbaKEQGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:06:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411882415"
-Message-ID: <1415203535.958.137.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 06/35] UBI: Fastmap: Ensure that all fastmap work is
- done upon WL shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tlinder@codeaurora.org
-Date: Wed, 05 Nov 2014 18:05:35 +0200
-In-Reply-To: <545A4947.4030403@nod.at>
-References: <1414586758-9972-1-git-send-email-richard@nod.at>
-			 <1414586758-9972-7-git-send-email-richard@nod.at>
-		 <1415202307.958.125.camel@sauron.fi.intel.com> <545A46F0.7030805@nod.at>
-	 <1415202877.958.131.camel@sauron.fi.intel.com> <545A4947.4030403@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S932313AbaKEQGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:06:09 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43583 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949AbaKEQGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:06:07 -0500
+Message-ID: <545A4AE8.6070402@kernel.org>
+Date: Wed, 05 Nov 2014 16:06:00 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Peter Meerwald <pmeerw@pmeerw.net>
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v4] iio: iadc: Qualcomm SPMI PMIC current ADC driver
+References: <1413987213-22218-1-git-send-email-iivanov@mm-sol.com>	 <5453ED55.2000003@gmx.de> <alpine.DEB.2.02.1410312128100.18476@pmeerw.net> <1415004303.407.11.camel@mm-sol.com>
+In-Reply-To: <1415004303.407.11.camel@mm-sol.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 16:59 +0100, Richard Weinberger wrote:
-> Am 05.11.2014 um 16:54 schrieb Artem Bityutskiy:
-> > On Wed, 2014-11-05 at 16:49 +0100, Richard Weinberger wrote:
-> >> If you want I can rebase.
-> > 
-> > That would be very helpful.
-> > 
-> >> I did all fixes first and then the cleanups.
-> > 
-> > Well, the first patch adds debugging stuff - not exactly a fix ;-)
+On 03/11/14 08:45, Ivan T. Ivanov wrote:
 > 
-> Let's name it robustness stuff. ;)
-> Seriously, I did first all fixes and the code cleanups later to make
-> it easy for others to backport these fixes.
+> On Fri, 2014-10-31 at 21:48 +0100, Peter Meerwald wrote:
+>>> Ivan T. Ivanov schrieb am 22.10.2014 16:13:
+>>>> The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+>>>> 16 bits resolution and register space inside PMIC accessible across
+>>>> SPMI bus.
+>>>>
+>>>> The driver registers itself through IIO interface.
+>>> Pretty much there, just one question I would like to double-check: The CPU of these chips is 
+>> Little Endian, right?
+>>> Annoyingly, you introduced a small typo in this revision, but that alone doesn't qualify for a 
+>> new revision. A separate patch fixing it would probably be best. See inline.
+>>
+>> some minor comments below
+> 
+> Thanks, will fix them. IIO maintainers, what do you
+> prefer, new version or fallow-up patch?
+> 
 
-Less back-porting efforts is a good goal. But then the robustness patch
-should also come later, I think.
-
+Follow up please.
+> Regards,
+> Ivan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
