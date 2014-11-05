@@ -1,146 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383AbaKEKII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:08:08 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:53356 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaKEKIE convert rfc822-to-8bit (ORCPT
+	id S1754500AbaKEKIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:08:12 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:48462 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754133AbaKEKII convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:08:04 -0500
-Message-ID: <5459F70C.3060204@arm.com>
-Date: Wed, 05 Nov 2014 10:08:12 +0000
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 05:08:08 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="42889411"
+Message-ID: <5459F387.909@cn.fujitsu.com>
+Date: Wed, 5 Nov 2014 17:53:11 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
- cpu hotplug
-References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
-X-OriginalArrivalTime: 05 Nov 2014 10:07:58.0988 (UTC) FILETIME=[605994C0:01CFF8E0]
-X-MC-Unique: 114110510080005701
-Content-Type: text/plain; charset=WINDOWS-1252
+To: <bcrl@kvack.org>, <akpm@linux-foundation.org>
+CC: Gu Zheng <guz.fnst@cn.fujitsu.com>, <linux-aio@kvack.org>,
+        <m.koenigshaus@wut.de>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] aio: fix uncorrent dirty pages accouting when truncating
+ AIO ring buffer
+References: <1414750042-20832-1-git-send-email-guz.fnst@cn.fujitsu.com>
+In-Reply-To: <1414750042-20832-1-git-send-email-guz.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ping...
 
-On 05/11/14 08:51, Wanpeng Li wrote:
-> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
-> addition, task may/may not be running again if cpu is added back. The root cause
-> which I found is that dl task will be throtted and removed from dl rq after
-> comsuming all budget, which leads to stop task can't pick it up from dl rq and
-> migrate to other cpus during hotplug.
+On 10/31/2014 06:07 PM, Gu Zheng wrote:
+
+> https://bugzilla.kernel.org/show_bug.cgi?id=86831
 > 
-> The method to reproduce:
-> schedtool -E -t 50000:100000 -e ./test
-> Actually test is just a simple for loop. Then observe which cpu the test
-> task is on.
-> echo 0 > /sys/devices/system/cpu/cpuN/online
+> Markus reported that when shutting down mysqld (with AIO support,
+> on a ext3 formatted Harddrive) leads to a negative number of dirty pages
+> (underrun to the counter). The negative number results in a drastic reduction
+> of the write performance because the page cache is not used, because the kernel
+> thinks it is still 2 ^ 32 dirty pages open.
 > 
-> This patch fix it by push the task to another cpu in dl_task_timer() if 
-> rq is offline.
+> Add a warn trace in __dec_zone_state will catch this easily:
 > 
-> Note: dl task can be migrated successfully if rq is offline currently, however, 
-> I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl 
-> task previous running on, so cpu_active_mask is used in the patch. 
+> static inline void __dec_zone_state(struct zone *zone, enum
+> 	zone_stat_item item)
+> {
+>      atomic_long_dec(&zone->vm_stat[item]);
+> +    WARN_ON_ONCE(item == NR_FILE_DIRTY &&
+> 	atomic_long_read(&zone->vm_stat[item]) < 0);
+>      atomic_long_dec(&vm_stat[item]);
+> }
 > 
-> Peterz, Juri?
+> [   21.341632] ------------[ cut here ]------------
+> [   21.346294] WARNING: CPU: 0 PID: 309 at include/linux/vmstat.h:242
+> cancel_dirty_page+0x164/0x224()
+> [   21.355296] Modules linked in: wutbox_cp sata_mv
+> [   21.359968] CPU: 0 PID: 309 Comm: kworker/0:1 Not tainted 3.14.21-WuT #80
+> [   21.366793] Workqueue: events free_ioctx
+> [   21.370760] [<c0016a64>] (unwind_backtrace) from [<c0012f88>]
+> (show_stack+0x20/0x24)
+> [   21.378562] [<c0012f88>] (show_stack) from [<c03f8ccc>]
+> (dump_stack+0x24/0x28)
+> [   21.385840] [<c03f8ccc>] (dump_stack) from [<c0023ae4>]
+> (warn_slowpath_common+0x84/0x9c)
+> [   21.393976] [<c0023ae4>] (warn_slowpath_common) from [<c0023bb8>]
+> (warn_slowpath_null+0x2c/0x34)
+> [   21.402800] [<c0023bb8>] (warn_slowpath_null) from [<c00c0688>]
+> (cancel_dirty_page+0x164/0x224)
+> [   21.411524] [<c00c0688>] (cancel_dirty_page) from [<c00c080c>]
+> (truncate_inode_page+0x8c/0x158)
+> [   21.420272] [<c00c080c>] (truncate_inode_page) from [<c00c0a94>]
+> (truncate_inode_pages_range+0x11c/0x53c)
+> [   21.429890] [<c00c0a94>] (truncate_inode_pages_range) from
+> [<c00c0f6c>] (truncate_pagecache+0x88/0xac)
+> [   21.439252] [<c00c0f6c>] (truncate_pagecache) from [<c00c0fec>]
+> (truncate_setsize+0x5c/0x74)
+> [   21.447731] [<c00c0fec>] (truncate_setsize) from [<c013b3a8>]
+> (put_aio_ring_file.isra.14+0x34/0x90)
+> [   21.456826] [<c013b3a8>] (put_aio_ring_file.isra.14) from
+> [<c013b424>] (aio_free_ring+0x20/0xcc)
+> [   21.465660] [<c013b424>] (aio_free_ring) from [<c013b4f4>]
+> (free_ioctx+0x24/0x44)
+> [   21.473190] [<c013b4f4>] (free_ioctx) from [<c003d8d8>]
+> (process_one_work+0x134/0x47c)
+> [   21.481132] [<c003d8d8>] (process_one_work) from [<c003e988>]
+> (worker_thread+0x130/0x414)
+> [   21.489350] [<c003e988>] (worker_thread) from [<c00448ac>]
+> (kthread+0xd4/0xec)
+> [   21.496621] [<c00448ac>] (kthread) from [<c000ec18>]
+> (ret_from_fork+0x14/0x20)
+> [   21.503884] ---[ end trace 79c4bf42c038c9a1 ]---
 > 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> The cause is that we set the aio ring file pages as *DIRTY* via SetPageDirty
+> (bypasses the VFS dirty pages increment) when init, and aio fs uses
+> *default_backing_dev_info* as the backing dev, which does not disable
+> the dirty pages accounting capability.
+> So truncating aio ring file contributes to accounting dirty pages,
+> error occurs.
+> The original goal is keeping these pages in memory (can not be reclaimed
+> or swapped) in life-time via marking it dirty. But thinking more,
+> pinning pages can already achieve the goal, so the SetPageDirty seems
+> unnecessary.
+> In order to fix the issue, using the __set_page_dirty_no_writeback instead
+> of the nop .set_page_dirty, and dropped the SetPageDirty (don't manually
+> set the dirty flags, don't disable set_page_dirty(), rely on default behaviour).
+> And an aio private backing dev info (disabled the ACCT_DIRTY/WRITEBACK/ACCT_WB
+> capabilities) is introduced to replace the default one to avoid accounting
+> dirty pages.
+> 
+> Reported-by: Markus Königshaus <m.koenigshaus@wut.de>
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Cc: stable <stable@vger.kernel.org>
 > ---
-> v1 -> v2:
->  * push the task to another cpu in dl_task_timer() if rq is offline.
+>  fs/aio.c |   18 +++++++++++-------
+>  1 files changed, 11 insertions(+), 7 deletions(-)
 > 
->  kernel/sched/deadline.c | 39 ++++++++++++++++++++++++++++++++++++---
->  1 file changed, 36 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 04c2cbb..233e482 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->  	return hrtimer_active(&dl_se->dl_timer);
->  }
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 84a7510..b23dc31 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -165,6 +165,12 @@ static struct vfsmount *aio_mnt;
+>  static const struct file_operations aio_ring_fops;
+>  static const struct address_space_operations aio_ctx_aops;
 >  
-> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->  /*
->   * This is the bandwidth enforcement timer callback. If here, we know
->   * a task is not on its dl_rq, since the fact that the timer was running
-> @@ -538,6 +539,39 @@ again:
->  	update_rq_clock(rq);
->  	dl_se->dl_throttled = 0;
->  	dl_se->dl_yielded = 0;
+> +static struct backing_dev_info aio_fs_backing_dev_info = {
+> +	.name           = "aiofs",
+> +	.state          = 0,
+> +	.capabilities   = BDI_CAP_NO_ACCT_AND_WRITEBACK | BDI_CAP_MAP_COPY,
+> +};
 > +
-> +	/*
-> +	 * So if we find that the rq the task was on is no longer
-> +	 * available, we need to select a new rq.
-> +	 */
-> +	if (!rq->online) {
-> +		struct rq *later_rq = NULL;
+>  static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+>  {
+>  	struct qstr this = QSTR_INIT("[aio]", 5);
+> @@ -176,6 +182,7 @@ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+>  
+>  	inode->i_mapping->a_ops = &aio_ctx_aops;
+>  	inode->i_mapping->private_data = ctx;
+> +	inode->i_mapping->backing_dev_info = &aio_fs_backing_dev_info;
+>  	inode->i_size = PAGE_SIZE * nr_pages;
+>  
+>  	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb, &this);
+> @@ -220,6 +227,9 @@ static int __init aio_setup(void)
+>  	if (IS_ERR(aio_mnt))
+>  		panic("Failed to create aio fs mount.");
+>  
+> +	if (bdi_init(&aio_fs_backing_dev_info))
+> +		panic("Failed to init aio fs backing dev info.");
 > +
-> +		/* We will release rq lock */
-> +		get_task_struct(p);
-> +
-> +		raw_spin_unlock(&rq->lock);
-> +
-> +		later_rq = find_lock_later_rq(p, rq);
-> +
-> +		if (!later_rq) {
-> +			put_task_struct(p);
-> +			goto out;
-> +		}
-> +
-> +		deactivate_task(rq, p, 0);
-> +		set_task_cpu(p, later_rq->cpu);
-> +		activate_task(later_rq, p, 0);
-> +
-> +		resched_curr(later_rq);
-> +
-> +		double_unlock_balance(rq, later_rq);
-> +
-> +		put_task_struct(p);
-> +
-> +		goto out;
-> +	}
-> +
->  	if (task_on_rq_queued(p)) {
->  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->  		if (dl_task(rq->curr))
-> @@ -555,7 +589,7 @@ again:
->  	}
->  unlock:
->  	raw_spin_unlock(&rq->lock);
+>  	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+>  	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+>  
+> @@ -281,11 +291,6 @@ static const struct file_operations aio_ring_fops = {
+>  	.mmap = aio_ring_mmap,
+>  };
+>  
+> -static int aio_set_page_dirty(struct page *page)
+> -{
+> -	return 0;
+> -}
 > -
-> +out:
->  	return HRTIMER_NORESTART;
->  }
+>  #if IS_ENABLED(CONFIG_MIGRATION)
+>  static int aio_migratepage(struct address_space *mapping, struct page *new,
+>  			struct page *old, enum migrate_mode mode)
+> @@ -357,7 +362,7 @@ out:
+>  #endif
 >  
-> @@ -1182,8 +1216,7 @@ static int find_later_rq(struct task_struct *task)
->  	 * We have to consider system topology and task affinity
->  	 * first, then we can look for a suitable cpu.
->  	 */
-> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> +	cpumask_copy(later_mask, cpu_active_mask);
+>  static const struct address_space_operations aio_ctx_aops = {
+> -	.set_page_dirty = aio_set_page_dirty,
+> +	.set_page_dirty = __set_page_dirty_no_writeback,
+>  #if IS_ENABLED(CONFIG_MIGRATION)
+>  	.migratepage	= aio_migratepage,
+>  #endif
+> @@ -412,7 +417,6 @@ static int aio_setup_ring(struct kioctx *ctx)
+>  		pr_debug("pid(%d) page[%d]->count=%d\n",
+>  			 current->pid, i, page_count(page));
+>  		SetPageUptodate(page);
+> -		SetPageDirty(page);
+>  		unlock_page(page);
+>  
+>  		ctx->ring_pages[i] = page;
 
-I fear this breaks what I lately fixed in commit 91ec6778ec4f
-("sched/deadline: Fix inter- exclusive cpusets migrations"), as
-we first have to consider exclusive cpusets topology in looking
-for a cpu. But, I'd have to test this to see if I'm right, and
-I'll try to do it soon.
-
-Thanks,
-
-- Juri
-
->  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->  			task, later_mask);
-> 
 
