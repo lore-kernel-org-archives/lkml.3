@@ -1,317 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaKENMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:12:34 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42367 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644AbaKENMc (ORCPT
+	id S1754832AbaKENOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:14:09 -0500
+Received: from relay.parallels.com ([195.214.232.42]:58661 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaKENOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:12:32 -0500
-Message-ID: <545A223C.6040409@kernel.org>
-Date: Wed, 05 Nov 2014 13:12:28 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 08:14:06 -0500
+Message-ID: <1415193240.28592.14.camel@tkhai>
+Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
+ cpu hotplug
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@arm.com>, <linux-kernel@vger.kernel.org>
+Date: Wed, 5 Nov 2014 16:14:00 +0300
+In-Reply-To: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] DT: iio: vadc: document dt binding
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com> <1415028270-25860-2-git-send-email-iivanov@mm-sol.com> <545968F5.7070605@gmx.de>
-In-Reply-To: <545968F5.7070605@gmx.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/14 00:01, Hartmut Knaack wrote:
-> Ivan T. Ivanov schrieb am 03.11.2014 16:24:
->> From: Stanimir Varbanov <svarbanov@mm-sol.com>
->>
->> Document DT binding for Qualcomm SPMI PMIC voltage ADC
->> driver.
->>
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-This looks more or less fine to me.  One probable typo inline.
+Hi, all,
 
-As Mark was kind enough to review the earlier version I'd like
-to let it sit for a while to see if he has time to have another look
-(perhaps at v5 with the trivial bits fixed up!)
->> ---
->>  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt | 129 +++++++++++++++++++++
->>  include/dt-bindings/iio/qcom,spmi-vadc.h           | 119 +++++++++++++++++++
->>  2 files changed, 248 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->>  create mode 100644 include/dt-bindings/iio/qcom,spmi-vadc.h
->>
->> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->> new file mode 100644
->> index 0000000..2253813
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->> @@ -0,0 +1,129 @@
->> +Qualcomm's SPMI PMIC voltage ADC
->> +
->> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
->> +voltage. The VADC is a 15-bit sigma-delta ADC.
->> +
->> +VADC node:
->> +
->> +- compatible:
->> +    Usage: required
->> +    Value type: <string>
->> +    Definition: Should contain "qcom,spmi-vadc".
->> +
->> +- reg:
->> +    Usage: required
->> +    Value type: <prop-encoded-array>
->> +    Definition: VADC base address and length in the SPMI PMIC register map.
->> +
->> +- #address-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be one. Child node 'reg' property should define ADC
->> +            channel number.
->> +
->> +- #size-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be zero.
->> +
->> +- #io-channel-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be one. For details about IIO bindings see:
->> +            Documentation/devicetree/bindings/iio/iio-bindings.txt
->> +
->> +- interrupts:
->> +    Usage: optional
->> +    Value type: <prop-encoded-array>
->> +    Definition: End of conversion interrupt.
->> +
->> +Channel node properties:
->> +
->> +- reg:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: ADC channel number.
->> +            See include/dt-bindings/iio/qcom,spmi-vadc.h
->> +
->> +- qcom,decimation:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: This parameters is used to decrease ADC sampling rate.
-> Typo: This parameter (singular)
->> +            Quicker measurements can be made by reducing decimation ratio.
->> +            Valid values are 512, 1024, 2048, 4096.
->> +            If property is not found, default value of 512 will be used.
->> +
->> +- qcom,pre-scaling:
->> +    Usage: optional
->> +    Value type: <u32 array>
->> +    Definition: Used for scaling the channel input signal before the signal is
->> +            fed to VADC. The configuration for this node is to know the
->> +            pre-determined ratio and use it for post scaling. Select one from
->> +            the following options.
->> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
->> +            If property is not found default value depending of chip will be used.
-on chip?
->> +
->> +- qcom,ratiometric:
->> +    Usage: optional
->> +    Value type: <empty>
->> +    Definition: Channel calibration type. If this property is specified
->> +            VADC will use the VDD reference (1.8V) and GND for channel
->> +            calibration. If property is not found, channel will be
->> +            calibrated with 0.625V and 1.25V reference channels, also
->> +            known as absolute calibration.
->> +
->> +- qcom,hw-settle-time:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: Time between AMUX getting configured and the ADC starting
->> +            conversion. Delay = 100us * (value) for value < 11, and
->> +            2ms * (value - 10) otherwise.
->> +            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
->> +            900 us and 1, 2, 4, 6, 8, 10 ms
->> +            If property is not found, channel will use 0us.
->> +
->> +- qcom,avg-samples:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: Number of samples to be used for measurement.
->> +            Averaging provides the option to obtain a single measurement
->> +            from the ADC that is an average of multiple samples. The value
->> +            selected is 2^(value).
->> +            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
->> +            If property is not found, 1 sample will be used.
->> +
->> +NOTE:
->> +
->> +Following channels, also know as reference points channels, are used for
-> Typos: <...> also known as reference point channels <...>
->> +result calibration and their channel configuration nodes should be defined:
->> +VADC_REF_625MV and/or VADC_SPARE1, based on PMIC version, VADC_REF_1250MV,
-> Better put the "based on PMIC version" into parenthesis.
->> +VADC_GND_REF and VADC_VDD_VADC.
->> +
->> +Example:
->> +
->> +	/* VADC node */
->> +	pmic_vadc: vadc@3100 {
->> +		compatible = "qcom,spmi-vadc";
->> +		reg = <0x3100 0x100>;
->> +		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +		#io-channel-cells = <1>;
->> +		io-channel-ranges;
->> +
->> +		/* Channel node */
->> +		usb_id_nopull {
->> +			reg = <VADC_LR_MUX10_USB_ID>;
->> +			qcom,decimation = <512>;
->> +			qcom,ratiometric;
->> +			qcom,hw-settle-time = <200>;
->> +			qcom,avg-samples = <1>;
->> +			qcom,pre-scaling = <1 3>;
->> +		};
->> +	};
->> +
->> +	/* IIO client node */
->> +	usb {
->> +		io-channels = <&pmic_vadc VADC_LR_MUX10_USB_ID>;
->> +		io-channel-names = "vadc";
->> +	};
->> diff --git a/include/dt-bindings/iio/qcom,spmi-vadc.h b/include/dt-bindings/iio/qcom,spmi-vadc.h
->> new file mode 100644
->> index 0000000..42121fa
->> --- /dev/null
->> +++ b/include/dt-bindings/iio/qcom,spmi-vadc.h
->> @@ -0,0 +1,119 @@
->> +/*
->> + * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 and
->> + * only version 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#ifndef _DT_BINDINGS_QCOM_SPMI_VADC_H
->> +#define _DT_BINDINGS_QCOM_SPMI_VADC_H
->> +
->> +/* Voltage ADC channels */
->> +#define VADC_USBIN				0x00
->> +#define VADC_DCIN				0x01
->> +#define VADC_VCHG_SNS				0x02
->> +#define VADC_SPARE1_03				0x03
->> +#define VADC_USB_ID_MV				0x04
->> +#define VADC_VCOIN				0x05
->> +#define VADC_VBAT_SNS				0x06
->> +#define VADC_VSYS				0x07
->> +#define VADC_DIE_TEMP				0x08
->> +#define VADC_REF_625MV				0x09
->> +#define VADC_REF_1250MV				0x0a
->> +#define VADC_CHG_TEMP				0x0b
->> +#define VADC_SPARE1				0x0c
->> +#define VADC_SPARE2				0x0d
->> +#define VADC_GND_REF				0x0e
->> +#define VADC_VDD_VADC				0x0f
->> +
->> +#define VADC_P_MUX1_1_1				0x10
->> +#define VADC_P_MUX2_1_1				0x11
->> +#define VADC_P_MUX3_1_1				0x12
->> +#define VADC_P_MUX4_1_1				0x13
->> +#define VADC_P_MUX5_1_1				0x14
->> +#define VADC_P_MUX6_1_1				0x15
->> +#define VADC_P_MUX7_1_1				0x16
->> +#define VADC_P_MUX8_1_1				0x17
->> +#define VADC_P_MUX9_1_1				0x18
->> +#define VADC_P_MUX10_1_1			0x19
->> +#define VADC_P_MUX11_1_1			0x1a
->> +#define VADC_P_MUX12_1_1			0x1b
->> +#define VADC_P_MUX13_1_1			0x1c
->> +#define VADC_P_MUX14_1_1			0x1d
->> +#define VADC_P_MUX15_1_1			0x1e
->> +#define VADC_P_MUX16_1_1			0x1f
->> +
->> +#define VADC_P_MUX1_1_3				0x20
->> +#define VADC_P_MUX2_1_3				0x21
->> +#define VADC_P_MUX3_1_3				0x22
->> +#define VADC_P_MUX4_1_3				0x23
->> +#define VADC_P_MUX5_1_3				0x24
->> +#define VADC_P_MUX6_1_3				0x25
->> +#define VADC_P_MUX7_1_3				0x26
->> +#define VADC_P_MUX8_1_3				0x27
->> +#define VADC_P_MUX9_1_3				0x28
->> +#define VADC_P_MUX10_1_3			0x29
->> +#define VADC_P_MUX11_1_3			0x2a
->> +#define VADC_P_MUX12_1_3			0x2b
->> +#define VADC_P_MUX13_1_3			0x2c
->> +#define VADC_P_MUX14_1_3			0x2d
->> +#define VADC_P_MUX15_1_3			0x2e
->> +#define VADC_P_MUX16_1_3			0x2f
->> +
->> +#define VADC_LR_MUX1_BAT_THERM			0x30
->> +#define VADC_LR_MUX2_BAT_ID			0x31
->> +#define VADC_LR_MUX3_XO_THERM			0x32
->> +#define VADC_LR_MUX4_AMUX_THM1			0x33
->> +#define VADC_LR_MUX5_AMUX_THM2			0x34
->> +#define VADC_LR_MUX6_AMUX_THM3			0x35
->> +#define VADC_LR_MUX7_HW_ID			0x36
->> +#define VADC_LR_MUX8_AMUX_THM4			0x37
->> +#define VADC_LR_MUX9_AMUX_THM5			0x38
->> +#define VADC_LR_MUX10_USB_ID			0x39
->> +#define VADC_AMUX_PU1				0x3a
->> +#define VADC_AMUX_PU2				0x3b
->> +#define VADC_LR_MUX3_BUF_XO_THERM		0x3c
->> +
->> +#define VADC_LR_MUX1_PU1_BAT_THERM		0x70
->> +#define VADC_LR_MUX2_PU1_BAT_ID			0x71
->> +#define VADC_LR_MUX3_PU1_XO_THERM		0x72
->> +#define VADC_LR_MUX4_PU1_AMUX_THM1		0x73
->> +#define VADC_LR_MUX5_PU1_AMUX_THM2		0x74
->> +#define VADC_LR_MUX6_PU1_AMUX_THM3		0x75
->> +#define VADC_LR_MUX7_PU1_AMUX_HW_ID		0x76
->> +#define VADC_LR_MUX8_PU1_AMUX_THM4		0x77
->> +#define VADC_LR_MUX9_PU1_AMUX_THM5		0x78
->> +#define VADC_LR_MUX10_PU1_AMUX_USB_ID		0x79
->> +#define VADC_LR_MUX3_BUF_PU1_XO_THERM		0x7c
->> +
->> +#define VADC_LR_MUX1_PU2_BAT_THERM		0xb0
->> +#define VADC_LR_MUX2_PU2_BAT_ID			0xb1
->> +#define VADC_LR_MUX3_PU2_XO_THERM		0xb2
->> +#define VADC_LR_MUX4_PU2_AMUX_THM1		0xb3
->> +#define VADC_LR_MUX5_PU2_AMUX_THM2		0xb4
->> +#define VADC_LR_MUX6_PU2_AMUX_THM3		0xb5
->> +#define VADC_LR_MUX7_PU2_AMUX_HW_ID		0xb6
->> +#define VADC_LR_MUX8_PU2_AMUX_THM4		0xb7
->> +#define VADC_LR_MUX9_PU2_AMUX_THM5		0xb8
->> +#define VADC_LR_MUX10_PU2_AMUX_USB_ID		0xb9
->> +#define VADC_LR_MUX3_BUF_PU2_XO_THERM		0xbc
->> +
->> +#define VADC_LR_MUX1_PU1_PU2_BAT_THERM		0xf0
->> +#define VADC_LR_MUX2_PU1_PU2_BAT_ID		0xf1
->> +#define VADC_LR_MUX3_PU1_PU2_XO_THERM		0xf2
->> +#define VADC_LR_MUX4_PU1_PU2_AMUX_THM1		0xf3
->> +#define VADC_LR_MUX5_PU1_PU2_AMUX_THM2		0xf4
->> +#define VADC_LR_MUX6_PU1_PU2_AMUX_THM3		0xf5
->> +#define VADC_LR_MUX7_PU1_PU2_AMUX_HW_ID		0xf6
->> +#define VADC_LR_MUX8_PU1_PU2_AMUX_THM4		0xf7
->> +#define VADC_LR_MUX9_PU1_PU2_AMUX_THM5		0xf8
->> +#define VADC_LR_MUX10_PU1_PU2_AMUX_USB_ID	0xf9
->> +#define VADC_LR_MUX3_BUF_PU1_PU2_XO_THERM	0xfc
->> +
->> +#endif /* _DT_BINDINGS_QCOM_SPMI_VADC_H */
->>
+В Ср, 05/11/2014 в 16:51 +0800, Wanpeng Li пишет:
+> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+> addition, task may/may not be running again if cpu is added back. The root cause
+> which I found is that dl task will be throtted and removed from dl rq after
+> comsuming all budget, which leads to stop task can't pick it up from dl rq and
+> migrate to other cpus during hotplug.
 > 
+> The method to reproduce:
+> schedtool -E -t 50000:100000 -e ./test
+> Actually test is just a simple for loop. Then observe which cpu the test
+> task is on.
+> echo 0 > /sys/devices/system/cpu/cpuN/online
+> 
+> This patch fix it by push the task to another cpu in dl_task_timer() if 
+> rq is offline.
+> 
+> Note: dl task can be migrated successfully if rq is offline currently, however, 
+> I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl 
+> task previous running on, so cpu_active_mask is used in the patch. 
+> 
+> Peterz, Juri?
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>  * push the task to another cpu in dl_task_timer() if rq is offline.
+> 
+>  kernel/sched/deadline.c | 39 ++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 36 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 04c2cbb..233e482 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>  	return hrtimer_active(&dl_se->dl_timer);
+>  }
+>  
+> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>  /*
+>   * This is the bandwidth enforcement timer callback. If here, we know
+>   * a task is not on its dl_rq, since the fact that the timer was running
+> @@ -538,6 +539,39 @@ again:
+>  	update_rq_clock(rq);
+>  	dl_se->dl_throttled = 0;
+>  	dl_se->dl_yielded = 0;
+> +
+> +	/*
+> +	 * So if we find that the rq the task was on is no longer
+> +	 * available, we need to select a new rq.
+> +	 */
+> +	if (!rq->online) {
+> +		struct rq *later_rq = NULL;
+> +
+> +		/* We will release rq lock */
+> +		get_task_struct(p);
+> +
+> +		raw_spin_unlock(&rq->lock);
+> +
+> +		later_rq = find_lock_later_rq(p, rq);
+> +
+> +		if (!later_rq) {
+> +			put_task_struct(p);
+> +			goto out;
+> +		}
+> +
+> +		deactivate_task(rq, p, 0);
+> +		set_task_cpu(p, later_rq->cpu);
+> +		activate_task(later_rq, p, 0);
+> +
+> +		resched_curr(later_rq);
+> +
+> +		double_unlock_balance(rq, later_rq);
+> +
+> +		put_task_struct(p);
+> +
+> +		goto out;
+> +	}
+> +
+>  	if (task_on_rq_queued(p)) {
+>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>  		if (dl_task(rq->curr))
+> @@ -555,7 +589,7 @@ again:
+>  	}
+>  unlock:
+>  	raw_spin_unlock(&rq->lock);
+> -
+> +out:
+>  	return HRTIMER_NORESTART;
+>  }
+>  
+> @@ -1182,8 +1216,7 @@ static int find_later_rq(struct task_struct *task)
+>  	 * We have to consider system topology and task affinity
+>  	 * first, then we can look for a suitable cpu.
+>  	 */
+> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+> +	cpumask_copy(later_mask, cpu_active_mask);
+>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>  			task, later_mask);
+
+isn't this too complicated?
+
+Can't we simply queue throttled tasks in rq_offline_dl() (without clearing
+of dl_throttled() status)? migrate_tasks() will do the migration right.
+
+This case the patch from the topic may be simply transformed in:
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index f3d7776..5059aa8 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -531,7 +531,7 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+ 	 * in the runqueue or is going to be enqueued back anyway.
+ 	 */
+ 	if (!dl_task(p) || dl_se->dl_new ||
+-	    dl_se->dl_boosted || !dl_se->dl_throttled)
++	    dl_se->dl_boosted || !dl_se->dl_throttled || on_dl_rq(dl_se))
+ 		goto unlock;
+ 
+ 	sched_clock_tick();
+
+
