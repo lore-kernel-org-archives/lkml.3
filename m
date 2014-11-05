@@ -1,174 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384AbaKERZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:25:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42058 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360AbaKERZO (ORCPT
+	id S932816AbaKER07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:26:59 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47913 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932291AbaKER06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:25:14 -0500
-Date: Wed, 5 Nov 2014 09:16:39 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-b09198f7b59101e52bcf238ed3b7bfc64de055ef@git.kernel.org>
-Cc: tglx@linutronix.de, prarit@redhat.com, bp@alien8.de, tony.luck@intel.com,
-        rdunlap@infradead.org, jiang.liu@linux.intel.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        joro@8bytes.org, gregkh@linuxfoundation.org, konrad.wilk@oracle.com,
-        rjw@rjwysocki.net, benh@kernel.crashing.org, grant.likely@linaro.org,
-        bhelgaas@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, joro@8bytes.org, prarit@redhat.com,
-        tglx@linutronix.de, tony.luck@intel.com, bp@alien8.de,
-        rdunlap@infradead.org, jiang.liu@linux.intel.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        benh@kernel.crashing.org, grant.likely@linaro.org, bhelgaas@google.com,
-        gregkh@linuxfoundation.org, konrad.wilk@oracle.com
-In-Reply-To: <1414397531-28254-15-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-15-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq:
-  Move IRQ initialization routines from io_apic.c into vector.c
-Git-Commit-ID: b09198f7b59101e52bcf238ed3b7bfc64de055ef
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 5 Nov 2014 12:26:58 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH -next 8/9] vt: Remove vt_get_kmsg_redirect() from uapi header
+Date: Wed,  5 Nov 2014 12:26:31 -0500
+Message-Id: <1415208392-16189-9-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
+References: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b09198f7b59101e52bcf238ed3b7bfc64de055ef
-Gitweb:     http://git.kernel.org/tip/b09198f7b59101e52bcf238ed3b7bfc64de055ef
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:05 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 5 Nov 2014 18:10:47 +0100
+vt_get_kmsg_redirect() only has meaning to the console driver as
+an alias for calling vt_kmsg_redirect(). Move the macro definition
+to the only source file which uses it; remove from uapi/linux/vt.h
 
-x86, irq: Move IRQ initialization routines from io_apic.c into vector.c
-
-Move IRQ initialization routines from io_apic.c into vector.c,
-preparing for enabling hierarchy irqdomain.
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414397531-28254-15-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- arch/x86/include/asm/io_apic.h |  2 ++
- arch/x86/kernel/apic/io_apic.c | 22 +---------------------
- arch/x86/kernel/apic/vector.c  | 28 ++++++++++++++++++++++++++++
- 3 files changed, 31 insertions(+), 21 deletions(-)
+ drivers/tty/vt/vt.c     | 2 ++
+ include/uapi/linux/vt.h | 3 ---
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index b7f1499..bf006cc 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -145,6 +145,7 @@ extern unsigned long io_apic_irqs;
- 
- struct irq_cfg;
- extern void ioapic_insert_resources(void);
-+extern int arch_early_ioapic_init(void);
- 
- extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
- 				     unsigned int, int,
-@@ -248,6 +249,7 @@ extern void print_IO_APICs(void);
- #define io_apic_assign_pci_irqs 0
- #define setup_ioapic_ids_from_mpc x86_init_noop
- static inline void ioapic_insert_resources(void) { }
-+static inline int arch_early_ioapic_init(void) { return 0; }
- static inline void print_IO_APICs(void) {}
- #define gsi_top (NR_IRQS_LEGACY)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 8dcdb7b..2619cbe 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -245,7 +245,7 @@ static void free_ioapic_saved_registers(int idx)
- 	ioapics[idx].saved_registers = NULL;
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index b33b00b..3dc5d56 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -2509,6 +2509,8 @@ int vt_kmsg_redirect(int new)
+ 		return kmsg_con;
  }
  
--int __init arch_early_irq_init(void)
-+int __init arch_early_ioapic_init(void)
- {
- 	struct irq_cfg *cfg;
- 	int i, node = cpu_to_node(0);
-@@ -2487,26 +2487,6 @@ unsigned int arch_dynirq_lower_bound(unsigned int from)
- 	return ioapic_initialized ? ioapic_dynirq_base : gsi_top;
- }
++#define vt_get_kmsg_redirect() vt_kmsg_redirect(-1)
++
+ /*
+  *	Console on virtual terminal
+  *
+diff --git a/include/uapi/linux/vt.h b/include/uapi/linux/vt.h
+index 4b59a26..978578b 100644
+--- a/include/uapi/linux/vt.h
++++ b/include/uapi/linux/vt.h
+@@ -84,7 +84,4 @@ struct vt_setactivate {
  
--int __init arch_probe_nr_irqs(void)
--{
--	int nr;
--
--	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
--		nr_irqs = NR_VECTORS * nr_cpu_ids;
--
--	nr = (gsi_top + nr_legacy_irqs()) + 8 * nr_cpu_ids;
--#if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
--	/*
--	 * for MSI and HT dyn irq
--	 */
--	nr += gsi_top * 16;
--#endif
--	if (nr < nr_irqs)
--		nr_irqs = nr;
--
--	return 0;
--}
--
- #ifdef CONFIG_X86_32
- static int io_apic_get_unique_id(int ioapic, int apic_id)
- {
-diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index 938108f..19fcb57 100644
---- a/arch/x86/kernel/apic/vector.c
-+++ b/arch/x86/kernel/apic/vector.c
-@@ -235,6 +235,34 @@ void clear_irq_vector(int irq, struct irq_cfg *cfg)
- 	raw_spin_unlock_irqrestore(&vector_lock, flags);
- }
+ #define VT_SETACTIVATE	0x560F	/* Activate and set the mode of a console */
  
-+int __init arch_probe_nr_irqs(void)
-+{
-+	int nr;
-+
-+	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
-+		nr_irqs = NR_VECTORS * nr_cpu_ids;
-+
-+	nr = (gsi_top + nr_legacy_irqs()) + 8 * nr_cpu_ids;
-+#if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
-+	/*
-+	 * for MSI and HT dyn irq
-+	 */
-+	if (gsi_top <= NR_IRQS_LEGACY)
-+		nr +=  8 * nr_cpu_ids;
-+	else
-+		nr += gsi_top * 16;
-+#endif
-+	if (nr < nr_irqs)
-+		nr_irqs = nr;
-+
-+	return nr_legacy_irqs();
-+}
-+
-+int __init arch_early_irq_init(void)
-+{
-+	return arch_early_ioapic_init();
-+}
-+
- static void __setup_vector_irq(int cpu)
- {
- 	/* Initialize vector_irq on a new cpu */
+-
+-#define vt_get_kmsg_redirect() vt_kmsg_redirect(-1)
+-
+ #endif /* _UAPI_LINUX_VT_H */
+-- 
+2.1.3
+
