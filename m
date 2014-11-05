@@ -1,147 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257AbaKEQ5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:57:11 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53191 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033AbaKEQ47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:56:59 -0500
-Date: Wed, 5 Nov 2014 08:56:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Using list_for_each_entry() in place of
- list_for_each_entry_rcu() ?
-Message-ID: <20141105165655.GG5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <201411012059.JHB90633.HtJOSOVLFFQFMO@I-love.SAKURA.ne.jp>
- <20141104015403.GV5718@linux.vnet.ibm.com>
- <201411042018.FBG60918.JOMOLOtHFQSVFF@I-love.SAKURA.ne.jp>
+	id S1755360AbaKEQ5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:57:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57295 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468AbaKEQ5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:57:41 -0500
+Date: Wed, 5 Nov 2014 17:57:26 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 09/12 v3] seq_buf: Move the seq_buf code to lib/
+Message-ID: <20141105165726.GK4570@pathway.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+ <20141104160222.809349817@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201411042018.FBG60918.JOMOLOtHFQSVFF@I-love.SAKURA.ne.jp>
+In-Reply-To: <20141104160222.809349817@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110516-0029-0000-0000-00000565D1FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 08:18:03PM +0900, Tetsuo Handa wrote:
-> Paul E. McKenney wrote:
-> > But if you only ever add it to the list that one time, then the
-> > list_for_each_entry_rcu() could become list_for_each_entry(), and
-> > rcu_read_lock() and rcu_read_unlock() are not needed.  Again, this
-> > assumes that the memory is never reused after being removed from the list.
+On Tue 2014-11-04 10:52:46, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> That is what I wanted to confirm. v1, v2, v3 are added to the list only
-> once, and mymodule.ko containing v1, v2, v3 are not unload-able.
+> The seq_buf functions are rather useful outside of tracing. Instead
+> of having it be dependent on CONFIG_TRACING, move the code into lib/
+> and allow other users to have access to it even when tracing is not
+> configured.
+> 
+> The seq_buf utility is similar to the seq_file utility, but instead of
+> writing sending data back up to userland, it writes it into a buffer
+> defined at seq_buf_init(). This allows us to send a descriptor around
+> that writes printf() formatted strings into it that can be retrieved
+> later.
+> 
+> It is currently used by the tracing facility for such things like trace
+> events to convert its binary saved data in the ring buffer into an
+> ASCII human readable context to be displayed in /sys/kernel/debug/trace.
+> 
+> It can also be used for doing NMI prints safely from NMI context into
+> the seq_buf and retrieved later and dumped to printk() safely. Doing
+> printk() from an NMI context is dangerous because an NMI can preempt
+> a current printk() and deadlock on it.
+> 
+> Link: http://lkml.kernel.org/p/20140619213952.058255809@goodmis.org
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Good enough, then.  ;-)
+This patch might needed an update when there are changes in the
+previous patches. But it is a simple file move that makes
+perfect sense, so:
 
-> > Note that in this case module unload followed by module reload is tricky.
-> > You have to "wait long enough" between unload and load.  Or you need an
-> > orderly teardown of some sort.
-> 
-> Yes, I'm aware of that.
-> 
-> > > Assumptions are:
-> > > 
-> > >   (1) v1, v2, v3 are statically allocated variables inside module,
-> > >       while my_lock, my_list, add_entry(), del_entry(), reader()
-> > >       are built-in.
-> > 
-> > When you say that my_lock and my_list are built-in, you mean that they
-> > are defined in the base kernel rather than in the module?  (I was assuming
-> > that they were defined in the module.)
-> 
-> I meant built-in as built into vmlinux. That is, my_lock, my_list,
-> add_entry(), del_entry(), reader() are defined in vmlinux , and v1, v2, v3
-> are defined in mymodule.ko .
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 
-OK, even more straightforward, then.
-
-> > >   (2) v1, v2, v3 are added to my_list only once upon module load
-> > > 
-> > >   (3) v1, v2, v3 might be removed from my_list some time later after
-> > >       module was loaded
-> > 
-> > Again, module unload followed by module load will be a bit dicey.  Other
-> > than that, it should work.
-> > 
-> > 							Thanx, Paul
-> > 
-> 
-> If someone really needs to implement unload-able modules, he/she can
-> split such modules into non unload-able component and unload-able
-> component.
-
-Yep, that works also.
-
-							Thanx, Paul
-
-> -------- non unload-able component --------
-> static DEFINE_SRCU(my_srcu_lock);
-> static int (*do_getvalue)(void);
-> 
-> static int mywrapper_getvalue(void)
-> {
->     const int idx = srcu_read_lock(&my_srcu_lock);
->     const typeof(do_getvalue) func = do_getvalue;
->     const int ret = func ? func() : 0;
->     srcu_read_unlock(&my_srcu_lock, idx);
->     return ret;
-> }
-> 
-> void mywrapper_register(typeof(do_getvalue) func)
-> {
->     do_getvalue = func;
-> }
-> EXPORT_SYMBOL_GPL(mywrapper_register);
-> 
-> void mywrapper_unregister(void)
-> {
->     do_getvalue = NULL;
->     synchronize_srcu(&my_srcu_lock);
-> }
-> EXPORT_SYMBOL_GPL(mywrapper_unregister);
-> 
-> struct my_struct {
->     struct list_head list;
->     const int (*func)(void);
-> } v1 = { .func = mywrapper_getvalue };
-> 
-> static int __init mywrapper_init(void)
-> {
->     add_entry(&v1);
->     return 0;
-> }
-> module_init(mywrapper_init);
-> -------- non unload-able component --------
-> 
-> -------- unload-able component --------
-> static int do_getvalue(void)
-> {
->     return (...snipped...);
-> }
-> 
-> static int __init mymodule_init(void)
-> {
->     mywrapper_register(do_getvalue);
->     return 0;
-> }
-> module_init(mymodule_init);
-> 
-> static void mymodule_exit(void)
-> {
->     mywrapper_unregister();
-> }
-> module_exit(mymodule_exit);
-> -------- unload-able component --------
-> 
-> Thank you.
-> 
-
+Best Regards,
+Petr
