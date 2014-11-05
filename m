@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503AbaKER1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:27:44 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35080 "EHLO
+	id S1756517AbaKER2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:28:00 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48272 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756213AbaKER05 (ORCPT
+	with ESMTP id S1756162AbaKER04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:26:57 -0500
+	Wed, 5 Nov 2014 12:26:56 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 7/9] tty: Document defunct ASYNC_SPLIT_TERMIOS flag in uapi header
-Date: Wed,  5 Nov 2014 12:26:30 -0500
-Message-Id: <1415208392-16189-8-git-send-email-peter@hurleysoftware.com>
+        Peter Hurley <peter@hurleysoftware.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: [PATCH -next 6/9] cris: Remove obsolete ASYNC_SPLIT_TERMIOS behavior
+Date: Wed,  5 Nov 2014 12:26:29 -0500
+Message-Id: <1415208392-16189-7-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
 References: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
@@ -25,28 +27,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last vestige of ASYNC_SPLIT_TERMIOS was removed by commit
-'cris: Remove obsolete ASYNC_SPLIT_TERMIOS behavior'. Mark the flag
-as defunct in the uapi header.
+ASYNC_SPLIT_TERMIOS behavior is a remnant of the long-dead /dev/cuaXX
+callout device. Split termios handling was removed tree-wide in v2.5.71 by:
 
+commit 99a21edebbfd8c29e39ee7fcc8a1ffa423657290
+Author: Alexander Viro <viro@www.linux.org.uk>
+Date:   Wed Jun 11 07:41:28 2003 -0700
+
+    [PATCH] tty_driver refcounting
+
+    killed the last remnants of callout stuff - we don't need to mess with
+    storing termios privately anymore.
+
+which pre-dated the re-introduction into the cris serial driver
+in v2.6.7 by:
+
+commit 311a5ffeda8ccb3f1f3840069f37234e043092d4
+Author: Andrew Morton <akpm@osdl.org>
+Date:   Mon May 31 18:52:29 2004 -0700
+
+    [PATCH] CRIS architecture update
+
+    From: "Mikael Starvik" <mikael.starvik@axis.com>
+
+    - Lots of fixes from 2.4.
+
+    - Updated for 2.6.6.
+
+    - Added IDE driver
+
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- include/uapi/linux/tty_flags.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/crisv10.c | 12 ------------
+ drivers/tty/serial/crisv10.h |  1 -
+ 2 files changed, 13 deletions(-)
 
-diff --git a/include/uapi/linux/tty_flags.h b/include/uapi/linux/tty_flags.h
-index 4e021e3..d2bc4ff 100644
---- a/include/uapi/linux/tty_flags.h
-+++ b/include/uapi/linux/tty_flags.h
-@@ -14,7 +14,7 @@
- 				    * on the callout port */
- #define ASYNCB_FOURPORT		 1 /* Set OU1, OUT2 per AST Fourport settings */
- #define ASYNCB_SAK		 2 /* Secure Attention Key (Orange book) */
--#define ASYNCB_SPLIT_TERMIOS	 3 /* Separate termios for dialin/callout */
-+#define ASYNCB_SPLIT_TERMIOS	 3 /* [x] Separate termios for dialin/callout */
- #define ASYNCB_SPD_HI		 4 /* Use 56000 instead of 38400 bps */
- #define ASYNCB_SPD_VHI		 5 /* Use 115200 instead of 38400 bps */
- #define ASYNCB_SKIP_TEST	 6 /* Skip UART test during autoconfiguration */
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index 58e6f61..0c1825b 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -3676,12 +3676,6 @@ rs_close(struct tty_struct *tty, struct file * filp)
+ 	}
+ 	info->port.flags |= ASYNC_CLOSING;
+ 	/*
+-	 * Save the termios structure, since this port may have
+-	 * separate termios for callout and dialin.
+-	 */
+-	if (info->port.flags & ASYNC_NORMAL_ACTIVE)
+-		info->normal_termios = tty->termios;
+-	/*
+ 	 * Now we wait for the transmit buffer to clear; and we notify
+ 	 * the line discipline to only process XON/XOFF characters.
+ 	 */
+@@ -4076,11 +4070,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
+ 		return retval;
+ 	}
+ 
+-	if ((info->port.count == 1) && (info->port.flags & ASYNC_SPLIT_TERMIOS)) {
+-		tty->termios = info->normal_termios;
+-		change_speed(info);
+-	}
+-
+ #ifdef SERIAL_DEBUG_OPEN
+ 	printk("rs_open ttyS%d successful...\n", info->line);
+ #endif
+@@ -4327,7 +4316,6 @@ static int __init rs_init(void)
+ 		info->custom_divisor = 0;
+ 		info->x_char = 0;
+ 		info->event = 0;
+-		info->normal_termios = driver->init_termios;
+ 		info->xmit.buf = NULL;
+ 		info->xmit.tail = info->xmit.head = 0;
+ 		info->first_recv_buffer = info->last_recv_buffer = NULL;
+diff --git a/drivers/tty/serial/crisv10.h b/drivers/tty/serial/crisv10.h
+index 7599014..15a52ee 100644
+--- a/drivers/tty/serial/crisv10.h
++++ b/drivers/tty/serial/crisv10.h
+@@ -98,7 +98,6 @@ struct e100_serial {
+ 
+ 	struct work_struct	work;
+ 	struct async_icount	icount;   /* error-statistics etc.*/
+-	struct ktermios		normal_termios;
+ 
+ 	unsigned long char_time_usec;       /* The time for 1 char, in usecs */
+ 	unsigned long flush_time_usec;      /* How often we should flush */
 -- 
 2.1.3
 
