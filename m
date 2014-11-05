@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091AbaKEV7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:59:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:42305 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaKEV7t (ORCPT
+	id S1751813AbaKEWB4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:01:56 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:48628 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaKEWBx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:59:49 -0500
-Message-ID: <545A9DD2.7050602@codeaurora.org>
-Date: Wed, 05 Nov 2014 15:59:46 -0600
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 17:01:53 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Weijie Yang <weijie.yang.kh@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>
+Cc: linux-mm@kvack.org, Laura Abbott <lauraa@codeaurora.org>,
+        iamjoonsoo.kim@lge.com, Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: Re: CMA alignment question
+In-Reply-To: <CAL1ERfMYmQcQ_sX7E0HC2bXmC-imh4T-7Q4nBVQRXkQSaTjvQQ@mail.gmail.com>
+Organization: http://mina86.com/
+References: <CADtm3G7DtGkvPk36Fiunwen8grw-94V6=iv82iusGumfNJkn-g@mail.gmail.com> <xa1tlhnq7ga7.fsf@mina86.com> <CADtm3G7bU6Y2aKco5Vb81KSqsy=FH9zmdDJm=Tixjoep1YeJ7Q@mail.gmail.com> <CAL1ERfMYmQcQ_sX7E0HC2bXmC-imh4T-7Q4nBVQRXkQSaTjvQQ@mail.gmail.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:141105:m.szyprowski@samsung.com::/RmCDym6P+6MMC/K:0000000000000000000000000000000000000085+
+X-Hashcash: 1:20:141105:iamjoonsoo.kim@lge.com::jJ1TBS/VKR3WKjRR:0000000000000000000000000000000000000001aM7
+X-Hashcash: 1:20:141105:lauraa@codeaurora.org::vnuRBScpsXNmW4m7:00000000000000000000000000000000000000001qHG
+X-Hashcash: 1:20:141105:computersforpeace@gmail.com::jtoaP8m7WiRITmH1:000000000000000000000000000000000028nR
+X-Hashcash: 1:20:141105:f.fainelli@gmail.com::AToVKL/RlhpDMfCd:000000000000000000000000000000000000000002Ku9
+X-Hashcash: 1:20:141105:weijie.yang.kh@gmail.com::BpS1TlfvWYL7RgHA:00000000000000000000000000000000000004Zsq
+X-Hashcash: 1:20:141105:linux-mm@kvack.org::3UVVGOd84o/eMvzC:00000000000000000000000000000000000000000003fsR
+X-Hashcash: 1:20:141105:gregory.0xf0@gmail.com::w6NV4TD7Y1v5x7AS:0000000000000000000000000000000000000005a9D
+X-Hashcash: 1:20:141105:linux-kernel@vger.kernel.org::MacOIKc5kD3pS0FV:0000000000000000000000000000000007qFT
+Date: Wed, 05 Nov 2014 23:01:48 +0100
+Message-ID: <xa1tsihxwblf.fsf@mina86.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com> <20141104082056.GG1618@lahna.fi.intel.com> <545912D2.5090708@codeaurora.org> <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
-In-Reply-To: <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 03:46 PM, Grant Likely wrote:
->
-> Before even attempting to put pinctrl mappings into your driver, there
-> should instead be a conversation at the ACPI spec level about whether
-> or not it makes sense and what such a binding should look like.
+> On Tue, Nov 04 2014, Gregory Fong wrote:
+>> The alignment in cma_alloc() is done w.r.t. the bitmap.  This is a
+>> problem when, for example:
+>>
+>> - a device requires 16M (order 12) alignment
+>> - the CMA region is not 16 M aligned
 
-Fair enough.  For GPIO, using the Linux GPIO driver as a back-end for 
-the ASL means that we don't have to duplicate the Linux GPIO driver in 
-firmware, and it also allows a high degree of flexibility.  That sounds 
-like highly desirable features for any device support, including pin 
-control.
+On Wed, Nov 05 2014, Weijie Yang wrote:
+> I think the device driver should ensure that situation could not occur,
+> by assign suitable alignment parameter in cma_declare_contiguous().
 
-I don't really understand ACPI/ASL enough to really have much insight in 
-this area, but I've been waiting over six months for someone ... anyone 
-... to do someone on this area.  So I'm kinda stuck -- I have a vested 
-interested in this area, and yet I'm not in a position to contribute much.
+What about default CMA area? Besides, I think principle of least
+surprise applies here and alignment should be physical.
 
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, a Linux Foundation Collaborative Project.
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
