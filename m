@@ -1,69 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776AbaKEQlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:41:50 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:64010 "EHLO SMTP.CITRIX.COM"
+	id S1755809AbaKEQlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:41:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10969 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755747AbaKEQls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:41:48 -0500
-X-IronPort-AV: E=Sophos;i="5.07,320,1413244800"; 
-   d="scan'208";a="188399416"
-Date: Wed, 5 Nov 2014 16:41:41 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: <linux-kernel@vger.kernel.org>, <mgorman@suse.de>,
-        <akpm@linux-foundation.org>, <hughd@google.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xen.org>,
-        <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Pte_special broken on Xen PV when NUMA balancing is enabled
-Message-ID: <20141105164141.GA27834@zion.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DLP: MIA2
+	id S1755782AbaKEQlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:41:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
+   d="scan'208";a="627083257"
+From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
+        aubrey.li@intel.com
+Cc: linux-kernel@vger.kernel.org, mahesh.kumar.p@intel.com
+Subject: [PATCH 3/3] PMC Driver : Expose the power gate status for CHT
+Date: Wed,  5 Nov 2014 22:05:34 +0530
+Message-Id: <1415205334-6141-1-git-send-email-mahesh.kumar.p@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+The PSS register reflects the power state of each island on SoC.
+It would be useful to know which of the islands is on or off at
+the moment.
+The patch adds the Pwr Gate status interface to CHT
 
-I'm developing virtual NUMA support for Xen. One thing I notice is that when
-NUMA balancing is enabled, kernel will crash with following backtrace.
+Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+---
+ arch/x86/include/asm/pmc_atom.h |   20 +++++++++++++++++++-
+ arch/x86/kernel/pmc_atom.c      |   33 +++++++++++++++++++++++++++++++--
+ 2 files changed, 50 insertions(+), 3 deletions(-)
 
-[  404.281396] CPU: 0 PID: 1058 Comm: dd Tainted: G    B   W      3.18.0-rc3-bp+ #3
-[  404.281403]  0000000000000000 00007fd62eca3000 ffffffff817b7cac ffff880172d298b8
-[  404.281415]  ffffffff8110383f 0720072007300732 00000007fd62eca3 0720072007200720
-[  404.281426]  ffff880172d298b8 ffff88017300bbb0 00007fd62eca3000 0000000000000000
-[  404.281437] Call Trace:                                                      
-[  404.281444]  [<ffffffff817b7cac>] ? dump_stack+0x41/0x51                     
-[  404.281452]  [<ffffffff8110383f>] ? print_bad_pte+0x19f/0x1cb                
-[  404.281460]  [<ffffffff81104479>] ? vm_normal_page+0x51/0x87                 
-[  404.281469]  [<ffffffff8110c5ef>] ? change_protection+0x4fb/0x76a            
-[  404.281477]  [<ffffffff81106435>] ? handle_mm_fault+0x9e0/0xa11              
-[  404.281486]  [<ffffffff8111cc22>] ? change_prot_numa+0x13/0x24               
-[  404.281495]  [<ffffffff8106abf0>] ? task_numa_work+0x20c/0x2ac               
-[  404.281503]  [<ffffffff810615e7>] ? finish_task_switch+0x83/0xc5             
-[  404.281512]  [<ffffffff8105af10>] ? task_work_run+0x7b/0x8f                  
-[  404.281521]  [<ffffffff8100d732>] ? do_notify_resume+0x5a/0x6d               
-[  404.281529]  [<ffffffff817bf49f>] ? retint_signal+0x48/0x89                  
-[  404.281537]  [<ffffffff810012eb>] ? xen_hypercall_iret+0xb/0x20
+diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+index 7f09fe0..d634125 100644
+--- a/arch/x86/include/asm/pmc_atom.h
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -47,13 +47,16 @@
+ /* Power gate status register */
+ #define	PMC_PSS			0x98
+ 
+-#define PMC_PSS_BIT_GBE			BIT(0)
++/* common bit definition */
+ #define PMC_PSS_BIT_SATA		BIT(1)
+ #define PMC_PSS_BIT_HDA			BIT(2)
+ #define PMC_PSS_BIT_SEC			BIT(3)
+ #define PMC_PSS_BIT_PCIE		BIT(4)
+ #define PMC_PSS_BIT_LPSS		BIT(5)
+ #define PMC_PSS_BIT_LPE			BIT(6)
++
++/* BYT specific bits */
++#define PMC_PSS_BIT_GBE			BIT(0)
+ #define PMC_PSS_BIT_DFX			BIT(7)
+ #define PMC_PSS_BIT_USH_CTRL		BIT(8)
+ #define PMC_PSS_BIT_USH_SUS		BIT(9)
+@@ -66,6 +69,21 @@
+ #define PMC_PSS_BIT_USB			BIT(16)
+ #define PMC_PSS_BIT_USB_SUS		BIT(17)
+ 
++/* CHT specific bits */
++#define PMC_PSS_BIT_UFS			BIT(7)
++#define PMC_PSS_BIT_UXD			BIT(11)
++#define PMC_PSS_BIT_UXD_FD		BIT(12)
++#define PMC_PSS_BIT_UX_ENG		BIT(15)
++#define PMC_PSS_BIT_USB_SUS_CHT		BIT(16)
++#define PMC_PSS_BIT_GMM		BIT(17)
++#define PMC_PSS_BIT_ISH		BIT(18)
++#define PMC_PSS_BIT_DFX_MASTER		BIT(26)
++#define PMC_PSS_BIT_DFX_CLSTR1		BIT(27)
++#define PMC_PSS_BIT_DFX_CLSTR2		BIT(28)
++#define PMC_PSS_BIT_DFX_CLSTR3		BIT(29)
++#define PMC_PSS_BIT_DFX_CLSTR4		BIT(30)
++#define PMC_PSS_BIT_DFX_CLSTR5		BIT(31)
++
+ 
+ /* The timers acumulate time spent in sleep state */
+ #define	PMC_S0IR_TMR		0x80
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+index b435e7c..50dde36 100644
+--- a/arch/x86/kernel/pmc_atom.c
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -45,7 +45,10 @@ struct pmc_bit_map {
+ };
+ 
+ static  struct pmc_bit_map *dev_map;
++static  struct pmc_bit_map *pss_map;
+ static int dev_num;
++static int pss_num;
++
+ static  struct pmc_bit_map byt_dev_map[] = {
+ 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
+ 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
+@@ -85,7 +88,7 @@ static  struct pmc_bit_map byt_dev_map[] = {
+ 	{"35 - DFX",			BIT_DFX_BYT},
+ };
+ 
+-static const struct pmc_bit_map pss_map[] = {
++static struct pmc_bit_map pss_map_vlv[] = {
+ 	{"0  - GBE",			PMC_PSS_BIT_GBE},
+ 	{"1  - SATA",			PMC_PSS_BIT_SATA},
+ 	{"2  - HDA",			PMC_PSS_BIT_HDA},
+@@ -144,6 +147,28 @@ static struct pmc_bit_map cht_dev_map[] = {
+ 	{"34 - ISH",	BIT_ISH_CHT,	BIT_ISH_FD_CHT},
+ };
+ 
++static struct pmc_bit_map pss_map_cht[] = {
++	{"1  - SATA",			PMC_PSS_BIT_SATA},
++	{"2  - HDA",			PMC_PSS_BIT_HDA},
++	{"3  - SEC",			PMC_PSS_BIT_SEC},
++	{"4  - PCIE",			PMC_PSS_BIT_PCIE},
++	{"5  - LPSS",			PMC_PSS_BIT_LPSS},
++	{"6  - LPE",			PMC_PSS_BIT_LPE},
++	{"7  - UFS",			PMC_PSS_BIT_UFS},
++	{"11  - UXD(xDCI)",		PMC_PSS_BIT_UXD},
++	{"12  - UXD FD SX(xDCI)",		PMC_PSS_BIT_UXD_FD},
++	{"15 -  UX Engine(xHCI) ",		PMC_PSS_BIT_UX_ENG},
++	{"16 - USB SUS ",		PMC_PSS_BIT_USB_SUS_CHT},
++	{"17 - GMM",		PMC_PSS_BIT_GMM},
++	{"18 - ISH",		PMC_PSS_BIT_ISH},
++	{"26 - DFX Master",		PMC_PSS_BIT_DFX_MASTER},
++	{"27 - DFX Cluster1",		PMC_PSS_BIT_DFX_CLSTR1},
++	{"28 - DFX Cluster2",		PMC_PSS_BIT_DFX_CLSTR2},
++	{"29 - DFX Cluster3",		PMC_PSS_BIT_DFX_CLSTR3},
++	{"30 - DFX Cluster4",		PMC_PSS_BIT_DFX_CLSTR4},
++	{"31 - DFX Cluster5",		PMC_PSS_BIT_DFX_CLSTR5},
++};
++
+ static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
+ {
+ 	return readl(pmc->regmap + reg_offset);
+@@ -240,7 +265,7 @@ static int pmc_pss_state_show(struct seq_file *s, void *unused)
+ 	u32 pss = pmc_reg_read(pmc, PMC_PSS);
+ 	int pss_index;
+ 
+-	for (pss_index = 0; pss_index < ARRAY_SIZE(pss_map); pss_index++) {
++	for (pss_index = 0; pss_index < pss_num; pss_index++) {
+ 		seq_printf(s, "Island: %-32s\tState: %s\n",
+ 			pss_map[pss_index].name,
+ 			pss_map[pss_index].d3_sts_bit & pss ? "Off" : "On");
+@@ -414,10 +439,14 @@ static int __init pmc_atom_init(void)
+ 			case PCI_DEVICE_ID_BYT_PMC:
+ 				dev_map = byt_dev_map;
+ 				dev_num = ARRAY_SIZE(byt_dev_map);
++				pss_map = pss_map_vlv;
++				pss_num = ARRAY_SIZE(pss_map_vlv);
+ 				break;
+ 			case PCI_DEVICE_ID_CHT_PMC:
+ 				dev_map = cht_dev_map;
+ 				dev_num = ARRAY_SIZE(cht_dev_map);
++				pss_map = pss_map_cht;
++				pss_num = ARRAY_SIZE(pss_map_cht);
+ 				break;
+ 			}
+ 			err = pmc_setup_dev(pdev);
+-- 
+1.7.9.5
 
-Decoding page flags 0x366 we have _PAGE_SPECIAL(_PAGE_NUMA) and
-_PAGE_GLOBAL(_PAGE_PROTNONE) set, _PAGE_PRESENT not set. It's handling
-a NUMA hint page fault and crashes because the PTE in question is
-considered a special PTE by pte_special.
-
-In a Xen PV guest, _PAGE_GLOBAL is added by hypervisor to mark the page
-a guest user space page. Xen PV kernel has already forbidden setting
-that bit during initialisation. It's a bit unfortunate that there's
-still clash with _PAGE_PROTNONE.
-
-Wei.
-
-P.S.  Interestingly, in b38af4721 ("x86,mm: fix pte_special versus
-pte_numa"), the commit which changed pte_special, Hugh (the author)
-wrote "It still appears that this patch may be incomplete: aren't there
-other places which need to be handling PROTNONE along with PRESENT?"
-Looks like now we have a case -- Xen PV -- that PROTNONE and PRESENT
-co-exist.
