@@ -1,155 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832AbaKENOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:14:09 -0500
-Received: from relay.parallels.com ([195.214.232.42]:58661 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaKENOG (ORCPT
+	id S1754860AbaKENPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:15:53 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:57033 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590AbaKENPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:14:06 -0500
-Message-ID: <1415193240.28592.14.camel@tkhai>
-Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
- cpu hotplug
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@arm.com>, <linux-kernel@vger.kernel.org>
-Date: Wed, 5 Nov 2014 16:14:00 +0300
-In-Reply-To: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+	Wed, 5 Nov 2014 08:15:49 -0500
+From: Chander Kashyap <k.chander@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
+        lorenzo.pieralisi@arm.com, catalin.marinas@arm.com,
+        mark.rutland@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: [PATCH v4] arm64: dts: exynos7: add support for cpuidle core power down
+Date: Wed,  5 Nov 2014 18:45:31 +0530
+Message-Id: <1415193331-14790-1-git-send-email-k.chander@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all,
+Exynos7 has core power down state where cores can be powered off independently.
+This patch adds support for this state.
 
-В Ср, 05/11/2014 в 16:51 +0800, Wanpeng Li пишет:
-> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
-> addition, task may/may not be running again if cpu is added back. The root cause
-> which I found is that dl task will be throtted and removed from dl rq after
-> comsuming all budget, which leads to stop task can't pick it up from dl rq and
-> migrate to other cpus during hotplug.
-> 
-> The method to reproduce:
-> schedtool -E -t 50000:100000 -e ./test
-> Actually test is just a simple for loop. Then observe which cpu the test
-> task is on.
-> echo 0 > /sys/devices/system/cpu/cpuN/online
-> 
-> This patch fix it by push the task to another cpu in dl_task_timer() if 
-> rq is offline.
-> 
-> Note: dl task can be migrated successfully if rq is offline currently, however, 
-> I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl 
-> task previous running on, so cpu_active_mask is used in the patch. 
-> 
-> Peterz, Juri?
-> 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
-> v1 -> v2:
->  * push the task to another cpu in dl_task_timer() if rq is offline.
-> 
->  kernel/sched/deadline.c | 39 ++++++++++++++++++++++++++++++++++++---
->  1 file changed, 36 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 04c2cbb..233e482 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
->  	return hrtimer_active(&dl_se->dl_timer);
->  }
->  
-> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
->  /*
->   * This is the bandwidth enforcement timer callback. If here, we know
->   * a task is not on its dl_rq, since the fact that the timer was running
-> @@ -538,6 +539,39 @@ again:
->  	update_rq_clock(rq);
->  	dl_se->dl_throttled = 0;
->  	dl_se->dl_yielded = 0;
-> +
-> +	/*
-> +	 * So if we find that the rq the task was on is no longer
-> +	 * available, we need to select a new rq.
-> +	 */
-> +	if (!rq->online) {
-> +		struct rq *later_rq = NULL;
-> +
-> +		/* We will release rq lock */
-> +		get_task_struct(p);
-> +
-> +		raw_spin_unlock(&rq->lock);
-> +
-> +		later_rq = find_lock_later_rq(p, rq);
-> +
-> +		if (!later_rq) {
-> +			put_task_struct(p);
-> +			goto out;
-> +		}
-> +
-> +		deactivate_task(rq, p, 0);
-> +		set_task_cpu(p, later_rq->cpu);
-> +		activate_task(later_rq, p, 0);
-> +
-> +		resched_curr(later_rq);
-> +
-> +		double_unlock_balance(rq, later_rq);
-> +
-> +		put_task_struct(p);
-> +
-> +		goto out;
-> +	}
-> +
->  	if (task_on_rq_queued(p)) {
->  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
->  		if (dl_task(rq->curr))
-> @@ -555,7 +589,7 @@ again:
->  	}
->  unlock:
->  	raw_spin_unlock(&rq->lock);
-> -
-> +out:
->  	return HRTIMER_NORESTART;
->  }
->  
-> @@ -1182,8 +1216,7 @@ static int find_later_rq(struct task_struct *task)
->  	 * We have to consider system topology and task affinity
->  	 * first, then we can look for a suitable cpu.
->  	 */
-> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> +	cpumask_copy(later_mask, cpu_active_mask);
->  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
->  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
->  			task, later_mask);
+Entry latency for the core power down is calculated as follows:
+1. Time difference is measured between cpuidle entry and exit.
+2. WFI is skipped for measuring the time.
+3. Select the worst case time in the set of 100000 cpuidle transactions,
+   with varying load.
 
-isn't this too complicated?
+Exit latency and target residency are supplied as per HW team
 
-Can't we simply queue throttled tasks in rq_offline_dl() (without clearing
-of dl_throttled() status)? migrate_tasks() will do the migration right.
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+---
+This patch has following dependencies:
+	- [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
+		http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
+Changes in v2:
+	- Moved the cpu-idle-state property after reg property
+	- removed the status property.
 
-This case the patch from the topic may be simply transformed in:
+Changes in v3:
+	- Added the Entry latency calculation in commit message.
+Changes in v4:
+	- Corrected the commit message.
+	- Corrected the entry latency value.
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index f3d7776..5059aa8 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -531,7 +531,7 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 	 * in the runqueue or is going to be enqueued back anyway.
- 	 */
- 	if (!dl_task(p) || dl_se->dl_new ||
--	    dl_se->dl_boosted || !dl_se->dl_throttled)
-+	    dl_se->dl_boosted || !dl_se->dl_throttled || on_dl_rq(dl_se))
- 		goto unlock;
+ arch/arm64/boot/dts/exynos/exynos7.dtsi |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+index 50ae936..444dde1 100644
+--- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
++++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+@@ -37,6 +37,7 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x0>;
++			cpu-idle-states = <&CPU_SLEEP>;
+ 		};
  
- 	sched_clock_tick();
-
+ 		cpu@1 {
+@@ -44,6 +45,7 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x1>;
++			cpu-idle-states = <&CPU_SLEEP>;
+ 		};
+ 
+ 		cpu@2 {
+@@ -51,6 +53,7 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x2>;
++			cpu-idle-states = <&CPU_SLEEP>;
+ 		};
+ 
+ 		cpu@3 {
+@@ -58,6 +61,20 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x3>;
++			cpu-idle-states = <&CPU_SLEEP>;
++		};
++
++		idle-states {
++			entry-method = "arm,psci";
++
++			CPU_SLEEP: cpu-sleep {
++				compatible = "arm,idle-state";
++				local-timer-stop;
++				arm,psci-suspend-param = <0x0010000>;
++				entry-latency-us = <34>;
++				exit-latency-us = <150>;
++				min-residency-us = <2100>;
++			};
+ 		};
+ 	};
+ 
+-- 
+1.7.9.5
 
