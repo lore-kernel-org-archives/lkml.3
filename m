@@ -1,121 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684AbaKEQlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:41:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41403 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127AbaKEQlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:41:07 -0500
-Date: Wed, 5 Nov 2014 08:39:59 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-c20c824715444c9cfad54736e9b41bcae7062d30@git.kernel.org>
-Cc: jiang.liu@linux.intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        benh@kernel.crashing.org, bp@alien8.de, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, bhelgaas@google.com, joro@8bytes.org,
-        yinghai@kernel.org, rdunlap@infradead.org, tglx@linutronix.de,
-        mingo@kernel.org, konrad.wilk@oracle.com, tony.luck@intel.com
-Reply-To: tglx@linutronix.de, mingo@kernel.org, rdunlap@infradead.org,
-        yinghai@kernel.org, joro@8bytes.org, tony.luck@intel.com,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        benh@kernel.crashing.org, jiang.liu@linux.intel.com,
-        bhelgaas@google.com, gregkh@linuxfoundation.org, bp@alien8.de,
-        rjw@rjwysocki.net
-In-Reply-To: <1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] iommu/vt-d:
-  Use helpers to access irq_cfg data structure associated with IRQ
-Git-Commit-ID: c20c824715444c9cfad54736e9b41bcae7062d30
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1755740AbaKEQlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:41:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44624 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755702AbaKEQli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:41:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
+   d="scan'208";a="632024264"
+From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
+        aubrey.li@intel.com
+Cc: linux-kernel@vger.kernel.org, mahesh.kumar.p@intel.com
+Subject: [PATCH 1/3] PMC driver: Add Cherrytrail PMC interface
+Date: Wed,  5 Nov 2014 22:04:14 +0530
+Message-Id: <1415205254-5943-1-git-send-email-mahesh.kumar.p@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c20c824715444c9cfad54736e9b41bcae7062d30
-Gitweb:     http://git.kernel.org/tip/c20c824715444c9cfad54736e9b41bcae7062d30
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:09 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 5 Nov 2014 11:04:48 +0100
+The patch adds CHT PMC interface. This exposes all the South IP
+device power states and S0ix states for CHT.
+The bit map of FUNC_DIS and D3_STS registers for SOCs are
+consistent. The D3_STS1 and FUNC_DIS2 registers, however
+are not aligned. This is fixed by adding an extra field,
+fn_dis bit, in the dev_map. Any deviations in these registers
+should be addressed in this manner.
 
-iommu/vt-d: Use helpers to access irq_cfg data structure associated with IRQ
-
-Use helpers to access irq_cfg data structure associated with IRQ,
-instead of accessing irq_data->chip_data directly. Later we can
-rewrite those helpers to support hierarchy irqdomain.
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: iommu@lists.linux-foundation.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Joerg Roedel <joro@8bytes.org>
-Link: http://lkml.kernel.org/r/1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+Signed-off-by: Aubrey Li <aubrey.li@intel.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
 ---
- drivers/iommu/intel_irq_remapping.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/pmc_atom.h |   30 ++++++++++----
+ arch/x86/kernel/pmc_atom.c      |   87 +++++++++++++++++++++++++++++++++------
+ 2 files changed, 98 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 7c80661..fd181cf 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -55,7 +55,7 @@ static int __init parse_ioapics_under_ir(void);
+diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+index fc7a17c..581ad43 100644
+--- a/arch/x86/include/asm/pmc_atom.h
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -17,7 +17,10 @@
+ #define PMC_ATOM_H
  
- static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
+ /* ValleyView Power Control Unit PCI Device ID */
+-#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
++#define	PCI_DEVICE_ID_BYT_PMC	0x0F1C
++/* CherryTrail Power Control Unit PCI Device ID */
++#define	PCI_DEVICE_ID_CHT_PMC	0x229C
++
+ 
+ /* PMC Memory mapped IO registers */
+ #define	PMC_BASE_ADDR_OFFSET	0x44
+@@ -25,9 +28,6 @@
+ #define	PMC_MMIO_REG_LEN	0x100
+ #define	PMC_REG_BIT_WIDTH	32
+ 
+-/* BIOS uses FUNC_DIS to disable specific function */
+-#define	PMC_FUNC_DIS		0x34
+-#define	PMC_FUNC_DIS_2		0x38
+ 
+ /* S0ix wake event control */
+ #define	PMC_S0IX_WAKE_EN	0x3C
+@@ -56,6 +56,7 @@
+ /* These registers reflect D3 status of functions */
+ #define	PMC_D3_STS_0		0xA0
+ 
++/* common bit definition */
+ #define	BIT_LPSS1_F0_DMA	BIT(0)
+ #define	BIT_LPSS1_F1_PWM1	BIT(1)
+ #define	BIT_LPSS1_F2_PWM2	BIT(2)
+@@ -91,9 +92,24 @@
+ 
+ #define	PMC_D3_STS_1		0xA4
+ #define	BIT_SMB			BIT(0)
+-#define	BIT_OTG_SS_PHY		BIT(1)
+-#define	BIT_USH_SS_PHY		BIT(2)
+-#define	BIT_DFX			BIT(3)
++
++/*BYT specific bits in PMC_D3_STS_1 register*/
++#define	BIT_OTG_SS_PHY_BYT		BIT(1)
++#define	BIT_USH_SS_PHY_BYT		BIT(2)
++#define	BIT_DFX_BYT			BIT(3)
++
++/*CHT specific bits in PMC_D3_STS_1 register*/
++#define	BIT_GMM_CHT			BIT(1)
++#define	BIT_ISH_CHT			BIT(2)
++
++/* BIOS uses FUNC_DIS to disable specific function */
++#define	PMC_FUNC_DIS		0x34
++#define	PMC_FUNC_DIS_2		0x38
++
++/*CHT specific bits in FUNC_DIS2 register*/
++#define	BIT_GMM_FD_CHT		BIT(3)
++#define	BIT_ISH_FD_CHT		BIT(4)
++
+ 
+ /* PMC I/O Registers */
+ #define	ACPI_BASE_ADDR_OFFSET	0x40
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+index 0c424a6..822fb6a 100644
+--- a/arch/x86/kernel/pmc_atom.c
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -40,10 +40,13 @@ static u32 acpi_base_addr;
+ 
+ struct pmc_dev_map {
+ 	const char *name;
+-	u32 bit_mask;
++	u32 d3_sts_bit;
++	u32 fn_dis_bit;
+ };
+ 
+-static const struct pmc_dev_map dev_map[] = {
++static  struct pmc_dev_map *dev_map;
++static int dev_num;
++static  struct pmc_dev_map byt_dev_map[] = {
+ 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
+ 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
+ 	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
+@@ -77,9 +80,47 @@ static const struct pmc_dev_map dev_map[] = {
+ 	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
+ 	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
+ 	{"32 - SMB",			BIT_SMB},
+-	{"33 - OTG_SS_PHY",		BIT_OTG_SS_PHY},
+-	{"34 - USH_SS_PHY",		BIT_USH_SS_PHY},
+-	{"35 - DFX",			BIT_DFX},
++	{"33 - OTG_SS_PHY",		BIT_OTG_SS_PHY_BYT},
++	{"34 - USH_SS_PHY",		BIT_USH_SS_PHY_BYT},
++	{"35 - DFX",			BIT_DFX_BYT},
++};
++
++static struct pmc_dev_map cht_dev_map[] = {
++	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
++	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
++	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
++	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
++	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
++	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
++	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
++	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
++	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
++	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
++	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
++	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
++	{"12 - HDA",			BIT_HDA},
++	{"13 - LPE",			BIT_LPE},
++	{"14 - OTG",			BIT_OTG},
++	{"15 - USH",			BIT_USH},
++	{"16 - GBE",			BIT_GBE},
++	{"17 - SATA",			BIT_SATA},
++	{"18 - USB_XHCI",		BIT_USB_EHCI},
++	{"19 - SEC",			BIT_SEC},
++	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
++	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
++	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
++	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
++	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
++	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
++	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
++	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
++	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
++	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
++	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
++	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
++	{"32 - SMB",	BIT_SMB},
++	{"33 - GMM",	BIT_GMM_CHT,	BIT_GMM_FD_CHT},
++	{"34 - ISH",	BIT_ISH_CHT,	BIT_ISH_FD_CHT},
+ };
+ 
+ static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
+@@ -128,30 +169,33 @@ static int pmc_dev_state_show(struct seq_file *s, void *unused)
+ 	struct pmc_dev *pmc = s->private;
+ 	u32 func_dis, func_dis_2, func_dis_index;
+ 	u32 d3_sts_0, d3_sts_1, d3_sts_index;
+-	int dev_num, dev_index, reg_index;
++	int dev_index, reg_index;
+ 
+ 	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
+ 	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
+ 	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
+ 	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
+ 
+-	dev_num = ARRAY_SIZE(dev_map);
+ 
+ 	for (dev_index = 0; dev_index < dev_num; dev_index++) {
+ 		reg_index = dev_index / PMC_REG_BIT_WIDTH;
++
++
+ 		if (reg_index) {
+-			func_dis_index = func_dis_2;
++			func_dis_index =
++				(func_dis_2 & dev_map[dev_index].fn_dis_bit);
+ 			d3_sts_index = d3_sts_1;
+ 		} else {
+-			func_dis_index = func_dis;
++			func_dis_index =
++				func_dis & dev_map[dev_index].fn_dis_bit;
+ 			d3_sts_index = d3_sts_0;
+ 		}
+ 
+ 		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
+ 			dev_map[dev_index].name,
+-			dev_map[dev_index].bit_mask & func_dis_index ?
++			func_dis_index ?
+ 			"Disabled" : "Enabled ",
+-			dev_map[dev_index].bit_mask & d3_sts_index ?
++			dev_map[dev_index].d3_sts_bit & d3_sts_index ?
+ 			"D3" : "D0");
+ 	}
+ 	return 0;
+@@ -241,6 +285,7 @@ static int pmc_setup_dev(struct pci_dev *pdev)
  {
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	return cfg ? &cfg->irq_2_iommu : NULL;
- }
+ 	struct pmc_dev *pmc = &pmc_device;
+ 	int ret;
++	int dev_index, reg_index;
  
-@@ -86,7 +86,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned int mask = 0;
- 	unsigned long flags;
- 	int index;
-@@ -154,7 +154,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long flags;
+ 	/* Obtain ACPI base address */
+ 	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
+@@ -262,6 +307,13 @@ static int pmc_setup_dev(struct pci_dev *pdev)
+ 	/* PMC hardware registers setup */
+ 	pmc_hw_reg_setup(pmc);
  
- 	if (!irq_iommu)
-@@ -1008,7 +1008,7 @@ static int
- intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			  bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest, irq = data->irq;
- 	struct irte irte;
- 	int err;
-@@ -1063,7 +1063,7 @@ static void intel_compose_msi_msg(struct pci_dev *pdev,
- 	u16 sub_handle = 0;
- 	int ir_index;
++	for (dev_index = 0; dev_index < dev_num; dev_index++) {
++		reg_index = dev_index / PMC_REG_BIT_WIDTH;
++		if (!dev_map[dev_index].fn_dis_bit)
++				dev_map[dev_index].fn_dis_bit =
++					dev_map[dev_index].d3_sts_bit;
++	}
++
+ #ifdef CONFIG_DEBUG_FS
+ 	ret = pmc_dbgfs_register(pmc, pdev);
+ 	if (ret) {
+@@ -281,7 +333,8 @@ static int pmc_setup_dev(struct pci_dev *pdev)
+  * a driver on the same PCI id.
+  */
+ static const struct pci_device_id pmc_pci_ids[] = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BYT_PMC) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_CHT_PMC) },
+ 	{ 0, },
+ };
  
--	cfg = irq_get_chip_data(irq);
-+	cfg = irq_cfg(irq);
- 
- 	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
- 	BUG_ON(ir_index == -1);
+@@ -304,6 +357,16 @@ static int __init pmc_atom_init(void)
+ 	for_each_pci_dev(pdev) {
+ 		ent = pci_match_id(pmc_pci_ids, pdev);
+ 		if (ent) {
++			switch (ent->device) {
++			case PCI_DEVICE_ID_BYT_PMC:
++				dev_map = byt_dev_map;
++				dev_num = ARRAY_SIZE(byt_dev_map);
++				break;
++			case PCI_DEVICE_ID_CHT_PMC:
++				dev_map = cht_dev_map;
++				dev_num = ARRAY_SIZE(cht_dev_map);
++				break;
++			}
+ 			err = pmc_setup_dev(pdev);
+ 			goto out;
+ 		}
+-- 
+1.7.9.5
+
