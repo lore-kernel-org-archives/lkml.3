@@ -1,65 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaKERQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:16:00 -0500
-Received: from smtprelay0052.hostedemail.com ([216.40.44.52]:52606 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756071AbaKERPw (ORCPT
+	id S1755032AbaKERRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:17:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41816 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaKERPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:15:52 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2914:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3873:3874:4321:5007:6261:7901:7903:8957:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12679:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: robin31_6cfc4a673d643
-X-Filterd-Recvd-Size: 1804
-Message-ID: <1415207747.6634.15.camel@perches.com>
-Subject: Re: [PATCH v2] staging:rtl8723au: core: Fix error reported by
- checkpatch.
-From: Joe Perches <joe@perches.com>
-To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
-        gregkh@linuxfoundation.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 05 Nov 2014 09:15:47 -0800
-In-Reply-To: <1415187303-28541-1-git-send-email-sanjeev_sharma@mentor.com>
-References: <wrfjy4rxzk5b.fsf@redhat.com>
-	 <1415187303-28541-1-git-send-email-sanjeev_sharma@mentor.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Nov 2014 12:15:22 -0500
+Date: Wed, 5 Nov 2014 09:13:18 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-41e72f617ed6645817731711f4fb735130815c5f@git.kernel.org>
+Cc: benh@kernel.crashing.org, bhelgaas@google.com, gregkh@linuxfoundation.org,
+        joro@8bytes.org, rjw@rjwysocki.net, tony.luck@intel.com, hpa@zytor.com,
+        mingo@kernel.org, grant.likely@linaro.org, bp@alien8.de,
+        rdunlap@infradead.org, prarit@redhat.com, tglx@linutronix.de,
+        konrad.wilk@oracle.com, yinghai@kernel.org, jiang.liu@linux.intel.com,
+        ryan@desfo.org, rafael.j.wysocki@intel.com, lambert.quentin@gmail.com,
+        linux-kernel@vger.kernel.org
+Reply-To: bhelgaas@google.com, gregkh@linuxfoundation.org, joro@8bytes.org,
+        benh@kernel.crashing.org, rdunlap@infradead.org, prarit@redhat.com,
+        tglx@linutronix.de, konrad.wilk@oracle.com, tony.luck@intel.com,
+        rjw@rjwysocki.net, hpa@zytor.com, mingo@kernel.org, bp@alien8.de,
+        grant.likely@linaro.org, jiang.liu@linux.intel.com, yinghai@kernel.org,
+        lambert.quentin@gmail.com, linux-kernel@vger.kernel.org,
+        ryan@desfo.org, rafael.j.wysocki@intel.com
+In-Reply-To: <1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq: Kill useless parameter 'irq_attr'
+  of IO_APIC_get_PCI_irq_vector()
+Git-Commit-ID: 41e72f617ed6645817731711f4fb735130815c5f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 17:05 +0530, Sanjeev Sharma wrote:
-> This is a patch to the rtw_cmd.c file that fixes
-> Error reported by checkpatch.
+Commit-ID:  41e72f617ed6645817731711f4fb735130815c5f
+Gitweb:     http://git.kernel.org/tip/41e72f617ed6645817731711f4fb735130815c5f
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:11:54 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Nov 2014 18:10:46 +0100
 
-Please run your patches through checkpatch before
-sending them.
+x86, irq: Kill useless parameter 'irq_attr' of IO_APIC_get_PCI_irq_vector()
 
-WARNING: suspect code indent for conditional statements (24, 24)
-#178: FILE: drivers/staging/rtl8723au/core/rtw_cmd.c:1025:
-+			if (check_fwstate(pmlmepriv, _FW_LINKED))
- 			LPS_Leave23a(padapter);
+None of the callers requires irq_attr to be filled
+in. IO_APIC_get_PCI_irq_vector() does not do anything useful with it
+either.
 
-Also, there are a couple of different things
-you changing here.
+Remove the parameter and fixup the call sites.
 
-This should be 2 separate patches.
+[ tglx: Massaged changelog ]
 
-One to use the temporary for:
-+	struct rt_link_detect *ldi = &pmlmepriv->LinkDetectInfo;
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Ryan Desfosses <ryan@desfo.org>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/hw_irq.h     |  2 +-
+ arch/x86/kernel/apic/io_apic.c    | 13 +++----------
+ arch/x86/pci/irq.c                |  6 ++----
+ drivers/pci/hotplug/ibmphp_core.c |  5 +----
+ 4 files changed, 7 insertions(+), 19 deletions(-)
 
-(and that bit has a defect here:
-
-
-+	} else {
- 		LPS_Leave23a(padapter);
-+		}
-
-where the indentation for the last close brace is wrong)
-
-and another for the whitespace only changes
-
-
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 8dbe237..b12c45c 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -162,7 +162,7 @@ static inline void send_cleanup_vector(struct irq_cfg *c) { }
+ struct irq_data;
+ int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+ 			  unsigned int *dest_id);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin, struct io_apic_irq_attr *irq_attr);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+ extern void setup_ioapic_dest(void);
+ 
+ extern void enable_IO_APIC(void);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 1b7de4c..192ca0a 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1179,8 +1179,7 @@ void mp_unmap_irq(int irq)
+  * Find a specific PCI IRQ entry.
+  * Not an __init, possibly needed by modules
+  */
+-int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+-				struct io_apic_irq_attr *irq_attr)
++int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin)
+ {
+ 	int irq, i, best_ioapic = -1, best_idx = -1;
+ 
+@@ -1234,14 +1233,8 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 		return -1;
+ 
+ out:
+-	irq = pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
+-			IOAPIC_MAP_ALLOC);
+-	if (irq > 0)
+-		set_io_apic_irq_attr(irq_attr, best_ioapic,
+-				     mp_irqs[best_idx].dstirq,
+-				     irq_trigger(best_idx),
+-				     irq_polarity(best_idx));
+-	return irq;
++	return pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
++			 IOAPIC_MAP_ALLOC);
+ }
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 9988458..77148ec 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1200,14 +1200,12 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ #ifdef CONFIG_X86_IO_APIC
+ 			struct pci_dev *temp_dev;
+ 			int irq;
+-			struct io_apic_irq_attr irq_attr;
+ 
+ 			if (dev->irq_managed && dev->irq > 0)
+ 				return 0;
+ 
+ 			irq = IO_APIC_get_PCI_irq_vector(dev->bus->number,
+-						PCI_SLOT(dev->devfn),
+-						pin - 1, &irq_attr);
++						PCI_SLOT(dev->devfn), pin - 1);
+ 			/*
+ 			 * Busses behind bridges are typically not listed in the MP-table.
+ 			 * In this case we have to look up the IRQ based on the parent bus,
+@@ -1221,7 +1219,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 				pin = pci_swizzle_interrupt_pin(dev, pin);
+ 				irq = IO_APIC_get_PCI_irq_vector(bridge->bus->number,
+ 						PCI_SLOT(bridge->devfn),
+-						pin - 1, &irq_attr);
++						pin - 1);
+ 				if (irq >= 0)
+ 					dev_warn(&dev->dev, "using bridge %s "
+ 						 "INT %c to get IRQ %d\n",
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index 3efaf4c..d261e62 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -155,13 +155,10 @@ int ibmphp_init_devno(struct slot **cur_slot)
+ 	for (loop = 0; loop < len; loop++) {
+ 		if ((*cur_slot)->number == rtable->slots[loop].slot &&
+ 		    (*cur_slot)->bus == rtable->slots[loop].bus) {
+-			struct io_apic_irq_attr irq_attr;
+-
+ 			(*cur_slot)->device = PCI_SLOT(rtable->slots[loop].devfn);
+ 			for (i = 0; i < 4; i++)
+ 				(*cur_slot)->irq[i] = IO_APIC_get_PCI_irq_vector((int) (*cur_slot)->bus,
+-						(int) (*cur_slot)->device, i,
+-						&irq_attr);
++						(int) (*cur_slot)->device, i);
+ 
+ 			debug("(*cur_slot)->irq[0] = %x\n",
+ 					(*cur_slot)->irq[0]);
