@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252AbaKEPRq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:17:46 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52720 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932236AbaKEPRp (ORCPT
+	id S932281AbaKEPSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:18:21 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:39723 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932233AbaKEPST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:17:45 -0500
-Message-Id: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com>
-X-Sasl-Enc: F4eE2gP2/mwDag4A5f73RWc+CxDJ9NuotfgApkFXc6ce 1415200663
-From: Martin Tournoij <martin@arp242.net>
-To: linux-kernel@vger.kernel.org
+	Wed, 5 Nov 2014 10:18:19 -0500
+Message-ID: <545A3FB8.5080004@plexistor.com>
+Date: Wed, 05 Nov 2014 17:18:16 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Boaz Harrosh <boaz@plexistor.com>, Jens Axboe <axboe@fb.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 5/5 v4] brd: Add getgeo to block ops for fdisk
+References: <545A2D69.8090003@plexistor.com> <545A2FEA.3050101@plexistor.com> <545A3EC8.3060203@plexistor.com>
+In-Reply-To: <545A3EC8.3060203@plexistor.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-c51dec4f
-Subject: [RFC] The SIGINFO signal from BSD
-Date: Wed, 05 Nov 2014 16:17:43 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On 11/05/2014 05:14 PM, Boaz Harrosh wrote:
+> From: Boaz Harrosh <boaz@plexistor.com>
+> 
+Sorry
 
-As a long-time BSD user, I have become quite used to the SIGINFO (sent with ^t)
-feature; after switching to Linux as my desktop a few months ago, I very much
-miss this.
+[V4]
+  Also fix the cryptic comment at the source code.
 
-SIGINFO prints the status of the process to the terminal; BSD cp, for example,
-shows show much data it's copied:
+I have pushed new trees to the public tree as well
 
-    $ cp large_file /dev/null
-    <press ^t>
-    load: 1.39  cmd: cp 85837 [running] 3.91r 0.00u 0.98s 8% 2340k
-    large_file -> /dev/null  15%
+Thanks
+Boaz
 
-As you see, it shows the current load, pid, process status, memory usage, as
-well as how much of the file has been copied. Many other BSD tools print similar
-statistics (mv, tar, dd, sleep, fetch, etc.).
+<>
+> +static int brd_getgeo(struct block_device *bd, struct hd_geometry *geo)
+> +{
+> +	/* With the usual emulated values of 64, 32, X and the
+> +	 * default size of 4M device, fdisk will offer 40 as possible
+> +	 * first-sector.
+> +	 * But with the values presented here of 1, 1, 1 fdisk will
+> +	 * offer 8 (4K) as possible first sector.
+> +	 * Otherwise, either way, it effects nothing. Only fdisk calls
+> +	 * this vector at all.
+> +	 */
+> +	geo->heads = 1;
+> +	geo->sectors = 1;
+> +	geo->cylinders = 1;
+> +	return 0;
+> +}
+> +
+>  static const struct block_device_operations brd_fops = {
+>  	.owner =		THIS_MODULE,
+>  	.rw_page =		brd_rw_page,
+> @@ -433,6 +450,7 @@ static const struct block_device_operations brd_fops = {
+>  #ifdef CONFIG_BLK_DEV_XIP
+>  	.direct_access =	brd_direct_access,
+>  #endif
+> +	.getgeo =		brd_getgeo,
+>  };
+>  
+>  /*
+> 
 
-On Linux, sometimes SIGUSR1 is used for similar purposes, the problem with this
-is that SIGUSR{1,2} will terminate a program if a program doesn't have a signal
-handler installed(!)
-SIGUSR1 also has no defined meaning, and may do something radically different;
-nginx, for example, reopens the logfiles on SIGUSR1, and SIGUSR2 upgrades the
-nginx executable on-the-fly.
-
-So you need to carefully inspect the documentation, hope it's not out of date,
-and then send SIGUSR1 and pray.
-
-This is different from SIGINFO, which does nothing when it's not installed,
-which is safe. You can send SIGINFO to any process, and not be afraid you kill
-it.
-
-In addition, it's also not easy to send SIGUSR1, you need to open a new
-terminal, find the pid, and use a kill command (you could also use
-pkill/killall, with the risk of sending the signal to other processes).
-
-SIGINFO is, AFAIK, supported since 4.4BSD & descendants (ie. all modern BSD
-systems), as well as MacOS X. Perhaps other systems as well (but did not
-investigate).
-
-Why don't we have SIGINFO on Linux? Would a patch to implement this be accepted?
-
-SIGINFO is not defined in any standard, but Linux already implements other
-useful non-standard signals (most notably SIGWINCH). IMHO it's a very useful
-feature.
-
-Thanks,
-Martin
-
-PS.
-I am *not* subscribed to this maillist; please cc me in replies!
