@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaKEK21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:28:27 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49836 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaKEK2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:28:18 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: [PATCH 3.18-rc3 v7 1/4] irqchip: gic: Make gic_raise_softirq() FIQ-safe
-Date: Wed,  5 Nov 2014 10:27:37 +0000
-Message-Id: <1415183260-6389-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
+	id S1754679AbaKEK2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:28:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45029 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754583AbaKEK23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:28:29 -0500
+Date: Wed, 5 Nov 2014 11:28:14 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [RFC][PATCH 01/12 v3] x86/kvm/tracing: Use helper function
+ trace_seq_buffer_ptr()
+Message-ID: <20141105102814.GA4570@pathway.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+ <20141104160221.585025609@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141104160221.585025609@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently calling printk() from a FIQ can result in deadlock on
-irq_controller_lock within gic_raise_softirq(). This occurs because
-printk(), which is otherwise structured to survive calls from FIQ/NMI,
-calls this function to raise an IPI when it needs to wake_up_klogd().
+On Tue 2014-11-04 10:52:38, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> To allow for the restructiong of the trace_seq code, we need users
+> of it to use the helper functions instead of accessing the internals
+> of the trace_seq structure itself.
+> 
+> Cc: Mark Rustad <mark.d.rustad@intel.com>
+> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-This patch fixes the problem by introducing an additional rwlock and
-using that to prevent softirqs being raised whilst the b.L switcher
-is updating the cpu map.
+Reviewed-by: Petr Mladek <pmladek@suse.cz>
 
-Other parts of the code are not updated to use the new
-fiq_safe_cpu_map_lock because other users of gic_cpu_map either rely on
-external locking or upon irq_controller_lock. Both locks are held by the
-b.L switcher code.
+Best Regards,
+Petr
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/irqchip/irq-gic.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 38493ff..0db62a6 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -73,6 +73,13 @@ struct gic_chip_data {
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- 
- /*
-+ * This lock may be locked for reading by FIQ handlers. Thus although
-+ * read locking may be used liberally, write locking must only take
-+ * place only when local FIQ handling is disabled.
-+ */
-+static DEFINE_RWLOCK(fiq_safe_cpu_map_lock);
-+
-+/*
-  * The GIC mapping of CPU interfaces does not necessarily match
-  * the logical CPU numbering.  Let's use a mapping as returned
-  * by the GIC itself.
-@@ -624,7 +631,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	read_lock_irqsave(&fiq_safe_cpu_map_lock, flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -639,7 +646,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	read_unlock_irqrestore(&fiq_safe_cpu_map_lock, flags);
- }
- #endif
- 
-@@ -687,7 +694,7 @@ int gic_get_cpu_id(unsigned int cpu)
-  * Migrate all peripheral interrupts with a target matching the current CPU
-  * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
-  * is also updated.  Targets to other CPU interfaces are unchanged.
-- * This must be called with IRQs locally disabled.
-+ * This must be called with IRQ and FIQ locally disabled.
-  */
- void gic_migrate_target(unsigned int new_cpu_id)
- {
-@@ -709,6 +716,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 	ror_val = (cur_cpu_id - new_cpu_id) & 31;
- 
- 	raw_spin_lock(&irq_controller_lock);
-+	write_lock(&fiq_safe_cpu_map_lock);
- 
- 	/* Update the target interface for this logical CPU */
- 	gic_cpu_map[cpu] = 1 << new_cpu_id;
-@@ -728,6 +736,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 		}
- 	}
- 
-+	write_unlock(&fiq_safe_cpu_map_lock);
- 	raw_spin_unlock(&irq_controller_lock);
- 
- 	/*
--- 
-1.9.3
-
+> ---
+>  arch/x86/kvm/mmutrace.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+> index 5aaf35641768..ce463a9cc8fb 100644
+> --- a/arch/x86/kvm/mmutrace.h
+> +++ b/arch/x86/kvm/mmutrace.h
+> @@ -22,7 +22,7 @@
+>  	__entry->unsync = sp->unsync;
+>  
+>  #define KVM_MMU_PAGE_PRINTK() ({				        \
+> -	const u32 saved_len = p->len;					\
+> +	const char *saved_ptr = trace_seq_buffer_ptr(p);		\
+>  	static const char *access_str[] = {			        \
+>  		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
+>  	};							        \
+> @@ -41,7 +41,7 @@
+>  			 role.nxe ? "" : "!",				\
+>  			 __entry->root_count,				\
+>  			 __entry->unsync ? "unsync" : "sync", 0);	\
+> -	p->buffer + saved_len;						\
+> +	saved_ptr;							\
+>  		})
+>  
+>  #define kvm_mmu_trace_pferr_flags       \
+> -- 
+> 2.1.1
+> 
+> 
