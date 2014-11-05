@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaKEGKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 01:10:00 -0500
-Received: from mail-bn1bon0131.outbound.protection.outlook.com ([157.56.111.131]:28919
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751369AbaKEGJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 01:09:58 -0500
-X-WSS-ID: 0NEJYGC-07-A9X-02
-X-M-MSG: 
-From: Vincent Wan <vincent.wan@amd.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>,
-        Wan Zongshun <mcuos.com@gmail.com>, Vincent Wan <vincent.wan@amd.com>
-Subject: [PATCH v3 3/3] mmc:sdhci-pci: enable sdhci doesn't support hs200 quirk for AMD sdhci
-Date: Wed, 5 Nov 2014 14:09:28 +0800
-Message-ID: <1415167768-5839-1-git-send-email-vincent.wan@amd.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751215AbaKEGXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 01:23:47 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50600 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaKEGXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 01:23:46 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options for cache
+References: <20141031185128.27889.32747.stgit@localhost.localdomain>
+	<20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com>
+	<20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com>
+	<20141104143814.GH18464@kernel.org> <5458FD56.8040304@hitachi.com>
+Date: Wed, 05 Nov 2014 15:23:44 +0900
+In-Reply-To: <5458FD56.8040304@hitachi.com> (Masami Hiramatsu's message of
+	"Wed, 05 Nov 2014 01:22:46 +0900")
+Message-ID: <87h9yew4gf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(19580395003)(19580405001)(36756003)(93916002)(110136001)(50986999)(33646002)(87936001)(87286001)(53416004)(50466002)(50226001)(89996001)(77156002)(97736003)(84676001)(4396001)(77096003)(48376002)(86362001)(44976005)(88136002)(68736004)(31966008)(102836001)(99396003)(21056001)(106466001)(105586002)(92726001)(120916001)(101416001)(92566001)(104166001)(95666004)(107046002)(62966003)(64706001)(229853001)(47776003)(20776003)(46102003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0386B406AA
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Vincent.Wan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD SD controller supports the SDR104 mode, but caps2 can not
-be promoted to support hs200 for eMMC.
+On Wed, 05 Nov 2014 01:22:46 +0900, Masami Hiramatsu wrote:
+> (2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
+>> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
+>>> OK, I agree using .debug/.buildid/ to store caches.
+>>> Here is what I'm thinking,
+>>  
+>>>   # this makes caches for given pattern instead of adding probes.
+>>>   perf probe --cache '* $params'
+>> 
+>>>   # the cache is stored in .debug/.buildid/<buildid>.probe
+>>>   # the cache entry can be queried by buildid and eventname
+>> 
+>> To follow the existing standard this would instead go to:
+>> 
+>>>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
+>>>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
+>
+> Ah, I see. so you meant adding a top-level .debug/probes/ dir.
+> But in that case, shouldn't we change .debug/.buildid/bu/ildid to
+> .debug/probes/.buildid/bu/ildid ?
 
-Signed-off-by: Vincent Wan <vincent.wan@amd.com>
-Signed-off-by: Wan Zongshun <mcuos.com@gmail.com>
----
- drivers/mmc/host/sdhci-pci.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Either is fine to me.  But my concern is that it might be bloated as
+system/package update is going on, so we need to control it somehow.
+That's why I suggested the probe-cache command.
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 5a77f18..c1ecd20 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -652,8 +652,10 @@ static int amd_probe(struct sdhci_pci_chip *chip)
- 	smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
- 			PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
- 
--	if (smbus_dev && (smbus_dev->revision < 0x51))
-+	if (smbus_dev && (smbus_dev->revision < 0x51)) {
- 		chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
-+		chip->quirks2 |= SDHCI_QUIRK2_BROKEN_HS200;
-+	}
- 
- 	return 0;
- }
--- 
-1.8.1.2
+>
+>> 
+>>>   perf probe --query ${remote_buildid}:do_fork
+>>>   p:probe/do_fork _text+298722 clone_flags=%di:u64 stack_start=%si:u64 stack_size=%dx:u64 parent_tidptr=%cx:u64 child_tidptr=%r8:u64
+>> 
+>>>   # or perf can set it up directly to local
+>>>   perf probe --query-add do_fork
+>> 
+>> You missed the build id above, no? I.e. it would be:
+>> 
+>>>   # or perf can set it up directly to local
+>>>   perf probe --query-add ${remote_buildid}:do_fork
+>
+> No, since this command set the event to local machine, perf-probe
+> should check the local build-id and query the appropriate event
+> from the cache.
+> # BTW, maybe we'd better use perf probe --add '$do_fork' (calls
+> # "cache of do_fork")  instead of long --query-add. :)
 
+It should take care of uprobe case too.  So simple do_fork should have
+group/event or provider/marker form instead so that it can help to find
+which binary defines the cached event.  Maybe we also need to keep a
+event-to-binary table and then check (current?) build-id somehow to
+identify correct event to be used.
+
+Also this function entry level event cache can be used with uprobes..
+
+Thanks,
+Namhyung
