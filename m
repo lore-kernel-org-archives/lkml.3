@@ -1,142 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551AbaKEHT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 02:19:27 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54831 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394AbaKEHSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 02:18:54 -0500
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: byungchul.park@lge.com
-From: byungchul.park@lge.com
-To: rostedt@goodmis.org, mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, seungho1.park@lge.com, jolsa@redhat.com,
-        Byungchul Park <byungchul.park@lge.com>
-Subject: [PATCH v2 2/3] tracing, function_graph: add additional marks to signal very large function execution time
-Date: Wed,  5 Nov 2014 16:18:45 +0900
-Message-Id: <1415171926-9782-3-git-send-email-byungchul.park@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
-References: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
+	id S1753761AbaKEHUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 02:20:07 -0500
+Received: from mail-bn1bon0070.outbound.protection.outlook.com ([157.56.111.70]:43003
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753644AbaKEHUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 02:20:02 -0500
+Date: Wed, 5 Nov 2014 08:19:41 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>, <michal.simek@xilinx.com>,
+        <soren.brinkmann@xilinx.com>, <davem@davemloft.net>,
+        <sthokal@xilinx.com>, <manuel.schoelling@gmx.de>,
+        <f.fainelli@gmail.com>, <paul.gortmaker@windriver.com>,
+        <ebiederm@xmission.com>
+CC: <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: net: ethernet: xilinx: xilinx_emaclite: revert
+ the original commit "1db3ddff1602edf2390b7667dcbaa0f71512e3ea"
+References: <5458E605.6070801@gmail.com>
+In-Reply-To: <5458E605.6070801@gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21076.003
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <a39951cc744047679d13b23e76c97347@BN1BFFO11FD022.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(479174003)(31014004)(377454003)(24454002)(189002)(164054003)(51704005)(31966008)(108616004)(74316001)(47776003)(20776003)(65956001)(64706001)(23676002)(76176999)(86362001)(64126003)(50986999)(6806004)(87936001)(19580405001)(92566001)(44976005)(19580395003)(104016003)(54356999)(2201001)(83506001)(95666004)(50466002)(4396001)(99396003)(46102003)(120916001)(62966003)(33646002)(21056001)(77156002)(107046002)(106466001)(102836001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB025;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB025;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0386B406AA
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Byungchul Park <byungchul.park@lge.com>
+On 11/04/2014 03:43 PM, Chen Gang wrote:
+> Microblaze is a fpga soft core, it can be customized easily, which may
+> cause many various hardware version strings.
+> 
+> So the original fix patch based on hard-coded compatible version strings
+> is not a good idea (although it is correct for current issue). For it,
+> there will be a new solving way soon (which based on the device tree).
+> 
+> The original issue is related with qemu, so can only change the hardware
+> version string in qemu for it, then keep the original driver no touch (
+> qemu is for virtualization which has much easier life than real world).
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  drivers/net/ethernet/xilinx/xilinx_emaclite.c | 1 -
+>  1 file changed, 1 deletion(-)
 
-Currently, function graph tracer prints "!" or "+" just before
-function execution time to signal a function overhead, depending
-on the time. Even it is usually enough to do that, we sometimes
-need to be signaled for bigger execution time than 100 micro seconds.
+Acked-by: Michal Simek <michal.simek@xilinx.com>
 
-For example, I used function graph tracer to detect if there is
-any case that exit_mm() takes too much time. I did following steps
-in /sys/kernel/debug/tracing. It was easier to detect very big
-excution time with patched kernel than with original kernel.
-
-$ echo exit_mm > set_graph_function
-$ echo function_graph > current_tracer
-$ echo > trace
-$ cat trace_pipe > $LOGFILE
- ... (do something and terminate logging)
-$ grep "\\$" $LOGFILE
- 3) $ 22082032 us |                      } /* kernel_map_pages */
- 3) $ 22082040 us |                    } /* free_pages_prepare */
- 3) $ 22082113 us |                  } /* free_hot_cold_page */
- 3) $ 22083455 us |                } /* free_hot_cold_page_list */
- 3) $ 22083895 us |              } /* release_pages */
- 3) $ 22177873 us |            } /* free_pages_and_swap_cache */
- 3) $ 22178929 us |          } /* unmap_single_vma */
- 3) $ 22198885 us |        } /* unmap_vmas */
- 3) $ 22206949 us |      } /* exit_mmap */
- 3) $ 22207659 us |    } /* mmput */
- 3) $ 22207793 us |  } /* exit_mm */
-
-And then, it was easy to find out that a schedule-out occured by
-sub_preempt_count() within kernel_map_pages().
-
-To detect very large function exection time caused by either problematic
-function implementation or scheduling issues, this patch can be useful.
-
-Signed-off-by: Byungchul Park <byungchul.park@lge.com>
----
- Documentation/trace/ftrace.txt       |    2 ++
- kernel/trace/trace.h                 |   14 ++++++++++++++
- kernel/trace/trace_functions_graph.c |   15 +++++++++------
- 3 files changed, 25 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 4da4261..f827e2f 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -1951,6 +1951,8 @@ want, depending on your needs.
- 
-   + means that the function exceeded 10 usecs.
-   ! means that the function exceeded 100 usecs.
-+  # means that the function exceeded 1000 usecs.
-+  $ means that the function exceeded 1 sec.
- 
- 
- - The task/pid field displays the thread cmdline and pid which
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 385391f..4b7252a 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -331,6 +331,20 @@ struct tracer_flags {
- /* Makes more easy to define a tracer opt */
- #define TRACER_OPT(s, b)	.name = #s, .bit = b
- 
-+/* trace overhead mark */
-+struct trace_mark {
-+	unsigned long long val; /* unit: nsec */
-+	char sym;
-+};
-+
-+#define DEFINE_MARK_STRUCT static const struct trace_mark mark[]
-+#define DEFINE_MARK(v, s) {.val = v, .sym = s}
-+#define MARK(d) 							\
-+({									\
-+	int i = ARRAY_SIZE(mark);					\
-+	while ((unsigned long long)(d) <= mark[--i].val && i > 0);	\
-+	mark[i].sym;							\
-+})
- 
- /**
-  * struct tracer - a specific tracer and its callbacks to interact with debugfs
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index cb33f46..8a62907 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -797,6 +797,14 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
- 	return TRACE_TYPE_HANDLED;
- }
- 
-+DEFINE_MARK_STRUCT = {
-+	DEFINE_MARK(0ULL		, ' '), /* 0 usecs */
-+	DEFINE_MARK(10000ULL		, '+'), /* 10 usecs */
-+	DEFINE_MARK(100000ULL		, '!'), /* 100 usecs */
-+	DEFINE_MARK(1000000ULL		, '#'), /* 1000 usecs */
-+	DEFINE_MARK(1000000000ULL	, '$'), /* 1 sec */
-+};
-+
- static enum print_line_t
- print_graph_duration(unsigned long long duration, struct trace_seq *s,
- 		     u32 flags)
-@@ -822,12 +830,7 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
- 
- 	/* Signal a overhead of time execution to the output */
- 	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
--		/* Duration exceeded 100 usecs */
--		if (duration > 100000ULL)
--			ret = trace_seq_puts(s, "! ");
--		/* Duration exceeded 10 usecs */
--		else if (duration > 10000ULL)
--			ret = trace_seq_puts(s, "+ ");
-+		ret = trace_seq_printf(s, "%c ", MARK(duration));
- 	}
- 
- 	/*
--- 
-1.7.9.5
+Thanks,
+Michal
 
