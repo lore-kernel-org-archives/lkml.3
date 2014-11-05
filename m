@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaKEJXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:23:04 -0500
-Received: from mail-bn1on0148.outbound.protection.outlook.com ([157.56.110.148]:27904
+	id S1753968AbaKEJ1r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:27:47 -0500
+Received: from mail-bn1bbn0106.outbound.protection.outlook.com ([157.56.111.106]:20384
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753936AbaKEJW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:22:56 -0500
+	id S1751198AbaKEJ1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:27:45 -0500
+Message-ID: <5459ED89.2080109@freescale.com>
+Date: Wed, 5 Nov 2014 11:27:37 +0200
 From: Cristian Stoica <cristian.stoica@freescale.com>
-To: <herbert@gondor.apana.org.au>, <davem@davemloft.net>,
-        <linux-crypto@vger.kernel.org>, <kim.phillips@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <horia.geanta@freescale.com>,
-        <marex@denx.de>, Cristian Stoica <cristian.stoica@freescale.com>
-Subject: [PATCH v2] crypto: caam: fix error reporting
-Date: Wed, 5 Nov 2014 11:21:24 +0200
-Message-ID: <1415179284-19791-1-git-send-email-cristian.stoica@freescale.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <20141104105731.ccb0eedea154b9bb6ed195b3@freescale.com>
-References: <20141104105731.ccb0eedea154b9bb6ed195b3@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(105606002)(92726001)(107046002)(88136002)(46102003)(62966003)(104016003)(95666004)(31966008)(99396003)(2201001)(87286001)(92566001)(106466001)(19580395003)(19580405001)(89996001)(77156002)(68736004)(229853001)(87936001)(93916002)(48376002)(76176999)(36756003)(50466002)(26826002)(50226001)(4396001)(84676001)(44976005)(120916001)(102836001)(21056001)(6806004)(33646002)(64706001)(20776003)(104166001)(97736003)(47776003)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0610;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0610;
+To: Kim Phillips <kim.phillips@freescale.com>
+CC: <herbert@gondor.apana.org.au>, <davem@davemloft.net>,
+        <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <horia.geanta@freescale.com>, <marex@denx.de>
+Subject: Re: [PATCH] crypto: caam: fix error reporting
+References: <1414774653-3583-1-git-send-email-cristian.stoica@freescale.com>
+	<20141031132209.5abced3ca9f55649d0bd6007@freescale.com>
+	<5457486C.3030205@freescale.com>
+	<20141103134716.775acd39d6334c6f8aeca151@freescale.com>
+	<54589515.2010903@freescale.com>
+ <20141104105731.ccb0eedea154b9bb6ed195b3@freescale.com>
+In-Reply-To: <20141104105731.ccb0eedea154b9bb6ed195b3@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(24454002)(51704005)(479174003)(377454003)(6806004)(64706001)(19580395003)(46102003)(50466002)(36756003)(64126003)(87936001)(20776003)(62966003)(97736003)(69596002)(107046002)(104016003)(19580405001)(110136001)(87266999)(21056001)(83506001)(68736004)(65956001)(59896002)(44976005)(106466001)(31966008)(26826002)(80316001)(84676001)(23756003)(99396003)(81156004)(33656002)(4396001)(47776003)(92726001)(65806001)(54356999)(65816999)(76176999)(93886004)(105606002)(77156002)(120916001)(95666004)(50986999)(92566001)(102836001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB392;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB392;
+X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0386B406AA
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=B18196@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0755;
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error code returned by hardware is four bits wide with an expected
-zero MSB. A hardware error condition where the error code can get between
-0x8 and 0xf will trigger an out of bound array access on the error
-message table.
-This patch fixes the invalid array access following such an error and
-reports the condition.
+Hi Kim,
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
----
- drivers/crypto/caam/error.c | 25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+On 11/04/2014 06:57 PM, Kim Phillips wrote:
+> On Tue, 4 Nov 2014 10:57:57 +0200
+> Cristian Stoica <cristian.stoica@freescale.com> wrote:
 
-diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
-index 6531054..66d73bf 100644
---- a/drivers/crypto/caam/error.c
-+++ b/drivers/crypto/caam/error.c
-@@ -213,27 +213,36 @@ void caam_jr_strstatus(struct device *jrdev, u32 status)
- 		void (*report_ssed)(struct device *jrdev, const u32 status,
- 				    const char *error);
- 		const char *error;
--	} status_src[] = {
-+	} status_src[16] = {
- 		{ NULL, "No error" },
- 		{ NULL, NULL },
- 		{ report_ccb_status, "CCB" },
- 		{ report_jump_status, "Jump" },
- 		{ report_deco_status, "DECO" },
--		{ NULL, NULL },
-+		{ NULL, "Queue Manager Interface" },
- 		{ report_jr_status, "Job Ring" },
- 		{ report_cond_code_status, "Condition Code" },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
-+		{ NULL, NULL },
- 	};
- 	u32 ssrc = status >> JRSTA_SSRC_SHIFT;
- 	const char *error = status_src[ssrc].error;
- 
- 	/*
--	 * If there is no further error handling function, just
--	 * print the error code, error string and exit. Otherwise
--	 * call the handler function.
-+	 * If there is an error handling function, call it to report the error.
-+	 * Otherwise print the error source name.
- 	 */
--	if (!status_src[ssrc].report_ssed)
--		dev_err(jrdev, "%08x: %s: \n", status, status_src[ssrc].error);
--	else
-+	if (status_src[ssrc].report_ssed)
- 		status_src[ssrc].report_ssed(jrdev, status, error);
-+	else if (error)
-+		dev_err(jrdev, "%d: %s\n", ssrc, error);
-+	else
-+		dev_err(jrdev, "%d: unknown error source\n", ssrc);
- }
- EXPORT_SYMBOL(caam_jr_strstatus);
--- 
-1.8.3.1
+>> Do you want me to drop the patch and pretend there is nothing to see?
+> 
+> no, fixing potential bugs preemptively is fine; I'd just like to
+> know that's the case: it wasn't clear from the original commit
+> message whether the problem occurred on a new h/w revision, in which
+> case I'd have like to have seen the driver updated with support for
+> the new error codes.
 
+This is a preemptive fix. I did not see a problem in the field with any
+hardware, recent or old.
+
+Cristian S.
