@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249AbaKEXUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 18:20:49 -0500
-Received: from smtprelay0171.hostedemail.com ([216.40.44.171]:56304 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750975AbaKEXUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 18:20:45 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2110:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6261:7550:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stem12_5daffe6e08d34
-X-Filterd-Recvd-Size: 3130
-Message-ID: <1415229642.6634.32.camel@perches.com>
-Subject: Re: [PATCH 04/13] autofs4 - change printks AUTOFS defined prints
-From: Joe Perches <joe@perches.com>
-To: Ian Kent <raven@themaw.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Nov 2014 15:20:42 -0800
-In-Reply-To: <1415228573.2365.24.camel@perseus.themaw.net>
-References: <20141103081218.6215.85903.stgit@perseus.themaw.net>
-	 <20141103081234.6215.82821.stgit@perseus.themaw.net>
-	 <1415003136.17743.9.camel@perches.com>
-	 <1415006418.6573.6.camel@perseus.themaw.net>
-	 <1415025215.17743.12.camel@perches.com>
-	 <1415228573.2365.24.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751297AbaKEXVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:21:34 -0500
+Received: from mail.us.es ([193.147.175.20]:52081 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975AbaKEXVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 18:21:31 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus4 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19591. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 4.252613 secs); 05 Nov 2014 23:21:29 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Thu, 6 Nov 2014 00:23:14 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: Re: [PATCH 3/8] netfilter: Convert print_tuple functions to return
+ void
+Message-ID: <20141105232314.GA3195@salvia>
+References: <20141105192426.348510548@goodmis.org>
+ <20141105192544.214361386@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105192544.214361386@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-06 at 07:02 +0800, Ian Kent wrote:
-> On Mon, 2014-11-03 at 06:33 -0800, Joe Perches wrote:
-> > 
-> > That's fine.  I left out the trailing semicolon/space.
-> > The pr_fmt could be something like:
-> > #define pr_fmt(fmt) KBUILD_MODNAME ":%d:%s: " fmt, current->pid, __func__
-> > or add a "pid:" descriptor prefix if you like too:
-> > #define pr_fmt(fmt) KBUILD_MODNAME ":pid:%d:%s: " fmt, current->pid, __func__
-> > 
-> > > > it's better to use a consistent style for
-> > > > these logging functions ideally with terminating
-> > > > newlines so there isn't a mix of code with
-> > > > and without those newlines.  That inconsistency
-> > > > leads to unintended defects.
-> > > 
-> > > The idea here was to make the logging consistent throughout.
-> > 
-> > Mine too.
-> > 
-> > > I have become used of not using the new-line terminator in logging over
-> > > the years and tend to favour that myself. You recommend not doing that
-> > > probably from a kernel wide consistency perspective? Maybe that is
-> > > better ...
-> > 
-> > Yes, kernel style consistency is the rationale.
-> > 
-> > Over time, people come along and add messages
-> > while not reading the code very closely so using
-> > the kernel style with newlines can help avoid
-> > these trivial defects.
+On Wed, Nov 05, 2014 at 02:24:29PM -0500, Steven Rostedt wrote:
+> From: Joe Perches <joe@perches.com>
 > 
-> I can see how not including the trailing newline in the macros is a good
-> thing and I'll forward a couple more patches to Andrew for this and fix
-> the inconsistencies.
+> Since adding a new function to seq_file (seq_has_overflowed())
+> there isn't any value for functions called from seq_show to
+> return anything.   Remove the int returns of the various
+> print_tuple/<foo>_print_tuple functions.
+> 
+> Link: http://lkml.kernel.org/p/f2e8cf8df433a197daa62cbaf124c900c708edc7.1412031505.git.joe@perches.com
+> 
+> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+> Cc: netfilter-devel@vger.kernel.org
+> Cc: coreteam@netfilter.org
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-OK, great.
+I replied to this yesterday, but it seems some spam filter also
+munched it. One comment below.
 
-> But idea of using pr_xxx() and pr_fmt() (actually that's too open to
-> name clashes so it would need to be named something like autofs_pr_fmt()
-> anyway) looks like it results in less readable code so I'd really prefer
-> not to do that.
+> @@ -202,9 +203,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  	if (l4proto->print_conntrack)
+>  		l4proto->print_conntrack(s, ct);
+>  
+> -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+> -			l3proto, l4proto))
+> -		goto release;
+> +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+> +		    l3proto, l4proto);
+>  
+>  	if (seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL))
+>  		goto release;
 
-Using pr_info/pr_debug (or any other pr_<level>) is a
-generic mechanism in the kernel.  Adding a
-#define pr_fmt is also generic thing that works with
-all the pr_<level> uses in a specific compilation unit.
+seq_print_acct returns seq_printf which is now void. I guess you have
+to remove this check too.
 
-cheers, Joe
+> @@ -213,9 +213,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  		if (seq_printf(s, "[UNREPLIED] "))
+>  			goto release;
+>  
+> -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
+> -			l3proto, l4proto))
+> -		goto release;
+> +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
+> +		    l3proto, l4proto);
+>  
+>  	if (seq_print_acct(s, ct, IP_CT_DIR_REPLY))
+>  		goto release;
 
+And here.
