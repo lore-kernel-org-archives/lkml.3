@@ -1,133 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993AbaKEV6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:58:47 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:55168 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaKEV6m convert rfc822-to-8bit (ORCPT
+	id S1752041AbaKEV7Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:59:25 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:49671 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317AbaKEV7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:58:42 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Gregory Fong <gregory.0xf0@gmail.com>, linux-mm@kvack.org
-Cc: linux-arm-kernel@lists.infradead.org, f.fainelli@gmail.com,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
+	Wed, 5 Nov 2014 16:59:21 -0500
+Date: Wed, 5 Nov 2014 13:59:18 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Prarit Bhargava <prarit@redhat.com>
+cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: cma: Align to physical address, not CMA region position
-In-Reply-To: <1415218078-10078-2-git-send-email-gregory.0xf0@gmail.com>
-Organization: http://mina86.com/
-References: <1415218078-10078-1-git-send-email-gregory.0xf0@gmail.com> <1415218078-10078-2-git-send-email-gregory.0xf0@gmail.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:141105:akpm@linux-foundation.org::RxaEOKuBUEPTmCm0:00000000000000000000000000000000000002Li
-X-Hashcash: 1:20:141105:aneesh.kumar@linux.vnet.ibm.com::RvGooNj1yQi9g/iP:0000000000000000000000000000000NDD
-X-Hashcash: 1:20:141105:iamjoonsoo.kim@lge.com::pPjqrUYBHNmOrTPl:0000000000000000000000000000000000000000JwM
-X-Hashcash: 1:20:141105:gregory.0xf0@gmail.com::Qlr6S4+j7TJFzSIV:0000000000000000000000000000000000000000UXY
-X-Hashcash: 1:20:141105:f.fainelli@gmail.com::ja2hxAO6OC5nyt+N:000000000000000000000000000000000000000002tEZ
-X-Hashcash: 1:20:141105:linux-kernel@vger.kernel.org::oIIjfDceOAhbV1tG:0000000000000000000000000000000003CYX
-X-Hashcash: 1:20:141105:linux-arm-kernel@lists.infradead.org::Nk7+GNU9VluUlHUG:00000000000000000000000005wco
-X-Hashcash: 1:20:141105:gregory.0xf0@gmail.com::vAVbwo8DTPpzHF8n:0000000000000000000000000000000000000007bm4
-X-Hashcash: 1:20:141105:m.szyprowski@samsung.com::MMAj5jwR39ovREpa:00000000000000000000000000000000000006UIn
-X-Hashcash: 1:20:141105:laurent.pinchart+renesas@ideasonboard.com::f1ADtd47ii2mU9pS:000000000000000000009KIQ
-X-Hashcash: 1:20:141105:linux-mm@kvack.org::j4pVE8OWNW6hIT3J:00000000000000000000000000000000000000000009Edj
-X-Hashcash: 1:20:141105:lauraa@codeaurora.org::8Dr69S4HkZQcCSJ9:00000000000000000000000000000000000000009X7D
-Date: Wed, 05 Nov 2014 22:58:37 +0100
-Message-ID: <xa1tvbmtwbqq.fsf@mina86.com>
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v8] kernel, add panic_on_warn
+In-Reply-To: <1415187736-16242-1-git-send-email-prarit@redhat.com>
+Message-ID: <alpine.DEB.2.10.1411051357050.31575@chino.kir.corp.google.com>
+References: <1415187736-16242-1-git-send-email-prarit@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05 2014, Gregory Fong wrote:
-> The alignment in cma_alloc() was done w.r.t. the bitmap.  This is a
-> problem when, for example:
->
-> - a device requires 16M (order 12) alignment
-> - the CMA region is not 16 M aligned
->
-> In such a case, can result with the CMA region starting at, say,
-> 0x2f800000 but any allocation you make from there will be aligned from
-> there.  Requesting an allocation of 32 M with 16 M alignment will
-> result in an allocation from 0x2f800000 to 0x31800000, which doesn't
-> work very well if your strange device requires 16M alignment.
->
-> Change to use bitmap_find_next_zero_area_off() to account for the
-> difference in alignment at reserve-time and alloc-time.
->
-> Cc: Michal Nazarewicz <mina86@mina86.com>
+On Wed, 5 Nov 2014, Prarit Bhargava wrote:
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-> Signed-off-by: Gregory Fong <gregory.0xf0@gmail.com>
-> ---
->  mm/cma.c | 19 ++++++++++++++++---
->  1 file changed, 16 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/cma.c b/mm/cma.c
-> index fde706e..0813599 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -63,6 +63,17 @@ static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
->  	return (1UL << (align_order - cma->order_per_bit)) - 1;
->  }
+> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+> index 6c0b9f2..bc4bd5a 100644
+> --- a/Documentation/kdump/kdump.txt
+> +++ b/Documentation/kdump/kdump.txt
+> @@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
 >  
-> +static unsigned long cma_bitmap_aligned_offset(struct cma *cma, int align_order)
-> +{
-> +	unsigned int alignment;
+>     http://people.redhat.com/~anderson/
+>  
+> +Trigger Kdump on WARN()
+> +=======================
 > +
-> +	if (align_order <= cma->order_per_bit)
-> +		return 0;
-> +	alignment = 1UL << (align_order - cma->order_per_bit);
-> +	return ALIGN(cma->base_pfn, alignment) -
-> +		(cma->base_pfn >> cma->order_per_bit);
-> +}
+> +The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
+> +will cause a kdump to occur at the panic() call.  In cases where a user wants
+> +to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
+> +to achieve the same behaviour.
+>  
+>  Contact
+>  =======
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 4c81a86..ea5d57c 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2509,6 +2509,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			timeout < 0: reboot immediately
+>  			Format: <timeout>
+>  
+> +	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
+> +			on a WARN().
 > +
->  static unsigned long cma_bitmap_maxno(struct cma *cma)
->  {
->  	return cma->count >> cma->order_per_bit;
-> @@ -328,7 +339,7 @@ err:
->   */
->  struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  {
-> -	unsigned long mask, pfn, start = 0;
-> +	unsigned long mask, offset, pfn, start = 0;
->  	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
->  	struct page *page = NULL;
->  	int ret;
-> @@ -343,13 +354,15 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  		return NULL;
+>  	crash_kexec_post_notifiers
+>  			Run kdump after running panic-notifiers and dumping
+>  			kmsg. This only for the users who doubt kdump always
+> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+> index 57baff5..b5d0c85 100644
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
+>  - overflowuid
+>  - panic
+>  - panic_on_oops
+> -- panic_on_unrecovered_nmi
+>  - panic_on_stackoverflow
+> +- panic_on_unrecovered_nmi
+> +- panic_on_warn
+>  - pid_max
+>  - powersave-nap               [ PPC only ]
+>  - printk
+> @@ -527,19 +528,6 @@ the recommended setting is 60.
 >  
->  	mask = cma_bitmap_aligned_mask(cma, align);
-> +	offset = cma_bitmap_aligned_offset(cma, align);
->  	bitmap_maxno = cma_bitmap_maxno(cma);
->  	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+>  ==============================================================
 >  
->  	for (;;) {
->  		mutex_lock(&cma->lock);
-> -		bitmap_no = bitmap_find_next_zero_area(cma->bitmap,
-> -				bitmap_maxno, start, bitmap_count, mask);
-> +		bitmap_no = bitmap_find_next_zero_area_off(cma->bitmap,
-> +				bitmap_maxno, start, bitmap_count, mask,
-> +				offset);
->  		if (bitmap_no >= bitmap_maxno) {
->  			mutex_unlock(&cma->lock);
->  			break;
-> -- 
-> 1.9.1
->
+> -panic_on_unrecovered_nmi:
+> -
+> -The default Linux behaviour on an NMI of either memory or unknown is
+> -to continue operation. For many environments such as scientific
+> -computing it is preferable that the box is taken out and the error
+> -dealt with than an uncorrected parity/ECC error get propagated.
+> -
+> -A small number of systems do generate NMI's for bizarre random reasons
+> -such as power management so the default is off. That sysctl works like
+> -the existing panic controls already in that directory.
+> -
+> -==============================================================
+> -
+>  panic_on_oops:
+>  
+>  Controls the kernel's behaviour when an oops or BUG is encountered.
+> @@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+>  
+>  ==============================================================
+>  
+> +panic_on_unrecovered_nmi:
+> +
+> +The default Linux behaviour on an NMI of either memory or unknown is
+> +to continue operation. For many environments such as scientific
+> +computing it is preferable that the box is taken out and the error
+> +dealt with than an uncorrected parity/ECC error get propagated.
+> +
+> +A small number of systems do generate NMI's for bizarre random reasons
+> +such as power management so the default is off. That sysctl works like
+> +the existing panic controls already in that directory.
+> +
+> +==============================================================
+> +
+> +panic_on_warn:
+> +
+> +Calls panic() in the WARN() path when set to 1.  This is useful to avoid
+> +a kernel rebuild when attempting to kdump at the location of a WARN().
+> +
+> +0: only WARN(), default behaviour.
+> +
+> +1: call panic() after printing out WARN() location.
+> +
+> +==============================================================
+> +
+>  perf_cpu_time_max_percent:
+>  
+>  Hints to the kernel how much CPU time it should be allowed to
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 3d770f55..d60d31d 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -422,6 +422,7 @@ extern int panic_timeout;
+>  extern int panic_on_oops;
+>  extern int panic_on_unrecovered_nmi;
+>  extern int panic_on_io_nmi;
+> +extern int panic_on_warn;
+>  extern int sysctl_panic_on_stackoverflow;
+>  /*
+>   * Only to be used by arch init code. If the user over-wrote the default
+> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
+> index 43aaba1..0956373 100644
+> --- a/include/uapi/linux/sysctl.h
+> +++ b/include/uapi/linux/sysctl.h
+> @@ -153,6 +153,7 @@ enum
+>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+> +	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
+>  };
+>  
+>  
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index d09dc5c..c6a7723 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -33,6 +33,7 @@ static int pause_on_oops;
+>  static int pause_on_oops_flag;
+>  static DEFINE_SPINLOCK(pause_on_oops_lock);
+>  static bool crash_kexec_post_notifiers;
+> +int panic_on_warn __read_mostly;
+>  
+>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
+>  EXPORT_SYMBOL_GPL(panic_timeout);
+> @@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+>  {
+>  	disable_trace_on_warning();
+>  
+> -	pr_warn("------------[ cut here ]------------\n");
+> +	if (!panic_on_warn)
+> +		pr_warn("------------[ cut here ]------------\n");
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+Is this really necessary?
+
+>  	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
+>  		raw_smp_processor_id(), current->pid, file, line, caller);
+>  
+>  	if (args)
+>  		vprintk(args->fmt, args->args);
+>  
+> +	if (panic_on_warn) {
+> +		/*
+> +		 * A flood of WARN()s may occur.  Prevent further WARN()s
+> +		 * from panicking the system.
+> +		 */
+
+What synchronization is preventing this race and further WARN()s panicking 
+the system?
+
+> +		panic_on_warn = 0;
+> +		panic("panic_on_warn set ...\n");
+> +	}
+> +
+>  	print_modules();
+>  	dump_stack();
+>  	print_oops_end_marker();
