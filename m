@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250AbaKERTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:19:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41999 "EHLO
+	id S932397AbaKERTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:19:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42004 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756236AbaKERS6 (ORCPT
+	with ESMTP id S932366AbaKERTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:18:58 -0500
-Date: Wed, 5 Nov 2014 09:17:43 -0800
+	Wed, 5 Nov 2014 12:19:04 -0500
+Date: Wed, 5 Nov 2014 09:17:59 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-5580d26aab193f1744f4bf94912ff12b73ab20c4@git.kernel.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        jiang.liu@linux.intel.com, bhelgaas@google.com,
-        benh@kernel.crashing.org, gregkh@linuxfoundation.org, hpa@zytor.com,
-        rdunlap@infradead.org, mingo@kernel.org, rjw@rjwysocki.net,
-        konrad.wilk@oracle.com, bp@alien8.de, tony.luck@intel.com,
-        joro@8bytes.org, yinghai@kernel.org
-Reply-To: benh@kernel.crashing.org, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com,
-        tglx@linutronix.de, rdunlap@infradead.org, hpa@zytor.com,
-        gregkh@linuxfoundation.org, bp@alien8.de, tony.luck@intel.com,
-        konrad.wilk@oracle.com, mingo@kernel.org, rjw@rjwysocki.net,
-        yinghai@kernel.org, joro@8bytes.org
-In-Reply-To: <1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-e1d8f79a27a41493c8f1ad0bde440048e17f9494@git.kernel.org>
+Cc: tony.luck@intel.com, joro@8bytes.org, tglx@linutronix.de,
+        bhelgaas@google.com, rjw@rjwysocki.net, konrad.wilk@oracle.com,
+        mingo@kernel.org, bp@alien8.de, yinghai@kernel.org,
+        benh@kernel.crashing.org, jiang.liu@linux.intel.com,
+        rdunlap@infradead.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Reply-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, rdunlap@infradead.org, jiang.liu@linux.intel.com,
+        benh@kernel.crashing.org, yinghai@kernel.org, mingo@kernel.org,
+        bp@alien8.de, konrad.wilk@oracle.com, rjw@rjwysocki.net,
+        tglx@linutronix.de, bhelgaas@google.com, tony.luck@intel.com,
+        joro@8bytes.org
+In-Reply-To: <1414397531-28254-20-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-20-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] iommu/vt-d:
+Subject: [tip:x86/apic] iommu/amd:
   Use helpers to access irq_cfg data structure associated with IRQ
-Git-Commit-ID: 5580d26aab193f1744f4bf94912ff12b73ab20c4
+Git-Commit-ID: e1d8f79a27a41493c8f1ad0bde440048e17f9494
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,14 +40,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5580d26aab193f1744f4bf94912ff12b73ab20c4
-Gitweb:     http://git.kernel.org/tip/5580d26aab193f1744f4bf94912ff12b73ab20c4
+Commit-ID:  e1d8f79a27a41493c8f1ad0bde440048e17f9494
+Gitweb:     http://git.kernel.org/tip/e1d8f79a27a41493c8f1ad0bde440048e17f9494
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:09 +0800
+AuthorDate: Mon, 27 Oct 2014 16:12:10 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 5 Nov 2014 18:10:48 +0100
 
-iommu/vt-d: Use helpers to access irq_cfg data structure associated with IRQ
+iommu/amd: Use helpers to access irq_cfg data structure associated with IRQ
 
 Use helpers to access irq_cfg data structure associated with IRQ,
 instead of accessing irq_data->chip_data directly. Later we can
@@ -65,58 +65,76 @@ Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Joerg Roedel <joro@8bytes.org>
-Link: http://lkml.kernel.org/r/1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1414397531-28254-20-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/iommu/intel_irq_remapping.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/iommu/amd_iommu.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 7c80661..fd181cf 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -55,7 +55,7 @@ static int __init parse_ioapics_under_ir(void);
- 
- static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
- {
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	return cfg ? &cfg->irq_2_iommu : NULL;
- }
- 
-@@ -86,7 +86,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned int mask = 0;
- 	unsigned long flags;
- 	int index;
-@@ -154,7 +154,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long flags;
- 
- 	if (!irq_iommu)
-@@ -1008,7 +1008,7 @@ static int
- intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			  bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest, irq = data->irq;
- 	struct irte irte;
- 	int err;
-@@ -1063,7 +1063,7 @@ static void intel_compose_msi_msg(struct pci_dev *pdev,
- 	u16 sub_handle = 0;
- 	int ir_index;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 505a9ad..6fda7cc 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -4068,7 +4068,7 @@ static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
+ 	int devid;
+ 	int ret;
  
 -	cfg = irq_get_chip_data(irq);
 +	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
  
- 	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
- 	BUG_ON(ir_index == -1);
+@@ -4131,7 +4131,7 @@ static int set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	if (!config_enabled(CONFIG_SMP))
+ 		return -1;
+ 
+-	cfg       = data->chip_data;
++	cfg       = irqd_cfg(data);
+ 	irq       = data->irq;
+ 	irte_info = &cfg->irq_2_irte;
+ 
+@@ -4169,7 +4169,7 @@ static int free_irq(int irq)
+ 	struct irq_2_irte *irte_info;
+ 	struct irq_cfg *cfg;
+ 
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
+ 
+@@ -4188,7 +4188,7 @@ static void compose_msi_msg(struct pci_dev *pdev,
+ 	struct irq_cfg *cfg;
+ 	union irte irte;
+ 
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return;
+ 
+@@ -4217,7 +4217,7 @@ static int msi_alloc_irq(struct pci_dev *pdev, int irq, int nvec)
+ 	if (!pdev)
+ 		return -EINVAL;
+ 
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
+ 
+@@ -4237,7 +4237,7 @@ static int msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
+ 	if (!pdev)
+ 		return -EINVAL;
+ 
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
+ 
+@@ -4260,7 +4260,7 @@ static int alloc_hpet_msi(unsigned int irq, unsigned int id)
+ 	struct irq_cfg *cfg;
+ 	int index, devid;
+ 
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
+ 
