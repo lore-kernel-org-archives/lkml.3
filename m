@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaKEDxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 22:53:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51522 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbaKEDxf (ORCPT
+	id S1753253AbaKEDzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 22:55:43 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43087 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaKEDzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 22:53:35 -0500
-Date: Tue, 4 Nov 2014 19:52:24 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yijing Wang <wangyijing@huawei.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>,
-        Frans Klaver <fransklaver@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Xiang Rui <rui.xiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>
-Subject: Re: Subject: [PATCH] kobject: fix the race between kobject_del and
- get_device_parent
-Message-ID: <20141105035224.GB9419@kroah.com>
-References: <543F25D3.8010708@huawei.com>
- <CAH6sp9PZYLRntXzmX14OmJpwWBu2_h=_h3oSvpaHE=gAG0meBw@mail.gmail.com>
- <543F7289.8010807@huawei.com>
- <20141016091328.GB24374@kroah.com>
- <544765D0.70302@huawei.com>
- <20141104191535.GI14459@htj.dyndns.org>
- <54598503.1060905@huawei.com>
- <20141105031345.GA29392@htj.dyndns.org>
- <5459992B.1040700@huawei.com>
- <20141105032943.GB29392@htj.dyndns.org>
+	Tue, 4 Nov 2014 22:55:41 -0500
+Date: Wed, 5 Nov 2014 03:55:36 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141105035536.GO7996@ZenIV.linux.org.uk>
+References: <20141104144258.GA14743@gondor.apana.org.au>
+ <20141104151353.GG7996@ZenIV.linux.org.uk>
+ <20141105022251.GA19136@gondor.apana.org.au>
+ <20141104.222727.275422581392488793.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141105032943.GB29392@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141104.222727.275422581392488793.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 10:29:43PM -0500, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Nov 05, 2014 at 11:27:39AM +0800, Yijing Wang wrote:
-> > Keep the parent directory looks good to me,  we could only add kobject_get(&parent)
-> > after the parent dir be created.
-> > 
-> > ....
-> > 		/* or create a new class-directory at the parent device */
-> > 		k = class_dir_create_and_add(dev->class, parent_kobj);
-> > 		/* do not emit an uevent for this simple "glue" directory */
-> > 		kobject_get(k);  <--------add parent ref count for first child device.
-> 
-> The created directory would already have the base ref.  I don't think
-> you need the above.  Just never put the parent once created.
-> 
-> Greg, how does this sound to you?
+On Tue, Nov 04, 2014 at 10:27:27PM -0500, David Miller wrote:
 
-It makes sense, but I don't understand, what "parent" directory is going
-away and causing problems?
+> Al, is this the helper you are talking about?
 
-thanks,
+Mostly, except that I kept it 4-argument (and used skb_copy_datagram_msg()
+for name).  Matter of taste - the ones you've missed because of that are
 
-greg k-h
+net/appletalk/ddp.c:1761:	err = skb_copy_datagram_iovec(skb, offset, msg->msg_iov, copied);
+net/ipv4/tcp.c:1836:			err = skb_copy_datagram_iovec(skb, offset,
+net/ipv4/udp.c:1284:		err = skb_copy_datagram_iovec(skb, sizeof(struct udphdr),
+net/ipv6/udp.c:427:			err = skb_copy_datagram_iovec(skb, sizeof(struct udphdr),
+net/ipx/af_ipx.c:1808:	rc = skb_copy_datagram_iovec(skb, sizeof(struct ipxhdr), msg->msg_iov,
+net/iucv/af_iucv.c:1358:	if (skb_copy_datagram_iovec(cskb, offset, msg->msg_iov, copied)) {
+net/llc/af_llc.c:822:			int rc = skb_copy_datagram_iovec(skb, offset,
+net/rxrpc/ar-recvmsg.c:183:		ret = skb_copy_datagram_iovec(skb, offset, msg->msg_iov, copy);
+net/tipc/socket.c:1375:		res = skb_copy_datagram_iovec(buf, msg_hdr_sz(msg),
+net/tipc/socket.c:1476:		res = skb_copy_datagram_iovec(buf, msg_hdr_sz(msg) + offset,
+net/unix/af_unix.c:1828:	err = skb_copy_datagram_iovec(skb, skip, msg->msg_iov, size);
+net/unix/af_unix.c:2033:		if (skb_copy_datagram_iovec(skb, UNIXCB(skb).consumed + skip,
+net/vmw_vsock/vmci_transport.c:1776:	err = skb_copy_datagram_iovec(skb, sizeof(*dg), msg->msg_iov,
+
+and back then I decided that 13 more converted instances might be worth keeping
+it in 4-argument form...
+
+What do you think of the trick with user_msghdr, BTW?
