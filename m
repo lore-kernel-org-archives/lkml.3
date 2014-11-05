@@ -1,73 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaKESMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:12:42 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:56402 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaKESMj (ORCPT
+	id S1751646AbaKESNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:13:07 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34256 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751339AbaKESMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 13:12:39 -0500
-Message-ID: <545A6894.7040506@lwfinger.net>
-Date: Wed, 05 Nov 2014 12:12:36 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
-Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
-References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>	 <5451BED0.2060906@lwfinger.net> <1415178975.5402.66.camel@marge.simpson.net>
-In-Reply-To: <1415178975.5402.66.camel@marge.simpson.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Nov 2014 13:12:02 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH -next 3/5] serial: core: Pass termios to set_ldisc() notifications
+Date: Wed,  5 Nov 2014 13:11:43 -0500
+Message-Id: <1415211105-16668-4-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415211105-16668-1-git-send-email-peter@hurleysoftware.com>
+References: <1415211105-16668-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 03:16 AM, Mike Galbraith wrote:
-> On Wed, 2014-10-29 at 23:30 -0500, Larry Finger wrote:
->> On 10/29/2014 06:28 PM, Murilo Opsfelder Araujo wrote:
->>> This is a complement of commit 08054200117a95afc14c3d2ed3a38bf4e345bf78
->>> "rtlwifi: Add check for get_btc_status callback".
->>>
->>> With this patch, next-20141029 at least does not panic with rtl8192se
->>> device.
->>>
->>
->> This patch is OK, but as noted it is not complete.
->>
->> I have patches to fix all the kernel panics for rtl8192se AND rtl8192ce. There
->> are missing parts, but I would prefer submitting mine, which would conflict with
->> this one. For that reason, NACK for this one, and please apply the set I am
->> submitting now.
->
-> It's all in there now, but my RTL8191SEvB is still dead.  Squabbling
-> with it isn't going all that well either.
->
-> As soon as 38506ece rtlwifi: rtl_pci: Start modification for new drivers
-> is applied, explosions appear.  Subsequently applying...
->
-> 08054200 rtlwifi: Add check for get_btc_status callback
-> c0386f15 rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for missing get_btc_status
-> 50147969 rtlwifi: rtl8192se: Fix duplicate calls to ieee80211_register_hw()
-> 30c5ccc6 rtlwifi: rtl8192se: Add missing section to read descriptor setting
-> 75a916e1 rtlwifi: rtl8192se: Fix firmware loading
->
-> ...fixes that mess up, but leaves the interface dead in the same manner
-> as if nothing has been reverted.  So it _seems_ the bustage lurks in
-> 38506ece somewhere.  Too bad it's non-dinky, and written in wifi-ese :)
+UART drivers which enable modem status interrupts when switching
+to N_PPS line discipline need to determine if modem status
+interrupts should be disabled when switching from N_PPS.
+Specifically, the set_ldisc() notification needs to evaluate
+UART_ENABLE_MS() which requires termios->c_cflag.
 
-Yes, I am aware that rtl8192se is failing, and now that I am back from vacation, 
-I am working on the problem. If you want to use the driver with kernel 3.18, 
-clone the repo at http://github.com/lwfinger/rtlwifi_new.git and build and 
-install either the master or kernel_version branches. Both work.
+Convert in-tree UART drivers to new interface.
 
-I am in the process of trying to find what the crucial difference is between 
-that repo and the kernel version.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/serial/8250/8250_core.c | 4 ++--
+ drivers/tty/serial/amba-pl010.c     | 4 ++--
+ drivers/tty/serial/atmel_serial.c   | 4 ++--
+ drivers/tty/serial/bfin_uart.c      | 5 +++--
+ drivers/tty/serial/clps711x.c       | 5 +++--
+ drivers/tty/serial/serial_core.c    | 2 +-
+ include/linux/serial_core.h         | 2 +-
+ 7 files changed, 14 insertions(+), 12 deletions(-)
 
-Larry
-
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index ca5cfdc..6cfdb7b 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2603,9 +2603,9 @@ serial8250_set_termios(struct uart_port *port, struct ktermios *termios,
+ }
+ 
+ static void
+-serial8250_set_ldisc(struct uart_port *port, int new)
++serial8250_set_ldisc(struct uart_port *port, struct ktermios *termios)
+ {
+-	if (new == N_PPS) {
++	if (termios->c_line == N_PPS) {
+ 		port->flags |= UPF_HARDPPS_CD;
+ 		serial8250_enable_ms(port);
+ 	} else
+diff --git a/drivers/tty/serial/amba-pl010.c b/drivers/tty/serial/amba-pl010.c
+index 2064d31..76e40b3 100644
+--- a/drivers/tty/serial/amba-pl010.c
++++ b/drivers/tty/serial/amba-pl010.c
+@@ -468,9 +468,9 @@ pl010_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	spin_unlock_irqrestore(&uap->port.lock, flags);
+ }
+ 
+-static void pl010_set_ldisc(struct uart_port *port, int new)
++static void pl010_set_ldisc(struct uart_port *port, struct ktermios *termios)
+ {
+-	if (new == N_PPS) {
++	if (termios->c_line == N_PPS) {
+ 		port->flags |= UPF_HARDPPS_CD;
+ 		pl010_enable_ms(port);
+ 	} else
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 8a84034..a2374d9 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -2042,9 +2042,9 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+-static void atmel_set_ldisc(struct uart_port *port, int new)
++static void atmel_set_ldisc(struct uart_port *port, struct ktermios *termios)
+ {
+-	if (new == N_PPS) {
++	if (termios->c_line == N_PPS) {
+ 		port->flags |= UPF_HARDPPS_CD;
+ 		atmel_enable_ms(port);
+ 	} else {
+diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
+index 7da9911..44b27ec 100644
+--- a/drivers/tty/serial/bfin_uart.c
++++ b/drivers/tty/serial/bfin_uart.c
+@@ -944,12 +944,13 @@ bfin_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
+  * Enable the IrDA function if tty->ldisc.num is N_IRDA.
+  * In other cases, disable IrDA function.
+  */
+-static void bfin_serial_set_ldisc(struct uart_port *port, int ld)
++static void bfin_serial_set_ldisc(struct uart_port *port,
++				  struct ktermios *termios)
+ {
+ 	struct bfin_serial_port *uart = (struct bfin_serial_port *)port;
+ 	unsigned int val;
+ 
+-	switch (ld) {
++	switch (termios->c_line) {
+ 	case N_IRDA:
+ 		val = UART_GET_GCTL(uart);
+ 		val |= (UMOD_IRDA | RPOLC);
+diff --git a/drivers/tty/serial/clps711x.c b/drivers/tty/serial/clps711x.c
+index acfe317..f963c4c 100644
+--- a/drivers/tty/serial/clps711x.c
++++ b/drivers/tty/serial/clps711x.c
+@@ -225,13 +225,14 @@ static void uart_clps711x_break_ctl(struct uart_port *port, int break_state)
+ 	writel(ubrlcr, port->membase + UBRLCR_OFFSET);
+ }
+ 
+-static void uart_clps711x_set_ldisc(struct uart_port *port, int ld)
++static void uart_clps711x_set_ldisc(struct uart_port *port,
++				    struct ktermios *termios)
+ {
+ 	if (!port->line) {
+ 		struct clps711x_port *s = dev_get_drvdata(port->dev);
+ 
+ 		regmap_update_bits(s->syscon, SYSCON_OFFSET, SYSCON1_SIREN,
+-				   (ld == N_IRDA) ? SYSCON1_SIREN : 0);
++				   (termios->c_line == N_IRDA) ? SYSCON1_SIREN : 0);
+ 	}
+ }
+ 
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 5209eaa..c5fb08c 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1247,7 +1247,7 @@ static void uart_set_ldisc(struct tty_struct *tty)
+ 
+ 	if (uport->ops->set_ldisc) {
+ 		mutex_lock(&state->port.mutex);
+-		uport->ops->set_ldisc(uport, tty->termios.c_line);
++		uport->ops->set_ldisc(uport, &tty->termios);
+ 		mutex_unlock(&state->port.mutex);
+ 	}
+ }
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index ad93296..40b4cc4 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -63,7 +63,7 @@ struct uart_ops {
+ 	void		(*flush_buffer)(struct uart_port *);
+ 	void		(*set_termios)(struct uart_port *, struct ktermios *new,
+ 				       struct ktermios *old);
+-	void		(*set_ldisc)(struct uart_port *, int new);
++	void		(*set_ldisc)(struct uart_port *, struct ktermios *);
+ 	void		(*pm)(struct uart_port *, unsigned int state,
+ 			      unsigned int oldstate);
+ 
+-- 
+2.1.3
 
