@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954AbaKESnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:43:04 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:56155 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750894AbaKESnC (ORCPT
+	id S1751976AbaKESnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:43:35 -0500
+Received: from resqmta-po-06v.sys.comcast.net ([96.114.154.165]:58650 "EHLO
+	resqmta-po-06v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751535AbaKESne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 13:43:02 -0500
-Date: Wed, 5 Nov 2014 13:42:59 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in
- trace_seq
-Message-ID: <20141105134259.1382ec70@gandalf.local.home>
-In-Reply-To: <20141105142620.GD4570@pathway.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
-	<20141104160221.864997179@goodmis.org>
-	<20141105142620.GD4570@pathway.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 5 Nov 2014 13:43:34 -0500
+Date: Wed, 5 Nov 2014 12:43:31 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 8/8] slab: recharge slab pages to the allocating
+ memory cgroup
+In-Reply-To: <fe7c55a7ff9bb8a1ddff0256f5404196c10bfd08.1415046910.git.vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.11.1411051242410.28485@gentwo.org>
+References: <cover.1415046910.git.vdavydov@parallels.com> <fe7c55a7ff9bb8a1ddff0256f5404196c10bfd08.1415046910.git.vdavydov@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 15:26:20 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
+On Mon, 3 Nov 2014, Vladimir Davydov wrote:
 
+> +static __always_inline void slab_free(struct kmem_cache *cachep, void *objp);
+> +
+>  static __always_inline void *
+>  slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
+>  		   unsigned long caller)
+> @@ -3185,6 +3187,10 @@ slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
+>  		kmemcheck_slab_alloc(cachep, flags, ptr, cachep->object_size);
+>  		if (unlikely(flags & __GFP_ZERO))
+>  			memset(ptr, 0, cachep->object_size);
+> +		if (unlikely(memcg_kmem_recharge_slab(ptr, flags))) {
+> +			slab_free(cachep, ptr);
+> +			ptr = NULL;
+> +		}
+>  	}
+>
+>  	return ptr;
+> @@ -3250,6 +3256,10 @@ slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
+>  		kmemcheck_slab_alloc(cachep, flags, objp, cachep->object_size);
+>  		if (unlikely(flags & __GFP_ZERO))
+>  			memset(objp, 0, cachep->object_size);
+> +		if (unlikely(memcg_kmem_recharge_slab(objp, flags))) {
+> +			slab_free(cachep, objp);
+> +			objp = NULL;
+> +		}
+>  	}
+>
 
-> > index 000000000000..97872154d51c
-> > --- /dev/null
-> > +++ b/include/linux/seq_buf.h
-> > @@ -0,0 +1,72 @@
-> > +#ifndef _LINUX_SEQ_BUF_H
-> > +#define _LINUX_SEQ_BUF_H
-> > +
-> > +#include <linux/fs.h>
-> > +
-> > +#include <asm/page.h>
-> 
-> One more small thing. We do not need this include because
-> seq_buf does not use the PAGE_SIZE.
-
-Good catch.
-
-I'll remove it.
-
--- Steve
-
+Please do not add code to the hotpaths if its avoidable. Can you charge
+the full slab only when allocated please?
