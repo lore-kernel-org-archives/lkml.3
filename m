@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaKEWxz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:53:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:6728 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751002AbaKEWxw (ORCPT
+	id S1751244AbaKEW4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:56:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36235 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaKEW4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:53:52 -0500
-Date: Wed, 5 Nov 2014 17:53:50 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2 v3] ftracetest: Add a couple of ftrace test cases
-Message-ID: <20141105175350.1224c304@gandalf.local.home>
-In-Reply-To: <5459E2AB.8020009@hitachi.com>
-References: <20141104152845.521858531@goodmis.org>
-	<20141104153028.602754370@goodmis.org>
-	<87zjc6ulry.fsf@sejong.aot.lge.com>
-	<5459E2AB.8020009@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 5 Nov 2014 17:56:42 -0500
+Date: Wed, 5 Nov 2014 14:56:41 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Daniel Dressler <danieru.dressler@gmail.com>
+Cc: Matthew Casey <mdcasey@chabloom.com>, Ben Hutchings <ben@decadent.org.uk>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: rtl8192e: Fix segfault upon alloc failure
+Message-ID: <20141105225641.GA26985@kroah.com>
+References: <danieru.dressler@gmail.com>
+ <1415203879-17261-1-git-send-email-danieru.dressler@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415203879-17261-1-git-send-email-danieru.dressler@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Nov 2014 17:41:15 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2014/11/05 16:52), Namhyung Kim wrote:
-> > Hi Steve,
-> > 
-> > On Tue, 04 Nov 2014 10:28:47 -0500, Steven Rostedt wrote:
-> >> +count=`cat trace | grep '()' | grep -v schedule | wc -l`
-> >> +
-> >> +if [ $count -ne 0 ]; then
-> >> +    echo "Graph filtering not working after stack tracer disabled?"
-> >> +    exit -1
-> >> +fi
-> >> +
-> >> +count=`cat trace | grep 'schedule()' | wc -l` 
-> >> +if [ $count -eq 0 ]; then
-> >> +    echo "No schedule traces found?"
-> >> +    exit -1
-> > 
-> > Hmm.. in this case don't we need to call do_reset especially for the
-> > last testcase?  Maybe we could define a simple function like:
-> > 
-> > fail() { # msg
-> > 	do_reset
-> > 	echo $1
-> > 	exit -1
-> > }
+On Thu, Nov 06, 2014 at 01:11:17AM +0900, Daniel Dressler wrote:
+> Kernel space allocations can fail. This patch
+> fixes a crash condition upon allocation failure.
 > 
-> If you want to call do_reset always on exit, you can also use "trap do_reset 0" too.
+> Should this condition occur init_firmware() will
+> goto its error handler and declare download failure.
+> 
+> Of interesting note is that prior to this patch
+> fw_download_code() could never fail yet our caller
+> checked the return value.
+> 
+> Reported-by: RUC_Soft_Sec <rucsoftsec@gmail.com>
+> Signed-off-by: Daniel Dressler <danieru.dressler@gmail.com>
+> ---
+>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> index 2e28744..e4257fe 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> @@ -61,6 +61,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>  		}
+>  
+>  		skb  = dev_alloc_skb(frag_length + 4);
+> +		if (!skb)
+> +			return false;
 
-Cool, I didn't know that. But I like the "fail" command, as it is a bit
-more verbose.
+Lots of people try to fix this "warning" in this manner.  But you have
+to do more work here than just a simple "return false;", you need to
+unwind all of the work you have done up to this point, which is a
+non-trivial task...
 
-I'll update.
+I'd recommend looking at how other drivers of this manufacturer handle
+this type of operation to get a better idea of how to rewrite this
+function.
 
-Thanks,
+good luck,
 
--- Steve
-
+greg k-h
