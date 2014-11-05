@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015AbaKEROd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:14:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41752 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366AbaKEROa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:14:30 -0500
-Date: Wed, 5 Nov 2014 09:13:03 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-a4aad01aa04e405dc41b6c8e75bed3a9b63327d7@git.kernel.org>
-Cc: bp@alien8.de, benh@kernel.crashing.org, pavel@ucw.cz,
-        gregkh@linuxfoundation.org, bhelgaas@google.com, tony.luck@intel.com,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, jiang.liu@linux.intel.com,
-        rjw@rjwysocki.net, hpa@zytor.com, len.brown@intel.com, joro@8bytes.org,
-        rdunlap@infradead.org
-Reply-To: jiang.liu@linux.intel.com, rjw@rjwysocki.net, rdunlap@infradead.org,
-        len.brown@intel.com, joro@8bytes.org, hpa@zytor.com, bp@alien8.de,
-        pavel@ucw.cz, benh@kernel.crashing.org, gregkh@linuxfoundation.org,
-        tony.luck@intel.com, bhelgaas@google.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, yinghai@kernel.org
-In-Reply-To: <1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq, ACPI:
-  Fix building warning of unused code
-Git-Commit-ID: a4aad01aa04e405dc41b6c8e75bed3a9b63327d7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755973AbaKEROO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:14:14 -0500
+Received: from mail-bl2on0091.outbound.protection.outlook.com ([65.55.169.91]:6457
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755128AbaKEROL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 12:14:11 -0500
+X-Greylist: delayed 609 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 12:14:11 EST
+Date: Wed, 5 Nov 2014 09:14:00 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Heiko Stuebner <heiko@sntech.de>, <linux-sh@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <linux-rockchip@lists.infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 5/7] pinctrl: Add driver for Zynq
+References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1415041531-15520-6-git-send-email-soren.brinkmann@xilinx.com>
+ <5459B1B5.6030001@suse.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5459B1B5.6030001@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21076.007
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <77a9809bf6a8476c80d9308a7d3b1ac0@BN1AFFO11FD047.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(164054003)(199003)(189002)(51704005)(377424004)(21056001)(44976005)(95666004)(106466001)(4396001)(53416004)(85202003)(102836001)(85182001)(83506001)(87936001)(31966008)(107046002)(54356999)(50986999)(23676002)(92566001)(86362001)(20776003)(47776003)(64706001)(120916001)(77156002)(77096003)(110136001)(104016003)(99396003)(108616004)(76176999)(6806004)(46102003)(74316001)(50466002)(33646002)(62966003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB044;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:3;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB044;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0386B406AA
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a4aad01aa04e405dc41b6c8e75bed3a9b63327d7
-Gitweb:     http://git.kernel.org/tip/a4aad01aa04e405dc41b6c8e75bed3a9b63327d7
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:11:53 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 5 Nov 2014 18:10:45 +0100
+On Wed, 2014-11-05 at 06:12AM +0100, Andreas Färber wrote:
+> Am 03.11.2014 um 20:05 schrieb Soren Brinkmann:
+> > +enum zynq_pinmux_functions {
+> > +	ZYNQ_PMUX_ethernet0,
+> > +	ZYNQ_PMUX_ethernet1,
+> > +	ZYNQ_PMUX_mdio0,
+> > +	ZYNQ_PMUX_mdio1,
+> > +	ZYNQ_PMUX_qspi0,
+> > +	ZYNQ_PMUX_qspi1,
+> > +	ZYNQ_PMUX_qspi_fbclk,
+> > +	ZYNQ_PMUX_qspi_cs1,
+> 
+> Are usb0 and usb1 intentionally missing in this patch for lack of
+> upstream USB driver? If so, then please mention what you left out in the
+> commit message.
 
-x86, irq, ACPI: Fix building warning of unused code
+I don't know how that could happen, but no, it's not intentionally
+missing, let's call it accidentally. It just slipped through. Don't
+ask me how I could miss USB.
 
-Fix building warning when CONFIG_X86_LOCAL_APIC is disabled.
-arch/x86/kernel/acpi/boot.c:699:20: warning: ‘acpi_set_irq_model_ioapic’ defined but not used [-Wunused-function]
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1414397531-28254-3-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/acpi/boot.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index a0e095f..4433a4b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -703,6 +703,7 @@ void acpi_unregister_gsi(u32 gsi)
- }
- EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
- static void __init acpi_set_irq_model_ioapic(void)
- {
- 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
-@@ -710,6 +711,7 @@ static void __init acpi_set_irq_model_ioapic(void)
- 	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
- 	acpi_ioapic = 1;
- }
-+#endif
- 
- /*
-  *  ACPI based hotplug support for CPU
+	Thanks,
+	Sören
