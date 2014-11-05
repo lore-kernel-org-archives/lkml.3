@@ -1,78 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805AbaKEMf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 07:35:29 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50545 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754643AbaKEMf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 07:35:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="411782233"
-Message-ID: <1415190903.2420.56.camel@jtkirshe-mobl>
-Subject: Re: [PATCH net 2/5] i40e: Implement ndo_gso_check()
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Stringer <joestringer@nicira.com>
-Cc: netdev@vger.kernel.org, sathya.perla@emulex.com, linux.nics@intel.com,
-        amirv@mellanox.com, shahed.shaikh@qlogic.com,
-        Dept-GELinuxNICDev@qlogic.com, therbert@google.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Nov 2014 04:35:03 -0800
-In-Reply-To: <1415138202-1197-3-git-send-email-joestringer@nicira.com>
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
-	 <1415138202-1197-3-git-send-email-joestringer@nicira.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-B7f7YwCzYtF3L7+3EQe2"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1754823AbaKEMga (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 07:36:30 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36554 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643AbaKEMg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 07:36:29 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-2b-545a19ca2fb6
+Message-id: <545A19C8.6090508@samsung.com>
+Date: Wed, 05 Nov 2014 13:36:24 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC 1/2] core: Add generic object registry implementation
+References: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
+In-reply-to: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xq7qnJKNCDHrbJSwWPrzLbHHl63s2
+	i+bF69ksLu+aw2bxc9c8FgdWj73fFrB47Jx1l91j/9w17B73u48zeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVceryGsaCLueKts+PGBsYl5t2MXJySAiYSOx+v4URwhaTuHBvPVsXIxeHkMBSRon3
+	73cyQzifGCVetWwFynBw8ApoSTz9IwvSwCKgKvG1eRU7iM0moCnxd/NNNhBbVCBC4sqaOWBD
+	eQUEJX5MvscC0ioikCDx5IgMiMkskC1xZ74dSIWwgLvEvZXXwKqFBDwkFm86ygJicwp4SnTd
+	3soKUa4uMWVKLkiYWUBeYvOat8wTGAVmIZk/C6FqFpKqBYzMqxhFU0uTC4qT0nON9IoTc4tL
+	89L1kvNzNzFCAvnrDsalx6wOMQpwMCrx8Ho0RYYIsSaWFVfmHmKU4GBWEuFlEIkKEeJNSays
+	Si3Kjy8qzUktPsTIxMEp1cBo3zfvksHK8MkL1XRbyg4skNXeuNeLt8Jsu1zlGjPGiDt77ytO
+	0JpfzG+7xNTCbHqQ04HVZSuitrsnK5kZS7aGtOcq6ou9nyiia/ZF6yR7FMNRhm+Wez9tnfqW
+	37/rNe/SmgNB6zKZNA51sd86f+tUGZ/uVmP97Y8Sp8/Rnnxkxz6bJP/Nh7YpsRRnJBpqMRcV
+	JwIAhfyZ90ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/04/2014 05:29 PM, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> Add a generic implementation of an object registry. This targets drivers
+> and subsystems that provide auxiliary objects that other drivers need to
+> look up. The goal is to put the difficult parts (keep object references,
+> module usage count, ...) into core code so that individual subsystems do
+> not have to deal with them.
+> 
+> The intention is for subsystems to instantiate a struct registry and use
+> a struct registry_record embedded into a subsystem-specific structure to
+> provide a subsystem-specific API around that.
 
---=-B7f7YwCzYtF3L7+3EQe2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2014-11-04 at 13:56 -0800, Joe Stringer wrote:
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an
-> implementation for this driver which checks for tunnel headers over
-> UDP
-> of up to 64 octets in length.
->=20
-> Implementation shamelessly stolen from Tom Herbert:
-> http://thread.gmane.org/gmane.linux.network/332428/focus=3D333111
->=20
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+As I understand you want to use this registry for panels and bridges.
+Could you explain the idea and describe example scenario when these
+refcountings are useful. I guess it should be when panel attached to
+drmdrv want to disappear.
+
+Real lifetime of panel is limited by probe/remove callbacks of panel
+driver, do you want to prolong it behind these limits?
+Do you want to have zombie panels, without hardware they abstract? For
+what purpose?
+What do you want to do with panel ops? Do they need support both life
+states?
+
+Anyway implementation currently seems to be broken, you try to refcount
+objects which are usually embedded in driver priv data, which disappears
+during remove callback of the driver.
+
+Regards
+Andrzej
+
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 > ---
->  drivers/net/ethernet/intel/i40e/i40e_main.c |   14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-
-Thanks again Joe, I will add your patch to my queue.
-
---=-B7f7YwCzYtF3L7+3EQe2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUWhl3AAoJEOVv75VaS+3OWywP/1f57qcQ3R6mOdigPWWEU46O
-ykDNC8MlnOCrACQGuaDzq5PJLnWRJtEHyPrOuSsStfdeGGvSydCbymwG0dY/ttx1
-ufb+oWs/OdpWCKBs0hMz25oGEnTO++SfaFZmMe5hpduhch+6Mo6z0IE7adGdwTzj
-SOnCclcToPKztbGpxP3DAU//hBomBAzYdL8uFPz5TrqTW0AgcnXQEBbWicw0zglw
-KMTkfhZd3D4jr8KsRJp0glll4gJ0PiSGdYtIYK+9svPYMrb4ffnkwK5PxyMZtDIq
-wAdklrGc84UDeqhRlnP9yBGy9lJ7X6nQ1Rfu73iTYAQQ6DqnIjWOe6chzsdsGnJg
-wLmQOCy/34JOGmlRhtKzMNVmMFEHS+4WvuwjgL0pdGcdBvyrKVEpGyl+8C0zSnFn
-eTeAs+MVFDZdG2Zh6PRfxSS/tXfpTf9+CJum/W+klEMyo+THJNn93ytVfoWoerRr
-J4J7j2mK4DDCaV9vw3sAS4Qr/ntvgEALAIIoiAEFoDsPbgRjxwbnisamEMr7BODf
-EfqkxQ9XA6VPYdkT7rTyit9hhBZxME0o3d6LCpvXeiZtl0qu9fEHsFH31yDoqSvf
-OJ/SgMqJfi8eOnldgIZSu0Gvhkv0pHXHukNeNvHKry7nGQs45OeMeeVBpW/r5wba
-6QablT55NpfmsTuR0Cp/
-=pD6x
------END PGP SIGNATURE-----
-
---=-B7f7YwCzYtF3L7+3EQe2--
+>  drivers/base/Makefile    |   2 +-
+>  drivers/base/registry.c  | 147 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/registry.h |  62 ++++++++++++++++++++
+>  3 files changed, 210 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/base/registry.c
+>  create mode 100644 include/linux/registry.h
+> 
+> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+> index 53c3fe1aeb29..250262d1af2c 100644
+> --- a/drivers/base/Makefile
+> +++ b/drivers/base/Makefile
+> @@ -4,7 +4,7 @@ obj-y			:= component.o core.o bus.o dd.o syscore.o \
+>  			   driver.o class.o platform.o \
+>  			   cpu.o firmware.o init.o map.o devres.o \
+>  			   attribute_container.o transport_class.o \
+> -			   topology.o container.o property.o
+> +			   topology.o container.o property.o registry.o
+>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+>  obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+>  obj-y			+= power/
+> diff --git a/drivers/base/registry.c b/drivers/base/registry.c
+> new file mode 100644
+> index 000000000000..9f510f6237b7
+> --- /dev/null
+> +++ b/drivers/base/registry.c
+> @@ -0,0 +1,147 @@
+> +/*
+> + * Copyright (C) 2014, NVIDIA Corporation.  All rights reserved.
+> + *
+> + * This file is released under the GPL v2.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/module.h>
+> +#include <linux/registry.h>
+> +
+> +static inline struct registry_record *to_registry_record(struct kref *kref)
+> +{
+> +	return container_of(kref, struct registry_record, kref);
+> +}
+> +
+> +static void registry_record_release(struct kref *kref)
+> +{
+> +	struct registry_record *record = to_registry_record(kref);
+> +
+> +	record->release(record);
+> +}
+> +
+> +/**
+> + * registry_record_init - initialize a registry record
+> + * @record: record to initialize
+> + *
+> + * Sets up internal fields of the registry record so that it can subsequently
+> + * be added to a registry.
+> + */
+> +void registry_record_init(struct registry_record *record)
+> +{
+> +	INIT_LIST_HEAD(&record->list);
+> +	kref_init(&record->kref);
+> +}
+> +
+> +/**
+> + * registry_record_ref - reference on the registry record
+> + * @record: record to reference
+> + *
+> + * Increases the reference count on the record and returns a pointer to it.
+> + *
+> + * Return: A pointer to the record on success or NULL on failure.
+> + */
+> +struct registry_record *registry_record_ref(struct registry_record *record)
+> +{
+> +	if (!record)
+> +		return NULL;
+> +
+> +	/*
+> +	 * Refuse to give out any more references if the module owning the
+> +	 * record is being removed.
+> +	 */
+> +	if (!try_module_get(record->owner))
+> +		return NULL;
+> +
+> +	kref_get(&record->kref);
+> +
+> +	return record;
+> +}
+> +
+> +/**
+> + * registry_record_unref - drop a reference to a registry record
+> + * @record: record to unreference
+> + *
+> + * Decreases the reference count on the record. When the reference count
+> + * reaches zero the record will be destroyed.
+> + */
+> +void registry_record_unref(struct registry_record *record)
+> +{
+> +	if (record) {
+> +		/*
+> +		 * Keep a copy of the module owner since the record may
+> +		 * disappear during the kref_put().
+> +		 */
+> +		struct module *owner = record->owner;
+> +
+> +		kref_put(&record->kref, registry_record_release);
+> +		module_put(owner);
+> +	}
+> +}
+> +
+> +/**
+> + * registry_add - add a record to a registry
+> + * @registry: registry to add the record to
+> + * @record: record to add
+> + *
+> + * Tries to increase the reference count of the module owning the registry. If
+> + * successful adds the new record to the registry.
+> + *
+> + * Return: 0 on success or a negative error code on failure.
+> + */
+> +int registry_add(struct registry *registry, struct registry_record *record)
+> +{
+> +	if (!try_module_get(registry->owner))
+> +		return -ENODEV;
+> +
+> +	mutex_lock(&registry->lock);
+> +	list_add_tail(&record->list, &registry->list);
+> +	mutex_unlock(&registry->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * registry_remove - remove a record from a registry
+> + * @registry: registry to remove the record from
+> + * @record: record to remove
+> + *
+> + * Decreases the reference count on the module owning the registry.
+> + */
+> +void registry_remove(struct registry *registry,
+> +		     struct registry_record *record)
+> +{
+> +	mutex_lock(&registry->lock);
+> +	list_del_init(&record->list);
+> +	mutex_unlock(&registry->lock);
+> +
+> +	module_put(registry->owner);
+> +}
+> +
+> +#ifdef CONFIG_OF
+> +/**
+> + * registry_find_by_of_node - look up an object by device node in a registry
+> + * @registry: registry to search
+> + * @np: device node to match on
+> + *
+> + * Return: A pointer to the record matching @np or NULL if no such record was
+> + * found.
+> + */
+> +struct registry_record *registry_find_by_of_node(struct registry *registry,
+> +						 struct device_node *np)
+> +{
+> +	struct registry_record *record;
+> +
+> +	mutex_lock(&registry->lock);
+> +
+> +	list_for_each_entry(record, &registry->list, list)
+> +		if (record->dev->of_node == np)
+> +			goto out;
+> +
+> +	record = NULL;
+> +
+> +out:
+> +	mutex_unlock(&registry->lock);
+> +	return record;
+> +}
+> +#endif
+> diff --git a/include/linux/registry.h b/include/linux/registry.h
+> new file mode 100644
+> index 000000000000..a807f4124736
+> --- /dev/null
+> +++ b/include/linux/registry.h
+> @@ -0,0 +1,62 @@
+> +/*
+> + * Copyright (C) 2014, NVIDIA Corporation.  All rights reserved.
+> + *
+> + * This file is released under the GPL v2.
+> + */
+> +
+> +#ifndef __LINUX_REGISTRY_H
+> +#define __LINUX_REGISTRY_H
+> +
+> +#include <linux/kref.h>
+> +#include <linux/list.h>
+> +#include <linux/mutex.h>
+> +
+> +struct device;
+> +struct device_node;
+> +struct module;
+> +
+> +struct registry;
+> +
+> +/**
+> + * struct registry_record - registry record object
+> + * @list: entry in registry for this record
+> + * @owner: owner module
+> + * @kref: reference count
+> + * @dev: parent device
+> + * @release: callback to destroy a record when no reference are left
+> + */
+> +struct registry_record {
+> +	struct list_head list;
+> +	struct module *owner;
+> +	struct kref kref;
+> +	struct device *dev;
+> +
+> +	void (*release)(struct registry_record *record);
+> +};
+> +
+> +void registry_record_init(struct registry_record *record);
+> +struct registry_record *registry_record_ref(struct registry_record *record);
+> +void registry_record_unref(struct registry_record *record);
+> +
+> +/**
+> + * struct registry - generic object registry
+> + * @list: list head of objects
+> + * @owner: owner module
+> + * @lock: lock for object list
+> + */
+> +struct registry {
+> +	struct list_head list;
+> +	struct module *owner;
+> +	struct mutex lock;
+> +};
+> +
+> +int registry_add(struct registry *registry, struct registry_record *record);
+> +void registry_remove(struct registry *registry,
+> +		     struct registry_record *record);
+> +
+> +#ifdef CONFIG_OF
+> +struct registry_record *registry_find_by_of_node(struct registry *registry,
+> +						 struct device_node *np);
+> +#endif
+> +
+> +#endif
+> 
 
