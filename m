@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121AbaKEWl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:41:29 -0500
-Received: from smtprelay0052.hostedemail.com ([216.40.44.52]:50926 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750796AbaKEWl2 (ORCPT
+	id S1751156AbaKEWoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:44:22 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:54101 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaKEWoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:41:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:966:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:4385:5007:6117:6119:6261:6630:7875:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12438:12517:12519:12555:12740:13019:13069:13095:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: order02_29a30bf8ce43e
-X-Filterd-Recvd-Size: 2841
-Message-ID: <1415227284.6634.26.camel@perches.com>
-Subject: Re: [PATCH V3] x86, cpu: trivial printk formatting fixes
-From: Joe Perches <joe@perches.com>
-To: Steven Honeyman <stevenhoneyman@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jiri Kosina <trivial@kernel.org>, x86@kernel.org,
+	Wed, 5 Nov 2014 17:44:21 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Ingo Molnar <mingo@redhat.com>,
         linux-kernel@vger.kernel.org
-Date: Wed, 05 Nov 2014 14:41:24 -0800
-In-Reply-To: <1415226516-20637-1-git-send-email-stevenhoneyman@gmail.com>
-References: <1415226516-20637-1-git-send-email-stevenhoneyman@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 4/6] trace: Replace seq_printf by simpler equivalents
+Organization: D03
+References: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
+	<1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
+	<20141105173454.7aa47289@gandalf.local.home>
+X-Hashcash: 1:20:141105:rostedt@goodmis.org::gN876Z2KedUtu7Dd:0000000000000000000000000000000000000000001mUy
+X-Hashcash: 1:20:141105:linux-kernel@vger.kernel.org::quQNdEr3B2Sbu+un:0000000000000000000000000000000002V5Q
+X-Hashcash: 1:20:141105:julia.lawall@lip6.fr::o6/cnuLYJqHYnSLk:0000000000000000000000000000000000000000047R3
+X-Hashcash: 1:20:141105:mingo@redhat.com::n19aH5SFQAB5RjHR:05moU
+Date: Wed, 05 Nov 2014 23:44:17 +0100
+In-Reply-To: <20141105173454.7aa47289@gandalf.local.home> (Steven Rostedt's
+	message of "Wed, 5 Nov 2014 17:34:54 -0500")
+Message-ID: <87tx2de08u.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 22:28 +0000, Steven Honeyman wrote:
-> dmesg (from util-linux) currently has two methods for reading the
-> kernel message ring buffer: /dev/kmsg and syslog(2). Since kernel
-> 3.5.0 kmsg has been the default, which escapes control characters
-> (e.g. new lines) before they are shown.
-> 
-> This change means that when dmesg is using /dev/kmsg, a 2 line printk
-> makes the output messy, because the second line does not get a
-> timestamp.
-> For example:
-> 
-> [    0.012863] CPU0: Thermal monitoring enabled (TM1)
-> [    0.012869] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
-> Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
-> [    0.012958] Freeing SMP alternatives memory: 28K (ffffffff81d86000
-> - ffffffff81d8d000)
-> [    0.014961] dmar: Host address width 39
-> 
-> Because printk.c intentionally escapes control characters, they should
-> not be there in the first place.
-> This patch fixes two occurrences of this.
-> 
-> V2: Revert change to log level, only fix the newline formatting issue
-> V3: Expand patch description
+On Wed, Nov 05 2014, Steven Rostedt <rostedt@goodmis.org> wrote:
 
-The log level change is back...
+> On Fri, 12 Sep 2014 11:25:52 +0200
+> Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+>
+>> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+>> index 5916a8e..7b9ce28 100644
+>> --- a/kernel/trace/ftrace.c
+>> +++ b/kernel/trace/ftrace.c
+>> @@ -556,13 +556,13 @@ static int function_stat_cmp(void *p1, void *p2)
+>>  static int function_stat_headers(struct seq_file *m)
+>>  {
+>>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>> -	seq_printf(m, "  Function                               "
+>> -		   "Hit    Time            Avg             s^2\n"
+>> -		      "  --------                               "
+>> -		   "---    ----            ---             ---\n");
+>> +	seq_puts(m,
+>> +		 "  Function                               " "Hit    Time            Avg             s^2\n"
+>> +		 "  --------                               " "---    ----            ---             ---\n");
+>
+> Please keep the original format. I know that it's considered bad form
+> to split strings like this, but I consider this one of the exceptions
+> to the rule.
 
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-[]
-> @@ -487,10 +487,8 @@ static void init_intel(struct cpuinfo_x86 *c)
->  
->  		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
->  		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
-> -			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
-> -				" Set to 'normal', was 'performance'\n"
-> -				"ENERGY_PERF_BIAS: View and update with"
-> -				" x86_energy_perf_policy(8)\n");
-> +			pr_info_once("ENERGY_PERF_BIAS: Set to 'normal', was 'performance'\n");
-> +			pr_info_once("ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)\n");
->  			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
->  			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
->  		}
+OK. Want me to resend?
 
+>> @@ -3250,7 +3250,7 @@ static int t_show(struct seq_file *m, void *v)
+>>  	if (!t)
+>>  		return 0;
+>>  
+>> -	seq_printf(m, "%s", t->name);
+>> +	seq_puts(m, t->name);
+>
+> This is wrong and dangerous.
+>
+> What happens if "t->name" contains "%d" or "%s"?
 
+Then those characters will be printed to the seq_file, just as they
+would previously? puts doesn't interpret its string argument in any
+way...
 
+>> --- a/kernel/trace/trace_events_trigger.c
+>> +++ b/kernel/trace/trace_events_trigger.c
+>> @@ -373,7 +373,7 @@ event_trigger_print(const char *name, struct seq_file *m,
+>>  {
+>>  	long count = (long)data;
+>>  
+>> -	seq_printf(m, "%s", name);
+>> +	seq_puts(m, name);
+>
+> Again, this is wrong and dangerous.
+
+I'm pretty sure it's neither :-)
+
+Rasmus
