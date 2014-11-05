@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaKEDLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 22:11:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23387 "EHLO mga01.intel.com"
+	id S1753473AbaKEDLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 22:11:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23408 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345AbaKEDKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753334AbaKEDKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Nov 2014 22:10:41 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,317,1413270000"; 
-   d="scan'208";a="617287015"
+   d="scan'208";a="617287012"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V7 13/17] perf, x86: enable LBR callstack when recording callchain
-Date: Tue,  4 Nov 2014 21:56:09 -0500
-Message-Id: <1415156173-10035-14-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V7 12/17] perf, x86: re-organize code that implicitly enables LBR/PEBS
+Date: Tue,  4 Nov 2014 21:56:08 -0500
+Message-Id: <1415156173-10035-13-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
 References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
@@ -26,49 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yan, Zheng <zheng.z.yan@intel.com>
 
-Only enable LBR callstack when user requires fp callgraph. The feature
-is not available when PERF_SAMPLE_BRANCH_STACK or PERF_SAMPLE_STACK_USER
-is required.
-Also, this feature only affects how to get user callchain. The kernel
-callchain is always got by frame pointers.
+make later patch more readable, no logic change.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 59 ++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 30 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2f79b9d..f454620 100644
+index 646e705..2f79b9d 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -425,10 +425,24 @@ int x86_pmu_hw_config(struct perf_event *event)
- 			if (!event->attr.exclude_kernel)
- 				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
- 		}
--	}
-+	} else if (x86_pmu_has_lbr_callstack() &&
-+		   (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+		   !(event->attr.sample_type & PERF_SAMPLE_STACK_USER) &&
-+		   !has_branch_stack(event) &&
-+		   !event->attr.exclude_user &&
-+		   (event->attach_state & PERF_ATTACH_TASK)) {
-+		/*
-+		 * user did not specify branch_sample_type,
-+		 * try using the LBR call stack facility to
-+		 * record call chains of user program.
-+		 */
-+		event->attr.branch_sample_type =
-+			PERF_SAMPLE_BRANCH_USER |
-+			PERF_SAMPLE_BRANCH_CALL_STACK;
+@@ -395,36 +395,35 @@ int x86_pmu_hw_config(struct perf_event *event)
  
--	if (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK)
-+		/* needs PMU specific data to save LBR stack */
- 		event->attach_state |= PERF_ATTACH_TASK_DATA;
+ 		if (event->attr.precise_ip > precise)
+ 			return -EOPNOTSUPP;
+-		/*
+-		 * check that PEBS LBR correction does not conflict with
+-		 * whatever the user is asking with attr->branch_sample_type
+-		 */
+-		if (event->attr.precise_ip > 1 &&
+-		    x86_pmu.intel_cap.pebs_format < 2) {
+-			u64 *br_type = &event->attr.branch_sample_type;
+-
+-			if (has_branch_stack(event)) {
+-				if (!precise_br_compat(event))
+-					return -EOPNOTSUPP;
+-
+-				/* branch_sample_type is compatible */
+-
+-			} else {
+-				/*
+-				 * user did not specify  branch_sample_type
+-				 *
+-				 * For PEBS fixups, we capture all
+-				 * the branches at the priv level of the
+-				 * event.
+-				 */
+-				*br_type = PERF_SAMPLE_BRANCH_ANY;
+-
+-				if (!event->attr.exclude_user)
+-					*br_type |= PERF_SAMPLE_BRANCH_USER;
+-
+-				if (!event->attr.exclude_kernel)
+-					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+-			}
 +	}
++	/*
++	 * check that PEBS LBR correction does not conflict with
++	 * whatever the user is asking with attr->branch_sample_type
++	 */
++	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
++		u64 *br_type = &event->attr.branch_sample_type;
++
++		if (has_branch_stack(event)) {
++			if (!precise_br_compat(event))
++				return -EOPNOTSUPP;
++
++			/* branch_sample_type is compatible */
++
++		} else {
++			/*
++			 * user did not specify  branch_sample_type
++			 *
++			 * For PEBS fixups, we capture all
++			 * the branches at the priv level of the
++			 * event.
++			 */
++			*br_type = PERF_SAMPLE_BRANCH_ANY;
++
++			if (!event->attr.exclude_user)
++				*br_type |= PERF_SAMPLE_BRANCH_USER;
++
++			if (!event->attr.exclude_kernel)
++				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+ 		}
+ 	}
  
- 	/*
- 	 * Generate PMC IRQs:
 -- 
 1.8.3.2
 
