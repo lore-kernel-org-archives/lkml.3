@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaKEWuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:50:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36209 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaKEWut (ORCPT
+	id S1751340AbaKEWvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:51:53 -0500
+Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:59951 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750867AbaKEWvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:50:49 -0500
-Date: Wed, 5 Nov 2014 14:50:49 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Hartley Sweeten <HartleyS@visionengravers.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] staging: comedi: split bus support into separate
- modules
-Message-ID: <20141105225049.GA12361@kroah.com>
-References: <1414777659-25578-1-git-send-email-abbotti@mev.co.uk>
- <DC148C5AA1CEBA4E87973D432B1C2D882601ABA4@P3PWEX4MB008.ex4.secureserver.net>
- <5454086D.6000401@mev.co.uk>
- <DC148C5AA1CEBA4E87973D432B1C2D882601B051@P3PWEX4MB008.ex4.secureserver.net>
- <545412F3.60502@mev.co.uk>
- <545414A6.9090101@mev.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545414A6.9090101@mev.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 5 Nov 2014 17:51:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:6119:6261:7901:9121:10004:10400:10848:10967:11026:11232:11233:11473:11658:11914:12296:12438:12517:12519:12679:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gold52_84697b7d0832b
+X-Filterd-Recvd-Size: 2601
+Message-ID: <1415227908.6634.30.camel@perches.com>
+Subject: Re: [PATCH 4/6] trace: Replace seq_printf by simpler equivalents
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 05 Nov 2014 14:51:48 -0800
+In-Reply-To: <20141105173454.7aa47289@gandalf.local.home>
+References: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
+	 <1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
+	 <20141105173454.7aa47289@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 11:00:54PM +0000, Ian Abbott wrote:
-> On 31/10/14 22:53, Ian Abbott wrote:
-> >I like the idea of the core comedi module being separated from all the
-> >various buses. And other buses can be added easily without pulling extra
-> >dependencies into the core (e.g. for platform or spi devices).
+On Wed, 2014-11-05 at 17:34 -0500, Steven Rostedt wrote:
+> On Fri, 12 Sep 2014 11:25:52 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+> > Using seq_printf to print a simple string or a single character is a
+> > lot more expensive than it needs to be, since seq_puts and seq_putc
+> > exist.
+[]
+> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+[]
+> @@ -556,13 +556,13 @@ static int function_stat_cmp(void *p1, void *p2)
+> >  static int function_stat_headers(struct seq_file *m)
+> >  {
+> >  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> > -	seq_printf(m, "  Function                               "
+> > -		   "Hit    Time            Avg             s^2\n"
+> > -		      "  --------                               "
+> > -		   "---    ----            ---             ---\n");
+> > +	seq_puts(m,
+> > +		 "  Function                               " "Hit    Time            Avg             s^2\n"
+> > +		 "  --------                               " "---    ----            ---             ---\n");
 > 
-> And if this get's accepted, I'd like to complete the separation by moving
-> the PCI, USB and PCMCIA stuf out of the "comedidev.h" header into their own
-> headers, which obviously means small edits to most of the low-level drivers
-> to #include different headers. (But then, "comedi_pci.h" could #include
-> <linux/pci.h> for example.)
+> Please keep the original format. I know that it's considered bad form
+> to split strings like this, but I consider this one of the exceptions
+> to the rule.
 
-Hartley, any objection to me applying this series?
+Why is that?
 
-greg k-h
+btw: when the strings fragments are put on the same line,
+it's nicer to take out the intermediate joining " " bits too.
+
+I'd've probably used 2 seq_puts calls like:
+
+	seq_puts(m, "  Function                               Hit    Time            Avg             s^2\n");
+	seq_puts(m, "  --------                               ---    ----            ---             ---\n");
+
+
