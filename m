@@ -1,66 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaKELOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 06:14:50 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:62033 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaKELOt convert rfc822-to-8bit (ORCPT
+	id S1754632AbaKELQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 06:16:51 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:45795 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208AbaKELQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 06:14:49 -0500
+	Wed, 5 Nov 2014 06:16:50 -0500
+Subject: [PATCH v2] hwmon: (ibmpowernv) Use platform 'id_table' to probe the
+ device
+To: jdelvare@suse.de, linux@roeck-us.net
+From: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
+Cc: benh@au1.ibm.com, linux-kernel@vger.kernel.org, michaele@au1.ibm.com
+Date: Wed, 05 Nov 2014 16:45:14 +0530
+Message-ID: <20141105110848.6183.55611.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <1415185699-28292-1-git-send-email-geert@linux-m68k.org>
-References: <1415185699-28292-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 5 Nov 2014 12:14:46 +0100
-X-Google-Sender-Auth: 5vFEBrfohmX73yJQ0_wX-vNX3Fg
-Message-ID: <CAMuHMdXVniq3oNwdaXRgj3GG3STbncAQfam03poNnGkEe8XPpA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.18-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110511-0009-0000-0000-00000203AF83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 12:08 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.18-rc3[1]  to v3.18-rc2[3], the summaries are:
->   - build errors: +5/-21
+The current driver probe() function assumes the sensor device to be
+alwary present and gets executed every time if the driver is loaded,
+but the appropriate hardware could not be present.
 
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtblk_dev_page.blk_config.capacity’):  =>
-152:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtblk_dev_page.blk_config.seg_max’):  =>
-151:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtblk_dev_page.host_features’):  => 149:3
-  + /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error:
-(near initialization for ‘virtnet_dev_page.host_features’):  => 119:3
+So, move the platform device creation as part of platform init code
+and use the 'id_table' to check if the device present or not.
 
-sh-randconfig
+Signed-off-by: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
+---
 
-  + /home/kisskb/slave/src/net/bridge/netfilter/nft_reject_bridge.c:
-error: implicit declaration of function 'csum_ipv6_magic'
-[-Werror=implicit-function-declaration]:  => 240:3
+Changes in v2
+=============
+- Improve readability in error case if 'sensors' not found, also log
+  the using 'pr_err'.
 
-s390-allyesconfig
-s390-allmodconfig
-cris-allyesconfig
-cris-allmodconfig
-powerpc-allyesconfig
-powerpc-allmodconfig
+ arch/powerpc/platforms/powernv/opal-sensor.c |   20 ++++++++
+ drivers/hwmon/ibmpowernv.c                   |   67 +++++++-------------------
+ 2 files changed, 39 insertions(+), 48 deletions(-)
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/8044/ (120 out of 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/8016/ (all 119 configs)
+diff --git a/arch/powerpc/platforms/powernv/opal-sensor.c b/arch/powerpc/platforms/powernv/opal-sensor.c
+index 10271ad..4ab67ef 100644
+--- a/arch/powerpc/platforms/powernv/opal-sensor.c
++++ b/arch/powerpc/platforms/powernv/opal-sensor.c
+@@ -20,7 +20,9 @@
+ 
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
++#include <linux/of_platform.h>
+ #include <asm/opal.h>
++#include <asm/machdep.h>
+ 
+ static DEFINE_MUTEX(opal_sensor_mutex);
+ 
+@@ -64,3 +66,21 @@ out:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(opal_get_sensor_data);
++
++static __init int opal_sensor_init(void)
++{
++	struct platform_device *pdev;
++	struct device_node *sensor;
++
++	sensor = of_find_node_by_path("/ibm,opal/sensors");
++	if (!sensor) {
++		pr_err("Opal node 'sensors' not found\n");
++		return -ENODEV;
++	}
++
++	pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
++	of_node_put(sensor);
++
++	return PTR_ERR_OR_ZERO(pdev);
++}
++machine_subsys_initcall(powernv, opal_sensor_init);
+diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
+index 6a30eee..c7577b8 100644
+--- a/drivers/hwmon/ibmpowernv.c
++++ b/drivers/hwmon/ibmpowernv.c
+@@ -74,9 +74,6 @@ struct platform_data {
+ 	u32 sensors_count; /* Total count of sensors from each group */
+ };
+ 
+-/* Platform device representing all the ibmpowernv sensors */
+-static struct platform_device *pdevice;
+-
+ static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
+ 			   char *buf)
+ {
+@@ -99,7 +96,7 @@ static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
+ 	return sprintf(buf, "%u\n", x);
+ }
+ 
+-static int __init get_sensor_index_attr(const char *name, u32 *index,
++static int get_sensor_index_attr(const char *name, u32 *index,
+ 					char *attr)
+ {
+ 	char *hash_pos = strchr(name, '#');
+@@ -136,7 +133,7 @@ static int __init get_sensor_index_attr(const char *name, u32 *index,
+  * which need to be mapped as fan2_input, temp1_max respectively before
+  * populating them inside hwmon device class.
+  */
+-static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
++static int create_hwmon_attr_name(struct device *dev, enum sensors type,
+ 					 const char *node_name,
+ 					 char *hwmon_attr_name)
+ {
+@@ -172,7 +169,7 @@ static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
+ 	return 0;
+ }
+ 
+-static int __init populate_attr_groups(struct platform_device *pdev)
++static int populate_attr_groups(struct platform_device *pdev)
+ {
+ 	struct platform_data *pdata = platform_get_drvdata(pdev);
+ 	const struct attribute_group **pgroups = pdata->attr_groups;
+@@ -180,11 +177,6 @@ static int __init populate_attr_groups(struct platform_device *pdev)
+ 	enum sensors type;
+ 
+ 	opal = of_find_node_by_path("/ibm,opal/sensors");
+-	if (!opal) {
+-		dev_dbg(&pdev->dev, "Opal node 'sensors' not found\n");
+-		return -ENODEV;
+-	}
+-
+ 	for_each_child_of_node(opal, np) {
+ 		if (np->name == NULL)
+ 			continue;
+@@ -221,7 +213,7 @@ static int __init populate_attr_groups(struct platform_device *pdev)
+  * to the name required by the higher 'hwmon' driver like fan1_input, temp1_max
+  * etc..
+  */
+-static int __init create_device_attrs(struct platform_device *pdev)
++static int create_device_attrs(struct platform_device *pdev)
+ {
+ 	struct platform_data *pdata = platform_get_drvdata(pdev);
+ 	const struct attribute_group **pgroups = pdata->attr_groups;
+@@ -280,7 +272,7 @@ exit_put_node:
+ 	return err;
+ }
+ 
+-static int __init ibmpowernv_probe(struct platform_device *pdev)
++static int ibmpowernv_probe(struct platform_device *pdev)
+ {
+ 	struct platform_data *pdata;
+ 	struct device *hwmon_dev;
+@@ -309,52 +301,31 @@ static int __init ibmpowernv_probe(struct platform_device *pdev)
+ 	return PTR_ERR_OR_ZERO(hwmon_dev);
+ }
+ 
++static const struct platform_device_id opal_sensor_driver_ids[] = {
++	{
++		.name = "opal-sensor",
++	},
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, opal_sensor_driver_ids);
++
+ static struct platform_driver ibmpowernv_driver = {
+-	.driver = {
+-		.owner = THIS_MODULE,
+-		.name = DRVNAME,
++	.probe		= ibmpowernv_probe,
++	.id_table	= opal_sensor_driver_ids,
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= DRVNAME,
+ 	},
+ };
+ 
+ static int __init ibmpowernv_init(void)
+ {
+-	int err;
+-
+-	pdevice = platform_device_alloc(DRVNAME, 0);
+-	if (!pdevice) {
+-		pr_err("Device allocation failed\n");
+-		err = -ENOMEM;
+-		goto exit;
+-	}
+-
+-	err = platform_device_add(pdevice);
+-	if (err) {
+-		pr_err("Device addition failed (%d)\n", err);
+-		goto exit_device_put;
+-	}
+-
+-	err = platform_driver_probe(&ibmpowernv_driver, ibmpowernv_probe);
+-	if (err) {
+-		if (err != -ENODEV)
+-			pr_err("Platform driver probe failed (%d)\n", err);
+-
+-		goto exit_device_del;
+-	}
+-
+-	return 0;
+-
+-exit_device_del:
+-	platform_device_del(pdevice);
+-exit_device_put:
+-	platform_device_put(pdevice);
+-exit:
+-	return err;
++	return platform_driver_register(&ibmpowernv_driver);
+ }
+ 
+ static void __exit ibmpowernv_exit(void)
+ {
+ 	platform_driver_unregister(&ibmpowernv_driver);
+-	platform_device_unregister(pdevice);
+ }
+ 
+ MODULE_AUTHOR("Neelesh Gupta <neelegup@linux.vnet.ibm.com>");
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
