@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043AbaKEOFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:05:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:62365 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996AbaKEOFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:05:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="602747162"
-Date: Wed, 5 Nov 2014 19:34:01 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Jonathan Corbet <corbet@lwn.net>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v8 1/5] PM / Runtime: Add getter for querying the IRQ
- safe option
-Message-ID: <20141105140401.GO1870@intel.com>
-References: <1413795888-18559-1-git-send-email-k.kozlowski@samsung.com>
- <20141031142241.GA17547@amd>
- <1414766416.6537.6.camel@AMDC1943>
- <3452823.YQ5FR2FtKz@avalon>
- <20141103162728.GB1870@intel.com>
- <20141103170408.GD4042@n2100.arm.linux.org.uk>
+	id S1755072AbaKEOGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:06:25 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42812 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743AbaKEOGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:06:22 -0500
+Message-ID: <545A2EDB.5040801@kernel.org>
+Date: Wed, 05 Nov 2014 14:06:19 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141103170408.GD4042@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>	 <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>	 <545A218F.5060301@kernel.org> <1415195855.3660.4.camel@mm-sol.com>
+In-Reply-To: <1415195855.3660.4.camel@mm-sol.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 05:04:08PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Nov 03, 2014 at 09:57:28PM +0530, Vinod Koul wrote:
-> > On Sat, Nov 01, 2014 at 02:29:42AM +0200, Laurent Pinchart wrote:
-> > > Many other drivers suffer from the same problem. While I won't reject your 
-> > > proposed fix, I would prefer a more generic approach.
-> > > 
-> > > One option that has been discussed previously was to use a work queue to delay 
-> > > starting the DMA transfer to an interruptible context where 
-> > > pm_runtime_get_sync() could be called. However, as Russell pointed out [1], 
-> > > even that won't work in all cases as the DMA slave might need the transfer to 
-> > > be started before enabling part of its hardware (OMAP audio seem to be such a 
-> > > case).
-> > > 
-> > > I've heard a rumor of a possible DMA engine rework to forbid calling the 
-> > > descriptor preparation API from atomic context. This could be used as a base 
-> > > to implement runtime PM, as DMA slave drivers should not prepare descriptors 
-> > > if they don't need to use them. However that's a long term plan, and we need a 
-> > > solution sooner than that.
-> > 
-> > Well it is not a rumour :)
-> > 
-> > I have been contemplating that now that async_tx will be killed so we dont
-> > have to worry about that usage. For the slave dma usage, we can change the
-> > prepare API to be non atomic. I think the users will be okay with approach.
-> > This way drivers can use runtime pm calls in prepare.
+On 05/11/14 13:57, Ivan T. Ivanov wrote:
 > 
-> Except we /do/ have a fair number of places where the prep calls are made
-> from atomic contexts, particularly in serial drivers.  You'd need to
-> introduce a tasklet into almost every serial driver which doesn't
-> already have one to restart RX DMA after an error or pause.  Eg,
+> On Wed, 2014-11-05 at 13:09 +0000, Jonathan Cameron wrote:
+>> On 03/11/14 15:24, Ivan T. Ivanov wrote:
+>>> From: Stanimir Varbanov <svarbanov@mm-sol.com>
+>>>
+>>> The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+>>> 15 bits resolution and register space inside PMIC accessible across
+>>> SPMI bus.
+>>>
+>>> The vadc driver registers itself through IIO interface.
+>>>
+>>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>> Hi Ivan,
+>>
+>> Couple of utterly tiny bits inline.  The biggest one is that
+>> you store some info about the calibration that you never actually
+>> use... Left over from some debugging perhaps?
+>>
+>> Jonathan
 > 
-> drivers/tty/serial/amba-pl011.c
-> drivers/tty/serial/pch_uart.c
-> drivers/tty/serial/imx.c
+> <snip>
 > 
-> Probably also:
+>>> +
+>>> +/*
+>>> + * VADC_CALIB_ABSOLUTE: uses the 625mV and 1.25V as reference channels.
+>>> + * VADC_CALIB_RATIOMETRIC: uses the reference voltage (1.8V) and GND for
+>>> + * calibration.
+>>> + */
+>>> +enum vadc_calibration {
+>>> +       VADC_CALIB_ABSOLUTE = 0,
+>>> +       VADC_CALIB_RATIOMETRIC
+>>> +};
+>>> +
+>>> +/**
+>>> + * struct vadc_linear_graph - Represent ADC characteristics.
+>>> + * @dy: numerator slope to calculate the gain.
+>> As dy is always equal to vref-gnd you could drop it and use those
+>> directly...
+>>
+>> Conversly you store vref or grnd and never use them...
 > 
-> drivers/net/ethernet/micrel/ks8842.c
-> 
-> There could well be other places as well, I've not gone through and
-> checked exhaustively.
-Yes that would be required to be done first. Or is there any better
-alternative proposal, am all ears
+> I am not sure I am following you. Please take a look in 
+> vadc_measure_ref_points() and vadc_calibrate().
+Good point on grnd, but vref is set but never read anywhere that I can find..
 
--- 
-~Vinod
+> 
+>>
+>>> + * @dx: denominator slope to calculate the gain.
+>>> + * @vref: A/D word of the voltage reference used for the channel.
+>>> + * @gnd: A/D word of the ground reference used for the channel.
+>>> + *
+>>> + * Each ADC device has different offset and gain parameters which are
+>>> + * computed to calibrate the device.
+>>> + */
+>>> +struct vadc_linear_graph {
+>>> +       s32 dy;
+>>> +       s32 dx;
+>>> +       s32 vref;
+>>> +       s32 gnd;
+>>> +};
+>>> +
+>>>
+> 
+> Will address blank line comment.
+> 
+> Regards,
+> Ivan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
