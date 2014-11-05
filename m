@@ -1,134 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaKEWWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:22:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35956 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172AbaKEWWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:22:01 -0500
-Date: Wed, 5 Nov 2014 23:21:59 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>, andi@firstfloor.org
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Subject: Re: [PATCH v2 03/13] backports: allow for different backport prefix
-Message-ID: <20141105222159.GS12953@wotan.suse.de>
-References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com> <1415157517-15442-4-git-send-email-mcgrof@do-not-panic.com> <1415173596.2589.3.camel@sipsolutions.net> <20141105091610.GM12953@wotan.suse.de> <1415179364.2589.13.camel@sipsolutions.net> <20141105194215.GN12953@wotan.suse.de> <1415222258.7485.10.camel@sipsolutions.net>
+	id S1751423AbaKEWWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:22:14 -0500
+Received: from 3.mo6.mail-out.ovh.net ([178.33.253.26]:44590 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751172AbaKEWWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 17:22:12 -0500
+X-Greylist: delayed 18712 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 17:22:11 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415222258.7485.10.camel@sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1415203287-21517-7-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1415203287-21517-7-git-send-email-boris.brezillon@free-electrons.com>
+Date: Wed, 5 Nov 2014 17:22:57 +0100
+Message-ID: <CACh+v5N8dXaH3ZNGr=MKXbQRU7nOMPLvxT0rEsZrbSKj20b_Dg@mail.gmail.com>
+Subject: Re: [PATCH v2 06/11] memory: atmel-ebi: add DT bindings documentation
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-Ovh-Tracer-Id: 5684105681774925848
+X-Ovh-Remote: 209.85.215.48 (mail-la0-f48.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrheduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrheduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Boris,
 
-Andi, some reference to some of your old module namespace work below for
-a different use case.
+2014-11-05 17:01 GMT+01:00 Boris Brezillon <boris.brezillon@free-electrons.com>:
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> ---
+>  .../bindings/memory-controllers/atmel-ebi.txt      | 153 +++++++++++++++++++++
+>  1 file changed, 153 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+>
+> diff --git a/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> new file mode 100644
+> index 0000000..dc2c34f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+> @@ -0,0 +1,153 @@
+> +* Device tree bindings for Atmel EBI
+> +
+> +The External Bus Interface (EBI) controller is a bus where you can connect
+> +asynchronous (NAND, NOR, SRAM, ....) and synchronous memories (SDR/DDR SDRAMs).
+> +The EBI provides a glue-less interface to asynchronous memories though the SMC
+> +(Static Memory Controller).
+> +Synchronous memories (and some asynchronous memories like NANDs) can be
+> +attached to specialized controllers which are responsible for configuring the
+> +bus appropriately according to the connected device.
+> +In the other hand, the bus interface can be automated for simple asynchronous
+> +devices.
+> +
+> +Required properties:
+> +
+> +- compatible:          "atmel,at91sam9260-ebi"
+> +                       "atmel,at91sam9261-ebi"
+> +                       "atmel,at91sam9263-ebi0"
+> +                       "atmel,at91sam9263-ebi1"
+> +                       "atmel,at91sam9g45-ebi"
+> +                       "atmel,at91sam9x5-ebi"
+> +                       "atmel,sama5d3-ebi"
+> +
+> +- reg:                 Contains offset/length value for EBI memory mapping.
+> +                       This property might contain several entries if the EBI
+> +                       memory range is not contiguous
+> +
+> +- #address-cells:      Must be 2.
+> +                       The first cell encodes the CS.
+> +                       The second cell encode the offset into the CS memory
+> +                       range.
+> +
+> +- #size-cells:         Must be set to 1.
+> +
+> +- ranges:              Encodes CS to memory region association.
+> +
+> +- clocks:              Clock feeding the EBI controller.
+> +                       See clock-bindings.txt
+> +
+> +Child chip-select (cs) nodes contain the memory devices nodes connected to
+> +such as NOR (e.g. cfi-flash) and NAND.
+> +There might be board specific devices like FPGAs.
+> +You'll define you device requirements in these child nodes.
+> +
+> +Required child cs node properties:
+> +
+> +- #address-cells:      Must be 2.
+> +
+> +- #size-cells:         Must be 1.
+> +
+> +- ranges:              Empty property indicating that child nodes can inherit
+> +                       memory layout.
+> +
+> +Optional child cs node properties:
+> +- atmel,generic-dev            boolean property specifying if the device is
+> +                               a generic device.
+> +                               The following properties are only parsed if
+> +                               this property is present.
+> +                               Specialized devices are attached to specialized
+> +                               controllers which should configure the bus
+> +                               appropriately.
 
-On Wed, Nov 05, 2014 at 10:17:38PM +0100, Johannes Berg wrote:
-> On Wed, 2014-11-05 at 20:42 +0100, Luis R. Rodriguez wrote:
-> 
-> > > No, I mean if bp_prefix were to contain some special character like [.
-> > > This can't actually happen though.
-> > 
-> > OK if that can't happen then I don't see the point.
-> 
-> Where by "can't happen" I mean that Kconfig probably wouldn't be happy
-> about it :-)
+What do you mean by specialized devices ? Can you give an example ?
 
-OK but bp_prefix is also used with a regular print several times and not
-just for regexp so this would break either way. To be safe I'll add the
-re.escape(bp_prefix) though.
-
-> > How about:
-> > 
-> > if integrate:
-> > 	kconfig_prefix = "CONFIG_"
-> > 	project_prefix = "BACKPORT_"
-> > else:
-> > 	kconfig_prefix = "CPTCFG_"
-> > 	# implied by kconfig_prefix
-> > 	project_prefix = ""
-> > full_prefix = kconfig_prefix + project_prefix
-> 
-> Yeah, this seems like decent naming.
-> 
-> > But note that we special case things all over for when the bp_prefix is 'CPTCFG'
-> > and the reason is that it is used when the kconfig getenv trick is used. I suppose
-> > we can infer that the kconfig trick is used when kconfig_prefix != 'CONFIG_' though.
-> > But the question still stands: why do we want to make these configurable? As it
-> > stands I actually hard code things mostly, I can clean this up but would prefer
-> > to deal with just the above.
-> 
-> I'm not sure where that's really the case? The one thing you did was use
-> CPTCFG_ in some places like the version, but that was independent of
-> this and could just be hardcoded there?
-
-In later code I used CPTCFG_ instead of 'not integrate' but this also carries an
-implied 'you are using kconfig trick', there were a few cases but surely I can
-generalize this with the above and as I mentioned inferring the kconfig trick was
-used if needed (can't think off the top of my head where but do think I needed
-this). Again though I'd prefer to think more about the *reason* for why we want
-congigurability of the prefix Vs thinking about solving the problems for it
-right now. My concerns is once code is baked we'll have to support it. Since
-people are stupid I expect things to be abused in the most crazy ways possible
-here and my fear is of some of these use case to come and haunt us. Worse thing
-I can think of is folks doing double integration with two versions of backports,
-say backports-3.18, backports-3.19. Obviously this is grotesque and having code
-in place to allow for this is begging for abuse.
-
-> > Also note that in some places we use BACKPORT vs BACKPORT_ so a sub or another
-> > variable would be needed.
-> 
-> I also didn't see that, why would that ever be needed?
-
-lib/kconfig.py uses it to negate the built-in symbol for integration for instance
-but come to think of it I think we can do this without the 'BACKPORT' and just
-use 'BACKPORT_' and no sub'ing, will try...
-
-> > As it stands in the v2 series packaging gets no BACKPORT_ prefix as the
-> > kconfig getenv() CTPCFG_ trick is used, however for integration we
-> > do add the prefix everywhere as we are carrying code into the kernel,
-> > we then use this to easily make this symbol depend on the non backported
-> > respective symbol making them mutually exclusive. Because of these two
-> > things I think a BACKPORT_ prefix for things we carry in is proper. This
-> > applies to the BACKPORT_BPAUTO and versioning entries, BACKPORT_KERNEL_3_18
-> > and so on.
-> 
-> Sure.
-> 
-> > I am not sure what other prefix we could possibly use here for integration.
-> 
-> Well, in theory you could imagine having two people backport different
-> subsystems and trying to integrate them both into a backport kernel ...
-> seems unlikely and will conflict on other levels (e.g. compat.ko) but
-> still.
-
-Seems you've though about it too :), indeed sharing compat would be an issue
-that would need to be addressed if that is to be a desirable option on
-backports.
-
-You know, this use case seems unavoidable so I'll just proceed with the
-configurability of it. But note that it seems we're both in agreement
-that right now what you described requires more work before in any way
-shape or form folks start using it for the exact purpose you described.
-I also think Andi Kleen's module namespace might be a much better solution to
-that problem [0], we'd just have to carry the code ourselves as I am not
-sure if this is ever going to get upstream as it was originally nacked.
-
-[0] https://backports.wiki.kernel.org/index.php/Documentation/backports/hacking/todo#Module_namespaces
-
-> Anyway, I don't really care if you don't make this configurable, but I
-> don't like the way you're doing string manipulation to figure out what
-> you want :-) That was really the reason for suggesting to split the
-> existing prefix variable into two pieces. You have it today, after all,
-> in theory you could have gotten rid of it completely and just pass the
-> "integrate" flag around.
-
-Yeah point taken. I'll go with the above last proposed variables and
-try to remove the other use cases.
-
-  Luis
+> +
+> +- atmel,bus-width:             width of the asynchronous device's data bus
+> +                               8, 16 or 32.
+> +                               8 if not present.
+> +
+> +- atmel,byte-access-type       "write" or "select" (see Atmel datasheet).
+> +                               "select" if not present.
+> +
+> +- atmel,read-mode              "nrd" or "ncs".
+> +                               "ncs" is not present.
+> +
+> +- atmel,write-mode             "nwe" or "ncs".
+> +                               "ncs" is not present.
+> +
+> +- atmel,exnw-mode              "disabled", "frozen" or "ready".
+> +                               "disabled" if not present.
+> +
+> +- atmel,page-mode              enable page mode if present. The provided value
+> +                               defines the page size (supported values: 4, 8,
+> +                               16 and 32).
+> +
+> +Optional device timings expressed in nanoseconds (if the property is not
+> +present 0 is assumed):
+> +
+> +- atmel,ncs-rd-setup-ns
+> +- atmel,nrd-setup-ns
+> +- atmel,ncs-wr-setup-ns
+> +- atmel,nwe-setup-ns
+> +- atmel,ncs-rd-pulse-ns
+> +- atmel,nrd-pulse-ns
+> +- atmel,ncs-wr-pulse-ns
+> +- atmel,nwe-pulse-ns
+> +- atmel,nwe-cycle-ns
+> +- atmel,nrd-cycle-ns
+> +- atmel,tdf-ns
+> +
+> +- atmel,tdf-optimized          data float optimized mode. If present the data
+> +                               float time is optimized depending on the next
+> +                               device being accessed (next device setup
+> +                               time is substracted to the current devive data
+> +                               float time).
+> +
+> +
+> +
+> +Example:
+> +
+> +       ebi: ebi@10000000 {
+> +               compatible = "atmel,sama5d3-ebi", "simple-bus";
+> +               #address-cells = <2>;
+> +               #size-cells = <1>;
+> +               atmel,smc = <&hsmc>;
+> +               atmel,matrix = <&matrix>;
+> +               reg = <0x10000000 0x10000000
+> +                      0x40000000 0x30000000>;
+> +               ranges = <0x0 0x0 0x10000000 0x10000000
+> +                         0x1 0x0 0x40000000 0x10000000
+> +                         0x2 0x0 0x50000000 0x10000000
+> +                         0x3 0x0 0x60000000 0x10000000>;
+> +               clocks = <&mck>;
+> +
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&pinctrl_ebi_addr>;
+> +
+> +               cs@0 {
+> +                       #address-cells = <2>;
+> +                       #size-cells = <1>;
+> +                       ranges;
+> +                       atmel,generic-dev;
+> +                       atmel,read-mode = "nrd";
+> +                       atmel,write-mode = "nwe";
+> +                       atmel,bus-width = <16>;
+> +                       atmel,ncs-rd-setup-ns = <0>;
+> +                       atmel,ncs-wr-setup-ns = <0>;
+> +                       atmel,nwe-setup-ns = <8>;
+> +                       atmel,nrd-setup-ns = <16>;
+> +                       atmel,ncs-rd-pulse-ns = <84>;
+> +                       atmel,ncs-wr-pulse-ns = <84>;
+> +                       atmel,nrd-pulse-ns = <76>;
+> +                       atmel,nwe-pulse-ns = <76>;
+> +                       atmel,nrd-cycle-ns = <107>;
+> +                       atmel,nwe-cycle-ns = <84>;
+> +                       atmel,tdf-ns = <16>;
+> +
+> +                       nor: flash@0,0 {
+> +                               compatible = "cfi-flash";
+> +                               #address-cells = <1>;
+> +                               #size-cells = <1>;
+> +                               reg = <0x0 0x0 0x1000000>;
+> +                               bank-width = <2>;
+> +                       };
+> +               };
+> +       };
+> +
+> --
+> 1.9.1
+>
