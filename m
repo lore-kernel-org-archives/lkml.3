@@ -1,163 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaKEQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:53:56 -0500
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:58485 "EHLO
-	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303AbaKEQxx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:53:53 -0500
-X-TM-IMSS-Message-ID: <c12c88b900064245@nsa.gov>
-Message-ID: <545A51CB.6070107@tycho.nsa.gov>
-Date: Wed, 05 Nov 2014 11:35:23 -0500
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755115AbaKEQyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:54:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57136 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754949AbaKEQyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:54:23 -0500
+Date: Wed, 5 Nov 2014 17:54:18 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, hch@lst.de, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] chardev: Increment cdev reference count when i_cdev
+ references it
+Message-ID: <20141105165418.GD30558@quack.suse.cz>
+References: <1414008853-13200-1-git-send-email-jack@suse.cz>
+ <1414008853-13200-3-git-send-email-jack@suse.cz>
+ <20141104144611.GE7996@ZenIV.linux.org.uk>
+ <20141104153752.GB21902@quack.suse.cz>
+ <20141104154030.GI7996@ZenIV.linux.org.uk>
+ <20141104155543.GD21902@quack.suse.cz>
+ <20141104160301.GJ7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>, linux-unionfs@vger.kernel.org,
-        selinux@tycho.nsa.gov
-CC: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] SELinux: Handle opening of a unioned file
-References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154307.2555.9847.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141105154307.2555.9847.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141104160301.GJ7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 10:43 AM, David Howells wrote:
-> Handle the opening of a unioned file by trying to derive the label that would
-> be attached to the union-layer inode if it doesn't exist.
+On Tue 04-11-14 16:03:03, Al Viro wrote:
+> On Tue, Nov 04, 2014 at 04:55:43PM +0100, Jan Kara wrote:
+> > > That consequence looks broken, IMO.
+> >   Hum, it already behaves for block devices that way (and noone complained
+> > - but admittedly block devices tied to strange modules are less common than
+> > character devices). Also rmmod isn't that common IMO, but I see your point
+> > that it's unintuitive behavior.
 > 
-> If the union-layer inode does exist (as it necessarily does in overlayfs, but
-> not in unionmount), we assume that it has the right label and use that.
-> Otherwise we try to get it from the superblock.
-> 
-> If the superblock has a globally-applied label, we use that, otherwise we try
-> to transition to an appropriate label.  This union label is then stored in the
-> file_security_struct.
-> 
-> We then perform an additional check to make sure that the calling task is
-> granted permission by the union-layer inode label to open the file in addition
-> to a check to make sure that the task is granted permission to open the lower
-> file with the lower inode label.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  security/selinux/hooks.c          |   56 +++++++++++++++++++++++++++++++++++++
->  security/selinux/include/objsec.h |    1 +
->  2 files changed, 57 insertions(+)
-> 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 6fd8090cc7a5..f43f07fdc028 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -3431,6 +3431,58 @@ static int selinux_file_receive(struct file *file)
->  	return file_has_perm(cred, file, file_to_av(file));
->  }
->  
-> +/*
-> + * We have a file opened on a unioned file system that falls through to a file
-> + * on a lower layer.  If there is a union inode, we try to get the label from
-> + * that, otherwise we need to get it from the superblock.
-> + */
-> +static int selinux_file_open_union(struct file *file,
-> +				   const struct path *union_path,
-> +				   struct file_security_struct *fsec,
-> +				   const struct cred *cred)
-> +{
-> +	const struct superblock_security_struct *sbsec;
-> +	const struct inode_security_struct *isec, *dsec;
-> +	const struct task_security_struct *tsec = current_security();
-> +	struct common_audit_data ad;
-> +	const struct inode *inode = union_path->dentry->d_inode;
-> +	struct dentry *dir;
-> +	int rc;
-> +
-> +	sbsec = union_path->dentry->d_sb->s_security;
-> +
-> +	if (inode) {
-> +		isec = inode->i_security;
-> +		fsec->union_isid = isec->sid;
-> +	} else if ((sbsec->flags & SE_SBINITIALIZED) &&
-> +		   (sbsec->behavior == SECURITY_FS_USE_MNTPOINT)) {
-> +		fsec->union_isid = sbsec->mntpoint_sid;
-> +	} else {
-> +		dir = dget_parent(union_path->dentry);
-> +		dsec = dir->d_inode->i_security;
-> +
-> +		rc = security_transition_sid(
-> +			tsec->sid, dsec->sid,
-> +			inode_mode_to_security_class(file_inode(file)->i_mode),
-> +			&union_path->dentry->d_name,
-> +			&fsec->union_isid);
-> +		dput(dir);
-> +		if (rc) {
-> +			printk(KERN_WARNING "%s:  "
-> +			       "security_transition_sid failed, rc=%d (name=%pD)\n",
-> +			       __func__, -rc, file);
-> +			return rc;
-> +		}
-> +	}
+> Umm...  Since when?  The last time I looked, bdev module refcounts were
+> tied to struct gendisk, not to struct block_device.
+  Ah, right you are. So how about clearing i_cdev and dropping reference to
+it when inode is not open anymore? Doing first open after a cleanup would
+be more expensive but it doesn't seem too much. For block devices first
+open of it is also more expensive - although there bd_openers is per block
+device while for character devices we would have the openers per device
+inode.  I don't think that's a real difference in practice unless you run
+some container service. If you think it would help, we could add some
+intermediate structure for character devices with similar rules like struct
+block_device for block devices (and character device references would be
+handled in the same way as we handle gendisk references for block devices).
+However I don't think it's really worth the bother...
 
-How do we know that this union_isid will bear any relation to the actual
-SID assigned to the union inode when it is created?  If the union inode
-does not already exist, when/where does it get created?
 
-Also, would be good to create a common helper for use here, by
-selinux_dentry_init_security(), selinux_inode_init_security(), and
-may_create().  Already some seeming potential for inconsistencies there.
-
-> +
-> +	/* We need to check that the union file is allowed to be opened as well
-> +	 * as checking that the lower file is allowed to be opened.
-> +	 */
-> +	ad.type = LSM_AUDIT_DATA_PATH;
-> +	ad.u.path = *union_path;
-> +	return inode_has_perm(cred, file_inode(file), fsec->union_isid, &ad);
-
-Something is seriously wrong here; you are passing fsec->union_isid
-where we expect a permissions bitmap / access vector.
-
-> +}
-> +
->  static int selinux_file_open(struct file *file, const struct path *union_path,
->  			     const struct cred *cred)
->  {
-> @@ -3456,6 +3508,10 @@ static int selinux_file_open(struct file *file, const struct path *union_path,
->  	 * new inode label or new policy.
->  	 * This check is not redundant - do not remove.
->  	 */
-> +
-> +	if (union_path->dentry != file->f_path.dentry)
-> +		selinux_file_open_union(file, union_path, fsec, cred);
-
-Ignored return value.
-
-> +
->  	return file_path_has_perm(cred, file, open_file_to_av(file));
->  }
->  
-> diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
-> index 81fa718d5cb3..f088c080aa9e 100644
-> --- a/security/selinux/include/objsec.h
-> +++ b/security/selinux/include/objsec.h
-> @@ -54,6 +54,7 @@ struct file_security_struct {
->  	u32 sid;		/* SID of open file description */
->  	u32 fown_sid;		/* SID of file owner (for SIGIO) */
->  	u32 isid;		/* SID of inode at the time of file open */
-> +	u32 union_isid;		/* SID of would-be inodes in union top (or 0) */
->  	u32 pseqno;		/* Policy seqno at the time of file open */
->  };
->  
-> 
-> _______________________________________________
-> Selinux mailing list
-> Selinux@tycho.nsa.gov
-> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
-> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
-> 
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
