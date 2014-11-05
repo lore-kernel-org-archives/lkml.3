@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313AbaKEQGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:06:09 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43583 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949AbaKEQGH (ORCPT
+	id S1755467AbaKEQGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:06:47 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43028 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755204AbaKEQBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:06:07 -0500
-Message-ID: <545A4AE8.6070402@kernel.org>
-Date: Wed, 05 Nov 2014 16:06:00 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Peter Meerwald <pmeerw@pmeerw.net>
-CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4] iio: iadc: Qualcomm SPMI PMIC current ADC driver
-References: <1413987213-22218-1-git-send-email-iivanov@mm-sol.com>	 <5453ED55.2000003@gmx.de> <alpine.DEB.2.02.1410312128100.18476@pmeerw.net> <1415004303.407.11.camel@mm-sol.com>
-In-Reply-To: <1415004303.407.11.camel@mm-sol.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Nov 2014 11:01:35 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 04/11] mfd: syscon: Add Atmel SMC binding doc
+Date: Wed,  5 Nov 2014 17:01:20 +0100
+Message-Id: <1415203287-21517-5-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/14 08:45, Ivan T. Ivanov wrote:
-> 
-> On Fri, 2014-10-31 at 21:48 +0100, Peter Meerwald wrote:
->>> Ivan T. Ivanov schrieb am 22.10.2014 16:13:
->>>> The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
->>>> 16 bits resolution and register space inside PMIC accessible across
->>>> SPMI bus.
->>>>
->>>> The driver registers itself through IIO interface.
->>> Pretty much there, just one question I would like to double-check: The CPU of these chips is 
->> Little Endian, right?
->>> Annoyingly, you introduced a small typo in this revision, but that alone doesn't qualify for a 
->> new revision. A separate patch fixing it would probably be best. See inline.
->>
->> some minor comments below
-> 
-> Thanks, will fix them. IIO maintainers, what do you
-> prefer, new version or fallow-up patch?
-> 
+The SMC registers are used to configure Atmel EBI (External Bus Interface)
+to interface with standard memory devices (NAND, NOR, SRAM or specialized
+devices like FPGAs).
 
-Follow up please.
-> Regards,
-> Ivan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Declare this memory region as a syscon, so that different drivers can
+configure the SMC interface (mostly timing configuration) according to
+their need.
+
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ Documentation/devicetree/bindings/mfd/atmel-smc.txt | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
+
+diff --git a/Documentation/devicetree/bindings/mfd/atmel-smc.txt b/Documentation/devicetree/bindings/mfd/atmel-smc.txt
+new file mode 100644
+index 0000000..0c0cc3d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/atmel-smc.txt
+@@ -0,0 +1,19 @@
++* Device tree bindings for Atmel SMC (Static Memory Controller)
++
++The SMC registers are used to configure Atmel EBI (External Bus Interface)
++to interface with standard memory devices (NAND, NOR, SRAM or specialized
++devices like FPGAs).
++
++Required properties:
++- compatible:		should be one of the following
++			"atmel,at91sam9260-smc", "syscon"
++			"atmel,sama5d3-smc", "syscon"
++- reg:			contains offset/length value of the SMC memory
++			region.
++
++Example:
++
++smc: smc@ffffc000 {
++	compatible = "atmel,sama5d3-smc", "syscon";
++	reg = <0xffffc000 0x1000>;
++};
+-- 
+1.9.1
+
