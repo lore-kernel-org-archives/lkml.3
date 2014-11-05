@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaKEINh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:13:37 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49464 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaKEINf (ORCPT
+	id S1753389AbaKEISw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:18:52 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:48992 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaKEISs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:13:35 -0500
-Message-ID: <5459DC2C.4030707@suse.cz>
-Date: Wed, 05 Nov 2014 09:13:32 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 03:18:48 -0500
+Date: Wed, 5 Nov 2014 09:18:38 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: len.brown@intel.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@kernel.org, torvalds@linux-foundation.org, rjw@rjwysocki.net,
+        hpa@zytor.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/wait: Reimplement wait_event_freezable()
+Message-ID: <20141105081838.GN10501@worktop.programming.kicks-ass.net>
+References: <tip-d86fz1jmso9wjxa8jfpinp8o@git.kernel.org>
+ <20141104201203.GA15071@amd>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, shuah.kh@samsung.com
-CC: stable@vger.kernel.org, satoru.takeuchi@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/144] 3.12.32-stable review
-References: <cover.1414759455.git.jslaby@suse.cz> <20141031165016.GA7958@roeck-us.net>
-In-Reply-To: <20141031165016.GA7958@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141104201203.GA15071@amd>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014, 05:50 PM, Guenter Roeck wrote:
-> On Fri, Oct 31, 2014 at 02:14:07PM +0100, Jiri Slaby wrote:
->> This is the start of the stable review cycle for the 3.12.32 release.
->> There are 144 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
->>
->> Responses should be made by Tue Nov  4 13:44:15 CET 2014.
->> Anything received after that time might be too late.
->>
-> Build results:
-> 	total: 135 pass: 135 fail: 0
-> Qemu test results:
-> 	total: 27 pass: 27 fail: 0
+On Tue, Nov 04, 2014 at 09:12:03PM +0100, Pavel Machek wrote:
+> Hi!
 > 
-> This is with v3.12.31-145-g6eb2b7e.
+> > Commit-ID:  36df04bc5273a046f53b5e359febc1225f85aa7b
+> > Gitweb:     http://git.kernel.org/tip/36df04bc5273a046f53b5e359febc1225f85aa7b
+> > Author:     Peter Zijlstra <peterz@infradead.org>
+> > AuthorDate: Wed, 29 Oct 2014 12:21:57 +0100
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Tue, 4 Nov 2014 07:17:45 +0100
+> > 
+> > sched/wait: Reimplement wait_event_freezable()
+> > 
+> > Provide better implementations of wait_event_freezable() APIs.
+> > 
+> > The problem is with freezer_do_not_count(), it hides the thread from
+> > the freezer, even though this thread might not actually freeze/sleep
+> > at all.
+> 
+> Can you elaborate?
+> 
+> The thread will be in freezer_do_not_count() area, but it is just
+> waiting for event there, it should not do much damage.
 
-On 11/03/2014, 08:15 PM, Shuah Khan wrote:
-> Compiled and booted on my test systems. No dmesg regressions.
+There are wait_event()s for which the cond expands to quite a lot of
+code. This code can still be running while the freezer reports success.
+This can happen because we're hidden by the do_not_count logic.
 
-Thank you both!
+Also, I initially overlooked that freezer_count() did a try_to_freeze().
 
--- 
-js
-suse labs
+> If this is bugfix, should it be cc-ed to stable?
+
+Its not a bugfix per se, the issue above is rare and extremely hard to
+hit, esp since the freezer tries multiple times before giving up. But
+its a theoretical possibility.
+
+> Did you test it with suspend/hibernation? Because I can't really see
+> how it works.
+
+It calls try_to_freeze() after each schedule(). But no, I've not
+actually tried.
+
+If we're stuck in the schedule, waiting for the event, freeze_task()
+will wake us up and then we'll find freeing() true and call into
+__refrigerator().
+
+If we're not stuck in schedule() we're running and the freezer
+can see us running and will wait for us to hit another freeze point.
+
+> > +#define __wait_event_freezable(wq, condition)				\
+> > +	___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,		\
+> > +			    schedule(); try_to_freeze())
+> > +
+
+> _Three_ underscores. And two underscore version exists, too,
+> fortunately it at least has different number of arguments.
+
+Hehe, yeah, there was a discount on underscores that day. The double
+underscore variants can be used in code along with the no underscores
+variants. The tripple one is implementation goo.
