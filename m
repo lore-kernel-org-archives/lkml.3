@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747AbaKEVhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:37:07 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55283 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751115AbaKEVhC (ORCPT
+	id S1751896AbaKEVid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:38:33 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48439 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaKEVia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:37:02 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH V2 1/5] sched: idle: cpuidle: Check the latency req before idle
-Date: Wed, 05 Nov 2014 22:57:47 +0100
-Message-ID: <1637800.Fp0noCplzq@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 5 Nov 2014 16:38:30 -0500
+Date: Wed, 05 Nov 2014 16:38:25 -0500 (EST)
+Message-Id: <20141105.163825.1433973842938441546.davem@davemloft.net>
+To: gerlitz.or@gmail.com
+Cc: therbert@google.com, joestringer@nicira.com, netdev@vger.kernel.org,
+        sathya.perla@emulex.com, jeffrey.t.kirsher@intel.com,
+        linux.nics@intel.com, amirv@mellanox.com, shahed.shaikh@qlogic.com,
+        Dept-GELinuxNICDev@qlogic.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
+References: <CANr6G5xtNYenhd8KDWx+kRcnSZ0fahUdAL+6Wcz=5_dNvrQR6Q@mail.gmail.com>
+	<CA+mtBx_BOmV+tOtio48M+xRatK79B31LoGnf4uvFJAbxYqOt_w@mail.gmail.com>
+	<CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 05 Nov 2014 13:38:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 23, 2014 11:01:17 AM Daniel Lezcano wrote:
-> When the pmqos latency requirement is set to zero that means "poll in all the
-> cases".
-> 
-> That is correctly implemented on x86 but not on the other archs.
-> 
-> As how is written the code, if the latency request is zero, the governor will
-> return zero, so corresponding, for x86, to the poll function, but for the
-> others arch the default idle function. For example, on ARM this is wait-for-
-> interrupt with a latency of '1', so violating the constraint.
-> 
-> In order to fix that, do the latency requirement check *before* calling the
-> cpuidle framework in order to jump to the poll function without entering
-> cpuidle. That has several benefits:
-> 
->  1. It clarifies and unifies the code
->  2. It fixes x86 vs other archs behavior
->  3. Factors out the call to the same function
->  4. Prevent to enter the cpuidle framework with its expensive cost in
->     calculation
-> 
-> As the latency_req is needed in all the cases, change the select API to take
-> the latency_req as parameter in case it is not equal to zero.
-> 
-> As a positive side effect, it introduces the latency constraint specified
-> externally, so one more step to the cpuidle/scheduler integration.
+From: Or Gerlitz <gerlitz.or@gmail.com>
+Date: Wed, 5 Nov 2014 23:32:44 +0200
 
-I'm expecting to see a new version of this patchset relatively soon.
+> but fact is that the proposed patch series has the --same-- helper for
+> four drivers, so why not start with a that limited helper which would
+> be picked up by these drivers and we'll take it from there.
 
-Are you planning to send one?
+I'm in favor of the helper, duplication is error prone.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+And in fact, any differences a driver ends up needing might be
+integratable into the helper.
