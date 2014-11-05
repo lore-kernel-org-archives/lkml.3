@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048AbaKERPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:15:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41825 "EHLO
+	id S1756065AbaKERPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:15:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41843 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaKERPa (ORCPT
+	with ESMTP id S1755521AbaKERPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:15:30 -0500
-Date: Wed, 5 Nov 2014 09:13:33 -0800
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-5e4df93bbb0be6203a0037676a430abf5373a70e@git.kernel.org>
-Cc: bp@alien8.de, gregkh@linuxfoundation.org, benh@kernel.crashing.org,
-        tony.luck@intel.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, prarit@redhat.com, jiang.liu@linux.intel.com,
-        bhelgaas@google.com, hpa@zytor.com, tglx@linutronix.de,
-        rjw@rjwysocki.net, yinghai@kernel.org, rdunlap@infradead.org,
-        sebastian@breakpoint.cc, konrad.wilk@oracle.com, joro@8bytes.org
-Reply-To: joro@8bytes.org, konrad.wilk@oracle.com, sebastian@breakpoint.cc,
-        rdunlap@infradead.org, yinghai@kernel.org, rjw@rjwysocki.net,
-        tglx@linutronix.de, hpa@zytor.com, bhelgaas@google.com,
-        jiang.liu@linux.intel.com, prarit@redhat.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, tony.luck@intel.com,
-        benh@kernel.crashing.org, gregkh@linuxfoundation.org, bp@alien8.de
-In-Reply-To: <1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com>
+	Wed, 5 Nov 2014 12:15:40 -0500
+Date: Wed, 5 Nov 2014 09:14:06 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-49e5780b2dd303bc86014934b13842c1a4675d01@git.kernel.org>
+Cc: rjw@rjwysocki.net, yinghai@kernel.org, gregkh@linuxfoundation.org,
+        grant.likely@linaro.org, prarit@redhat.com, bhelgaas@google.com,
+        bp@alien8.de, tony.luck@intel.com, tglx@linutronix.de,
+        mingo@kernel.org, jiang.liu@linux.intel.com, hpa@zytor.com,
+        rdunlap@infradead.org, joro@8bytes.org, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com
+Reply-To: rdunlap@infradead.org, joro@8bytes.org, konrad.wilk@oracle.com,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        tony.luck@intel.com, tglx@linutronix.de, mingo@kernel.org,
+        jiang.liu@linux.intel.com, hpa@zytor.com, gregkh@linuxfoundation.org,
+        grant.likely@linaro.org, prarit@redhat.com, bhelgaas@google.com,
+        rjw@rjwysocki.net, yinghai@kernel.org
+In-Reply-To: <1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Convert irq_2_pin list to generic list
-Git-Commit-ID: 5e4df93bbb0be6203a0037676a430abf5373a70e
+Subject: [tip:x86/apic] x86, irq:
+  Rename local APIC related functions in io_apic.c as apic_xxx()
+Git-Commit-ID: 49e5780b2dd303bc86014934b13842c1a4675d01
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,147 +40,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5e4df93bbb0be6203a0037676a430abf5373a70e
-Gitweb:     http://git.kernel.org/tip/5e4df93bbb0be6203a0037676a430abf5373a70e
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 27 Oct 2014 16:11:55 +0800
+Commit-ID:  49e5780b2dd303bc86014934b13842c1a4675d01
+Gitweb:     http://git.kernel.org/tip/49e5780b2dd303bc86014934b13842c1a4675d01
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:11:57 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 5 Nov 2014 18:10:46 +0100
 
-x86, irq: Convert irq_2_pin list to generic list
+x86, irq: Rename local APIC related functions in io_apic.c as apic_xxx()
 
-Use generic list to replace private list implementation so we can use
-the existing helper functions.
+Rename local APIC related functions in io_apic.c as apic_xxx() instead
+of ioapic_xxx(), later they will be moved into separate file.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Joerg Roedel <joro@8bytes.org>
 ---
- arch/x86/include/asm/hw_irq.h  |  2 +-
- arch/x86/kernel/apic/io_apic.c | 28 +++++++++++-----------------
- 2 files changed, 12 insertions(+), 18 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |  4 ++--
+ arch/x86/kernel/apic/io_apic.c | 42 +++++++++++++++++++++---------------------
+ arch/x86/platform/uv/uv_irq.c  |  2 +-
+ 3 files changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index b12c45c..66e59e6 100644
+index 9e2d08b..e1acbba 100644
 --- a/arch/x86/include/asm/hw_irq.h
 +++ b/arch/x86/include/asm/hw_irq.h
-@@ -138,7 +138,7 @@ struct irq_2_irte {
-  * Most irqs are mapped 1:1 with pins.
-  */
- struct irq_cfg {
--	struct irq_pin_list	*irq_2_pin;
-+	struct list_head	irq_2_pin;
- 	cpumask_var_t		domain;
- 	cpumask_var_t		old_domain;
- 	u8			vector;
+@@ -141,8 +141,8 @@ static inline void send_cleanup_vector(struct irq_cfg *c) { }
+ #endif
+ 
+ struct irq_data;
+-int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+-			  unsigned int *dest_id);
++int apic_set_affinity(struct irq_data *, const struct cpumask *,
++		      unsigned int *dest_id);
+ #endif	/* CONFIG_X86_LOCAL_APIC */
+ 
+ #ifdef CONFIG_X86_IO_APIC
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 192ca0a..fac6be1 100644
+index fac6be1..f629c43 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -74,7 +74,7 @@
- 		for_each_pin((idx), (pin))
- 
- #define for_each_irq_pin(entry, head) \
--	for (entry = head; entry; entry = entry->next)
-+	list_for_each_entry(entry, &head, list)
- 
- /*
-  *      Is the SiS APIC rmw bug present ?
-@@ -229,8 +229,8 @@ void mp_save_irq(struct mpc_intsrc *m)
+@@ -2252,7 +2252,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 	return was_pending;
  }
  
- struct irq_pin_list {
-+	struct list_head list;
- 	int apic, pin;
--	struct irq_pin_list *next;
+-static int ioapic_retrigger_irq(struct irq_data *data)
++static int apic_retrigger_irq(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned long flags;
+@@ -2407,8 +2407,8 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
+  * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
+  * leaves data->affinity untouched.
+  */
+-int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+-			  unsigned int *dest_id)
++int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
++		      unsigned int *dest_id)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned int irq = data->irq;
+@@ -2449,7 +2449,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 		return -EPERM;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (!ret) {
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+@@ -2460,7 +2460,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	return ret;
+ }
+ 
+-static void ack_apic_edge(struct irq_data *data)
++static void apic_ack_edge(struct irq_data *data)
+ {
+ 	irq_complete_move(data->chip_data);
+ 	irq_move_irq(data);
+@@ -2549,7 +2549,7 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ }
+ #endif
+ 
+-static void ack_apic_level(struct irq_data *data)
++static void ack_ioapic_level(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	int i, irq = data->irq;
+@@ -2621,10 +2621,10 @@ static struct irq_chip ioapic_chip __read_mostly = {
+ 	.irq_startup		= startup_ioapic_irq,
+ 	.irq_mask		= mask_ioapic_irq,
+ 	.irq_unmask		= unmask_ioapic_irq,
+-	.irq_ack		= ack_apic_edge,
+-	.irq_eoi		= ack_apic_level,
++	.irq_ack		= apic_ack_edge,
++	.irq_eoi		= ack_ioapic_level,
+ 	.irq_set_affinity	= native_ioapic_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
  };
  
- static struct irq_pin_list *alloc_irq_pin_list(int node)
-@@ -297,6 +297,7 @@ static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
- 		goto out_cfg;
- 	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
- 		goto out_domain;
-+	INIT_LIST_HEAD(&cfg->irq_2_pin);
- 	return cfg;
- out_domain:
- 	free_cpumask_var(cfg->domain);
-@@ -460,15 +461,12 @@ static void ioapic_mask_entry(int apic, int pin)
-  */
- static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
- {
--	struct irq_pin_list **last, *entry;
-+	struct irq_pin_list *entry;
+@@ -3159,7 +3159,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	unsigned int dest;
+ 	int ret;
  
- 	/* don't allow duplicates */
--	last = &cfg->irq_2_pin;
--	for_each_irq_pin(entry, cfg->irq_2_pin) {
-+	for_each_irq_pin(entry, cfg->irq_2_pin)
- 		if (entry->apic == apic && entry->pin == pin)
- 			return 0;
--		last = &entry->next;
--	}
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
  
- 	entry = alloc_irq_pin_list(node);
- 	if (!entry) {
-@@ -479,22 +477,19 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
- 	entry->apic = apic;
- 	entry->pin = pin;
+@@ -3183,9 +3183,9 @@ static struct irq_chip msi_chip = {
+ 	.name			= "PCI-MSI",
+ 	.irq_unmask		= unmask_msi_irq,
+ 	.irq_mask		= mask_msi_irq,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= msi_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
  
--	*last = entry;
-+	list_add_tail(&entry->list, &cfg->irq_2_pin);
- 	return 0;
- }
+@@ -3261,7 +3261,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct msi_msg msg;
+ 	int ret;
  
- static void __remove_pin_from_irq(struct irq_cfg *cfg, int apic, int pin)
- {
--	struct irq_pin_list **last, *entry;
-+	struct irq_pin_list *tmp, *entry;
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
  
--	last = &cfg->irq_2_pin;
--	for_each_irq_pin(entry, cfg->irq_2_pin)
-+	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
- 		if (entry->apic == apic && entry->pin == pin) {
--			*last = entry->next;
-+			list_del(&entry->list);
- 			kfree(entry);
- 			return;
--		} else {
--			last = &entry->next;
- 		}
- }
+@@ -3282,9 +3282,9 @@ static struct irq_chip dmar_msi_type = {
+ 	.name			= "DMAR_MSI",
+ 	.irq_unmask		= dmar_msi_unmask,
+ 	.irq_mask		= dmar_msi_mask,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= dmar_msi_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
  
-@@ -1739,8 +1734,7 @@ __apicdebuginit(void) print_IO_APICs(void)
- 		cfg = irq_cfg(irq);
- 		if (!cfg)
- 			continue;
--		entry = cfg->irq_2_pin;
--		if (!entry)
-+		if (list_empty(&cfg->irq_2_pin))
- 			continue;
- 		printk(KERN_DEBUG "IRQ%d ", irq);
- 		for_each_irq_pin(entry, cfg->irq_2_pin)
-@@ -4076,7 +4070,7 @@ void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq)
+@@ -3313,7 +3313,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 	unsigned int dest;
+ 	int ret;
  
- 	ioapic_mask_entry(ioapic, pin);
- 	__remove_pin_from_irq(cfg, ioapic, pin);
--	WARN_ON(cfg->irq_2_pin != NULL);
-+	WARN_ON(!list_empty(&cfg->irq_2_pin));
- 	arch_teardown_hwirq(virq);
- }
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
  
+@@ -3333,9 +3333,9 @@ static struct irq_chip hpet_msi_type = {
+ 	.name = "HPET_MSI",
+ 	.irq_unmask = hpet_msi_unmask,
+ 	.irq_mask = hpet_msi_mask,
+-	.irq_ack = ack_apic_edge,
++	.irq_ack = apic_ack_edge,
+ 	.irq_set_affinity = hpet_msi_set_affinity,
+-	.irq_retrigger = ioapic_retrigger_irq,
++	.irq_retrigger = apic_retrigger_irq,
+ 	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3385,7 +3385,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3397,9 +3397,9 @@ static struct irq_chip ht_irq_chip = {
+ 	.name			= "PCI-HT",
+ 	.irq_mask		= mask_ht_irq,
+ 	.irq_unmask		= unmask_ht_irq,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= ht_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index b233681..3e8fab7 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -204,7 +204,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct uv_IO_APIC_route_entry *entry;
+ 	int mmr_pnode;
+ 
+-	if (__ioapic_set_affinity(data, mask, &dest))
++	if (apic_set_affinity(data, mask, &dest))
+ 		return -1;
+ 
+ 	mmr_value = 0;
