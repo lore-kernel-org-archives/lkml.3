@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaKEQp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:45:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10907 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084AbaKEQp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:45:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="602859854"
-Date: Wed, 5 Nov 2014 22:16:01 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jonathan Corbet <corbet@lwn.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v9 3/4] dma: pl330: add Power Management support
-Message-ID: <20141105164601.GQ1870@intel.com>
-References: <1415105570-7871-1-git-send-email-k.kozlowski@samsung.com>
- <1415105570-7871-4-git-send-email-k.kozlowski@samsung.com>
- <20141105140116.GN1870@intel.com>
- <1415197299.30831.10.camel@AMDC1943>
+	id S1755610AbaKEQqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:46:53 -0500
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:56934 "EHLO
+	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaKEQqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:46:51 -0500
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 11:46:50 EST
+X-TM-IMSS-Message-ID: <c133d0050006442e@nsa.gov>
+Message-ID: <545A53A9.4060009@tycho.nsa.gov>
+Date: Wed, 05 Nov 2014 11:43:21 -0500
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415197299.30831.10.camel@AMDC1943>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Howells <dhowells@redhat.com>, linux-unionfs@vger.kernel.org,
+        selinux@tycho.nsa.gov
+CC: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] SELinux: The copy-up operation must have read permission
+ on the lower file
+References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154318.2555.7052.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20141105154318.2555.7052.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 03:21:39PM +0100, Krzysztof Kozlowski wrote:
-> > > +static int __maybe_unused pl330_resume(struct device *dev)
-> > > +{
-> > > +	struct amba_device *pcdev = to_amba_device(dev);
-> > > +
-> > > +	amba_pclk_prepare(pcdev);
-> > > +
-> > > +	/*
-> > > +	 * TODO: Idea for future. The device should not be woken up after
-> > > +	 * system resume if it is not needed. It could stay runtime suspended
-> > > +	 * waiting for DMA requests. However for safe suspend and resume we
-> > > +	 * forcibly resume the device here.
-> > > +	 */
-> > > +	return pm_runtime_force_resume(dev);
-> > > +}
-> > > +
-> > > +static SIMPLE_DEV_PM_OPS(pl330_pm, pl330_suspend, pl330_resume);
-> > IIUC this sets .suspend and .resume, aren't you trying to add runtime
-> > support as well?
-> > Did you want UNIVERSAL_DEV_PM_OPS() ?
+On 11/05/2014 10:43 AM, David Howells wrote:
+> The copy-up operation must have read permission on the lower file for the task
+> that caused the copy-up.  This helps prevent overlayfs from being used to
+> access something it shouldn't.
 > 
-> The runtime suspend and resume callbacks are provided by amba/bus.c.
-Can you add that as comment in this driver please.
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  security/selinux/hooks.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index f43f07fdc028..57f9c641779f 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -3144,7 +3144,8 @@ static void selinux_inode_getsecid(const struct inode *inode, u32 *secid)
+>  
+>  static int selinux_inode_copy_up(struct dentry *src, struct dentry *dst)
+>  {
+> -	return 0;
+> +	const struct cred *cred = current_cred();
+> +	return dentry_has_perm(cred, src, FILE__OPEN | FILE__READ);
+>  }
 
-rest looks fine
+Won't this get checked anyway when overlayfs calls vfs helpers to open
+the source and those vfs helpers call the security hooks and apply the
+usual checks?
 
--- 
-~Vinod
+Or, if not, where do you check permissions for the destination?
 
