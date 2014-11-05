@@ -1,186 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaKEUAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:00:12 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:48989 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751746AbaKEUAJ (ORCPT
+	id S1752099AbaKEUBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:01:38 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38294 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaKEUBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:00:09 -0500
-Date: Wed, 5 Nov 2014 15:00:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in
- trace_seq
-Message-ID: <20141105150007.1c543b9e@gandalf.local.home>
-In-Reply-To: <20141105134147.226a23ef@gandalf.local.home>
-References: <20141104155237.228431433@goodmis.org>
-	<20141104160221.864997179@goodmis.org>
-	<20141105142222.GC4570@pathway.suse.cz>
-	<20141105134147.226a23ef@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 5 Nov 2014 15:01:34 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 4/5] of: Add old prop argument on
+ OF_RECONFIG_UPDATE_PROPERTY
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <1414528433-9650-5-git-send-email-pantelis.antoniou@konsulko.com>
+References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1414528433-9650-5-git-send-email-pantelis.antoniou@konsulko.com>
+Date: Wed, 05 Nov 2014 20:01:29 +0000
+Message-Id: <20141105200129.B4438C41C40@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 13:41:47 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tue, 28 Oct 2014 22:33:52 +0200
+, Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+ wrote:
+> The notifier now includes the old_prop argument when updating
+> properties, propagate this API to changeset internals while
+> also retaining the old behaviour of retrieving the old_property
+> when NULL is passed.
+> 
+> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 
-> > 
-> > > + */
-> > > +int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-> > > +		    int nmaskbits)
-> > > +{
-> > > +	unsigned int len = SEQ_BUF_LEFT(s);
-> > >
-> > > +	int ret;
-> > > +
-> > > +	WARN_ON(s->size == 0);
-> > > +
-> > > +	if (s->len < s->size) {
-> > > +		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-> > 
-> > It writes to the beginning of the buffer. It should be
-> > 
-> > 		ret = bitmap_scnprintf(s->buffer + s->len, len,
-> > 				       maskp, nmaskbits);
-> >
+I'm still fuzzy on the need for this patch. Is this just an optimization
+so that the property doesn't get looked up twice? Or is there a reason
+when the oldprop really needs to be passed in explicitly?
+
+g.
+
+> ---
+>  drivers/of/dynamic.c  | 18 ++++++++++++++----
+>  drivers/of/selftest.c |  2 +-
+>  include/linux/of.h    | 20 +++++++++++++-------
+>  3 files changed, 28 insertions(+), 12 deletions(-)
 > 
-> Yep thanks. Luckily its only user didn't care.
-> 
-> Will fix.
+> diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
+> index 8e8b614..9eb8528 100644
+> --- a/drivers/of/dynamic.c
+> +++ b/drivers/of/dynamic.c
+> @@ -627,6 +627,7 @@ int of_changeset_revert(struct of_changeset *ocs)
+>   * @action:	action to perform
+>   * @np:		Pointer to device node
+>   * @prop:	Pointer to property
+> + * @old_prop:	Pointer to old property (if updating)
+>   *
+>   * On action being one of:
+>   * + OF_RECONFIG_ATTACH_NODE
+> @@ -637,10 +638,21 @@ int of_changeset_revert(struct of_changeset *ocs)
+>   * Returns 0 on success, a negative error value in case of an error.
+>   */
+>  int of_changeset_action(struct of_changeset *ocs, unsigned long action,
+> -		struct device_node *np, struct property *prop)
+> +		struct device_node *np, struct property *prop,
+> +		struct property *oldprop)
+>  {
+>  	struct of_changeset_entry *ce;
 >  
-> > 
-> > > +		if (s->len + ret < s->size) {
-> > 
-> > This will always happen because bitmap_scnprintf() is limited by SEQ_BUF_LEFT(s)
-> > and it currently returns the remaining size - len - 1.
+> +	/* in case someone passed NULL as old_prop, find it */
+> +	if (action == OF_RECONFIG_UPDATE_PROPERTY && prop && !oldprop) {
+> +		oldprop = of_find_property(np, prop->name, NULL);
+> +		if (!oldprop) {
+> +			pr_err("%s: Failed to find old_prop for \"%s/%s\"\n",
+> +					__func__, np->full_name, prop->name);
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+>  	ce = kzalloc(sizeof(*ce), GFP_KERNEL);
+>  	if (!ce) {
+>  		pr_err("%s: Failed to allocate\n", __func__);
+> @@ -650,9 +662,7 @@ int of_changeset_action(struct of_changeset *ocs, unsigned long action,
+>  	ce->action = action;
+>  	ce->np = of_node_get(np);
+>  	ce->prop = prop;
+> -
+> -	if (action == OF_RECONFIG_UPDATE_PROPERTY && prop)
+> -		ce->old_prop = of_find_property(np, prop->name, NULL);
+> +	ce->old_prop = oldprop;
+>  
+>  	/* add it to the list */
+>  	list_add_tail(&ce->node, &ocs->entries);
+> diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+> index 7800127..16102fd 100644
+> --- a/drivers/of/selftest.c
+> +++ b/drivers/of/selftest.c
+> @@ -427,7 +427,7 @@ static void __init of_selftest_changeset(void)
+>  	selftest(!of_changeset_detach_node(&chgset, nremove), "fail remove node\n");
+>  	selftest(!of_changeset_attach_node(&chgset, n21), "fail attach n21\n");
+>  	selftest(!of_changeset_add_property(&chgset, parent, ppadd), "fail add prop\n");
+> -	selftest(!of_changeset_update_property(&chgset, parent, ppupdate), "fail update prop\n");
+> +	selftest(!of_changeset_update_property(&chgset, parent, ppupdate, NULL), "fail update prop\n");
+>  	selftest(!of_changeset_remove_property(&chgset, parent, ppremove), "fail remove prop\n");
+>  	mutex_lock(&of_mutex);
+>  	selftest(!of_changeset_apply(&chgset), "apply failed\n");
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 6545e7a..71d25aa 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -830,36 +830,42 @@ extern int of_changeset_apply(struct of_changeset *ocs);
+>  extern int of_changeset_revert(struct of_changeset *ocs);
+>  extern int of_changeset_action(struct of_changeset *ocs,
+>  		unsigned long action, struct device_node *np,
+> -		struct property *prop);
+> +		struct property *prop, struct property *old_prop);
+>  
+>  static inline int of_changeset_attach_node(struct of_changeset *ocs,
+>  		struct device_node *np)
+>  {
+> -	return of_changeset_action(ocs, OF_RECONFIG_ATTACH_NODE, np, NULL);
+> +	return of_changeset_action(ocs, OF_RECONFIG_ATTACH_NODE, np, NULL,
+> +			NULL);
+>  }
+>  
+>  static inline int of_changeset_detach_node(struct of_changeset *ocs,
+>  		struct device_node *np)
+>  {
+> -	return of_changeset_action(ocs, OF_RECONFIG_DETACH_NODE, np, NULL);
+> +	return of_changeset_action(ocs, OF_RECONFIG_DETACH_NODE, np, NULL,
+> +			NULL);
+>  }
+>  
+>  static inline int of_changeset_add_property(struct of_changeset *ocs,
+>  		struct device_node *np, struct property *prop)
+>  {
+> -	return of_changeset_action(ocs, OF_RECONFIG_ADD_PROPERTY, np, prop);
+> +	return of_changeset_action(ocs, OF_RECONFIG_ADD_PROPERTY, np, prop,
+> +			NULL);
+>  }
+>  
+>  static inline int of_changeset_remove_property(struct of_changeset *ocs,
+>  		struct device_node *np, struct property *prop)
+>  {
+> -	return of_changeset_action(ocs, OF_RECONFIG_REMOVE_PROPERTY, np, prop);
+> +	return of_changeset_action(ocs, OF_RECONFIG_REMOVE_PROPERTY, np, prop,
+> +			NULL);
+>  }
+>  
+>  static inline int of_changeset_update_property(struct of_changeset *ocs,
+> -		struct device_node *np, struct property *prop)
+> +		struct device_node *np, struct property *prop,
+> +		struct property *old_prop)
+>  {
+> -	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop);
+> +	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop,
+> +			old_prop);
+>  }
+>  #endif
+>  
+> -- 
+> 1.7.12
 > 
-> Hmm, that's correct, as bitmap_scnprintf() returns the amount written
-> instead of the amount that it would write like snprintf() would.
-> 
-> 
-> > 
-> > You might want to use "s->size - s->len" instead of SEQ_BUF_LEFT(s).
-> 
-> That wont help when we make overflow len > size.
-> 
-> Probably should see if ret == the amount of bits required for the
-> bitmask.
-
-Here's the new version:
-
-int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-		    int nmaskbits)
-{
-	unsigned int len = seq_buf_buffer_left(s);
-	int size;
-	int ret;
-
-	WARN_ON(s->size == 0);
-
-	if (s->len < s->size) {
-		/*
-		 * Calculate to see if we have enough room to fit
-		 * @nmaskbits as a string
-		 */
-		size = (nmaskbits + 3) / 4;
-		/* Add the commas that are used for groups of 8 hex digits */
-		size += size / 8;
-		if (len >= size) {
-			ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-			WARN_ON_ONCE(s->len + ret >= s->size);
-			s->len += ret;
-			return 0;
-		}
-	}
-	seq_buf_set_overflow(s);
-	return -1;
-}
-
-
-> 
-> > 
-> > 
-> > > +			s->len += ret;
-> > > +			return 0;
-> > > +		}
-> > > +	}
-> > > +	seq_buf_set_overflow(s);
-> > > +	return -1;
-> > > +}
-
-
-
-> > > +/**
-> > > + * seq_buf_putmem_hex - write raw memory into the buffer in ASCII hex
-> > > + * @s: seq_buf descriptor
-> > > + * @mem: The raw memory to write its hex ASCII representation of
-> > > + * @len: The length of the raw memory to copy (in bytes)
-> > > + *
-> > > + * This is similar to seq_buf_putmem() except instead of just copying the
-> > > + * raw memory into the buffer it writes its ASCII representation of it
-> > > + * in hex characters.
-> > > + *
-> > > + * Returns zero on success, -1 on overflow
-> > > + */
-> > > +int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-> > > +		       unsigned int len)
-> > > +{
-> > > +	unsigned char hex[HEX_CHARS];
-> > > +	const unsigned char *data = mem;
-> > > +	unsigned int start_len;
-> > > +	int i, j;
-> > > +
-> > > +	WARN_ON(s->size == 0);
-> > > +
-> > > +	while (len) {
-> > > +		start_len = min(len, HEX_CHARS - 1);
-> > > +#ifdef __BIG_ENDIAN
-> > > +		for (i = 0, j = 0; i < start_len; i++) {
-> > > +#else
-> > > +		for (i = start_len-1, j = 0; i >= 0; i--) {
-> > > +#endif
-> > > +			hex[j++] = hex_asc_hi(data[i]);
-> > > +			hex[j++] = hex_asc_lo(data[i]);
-> > > +		}
-> > > +		if (WARN_ON_ONCE(j == 0 || j/2 > len))
-> > > +			break;
-> > > +
-> > > +		/* j increments twice per loop */
-> > > +		len -= j / 2;
-> > > +		hex[j++] = ' ';
-> > > +
-> > > +		seq_buf_putmem(s, hex, j);
-> > > +		if (seq_buf_has_overflowed(s))
-> > 
-> > We might want to use the seq_buf_putmem() return value here.
-> 
-> We could do that.
-
-Actually, no we can't. As I stated before, the return values of most
-of the seq_*() functions (for seq_file and seq_buf) will be turning
-into void functions.
-
-I'm avoiding checking return values here.
-
--- Steve
-
-> 
-> > 
-> > > +			return -1;
-> > > +	}
-> > > +	return 0;
-> > > +}
-> > > +
-> > 
 
