@@ -1,64 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaKESR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:17:28 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:56519 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaKESRZ convert rfc822-to-8bit (ORCPT
+	id S1751905AbaKESRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:17:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42404 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbaKESRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 13:17:25 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/7] pinctrl: pinconf-generic: Infer map type from DT property
-Date: Wed, 05 Nov 2014 20:17:38 +0200
-Message-ID: <1417202.djDaFURS6d@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <d0c8876b424049059acab000d07ffa4b@BN1AFFO11FD053.protection.gbl>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com> <21124316.ibhe1N9UZS@avalon> <d0c8876b424049059acab000d07ffa4b@BN1AFFO11FD053.protection.gbl>
+Date: Wed, 5 Nov 2014 09:16:07 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-051825cab15c8180f2f0dbc3a9de5a3db7476065@git.kernel.org>
+Cc: konrad.wilk@oracle.com, bp@alien8.de, benh@kernel.crashing.org,
+        bhelgaas@google.com, tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, rjw@rjwysocki.net, gregkh@linuxfoundation.org,
+        tglx@linutronix.de, mingo@kernel.org, joro@8bytes.org,
+        jiang.liu@linux.intel.com, rdunlap@infradead.org, hpa@zytor.com,
+        prarit@redhat.com, yinghai@kernel.org
+Reply-To: mingo@kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
+        gregkh@linuxfoundation.org, joro@8bytes.org, grant.likely@linaro.org,
+        prarit@redhat.com, yinghai@kernel.org, hpa@zytor.com,
+        rdunlap@infradead.org, jiang.liu@linux.intel.com,
+        benh@kernel.crashing.org, bp@alien8.de, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com, tony.luck@intel.com
+In-Reply-To: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq:
+  Move HT IRQ related code from io_apic.c into htirq.c
+Git-Commit-ID: 051825cab15c8180f2f0dbc3a9de5a3db7476065
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sören,
+Commit-ID:  051825cab15c8180f2f0dbc3a9de5a3db7476065
+Gitweb:     http://git.kernel.org/tip/051825cab15c8180f2f0dbc3a9de5a3db7476065
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:12:03 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Nov 2014 18:10:47 +0100
 
-On Wednesday 05 November 2014 10:09:35 Sören Brinkmann wrote:
-> On Wed, 2014-11-05 at 03:56PM +0200, Laurent Pinchart wrote:
-> > On Monday 03 November 2014 11:05:26 Soren Brinkmann wrote:
-> > > With the new 'groups' property, the DT parser can infer the map type
-> > > from the fact whether 'pins' or 'groups' is used to specify the pin
-> > > group to work on.
-> > > To maintain backwards compatibitliy with current usage of the DT
-> > > binding, this is only done when an invalid map type is passed to the
-> > > parsing function.
-> > 
-> > The Renesas PFC implements similar bindings with using the vendor-specific
-> > properties "renesas,pins" and "renesas,groups" (bindings and
-> > implementation available at
-> > Documentation/devicetree/bindings/pinctrl/renesas,pfc-pinctrl.txt and
-> > drivers/pinctrl/sh-pfc/pinctrl.c respectively).
-> > 
-> > The Renesas implementation is a bit more generic in that it allows both
-> > pins and groups to be specified in a single subnode. Do you think that
-> > feature would make sense for pinconf-generic as well ?
-> 
-> I don't have a use-case for that. I guess if somebody needs this kind of
-> functionality it could be added later. I would like to avoid blocking
-> pinctrl-zynq on adding more features here.
+x86, irq: Move HT IRQ related code from io_apic.c into htirq.c
 
-I'm fine with that, as long as the changes won't require breaking the DT ABI. 
-I don't think they would but I wanted to raise the issue in case I would have 
-missed a potential issue.
+Create arch/x86/kernel/apic/htirq.c to host Hypertransport IRQ related
+code, preparing for enabling hierarchy irqdomain.
 
--- 
-Regards,
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/Makefile  |   1 +
+ arch/x86/kernel/apic/htirq.c   | 107 +++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/apic/io_apic.c |  92 -----------------------------------
+ 3 files changed, 108 insertions(+), 92 deletions(-)
 
-Laurent Pinchart
-
+diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
+index aac3007..8bb12dd 100644
+--- a/arch/x86/kernel/apic/Makefile
++++ b/arch/x86/kernel/apic/Makefile
+@@ -7,6 +7,7 @@ obj-y				+= hw_nmi.o
+ 
+ obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
+ obj-$(CONFIG_PCI_MSI)		+= msi.o
++obj-$(CONFIG_HT_IRQ)		+= htirq.o
+ obj-$(CONFIG_SMP)		+= ipi.o
+ 
+ ifeq ($(CONFIG_X86_64),y)
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+new file mode 100644
+index 0000000..a4980c5
+--- /dev/null
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -0,0 +1,107 @@
++/*
++ * Support Hypertransport IRQ
++ *
++ * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
++ *	Moved from arch/x86/kernel/apic/io_apic.c.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/pci.h>
++#include <linux/htirq.h>
++#include <asm/hw_irq.h>
++#include <asm/apic.h>
++#include <asm/hypertransport.h>
++
++/*
++ * Hypertransport interrupt support
++ */
++static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
++{
++	struct ht_irq_msg msg;
++
++	fetch_ht_irq_msg(irq, &msg);
++
++	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
++	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
++
++	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
++	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
++
++	write_ht_irq_msg(irq, &msg);
++}
++
++static int
++ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	unsigned int dest;
++	int ret;
++
++	ret = apic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
++
++	target_ht_irq(data->irq, dest, cfg->vector);
++	return IRQ_SET_MASK_OK_NOCOPY;
++}
++
++static struct irq_chip ht_irq_chip = {
++	.name			= "PCI-HT",
++	.irq_mask		= mask_ht_irq,
++	.irq_unmask		= unmask_ht_irq,
++	.irq_ack		= apic_ack_edge,
++	.irq_set_affinity	= ht_set_affinity,
++	.irq_retrigger		= apic_retrigger_irq,
++	.flags			= IRQCHIP_SKIP_SET_WAKE,
++};
++
++int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
++{
++	struct irq_cfg *cfg;
++	struct ht_irq_msg msg;
++	unsigned dest;
++	int err;
++
++	if (disable_apic)
++		return -ENXIO;
++
++	cfg = irq_cfg(irq);
++	err = assign_irq_vector(irq, cfg, apic->target_cpus());
++	if (err)
++		return err;
++
++	err = apic->cpu_mask_to_apicid_and(cfg->domain,
++					   apic->target_cpus(), &dest);
++	if (err)
++		return err;
++
++	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
++
++	msg.address_lo =
++		HT_IRQ_LOW_BASE |
++		HT_IRQ_LOW_DEST_ID(dest) |
++		HT_IRQ_LOW_VECTOR(cfg->vector) |
++		((apic->irq_dest_mode == 0) ?
++			HT_IRQ_LOW_DM_PHYSICAL :
++			HT_IRQ_LOW_DM_LOGICAL) |
++		HT_IRQ_LOW_RQEOI_EDGE |
++		((apic->irq_delivery_mode != dest_LowestPrio) ?
++			HT_IRQ_LOW_MT_FIXED :
++			HT_IRQ_LOW_MT_ARBITRATED) |
++		HT_IRQ_LOW_IRQ_MASKED;
++
++	write_ht_irq_msg(irq, &msg);
++
++	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
++				      handle_edge_irq, "edge");
++
++	dev_dbg(&dev->dev, "irq %d for HT\n", irq);
++
++	return 0;
++}
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 653fe21..b1acb68 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -32,7 +32,6 @@
+ #include <linux/module.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/irqdomain.h>
+-#include <linux/htirq.h>
+ #include <linux/freezer.h>
+ #include <linux/kthread.h>
+ #include <linux/jiffies.h>	/* time_after() */
+@@ -49,7 +48,6 @@
+ #include <asm/dma.h>
+ #include <asm/timer.h>
+ #include <asm/i8259.h>
+-#include <asm/hypertransport.h>
+ #include <asm/setup.h>
+ #include <asm/irq_remapping.h>
+ #include <asm/hw_irq.h>
+@@ -2450,96 +2448,6 @@ static int __init ioapic_init_ops(void)
+ 
+ device_initcall(ioapic_init_ops);
+ 
+-/*
+- * Hypertransport interrupt support
+- */
+-#ifdef CONFIG_HT_IRQ
+-
+-static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
+-{
+-	struct ht_irq_msg msg;
+-	fetch_ht_irq_msg(irq, &msg);
+-
+-	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
+-	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
+-
+-	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
+-	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
+-
+-	write_ht_irq_msg(irq, &msg);
+-}
+-
+-static int
+-ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+-{
+-	struct irq_cfg *cfg = data->chip_data;
+-	unsigned int dest;
+-	int ret;
+-
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	target_ht_irq(data->irq, dest, cfg->vector);
+-	return IRQ_SET_MASK_OK_NOCOPY;
+-}
+-
+-static struct irq_chip ht_irq_chip = {
+-	.name			= "PCI-HT",
+-	.irq_mask		= mask_ht_irq,
+-	.irq_unmask		= unmask_ht_irq,
+-	.irq_ack		= apic_ack_edge,
+-	.irq_set_affinity	= ht_set_affinity,
+-	.irq_retrigger		= apic_retrigger_irq,
+-	.flags			= IRQCHIP_SKIP_SET_WAKE,
+-};
+-
+-int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+-{
+-	struct irq_cfg *cfg;
+-	struct ht_irq_msg msg;
+-	unsigned dest;
+-	int err;
+-
+-	if (disable_apic)
+-		return -ENXIO;
+-
+-	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
+-
+-	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
+-
+-	msg.address_lo =
+-		HT_IRQ_LOW_BASE |
+-		HT_IRQ_LOW_DEST_ID(dest) |
+-		HT_IRQ_LOW_VECTOR(cfg->vector) |
+-		((apic->irq_dest_mode == 0) ?
+-			HT_IRQ_LOW_DM_PHYSICAL :
+-			HT_IRQ_LOW_DM_LOGICAL) |
+-		HT_IRQ_LOW_RQEOI_EDGE |
+-		((apic->irq_delivery_mode != dest_LowestPrio) ?
+-			HT_IRQ_LOW_MT_FIXED :
+-			HT_IRQ_LOW_MT_ARBITRATED) |
+-		HT_IRQ_LOW_IRQ_MASKED;
+-
+-	write_ht_irq_msg(irq, &msg);
+-
+-	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
+-				      handle_edge_irq, "edge");
+-
+-	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for HT\n", irq);
+-
+-	return 0;
+-}
+-#endif /* CONFIG_HT_IRQ */
+-
+ static int
+ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ {
