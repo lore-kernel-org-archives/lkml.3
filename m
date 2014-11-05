@@ -1,214 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaKEQ5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:57:00 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:53495 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaKEQ46 (ORCPT
+	id S1755257AbaKEQ5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:57:11 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:53191 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033AbaKEQ47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:56:58 -0500
-Date: Wed, 5 Nov 2014 16:56:47 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-Message-ID: <20141105165646.GN32700@e104818-lin.cambridge.arm.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
- <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com>
- <20141103105716.GC23162@arm.com>
- <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
+	Wed, 5 Nov 2014 11:56:59 -0500
+Date: Wed, 5 Nov 2014 08:56:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Using list_for_each_entry() in place of
+ list_for_each_entry_rcu() ?
+Message-ID: <20141105165655.GG5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <201411012059.JHB90633.HtJOSOVLFFQFMO@I-love.SAKURA.ne.jp>
+ <20141104015403.GV5718@linux.vnet.ibm.com>
+ <201411042018.FBG60918.JOMOLOtHFQSVFF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <201411042018.FBG60918.JOMOLOtHFQSVFF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110516-0029-0000-0000-00000565D1FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 11:10:18AM +0000, Stefano Stabellini wrote:
-> On Mon, 3 Nov 2014, Will Deacon wrote:
-> > On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
-> > > On Mon, 27 Oct 2014, Stefano Stabellini wrote:
-> > > > Introduce a boolean flag and an accessor function to check whether a
-> > > > device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
-> > > > 
-> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > > CC: will.deacon@arm.com
-> > > 
-> > > Will, Catalin,
-> > > are you OK with this patch?
-> > 
-> > It would be nicer if the dma_coherent flag didn't have to be duplicated by
-> > each architecture in dev_archdata. Is there any reason not to put it in the
-> > core code?
+On Tue, Nov 04, 2014 at 08:18:03PM +0900, Tetsuo Handa wrote:
+> Paul E. McKenney wrote:
+> > But if you only ever add it to the list that one time, then the
+> > list_for_each_entry_rcu() could become list_for_each_entry(), and
+> > rcu_read_lock() and rcu_read_unlock() are not needed.  Again, this
+> > assumes that the memory is never reused after being removed from the list.
 > 
-> Yes, there is a reason for it: if I added a boolean dma_coherent flag in
-> struct device as Catalin initially suggested, what would be the default
-> for each architecture? Where would I set it for arch that don't use
-> device tree?
+> That is what I wanted to confirm. v1, v2, v3 are added to the list only
+> once, and mymodule.ko containing v1, v2, v3 are not unload-able.
 
-You don't need to. An architecture that has coherent DMA always doesn't
-need to do anything. One that has non-coherent DMA always only needs to
-select HAVE_DMA_NONCOHERENT. One that has a mix of both needs to find a
-way to set dev->dma_coherent. Since that's a new API you introduce, it
-doesn't break any existing architectures.
+Good enough, then.  ;-)
 
-Note that if !is_device_dma_coherent(), it doesn't always mean that
-standard cache maintenance would be enough (but that's a Xen problem,
-not sure how to solve).
+> > Note that in this case module unload followed by module reload is tricky.
+> > You have to "wait long enough" between unload and load.  Or you need an
+> > orderly teardown of some sort.
+> 
+> Yes, I'm aware of that.
+> 
+> > > Assumptions are:
+> > > 
+> > >   (1) v1, v2, v3 are statically allocated variables inside module,
+> > >       while my_lock, my_list, add_entry(), del_entry(), reader()
+> > >       are built-in.
+> > 
+> > When you say that my_lock and my_list are built-in, you mean that they
+> > are defined in the base kernel rather than in the module?  (I was assuming
+> > that they were defined in the module.)
+> 
+> I meant built-in as built into vmlinux. That is, my_lock, my_list,
+> add_entry(), del_entry(), reader() are defined in vmlinux , and v1, v2, v3
+> are defined in mymodule.ko .
 
+OK, even more straightforward, then.
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 05d7a8a458d5..8462b2e7491b 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -203,6 +203,9 @@ config HAVE_DMA_ATTRS
- config HAVE_DMA_CONTIGUOUS
- 	bool
- 
-+config HAVE_DMA_NONCOHERENT
-+	bool
-+
- config GENERIC_SMP_IDLE_THREAD
-        bool
- 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 89c4b5ccc68d..fd7d5522764c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -40,6 +40,7 @@ config ARM
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_CONTIGUOUS if MMU
-+	select HAVE_DMA_NONCOHERENT if OF
- 	select HAVE_DYNAMIC_FTRACE if (!XIP_KERNEL)
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && MMU
- 	select HAVE_FTRACE_MCOUNT_RECORD if (!XIP_KERNEL)
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 9532f8d5857e..eb7a5aa64e0e 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -46,6 +46,7 @@ config ARM64
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_CONTIGUOUS
-+	select HAVE_DMA_NONCOHERENT
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS
- 	select HAVE_FTRACE_MCOUNT_RECORD
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 3b64d0bf5bba..7e827726b702 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -183,6 +183,7 @@ static void of_dma_configure(struct device *dev)
- 	 * dma coherent operations.
- 	 */
- 	if (of_dma_is_coherent(dev->of_node)) {
-+		dev->dma_coherent = true;
- 		set_arch_dma_coherent_ops(dev);
- 		dev_dbg(dev, "device is dma coherent\n");
- 	}
-diff --git a/include/linux/device.h b/include/linux/device.h
-index ce1f21608b16..e00ca876db01 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -796,6 +796,7 @@ struct device {
- 
- 	bool			offline_disabled:1;
- 	bool			offline:1;
-+	bool			dma_coherent:1;
- };
- 
- static inline struct device *kobj_to_dev(struct kobject *kobj)
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index d5d388160f42..0bdffba2337d 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -78,6 +78,18 @@ static inline int is_device_dma_capable(struct device *dev)
- 	return dev->dma_mask != NULL && *dev->dma_mask != DMA_MASK_NONE;
- }
- 
-+#ifdef CONFIG_HAVE_DMA_NONCOHERENT
-+static inline int is_device_dma_coherent(struct device *dev)
-+{
-+	return dev->dma_coherent;
-+}
-+#else
-+static inline int is_device_dma_coherent(struct device *dev)
-+{
-+	return 1
-+}
-+#endif
-+
- #ifdef CONFIG_HAS_DMA
- #include <asm/dma-mapping.h>
- #else
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 9532f8d5857e..eb7a5aa64e0e 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -46,6 +46,7 @@ config ARM64
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_CONTIGUOUS
-+	select HAVE_DMA_NONCOHERENT
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS
- 	select HAVE_FTRACE_MCOUNT_RECORD
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 3b64d0bf5bba..7e827726b702 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -183,6 +183,7 @@ static void of_dma_configure(struct device *dev)
- 	 * dma coherent operations.
- 	 */
- 	if (of_dma_is_coherent(dev->of_node)) {
-+		dev->dma_coherent = true;
- 		set_arch_dma_coherent_ops(dev);
- 		dev_dbg(dev, "device is dma coherent\n");
- 	}
-diff --git a/include/linux/device.h b/include/linux/device.h
-index ce1f21608b16..e00ca876db01 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -796,6 +796,7 @@ struct device {
- 
- 	bool			offline_disabled:1;
- 	bool			offline:1;
-+	bool			dma_coherent:1;
- };
- 
- static inline struct device *kobj_to_dev(struct kobject *kobj)
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index d5d388160f42..0bdffba2337d 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -78,6 +78,18 @@ static inline int is_device_dma_capable(struct device *dev)
- 	return dev->dma_mask != NULL && *dev->dma_mask != DMA_MASK_NONE;
- }
- 
-+#ifdef CONFIG_HAVE_DMA_NONCOHERENT
-+static inline int is_device_dma_coherent(struct device *dev)
-+{
-+	return dev->dma_coherent;
-+}
-+#else
-+static inline int is_device_dma_coherent(struct device *dev)
-+{
-+	return 1
-+}
-+#endif
-+
- #ifdef CONFIG_HAS_DMA
- #include <asm/dma-mapping.h>
- #else
+> > >   (2) v1, v2, v3 are added to my_list only once upon module load
+> > > 
+> > >   (3) v1, v2, v3 might be removed from my_list some time later after
+> > >       module was loaded
+> > 
+> > Again, module unload followed by module load will be a bit dicey.  Other
+> > than that, it should work.
+> > 
+> > 							Thanx, Paul
+> > 
+> 
+> If someone really needs to implement unload-able modules, he/she can
+> split such modules into non unload-able component and unload-able
+> component.
+
+Yep, that works also.
+
+							Thanx, Paul
+
+> -------- non unload-able component --------
+> static DEFINE_SRCU(my_srcu_lock);
+> static int (*do_getvalue)(void);
+> 
+> static int mywrapper_getvalue(void)
+> {
+>     const int idx = srcu_read_lock(&my_srcu_lock);
+>     const typeof(do_getvalue) func = do_getvalue;
+>     const int ret = func ? func() : 0;
+>     srcu_read_unlock(&my_srcu_lock, idx);
+>     return ret;
+> }
+> 
+> void mywrapper_register(typeof(do_getvalue) func)
+> {
+>     do_getvalue = func;
+> }
+> EXPORT_SYMBOL_GPL(mywrapper_register);
+> 
+> void mywrapper_unregister(void)
+> {
+>     do_getvalue = NULL;
+>     synchronize_srcu(&my_srcu_lock);
+> }
+> EXPORT_SYMBOL_GPL(mywrapper_unregister);
+> 
+> struct my_struct {
+>     struct list_head list;
+>     const int (*func)(void);
+> } v1 = { .func = mywrapper_getvalue };
+> 
+> static int __init mywrapper_init(void)
+> {
+>     add_entry(&v1);
+>     return 0;
+> }
+> module_init(mywrapper_init);
+> -------- non unload-able component --------
+> 
+> -------- unload-able component --------
+> static int do_getvalue(void)
+> {
+>     return (...snipped...);
+> }
+> 
+> static int __init mymodule_init(void)
+> {
+>     mywrapper_register(do_getvalue);
+>     return 0;
+> }
+> module_init(mymodule_init);
+> 
+> static void mymodule_exit(void)
+> {
+>     mywrapper_unregister();
+> }
+> module_exit(mymodule_exit);
+> -------- unload-able component --------
+> 
+> Thank you.
+> 
+
