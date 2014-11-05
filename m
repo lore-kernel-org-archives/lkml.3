@@ -1,80 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaKEKOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:14:43 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:43544 "EHLO lists.s-osg.org"
+	id S1754495AbaKEKPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:15:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:2289 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751604AbaKEKOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:14:39 -0500
-Date: Wed, 5 Nov 2014 08:14:33 -0200
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Cc: Jarod Wilson <jarod@wilsonet.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Matina Maria Trompouki <mtrompou@gmail.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: media: lirc: replace dev_err by pr_err
-Message-ID: <20141105081433.4f4003af@recife.lan>
-In-Reply-To: <20141104001319.GA14567@localhost.localdomain>
-References: <20141104001319.GA14567@localhost.localdomain>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751396AbaKEKP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:15:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,319,1413270000"; 
+   d="scan'208";a="602631990"
+Date: Wed, 5 Nov 2014 12:15:20 +0200
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis.turischev@compulab.co.il>
+Subject: Re: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
+Message-ID: <20141105101520.GY1618@lahna.fi.intel.com>
+References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <1413431475-12799-4-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <20141016101918.GC2255@lahna.fi.intel.com>
+ <50B33AC5ED75F74F991980326F1C438D0FC047C5@PGSMSX108.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B33AC5ED75F74F991980326F1C438D0FC047C5@PGSMSX108.gar.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 4 Nov 2014 02:13:19 +0200
-Aya Mahfouz <mahfouz.saif.elyazal@gmail.com> escreveu:
-
-> This patch replaces dev_err by pr_err since the value
-> of ir is NULL when the message is displayed.
-
-This one doesn't apply at the media tree:
-
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index 1ccf6262ab36..babd6470f246 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -1636,7 +1636,11 @@ out_put_xx:
- out_put_ir:
- 	put_ir_device(ir, true);
- out_no_ir:
-+<<<<<<<
- 	zilog_error("%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-+=======
-+	pr_err("%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-+>>>>>>>
- 		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
- 		   ret);
- 	mutex_unlock(&ir_devices_lock);
-
-Perhaps it depends on some patch merged via Greg's tree?
-
-Regards,
-Mauro
+On Wed, Nov 05, 2014 at 11:33:01AM +0200, Chang, Rebecca Swee Fun wrote:
+> Sorry for the late reply, was working on something else.
 > 
-> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> ---
->  drivers/staging/media/lirc/lirc_zilog.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > -----Original Message-----
+> > From: Westerberg, Mika
+> > Sent: 16 October, 2014 6:19 PM
+> > To: Chang, Rebecca Swee Fun
+> > Cc: Linus Walleij; GPIO Subsystem Mailing List; Linux Kernel Mailing List; Denis
+> > Turischev
+> > Subject: Re: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
+> > 
+> > On Thu, Oct 16, 2014 at 11:51:15AM +0800, Chang Rebecca Swee Fun wrote:
+> > > Intel Quark X1000 GPIO controller supports interrupt handling for both
+> > > core power well and resume power well. This patch is to enable the IRQ
+> > > support and provide IRQ handling for Intel Quark X1000 GPIO-SCH device
+> > > driver.
+> > >
+> > > This piece of work is derived from Dan O'Donovan's initial work for
+> > > Quark X1000 enabling.
+> > >
+> > > Signed-off-by: Chang Rebecca Swee Fun
+> > > <rebecca.swee.fun.chang@intel.com>
+> > 
+> > In addition to what Varka Bhadram pointed out, I have few comments. See
+> > below.
+> > 
+> > Overall, looks good.
+> > 
+> > > ---
+> > >  drivers/gpio/gpio-sch.c |  257
+> > > ++++++++++++++++++++++++++++++++++++++++++++---
+> > >  1 file changed, 245 insertions(+), 12 deletions(-)
+> > >
+> (...)
 > 
-> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-> index 11a7cb1..ecdd71e 100644
-> --- a/drivers/staging/media/lirc/lirc_zilog.c
-> +++ b/drivers/staging/media/lirc/lirc_zilog.c
-> @@ -1633,7 +1633,7 @@ out_put_xx:
->  out_put_ir:
->  	put_ir_device(ir, true);
->  out_no_ir:
-> -	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
-> +	pr_err("%s: probing IR %s on %s (i2c-%d) failed with %d\n",
->  		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
->  		   ret);
->  	mutex_unlock(&ir_devices_lock);
+> > > +static void sch_gpio_irq_disable(struct irq_data *d) {
+> > > +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
+> > > +	u32 gpio_num;
+> > > +
+> > > +	gpio_num = d->irq - sch->irq_base;
+> > > +	sch_gpio_register_clear(sch, gpio_num, GGPE); }
+> > > +
+> > > +static void sch_gpio_irq_ack(struct irq_data *d) {
+> > > +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
+> > > +	u32 gpio_num;
+> > > +
+> > > +	gpio_num = d->irq - sch->irq_base;
+> > > +	sch_gpio_reg_set(&(sch->chip), gpio_num, GTS, 1);
+> > 
+> > Maybe use the new sch_gpio_register_set() here instead?
+> 
+> According to Alexandre's review feedback, sch_gpio_register_set() and
+> sch_gpio_register_clear() actually having similar block of codes with
+> sch_gpio_reg_set(). He suggested to call sch_gpio_reg_set(gc, gpio,
+> reg, 1) in place of sch_gpio_register_set() and sch_gpio_reg_set(gc,
+> gpio, reg, 0) for sch_gpio_register_clear(). I'm now in the progress
+> of reworking the patches in that direction.
+
+Sounds good.
+
+> > 
+> > > +}
+> > > +
+> > > +static int sch_gpio_irq_type(struct irq_data *d, unsigned type) {
+> > > +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
+> > > +	unsigned long flags;
+> > > +	u32 gpio_num;
+> > > +
+> > > +	if (d == NULL)
+> > > +		return -EINVAL;
+> > 
+> > How can that happen?
+> 
+> This is just to ensure the irq_data struct contains data. If you think
+> this is no needed, I will remove it in next submission.
+
+I think you can drop that check. Also if 'd' would be NULL you will
+crash already in
+
+	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
+
+> (...)
+> > > +
+> > > +static void sch_gpio_irqs_init(struct sch_gpio *sch, unsigned int
+> > > +num) {
+> > > +	unsigned int i;
+> > > +
+> > > +	for (i = 0; i < num; i++) {
+> > > +		irq_set_chip_data(i + sch->irq_base, sch);
+> > > +		irq_set_chip_and_handler_name(i + sch->irq_base,
+> > > +					      &sch_irq_chip,
+> > > +					      handle_simple_irq,
+> > > +					      "sch_gpio_irq_chip");
+> > 
+> > Hmm, I wonder if this
+> > 
+> > 		irq_set_chip_and_handler_name(i + sch->irq_base,
+> > &sch_irq_chip,
+> > 					handle_simple_irq,
+> > "sch_gpio_irq_chip");
+> > 
+> > looks better. Up to you.
+> > 
+> I think I will take what you've suggested. :)
+> 
+> (...)
+> > >  static int sch_gpio_probe(struct platform_device *pdev)  {
+> > >  	struct sch_gpio *sch;
+> > > -	struct resource *res;
+> > > +	struct resource *res, *irq;
+> > > +	int err;
+> > >
+> > >  	sch = devm_kzalloc(&pdev->dev, sizeof(*sch), GFP_KERNEL);
+> > >  	if (!sch)
+> > > @@ -203,6 +376,17 @@ static int sch_gpio_probe(struct platform_device
+> > *pdev)
+> > >  				 pdev->name))
+> > >  		return -EBUSY;
+> > >
+> > > +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> > > +	sch->irq_support = !!irq;
+> > > +	if (sch->irq_support) {
+> > > +		sch->irq_num = irq->start;
+> > > +		if (sch->irq_num < 0) {
+> > 
+> > Is this really possible? I mean can't you just detect the irq support by looking
+> > sch->irq_num? If it is > 0 then it has interrupt support. I think that irq 0 is not
+> > valid.
+> 
+> Yes, I can do that, but the irq_num was being passed from MFD LPC_SCH.
+> This implementation is to avoid enabling irq support if LPC_SCH passed
+> in a negative value.  As for irq 0, I think it is valid. Based on my
+> observation in "cat /proc/interrupt" there is a 0 irq line available.
+
+I see.
+
+In that case, how about following?
+
+	irq = platform_get_irq(pdev, 0)
+	if (irq >= 0) {
+		/* Add irq support here */
+	}
+
+> 
+> > 
+> > > +			dev_warn(&pdev->dev,
+> > > +				 "failed to obtain irq number for device\n");
+> > > +			sch->irq_support = false;
+> > > +		}
+> > > +	}
+> > > +
+> > >  	spin_lock_init(&sch->lock);
+> > >  	sch->iobase = res->start;
+> > >  	sch->chip = sch_gpio_chip;
+> > > @@ -251,15 +435,64 @@ static int sch_gpio_probe(struct platform_device
+> > *pdev)
+> > >  		return -ENODEV;
+> > >  	}
+> > >
+> > > +	err = gpiochip_add(&sch->chip);
+> > > +	if (err < 0)
+> > > +		goto err_sch_gpio;
+> > > +
+> > > +	if (sch->irq_support) {
+> > > +		sch->irq_base = irq_alloc_descs(-1, 0, sch->chip.ngpio,
+> > > +						NUMA_NO_NODE);
+> > > +		if (sch->irq_base < 0) {
+> > > +			dev_err(&pdev->dev,
+> > > +				"failed to allocate GPIO IRQ descs\n");
+> > > +			goto err_sch_intr_chip;
+> > > +		}
+> > > +
+> > > +		/* disable interrupts */
+> > > +		sch_gpio_irq_disable_all(sch, sch->chip.ngpio);
+> > > +
+> > > +		err = request_irq(sch->irq_num, sch_gpio_irq_handler,
+> > > +				  IRQF_SHARED, KBUILD_MODNAME, sch);
+> > > +		if (err) {
+> > > +			dev_err(&pdev->dev,
+> > > +				"%s failed to request IRQ\n", __func__);
+> > > +			goto err_sch_request_irq;
+> > > +		}
+> > > +
+> > > +		sch_gpio_irqs_init(sch, sch->chip.ngpio);
+> > > +	}
+> > > +
+> > >  	platform_set_drvdata(pdev, sch);
+> > >
+> > > -	return gpiochip_add(&sch->chip);
+> > > +	return 0;
+> > > +
+> > > +err_sch_request_irq:
+> > > +	irq_free_descs(sch->irq_base, sch->chip.ngpio);
+> > > +
+> > > +err_sch_intr_chip:
+> > > +	if (gpiochip_remove(&sch->chip))
+> > > +		dev_err(&pdev->dev,
+> > > +			"%s gpiochip_remove() failed\n", __func__);
+> > > +
+> > > +err_sch_gpio:
+> > > +	release_region(res->start, resource_size(res));
+> > 
+> > This is not needed as devm_request_region() will clean it up for you
+> > automatically. Even if probe() fails.
+> 
+> Noted with thanks.
+> 
+> Rebecca
