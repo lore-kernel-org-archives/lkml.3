@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaKEIqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:46:19 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:59291 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaKEIqQ (ORCPT
+	id S1753798AbaKEIsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:48:31 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:42448 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaKEIs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:46:16 -0500
-Message-ID: <5459E3D2.3050106@hitachi.com>
-Date: Wed, 05 Nov 2014 17:46:10 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 5 Nov 2014 03:48:29 -0500
+Date: Wed, 5 Nov 2014 14:18:19 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Joe Perches <joe@perches.com>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] ALSA: echoaudio: cleanup of unnecessary messages
+Message-ID: <20141105084819.GA6878@sudip-PC>
+References: <1415125074-28006-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <1415125681.23168.1.camel@perches.com>
+ <20141105070150.GA4881@sudip-PC>
+ <s5hppd29l8l.wl-tiwai@suse.de>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
- for cache
-References: <20141031185128.27889.32747.stgit@localhost.localdomain> <20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com> <20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com> <20141104143814.GH18464@kernel.org> <5458FD56.8040304@hitachi.com> <87h9yew4gf.fsf@sejong.aot.lge.com>
-In-Reply-To: <87h9yew4gf.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hppd29l8l.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/05 15:23), Namhyung Kim wrote:
-> On Wed, 05 Nov 2014 01:22:46 +0900, Masami Hiramatsu wrote:
->> (2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
->>> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
->>>> OK, I agree using .debug/.buildid/ to store caches.
->>>> Here is what I'm thinking,
->>>  
->>>>   # this makes caches for given pattern instead of adding probes.
->>>>   perf probe --cache '* $params'
->>>
->>>>   # the cache is stored in .debug/.buildid/<buildid>.probe
->>>>   # the cache entry can be queried by buildid and eventname
->>>
->>> To follow the existing standard this would instead go to:
->>>
->>>>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
->>>>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
->>
->> Ah, I see. so you meant adding a top-level .debug/probes/ dir.
->> But in that case, shouldn't we change .debug/.buildid/bu/ildid to
->> .debug/probes/.buildid/bu/ildid ?
+On Wed, Nov 05, 2014 at 08:09:46AM +0100, Takashi Iwai wrote:
+> At Wed, 5 Nov 2014 12:31:50 +0530,
+> Sudip Mukherjee wrote:
+> > 
+> > On Tue, Nov 04, 2014 at 10:28:01AM -0800, Joe Perches wrote:
+> > > On Tue, 2014-11-04 at 23:47 +0530, Sudip Mukherjee wrote:
+> > > > commit "b5b4a41b392960010fccf1f9ccf8334d612bd450" was dereferencing
+> > > > chip after it has been freed. This patch fixes that and at the same
+> > > > time removes some debugging messages, which are unnecessary, as they
+> > > > are just printing information about entry and exit from a function.
+> > > > This information we can easily get from ftrace.
+> > > 
+> > > Mostly true.
+> > > 
+> > > > diff --git a/sound/pci/echoaudio/echoaudio.c b/sound/pci/echoaudio/echoaudio.c
+> > > []
+> > > > @@ -763,10 +755,8 @@ static int pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+> > > >  	spin_lock(&chip->lock);
+> > > >  	switch (cmd) {
+> > > >  	case SNDRV_PCM_TRIGGER_RESUME:
+> > > > -		dev_dbg(chip->card->dev, "pcm_trigger resume\n");
+> > > >  	case SNDRV_PCM_TRIGGER_START:
+> > > >  	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+> > > > -		dev_dbg(chip->card->dev, "pcm_trigger start\n");
+> > > >  		for (i = 0; i < DSP_MAXPIPES; i++) {
+> > > >  			if (channelmask & (1 << i)) {
+> > > >  				pipe = chip->substream[i]->runtime->private_data;
+> > > 
+> > > These may not be useful but this switch state information
+> > > can't be got from ftrace.
+> > is this information required? trigger callback will be called everytime pcm is started, stopped or paused. then log will be full of just these messages.
+> > if it is required then i can send a v2, if not required then also i can send another cleanup patch to clear the other prints in the
+> > switch-case of other devices in echoaudio.
 > 
-> Either is fine to me.  But my concern is that it might be bloated as
-> system/package update is going on, so we need to control it somehow.
-> That's why I suggested the probe-cache command.
+> There has been never such "requirement".  It's merely a debug code.
 
-Yes, that is also my question. Should we really have 3 cache management
-commands? At the first step, maybe we can have those as separated,
-but it would better be consolidated to one perf-cache command, I think.
+then i will send you a v2 of this patch which will also cleanup similar debug messages in the switch-case of other devices in echoaudio.
 
+thanks
+sudip
 
->>>>   perf probe --query ${remote_buildid}:do_fork
->>>>   p:probe/do_fork _text+298722 clone_flags=%di:u64 stack_start=%si:u64 stack_size=%dx:u64 parent_tidptr=%cx:u64 child_tidptr=%r8:u64
->>>
->>>>   # or perf can set it up directly to local
->>>>   perf probe --query-add do_fork
->>>
->>> You missed the build id above, no? I.e. it would be:
->>>
->>>>   # or perf can set it up directly to local
->>>>   perf probe --query-add ${remote_buildid}:do_fork
->>
->> No, since this command set the event to local machine, perf-probe
->> should check the local build-id and query the appropriate event
->> from the cache.
->> # BTW, maybe we'd better use perf probe --add '$do_fork' (calls
->> # "cache of do_fork")  instead of long --query-add. :)
 > 
-> It should take care of uprobe case too.  So simple do_fork should have
-> group/event or provider/marker form instead so that it can help to find
-> which binary defines the cached event.  Maybe we also need to keep a
-> event-to-binary table and then check (current?) build-id somehow to
-> identify correct event to be used.
 > 
-
-Good catch! :)
-
- perf probe --add '$group:event $params' # for cached event
- perf probe --add '%provider[@path]:marker $params' # for SDT event
-
-and these are automatically check the build-id.
-
-> Also this function entry level event cache can be used with uprobes..
-
-Yes, of course :)
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> Takashi
