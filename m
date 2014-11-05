@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297AbaKEXVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 18:21:34 -0500
-Received: from mail.us.es ([193.147.175.20]:52081 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975AbaKEXVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 18:21:31 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus4 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19591. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
- Processed in 4.252613 secs); 05 Nov 2014 23:21:29 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Thu, 6 Nov 2014 00:23:14 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
-Subject: Re: [PATCH 3/8] netfilter: Convert print_tuple functions to return
- void
-Message-ID: <20141105232314.GA3195@salvia>
-References: <20141105192426.348510548@goodmis.org>
- <20141105192544.214361386@goodmis.org>
+	id S1751306AbaKEXXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:23:19 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:62651 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaKEXXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 18:23:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105192544.214361386@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5459650E.6070201@osg.samsung.com>
+References: <cover.1415117102.git.shuahkh@osg.samsung.com>
+	<CAGXu5jK9-TpOF4SFX2bkU2UJMXk-3W+-_we0BTxu4Ga+7bYXSQ@mail.gmail.com>
+	<5459650E.6070201@osg.samsung.com>
+Date: Wed, 5 Nov 2014 15:23:14 -0800
+X-Google-Sender-Auth: T-AfqlqiBjqvZkxkMW1PJUANfHk
+Message-ID: <CAGXu5jKs0ym5sqsPRFD_MJd05-+nS0v+oiscwUQ5JzvgsZTe=Q@mail.gmail.com>
+Subject: Re: [PATCH 00/20] kselftest install target feature
+From: Kees Cook <keescook@chromium.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+        Phong Tran <tranmanphong@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Hugh Dickins <hughd@google.com>, pranith kumar <bobby.prani@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 02:24:29PM -0500, Steven Rostedt wrote:
-> From: Joe Perches <joe@perches.com>
-> 
-> Since adding a new function to seq_file (seq_has_overflowed())
-> there isn't any value for functions called from seq_show to
-> return anything.   Remove the int returns of the various
-> print_tuple/<foo>_print_tuple functions.
-> 
-> Link: http://lkml.kernel.org/p/f2e8cf8df433a197daa62cbaf124c900c708edc7.1412031505.git.joe@perches.com
-> 
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-> Cc: netfilter-devel@vger.kernel.org
-> Cc: coreteam@netfilter.org
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On Tue, Nov 4, 2014 at 3:45 PM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+> On 11/04/2014 12:22 PM, Kees Cook wrote:
+>> On Tue, Nov 4, 2014 at 9:10 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+>>> This patch series adds a new kselftest_install make target
+>>> to enable selftest install. When make kselftest_install is
+>>> run, selftests are installed on the system. A new install
+>>> target is added to selftests Makefile which will install
+>>> targets for the tests that are specified in INSTALL_TARGETS.
+>>> During install, a script is generated to run tests that are
+>>> installed. This script will be installed in the selftest install
+>>> directory. Individual test Makefiles are changed to add to the
+>>> script. This will allow new tests to add install and run test
+>>> commands to the generated kselftest script.
+>>
+>> I'm all for making the self tests more available, but I don't think
+>> this is the right approach. My primary objection is that it creates a
+>> second way to run tests, and that means any changes and additions need
+>> to be updated in two places. I'd much rather just maintain the single
+>> "make" targets instead. Having "make" available on the target device
+>> doesn't seem too bad to me. Is there a reason that doesn't work for
+>> your situation?
+>
+> Kees,
+>
+> My primary objective is to provide a way to install selftests for a
+> specific kernel release. This will allow developers to run tests for
+> a specific release and look for regressions. Adding an install target
+> will also help support local execution of tests in a virtualized
+> environments. In some cases such as qemu, it is not practical to
+> expect the target to have support for "make". Once tests are installed
+> to be run outside the git environment, we need a master script that
+> can run the tests. Hence the need for a master script that can run
+> tests.
+>
+> We have the ability to run all tests via make kselftest target or
+> run a specific test using the individual test's run_tests target.
+> Both of above are necessary to support running tests from the tree.
+> Embedding run_tests logic in the makefiles doesn't work very well
+> in the long run.
+>
+> We also need a way to run them outside tree. I agree with you that
+> the way I added the script generation, duplicates the code in individual
+> run_tests targets and that changes/updates need to be made in both
+> places.
+>
+> Would you be ok with the approach if I fixed the duplicating
+> problem? I can address the duplication concern easily.
 
-I replied to this yesterday, but it seems some spam filter also
-munched it. One comment below.
+Yeah, getting rid of duplication would be much preferred. Thanks!
 
-> @@ -202,9 +203,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  	if (l4proto->print_conntrack)
->  		l4proto->print_conntrack(s, ct);
->  
-> -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-> -			l3proto, l4proto))
-> -		goto release;
-> +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-> +		    l3proto, l4proto);
->  
->  	if (seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL))
->  		goto release;
+-Kees
 
-seq_print_acct returns seq_printf which is now void. I guess you have
-to remove this check too.
+>
+>>
+>> I would, however, like to see some better standardization of the test
+>> "framework" that we've got in there already. (For example, some
+>> failures fail the "make", some don't, there are various reporting
+>> methods for success/failure depending on the test, etc.)
+>
+> This is being addressed and I have the framework in linux-kselftest
+> git next branch at the moment. I do think the above work is part of
+> addressing the larger framework issues such as being able to run tests
+> on a target system that might not have "make" support and makes it
+> easier to use.
+>
+> thanks,
+> -- Shuah
+>
+>
+> --
+> Shuah Khan
+> Sr. Linux Kernel Developer
+> Samsung Research America (Silicon Valley)
+> shuahkh@osg.samsung.com | (970) 217-8978
 
-> @@ -213,9 +213,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
->  		if (seq_printf(s, "[UNREPLIED] "))
->  			goto release;
->  
-> -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
-> -			l3proto, l4proto))
-> -		goto release;
-> +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
-> +		    l3proto, l4proto);
->  
->  	if (seq_print_acct(s, ct, IP_CT_DIR_REPLY))
->  		goto release;
 
-And here.
+
+-- 
+Kees Cook
+Chrome OS Security
