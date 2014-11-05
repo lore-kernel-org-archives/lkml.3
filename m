@@ -1,128 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaKESAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:00:05 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:56486 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259AbaKER76 (ORCPT
+	id S1752872AbaKESA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:00:57 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:48412 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845AbaKESAy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:59:58 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/7] pinctrl: pinconf-generic: Infer map type from DT property
-Date: Wed, 05 Nov 2014 15:56:29 +0200
-Message-ID: <21124316.ibhe1N9UZS@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com> <1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
+	Wed, 5 Nov 2014 13:00:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CANr6G5xtNYenhd8KDWx+kRcnSZ0fahUdAL+6Wcz=5_dNvrQR6Q@mail.gmail.com>
+References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
+	<CAJ3xEMjkxRg=uM+0kjOM0Zh84XYm_O6PiWoeYSw=LirU=ZJ+rA@mail.gmail.com>
+	<CANr6G5xtNYenhd8KDWx+kRcnSZ0fahUdAL+6Wcz=5_dNvrQR6Q@mail.gmail.com>
+Date: Wed, 5 Nov 2014 10:00:53 -0800
+Message-ID: <CA+mtBx_BOmV+tOtio48M+xRatK79B31LoGnf4uvFJAbxYqOt_w@mail.gmail.com>
+Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
+From: Tom Herbert <therbert@google.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: Or Gerlitz <gerlitz.or@gmail.com>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        "sathya.perla" <sathya.perla@emulex.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>, Amir Vadai <amirv@mellanox.com>,
+        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
+        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Soren,
+On Wed, Nov 5, 2014 at 9:50 AM, Joe Stringer <joestringer@nicira.com> wrote:
+>
+> On 5 November 2014 04:38, Or Gerlitz <gerlitz.or@gmail.com> wrote:
+>>
+>> On Tue, Nov 4, 2014 at 11:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>> > Most NICs that report NETIF_F_GSO_UDP_TUNNEL support VXLAN, and not other
+>> > UDP-based encapsulation protocols where the format and size of the header may
+>> > differ. This patch series implements ndo_gso_check() for these NICs,
+>> > restricting the GSO handling to something that looks and smells like VXLAN.
+>> >
+>> > Implementation shamelessly stolen from Tom Herbert (with minor fixups):
+>> > http://thread.gmane.org/gmane.linux.network/332428/focus=333111
+>>
+>>
+>> Hi Joe,
+>>
+>> 1st, thanks for picking this task...2nd, for drivers that currently
+>> support only pure VXLAN, I don't see the point
+>> to replicate the helper suggested by Tom (good catch on the size check
+>> to be 16 and not 12) four times and who know how more in the future.
+>> Let's just have one generic helper and make the mlx4/be/fm10k/benet
+>> drivers to have it as their ndo, OK?
+>
+>
+> Thanks for taking a look.
+>
+> I had debated whether to do this or not as the actual support on each NIC may differ, and each implementation may morph over time to match these capabilities better. Obviously the vendors will know better than me on this, so I'm posing this series to prod them for more information. At this point I've had just one maintainer come back and confirm that this helper is a good fit for their hardware, so I'd like to confirm that multiple drivers will use a ndo_gso_check_vxlan_helper() function before I go and create it.
 
-Thank you for the patch.
 
-On Monday 03 November 2014 11:05:26 Soren Brinkmann wrote:
-> With the new 'groups' property, the DT parser can infer the map type
-> from the fact whether 'pins' or 'groups' is used to specify the pin
-> group to work on.
-> To maintain backwards compatibitliy with current usage of the DT
-> binding, this is only done when an invalid map type is passed to the
-> parsing function.
+Thanks for implementing this fix!
 
-The Renesas PFC implements similar bindings with using the vendor-specific 
-properties "renesas,pins" and "renesas,groups" (bindings and implementation 
-available at Documentation/devicetree/bindings/pinctrl/renesas,pfc-pinctrl.txt 
-and drivers/pinctrl/sh-pfc/pinctrl.c respectively).
-
-The Renesas implementation is a bit more generic in that it allows both pins 
-and groups to be specified in a single subnode. Do you think that feature 
-would make sense for pinconf-generic as well ?
-
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> Changes since RFC v2:
->  - none
-> ---
->  drivers/pinctrl/pinconf-generic.c       | 17 ++++++++++++++---
->  include/linux/pinctrl/pinconf-generic.h |  7 +++++++
->  2 files changed, 21 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinconf-generic.c
-> b/drivers/pinctrl/pinconf-generic.c index f78b416d7984..1e782a0d6e48 100644
-> --- a/drivers/pinctrl/pinconf-generic.c
-> +++ b/drivers/pinctrl/pinconf-generic.c
-> @@ -264,6 +264,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev
-> *pctldev, unsigned reserve;
->  	struct property *prop;
->  	const char *group;
-> +	const char *dt_pin_specifier = "pins";
-> 
->  	ret = of_property_read_string(np, "function", &function);
->  	if (ret < 0) {
-> @@ -284,10 +285,20 @@ int pinconf_generic_dt_subnode_to_map(struct
-> pinctrl_dev *pctldev, reserve++;
->  	if (num_configs)
->  		reserve++;
-> +
->  	ret = of_property_count_strings(np, "pins");
->  	if (ret < 0) {
-> -		dev_err(dev, "could not parse property pins\n");
-> -		goto exit;
-> +		ret = of_property_count_strings(np, "groups");
-> +		if (ret < 0) {
-> +			dev_err(dev, "could not parse property pins/groups\n");
-> +			goto exit;
-> +		}
-> +		if (type == PIN_MAP_TYPE_INVALID)
-> +			type = PIN_MAP_TYPE_CONFIGS_GROUP;
-> +		dt_pin_specifier = "groups";
-> +	} else {
-> +		if (type == PIN_MAP_TYPE_INVALID)
-> +			type = PIN_MAP_TYPE_CONFIGS_PIN;
->  	}
->  	reserve *= ret;
-> 
-> @@ -296,7 +307,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev
-> *pctldev, if (ret < 0)
->  		goto exit;
-> 
-> -	of_property_for_each_string(np, "pins", prop, group) {
-> +	of_property_for_each_string(np, dt_pin_specifier, prop, group) {
->  		if (function) {
->  			ret = pinctrl_utils_add_map_mux(pctldev, map,
->  					reserved_maps, num_maps, group,
-> diff --git a/include/linux/pinctrl/pinconf-generic.h
-> b/include/linux/pinctrl/pinconf-generic.h index d578a60eff23..b6dedfbfce69
-> 100644
-> --- a/include/linux/pinctrl/pinconf-generic.h
-> +++ b/include/linux/pinctrl/pinconf-generic.h
-> @@ -174,6 +174,13 @@ static inline int pinconf_generic_dt_node_to_map_pin(
->  			PIN_MAP_TYPE_CONFIGS_PIN);
->  }
-> 
-> +static inline int pinconf_generic_dt_node_to_map_all(
-> +		struct pinctrl_dev *pctldev, struct device_node *np_config,
-> +		struct pinctrl_map **map, unsigned *num_maps)
-> +{
-> +	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
-> +			PIN_MAP_TYPE_INVALID);
-> +}
->  #endif
-> 
->  #endif /* CONFIG_GENERIC_PINCONF */
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Personally, I would rather not have the helper. This is already a
+small number of drivers, and each driver owner should consider what
+limitations are of their device and try to enable to allow the maximum
+number of use cases possible. I'm also hoping that new devices will
+implement the more generic mechanism so that VXLAN is just one
+supported protocol.
