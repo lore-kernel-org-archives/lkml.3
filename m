@@ -1,221 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaKESSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:18:07 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:51760 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaKESSE (ORCPT
+	id S1751658AbaKESTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:19:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50814 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaKESTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 13:18:04 -0500
-Date: Wed, 5 Nov 2014 19:14:54 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Nix <nix@esperi.org.uk>
-Cc: Johan Hovold <johan@kernel.org>, Paul Martin <pm@debian.org>,
-        Daniel Silverstone <dsilvers@debian.org>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm)
- broken in 3.16
-Message-ID: <20141105181454.GW31358@localhost>
-References: <20141012185845.GB2786@localhost>
- <878uklynq9.fsf@spindle.srvr.nix>
- <20141014083432.GB7958@localhost>
- <871tq04fiy.fsf@spindle.srvr.nix>
- <20141022101458.GK2113@localhost>
- <87y4s8yv38.fsf@spindle.srvr.nix>
- <20141024111442.GA19377@localhost>
- <87d298i3y9.fsf@spindle.srvr.nix>
- <20141105115643.GR31358@localhost>
- <87vbmtbrx2.fsf@spindle.srvr.nix>
+	Wed, 5 Nov 2014 13:19:04 -0500
+Message-ID: <545A6A0A.70806@canonical.com>
+Date: Wed, 05 Nov 2014 13:18:50 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vbmtbrx2.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Pratyush Anand <pratyush.anand@st.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "pmladek@suse.cz" <pmladek@suse.cz>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "peter.chen@freescale.com" <peter.chen@freescale.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [Regression][v3.17][v3.18]   USB: Fix persist resume of some
+ SS USB devices
+References: <54595116.1050802@canonical.com> <20141105052335.GB2517@pratyush-vbox> <20141105084832.GC2517@pratyush-vbox>
+In-Reply-To: <20141105084832.GC2517@pratyush-vbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 03:14:49PM +0000, Nix wrote:
-> On 5 Nov 2014, Johan Hovold stated:
-> 
-> > On Fri, Oct 31, 2014 at 04:44:46PM +0000, Nix wrote:
-> >> Sorry for the delay: illness and work-related release time flurries.
-> >> 
-> >> On 24 Oct 2014, Johan Hovold told this:
-> >> 
-
-> > The log appears incomplete again, this time it seems the last part is
-> > completely missing (the device is never closed for example). The device
-> > still seems to be responding.
-> 
-> Nope -- by the time I clipped the log, the device was definitely
-> nonresponsive.
+On 11/05/2014 03:48 AM, Pratyush Anand wrote:
+> On Wed, Nov 05, 2014 at 10:53:35AM +0530, Pratyush Anand wrote:
+>> Hello Joe,
+>>
+>> On Wed, Nov 05, 2014 at 06:20:06AM +0800, Joseph Salisbury wrote:
+>>> Hello Pratyush,
+>>>
+>>> A kernel bug report was opened against Ubuntu [0].  After a kernel
+>>> bisect, it was found that reverting the following commit resolved this bug:
+>>>
+>>> commit a40178b2fa6ad87670fb1e5fa4024db00c149629
+>>> Author: Pratyush Anand <pratyush.anand@st.com>
+>>> Date:   Fri Jul 18 12:37:10 2014 +0530
+>>>
+>>>     USB: Fix persist resume of some SS USB devices
+>>>
+>>> The regression was introduced as of v3.17-rc1.  The regression still
+>>> exists in the 3.18-rc3 mainline kernel, and has made it's way into the
+>>> stable kernels.
+>> Its strange, as per my understanding patch does not introduce any side
+>> effect for devices whose resume time is normal. So, if a device is
+>> connected to the SS port and it was working after resume from
+>> suspend to ram without this patch, then that device should still work
+>> with this patch.
+>>
+>> Infact this has resolved another bug reported to bugzilla
+>> https://bugzilla.kernel.org/show_bug.cgi?id=53211
+>>
+>>
+>>> I was hoping to get your feedback, since you are the patch author.  Do
+>>> you think gathering any additional data will help diagnose this issue,
+>> Yaa, sure additional info will help to understand the issue.
+>> -- dmesg log of suspend resume when this patch is not applied and also
+>> when applied.
+> I see that you have already provided both log to the buglink. I had a
+> look on that. 
 >
-> I've appended the remaining log, just in case. This is the same as the
-> snapshot I added to the email itself last time: a close-and-open as I
-> tried restarting the daemon, and another close as part of system
-> shutdown.
+>
+> When it fails (with this patch):
+> Oct 22 15:38:59 mana kernel: [   59.825122] PM: resume of devices
+> complete after 22223.878 msecs
+>
+> When it passed (without this patch):
+> Oct 22 15:37:19 mana kernel: [   53.495109] PM: resume of devices
+> complete after 3641.933 msecs
+> However, even when patch was not present(and it passed), there is a logical
+> disconnection of devices, so you would face the issue mentioned in
+> https://bugzilla.kernel.org/show_bug.cgi?id=53211.
+>
+> Looking to the timeout, it seems that wait loop went for full length
+> (2S) for all the devices, still could not find a connected device. So,
+> basically SS link between root hub and hub was not up in 2 sec. Not
+> sure why, but reading further hub port status caused some fatal issue
+> with xhci host and so it is not able to get new device connection
+> after logical disconnection.
+>
+> Increasing the timeout value may help. But with this long timeout I see a
+> possibility of sync issue between port_event and usb_port_resume. It
+> might happen that port_event reads hub port status before
+> usb_port_resume handles reset_resume.
+>
+> Can you try following patch with step increasing varied value of
+> PORT_ENABLE_WAIT, and then let me know which value of
+> PORT_ENABLE_WAIT works for you (if it works ;)).
+>
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 11e80ac31324..6eaf481d3d53 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -3311,13 +3311,14 @@ static int finish_port_resume(struct usb_device *udev)
+>   * This routine should only be called when persist is enabled for a SS
+>   * device.
+>   */
+> +#define PORT_ENABLE_WAIT	2000
+>  static int wait_for_ss_port_enable(struct usb_device *udev,
+>  		struct usb_hub *hub, int *port1,
+>  		u16 *portchange, u16 *portstatus)
+>  {
+>  	int status = 0, delay_ms = 0;
+>  
+> -	while (delay_ms < 2000) {
+> +	while (delay_ms < PORT_ENABLE_WAIT) {
+>  		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
+>  			break;
+>  		msleep(20);
+> @@ -4881,6 +4882,22 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
+>  	usb_lock_port(port_dev);
+>  }
+>  
+> +static void wait_for_reset_resume(struct usb_hub *hub, int port)
+> +{
+> +	struct usb_device *udev;
+> +	int delay_ms = 0;
+> +
+> +	udev = hub->ports[port -1]->child;
+> +	if (udev && udev->reset_resume) {
+> +		while (delay_ms < PORT_ENABLE_WAIT) {
+> +			if (!udev->reset_resume)
+> +				break;
+> +			msleep(20);
+> +			delay_ms += 20;
+> +		}
+> +	}
+> +}
+> +
+>  static void port_event(struct usb_hub *hub, int port1)
+>  		__must_hold(&port_dev->status_lock)
+>  {
+> @@ -4894,6 +4911,8 @@ static void port_event(struct usb_hub *hub, int port1)
+>  	clear_bit(port1, hub->event_bits);
+>  	clear_bit(port1, hub->wakeup_bits);
+>  
+> +	wait_for_reset_resume(hub, port1);
+> +
+>  	if (hub_port_status(hub, port1, &portstatus, &portchange) < 0)
+>  		return;
+>  
+> Regards
+> Pratyush
 
-Ok, yeah, there's the crash.
-
-> >> >                                                      What if you
-> >> > physically disconnect and reconnect the device instead, or simply
-> >> 
-> >> That fixes it, in fact it's the only way to fix it once it's broken by
-> >> this bug.
-> >
-> > I didn't mean whether it would get the device working again, but rather
-> > whether you could kill it this way.
-> 
-> Never seen it fail after a physical disconnection.
-
-Ok.
-
-And it has to include an enumeration, since just opening and closing it
-(restarting the daemon) repeatedly seems to work?
-
-> >> ... no, that doesn't help. Additional log from that shows a lot of what
-> >> looks like error returns:
-> >> 
-> >> Oct 31 16:38:03 fold kern debug: : [  168.135213] cdc_acm 2-1:1.0: acm_tty_close
-> >> Oct 31 16:38:08 fold kern debug: : [  173.130531] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x0, len 0x0, result -110
-> >
-> > Yeah, it seems your device firmware has crashed. It stops responding to
-> > control requests.
-> 
-> Not surprising: I was fairly sure we were provoking a key firmware crash
-> or something like that. This is a device with no support for flow
-> control at all, after all, so I'm not terribly surprised that trying to
-> do flow control confuses it.
-
-Only weird thing is that it has been coping with those calls for a long
-time. Only the slightly changed timings seems to have triggered this
-issue.
-
-> > The above is all normal, but
-> >
-> >> Oct 31 16:38:08 fold kern debug: : [  173.161489] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x3, len 0x0, result -62
-> >
-> > here's another timeout. It's dead.
-> 
-> Again, not surprising.
-> 
-> > Did you get anywhere with trying to look at the device firmware?
-> 
-> Look at it? Only Daniel Silverstone (Cc:ed) can do that. The only copy
-> of the firmware I have is baked into the sealed key. :)
-
-Ah, ok. I guess we need a new quirk then. There's already a quirk in the
-driver to suppress error from when trying to set the control lines.
-
-But that doesn't help this device, which happily accepts the requests
-and then dies at random times.
-
-Could you try two more things (too make sure line control is really the
-culprit):
-
-1. If you clear HUPCL in ekeyd so that the lines are never lowered, does
-that fix the stability issue?
-
-2. Can you verify that the patch below works? Did I use the correct
-VID/PID? Could you provide "lsusb -v" output (for the capability flags)
-as well?
-
-Note that the patch is against the usb-linus branch of the usb tree,
-which also contains another fix which could affect this device
-(set_termios will now be called an extra time on every open). You also
-need this one, which have not yet been applied:
-
-	http://marc.info/?l=linux-usb&m=141520959813505&w=2
-
-Thanks,
-Johan
+Thanks for the feedback, Pratyush.  We'll test your patch and get back
+to you.
 
 
->From 76abc8a7eda9ea1978ee3527c773210c28332317 Mon Sep 17 00:00:00 2001
-From: Johan Hovold <johan@kernel.org>
-Date: Wed, 5 Nov 2014 18:51:54 +0100
-Subject: [PATCH] USB: cdc-acm: add quirk for control-line state requests
-
-Add new quirk for devices that cannot handle control-line state
-requests.
-
-Note that we currently send these requests to all devices, regardless of
-whether they claim to support it, but that errors are only logged if
-support is claimed.
-
-Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
-only changed the timings for these requests slightly, this has been
-reported to cause occasional firmware crashes on Simtec Electronics
-Entropy Key devices after re-enumeration. Enable the quirk for this
-device.
-
-Reported-by: Nix <nix@esperi.org.uk>
-Cc: stable <stable@vger.kernel.org>	# v3.16
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- drivers/usb/class/cdc-acm.c | 14 ++++++++++++--
- drivers/usb/class/cdc-acm.h |  2 ++
- 2 files changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 9d6495424b06..077d58ac3dcb 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -148,8 +148,15 @@ static int acm_ctrl_msg(struct acm *acm, int request, int value,
- /* devices aren't required to support these requests.
-  * the cdc acm descriptor tells whether they do...
-  */
--#define acm_set_control(acm, control) \
--	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
-+static inline int acm_set_control(struct acm *acm, int control)
-+{
-+	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
-+		return -EOPNOTSUPP;
-+
-+	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
-+			control, NULL, 0);
-+}
-+
- #define acm_set_line(acm, line) \
- 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
- #define acm_send_break(acm, ms) \
-@@ -1320,6 +1327,7 @@ made_compressed_probe:
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
- 	init_usb_anchor(&acm->delayed);
-+	acm->quirks = quirks;
- 
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1687,6 +1695,8 @@ static const struct usb_device_id acm_ids[] = {
- 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
-+	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
-+	.driver_info = QUIRK_CONTROL_LINE_STATE, },
- 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
- 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
- 	},
-diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
-index fc75651afe1c..d3251ebd09e2 100644
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -121,6 +121,7 @@ struct acm {
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
- 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
-+	unsigned long quirks;
- };
- 
- #define CDC_DATA_INTERFACE_TYPE	0x0a
-@@ -132,3 +133,4 @@ struct acm {
- #define NOT_A_MODEM			BIT(3)
- #define NO_DATA_INTERFACE		BIT(4)
- #define IGNORE_DEVICE			BIT(5)
-+#define QUIRK_CONTROL_LINE_STATE	BIT(6)
--- 
-2.0.4
+>
+>> -- dmesg log with following additional debug print.
+>> @@ -3318,6 +3318,7 @@ static int wait_for_ss_port_enable(struct usb_device *udev,
+>>         int status = 0, delay_ms = 0;
+>>          
+>>         while (delay_ms < 2000) {
+>> +               printk("%s:portstatus is %x and portchange is %x\n", __func__, *portstatus, *portchange);
+>>                if (status || *portstatus & USB_PORT_STAT_CONNECTION)
+>>                         break;
+>>
+>>> or would it be best to submit a revert request?
+>> Let me see what is the portstatus value and why didn't it break loop in first
+>> iteration if device was OK.
+>>
+>> Regards
+>> Pratyush
+>>
+>>>    
+>>>
+>>> Thanks,
+>>>    
+>>> Joe
+>>>
+>>> [0] http://pad.lv/1384041
 
