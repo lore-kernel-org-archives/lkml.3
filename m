@@ -1,151 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaKEL0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 06:26:38 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:46512 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520AbaKEL0h (ORCPT
+	id S1754621AbaKEL3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 06:29:31 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49473 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaKEL32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 06:26:37 -0500
-Date: Wed, 5 Nov 2014 03:26:33 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 v4] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Message-ID: <20141105112633.GK22361@norris-Latitude-E6410>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315E9B48@NTXXIAMBX02.xacn.micron.com>
+	Wed, 5 Nov 2014 06:29:28 -0500
+Date: Wed, 5 Nov 2014 16:59:15 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Cc: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Matina Maria Trompouki <mtrompou@gmail.com>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: media: lirc: modify print calls
+Message-ID: <20141105112915.GA2680@sudip-PC>
+References: <20141104214307.GA6709@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E9B48@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <20141104214307.GA6709@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 01:25:14PM +0000, bpqw wrote:
-> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+On Tue, Nov 04, 2014 at 11:43:07PM +0200, Aya Mahfouz wrote:
+> This patches replaces one pr_debug call by dev_dbg and
+> changes the device used by one of the dev_err calls.
+
+i think you should mention in the commit message why you are changing the device.
+and also for revised patch its better if you add version number in the subject.
+like this is v2.
+
+thanks
+sudip
+
 > 
-> For Micron SPI NOR flash,enabling or disabling quad I/O protocol is controlled
-> by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
-> When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O mode.
-> 
-> Signed-off-by: bean huo <beanhuo@micron.com>
-> Acked-by: Marek Vasut <marex@denx.de>
+> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
 > ---
->  v1-v2:modified to that capture wait_till_ready()
-> 	 return value,if error,directly return its
-> 	 the value.
->  v2-v3:directly use the reurning error value of
-> 	 read_reg and write_reg,instead of -EINVAL.
->  V3-v4:
-> 	Modify commit logs that wraped into 80 columns 
-
-Please be aware that resending your patch every few days does not really
-help your cause.
-
-Also, your patch is still corrupt and cannot be applied as-is. Please
-double-check your mailer settings and resend once you have something I
-can apply.
-
-Brian
-
+>  drivers/staging/media/lirc/lirc_zilog.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
->  drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/mtd/spi-nor.h   |    6 ++++++
->  2 files changed, 52 insertions(+)
+> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+> index 52f8e91..dca806a 100644
+> --- a/drivers/staging/media/lirc/lirc_zilog.c
+> +++ b/drivers/staging/media/lirc/lirc_zilog.c
+> @@ -1447,7 +1447,7 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  	int ret;
+>  	bool tx_probe = false;
+>  
+> -	pr_debug("%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+> +	dev_dbg(&client->dev, "%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+>  		__func__, id->name, adap->nr, adap->name, client->addr);
+>  
+>  	/*
+> @@ -1631,7 +1631,7 @@ out_put_xx:
+>  out_put_ir:
+>  	put_ir_device(ir, true);
+>  out_no_ir:
+> -	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+> +	dev_err(&client->dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+>  		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
+>  		   ret);
+>  	mutex_unlock(&ir_devices_lock);
+> -- 
+> 1.9.3
 > 
-> diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c index b5ad6be..486b167 100644
-> --- a/drivers/mtd/spi-nor/spi-nor.c
-> +++ b/drivers/mtd/spi-nor/spi-nor.c
-> @@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
->  	return 0;
->  }
->  
-> +static int micron_quad_enable(struct spi_nor *nor) {
-> +	int ret, val;
-> +
-> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-> +	if (ret < 0) {
-> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	write_enable(nor);
-> +
-> +	/* set EVCR ,enable quad I/O */
-> +	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-> +	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-> +	if (ret < 0) {
-> +		dev_err(nor->dev,
-> +			"error while writing EVCR register\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = wait_till_ready(nor);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* read EVCR and check it */
-> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-> +	if (ret < 0) {
-> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-> +		return ret;
-> +	}
-> +	if (val & EVCR_QUAD_EN_MICRON) {
-> +		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)  {
->  	int status;
-> @@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
->  			return -EINVAL;
->  		}
->  		return status;
-> +	case CFI_MFR_ST:
-> +		status = micron_quad_enable(nor);
-> +		if (status) {
-> +			dev_err(nor->dev, "Micron quad-read not enabled\n");
-> +			return -EINVAL;
-> +		}
-> +		return status;
->  	default:
->  		status = spansion_quad_enable(nor);
->  		if (status) {
-> diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h index 9e6294f..d71b659 100644
-> --- a/include/linux/mtd/spi-nor.h
-> +++ b/include/linux/mtd/spi-nor.h
-> @@ -56,6 +56,10 @@
->  /* Used for Spansion flashes only. */
->  #define SPINOR_OP_BRWR		0x17	/* Bank register write */
->  
-> +/* Used for Micron flashes only. */
-> +#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
-> +#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
-> +
->  /* Status Register bits. */
->  #define SR_WIP			1	/* Write in progress */
->  #define SR_WEL			2	/* Write enable latch */
-> @@ -67,6 +71,8 @@
->  
->  #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
->  
-> +#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
-> +
->  /* Flag Status Register bits */
->  #define FSR_READY		0x80
->  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
