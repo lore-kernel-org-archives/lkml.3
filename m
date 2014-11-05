@@ -1,139 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaKEP1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:27:51 -0500
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:62733 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644AbaKEP1u (ORCPT
+	id S1755407AbaKEP3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:29:09 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43348 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755266AbaKEP3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:27:50 -0500
+	Wed, 5 Nov 2014 10:29:06 -0500
+Message-ID: <545A423F.1040709@kernel.org>
+Date: Wed, 05 Nov 2014 15:29:03 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5459DB82.9080100@nvidia.com>
-References: <54584260.8030602@nvidia.com>
-	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
-	<545895B2.2000101@nvidia.com>
-	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
-	<5459DB82.9080100@nvidia.com>
-Date: Wed, 5 Nov 2014 07:27:49 -0800
-Message-ID: <CAD7vxxJrsp096TXorWArg9FfpjmzM7+GtfSmzG1hqTA5MrzF3w@mail.gmail.com>
-Subject: Re: Possible regression with commit 52221610d
-From: Tim Kryger <tim.kryger@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Sachin Kamat <spk.linux@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
+        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
+        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org
+Subject: Re: [PATCH v2 1/3] iio: exyno-adc: use syscon for PMU register access
+References: <1410857931-4980-1-git-send-email-ch.naveen@samsung.com> <1410857931-4980-2-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1410857931-4980-2-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 12:10 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 11/05/2014 12:31 AM, Tim Kryger wrote:
->>
->> On Tue, Nov 4, 2014 at 1:00 AM, Alexandre Courbot <acourbot@nvidia.com>
->> wrote:
->>>
->>> Hi Tim, thanks for your reply!
->>>
->>> On 11/04/2014 02:28 PM, Tim Kryger wrote:
->>>>
->>>>
->>>> On Mon, Nov 3, 2014 at 7:05 PM, Alexandre Courbot <acourbot@nvidia.com>
->>>> wrote:
->>>>>
->>>>>
->>>>> Hi guys,
->>>>>
->>>>> On the NVIDIA shield (tegra114-roth) platform, I have noticed that MMC
->>>>> stopped working completely on recent kernels. MMC devices will not show
->>>>> up
->>>>> and the message "mmc1: Controller never released inhibit bit(s)." shows
->>>>> up
->>>>> repeatedly in the console.
->>>>>
->>>>> After bisecting I tracked commit
->>>>> 52221610dd84dc3e9196554f0292ca9e8ab3541d
->>>>> ("mmc: sdhci: Improve external VDD regulator support") as the one that
->>>>> introduced this issue, which seems somehow surprising to me since it
->>>>> has
->>>>> been around for a while and nobody else complained about this AFAICT.
->>>>
->>>>
->>>>
->>>> I'm not too familiar with the Nvidia Shield so can you please confirm
->>>> the following?
->>>>
->>>> The controller in the Tegra114 is SDHCI compliant and as such
->>>> sdhci_tegra_probe calls sdhci_add_host.  External regulators are
->>>> sought in sdhci_add_host with a call to mmc_regulator_get_supply.
->>>
->>>
->>>
->>> This is correct.
->>>
->>>> Since no external regulators are specified in tegra114.dtsi or
->>>> tegra114-roth.dts, mmc->supply.vmmc and mmc->supply.vqmmc are set to
->>>> -ENODEV.
->>>
->>>
->>>
->>> Actually 2 of the MMC nodes in tegra114-roth.dts (for SD card and eMMC)
->>> have
->>> a vmmc-supply property, so for two of them at least mmc->supply.vmmc is a
->>> valid pointer.
->>>
->>
->> I must have been looking at an old version of the file.  Thanks for
->> clearing this up.
->>
->>> As explained above, vmmc is a valid pointer for 2 instances of the MMC
->>> controller. Interestingly, if I just remove the "return" line in the
->>> IS_ERR() block (without moving it around), the issue also seems to be
->>> fixed.
->>>
->>>>
->>>> Can you provide the relevant parts of the log before the problem occurs?
->>>
->>>
->>>
->>> There is not much unfortunately ; the only relevant log I have is this:
->>>
->>> [   12.246022] mmc2: Timeout waiting for hardware interrupt.
->>> [   12.264990] mmc2: Controller never released inhibit bit(s).
->>>
->>> Some hardware interrupt timed out. I don't know much about the MMC
->>> subsystem. but could it be because initially the controller is not in a
->>> powered-on state, and that return statement causes the function to leave
->>> it
->>> unpowered?
->>
->>
->> In a nutshell, the issue here is that the SDHCI spec demands that VMMC
->> be supplied by the controller itself with the specific voltage
->> configured using the SDHCI_POWER_CONTROL register but almost nobody
->> does this.  Many SoCs omit this capability from their controllers and
->> instead rely upon external regulators.  In such cases there isn't
->> normally any need to update the voltage bits of the power control
->> register.  It sounds like you are saying this isn't true for the
->> Tegra114.
->
->
-> Thanks for your explanation, it makes sense now.
->
-> Looking at other Tegra boards .dts I noticed that SHIELD is the only one
-> using a vmmc-supply. Maybe this is the part that is wrong? I wrote this DTS
-> and cannot exclude I misread the schematics. Maybe that regulator is used
-> for some other (still sdmmc-related) purpose but the actual power provider
-> is the controller itself.
->
-> If you can confirm that the driver is performing as it should, I will look
-> in that direction and revise my DTS.
+On 16/09/14 09:58, Naveen Krishna Chatradhi wrote:
+> This patch updates the IIO based ADC driver to use syscon and regmap
+> APIs to access and use PMU registers instead of remapping the PMU
+> registers in the driver.
+> 
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> To: linux-iio@vger.kernel.org
+Applied to the togreg branch of iio.git - initially pushed out as testing
+for the autobuilders to play.
 
-I believe it is working as intended.  Is the schematic publicly available?
 
->
-> Thanks!
-> Alex.
->
->
+> ---
+> Changes since v1:
+> Rebased on top of togreg branch of IIO git
+> 
+>  drivers/iio/adc/exynos_adc.c |   30 +++++++++++++++++++++---------
+>  1 file changed, 21 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index 43620fd..fe03177 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -39,6 +39,8 @@
+>  #include <linux/iio/iio.h>
+>  #include <linux/iio/machine.h>
+>  #include <linux/iio/driver.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regmap.h>
+>  
+>  /* S3C/EXYNOS4412/5250 ADC_V1 registers definitions */
+>  #define ADC_V1_CON(x)		((x) + 0x00)
+> @@ -90,11 +92,14 @@
+>  
+>  #define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
+>  
+> +#define EXYNOS_ADCV1_PHY_OFFSET	0x0718
+> +#define EXYNOS_ADCV2_PHY_OFFSET	0x0720
+> +
+>  struct exynos_adc {
+>  	struct exynos_adc_data	*data;
+>  	struct device		*dev;
+>  	void __iomem		*regs;
+> -	void __iomem		*enable_reg;
+> +	struct regmap		*pmu_map;
+>  	struct clk		*clk;
+>  	struct clk		*sclk;
+>  	unsigned int		irq;
+> @@ -110,6 +115,7 @@ struct exynos_adc_data {
+>  	int num_channels;
+>  	bool needs_sclk;
+>  	bool needs_adc_phy;
+> +	int phy_offset;
+>  	u32 mask;
+>  
+>  	void (*init_hw)(struct exynos_adc *info);
+> @@ -183,7 +189,7 @@ static void exynos_adc_v1_init_hw(struct exynos_adc *info)
+>  	u32 con1;
+>  
+>  	if (info->data->needs_adc_phy)
+> -		writel(1, info->enable_reg);
+> +		regmap_write(info->pmu_map, info->data->phy_offset, 1);
+>  
+>  	/* set default prescaler values and Enable prescaler */
+>  	con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+> @@ -198,7 +204,7 @@ static void exynos_adc_v1_exit_hw(struct exynos_adc *info)
+>  	u32 con;
+>  
+>  	if (info->data->needs_adc_phy)
+> -		writel(0, info->enable_reg);
+> +		regmap_write(info->pmu_map, info->data->phy_offset, 0);
+>  
+>  	con = readl(ADC_V1_CON(info->regs));
+>  	con |= ADC_V1_CON_STANDBY;
+> @@ -225,6 +231,7 @@ static const struct exynos_adc_data exynos_adc_v1_data = {
+>  	.num_channels	= MAX_ADC_V1_CHANNELS,
+>  	.mask		= ADC_DATX_MASK,	/* 12 bit ADC resolution */
+>  	.needs_adc_phy	= true,
+> +	.phy_offset	= EXYNOS_ADCV1_PHY_OFFSET,
+>  
+>  	.init_hw	= exynos_adc_v1_init_hw,
+>  	.exit_hw	= exynos_adc_v1_exit_hw,
+> @@ -314,7 +321,7 @@ static void exynos_adc_v2_init_hw(struct exynos_adc *info)
+>  	u32 con1, con2;
+>  
+>  	if (info->data->needs_adc_phy)
+> -		writel(1, info->enable_reg);
+> +		regmap_write(info->pmu_map, info->data->phy_offset, 1);
+>  
+>  	con1 = ADC_V2_CON1_SOFT_RESET;
+>  	writel(con1, ADC_V2_CON1(info->regs));
+> @@ -332,7 +339,7 @@ static void exynos_adc_v2_exit_hw(struct exynos_adc *info)
+>  	u32 con;
+>  
+>  	if (info->data->needs_adc_phy)
+> -		writel(0, info->enable_reg);
+> +		regmap_write(info->pmu_map, info->data->phy_offset, 0);
+>  
+>  	con = readl(ADC_V2_CON1(info->regs));
+>  	con &= ~ADC_CON_EN_START;
+> @@ -362,6 +369,7 @@ static const struct exynos_adc_data exynos_adc_v2_data = {
+>  	.num_channels	= MAX_ADC_V2_CHANNELS,
+>  	.mask		= ADC_DATX_MASK, /* 12 bit ADC resolution */
+>  	.needs_adc_phy	= true,
+> +	.phy_offset	= EXYNOS_ADCV2_PHY_OFFSET,
+>  
+>  	.init_hw	= exynos_adc_v2_init_hw,
+>  	.exit_hw	= exynos_adc_v2_exit_hw,
+> @@ -374,6 +382,7 @@ static const struct exynos_adc_data exynos3250_adc_data = {
+>  	.mask		= ADC_DATX_MASK, /* 12 bit ADC resolution */
+>  	.needs_sclk	= true,
+>  	.needs_adc_phy	= true,
+> +	.phy_offset	= EXYNOS_ADCV1_PHY_OFFSET,
+>  
+>  	.init_hw	= exynos_adc_v2_init_hw,
+>  	.exit_hw	= exynos_adc_v2_exit_hw,
+> @@ -558,10 +567,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>  
+>  
+>  	if (info->data->needs_adc_phy) {
+> -		mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> -		info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
+> -		if (IS_ERR(info->enable_reg))
+> -			return PTR_ERR(info->enable_reg);
+> +		info->pmu_map = syscon_regmap_lookup_by_phandle(
+> +					pdev->dev.of_node,
+> +					"samsung,syscon-phandle");
+> +		if (IS_ERR(info->pmu_map)) {
+> +			dev_err(&pdev->dev, "syscon regmap lookup failed.\n");
+> +			return PTR_ERR(info->pmu_map);
+> +		}
+>  	}
+>  
+>  	irq = platform_get_irq(pdev, 0);
+> 
