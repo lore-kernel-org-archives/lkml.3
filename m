@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562AbaKEPtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:49:23 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:54227 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183AbaKEPtT (ORCPT
+	id S1755500AbaKEPtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:49:05 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42231 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183AbaKEPtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:49:19 -0500
+	Wed, 5 Nov 2014 10:49:02 -0500
 From: "pang.xunlei" <pang.xunlei@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Juri Lelli <juri.lelli@gmail.com>,
         "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH v3 7/7] sched/deadline: Modify cpudl_find() for more cases of electing best_cpu
-Date: Wed,  5 Nov 2014 23:48:26 +0800
-Message-Id: <1415202506-7800-7-git-send-email-pang.xunlei@linaro.org>
+Subject: [PATCH v3 4/7] sched/deadline: Fix several problems with cpudl_find()
+Date: Wed,  5 Nov 2014 23:48:23 +0800
+Message-Id: <1415202506-7800-4-git-send-email-pang.xunlei@linaro.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1415202506-7800-1-git-send-email-pang.xunlei@linaro.org>
 References: <1415202506-7800-1-git-send-email-pang.xunlei@linaro.org>
@@ -23,366 +23,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a runqueue runs out of DL tasks, it may have RT tasks or non-RT
-tasks or just idle. It'd be better to push the DL task to an idle cpu
-or non-RT cpu if there is any.
+cpudl_find() has some problems:
 
-Adds idle_enter_dl()/idle_exit_dl() to detect idle cases.
-Adds rt_enter_dl()/rt_exit_dl() to detect non-RT cases.
+1)in check_preempt_equal_dl(), called with NULL later_mask, thus
+cpudl_find() doesn't check cpudl.free_cpus at all.
 
-Use the same thought as tackling RT in the former patch.
+2)Also, the whole system isn't always overloaded with many DL tasks
+in which cases all the cpu may have a DL task running, so it may
+return the best cpu, because we only return the first maximum deadline
+cpu(is there a need to iterate the same deadline value to find more
+different cpus if possible?).
+So it may be reasonable to change the return value of cpudl_find()
+to a bool type, because it isn't always the best cpu actually which
+can be better determined in find_later_rq() via sched_domain topology.
+
+3)in the "else if" branch, uses cpus_allowed to test again.
+
+This patch syncs the logic in a former patch by "Juri Lelli", then
+problem 1) will be solved naturally, and modifies cpudl_find() and
+all its call sites to address these problems.
+
+The former patch by "Juri Lelli" is:
+"sched/deadline: Fix inter- exclusive cpusets migrations"
 
 Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
 ---
- kernel/sched/cpudeadline.c | 80 +++++++++++++++++++++++++++++++++++++---------
- kernel/sched/cpudeadline.h | 13 ++++++--
- kernel/sched/deadline.c    | 32 ++++++++++++++++---
- kernel/sched/idle_task.c   |  2 ++
- kernel/sched/rt.c          |  7 ++++
- kernel/sched/sched.h       | 11 +++++++
- 6 files changed, 123 insertions(+), 22 deletions(-)
+ kernel/sched/cpudeadline.c | 29 ++++++++++++++---------------
+ kernel/sched/cpudeadline.h |  2 +-
+ kernel/sched/deadline.c    | 45 ++++++++++++++++++++++++++-------------------
+ 3 files changed, 41 insertions(+), 35 deletions(-)
 
 diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index 72a3da3..8254310 100644
+index 539ca3c..72a3da3 100644
 --- a/kernel/sched/cpudeadline.c
 +++ b/kernel/sched/cpudeadline.c
-@@ -98,7 +98,7 @@ static inline int cpudl_maximum(struct cpudl *cp)
+@@ -97,30 +97,29 @@ static inline int cpudl_maximum(struct cpudl *cp)
+  * cpudl_find - find the best (later-dl) CPU in the system
   * @cp: the cpudl max-heap context
   * @p: the task
-  * @later_mask: a mask used to filter cpus, also used to fill
-- *     in with the selected CPUs if set_flag is set. Not NULL.
-+ *  back in with the selected CPUs if set_flag is set. Not NULL.
-  * @set_flag: a flag to determine if should set the later_mask.
+- * @later_mask: a mask to fill in with the selected CPUs (or NULL)
++ * @later_mask: a mask used to filter cpus, also used to fill
++ *     in with the selected CPUs if set_flag is set. Not NULL.
++ * @set_flag: a flag to determine if should set the later_mask.
   *
-  * Returns: (int)bool - CPUs were found
-@@ -110,7 +110,15 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+- * Returns: int - best CPU (heap maximum if suitable)
++ * Returns: (int)bool - CPUs were found
+  */
+ int cpudl_find(struct cpudl *cp, struct task_struct *p,
+-	       struct cpumask *later_mask)
++	       struct cpumask *later_mask, int set_flag)
+ {
+-	int best_cpu = -1;
++	struct cpumask tmp_mask;
  	const struct sched_dl_entity *dl_se = &p->dl;
  
- 
--	if (cpumask_and(&tmp_mask, later_mask, cp->free_cpus)) {
-+	if (cpumask_and(&tmp_mask, later_mask, cp->idle_cpus)) {
+-	if (later_mask && cpumask_and(later_mask, later_mask, cp->free_cpus)) {
+-		best_cpu = cpumask_any(later_mask);
+-		goto out;
+-	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
++
++	if (cpumask_and(&tmp_mask, later_mask, cp->free_cpus)) {
 +		if (set_flag)
 +			cpumask_copy(later_mask, &tmp_mask);
 +		return 1;
-+	} else if (cpumask_and(&tmp_mask, later_mask, cp->freert_cpus)) {
-+		if (set_flag)
-+			cpumask_copy(later_mask, &tmp_mask);
++	} else if (cpumask_and(later_mask, later_mask, cpumask_of(cpudl_maximum(cp))) &&
+ 			dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
+-		best_cpu = cpudl_maximum(cp);
+-		if (later_mask)
+-			cpumask_set_cpu(best_cpu, later_mask);
 +		return 1;
-+	} else if (cpumask_and(&tmp_mask, later_mask, cp->freedl_cpus)) {
- 		if (set_flag)
- 			cpumask_copy(later_mask, &tmp_mask);
- 		return 1;
-@@ -127,21 +135,47 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
-  * @cp: the cpudl max-heap context
-  * @cpu: the target cpu
-  * @dl: the new earliest deadline for this cpu
-- *
-+ * @set_flags: CPUDL_SET_XXX, CPUDL_CLEAR_XXX
-  * Notes: assumes cpu_rq(cpu)->lock is locked
-  *
-  * Returns: (void)
-  */
--void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
-+void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int set_flags)
- {
- 	int old_idx, new_cpu;
- 	unsigned long flags;
- 
- 	WARN_ON(!cpu_present(cpu));
- 
-+	/* We can do this percpu operation without spinlock */
-+	switch (set_flags) {
-+	case CPUDL_SET_IDLE:
-+		cpumask_set_cpu(cpu, cp->idle_cpus);
-+		/* sync for cpudl_find() */
-+		smp_rmb();
-+		return;
-+	case CPUDL_CLEAR_IDLE:
-+		cpumask_clear_cpu(cpu, cp->idle_cpus);
-+		/* sync for cpudl_find() */
-+		smp_rmb();
-+		return;
-+	case CPUDL_SET_FREERT:
-+		cpumask_set_cpu(cpu, cp->freert_cpus);
-+		/* sync for cpudl_find() */
-+		smp_rmb();
-+		return;
-+	case CPUDL_CLEAR_FREERT:
-+		cpumask_clear_cpu(cpu, cp->freert_cpus);
-+		/* sync for cpudl_find() */
-+		smp_rmb();
-+		return;
-+	default:
-+		break;
-+	}
-+
- 	raw_spin_lock_irqsave(&cp->lock, flags);
- 	old_idx = cp->elements[cpu].idx;
--	if (!is_valid) {
-+	if (set_flags == CPUDL_SET_FREEDL) {
- 		/* remove item */
- 		if (old_idx == IDX_INVALID) {
- 			/*
-@@ -163,8 +197,8 @@ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
- 			cpudl_exchange(cp, old_idx, parent(old_idx));
- 			old_idx = parent(old_idx);
- 		}
--		cpumask_set_cpu(cpu, cp->free_cpus);
--                cpudl_heapify(cp, old_idx);
-+		cpumask_set_cpu(cpu, cp->freedl_cpus);
-+		cpudl_heapify(cp, old_idx);
- 
- 		goto out;
  	}
-@@ -175,7 +209,7 @@ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
- 		cp->elements[cp->size - 1].cpu = cpu;
- 		cp->elements[cpu].idx = cp->size - 1;
- 		cpudl_change_key(cp, cp->size - 1, dl);
--		cpumask_clear_cpu(cpu, cp->free_cpus);
-+		cpumask_clear_cpu(cpu, cp->freedl_cpus);
- 	} else {
- 		cpudl_change_key(cp, old_idx, dl);
- 	}
-@@ -200,19 +234,33 @@ int cpudl_init(struct cpudl *cp)
- 			       sizeof(struct cpudl_item),
- 			       GFP_KERNEL);
- 	if (!cp->elements)
--		return -ENOMEM;
-+		goto out;
-+
-+	if (!alloc_cpumask_var(&cp->freedl_cpus, GFP_KERNEL))
-+		goto free_elements;
-+
-+	if (!zalloc_cpumask_var(&cp->freert_cpus, GFP_KERNEL))
-+		goto free_freedl_cpus;
-+
-+	if (!zalloc_cpumask_var(&cp->idle_cpus, GFP_KERNEL))
-+		goto free_freert_cpus;
  
--	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL)) {
--		kfree(cp->elements);
--		return -ENOMEM;
--	}
- 
- 	for_each_possible_cpu(i)
- 		cp->elements[i].idx = IDX_INVALID;
- 
--	cpumask_setall(cp->free_cpus);
-+	cpumask_setall(cp->freedl_cpus);
- 
- 	return 0;
-+
-+free_freert_cpus:
-+	kfree(cp->freert_cpus);
-+free_freedl_cpus:
-+	kfree(cp->freedl_cpus);
-+free_elements:
-+	kfree(cp->elements);
-+out:
-+	return -ENOMEM;
+-out:
+-	WARN_ON(best_cpu != -1 && !cpu_present(best_cpu));
+-
+-	return best_cpu;
++	return 0;
  }
  
  /*
-@@ -221,6 +269,8 @@ int cpudl_init(struct cpudl *cp)
-  */
- void cpudl_cleanup(struct cpudl *cp)
- {
--	free_cpumask_var(cp->free_cpus);
-+	free_cpumask_var(cp->freedl_cpus);
-+	free_cpumask_var(cp->freert_cpus);
-+	free_cpumask_var(cp->idle_cpus);
- 	kfree(cp->elements);
- }
 diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
-index dfdf594..20ebfffe 100644
+index 538c979..0c9636e 100644
 --- a/kernel/sched/cpudeadline.h
 +++ b/kernel/sched/cpudeadline.h
-@@ -5,6 +5,13 @@
+@@ -21,7 +21,7 @@ struct cpudl {
  
- #define IDX_INVALID     -1
- 
-+#define CPUDL_SET_DL		1 /* set deadline value, clear freedl_cpus */
-+#define CPUDL_SET_FREEDL	2 /* set freedl_cpus */
-+#define CPUDL_SET_FREERT	3 /* set freert_cpus */
-+#define CPUDL_CLEAR_FREERT	4 /* clear freert_cpus */
-+#define CPUDL_SET_IDLE		5 /* set idle_cpus */
-+#define CPUDL_CLEAR_IDLE	6 /* clear idle_cpus */
-+
- struct cpudl_item {
- 	u64 dl;
- 	int cpu;
-@@ -14,7 +21,9 @@ struct cpudl_item {
- struct cpudl {
- 	raw_spinlock_t lock;
- 	int size;
--	cpumask_var_t free_cpus;
-+	cpumask_var_t idle_cpus;
-+	cpumask_var_t freert_cpus;
-+	cpumask_var_t freedl_cpus;
- 	struct cpudl_item *elements;
- };
- 
-@@ -22,7 +31,7 @@ struct cpudl {
  #ifdef CONFIG_SMP
  int cpudl_find(struct cpudl *cp, struct task_struct *p,
- 	       struct cpumask *later_mask, int set_flag);
--void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
-+void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int set_flags);
+-	       struct cpumask *later_mask);
++	       struct cpumask *later_mask, int set_flag);
+ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
  int cpudl_init(struct cpudl *cp);
  void cpudl_cleanup(struct cpudl *cp);
- #endif /* CONFIG_SMP */
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index ddb6185..dc021a1 100644
+index 256e577..42edfcd 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
-@@ -665,6 +665,26 @@ static void update_curr_dl(struct rq *rq)
- 
- #ifdef CONFIG_SMP
- 
-+void idle_enter_dl(struct rq *this_rq)
-+{
-+	cpudl_set(&this_rq->rd->cpudl, this_rq->cpu, 0, CPUDL_SET_IDLE);
-+}
-+
-+void idle_exit_dl(struct rq *this_rq)
-+{
-+	cpudl_set(&this_rq->rd->cpudl, this_rq->cpu, 0, CPUDL_CLEAR_IDLE);
-+}
-+
-+void rt_enter_dl(struct rq *this_rq)
-+{
-+	cpudl_set(&this_rq->rd->cpudl, this_rq->cpu, 0, CPUDL_CLEAR_FREERT);
-+}
-+
-+void rt_exit_dl(struct rq *this_rq)
-+{
-+	cpudl_set(&this_rq->rd->cpudl, this_rq->cpu, 0, CPUDL_SET_FREERT);
-+}
-+
- static struct task_struct *pick_next_earliest_dl_task(struct rq *rq, int cpu);
- 
- static inline u64 next_deadline(struct rq *rq)
-@@ -691,7 +711,7 @@ static void inc_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
- 		 */
- 		dl_rq->earliest_dl.next = dl_rq->earliest_dl.curr;
- 		dl_rq->earliest_dl.curr = deadline;
--		cpudl_set(&rq->rd->cpudl, rq->cpu, deadline, 1);
-+		cpudl_set(&rq->rd->cpudl, rq->cpu, deadline, CPUDL_SET_DL);
- 	} else if (dl_rq->earliest_dl.next == 0 ||
- 		   dl_time_before(deadline, dl_rq->earliest_dl.next)) {
- 		/*
-@@ -715,7 +735,7 @@ static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
- 	if (!dl_rq->dl_nr_running) {
- 		dl_rq->earliest_dl.curr = 0;
- 		dl_rq->earliest_dl.next = 0;
--		cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
-+		cpudl_set(&rq->rd->cpudl, rq->cpu, 0, CPUDL_SET_FREEDL);
- 	} else {
- 		struct rb_node *leftmost = dl_rq->rb_leftmost;
- 		struct sched_dl_entity *entry;
-@@ -723,7 +743,8 @@ static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
- 		entry = rb_entry(leftmost, struct sched_dl_entity, rb_node);
- 		dl_rq->earliest_dl.curr = entry->deadline;
- 		dl_rq->earliest_dl.next = next_deadline(rq);
--		cpudl_set(&rq->rd->cpudl, rq->cpu, entry->deadline, 1);
-+		cpudl_set(&rq->rd->cpudl, rq->cpu,
-+					entry->deadline, CPUDL_SET_DL);
- 	}
+@@ -946,23 +946,34 @@ out:
+ 	return cpu;
  }
  
-@@ -1560,7 +1581,8 @@ static void rq_online_dl(struct rq *rq)
- 		dl_set_overload(rq);
- 
- 	if (rq->dl.dl_nr_running > 0)
--		cpudl_set(&rq->rd->cpudl, rq->cpu, rq->dl.earliest_dl.curr, 1);
-+		cpudl_set(&rq->rd->cpudl, rq->cpu,
-+					rq->dl.earliest_dl.curr, CPUDL_SET_DL);
- }
- 
- /* Assumes rq->lock is held */
-@@ -1569,7 +1591,7 @@ static void rq_offline_dl(struct rq *rq)
- 	if (rq->dl.overloaded)
- 		dl_clear_overload(rq);
- 
--	cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
-+	cpudl_set(&rq->rd->cpudl, rq->cpu, 0, CPUDL_SET_FREEDL);
- }
- 
- void init_sched_dl_class(void)
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index e053347..7838e56 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -26,6 +26,7 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
- static struct task_struct *
- pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+	idle_enter_dl(rq);
- 	idle_enter_rt(rq);
- 
- 	put_prev_task(rq, prev);
-@@ -49,6 +50,7 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
- 
- static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+	idle_exit_dl(rq);
- 	idle_exit_rt(rq);
- 	idle_exit_fair(rq);
- 	rq_last_tick_reset(rq);
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 49164f1..ee49b94 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1484,6 +1484,9 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 	if (!rt_rq->rt_queued)
- 		return NULL;
- 
-+	if (prev->sched_class != &rt_sched_class)
-+		rt_enter_dl(rq);
++static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
 +
- 	put_prev_task(rq, prev);
- 
- 	p = _pick_next_task_rt(rq);
-@@ -1498,6 +1501,10 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 
- static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
+ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
  {
-+	/* Neglect stop preempt. As for dl preempt, doesn't matter */
-+	if (rq->curr->sched_class != &rt_sched_class)
-+		rt_exit_dl(rq);
++	struct cpumask *later_mask = this_cpu_cpumask_var_ptr(local_cpu_mask_dl);
 +
- 	update_curr_rt(rq);
+ 	/*
+ 	 * Current can't be migrated, useless to reschedule,
+ 	 * let's hope p can move out.
+ 	 */
+-	if (rq->curr->nr_cpus_allowed == 1 ||
+-	    cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
++	if (rq->curr->nr_cpus_allowed == 1)
++		return;
++
++	cpumask_and(later_mask, rq->rd->span, cpu_active_mask);
++	cpumask_and(later_mask, later_mask, &rq->curr->cpus_allowed);
++	if (!cpudl_find(&rq->rd->cpudl, rq->curr, later_mask, 0))
+ 		return;
  
  	/*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index cc603fa..b76dfef 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1162,6 +1162,12 @@ extern void update_group_capacity(struct sched_domain *sd, int cpu);
+ 	 * p is migratable, so let's not schedule it and
+ 	 * see if it is pushed or pulled somewhere else.
+ 	 */
+-	if (p->nr_cpus_allowed != 1 &&
+-	    cpudl_find(&rq->rd->cpudl, p, NULL) != -1)
+-		return;
++	if (p->nr_cpus_allowed != 1) {
++		cpumask_and(later_mask, rq->rd->span, cpu_active_mask);
++		cpumask_and(later_mask, later_mask, &p->cpus_allowed);
++		if (cpudl_find(&rq->rd->cpudl, p, later_mask, 0))
++			return;
++	}
  
- extern void trigger_load_balance(struct rq *rq);
+ 	resched_curr(rq);
+ }
+@@ -1148,14 +1159,12 @@ next_node:
+ 	return NULL;
+ }
  
-+extern void rt_enter_dl(struct rq *this_rq);
-+extern void rt_exit_dl(struct rq *this_rq);
+-static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
+-
+ static int find_later_rq(struct task_struct *task)
+ {
+ 	struct sched_domain *sd;
+ 	struct cpumask *later_mask = this_cpu_cpumask_var_ptr(local_cpu_mask_dl);
+ 	int this_cpu = smp_processor_id();
+-	int best_cpu, cpu = task_cpu(task);
++	int cpu = task_cpu(task);
+ 
+ 	/* Make sure the mask is initialized first */
+ 	if (unlikely(!later_mask))
+@@ -1168,14 +1177,14 @@ static int find_later_rq(struct task_struct *task)
+ 	 * We have to consider system topology and task affinity
+ 	 * first, then we can look for a suitable cpu.
+ 	 */
+-	cpumask_copy(later_mask, task_rq(task)->rd->span);
+-	cpumask_and(later_mask, later_mask, cpu_active_mask);
++	cpumask_and(later_mask, task_rq(task)->rd->span, cpu_active_mask);
+ 	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+-	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+-			task, later_mask);
+-	if (best_cpu == -1)
++	if (!cpudl_find(&task_rq(task)->rd->cpudl, task, later_mask, 1))
+ 		return -1;
+ 
++	if (cpumask_weight(later_mask) == 1)
++		return cpumask_any(later_mask);
 +
-+extern void idle_enter_dl(struct rq *this_rq);
-+extern void idle_exit_dl(struct rq *this_rq);
-+
- extern void idle_enter_rt(struct rq *this_rq);
- extern void idle_exit_rt(struct rq *this_rq);
+ 	/*
+ 	 * If we are here, some target has been found,
+ 	 * the most suitable of which is cached in best_cpu.
+@@ -1200,6 +1209,7 @@ static int find_later_rq(struct task_struct *task)
  
-@@ -1169,6 +1175,11 @@ extern void idle_enter_fair(struct rq *this_rq);
- extern void idle_exit_fair(struct rq *this_rq);
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
++		int best_cpu;
+ 		if (sd->flags & SD_WAKE_AFFINE) {
  
- #else
-+static inline void rt_enter_dl(struct rq *rq) { }
-+static inline void rt_exit_dl(struct rq *rq) { }
-+
-+static inline void idle_enter_dl(struct rq *rq) { }
-+static inline void idle_exit_dl(struct rq *rq) { }
+ 			/*
+@@ -1212,12 +1222,9 @@ static int find_later_rq(struct task_struct *task)
+ 				return this_cpu;
+ 			}
  
- static inline void idle_enter_rt(struct rq *rq) { }
- static inline void idle_exit_rt(struct rq *rq) { }
+-			/*
+-			 * Last chance: if best_cpu is valid and is
+-			 * in the mask, that becomes our choice.
+-			 */
+-			if (best_cpu < nr_cpu_ids &&
+-			    cpumask_test_cpu(best_cpu, sched_domain_span(sd))) {
++			best_cpu = cpumask_first_and(later_mask,
++								sched_domain_span(sd));
++			if (best_cpu < nr_cpu_ids) {
+ 				rcu_read_unlock();
+ 				return best_cpu;
+ 			}
 -- 
 2.1.0
 
