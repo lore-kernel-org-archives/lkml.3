@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaKEGY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 01:24:28 -0500
-Received: from mail-by2on0112.outbound.protection.outlook.com ([207.46.100.112]:7104
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751335AbaKEGYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 01:24:25 -0500
-X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 01:24:24 EST
-X-WSS-ID: 0NEJYFW-07-A9Q-02
-X-M-MSG: 
-From: Vincent Wan <vincent.wan@amd.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>,
-        Wan Zongshun <mcuos.com@gmail.com>, Vincent Wan <vincent.wan@amd.com>
-Subject: [PATCH v3 2/3] mmc:sdhci-pci: enable the clear transfer mode register quirk for AMD sdhci
-Date: Wed, 5 Nov 2014 14:09:14 +0800
-Message-ID: <1415167754-5801-1-git-send-email-vincent.wan@amd.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751313AbaKEGch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 01:32:37 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54869 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaKEGcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 01:32:36 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: "Liang\, Kan" <kan.liang@intel.com>
+Cc: "acme\@kernel.org" <acme@kernel.org>,
+        "jolsa\@kernel.org" <jolsa@kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi\@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH 1/1] perf tools: perf diff for different binaries
+References: <1414757172-20064-1-git-send-email-kan.liang@intel.com>
+	<87tx2f5xpo.fsf@sejong.aot.lge.com>
+	<37D7C6CF3E00A74B8858931C1DB2F07701653813@SHSMSX103.ccr.corp.intel.com>
+Date: Wed, 05 Nov 2014 15:32:34 +0900
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F07701653813@SHSMSX103.ccr.corp.intel.com>
+	(Kan Liang's message of "Tue, 4 Nov 2014 17:07:43 +0000")
+Message-ID: <87d292w41p.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(44976005)(93916002)(97736003)(104166001)(33646002)(110136001)(68736004)(84676001)(19580395003)(19580405001)(102836001)(36756003)(87286001)(77096003)(87936001)(88136002)(229853001)(89996001)(77156002)(21056001)(50986999)(92566001)(106466001)(64706001)(50466002)(31966008)(217423001)(86362001)(107046002)(53416004)(4396001)(92726001)(101416001)(48376002)(50226001)(105586002)(46102003)(20776003)(99396003)(47776003)(120916001)(62966003)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0386B406AA
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Vincent.Wan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to enable the quirk for AMD sdhci requiring transfer
-mode register need to be cleared for commands without data
+Hi Kan,
 
-Signed-off-by: Vincent Wan <vincent.wan@amd.com>
-Signed-off-by: Wan Zongshun <mcuos.com@gmail.com>
----
- drivers/mmc/host/sdhci-pci.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+On Tue, 4 Nov 2014 17:07:43 +0000, Kan Liang wrote:
+> Hi Namhyung,
+>
+>> >                             tchain_edit        [.] f1
+>> >      0.14%        3.913444  tchain_edit        [.] f2
+>> >     99.82%        1.005478  tchain_edit        [.] f3
+>> 
+>> Hmm.. I think it should be a default behavior for perf diff, otherwise -s
+>> symbol is almost meaningless IMHO. 
+>
+> I think we need both instruction level and function level diff.
+> For debugging scaling issue, I think we need to do deeper analysis for some
+> cache or lock issue. The function level is too high granularity.  
+>
+> The new option can be used to debug scaling regression issue.
+> If the binary/kernel is updated, it doesn't make sense to compare the
+> symbol address, since it should be changed. So comparing the function
+> should be more useful.
+>
+>
+>> What about setting the
+>> sort_sym.se_collapse in data_process() so that hists__match() can use
+>> symbol names?
+>
+> Yes, we can set it if we only do function level diff. But I'd like to keep
+> both. So I defined two sort keys.
+> "symbol" means "symbol address executed at the time of sample "
+> "symbol_name" means "name of function executed at the time of sample"
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index c25639b..5a77f18 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -645,6 +645,23 @@ static const struct sdhci_pci_fixes sdhci_rtsx = {
- 	.probe_slot	= rtsx_probe_slot,
- };
- 
-+static int amd_probe(struct sdhci_pci_chip *chip)
-+{
-+	struct pci_dev	*smbus_dev;
-+
-+	smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
-+			PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
-+
-+	if (smbus_dev && (smbus_dev->revision < 0x51))
-+		chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
-+
-+	return 0;
-+}
-+
-+static const struct sdhci_pci_fixes sdhci_amd = {
-+	.probe		= amd_probe,
-+};
-+
- static const struct pci_device_id pci_ids[] = {
- 	{
- 		.vendor		= PCI_VENDOR_ID_RICOH,
-@@ -1044,7 +1061,15 @@ static const struct pci_device_id pci_ids[] = {
- 		.subdevice	= PCI_ANY_ID,
- 		.driver_data	= (kernel_ulong_t)&sdhci_o2,
- 	},
--
-+	{
-+		.vendor		= PCI_VENDOR_ID_AMD,
-+		.device		= PCI_ANY_ID,
-+		.class		= PCI_CLASS_SYSTEM_SDHCI << 8,
-+		.class_mask	= 0xFFFF00,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.driver_data	= (kernel_ulong_t)&sdhci_amd,
-+	},
- 	{	/* Generic SD host controller */
- 		PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
- 	},
--- 
-1.8.1.2
+Hmm.. I don't think the symbol sort key provides the instruction level
+diff that you want.  If it finds a symbol it just use the start address
+of the symbol, not the exact address of the sample.  Am I missing
+something?
 
+Thanks,
+Namhyung
