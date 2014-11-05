@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbaKENbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:31:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50379 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754821AbaKENbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:31:04 -0500
-Date: Wed, 5 Nov 2014 14:31:00 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Message-ID: <20141105133100.GC4527@dhcp22.suse.cz>
-References: <1413876435-11720-1-git-send-email-mhocko@suse.cz>
- <2156351.pWp6MNRoWm@vostro.rjw.lan>
- <20141021141159.GE9415@dhcp22.suse.cz>
- <4766859.KSKPTm3b0x@vostro.rjw.lan>
- <20141021142939.GG9415@dhcp22.suse.cz>
- <20141104192705.GA22163@htj.dyndns.org>
- <20141105124620.GB4527@dhcp22.suse.cz>
- <20141105130247.GA14386@htj.dyndns.org>
+	id S1754880AbaKENco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:32:44 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:44452 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaKENcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 08:32:42 -0500
+Message-ID: <545A2680.2@imgtec.com>
+Date: Wed, 5 Nov 2014 13:30:40 +0000
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105130247.GA14386@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
+        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
+        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
+        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
+        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>
+Subject: Re: [PATCH V2 1/2] imx-drm: imx-hdmi: split imx soc specific code
+ from imx-hdmi
+References: <1415192385-6572-1-git-send-email-andy.yan@rock-chips.com>
+In-Reply-To: <1415192385-6572-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-11-14 08:02:47, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Wed, Nov 05, 2014 at 01:46:20PM +0100, Michal Hocko wrote:
-> > As I've said I wasn't entirely happy with this half solution but it helped
-> > the current situation at the time. The full solution would require to
-> 
-> I don't think this helps the situation.  It just makes the bug more
-> obscure and the race window while reduced is still pretty big and
-> there seems to be an actual not too low chance of the bug triggering
-> out in the wild.  How does this level of obscuring help anything?  In
-> addition to making the bug more difficult to reproduce, it also adds a
-> bunch of code which *pretends* to address the issue but ultimately
-> just lowers visibility into what's going on and hinders tracking down
-> the issue when something actually goes wrong.  This is *NOT* making
-> the situation better.  The patch is net negative.
 
-The patch was a compromise. It was needed to catch the most common
-OOM conditions while the tasks are getting frozen. The race window
-between the counter increment and the check in the PM path is negligible
-compared to the freezing process. And it is safe from OOM point of view
-because nothing can block it away.
+This one patch does too much to be reviewed easily.
 
-> > I think the patch below should be safe. Would you prefer this solution
-> > instead? It is race free but there is the risk that exposing a lock which
+One patch is supposed to modify/add one thing at a time in the kernel.
+
+Separating platform specific code from imx-drm/imx-hdmi is one thing.
+
+Adding support for multi-byte register access is something different.
+
+i.e. Something like.
+1/3 split platform specific code out.
+2/3 move/rename imx-hdmi outside the folder
+3/3 add support for multi byte register width access.
+
+If there are other things that are not directly relevant to the patch,
+it goes in a different patch. Bug fixes are also separate.
+
+This should result in readable patches that can be reviewed easily.
+
+Also, the approach with 4 byte access is ok. But you could use reg-shifts as well perhaps.
+Then you won't have to change so much of the code.
+
+static inline void hdmi_writeb(struct dwc_hdmi *hdmi, u8 val, int offset)
++{
++ writeb(val, hdmi->regs + (offset << hdmi->reg_shift));
++}
++
++static inline u8 hdmi_readb(struct dwc_hdmi *hdmi, int offset)
++{
++ return readb(hdmi->regs + (offset << hdmi->reg_shift));
++}
+
+And then in probe
+
++hdmi->reg_shift = 0;
++
++ if (of_property_read_u32(np, "reg-shift", &hdmi->reg_shift))
++ dev_warn(hdmi->dev, "No reg-shift\n");
+
+This way the reg-shift property can be defined using DT
+
+Cheers,
+ZubairLK
+
+On 05/11/14 12:59, Andy Yan wrote:
+> imx6 and rockchip rk3288 and JZ4780 (Ingenic Xburst/MIPS)
+> use the interface compatible Designware HDMI IP, but they
+> also have some lightly difference, such as phy pll configuration,
+> register width(imx hdmi register is one byte, but rk3288 is 4
+> bytes width), 4K support(imx6 doesn't support 4k, but rk3288 does),
+> clk useage,and the crtc mux configuration is also platform specific.
 > 
-> Yes, this is an a lot saner approach in general.
+> To reuse the imx hdmi driver, split the platform specific code out
+> to dw_hdmi-imx.c.
 > 
-> > completely blocks OOM killer from the allocation path will kick us
-> > later.
-> 
-> Can you please spell it out?  How would it kick us?  We already have
-> oom_killer_disable/enable(), how is this any different in terms of
-> correctness from them? 
-
-As already said in the part of email you haven't quoted.
-oom_killer_disable will cause allocations to _fail_. With the lock you are
-_blocking_ OOM killer completely. This is error prone because no part of
-system should be able to block the last resort memory shortage actions.
-
-> Also, why isn't this part of
-> oom_killer_disable/enable()?  The way they're implemented is really
-> silly now.  It just sets a flag and returns whether there's a
-> currently running instance or not.  How were these even useful? 
-> Why can't you just make disable/enable to what they were supposed to
-> do from the beginning?
-
-Because then we would block all the potential allocators coming from
-workqueues or kernel threads which are not frozen yet rather than fail
-the allocation. I am not familiar with the PM code and all the paths
-this might get called from enough to tell whether failing the allocation
-is better approach than failing the suspend operation on a timeout.
--- 
-Michal Hocko
-SUSE Labs
+> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+> ---
+>  drivers/staging/imx-drm/Makefile      |   2 +-
+>  drivers/staging/imx-drm/dw_hdmi-imx.c | 214 ++++++++++
+>  drivers/staging/imx-drm/imx-hdmi.c    | 726 ++++++++++++++--------------------
+>  include/drm/bridge/dw_hdmi.h          | 114 ++++++
+>  4 files changed, 634 insertions(+), 422 deletions(-)
+>  create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
+>  create mode 100644 include/drm/bridge/dw_hdmi.h
