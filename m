@@ -1,98 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827AbaKEN5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:57:20 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:56789 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753898AbaKEN5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:57:18 -0500
-Message-ID: <1415195855.3660.4.camel@mm-sol.com>
-Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Date: Wed, 05 Nov 2014 15:57:35 +0200
-In-Reply-To: <545A218F.5060301@kernel.org>
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>
-	 <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>
-	 <545A218F.5060301@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.6-fta3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754890AbaKEN56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:57:58 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44089 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994AbaKEN55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 08:57:57 -0500
+Date: Wed, 5 Nov 2014 13:57:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs.git
+Message-ID: <20141105135754.GQ7996@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Another overlayfs fix.  Please, pull from the usual place:
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-On Wed, 2014-11-05 at 13:09 +0000, Jonathan Cameron wrote:
-> On 03/11/14 15:24, Ivan T. Ivanov wrote:
-> > From: Stanimir Varbanov <svarbanov@mm-sol.com>
-> > 
-> > The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> > 15 bits resolution and register space inside PMIC accessible across
-> > SPMI bus.
-> > 
-> > The vadc driver registers itself through IIO interface.
-> > 
-> > Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Hi Ivan,
-> 
-> Couple of utterly tiny bits inline.  The biggest one is that
-> you store some info about the calibration that you never actually
-> use... Left over from some debugging perhaps?
-> 
-> Jonathan
+Shortlog:
+Miklos Szeredi (1):
+      ovl: don't poison cursor
 
-<snip>
-
-> > +
-> > +/*
-> > + * VADC_CALIB_ABSOLUTE: uses the 625mV and 1.25V as reference channels.
-> > + * VADC_CALIB_RATIOMETRIC: uses the reference voltage (1.8V) and GND for
-> > + * calibration.
-> > + */
-> > +enum vadc_calibration {
-> > +       VADC_CALIB_ABSOLUTE = 0,
-> > +       VADC_CALIB_RATIOMETRIC
-> > +};
-> > +
-> > +/**
-> > + * struct vadc_linear_graph - Represent ADC characteristics.
-> > + * @dy: numerator slope to calculate the gain.
-> As dy is always equal to vref-gnd you could drop it and use those
-> directly...
-> 
-> Conversly you store vref or grnd and never use them...
-
-I am not sure I am following you. Please take a look in 
-vadc_measure_ref_points() and vadc_calibrate().
-
-> 
-> > + * @dx: denominator slope to calculate the gain.
-> > + * @vref: A/D word of the voltage reference used for the channel.
-> > + * @gnd: A/D word of the ground reference used for the channel.
-> > + *
-> > + * Each ADC device has different offset and gain parameters which are
-> > + * computed to calibrate the device.
-> > + */
-> > +struct vadc_linear_graph {
-> > +       s32 dy;
-> > +       s32 dx;
-> > +       s32 vref;
-> > +       s32 gnd;
-> > +};
-> > +
-> > 
-
-Will address blank line comment.
-
-Regards,
-Ivan
+Diffstat:
+ fs/overlayfs/readdir.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
