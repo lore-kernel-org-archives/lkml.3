@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241AbaKEK4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:56:38 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:33315 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaKEK4g (ORCPT
+	id S1754346AbaKEK5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:57:12 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:57353 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477AbaKEK5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:56:36 -0500
+	Wed, 5 Nov 2014 05:57:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvywuEox+2fYZ-+ZLop=Za7Kum8P+q1kHx3cFWF2nG6O5A@mail.gmail.com>
-References: <CAOD=uF4L+jvR=ckMdo3o4wdSsRcGynQnv_KOpDeyJst74YOxuA@mail.gmail.com>
-	<CAFLxGvywuEox+2fYZ-+ZLop=Za7Kum8P+q1kHx3cFWF2nG6O5A@mail.gmail.com>
-Date: Wed, 5 Nov 2014 16:26:35 +0530
-Message-ID: <CAOD=uF6oBZ0cmNH4Jf9Hs4ZU3Y4WO-wfvc4k0b7Ezpo63S7Dag@mail.gmail.com>
-Subject: Re: How to access Linux Kernel environment Variables ?
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+In-Reply-To: <20141105104359.GP3337@twins.programming.kicks-ass.net>
+References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
+	<1415156173-10035-14-git-send-email-kan.liang@intel.com>
+	<20141105092145.GP10501@worktop.programming.kicks-ass.net>
+	<CABPqkBS89jrjOMR9b_7WudJ0rDn0uD8XxX2gCJYDvTEssjXcww@mail.gmail.com>
+	<20141105104359.GP3337@twins.programming.kicks-ass.net>
+Date: Wed, 5 Nov 2014 11:57:10 +0100
+Message-ID: <CABPqkBQFqoZdRZvRT3kHukpYXHBJdB4mUWARNoo1QZmgH24p4w@mail.gmail.com>
+Subject: Re: [PATCH V7 13/17] perf, x86: enable LBR callstack when recording callchain
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kan Liang <kan.liang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Richard for your response.
-
-Is there any system call in Linux which can access and set variables
-in /proc/cmdline ?  (Similar to kenv() in FreeBSD which can access and
-set variables in /boot/loader.conf).
-
-I would like to use that system call in linux C code, the  way I am
-using kenv() in freeBSD environment.
-
-Regards
-Santosh
-
-On Wed, Nov 5, 2014 at 2:44 PM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Wed, Nov 5, 2014 at 9:03 AM, santosh prasad nayak
-> <santoshprasadnayak@gmail.com> wrote:
->> Hi all,
+On Wed, Nov 5, 2014 at 11:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Nov 05, 2014 at 10:58:28AM +0100, Stephane Eranian wrote:
+>> On Wed, Nov 5, 2014 at 10:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, Nov 04, 2014 at 09:56:09PM -0500, Kan Liang wrote:
+>> >> From: Yan, Zheng <zheng.z.yan@intel.com>
+>> >>
+>> >> Only enable LBR callstack when user requires fp callgraph. The feature
+>> >> is not available when PERF_SAMPLE_BRANCH_STACK or PERF_SAMPLE_STACK_USER
+>> >> is required.
+>> >> Also, this feature only affects how to get user callchain. The kernel
+>> >> callchain is always got by frame pointers.
+>> >
+>> > Since FP callchains should not change, this doesn't appear to make any
+>> > sense either.
 >>
->> Is there any system call in Linux which serve the purpose of  "kenv()"
->> of FreeBSD ?
->>
->>
->> In FreeBSD:
->> -----------------
->> Kernel environment variables are saved at "/boot/loader.conf"  and
->> those variables can be accessed using "kenv()"  system call in C
->> program.
->> ----------------
->>
->>
->> Is there any similar functionality available in Linux kernel ?
+>> If I recall earlier discussion, the FP callchain are not changed. On
+>> HSW, when requesting fp at the user level only, then the kernel
+>> automatically tries to use the LBR callstack mode.  Advantage is that
+>> the user app does not require frame-pointer or dwarf debug info to get
+>> correct callchains with perf record. The downside is that LBR
+>> callstack does not work in certain callchain corner cases.
 >
-> /proc/cmdline?
+> But this patch changes the FP callchain interface. I see no need of
+> that. We already have multiple independent callchain options (FP and
+> Dwarf) adding a third option should also be independent (LBR).
 >
-> --
-> Thanks,
-> //richard
+> Allowing all 3 at the same time allows for identifying those corner
+> cases.
+>
+> That is I simply don't see a good reason intertwine these things at the
+> interface level. All it does is reduce options. Would it not be 'nice'
+> to allow both FP and LBR at the same time?
+
+Yes, but I wonder how would the tool sort this out if you have FP and LBR
+for each sample.
+
+My understanding of the patch is that it does not change the user interface,
+it changes the way callchains are gathered by the kernel on HSW.
+
+Is there explicit mention in the API that CALLCHAIN is relying on FP?
+
+I think in general it would be better for tools to know which
+low-level mechanism
+is used to better interpret the results and especially be aware of the
+limitations of
+each mechanism.
+
+I think the patch is trying some auto-promotion of CALLCHAIN to FP based
+on the belief it is better in most cases. It reminds me of the discussion about
+precise mode. Why not default to precise for all events that support it?
+
+I would be okay if the patch was introducing the 3rd mode for callchains.
