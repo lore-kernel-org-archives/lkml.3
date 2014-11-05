@@ -1,119 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaKETEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 14:04:45 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:53085 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaKETEo convert rfc822-to-8bit (ORCPT
+	id S1751441AbaKETEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 14:04:55 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53519 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaKETEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 14:04:44 -0500
+	Wed, 5 Nov 2014 14:04:51 -0500
+Date: Wed, 5 Nov 2014 21:04:43 +0200
+From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+To: ursula.braun@de.ibm.com, blaschka@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: [PATCH v5] drivers: s390: net: ctcm: migrate variables to handle
+ y2038 problem
+Message-ID: <20141105190443.GA3868@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <545A7087.3050802@laposte.net>
-References: <1415151063-2530-1-git-send-email-chuansheng.liu@intel.com>
- <CAErSpo6cWP2ngErLVzqASkeQOLsB7JjgCC8UuA-S=Lz=AJyf6Q@mail.gmail.com> <545A7087.3050802@laposte.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Nov 2014 12:03:43 -0700
-Message-ID: <CAErSpo4fvoeP9Gab1ZDg=ofjH+aqxGD09nLDTF1ZERnH=yEPxw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Do not enable async suspend for JMicron chips
-To: Barto <mister.freeman@laposte.net>
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        Tejun Heo <tj@kernel.org>, Rafael Wysocki <rjw@rjwysocki.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 11:46 AM, Barto <mister.freeman@laposte.net> wrote:
-> this patch solves these 2 bug reports :
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=84861
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=81551
+This patch is concerned with migrating the time variables for the s390
+network driver. The changes handle the y2038 problem where timespec will
+overflow in the year 2038. timespec was replaced by unsigned long and
+all time variables get their values from the jiffies global variable.
+This was done for the sake of speed and efficiency.
 
-Those bugs were already mentioned.  But e6b7e41cdd8c claims to solve
-https://bugzilla.kernel.org/show_bug.cgi?id=81551, and 84861 is a
-duplicate of 81551, so it should also be fixed by e6b7e41cdd8c.
+ch->prof.tx_time will now hold the difference between two jiffies'
+values instead of the difference between two xtime values
+represented in microseconds.
 
-So the question is, why was e6b7e41cdd8c insufficient?  Presumably it
-was tested and somebody thought it did fix the problem.
+Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+---
+v1: Arnd has advised me to provide you with options for time
+    calculation. The first option: "accuracy" is used in this
+    patch. The second option: "speed" can be done through
+    jiffies.
 
-> in simple words : JMicron IDE/Sata controlers family ( JMBxxx ) are not
-> fully compatible with async_suspend feature, when a user tries to put
-> his PC on standby mode then at wake-up JMicron IDE/Sata controlers will
-> not work, because of a brother-relation between the SATA and IDE part on
-> this JMicron PCI card
->
->
->
->
-> Le 05/11/2014 19:01, Bjorn Helgaas a écrit :
->> On Tue, Nov 4, 2014 at 6:31 PM, Chuansheng Liu <chuansheng.liu@intel.com> wrote:
->>> The JMicron chip 361/363/368 contains one SATA controller and
->>> one PATA controller, they are brother-relation ship in PCI tree,
->>> but for powering on these both controller, we must follow the
->>> sequence one by one, otherwise one of them can not be powered on
->>> successfully.
->>
->> This should mention what's broken and what problem a user would see.
->> This changelog sounds a lot like the one for e6b7e41cdd8c, so I don't
->> know if this is for a new, related problem, or what.
->>
->>> So here we disable the async suspend method for Jmicron chip.
->>>
->>> Bug link:
->>> https://bugzilla.kernel.org/show_bug.cgi?id=81551
->>> https://bugzilla.kernel.org/show_bug.cgi?id=84861
->>>
->>> And we can revert the below commit after this patch is applied:
->>> e6b7e41(ata: Disabling the async PM for JMicron chip 363/361)
->>>
->>> Cc: stable@vger.kernel.org # 3.15+
->>> Acked-by: Aaron Lu <aaron.lu@intel.com>
->>> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
->>> ---
->>>  drivers/pci/pci.c |   12 +++++++++++-
->>>  1 file changed, 11 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->>> index 625a4ac..53128f0 100644
->>> --- a/drivers/pci/pci.c
->>> +++ b/drivers/pci/pci.c
->>> @@ -2046,7 +2046,17 @@ void pci_pm_init(struct pci_dev *dev)
->>>         pm_runtime_forbid(&dev->dev);
->>>         pm_runtime_set_active(&dev->dev);
->>>         pm_runtime_enable(&dev->dev);
->>> -       device_enable_async_suspend(&dev->dev);
->>> +
->>> +       /*
->>> +        * The JMicron chip 361/363/368 contains one SATA controller and
->>> +        * one PATA controller, they are brother-relation ship in PCI tree,
->>> +        * but for powering on these both controller, we must follow the
->>> +        * sequence one by one, otherwise one of them can not be powered on
->>> +        * successfully, so here we disable the async suspend method for
->>> +        * Jmicron chip.
->>> +        */
->>> +       if (dev->vendor != PCI_VENDOR_ID_JMICRON)
->>> +               device_enable_async_suspend(&dev->dev);
->>
->> I don't like littering the core PCI code with vendor tests like this.
->> This would be the only one, except for an ancient DECchip 21050 bridge
->> erratum.
->>
->> And why would we want a test for *all* JMicron devices here, when you
->> claim the problem only affects a few specific ones?
->>
->> And what's the story with the e6b7e41cdd8c ("ata: Disabling the async
->> PM for JMicron chip 363/361") connection?  Is something broken even
->> with e6b7e41cdd8c, and this is a better fix?  Or is this simply a
->> different way of fixing the same problem?
->>
->>>         dev->wakeup_prepared = false;
->>>
->>>         dev->pm_cap = 0;
->>> --
->>> 1.7.9.5
->>>
->>
+v2: Moved on to the speed option. Let me know if I explicitly
+    need to include the jiffies header. The module compiles with
+    no problems on my side.
+
+v3: Handled the error pointed out by Ursula. The current version
+    does not handle overflows. There are two solutions for this.
+    The first is to use jiffies_64 since s/390 is a 64-bit
+    architecture after all. The second is to use wrapper functions
+    like time_before and time_after. Two files were added too.
+    They are: ctcm_main.c and netiucv.c. This patch could be sent
+    as a patchset in its final version for convenience.
+
+v4: removed #include <linux/jiffies.h> per Ursula's feedback.
+    Changed duration to hold the difference between jiffies
+    instead of difference between microsecond values per Arnd's
+    suggestion.
+
+v5: added changes written by Ursula to handle missed modifications.
+
+ drivers/s390/net/ctcm_fsms.c  | 18 +++++++-----------
+ drivers/s390/net/ctcm_main.c  |  4 ++--
+ drivers/s390/net/ctcm_main.h  |  2 +-
+ drivers/s390/net/ctcm_sysfs.c |  4 ++--
+ drivers/s390/net/netiucv.c    |  6 +++---
+ 5 files changed, 15 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/s390/net/ctcm_fsms.c b/drivers/s390/net/ctcm_fsms.c
+index fb92524..49143c3 100644
+--- a/drivers/s390/net/ctcm_fsms.c
++++ b/drivers/s390/net/ctcm_fsms.c
+@@ -251,13 +251,11 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+ 	int first = 1;
+ 	int i;
+ 	unsigned long duration;
+-	struct timespec done_stamp = current_kernel_time(); /* xtime */
++	unsigned long done_stamp jiffies;
+ 
+ 	CTCM_PR_DEBUG("%s(%s): %s\n", __func__, ch->id, dev->name);
+ 
+-	duration =
+-	    (done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+-	    (done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
++	duration = done_stamp -ch->prof.send_stamp;
+ 	if (duration > ch->prof.tx_time)
+ 		ch->prof.tx_time = duration;
+ 
+@@ -307,7 +305,7 @@ static void chx_txdone(fsm_instance *fi, int event, void *arg)
+ 		spin_unlock(&ch->collect_lock);
+ 		ch->ccw[1].count = ch->trans_skb->len;
+ 		fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+-		ch->prof.send_stamp = current_kernel_time(); /* xtime */
++		ch->prof.send_stamp = jiffies;
+ 		rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+ 						(unsigned long)ch, 0xff, 0);
+ 		ch->prof.doios_multi++;
+@@ -1229,14 +1227,12 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+ 	int		rc;
+ 	struct th_header *header;
+ 	struct pdu	*p_header;
+-	struct timespec done_stamp = current_kernel_time(); /* xtime */
++	unsigned long done_stamp = jiffies;
+ 
+ 	CTCM_PR_DEBUG("Enter %s: %s cp:%i\n",
+ 			__func__, dev->name, smp_processor_id());
+ 
+-	duration =
+-		(done_stamp.tv_sec - ch->prof.send_stamp.tv_sec) * 1000000 +
+-		(done_stamp.tv_nsec - ch->prof.send_stamp.tv_nsec) / 1000;
++	duration = done_stamp -ch->prof.send_stamp;
+ 	if (duration > ch->prof.tx_time)
+ 		ch->prof.tx_time = duration;
+ 
+@@ -1361,7 +1357,7 @@ static void ctcmpc_chx_txdone(fsm_instance *fi, int event, void *arg)
+ 
+ 	ch->ccw[1].count = ch->trans_skb->len;
+ 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ch->prof.send_stamp = jiffies;
+ 	if (do_debug_ccw)
+ 		ctcmpc_dumpit((char *)&ch->ccw[0], sizeof(struct ccw1) * 3);
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[0],
+@@ -1827,7 +1823,7 @@ static void ctcmpc_chx_send_sweep(fsm_instance *fsm, int event, void *arg)
+ 	fsm_newstate(wch->fsm, CTC_STATE_TX);
+ 
+ 	spin_lock_irqsave(get_ccwdev_lock(wch->cdev), saveflags);
+-	wch->prof.send_stamp = current_kernel_time(); /* xtime */
++	wch->prof.send_stamp = jiffies;
+ 	rc = ccw_device_start(wch->cdev, &wch->ccw[3],
+ 					(unsigned long) wch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(wch->cdev), saveflags);
+diff --git a/drivers/s390/net/ctcm_main.c b/drivers/s390/net/ctcm_main.c
+index e056dd4..05c37d6 100644
+--- a/drivers/s390/net/ctcm_main.c
++++ b/drivers/s390/net/ctcm_main.c
+@@ -567,7 +567,7 @@ static int ctcm_transmit_skb(struct channel *ch, struct sk_buff *skb)
+ 	fsm_newstate(ch->fsm, CTC_STATE_TX);
+ 	fsm_addtimer(&ch->timer, CTCM_TIME_5_SEC, CTC_EVENT_TIMER, ch);
+ 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ch->prof.send_stamp = jiffies;
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+ 					(unsigned long)ch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+@@ -831,7 +831,7 @@ static int ctcmpc_transmit_skb(struct channel *ch, struct sk_buff *skb)
+ 					sizeof(struct ccw1) * 3);
+ 
+ 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);
+-	ch->prof.send_stamp = current_kernel_time(); /* xtime */
++	ch->prof.send_stamp = jiffies;
+ 	rc = ccw_device_start(ch->cdev, &ch->ccw[ccw_idx],
+ 					(unsigned long)ch, 0xff, 0);
+ 	spin_unlock_irqrestore(get_ccwdev_lock(ch->cdev), saveflags);
+diff --git a/drivers/s390/net/ctcm_main.h b/drivers/s390/net/ctcm_main.h
+index 477c933..6f4417c 100644
+--- a/drivers/s390/net/ctcm_main.h
++++ b/drivers/s390/net/ctcm_main.h
+@@ -121,7 +121,7 @@ struct ctcm_profile {
+ 	unsigned long doios_multi;
+ 	unsigned long txlen;
+ 	unsigned long tx_time;
+-	struct timespec send_stamp;
++	unsigned long send_stamp;
+ };
+ 
+ /*
+diff --git a/drivers/s390/net/ctcm_sysfs.c b/drivers/s390/net/ctcm_sysfs.c
+index 6bcfbbb..c88f465 100644
+--- a/drivers/s390/net/ctcm_sysfs.c
++++ b/drivers/s390/net/ctcm_sysfs.c
+@@ -100,8 +100,8 @@ static void ctcm_print_statistics(struct ctcm_priv *priv)
+ 		     priv->channel[WRITE]->prof.doios_multi);
+ 	p += sprintf(p, "  Netto bytes written: %ld\n",
+ 		     priv->channel[WRITE]->prof.txlen);
+-	p += sprintf(p, "  Max. TX IO-time: %ld\n",
+-		     priv->channel[WRITE]->prof.tx_time);
++	p += sprintf(p, "  Max. TX IO-time: %u\n",
++		jiffies_to_usecs(priv->channel[WRITE]->prof.tx_time));
+ 
+ 	printk(KERN_INFO "Statistics for %s:\n%s",
+ 				priv->channel[CTCM_WRITE]->netdev->name, sbuf);
+diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+index 0a87809..7e91f54 100644
+--- a/drivers/s390/net/netiucv.c
++++ b/drivers/s390/net/netiucv.c
+@@ -178,7 +178,7 @@ struct connection_profile {
+ 	unsigned long doios_multi;
+ 	unsigned long txlen;
+ 	unsigned long tx_time;
+-	struct timespec send_stamp;
++	unsigned long send_stamp;
+ 	unsigned long tx_pending;
+ 	unsigned long tx_max_pending;
+ };
+@@ -786,7 +786,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
+ 
+ 	header.next = 0;
+ 	memcpy(skb_put(conn->tx_buff, NETIUCV_HDRLEN), &header, NETIUCV_HDRLEN);
+-	conn->prof.send_stamp = current_kernel_time();
++	conn->prof.send_stamp = jiffies;
+ 	txmsg.class = 0;
+ 	txmsg.tag = 0;
+ 	rc = iucv_message_send(conn->path, &txmsg, 0, 0,
+@@ -1220,7 +1220,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
+ 		memcpy(skb_put(nskb, NETIUCV_HDRLEN), &header,  NETIUCV_HDRLEN);
+ 
+ 		fsm_newstate(conn->fsm, CONN_STATE_TX);
+-		conn->prof.send_stamp = current_kernel_time();
++		conn->prof.send_stamp = jiffies;
+ 
+ 		msg.tag = 1;
+ 		msg.class = 0;
+-- 
+1.9.3
+
