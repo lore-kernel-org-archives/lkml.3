@@ -1,196 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbaKEQVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:21:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:38936 "EHLO mga11.intel.com"
+	id S1755305AbaKEQXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:23:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52778 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755246AbaKEQVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:21:39 -0500
+	id S1754655AbaKEQXF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:23:05 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="627068084"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc V5 3.18] mei: nfc: clean nfc internal struct on host exit
-Date: Wed,  5 Nov 2014 18:18:52 +0200
-Message-Id: <1415204332-11548-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="411894229"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "jolsa@redhat.com" <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V7 00/17] perf, x86: Haswell LBR call stack support
+Thread-Topic: [PATCH V7 00/17] perf, x86: Haswell LBR call stack support
+Thread-Index: AQHP+KX2mQc4+JvE8EymwJ/+bhfdO5xRQPaAgADzn3A=
+Date: Wed, 5 Nov 2014 16:22:09 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F0770165410A@SHSMSX103.ccr.corp.intel.com>
+References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
+ <20141105093759.GQ10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141105093759.GQ10501@worktop.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFC internal structure cleaning was dropped by commit
 
-commit 487056932d372cc4f6c636f21a928d6667b151d7
-Author: Tomas Winkler <tomas.winkler@intel.com>
-Date:   Mon Feb 17 15:13:19 2014 +0200
+>> 
+> 
+> So if I take all except 11,13,16,17 but instead do something like the below,
+> everything will work just fine, right?
+> 
+> Or am I missing something?
+> 
 
-    mei: Remove all bus devices from the mei_dev list when stopping the MEI
+Yes, it should work.  Then LBR callstack will rely on user to enable it.
+But user never get the LBR callstack data if it's available.  
+I'm not sure why you do that? 
 
-    When stopping the MEI, we should remove and potentially unregister
-    all bus devices queued on the mei_dev linked list.
 
-We allocate nfc_dev and free it across the reset
-so we do not keep it in dirty state
-
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
----
-V2: allocate mei_nfc_dev dynamically
-V3: Drop the stable request as manual rebase is required,
-    a separate request will be sent
-V4: use upstream entry for reference for regressing commit
-V5: two hanks were lost in translation (the patch has bad karma)
-
- drivers/misc/mei/bus.c     |  4 ++--
- drivers/misc/mei/mei_dev.h |  1 +
- drivers/misc/mei/nfc.c     | 52 ++++++++++++++++++++++++++++++++++++++--------
- 3 files changed, 46 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 4d20d60ca38d..b3a72bca5242 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -140,7 +140,7 @@ static struct device_type mei_cl_device_type = {
- 	.release	= mei_cl_dev_release,
- };
- 
--static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *dev,
-+struct mei_cl *mei_cl_bus_find_cl_by_uuid(struct mei_device *dev,
- 						uuid_le uuid)
- {
- 	struct mei_cl *cl;
-@@ -160,7 +160,7 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
- 	struct mei_cl *cl;
- 	int status;
- 
--	cl = mei_bus_find_mei_cl_by_uuid(dev, uuid);
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, uuid);
- 	if (cl == NULL)
- 		return NULL;
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 71744b16cc8c..1288a5cf60b9 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -349,6 +349,7 @@ void mei_cl_bus_rx_event(struct mei_cl *cl);
- void mei_cl_bus_remove_devices(struct mei_device *dev);
- int mei_cl_bus_init(void);
- void mei_cl_bus_exit(void);
-+struct mei_cl *mei_cl_bus_find_cl_by_uuid(struct mei_device *dev, uuid_le uuid);
- 
- 
- /**
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 622654323177..60ca9240368e 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -117,8 +117,6 @@ struct mei_nfc_dev {
- 	u16 recv_req_id;
- };
- 
--static struct mei_nfc_dev nfc_dev;
--
- /* UUIDs for NFC F/W clients */
- const uuid_le mei_nfc_guid = UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50,
- 				     0x94, 0xd4, 0x50, 0x26,
-@@ -138,6 +136,9 @@ static const uuid_le mei_nfc_info_guid = UUID_LE(0xd2de1625, 0x382d, 0x417d,
- 
- static void mei_nfc_free(struct mei_nfc_dev *ndev)
- {
-+	if (!ndev)
-+		return;
-+
- 	if (ndev->cl) {
- 		list_del(&ndev->cl->device_link);
- 		mei_cl_unlink(ndev->cl);
-@@ -150,7 +151,7 @@ static void mei_nfc_free(struct mei_nfc_dev *ndev)
- 		kfree(ndev->cl_info);
- 	}
- 
--	memset(ndev, 0, sizeof(struct mei_nfc_dev));
-+	kfree(ndev);
- }
- 
- static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
-@@ -319,9 +320,10 @@ err:
- static int mei_nfc_enable(struct mei_cl_device *cldev)
- {
- 	struct mei_device *dev;
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
- 	int ret;
- 
-+	ndev = (struct mei_nfc_dev *)cldev->priv_data;
- 	dev = ndev->cl->dev;
- 
- 	ret = mei_nfc_connect(ndev);
-@@ -479,15 +481,25 @@ err:
- 
- int mei_nfc_host_init(struct mei_device *dev)
- {
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
- 	struct mei_cl *cl_info, *cl = NULL;
- 	struct mei_me_client *me_cl;
- 	int ret;
- 
--	/* already initialized */
--	if (ndev->cl_info)
-+
-+	/* in case of internal reset bail out
-+	 * as the device is already setup
-+	 */
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, mei_nfc_guid);
-+	if (cl)
- 		return 0;
- 
-+	ndev = kzalloc(sizeof(struct mei_nfc_dev), GFP_KERNEL);
-+	if (!ndev) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
- 	ndev->cl_info = mei_cl_allocate(dev);
- 	ndev->cl = mei_cl_allocate(dev);
- 
-@@ -550,9 +562,31 @@ err:
- 
- void mei_nfc_host_exit(struct mei_device *dev)
- {
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
-+	struct mei_cl *cl;
-+	struct mei_cl_device *cldev;
-+
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, mei_nfc_guid);
-+	if (!cl)
-+		return;
-+
-+	cldev = cl->device;
-+	if (!cldev)
-+		return;
- 
--	cancel_work_sync(&ndev->init_work);
-+	ndev = (struct mei_nfc_dev *)cldev->priv_data;
-+	if (ndev)
-+		cancel_work_sync(&ndev->init_work);
-+
-+	cldev->priv_data = NULL;
-+
-+	mutex_lock(&dev->device_lock);
-+	/* Need to remove the device here
-+	 * since mei_nfc_free will unlink the clients
-+	 */
-+	mei_cl_remove_device(cldev);
-+	mei_nfc_free(ndev);
-+	mutex_unlock(&dev->device_lock);
- }
- 
- 
--- 
-1.9.3
-
+> ---
+>  arch/x86/kernel/cpu/perf_event.h           |    8 --------
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |    8 ++++----
+>  include/uapi/linux/perf_event.h            |   16 ++++++++--------
+>  3 files changed, 12 insertions(+), 20 deletions(-)
+> 
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -521,14 +521,6 @@ struct x86_perf_task_context {
+>  	int lbr_stack_state;
+>  };
+> 
+> -enum {
+> -	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT =
+> PERF_SAMPLE_BRANCH_MAX_SHIFT,
+> -	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
+> -
+> -	PERF_SAMPLE_BRANCH_CALL_STACK =
+> -				1U <<
+> PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
+> -};
+> -
+>  #define x86_add_quirk(func_)						\
+>  do {									\
+>  	static struct x86_pmu_quirk __quirk __initdata = {		\
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -537,7 +537,7 @@ static int intel_pmu_setup_hw_lbr_filter
+>  	u64 mask = 0, v;
+>  	int i;
+> 
+> -	for (i = 0; i < PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE; i++) {
+> +	for (i = 0; i < PERF_SAMPLE_BRANCH_MAX_SHIFT; i++) {
+>  		if (!(br_type & (1ULL << i)))
+>  			continue;
+> 
+> @@ -808,7 +808,7 @@ intel_pmu_lbr_filter(struct cpu_hw_event
+>  /*
+>   * Map interface branch filters onto LBR filters
+>   */
+> -static const int
+> nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+> +static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX_SHIFT]
+> = {
+>  	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
+>  	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
+>  	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
+> @@ -827,7 +827,7 @@ static const int nhm_lbr_sel_map[PERF_SA
+>  	[PERF_SAMPLE_BRANCH_COND_SHIFT]     = LBR_JCC,
+>  };
+> 
+> -static const int
+> snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+> +static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX_SHIFT] =
+> {
+>  	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
+>  	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
+>  	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
+> @@ -839,7 +839,7 @@ static const int snb_lbr_sel_map[PERF_SA
+>  	[PERF_SAMPLE_BRANCH_COND_SHIFT]		= LBR_JCC,
+>  };
+> 
+> -static const int
+> hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+> +static const int hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX_SHIFT] =
+> {
+>  	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
+>  	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
+>  	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -166,6 +166,8 @@ enum perf_branch_sample_type_shift {
+>  	PERF_SAMPLE_BRANCH_NO_TX_SHIFT		= 9, /* not
+> in transaction */
+>  	PERF_SAMPLE_BRANCH_COND_SHIFT		= 10, /* conditional
+> branches */
+> 
+> +	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT	= 11, /* call/ret
+> stack */
+> +
+>  	PERF_SAMPLE_BRANCH_MAX_SHIFT		/* non-ABI */
+>  };
+> 
+> @@ -175,18 +177,16 @@ enum perf_branch_sample_type {
+>  	PERF_SAMPLE_BRANCH_HV		= 1U <<
+> PERF_SAMPLE_BRANCH_HV_SHIFT,
+> 
+>  	PERF_SAMPLE_BRANCH_ANY		= 1U <<
+> PERF_SAMPLE_BRANCH_ANY_SHIFT,
+> -	PERF_SAMPLE_BRANCH_ANY_CALL	=
+> -				1U <<
+> PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
+> -	PERF_SAMPLE_BRANCH_ANY_RETURN	=
+> -				1U <<
+> PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
+> -	PERF_SAMPLE_BRANCH_IND_CALL	=
+> -				1U <<
+> PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
+> -	PERF_SAMPLE_BRANCH_ABORT_TX	=
+> -				1U <<
+> PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
+> +	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U <<
+> PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
+> +	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U <<
+> PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
+> +	PERF_SAMPLE_BRANCH_IND_CALL	= 1U <<
+> PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
+> +	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U <<
+> PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
+>  	PERF_SAMPLE_BRANCH_IN_TX	= 1U <<
+> PERF_SAMPLE_BRANCH_IN_TX_SHIFT,
+>  	PERF_SAMPLE_BRANCH_NO_TX	= 1U <<
+> PERF_SAMPLE_BRANCH_NO_TX_SHIFT,
+>  	PERF_SAMPLE_BRANCH_COND		= 1U <<
+> PERF_SAMPLE_BRANCH_COND_SHIFT,
+> 
+> +	PERF_SAMPLE_BRANCH_CALL_STACK	= 1U <<
+> PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
+> +
+>  	PERF_SAMPLE_BRANCH_MAX		= 1U <<
+> PERF_SAMPLE_BRANCH_MAX_SHIFT,
+>  };
+> 
