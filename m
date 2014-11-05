@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaKEWHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:07:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55514 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751310AbaKEWHi (ORCPT
+	id S1751933AbaKEWIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:08:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35779 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaKEWIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:07:38 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 3/4] PNP: Allow device to override ACPI device sleep
-Date: Wed, 05 Nov 2014 23:28:24 +0100
-Message-ID: <4057911.0dclCWmemA@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415212854-16944-4-git-send-email-peter@hurleysoftware.com>
-References: <1415212854-16944-1-git-send-email-peter@hurleysoftware.com> <1415212854-16944-4-git-send-email-peter@hurleysoftware.com>
+	Wed, 5 Nov 2014 17:08:07 -0500
+Date: Wed, 5 Nov 2014 14:08:06 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: sostalle <sean.stalley@intel.com>
+Cc: steph <stephanie.s.wallick@intel.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH 01/10] added media agnostic (MA) USB HCD driver
+Message-ID: <20141105220806.GB15806@kroah.com>
+References: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415047377-3139-2-git-send-email-stephanie.s.wallick@intel.com>
+ <20141103212139.GB7379@kroah.com>
+ <20141104000442.GC8890@steph-desktop>
+ <20141104001355.GA10900@kroah.com>
+ <20141105201433.GA4354@sean.stalley.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105201433.GA4354@sean.stalley.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 05, 2014 01:40:53 PM Peter Hurley wrote:
-> If the serial console is an ACPI PNP device, the PNP bus attempts to
-> power-down the device, even though the no_console_suspend command line
-> parameter is specified (eg., debugging suspend/resume).
+On Wed, Nov 05, 2014 at 12:14:33PM -0800, sostalle wrote:
+> On Mon, Nov 03, 2014 at 04:13:55PM -0800, Greg KH wrote:
+> > On Mon, Nov 03, 2014 at 04:04:42PM -0800, steph wrote:
+> > > On Mon, Nov 03, 2014 at 01:21:39PM -0800, Greg KH wrote:
+> > > > On Mon, Nov 03, 2014 at 12:42:48PM -0800, Stephanie Wallick wrote:
+> [snip] 
+> > > > > +static int mausb_hcd_init(void)
+> > > > > +{
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	/* register HCD driver */
+> > > > > +	ret = platform_driver_register(&mausb_driver);
+> > > > 
+> > > > Why is this a platform driver?  How does this relate to platform
+> > > > hardware?
+> > > > 
+> > > The driver doesn't require platform resources. It looks like a host
+> > > controller driver but communicates over the network instead of to
+> > > a physical host controller. There is no MA USB-specific hardware.
+> > > 
+> > > Should we use a struct device instead of a struct platform_device?
+> > 
+> > Yes, please make it a "virtual" device.
+> > 
 > 
-> Add PNP_SUSPEND capability which is on by default, but when cleared,
-> prevents pnpacpi_suspend() (which is the ACPI PNP protocol ->suspend()
-> method).
+> Is it OK for our virtual host controller to use struct platform_device?
 > 
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-
-While I'm not disagreeing with this entirely, I have a concern.
-
-There are two types of suspend in Linux these days, runtime suspend and
-system suspend.  What this is about is "device suspend during system
-suspend" only, so the flag name is somewhat confusing.
-
-Also the flag is only going to be used for consoles, so why don't you
-introduce a PNP_CONSOLE flag and then define pnp_can_suspend() as
-
-static inline pnp_can_suspend(struct pnp_dev *pnp_dev)
-{
-	return pnp_dev->protocol->suspend &&
-		 (!(pnp_dev->capabilities & PNP_CONSOLE) || console_suspend_enabled);
-}
-
-> ---
->  drivers/pnp/driver.c       | 2 +-
->  drivers/pnp/pnpacpi/core.c | 2 +-
->  include/linux/pnp.h        | 3 +++
->  3 files changed, 5 insertions(+), 2 deletions(-)
+> The other virtual host controllers (usbip/vhci_hcd.c & gadget/udc/dummy_hcd.c)
+> use the platform_device struct. Unless I am missing something, it doesn't look
+> like the other virtual host controllers use platform resources.
 > 
-> diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
-> index f748cc8..4e57d33 100644
-> --- a/drivers/pnp/driver.c
-> +++ b/drivers/pnp/driver.c
-> @@ -182,7 +182,7 @@ static int __pnp_bus_suspend(struct device *dev, pm_message_t state)
->  			return error;
->  	}
->  
-> -	if (pnp_dev->protocol->suspend)
-> +	if (pnp_can_suspend(pnp_dev))
->  		pnp_dev->protocol->suspend(pnp_dev, state);
->  	return 0;
->  }
-> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-> index d2b780a..115bb73 100644
-> --- a/drivers/pnp/pnpacpi/core.c
-> +++ b/drivers/pnp/pnpacpi/core.c
-> @@ -253,7 +253,7 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
->  	dev->active = device->status.enabled;
->  	if (acpi_has_method(device->handle, "_SRS"))
->  		dev->capabilities |= PNP_CONFIGURABLE;
-> -	dev->capabilities |= PNP_READ;
-> +	dev->capabilities |= PNP_READ | PNP_SUSPEND;
->  	if (device->flags.dynamic_status && (dev->capabilities & PNP_CONFIGURABLE))
->  		dev->capabilities |= PNP_WRITE;
->  	if (device->flags.removable)
-> diff --git a/include/linux/pnp.h b/include/linux/pnp.h
-> index 195aafc..5a5cbc2 100644
-> --- a/include/linux/pnp.h
-> +++ b/include/linux/pnp.h
-> @@ -309,6 +309,7 @@ struct pnp_fixup {
->  #define PNP_DISABLE		0x0004
->  #define PNP_CONFIGURABLE	0x0008
->  #define PNP_REMOVABLE		0x0010
-> +#define PNP_SUSPEND		0x0020
->  
->  #define pnp_can_read(dev)	(((dev)->protocol->get) && \
->  				 ((dev)->capabilities & PNP_READ))
-> @@ -318,6 +319,8 @@ struct pnp_fixup {
->  				 ((dev)->capabilities & PNP_DISABLE))
->  #define pnp_can_configure(dev)	((!(dev)->active) && \
->  				 ((dev)->capabilities & PNP_CONFIGURABLE))
-> +#define pnp_can_suspend(dev)	(((dev)->protocol->suspend) && \
-> +				 ((dev)->capabilities & PNP_SUSPEND))
->  
->  #ifdef CONFIG_ISAPNP
->  extern struct pnp_protocol isapnp_protocol;
-> 
+> If it is not ok, is there a good example somewhere of a virtual non-platform
+> device?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+If your device is not really a platform device (i.e. no platform
+resources), then just create a virtual device with a call to
+device_create() and don't pass in a parent pointer.  But you need to
+create a class for it, which is a pain, but shouldn't be that hard.
+
+Hope this helps,
+
+greg k-h
