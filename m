@@ -1,64 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751232AbaKEXbq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 18:31:46 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:43418 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaKEXbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 18:31:43 -0500
-Date: Thu, 6 Nov 2014 00:31:40 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Michal Marek <mmarek@suse.cz>, Stefan Assmann <sassmann@kpanic.de>
-Subject: Re: [PATCH v2 03/13] backports: allow for different backport prefix
-Message-ID: <20141105233140.GE12538@two.firstfloor.org>
-References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
- <1415157517-15442-4-git-send-email-mcgrof@do-not-panic.com>
- <1415173596.2589.3.camel@sipsolutions.net>
- <20141105091610.GM12953@wotan.suse.de>
- <1415179364.2589.13.camel@sipsolutions.net>
- <20141105194215.GN12953@wotan.suse.de>
- <1415222258.7485.10.camel@sipsolutions.net>
- <20141105222159.GS12953@wotan.suse.de>
- <20141105230907.GD12538@two.firstfloor.org>
- <CAB=NE6Wu7gFh+_1ebiaWCq2cUt_SnCMB-+1Xv9ZuZtBafdg0Vg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6Wu7gFh+_1ebiaWCq2cUt_SnCMB-+1Xv9ZuZtBafdg0Vg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751218AbaKEXd6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:33:58 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46666 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873AbaKEXdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 18:33:53 -0500
+Subject: Re: [PATCH v2 03/11] crypto: Documentation - RNG API documentation
+From: "Joy M. Latten" <jmlatten@linux.vnet.ibm.com>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, Marek Vasut <marex@denx.de>,
+        Jason Cooper <cryptography@lakedaemon.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+In-Reply-To: <5465244.OPD58DmVa6@tachyon.chronox.de>
+References: <6375771.bx7QqLJLuR@tachyon.chronox.de>
+	 <5465244.OPD58DmVa6@tachyon.chronox.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Nov 2014 17:33:48 -0600
+Message-ID: <1415230428.5083.41.camel@oc8377654763.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110523-0029-0000-0000-000001096343
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The only thing that was not clear to me from reviewing the module
-> namespace stuff a while ago was the original intent, but I confess I
-> actually only looked at the technical details to see if it was
-> applicable to the backports case, do you recall the original
-> motivation ?
+Hi Stephan,
 
-The original intent was to provide a cleaner export symbol API.
+Just one quick comment below...
 
-There are roughly two classes of exported symbols:
+regards,
+Joy
 
-- Generally usable, well designed, interfaces intended to be used by multiple
-modules (e.g. functions for drivers to register themselves or
-library functions)
+On Sun, 2014-11-02 at 21:36 +0100, Stephan Mueller wrote:
+> The API function calls exported by the kernel crypto API for RNGs to
+> be used by consumers are documented.
+> 
+> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> CC: Marek Vasut <marex@denx.de>
+> ---
+>  include/crypto/rng.h | 113 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 113 insertions(+)
+> 
+> diff --git a/include/crypto/rng.h b/include/crypto/rng.h
+> index c93f9b9..83c4238 100644
+> --- a/include/crypto/rng.h
+> +++ b/include/crypto/rng.h
+> @@ -20,11 +20,68 @@ extern struct crypto_rng *crypto_default_rng;
+>  int crypto_get_default_rng(void);
+>  void crypto_put_default_rng(void);
+> 
+> +/**
+> + * Random number generator API to use the ciphers of type
+> + * CRYPTO_ALG_TYPE_RNG (listed as type "rng" in /proc/crypto)
+> + *
+> + * Example code:
+> + *
+> + *static int get_random_numbers(u8 *buf, unsigned int len)
+> + *{
+> + *	struct crypto_rng *rng = NULL;
+> + *	char *drbg = "drbg_nopr_sha256"; // Hash DRBG with SHA-256, no PR
+> + *	int ret;
+> + *
+> + *	if (!buf || !len) {
+> + *		pr_debug("No output buffer provided\n");
+> + *		return -EINVAL;
+> + *	}
+> + *
+> + *	rng = crypto_alloc_rng(drbg, 0, 0);
+> + *	if (IS_ERR(rng)) {
+> + *		pr_debug("could not allocate RNG handle for %s\n", drbg);
+> + *		return -PTR_ERR(rng);
+> + *	}
+> + *
+> + *	ret = crypto_rng_get_bytes(rng, buf, len);
+> + *	if (ret < 0)
+> + *		pr_debug("generation of random numbers failed\n");
+> + *	else if (ret == 0)
+> + *		pr_debug("RNG returned no data");
+> + *	else
+> + *		pr_debug("RNG returned %d bytes of data\n", ret);
+> + *
+> + *out:
+> + *	crypto_free_rng(rng);
+> + *	return ret;
+> + *}
+> + */
+> +
+>  static inline struct crypto_rng *__crypto_rng_cast(struct crypto_tfm *tfm)
+>  {
+>  	return (struct crypto_rng *)tfm;
+>  }
+> 
+> +/**
+> + * Allocate a cipher handle for a random number generator. The returned struct
+> + * crypto_rng is the cipher handle that is required for any subsequent
+> + * API invocation for that random number generator.
+> + *
+> + * For all random number generators, this call creates a new private copy of
+> + * the random number generator that does not share a state with other
+> + * instances. The only exception is the "krng" random number generator which
+> + * is a kernel crypto API use case for the get_random_bytes() function of the
+> + * /dev/random driver.
+> + *
+> + * @alg_name is the cra_name / name or cra_driver_name / driver name of the
+> + *	     message digest cipher
+> + * @type specifies the type of the cipher (see Documentation/crypto/)
+> + * @mask specifies the mask for the cipher (see Documentation/crypto/)
+> + *
+> + * return value:
+> + *	allocated cipher handle in case of success
+> + *	IS_ERR() is true in case of an error, PTR_ERR() returns the error code.
+> + */
+>  static inline struct crypto_rng *crypto_alloc_rng(const char *alg_name,
+>  						  u32 type, u32 mask)
+>  {
+> @@ -40,6 +97,14 @@ static inline struct crypto_tfm *crypto_rng_tfm(struct crypto_rng *tfm)
+>  	return &tfm->base;
+>  }
+> 
+> +/**
+> + * Return the generic name (cra_name) of the initialized random number generator
+> + *
+> + * @tfm cipher handle
+> + *
+> + * return value:
+> + *	generic name string
+> + */
+>  static inline struct rng_alg *crypto_rng_alg(struct crypto_rng *tfm)
+>  {
+>  	return &crypto_rng_tfm(tfm)->__crt_alg->cra_rng;
+> @@ -50,23 +115,71 @@ static inline struct rng_tfm *crypto_rng_crt(struct crypto_rng *tfm)
+>  	return &crypto_rng_tfm(tfm)->crt_rng;
+>  }
+> 
+> +/**
+> + * The referenced random number generator handle is zeroized and subsequently
+> + * freed.
+> + *
+> + * @tfm cipher handle to be freed
+> + */
+>  static inline void crypto_free_rng(struct crypto_rng *tfm)
+>  {
+>  	crypto_free_tfm(crypto_rng_tfm(tfm));
+>  }
+> 
+> +/**
+> + * This function fills the caller-allocated buffer with random numbers using the
+> + * random number generator referenced by the cipher handle.
+> + *
+> + * @tfm cipher handle
+> + * @rdata output buffer holding the random numbers
+> + * @dlen length of the output buffer
+> + *
+> + * return value:
+> + *	> 0 function was successful and returns the number of generated bytes
+> + *	< 0 if an error occurred
+> + */
+>  static inline int crypto_rng_get_bytes(struct crypto_rng *tfm,
+>  				       u8 *rdata, unsigned int dlen)
+>  {
+>  	return crypto_rng_crt(tfm)->rng_gen_random(tfm, rdata, dlen);
+>  }
+> 
+> +/**
+> + * The reset function completely re-initializes the random number generator
+> + * referenced by the cipher handle by clearing the current state. The new state
+> + * is initialized with the caller provided seed or automatically, depending
+> + * on the random number generator type (the ANSI X9.31 RNG requires
+> + * caller-provided seed, the SP800-90A DRBGs perform an automatic seeding).
+> + * The seed is provided with the. The provided seed should have the length of
+dangling sentence... 
 
-- Special purpose exports that are only really for a single
-module, but are not intended as a general interface. These interfaces
-are usually not really clean and reusable.
+> + * the seed size defined for the random number generator as defined by
+> + * crypto_rng_seedsize.
+> + *
+> + * @tfm cipher handle
+> + * @seed seed input data
+> + * @slen length of the seed input data
+> + *
+> + * return value:
+> + *	0 if the setting of the key was successful
+> + *	< 0 if an error occurred
+> + */
+>  static inline int crypto_rng_reset(struct crypto_rng *tfm,
+>  				   u8 *seed, unsigned int slen)
+>  {
+>  	return crypto_rng_crt(tfm)->rng_reset(tfm, seed, slen);
+>  }
+> 
+> +/**
+> + * The function returns the seed size for the random number generator
+> + * referenced by the cipher handle. This value may be zero if the random
+> + * number generator does not implement or require a reseeding. For example,
+> + * the SP800-90A DRBGs implement an automated reseeding after reaching a
+> + * pre-defined threshold.
+> + *
+> + * @tfm cipher handle
+> + *
+> + * return value:
+> + *	seed size for the random number generator
+> + */
+>  static inline int crypto_rng_seedsize(struct crypto_rng *tfm)
+>  {
+>  	return crypto_rng_alg(tfm)->seedsize;
 
-The idea was to mark the later special purpose exports with the name of the
-module that is supposed to them. They wouldn't be available
-to everybody else and wouldn't become part of the general
-kernel module API.
-
--Andi
 
