@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973AbaKEROO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:14:14 -0500
-Received: from mail-bl2on0091.outbound.protection.outlook.com ([65.55.169.91]:6457
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755128AbaKEROL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:14:11 -0500
-X-Greylist: delayed 609 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 12:14:11 EST
-Date: Wed, 5 Nov 2014 09:14:00 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Heiko Stuebner <heiko@sntech.de>, <linux-sh@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-rockchip@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH 5/7] pinctrl: Add driver for Zynq
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
- <1415041531-15520-6-git-send-email-soren.brinkmann@xilinx.com>
- <5459B1B5.6030001@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5459B1B5.6030001@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21076.007
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <77a9809bf6a8476c80d9308a7d3b1ac0@BN1AFFO11FD047.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(164054003)(199003)(189002)(51704005)(377424004)(21056001)(44976005)(95666004)(106466001)(4396001)(53416004)(85202003)(102836001)(85182001)(83506001)(87936001)(31966008)(107046002)(54356999)(50986999)(23676002)(92566001)(86362001)(20776003)(47776003)(64706001)(120916001)(77156002)(77096003)(110136001)(104016003)(99396003)(108616004)(76176999)(6806004)(46102003)(74316001)(50466002)(33646002)(62966003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB044;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:3;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB044;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0386B406AA
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+	id S1755850AbaKERNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:13:38 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48535 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755309AbaKERNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 12:13:36 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH -next v2 09/26] tty: Remove TTY_CLOSING
+Date: Wed,  5 Nov 2014 12:12:52 -0500
+Message-Id: <1415207589-15967-10-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
+References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
+ <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 06:12AM +0100, Andreas Färber wrote:
-> Am 03.11.2014 um 20:05 schrieb Soren Brinkmann:
-> > +enum zynq_pinmux_functions {
-> > +	ZYNQ_PMUX_ethernet0,
-> > +	ZYNQ_PMUX_ethernet1,
-> > +	ZYNQ_PMUX_mdio0,
-> > +	ZYNQ_PMUX_mdio1,
-> > +	ZYNQ_PMUX_qspi0,
-> > +	ZYNQ_PMUX_qspi1,
-> > +	ZYNQ_PMUX_qspi_fbclk,
-> > +	ZYNQ_PMUX_qspi_cs1,
-> 
-> Are usb0 and usb1 intentionally missing in this patch for lack of
-> upstream USB driver? If so, then please mention what you left out in the
-> commit message.
+Now that re-open is not permitted for a legacy BSD pty master,
+using TTY_CLOSING to indicate when a tty can be torn-down is
+no longer necessary.
 
-I don't know how that could happen, but no, it's not intentionally
-missing, let's call it accidentally. It just slipped through. Don't
-ask me how I could miss USB.
+Reviewed-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_io.c | 14 ++------------
+ include/linux/tty.h  |  1 -
+ 2 files changed, 2 insertions(+), 13 deletions(-)
 
-	Thanks,
-	Sören
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index fb74107..49167ed 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1197,7 +1197,7 @@ void tty_write_message(struct tty_struct *tty, char *msg)
+ 	if (tty) {
+ 		mutex_lock(&tty->atomic_write_lock);
+ 		tty_lock(tty);
+-		if (tty->ops->write && !test_bit(TTY_CLOSING, &tty->flags)) {
++		if (tty->ops->write && tty->count > 0) {
+ 			tty_unlock(tty);
+ 			tty->ops->write(tty, msg, strlen(msg));
+ 		} else
+@@ -1888,16 +1888,6 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	/*
+ 	 * Perform some housekeeping before deciding whether to return.
+ 	 *
+-	 * Set the TTY_CLOSING flag if this was the last open.  In the
+-	 * case of a pty we may have to wait around for the other side
+-	 * to close, and TTY_CLOSING makes sure we can't be reopened.
+-	 */
+-	if (tty_closing)
+-		set_bit(TTY_CLOSING, &tty->flags);
+-	if (o_tty_closing)
+-		set_bit(TTY_CLOSING, &o_tty->flags);
+-
+-	/*
+ 	 * If _either_ side is closing, make sure there aren't any
+ 	 * processes that still think tty or o_tty is their controlling
+ 	 * tty.
+@@ -1912,7 +1902,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 
+ 	mutex_unlock(&tty_mutex);
+ 	tty_unlock_pair(tty, o_tty);
+-	/* At this point the TTY_CLOSING flag should ensure a dead tty
++	/* At this point, the tty->count == 0 should ensure a dead tty
+ 	   cannot be re-opened by a racing opener */
+ 
+ 	/* check whether both sides are closing ... */
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index ff0dd7a..35b29f0 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -316,7 +316,6 @@ struct tty_file_private {
+ #define TTY_EXCLUSIVE 		3	/* Exclusive open mode */
+ #define TTY_DEBUG 		4	/* Debugging */
+ #define TTY_DO_WRITE_WAKEUP 	5	/* Call write_wakeup after queuing new */
+-#define TTY_CLOSING 		7	/* ->close() in progress */
+ #define TTY_LDISC_OPEN	 	11	/* Line discipline is open */
+ #define TTY_PTY_LOCK 		16	/* pty private */
+ #define TTY_NO_WRITE_SPLIT 	17	/* Preserve write boundaries to driver */
+-- 
+2.1.3
+
