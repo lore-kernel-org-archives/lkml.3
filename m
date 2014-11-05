@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaKENpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:45:09 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:41695 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932141AbaKENpE (ORCPT
+	id S932097AbaKENo7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:44:59 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:36039 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923AbaKENoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:45:04 -0500
-Date: Wed, 5 Nov 2014 14:40:40 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Stefan Monnier <monnier@iro.umontreal.ca>
-Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-sunxi] Re: [PATCH 3/6] phy: Add driver to support
- individual USB PHYs on sun9i
-Message-ID: <20141105134040.GE27686@lukather>
-References: <1415074039-16590-1-git-send-email-wens@csie.org>
- <1415074039-16590-4-git-send-email-wens@csie.org>
- <1415081773.665.1.camel@plaes.org>
- <20141105094543.GC27686@lukather>
- <jwvr3xhu6p3.fsf-monnier+gmane.comp.hardware.netbook.arm.sunxi@gnu.org>
+	Wed, 5 Nov 2014 08:44:55 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm 1/3] memcg: do not abuse memcg_kmem_skip_account
+Date: Wed, 5 Nov 2014 16:44:42 +0300
+Message-ID: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
-Content-Disposition: inline
-In-Reply-To: <jwvr3xhu6p3.fsf-monnier+gmane.comp.hardware.netbook.arm.sunxi@gnu.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+task_struct->memcg_kmem_skip_account was initially introduced to avoid
+recursion during kmem cache creation: memcg_kmem_get_cache, which is
+called by kmem_cache_alloc to determine the per-memcg cache to account
+allocation to, may issue lazy cache creation if the needed cache doesn't
+exist, which means issuing yet another kmem_cache_alloc. We can't just
+pass a flag to the nested kmem_cache_alloc disabling kmem accounting,
+because there are hidden allocations, e.g. in INIT_WORK. So we
+introduced a flag on the task_struct, memcg_kmem_skip_account, making
+memcg_kmem_get_cache return immediately.
 
---hwvH6HDNit2nSK4j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+By its nature, the flag may also be used to disable accounting for
+allocations shared among different cgroups, and currently it is used
+this way in memcg_activate_kmem. Using it like this looks like abusing
+it to me. If we want to disable accounting for some allocatrons (which
+we will definitely want one day), we should either add GFP_NO_MEMCG or
+GFP_MEMCG flag in order to blacklist/whitelist some allocations.
 
-Hi Stefan,
+For now, let's simply remove memcg_stop/resume_kmem_account from
+memcg_activate_kmem.
 
-Please keep me in Cc.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-On Wed, Nov 05, 2014 at 08:27:41AM -0500, Stefan Monnier wrote:
-> > Until some new SoC part of the sun9i family comes up, and it will just
-> > add to the confusion.
->=20
-> Maybe, but then again maybe not.  It depends whether such a new member
-> ever shows up, and whether it has a hardware that's compatible enough
-> that the code doesn't need to be changed (seems unlikely).
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f61ecbc97d30..b3fe830fdb29 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3428,12 +3428,6 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
+ 		return 0;
+ 
+ 	/*
+-	 * We are going to allocate memory for data shared by all memory
+-	 * cgroups so let's stop accounting here.
+-	 */
+-	memcg_stop_kmem_account();
+-
+-	/*
+ 	 * For simplicity, we won't allow this to be disabled.  It also can't
+ 	 * be changed if the cgroup has children already, or if tasks had
+ 	 * already joined.
+@@ -3475,7 +3469,6 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
+ 	 */
+ 	memcg->kmemcg_id = memcg_id;
+ out:
+-	memcg_resume_kmem_account();
+ 	return err;
+ }
+ 
+-- 
+1.7.10.4
 
-Yeah, and in all cases, we won't be wrong. While if a new SoCs comes
-out which is part of the sun9i (let's say A842), you'll have to select
-an option that states that it is for the A80.
-
-The list will be confusing for the user and/or a pain to maintain for
-us.
-
-> > Such a person would know that the A80 is part of the sun9i family if
-> > it has some knowledge of the Allwinner SocS.  And if they don't, A80 or
-> > sun9i or both won't make any kind of difference.
->=20
-> Actually, I'm fairly familiar with Allwinner's family of SoCs, but
-> I kind of lost track of which Ann corresponds to which sunXi.  If I got
-> a board, all the documentation would tell me that it's got an A80 on
-> board, but not that it has a sun9i thingy on board.  So there's a good
-> chance that a user knows "A80" but not "sun9i".
-
-Good thing we do have a wiki page just for that then.
-
-http://linux-sunxi.org/Allwinner_SoC_Family#Comparison_table
-
-> And last I heard the sunXi designations are a bit unreliable since
-> Allwinner renumbered them differently (is the A20 a sun7i or a sun8i).
-
-It might have been both to Allwinner. It's always been sun7i for us.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---hwvH6HDNit2nSK4j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUWijYAAoJEBx+YmzsjxAgkuYP/3nnfRMh3gbpy57Yw766PUeA
-cp+lWZu4Zr1OO5nfY5zpUjkQRNsquq+P0AQ9fIpSX13hUmHrBLXnY6E+v54l6akj
-KGYWOnSsLCNezCnuZzLP/5gQJtJyDWfZE08fF8pjUhE0t660od7yN8X5uc6GVJ29
-j8kbR2wpaPO/JL77acbMYLNT8o6sYChwy0q3ps3UzHVhmEWjLa4/8iga6pYST2Vb
-xumQ4XzRtRXm+HMvDmTJw28v8yJNujftDLch7OYFNXpq8omuWUVc/p8lK7zg65fP
-hkCKR72KPk7Expupdz0CBu4x81E0Cpl7nAsSoXy0Rj1imoYdp9e9xoK54EBjKGon
-b6WUJ0o998f5AprUCFGQCt5zmjPFE/QdVFifieQjQdqNsBnE82aQnE5/kfX9oJTp
-pwkLFjUrdKDX6HPgONKIGveavbPgVBB+7EkDcOhpjMnccy30595AjN8TjEsj2TNH
-zUXbni/5qsjN/DfQVc5Q2LufJnqCF6RrUPZHUZIqyHbTo7Bx8gOf9X8MM007XONH
-DXZHR5q5R7rKpIuEsxB3cjodsqD3ICcGfEfkzPCR3ZaTJGnFNfRDWo37yMY5Z1D2
-2SnvkQoyKgtFVv+qfBk1/IR06i5t/CXRL5HG3SuD2Bi1B9L5gD/BAbFGxzpPvtsS
-476VhDVRpG+iXWpBt8uC
-=JByI
------END PGP SIGNATURE-----
-
---hwvH6HDNit2nSK4j--
