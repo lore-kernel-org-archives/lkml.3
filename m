@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaKEOuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:50:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62488 "EHLO mga01.intel.com"
+	id S1755180AbaKEOuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:50:24 -0500
+Received: from mga01.intel.com ([192.55.52.88]:62496 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115AbaKEOuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755020AbaKEOuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 09:50:18 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="617582880"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="411843837"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>
@@ -21,9 +21,9 @@ Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 15/19] futex, thp: remove special case for THP in get_futex_key
-Date: Wed,  5 Nov 2014 16:49:50 +0200
-Message-Id: <1415198994-15252-16-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 16/19] thp: update documentation
+Date: Wed,  5 Nov 2014 16:49:51 +0200
+Message-Id: <1415198994-15252-17-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -31,124 +31,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With new THP refcounting, we don't need tricks to stabilize huge page.
-If we've got reference to tail page, it can't split under us.
-
-This patch effectively reverts a5b338f2b0b1.
+The patch updates Documentation/vm/transhuge.txt to reflect changes in
+THP design.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- kernel/futex.c | 61 ++++++++++++----------------------------------------------
- 1 file changed, 12 insertions(+), 49 deletions(-)
+ Documentation/vm/transhuge.txt | 84 +++++++++++++++++++-----------------------
+ 1 file changed, 38 insertions(+), 46 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index d3a9d946d0b7..fb71ccba683b 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -391,7 +391,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
- {
- 	unsigned long address = (unsigned long)uaddr;
- 	struct mm_struct *mm = current->mm;
--	struct page *page, *page_head;
-+	struct page *page;
- 	int err, ro = 0;
+diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+index df1794a9071f..33465e7b0d9b 100644
+--- a/Documentation/vm/transhuge.txt
++++ b/Documentation/vm/transhuge.txt
+@@ -200,9 +200,18 @@ thp_collapse_alloc_failed is incremented if khugepaged found a range
+ 	of pages that should be collapsed into one huge page but failed
+ 	the allocation.
  
- 	/*
-@@ -434,46 +434,9 @@ again:
- 	else
- 		err = 0;
+-thp_split is incremented every time a huge page is split into base
++thp_split_page is incremented every time a huge page is split into base
+ 	pages. This can happen for a variety of reasons but a common
+ 	reason is that a huge page is old and is being reclaimed.
++	This action implies splitting all PMD the page mapped with.
++
++thp_split_page_failed is is incremented if kernel fails to split huge
++	page. This can happen if the page was pinned by somebody.
++
++thp_split_pmd is incremented every time a PMD split into table of PTEs.
++	This can happen, for instance, when application calls mprotect() or
++	munmap() on part of huge page. It doesn't split huge page, only
++	page table entry.
  
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--	page_head = page;
--	if (unlikely(PageTail(page))) {
--		put_page(page);
--		/* serialize against __split_huge_page_splitting() */
--		local_irq_disable();
--		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
--			page_head = compound_head(page);
--			/*
--			 * page_head is valid pointer but we must pin
--			 * it before taking the PG_lock and/or
--			 * PG_compound_lock. The moment we re-enable
--			 * irqs __split_huge_page_splitting() can
--			 * return and the head page can be freed from
--			 * under us. We can't take the PG_lock and/or
--			 * PG_compound_lock on a page that could be
--			 * freed from under us.
--			 */
--			if (page != page_head) {
--				get_page(page_head);
--				put_page(page);
--			}
--			local_irq_enable();
--		} else {
--			local_irq_enable();
--			goto again;
--		}
--	}
--#else
--	page_head = compound_head(page);
--	if (page != page_head) {
--		get_page(page_head);
--		put_page(page);
--	}
--#endif
+ thp_zero_page_alloc is incremented every time a huge zero page is
+ 	successfully allocated. It includes allocations which where
+@@ -280,9 +289,9 @@ unaffected. libhugetlbfs will also work fine as usual.
+ == Graceful fallback ==
+ 
+ Code walking pagetables but unware about huge pmds can simply call
+-split_huge_page_pmd(vma, addr, pmd) where the pmd is the one returned by
++split_huge_pmd(vma, pmd, addr) where the pmd is the one returned by
+ pmd_offset. It's trivial to make the code transparent hugepage aware
+-by just grepping for "pmd_offset" and adding split_huge_page_pmd where
++by just grepping for "pmd_offset" and adding split_huge_pmd where
+ missing after pmd_offset returns the pmd. Thanks to the graceful
+ fallback design, with a one liner change, you can avoid to write
+ hundred if not thousand of lines of complex code to make your code
+@@ -291,7 +300,8 @@ hugepage aware.
+ If you're not walking pagetables but you run into a physical hugepage
+ but you can't handle it natively in your code, you can split it by
+ calling split_huge_page(page). This is what the Linux VM does before
+-it tries to swapout the hugepage for example.
++it tries to swapout the hugepage for example. split_huge_page can fail
++if the page is pinned and you must handle this correctly.
+ 
+ Example to make mremap.c transparent hugepage aware with a one liner
+ change:
+@@ -303,14 +313,14 @@ diff --git a/mm/mremap.c b/mm/mremap.c
+ 		return NULL;
+ 
+ 	pmd = pmd_offset(pud, addr);
+-+	split_huge_page_pmd(vma, addr, pmd);
+++	split_huge_pmd(vma, pmd, addr);
+ 	if (pmd_none_or_clear_bad(pmd))
+ 		return NULL;
+ 
+ == Locking in hugepage aware code ==
+ 
+ We want as much code as possible hugepage aware, as calling
+-split_huge_page() or split_huge_page_pmd() has a cost.
++split_huge_page() or split_huge_pmd() has a cost.
+ 
+ To make pagetable walks huge pmd aware, all you need to do is to call
+ pmd_trans_huge() on the pmd returned by pmd_offset. You must hold the
+@@ -319,47 +329,29 @@ created from under you by khugepaged (khugepaged collapse_huge_page
+ takes the mmap_sem in write mode in addition to the anon_vma lock). If
+ pmd_trans_huge returns false, you just fallback in the old code
+ paths. If instead pmd_trans_huge returns true, you have to take the
+-mm->page_table_lock and re-run pmd_trans_huge. Taking the
+-page_table_lock will prevent the huge pmd to be converted into a
+-regular pmd from under you (split_huge_page can run in parallel to the
++page table lock (pmd_lock()) and re-run pmd_trans_huge. Taking the
++page table lock will prevent the huge pmd to be converted into a
++regular pmd from under you (split_huge_pmd can run in parallel to the
+ pagetable walk). If the second pmd_trans_huge returns false, you
+ should just drop the page_table_lock and fallback to the old code as
+-before. Otherwise you should run pmd_trans_splitting on the pmd. In
+-case pmd_trans_splitting returns true, it means split_huge_page is
+-already in the middle of splitting the page. So if pmd_trans_splitting
+-returns true it's enough to drop the page_table_lock and call
+-wait_split_huge_page and then fallback the old code paths. You are
+-guaranteed by the time wait_split_huge_page returns, the pmd isn't
+-huge anymore. If pmd_trans_splitting returns false, you can proceed to
+-process the huge pmd and the hugepage natively. Once finished you can
+-drop the page_table_lock.
 -
--	lock_page(page_head);
--
-+	lock_page(page);
- 	/*
--	 * If page_head->mapping is NULL, then it cannot be a PageAnon
-+	 * If page->mapping is NULL, then it cannot be a PageAnon
- 	 * page; but it might be the ZERO_PAGE or in the gate area or
- 	 * in a special mapping (all cases which we are happy to fail);
- 	 * or it may have been a good file page when get_user_pages_fast
-@@ -485,12 +448,12 @@ again:
- 	 *
- 	 * The case we do have to guard against is when memory pressure made
- 	 * shmem_writepage move it from filecache to swapcache beneath us:
--	 * an unlikely race, but we do need to retry for page_head->mapping.
-+	 * an unlikely race, but we do need to retry for page->mapping.
- 	 */
--	if (!page_head->mapping) {
--		int shmem_swizzled = PageSwapCache(page_head);
--		unlock_page(page_head);
--		put_page(page_head);
-+	if (!page->mapping) {
-+		int shmem_swizzled = PageSwapCache(page);
-+		unlock_page(page);
-+		put_page(page);
- 		if (shmem_swizzled)
- 			goto again;
- 		return -EFAULT;
-@@ -503,7 +466,7 @@ again:
- 	 * it's a read-only handle, it's expected that futexes attach to
- 	 * the object not the particular process.
- 	 */
--	if (PageAnon(page_head)) {
-+	if (PageAnon(page)) {
- 		/*
- 		 * A RO anonymous page will never change and thus doesn't make
- 		 * sense for futex operations.
-@@ -518,15 +481,15 @@ again:
- 		key->private.address = address;
- 	} else {
- 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
--		key->shared.inode = page_head->mapping->host;
-+		key->shared.inode = page->mapping->host;
- 		key->shared.pgoff = basepage_index(page);
- 	}
+-== compound_lock, get_user_pages and put_page ==
++before. Otherwise you can proceed to process the huge pmd and the
++hugepage natively. Once finished you can drop the page_table_lock.
++
++== Refcounts and transparent huge pages ==
  
- 	get_futex_key_refs(key); /* implies MB (B) */
- 
- out:
--	unlock_page(page_head);
--	put_page(page_head);
-+	unlock_page(page);
-+	put_page(page);
- 	return err;
- }
- 
++As with other compound page types we do all refcounting for THP on head
++page, but unlike other compound pages THP support splitting.
+ split_huge_page internally has to distribute the refcounts in the head
+-page to the tail pages before clearing all PG_head/tail bits from the
+-page structures. It can do that easily for refcounts taken by huge pmd
+-mappings. But the GUI API as created by hugetlbfs (that returns head
+-and tail pages if running get_user_pages on an address backed by any
+-hugepage), requires the refcount to be accounted on the tail pages and
+-not only in the head pages, if we want to be able to run
+-split_huge_page while there are gup pins established on any tail
+-page. Failure to be able to run split_huge_page if there's any gup pin
+-on any tail page, would mean having to split all hugepages upfront in
+-get_user_pages which is unacceptable as too many gup users are
+-performance critical and they must work natively on hugepages like
+-they work natively on hugetlbfs already (hugetlbfs is simpler because
+-hugetlbfs pages cannot be split so there wouldn't be requirement of
+-accounting the pins on the tail pages for hugetlbfs). If we wouldn't
+-account the gup refcounts on the tail pages during gup, we won't know
+-anymore which tail page is pinned by gup and which is not while we run
+-split_huge_page. But we still have to add the gup pin to the head page
+-too, to know when we can free the compound page in case it's never
+-split during its lifetime. That requires changing not just
+-get_page, but put_page as well so that when put_page runs on a tail
+-page (and only on a tail page) it will find its respective head page,
+-and then it will decrease the head page refcount in addition to the
+-tail page refcount. To obtain a head page reliably and to decrease its
+-refcount without race conditions, put_page has to serialize against
+-__split_huge_page_refcount using a special per-page lock called
+-compound_lock.
++page to the tail pages before clearing all PG_head/tail bits from the page
++structures. It can be done easily for refcounts taken by page table
++entries. But we don't have enough information on how to distribute any
++additional pins (i.e. from get_user_pages). split_huge_page fails any
++requests to split pinned huge page: it expects page count to be equal to
++sum of mapcount of all sub-pages plus one (split_huge_page caller must
++have reference for head page).
++
++split_huge_page uses per-page compound_lock to protect page->_count to be
++updated by get_page()/put_page() on tail pages.
++
++Note that split_huge_pmd doesn't have any limitation on refcounting: PMD
++can be split at any point and never fails.
 -- 
 2.1.1
 
