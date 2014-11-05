@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaKEEbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 23:31:52 -0500
-Received: from ozlabs.org ([103.22.144.67]:35153 "EHLO ozlabs.org"
+	id S1753193AbaKEEhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 23:37:14 -0500
+Received: from ozlabs.org ([103.22.144.67]:58374 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421AbaKEEbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 23:31:48 -0500
-Date: Wed, 5 Nov 2014 15:31:36 +1100
+	id S1751421AbaKEEhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 23:37:11 -0500
+Date: Wed, 5 Nov 2014 15:37:04 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tapasweni Pathak <tapaswenipathak@gmail.com>,
-        Sean Young <sean@mess.org>
+        Amber Thrall <amber.rose.thrall@gmail.com>,
+        Aybuke Ozdemir <aybuke.147@gmail.com>
 Subject: linux-next: manual merge of the staging tree with the v4l-dvb tree
-Message-ID: <20141105153136.2026c4b9@canb.auug.org.au>
+Message-ID: <20141105153704.3af595f9@canb.auug.org.au>
 X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/MwwQOrG2D1+uD6.FVtQtPr1"; protocol="application/pgp-signature"
+ boundary="Sig_/Stqo7ads/1GeHnF.8WcoN1d"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MwwQOrG2D1+uD6.FVtQtPr1
+--Sig_/Stqo7ads/1GeHnF.8WcoN1d
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg,
 
 Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/media/lirc/lirc_igorplugusb.c between commit
-3e5907e695f2 ("[media] lirc_igorplugusb: remove") from the v4l-dvb tree
-and commit d82e62deb51b ("staging: media: lirc: Remove useless cast on
-void pointer") from the staging tree.
+drivers/staging/media/lirc/lirc_sasem.c between commit f3a75505ab5f
+("[media] Staging: media: lirc: cleaned up packet dump in 2 files")
+from the v4l-dvb tree and commit eca6a8872a04 ("staging: media: lirc:
+Use pr_* instead of printk") from the staging tree.
 
-I fixed it up (I just removed the file) and can carry the fix as
-necessary (no action is required).
+I fixed it up (I just used the v4l-dvb tree version - see below) and
+can carry the fix as necessary (no action is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/MwwQOrG2D1+uD6.FVtQtPr1
+diff --cc drivers/staging/media/lirc/lirc_sasem.c
+index 2f0463eb9887,123ddf68b587..000000000000
+--- a/drivers/staging/media/lirc/lirc_sasem.c
++++ b/drivers/staging/media/lirc/lirc_sasem.c
+@@@ -581,8 -582,13 +581,9 @@@ static void incoming_packet(struct sase
+  		return;
+  	}
+ =20
+ -	if (debug) {
+ -		pr_info("Incoming data: ");
+ -		for (i =3D 0; i < 8; ++i)
+ -			pr_cont("%02x ", buf[i]);
+ -		pr_cont("\n");
+ -	}
+ +	if (debug)
+ +		dev_info(&context->dev->dev, "Incoming data: %*ph\n", len, buf);
++=20
+  	/*
+  	 * Lirc could deal with the repeat code, but we really need to block it
+  	 * if it arrives too late.  Otherwise we could repeat the wrong code.
+
+--Sig_/Stqo7ads/1GeHnF.8WcoN1d
 Content-Type: application/pgp-signature
 Content-Description: OpenPGP digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUWagyAAoJEMDTa8Ir7ZwVVdYP/iWWGa6qQeEpvHzYDwMh93YE
-buT98Xu5paZn6KwtnvkMd4i/VXLWBiBr2Y+x0ZOAK38l4H1NcMdA3Av4ANOsnD/D
-ZktOH2gjTc5jlZk7MGySH/C3DyLFNUdvjHuapVrtzygfLSUvPa5QIcZYzU4On3L2
-cQ0BInSmPnN4DZgiSGzF40qBlL6Wg/M9KyiX/kR0MV9KGWfrwHNJ6zS6LhHMRT5F
-k56Knzn4kLtB7Uzj8bz8NwjzZ7hMHGsX0Bvd+9QykEPg44uaxWLaO0Ntk++5DHwx
-g4dRws5fGiHBzS+xaeULfz5/RgEZdt4h+w1YxtueMwcPR9uNu6ktzfhlcJT9zUyx
-Zc9x5xyabsqLCmhFybrl2/KLxtunuq3abbUqhwturfl4X0qXZHc8NPVVWcH1vUbd
-9DDOCU6JoAOVo/AwzB9l65MdyP7WcfiTcT+rq8A49JVSsDR3ka0e2RI0EiXYYgPe
-DNBJTXF+AvqAo6MLIG04q4rRtzuDWcmsmnazQ9+yY8pIUyBJYPKKTTNw17FhHTNI
-uvq9MXH+7ja76DEokcbUw5qwnxF2JgNjDYl+Nques/MKZOTrcBAsj0hcyKVDMZB0
-Hrok2bMdDLJVpjdrrnx6fUt3H1TEXbHeKFf0hwPFzeaDPR59nDI66qLrjAjzL4m4
-ULZD5XrWrVnIF5Qcbid9
-=AtuV
+iQIcBAEBCAAGBQJUWal1AAoJEMDTa8Ir7ZwVpgkQAIrxoOyKI/77M3U7YcHxUgoD
+MPIMVhloopqUDSesvpmqpXb+BWNjsqvhdd7HJyKWyqiJKIf0EgoNL2gpUiCCrwPu
+4lM3Tks9VrB9/ABAR0Ka7i5bRFj6BL5shdmU2hRXQXZfxN4N69uaAtZBX0Ma4Fag
+67tnUrmaFdbtqpdR834UMd5hKPpCgThJNCJb18OMVTRWqP/QkYF8leYA0EUDXB90
+m3mAikP5LqEPcSjhTfi2RdNdsleoxKAPgPhpquro+RXzjFGM/Gbu9kbiE5w+8zzm
+NaIZpcSXFz4gLoA/e8I2cmFD6XQXojkAUqhpFyNQE/wFkj5r74acMD4ZRxEAUWt8
+E6kQtr499R5w20dm3rEVVdNqtM7qBFKQl4wjkc7MXkBzAmEtfyw9pHkQvlk5htX4
+1YfR+EaAe5Xar4x53gmlMbhKHx2Bhr63JAmytBRdQSzk1szVIXRBGD+XJ6NiXbcR
+3IBTsPH2o+ypgpHJsDP8J8OO2JA67Qn7yOJAh/2+oUqjii2lunNswPbssh2NpjXA
+AamjUrY2vavYBq4rTdh/iiQUSjtq3fvV+j9/VW3MbdaL7FuZl6MLWhnifvMKSRh3
+HWFYLodhkMGnsCvIEnaOWIOxIMAAGGQoiRIJfeDxv8C70mAJI34KEeX4pOFnafZB
+pti1NXU0F+pbq9Znv7Xb
+=EOrr
 -----END PGP SIGNATURE-----
 
---Sig_/MwwQOrG2D1+uD6.FVtQtPr1--
+--Sig_/Stqo7ads/1GeHnF.8WcoN1d--
