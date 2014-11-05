@@ -1,242 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaKEUBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:01:51 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62614 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091AbaKEUBo (ORCPT
+	id S1751541AbaKEUFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:05:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:39850 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751081AbaKEUFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:01:44 -0500
-Date: Wed, 5 Nov 2014 12:01:40 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Rodrigo Freire <rfreire@redhat.com>
-Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        linux-mtd@lists.infradead.org, Felix Fietkau <nbd@openwrt.org>,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Herton Krzesinski <hkrzesin@redhat.com>
-Subject: Re: [RESEND PATCH V2] mtd: block2mtd: Present block2mtd timely on
- boot time
-Message-ID: <20141105200140.GM23619@ld-irv-0074>
-References: <1807144344.40128259.1410985683342.JavaMail.zimbra@redhat.com>
- <515696553.1577613.1412867251670.JavaMail.zimbra@redhat.com>
+	Wed, 5 Nov 2014 15:05:46 -0500
+Message-Id: <20141105192545.005203298@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Wed, 05 Nov 2014 14:24:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 8/8] debugfs: Have debugfs_print_regs32() return void
+References: <20141105192426.348510548@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515696553.1577613.1412867251670.JavaMail.zimbra@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0008-debugfs-Have-debugfs_print_regs32-return-void.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 11:07:31AM -0400, Rodrigo Freire wrote:
-> From: Felix Fietkau <nbd@openwrt.org> 
-> 
-> mtd: block2mtd: Ensure that block2mtd is presented in a timely fashion 
-> 
-> Currently, a block MTD device is not presented to the system on time, in 
-> order to start mounting the filesystems. This patch ensures that block2mtd 
-> is presented at the right time, so filesystems can be mounted on boot time. 
-> This issue was seen on BCM2835 (Raspberry Pi) systems when mounting JFFS2 
-> block2mtd filesystems. 
-> This patchset also adds a MTD device name and a timeout option to the driver. 
-> Original patchset: 
-> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/440-block2mtd_init.patch?rev=40444 
-> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/441-block2mtd_probe.patch?rev=40444 
-> 
-> Signed-off-by: Felix Fietkau <nbd@openwrt.org> 
-> Signed-off-by: Rodrigo Freire <rfreire@redhat.com> 
-> Signed-off-by: Herton Krzesinski <herton@redhat.com> 
-> --- 
-> V2: Uses kstrdup, removed PAGE_MASK. 
+From: Joe Perches <joe@perches.com>
 
-FYI, this copy was malformed. All the indentation and formatting is
-wrong, so it doesn't apply. I'll look at the previous copy you sent, but
-please fix this in the future.
+The seq_printf() will soon just return void, and seq_has_overflowed()
+should be used instead to see if the seq can no longer accept input.
 
-Brian
+As the return value of debugfs_print_regs32() has no users and
+the seq_file descriptor should be checked with seq_has_overflowed()
+instead of return values of functions, it is better to just have
+debugfs_print_regs32() also return void.
 
-> --- a/drivers/mtd/devices/block2mtd.c 2014-09-16 21:38:12.543952627 -0300 
-> +++ b/drivers/mtd/devices/block2mtd.c 2014-09-17 17:43:21.424944394 -0300 
-> @@ -9,7 +9,15 @@ 
-> 
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt 
-> 
-> +/* 
-> +* When the first attempt at device initialization fails, we may need to 
-> +* wait a little bit and retry. This timeout, by default 3 seconds, gives 
-> +* device time to start up. Required on BCM2708 and a few other chipsets. 
-> +*/ 
-> +#define MTD_DEFAULT_TIMEOUT 3 
-> + 
-> #include <linux/module.h> 
-> +#include <linux/delay.h> 
-> #include <linux/fs.h> 
-> #include <linux/blkdev.h> 
-> #include <linux/bio.h> 
-> @@ -17,6 +25,7 @@ 
-> #include <linux/list.h> 
-> #include <linux/init.h> 
-> #include <linux/mtd/mtd.h> 
-> +#include <linux/mtd/partitions.h> 
-> #include <linux/mutex.h> 
-> #include <linux/mount.h> 
-> #include <linux/slab.h> 
-> @@ -209,12 +218,14 @@ static void block2mtd_free_device(struct 
-> } 
-> 
-> 
-> -static struct block2mtd_dev *add_device(char *devname, int erase_size) 
-> +static struct block2mtd_dev *add_device(char *devname, int erase_size, const char *mtdname, int timeout) 
-> { 
-> const fmode_t mode = FMODE_READ | FMODE_WRITE | FMODE_EXCL; 
-> - struct block_device *bdev; 
-> + struct block_device *bdev = ERR_PTR(-ENODEV); 
-> struct block2mtd_dev *dev; 
-> + struct mtd_partition *part; 
-> char *name; 
-> + int i; 
-> 
-> if (!devname) 
-> return NULL; 
-> @@ -225,15 +236,28 @@ static struct block2mtd_dev *add_device( 
-> 
-> /* Get a handle on the device */ 
-> bdev = blkdev_get_by_path(devname, mode, dev); 
-> -#ifndef MODULE 
-> - if (IS_ERR(bdev)) { 
-> 
-> - /* We might not have rootfs mounted at this point. Try 
-> - to resolve the device name by other means. */ 
-> - 
-> - dev_t devt = name_to_dev_t(devname); 
-> - if (devt) 
-> - bdev = blkdev_get_by_dev(devt, mode, dev); 
-> +#ifndef MODULE 
-> +/* 
-> +* We might not have the root device mounted at this point. 
-> +* Try to resolve the device name by other means. 
-> +*/ 
-> + for (i = 0; IS_ERR(bdev) && i <= timeout; i++) { 
-> + dev_t devt; 
-> + 
-> + if (i) 
-> + /* 
-> + * Calling wait_for_device_probe in the first loop 
-> + * was not enough, sleep for a bit in subsequent 
-> + * go-arounds. 
-> + */ 
-> + msleep(1000); 
-> + wait_for_device_probe(); 
-> + 
-> + devt = name_to_dev_t(devname); 
-> + if (!devt) 
-> + continue; 
-> + bdev = blkdev_get_by_dev(devt, mode, dev); 
-> } 
-> #endif 
-> 
-> @@ -257,13 +281,14 @@ static struct block2mtd_dev *add_device( 
-> 
-> /* Setup the MTD structure */ 
-> /* make the name contain the block device in */ 
-> - name = kasprintf(GFP_KERNEL, "block2mtd: %s", devname); 
-> + if (!mtdname) 
-> + mtdname = devname; 
-> + name = kstrdup (mtdname, GFP_KERNEL); 
-> if (!name) 
-> goto err_destroy_mutex; 
-> 
-> dev->mtd.name = name; 
-> - 
-> - dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK; 
-> + dev->mtd.size = dev->blkdev->bd_inode->i_size & ~(erase_size - 1); 
-> dev->mtd.erasesize = erase_size; 
-> dev->mtd.writesize = 1; 
-> dev->mtd.writebufsize = PAGE_SIZE; 
-> @@ -276,15 +301,19 @@ static struct block2mtd_dev *add_device( 
-> dev->mtd.priv = dev; 
-> dev->mtd.owner = THIS_MODULE; 
-> 
-> - if (mtd_device_register(&dev->mtd, NULL, 0)) { 
-> + part = kzalloc(sizeof(struct mtd_partition), GFP_KERNEL); 
-> + part->name = name; 
-> + part->offset = 0; 
-> + part->size = dev->mtd.size; 
-> + if (mtd_device_register(&dev->mtd, part, 1)) { 
-> /* Device didn't get added, so free the entry */ 
-> goto err_destroy_mutex; 
-> } 
-> + 
-> list_add(&dev->list, &blkmtd_device_list); 
-> pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n", 
-> dev->mtd.index, 
-> - dev->mtd.name + strlen("block2mtd: "), 
-> - dev->mtd.erasesize >> 10, dev->mtd.erasesize); 
-> + mtdname, dev->mtd.erasesize >> 10, dev->mtd.erasesize); 
-> return dev; 
-> 
-> err_destroy_mutex: 
-> @@ -353,11 +382,12 @@ static char block2mtd_paramline[80 + 12] 
-> 
-> static int block2mtd_setup2(const char *val) 
-> { 
-> - char buf[80 + 12]; /* 80 for device, 12 for erase size */ 
-> + char buf[80 + 12 + 80 + 8]; /* 80 for device, 12 for erase size, 80 for name, 8 for timeout */ 
-> char *str = buf; 
-> - char *token[2]; 
-> + char *token[4]; 
-> char *name; 
-> size_t erase_size = PAGE_SIZE; 
-> + unsigned long timeout = MTD_DEFAULT_TIMEOUT; 
-> int i, ret; 
-> 
-> if (strnlen(val, sizeof(buf)) >= sizeof(buf)) { 
-> @@ -368,7 +398,7 @@ static int block2mtd_setup2(const char * 
-> strcpy(str, val); 
-> kill_final_newline(str); 
-> 
-> - for (i = 0; i < 2; i++) 
-> + for (i = 0; i < 4; i++) 
-> token[i] = strsep(&str, ","); 
-> 
-> if (str) { 
-> @@ -395,7 +425,13 @@ static int block2mtd_setup2(const char * 
-> } 
-> } 
-> 
-> - add_device(name, erase_size); 
-> + if (token[2] && (strlen(token[2]) + 1 > 80)) 
-> + pr_err("mtd device name too long"); 
-> + 
-> + 
-> + if (token[3] && kstrtoul(token[3], 0, &timeout)) 
-> + pr_err("invalid timeout"); 
-> + add_device(name, erase_size, token[2], timeout); 
-> 
-> return 0; 
-> } 
-> @@ -429,7 +465,7 @@ static int block2mtd_setup(const char *v 
-> 
-> 
-> module_param_call(block2mtd, block2mtd_setup, NULL, NULL, 0200); 
-> -MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>]\""); 
-> +MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>[,<name>[,<timeout>]]]\""); 
-> 
-> static int __init block2mtd_init(void) 
-> { 
-> @@ -463,8 +499,7 @@ static void block2mtd_exit(void) 
-> } 
-> } 
-> 
-> - 
-> -module_init(block2mtd_init); 
-> +late_initcall(block2mtd_init); 
-> module_exit(block2mtd_exit); 
-> 
-> MODULE_LICENSE("GPL"); 
-> --- 
-> 1.7.1 
-> 
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+Link: http://lkml.kernel.org/p/2634b19eb1c04a9d31148c1fe6f1f3819be95349.1412031505.git.joe@perches.com
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Joe Perches <joe@perches.com>
+[ original change only updated seq_printf() return, added return of
+  void to debugfs_print_regs32() as well ]
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ Documentation/filesystems/debugfs.txt |  2 +-
+ fs/debugfs/file.c                     | 15 ++++++++-------
+ include/linux/debugfs.h               |  7 +++----
+ 3 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
+index 3a863f692728..88ab81c79109 100644
+--- a/Documentation/filesystems/debugfs.txt
++++ b/Documentation/filesystems/debugfs.txt
+@@ -140,7 +140,7 @@ file.
+ 				     struct dentry *parent,
+ 				     struct debugfs_regset32 *regset);
+ 
+-    int debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
++    void debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
+ 			 int nregs, void __iomem *base, char *prefix);
+ 
+ The "base" argument may be 0, but you may want to build the reg32 array
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 76c08c2beb2f..8e0f2f410189 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -692,18 +692,19 @@ EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
+  * because some peripherals have several blocks of identical registers,
+  * for example configuration of dma channels
+  */
+-int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+-			   int nregs, void __iomem *base, char *prefix)
++void debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
++			  int nregs, void __iomem *base, char *prefix)
+ {
+-	int i, ret = 0;
++	int i;
+ 
+ 	for (i = 0; i < nregs; i++, regs++) {
+ 		if (prefix)
+-			ret += seq_printf(s, "%s", prefix);
+-		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
+-				  readl(base + regs->offset));
++			seq_printf(s, "%s", prefix);
++		seq_printf(s, "%s = 0x%08x\n", regs->name,
++			   readl(base + regs->offset));
++		if (seq_has_overflowed(s))
++			break;
+ 	}
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(debugfs_print_regs32);
+ 
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 4d0b4d1aa132..d84f8c254a87 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -92,8 +92,8 @@ struct dentry *debugfs_create_regset32(const char *name, umode_t mode,
+ 				     struct dentry *parent,
+ 				     struct debugfs_regset32 *regset);
+ 
+-int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+-			 int nregs, void __iomem *base, char *prefix);
++void debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
++			  int nregs, void __iomem *base, char *prefix);
+ 
+ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
+ 					struct dentry *parent,
+@@ -233,10 +233,9 @@ static inline struct dentry *debugfs_create_regset32(const char *name,
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
+-static inline int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
++static inline void debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+ 			 int nregs, void __iomem *base, char *prefix)
+ {
+-	return 0;
+ }
+ 
+ static inline bool debugfs_initialized(void)
+-- 
+2.1.1
+
+
