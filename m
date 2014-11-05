@@ -1,122 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaKEJ5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:57:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754120AbaKEJ5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:57:14 -0500
-Message-ID: <5459F46E.4070802@redhat.com>
-Date: Wed, 05 Nov 2014 09:57:02 +0000
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754370AbaKEJ6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:58:31 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:51505 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523AbaKEJ61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:58:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: at91: rm9200 add system timer resources to watchdog
+Date: Wed, 05 Nov 2014 10:58:22 +0100
+Message-ID: <7422028.lkBOqUd5nl@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141104224126.GD22928@piout.net>
+References: <1414788359-15759-1-git-send-email-alexandre.belloni@free-electrons.com> <3833756.aJxOhkuG91@wuerfel> <20141104224126.GD22928@piout.net>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <dvlasenk@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Evan Teran <eteran@alum.rit.edu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ptrace/x86: fix the TIF_FORCED_TF logic in handle_signal()
-References: <20141103201256.GA5213@redhat.com> <20141103201317.GA5221@redhat.com> <5457F647.7020208@redhat.com> <20141104235505.GA31748@redhat.com>
-In-Reply-To: <20141104235505.GA31748@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:NkqvRbz46rc/WFb6wyt31MQPEoNGuyXsqJ0SW5gWt2l
+ w1tQb5Y1xBjo54lPmibW7onbXo4TYOoMYzE93JpmxtWlkEbtV0
+ ztVindj0BtIF/p/t4BdaIrES0xjJABWwbqz1+0Kk8Z0PCaxuCu
+ feR6ZlGIW4gQTs7UrosIBEbkhgPN4wYCvn+pTJTxLNsDEUgLrh
+ 3Y7LYslRmDuR8vG2b3gsdP/SifTabIxbghsLYs8LEBH0GzUhj6
+ oyMA5gJ0oieBLYlN5Mpr9/pTR1YaLTX3TcXjk4WRkkFE+kwx7/
+ aRlgJ/iAhHCZquyWtWOJZ0N3kQNYhimSI0EkVUa62oGYjTnnOf
+ /ixRjf2S2JP7Xq24wV9I=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 11:55 PM, Oleg Nesterov wrote:
-> On 11/03, Pedro Alves wrote:
->>
->> Thanks a lot Oleg.
+On Tuesday 04 November 2014 23:41:26 Alexandre Belloni wrote:
+> On 31/10/2014 at 22:36:55 +0100, Arnd Bergmann wrote :
+> > On Friday 31 October 2014 21:57:56 Alexandre Belloni wrote:
+> > > On 31/10/2014 at 21:50:05 +0100, Arnd Bergmann wrote :
+> > > > On Friday 31 October 2014 21:45:58 Alexandre Belloni wrote:
+> > > > > To be able to make the watchdog driver independent from the mach/ includes, pass
+> > > > > the system timer register space as a resource.
+> > > > > 
+> > > > > Also, change the name to avoid conflicting with the at91sam9 watchdog driver.
+> > > > > 
+> > > > > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > > > > 
+> > > > 
+> > > > Doing this change as a separate patch breaks bisection because now the device
+> > > > name no longer matches untile the other patch is applied too.
+> > > > 
+> > > 
+> > > Yeah, I was not sure how important that was as there is no user of the
+> > > watchdog in the kernel. My thinking was that both patch can then go
+> > > through different trees.
+> > > 
+> > > I can definitely squash them.
+> > 
+> > AFAICT, arch/arm/configs/at91rm9200_defconfig enables the device and it
+> > gets registered through at91_add_standard_devices. You definitely have
+> > my Ack to merge the mach-at91 patch through the watchdog tree.
+> > 
 > 
-> thanks for the detailed report ;)
+> You're right, I missed that one. I was expecting it to be called from
+> board files.
 > 
->> Question - shouldn't ptrace tests be put in
->> tools/testing/selftests/ptrace/ in the kernel tree nowadays?
-> 
-> Oh, I do not know. Personally I am not sure that selftests/ptrace/
-> makes sense and I did not even know (or forgot) we already have it.
+> So, I'll squash both patches, add your SoB and your Ack and get it
+> merged through the watchdog tree, tell me if that is not what you
+> expect.
 
-I didn't know about it either until recently.
+I definitely *don't* expect you to add my Signed-off-by, that would
+be against the procedures we have in Documentation/SubmittingPatches.
 
-> To me it would be better to move the single peeksiginfo.c to ptrace
-> testsuite and remove this dir.
-> 
-> That said, I certainly won't argue if you or Jan will maintain
-> selftests/ptrace and send the patches with the new test-cases ;)
+Other than that, it sounds good, thanks!
 
-IMO, having the tests in the kernel tree might make it simpler
-to require fixes to come along with tests, so we're better covered
-against regressions, but whatever works best to whoever is
-maintaining ptrace is good for me.  ;-)
-
-> 
-> The only problem is that every new test-case should be justified
-> somehow. For example, should we add the test-case from this changelog
-> into selftests/ptrace/ ? 
-
-IMO, we should have a ptrace test for this somewhere.  I just don't
-know about the intention of selftests/ptrace/, but it looked like
-it was meant as a replacement for the out of tree testsuite.
-Having the ptrace testsuite in the tree makes sense to me,
-for making it easier to require ptrace fixes and extensions to
-come along with tests, and to make it easier to catch regressions
-closer to the source, and to serve as self-documentation on
-expected behavior, but I don't have time to actively pursue
-that myself, unfortunately.
-
-> Honestly, I do not know. This bug is minor,
-> and probably we do not want a test-case for every bug we fix. 
-
-My view is that there was a bug, and a test case would help
-prevent re-introducing it.
-
-> So I'd
-> leave this to you, you know how ptrace is actually _used_ and what is
-> important for gdb.
-
-Right.  FYI, I've added a testcase to gdb as well, to cover the use
-case from a higher level functionality view:
-
- https://sourceware.org/ml/gdb-patches/2014-10/msg00780.html
-
-(Between a bug/regression being introduced in the kernel and running
-the gdb testsuite against that, a lot of time may pass.  Myself,
-I usually only test and develop against whatever kernel the
-distro ships, which is a released kernel.  And gdb doesn't use
-every ptrace feature.)
-
-> 
-> The same for other tests in ptrace testsuite. Some of them are really
-> "random", in any case (I think) we should not blindly put them all into
-> selftests/ptrace. Not to mention the coding style which should be fixed.
-
-Agreed.
-
-> 
-> And I know that gdb has a lot of internal tests, and gdb developers
-> run them (and ptrace tests) to check the new kernels... Who else do
-> you think will use selftests/ptrace?
-
-IMO, whoever touches ptrace code in the kernel should be
-required to run the ptrace tests, but not the testsuites of
-random other tools that use ptrace (like gdb, strace and others).
-Having the ptrace tests in the tree sounded like might make
-such a requirement simpler, and I naively thought that the existence
-of the directory might mean that that's the direction kernel folks
-had agreed on, that's all.
-
-> 
-> But again, if you/Jan want to add something into selftests - please
-> send a patch. I will even try to review it but only in a sense that
-> I will try to convince myself that I understand _what_ this test does,
-> not _why_ we need this test-case. You certainly understand "why" much
-> better.
-> 
-> Add Denys, perhaps he also has some tests for strace.
-
-Thanks,
-Pedro Alves
-
+	Arnd
