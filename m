@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaKEPV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:21:56 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:44487 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468AbaKEPVy (ORCPT
+	id S932394AbaKEPXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:23:16 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:5472 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755056AbaKEPXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:21:54 -0500
+	Wed, 5 Nov 2014 10:23:15 -0500
+Date: Wed, 5 Nov 2014 10:23:12 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ftrace: Document filter and option limitations
+Message-ID: <20141105102312.59348651@gandalf.local.home>
+In-Reply-To: <1415123165-3020-1-git-send-email-peter@hurleysoftware.com>
+References: <1415123165-3020-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141105082721.GB19607@infradead.org>
-References: <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
- <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
- <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
- <20141031084220.GA29085@infradead.org> <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
- <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
- <20141103083447.GA8617@infradead.org> <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
- <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
- <CA+55aFw29MUj+w46yneut2yxXOH1RQmDud5KL8V-SPyPWm1WqA@mail.gmail.com> <20141105082721.GB19607@infradead.org>
-From: Eric Rannaud <e@nanocritical.com>
-Date: Wed, 5 Nov 2014 07:21:28 -0800
-Message-ID: <CAH_=xoa36gKcEpi8mSE9cedghqE4FhBCVMQNPV_1qDyk1Bb2ng@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 12:27 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Mon, Nov 03, 2014 at 11:04:27AM -0800, Linus Torvalds wrote:
->> Oh, so you don't actually need any file contents at all?
->>
->> If that is actually a real usage, then maybe we should just say that
->> "O_TMPFILE|O_RDONLY" is fine, and remove the check that it has to be
->> writable.
->
-> Wasn't this disallowed to prevent problems on old kernels that don't use
-> O_TMPFILE?  In that case we'd ignore the flag and would just get a file
-> handle for the directory instead.
+On Tue,  4 Nov 2014 12:46:05 -0500
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-Yes, that was the idea at first, as discussed at
-http://article.gmane.org/gmane.linux.file-systems/76273, in commit
-bb458c644. But soon after that, O_WRONLY was allowed (ba57ea64cb1),
-and O_RDWR was removed from O_TMPFILE. Now only remain the explicit
-checks in build_open_flags() that Linus mentioned.
+> When using the function or function_graph tracers from the command
+> line, certain command line options have limitations.
+> 
+> Document that only kernel built-in functions can be filtered via
+> ftrace_filter= or ftrace_graph_filter=. Document that tracer-specific
+> options cannot be set on the command line via trace_options.
+> Document that ftrace cannot do late binding for function
+> filters.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  Documentation/kernel-parameters.txt | 6 ++++++
+>  Documentation/trace/ftrace.txt      | 7 +++++--
+>  2 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 4c81a86..d098ead 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1121,6 +1121,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			list of functions. This list can be changed at run
+>  			time by the set_ftrace_filter file in the debugfs
+>  			tracing directory.
+> +			Only kernel built-in functions can be filtered.
+>  
+>  	ftrace_notrace=[function-list]
+>  			[FTRACE] Do not trace the functions specified in
+> @@ -1134,6 +1135,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			function-list is a comma separated list of functions
+>  			that can be changed at run time by the
+>  			set_graph_function file in the debugfs tracing directory.
+> +			Only kernel built-in functions can be filtered.
+>  
+>  	ftrace_graph_notrace=[function-list]
+>  			[FTRACE] Do not trace from the functions specified in
+> @@ -3521,6 +3523,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  
+>  			      trace_options=stacktrace
+>  
+> +			Tracer-specific options are ignored when set this way.
+> +			For example, the 'func_stack_trace' option cannot be
+> +			set here.
+> +
+>  			See also Documentation/trace/ftrace.txt "trace options"
+>  			section.
+>  
+> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+> index 4da4261..d540273 100644
+> --- a/Documentation/trace/ftrace.txt
+> +++ b/Documentation/trace/ftrace.txt
+> @@ -188,7 +188,8 @@ of ftrace. Here is a list of some of the key files:
+>  	in with practically no overhead in performance.  This also
+>  	has a side effect of enabling or disabling specific functions
+>  	to be traced. Echoing names of functions into this file
+> -	will limit the trace to only those functions.
+> +	will limit the trace to only those functions. Only already-
+> +	loaded functions can be filtered.
 
-If we allow
-    fd = open("/tmp", O_TMPFILE|O_RDONLY, 0600)
-it would be seen by an old kernel as
-    fd = open("/tmp", O_DIRECTORY|O_RDONLY, 0600)
-which will succeed.
+I would add a little more. Something that states that modules with the
+same function names that are loaded at a later time will not be
+filtered with theses names.
 
-But unlike the other cases the creative definition of O_TMPFILE was
-meant to prevent, this does not create a security risk for anyone
-implementing a secure tmpfile, as they would be asking for a writable
-fd.
+Hmm, actually, I think this could be rather trivial to implement
+something that will filter modules that are added.
 
-To implement an atomic open() with O_TMPFILE+flink, if neither
-O_WRONLY nor O_RDWR is in flags, you would have to manually check with
-fstat that fd is indeed a regular file and not a directory. At least
-if you need to run on old kernels.
+I think that may be a better solution. I'm assuming you would like to
+have functions filtered via the command line to filter on modules as
+well. Correct?
 
-If such a changes goes in, the man page for open(2) should talk about
-what happens on old kernels (it already has an explanation for the
-writable case).
+
+-- Steve
+
+
+>  
+>  	This interface also allows for commands to be used. See the
+>  	"Filter commands" section for more details.
+> @@ -208,7 +209,9 @@ of ftrace. Here is a list of some of the key files:
+>  
+>  	Set a "trigger" function where tracing should start
+>  	with the function graph tracer (See the section
+> -	"dynamic ftrace" for more details).
+> +	"dynamic ftrace" for more details). As with set_ftrace_filter,
+> +	only names of already-loaded functions can be written to
+> +	this file.
+>  
+>    available_filter_functions:
+>  
+
