@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854AbaKEQmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:42:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41422 "EHLO
+	id S1755867AbaKEQmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:42:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41429 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762AbaKEQlt (ORCPT
+	with ESMTP id S1755829AbaKEQmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:41:49 -0500
-Date: Wed, 5 Nov 2014 08:35:32 -0800
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-ad6b879eac110587bc6dc01ccea479e15de017df@git.kernel.org>
-Cc: bhelgaas@google.com, konrad.wilk@oracle.com, gregkh@linuxfoundation.org,
-        joro@8bytes.org, hpa@zytor.com, sebastian@breakpoint.cc,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        grant.likely@linaro.org, tony.luck@intel.com, rjw@rjwysocki.net,
-        tglx@linutronix.de, prarit@redhat.com, jiang.liu@linux.intel.com,
-        benh@kernel.crashing.org, rdunlap@infradead.org, yinghai@kernel.org
-Reply-To: rjw@rjwysocki.net, tglx@linutronix.de, jiang.liu@linux.intel.com,
-        prarit@redhat.com, benh@kernel.crashing.org, rdunlap@infradead.org,
-        yinghai@kernel.org, konrad.wilk@oracle.com, bhelgaas@google.com,
-        joro@8bytes.org, hpa@zytor.com, gregkh@linuxfoundation.org,
-        tony.luck@intel.com, sebastian@breakpoint.cc, mingo@kernel.org,
-        grant.likely@linaro.org, linux-kernel@vger.kernel.org, bp@alien8.de
-In-Reply-To: <1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com>
+	Wed, 5 Nov 2014 11:42:17 -0500
+Date: Wed, 5 Nov 2014 08:40:15 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-18fbf8bb8b5341da3f254e62c5a21ef87ecf6b00@git.kernel.org>
+Cc: mingo@kernel.org, jiang.liu@linux.intel.com, rjw@rjwysocki.net,
+        joro@8bytes.org, yinghai@kernel.org, gregkh@linuxfoundation.org,
+        tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bp@alien8.de, tony.luck@intel.com, konrad.wilk@oracle.com,
+        rdunlap@infradead.org, benh@kernel.crashing.org, bhelgaas@google.com
+Reply-To: mingo@kernel.org, jiang.liu@linux.intel.com, joro@8bytes.org,
+        rjw@rjwysocki.net, gregkh@linuxfoundation.org, yinghai@kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bp@alien8.de, tony.luck@intel.com, konrad.wilk@oracle.com,
+        rdunlap@infradead.org, benh@kernel.crashing.org, bhelgaas@google.com
+In-Reply-To: <1414397531-28254-20-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-20-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Convert irq_2_pin list to generic list
-Git-Commit-ID: ad6b879eac110587bc6dc01ccea479e15de017df
+Subject: [tip:x86/apic] iommu/amd:
+  Use helpers to access irq_cfg data structure associated with IRQ
+Git-Commit-ID: 18fbf8bb8b5341da3f254e62c5a21ef87ecf6b00
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,147 +38,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ad6b879eac110587bc6dc01ccea479e15de017df
-Gitweb:     http://git.kernel.org/tip/ad6b879eac110587bc6dc01ccea479e15de017df
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 27 Oct 2014 16:11:55 +0800
+Commit-ID:  18fbf8bb8b5341da3f254e62c5a21ef87ecf6b00
+Gitweb:     http://git.kernel.org/tip/18fbf8bb8b5341da3f254e62c5a21ef87ecf6b00
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:12:10 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 5 Nov 2014 11:04:46 +0100
+CommitDate: Wed, 5 Nov 2014 11:04:48 +0100
 
-x86, irq: Convert irq_2_pin list to generic list
+iommu/amd: Use helpers to access irq_cfg data structure associated with IRQ
 
-Use generic list to replace private list implementation so we can use
-the existing helper functions.
+Use helpers to access irq_cfg data structure associated with IRQ,
+instead of accessing irq_data->chip_data directly. Later we can
+rewrite those helpers to support hierarchy irqdomain.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: iommu@lists.linux-foundation.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 Cc: Joerg Roedel <joro@8bytes.org>
+Link: http://lkml.kernel.org/r/1414397531-28254-20-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/hw_irq.h  |  2 +-
- arch/x86/kernel/apic/io_apic.c | 28 +++++++++++-----------------
- 2 files changed, 12 insertions(+), 18 deletions(-)
+ drivers/iommu/amd_iommu.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index b12c45c..66e59e6 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -138,7 +138,7 @@ struct irq_2_irte {
-  * Most irqs are mapped 1:1 with pins.
-  */
- struct irq_cfg {
--	struct irq_pin_list	*irq_2_pin;
-+	struct list_head	irq_2_pin;
- 	cpumask_var_t		domain;
- 	cpumask_var_t		old_domain;
- 	u8			vector;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 192ca0a..fac6be1 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -74,7 +74,7 @@
- 		for_each_pin((idx), (pin))
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 505a9ad..6fda7cc 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -4068,7 +4068,7 @@ static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
+ 	int devid;
+ 	int ret;
  
- #define for_each_irq_pin(entry, head) \
--	for (entry = head; entry; entry = entry->next)
-+	list_for_each_entry(entry, &head, list)
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
  
- /*
-  *      Is the SiS APIC rmw bug present ?
-@@ -229,8 +229,8 @@ void mp_save_irq(struct mpc_intsrc *m)
- }
+@@ -4131,7 +4131,7 @@ static int set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	if (!config_enabled(CONFIG_SMP))
+ 		return -1;
  
- struct irq_pin_list {
-+	struct list_head list;
- 	int apic, pin;
--	struct irq_pin_list *next;
- };
+-	cfg       = data->chip_data;
++	cfg       = irqd_cfg(data);
+ 	irq       = data->irq;
+ 	irte_info = &cfg->irq_2_irte;
  
- static struct irq_pin_list *alloc_irq_pin_list(int node)
-@@ -297,6 +297,7 @@ static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
- 		goto out_cfg;
- 	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
- 		goto out_domain;
-+	INIT_LIST_HEAD(&cfg->irq_2_pin);
- 	return cfg;
- out_domain:
- 	free_cpumask_var(cfg->domain);
-@@ -460,15 +461,12 @@ static void ioapic_mask_entry(int apic, int pin)
-  */
- static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
- {
--	struct irq_pin_list **last, *entry;
-+	struct irq_pin_list *entry;
+@@ -4169,7 +4169,7 @@ static int free_irq(int irq)
+ 	struct irq_2_irte *irte_info;
+ 	struct irq_cfg *cfg;
  
- 	/* don't allow duplicates */
--	last = &cfg->irq_2_pin;
--	for_each_irq_pin(entry, cfg->irq_2_pin) {
-+	for_each_irq_pin(entry, cfg->irq_2_pin)
- 		if (entry->apic == apic && entry->pin == pin)
- 			return 0;
--		last = &entry->next;
--	}
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
  
- 	entry = alloc_irq_pin_list(node);
- 	if (!entry) {
-@@ -479,22 +477,19 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
- 	entry->apic = apic;
- 	entry->pin = pin;
+@@ -4188,7 +4188,7 @@ static void compose_msi_msg(struct pci_dev *pdev,
+ 	struct irq_cfg *cfg;
+ 	union irte irte;
  
--	*last = entry;
-+	list_add_tail(&entry->list, &cfg->irq_2_pin);
- 	return 0;
- }
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return;
  
- static void __remove_pin_from_irq(struct irq_cfg *cfg, int apic, int pin)
- {
--	struct irq_pin_list **last, *entry;
-+	struct irq_pin_list *tmp, *entry;
+@@ -4217,7 +4217,7 @@ static int msi_alloc_irq(struct pci_dev *pdev, int irq, int nvec)
+ 	if (!pdev)
+ 		return -EINVAL;
  
--	last = &cfg->irq_2_pin;
--	for_each_irq_pin(entry, cfg->irq_2_pin)
-+	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
- 		if (entry->apic == apic && entry->pin == pin) {
--			*last = entry->next;
-+			list_del(&entry->list);
- 			kfree(entry);
- 			return;
--		} else {
--			last = &entry->next;
- 		}
- }
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
  
-@@ -1739,8 +1734,7 @@ __apicdebuginit(void) print_IO_APICs(void)
- 		cfg = irq_cfg(irq);
- 		if (!cfg)
- 			continue;
--		entry = cfg->irq_2_pin;
--		if (!entry)
-+		if (list_empty(&cfg->irq_2_pin))
- 			continue;
- 		printk(KERN_DEBUG "IRQ%d ", irq);
- 		for_each_irq_pin(entry, cfg->irq_2_pin)
-@@ -4076,7 +4070,7 @@ void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq)
+@@ -4237,7 +4237,7 @@ static int msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
+ 	if (!pdev)
+ 		return -EINVAL;
  
- 	ioapic_mask_entry(ioapic, pin);
- 	__remove_pin_from_irq(cfg, ioapic, pin);
--	WARN_ON(cfg->irq_2_pin != NULL);
-+	WARN_ON(!list_empty(&cfg->irq_2_pin));
- 	arch_teardown_hwirq(virq);
- }
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
+ 
+@@ -4260,7 +4260,7 @@ static int alloc_hpet_msi(unsigned int irq, unsigned int id)
+ 	struct irq_cfg *cfg;
+ 	int index, devid;
+ 
+-	cfg = irq_get_chip_data(irq);
++	cfg = irq_cfg(irq);
+ 	if (!cfg)
+ 		return -EINVAL;
  
