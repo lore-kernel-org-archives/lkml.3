@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaKEAtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 19:49:33 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43312 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaKEAtb (ORCPT
+	id S1752845AbaKEAuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 19:50:51 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:40801 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751792AbaKEAut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 19:49:31 -0500
-Message-ID: <5459740B.6000906@huawei.com>
-Date: Wed, 5 Nov 2014 08:49:15 +0800
-From: leizhen <thunder.leizhen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 4 Nov 2014 19:50:49 -0500
+Message-ID: <5459745D.1000803@fb.com>
+Date: Tue, 4 Nov 2014 17:50:37 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
+To: Boaz Harrosh <boaz@plexistor.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        Kefeng Wang <wangkefeng.wang@huawei.com>
-Subject: Re: [PATCH 1/1] of/fdt: simplify early_init_dt_verify
-References: <1414497065-9808-1-git-send-email-thunder.leizhen@huawei.com> <20141104162054.4CC9BC423D0@trevor.secretlab.ca> <CAErSpo6Upf=QPn7=Cd=XDazXVnSPhb-9gDZjH9_CcY37-xUKLw@mail.gmail.com>
-In-Reply-To: <CAErSpo6Upf=QPn7=Cd=XDazXVnSPhb-9gDZjH9_CcY37-xUKLw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCHSET 0/5 v2] brd: partition fixes
+References: <53FDF7AD.5000709@plexistor.com> <54044759.9080103@gmail.com> <540EEE2C.1090801@plexistor.com> <540F0DDF.3010907@fb.com> <5443F90A.4030606@plexistor.com> <5458FC1F.1070604@plexistor.com>
+In-Reply-To: <5458FC1F.1070604@plexistor.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.142]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-05_01:2014-11-04,2014-11-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.925924926977281 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1411050008
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/5 1:03, Bjorn Helgaas wrote:
-> On Tue, Nov 4, 2014 at 9:20 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> On Tue, 28 Oct 2014 19:51:05 +0800
->> , Zhen Lei <thunder.leizhen@huawei.com>
->>  wrote:
->>> put off initial_boot_params = params; until all checks finished. If any check
->>> failed, initial_boot_params is equal NULL, base upon bss segment initial value.
+On 2014-11-04 09:17, Boaz Harrosh wrote:
+> On 10/19/2014 08:46 PM, Boaz Harrosh wrote:
+>> On 09/09/2014 05:25 PM, Jens Axboe wrote:
+>>> On 09/09/2014 06:10 AM, Boaz Harrosh wrote:
+>> <>
+>>>> Please tell me what you want to do with these patches. They must go into this Kernel
+>>>> cycle before brd is released with wrong user-mode visible nub
+>>>>
+>> <>
+>>> I will drop the 3/5 patch (do that one separately) and queue up and test.
 >>>
->>> Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
 >>
->> Interesting. I received exactly the same patch from Bjorn Helgaas. Were
->> the two of you working together, or is this merely a coincedence?
-> 
-> LOL, that's really funny.  We're not working together, so it's a total
-> coincidence :)
-> 
-Haha!!!
-
-Hi, Bjorn Helgaas. Nice to meet you.
-
->>> ---
->>>  drivers/of/fdt.c | 10 ++++------
->>>  1 file changed, 4 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
->>> index d1ffca8..325c638 100644
->>> --- a/drivers/of/fdt.c
->>> +++ b/drivers/of/fdt.c
->>> @@ -994,14 +994,12 @@ bool __init early_init_dt_verify(void *params)
->>>       if (!params)
->>>               return false;
->>>
->>> -     /* Setup flat device-tree pointer */
->>> -     initial_boot_params = params;
->>> -
->>>       /* check device tree validity */
->>> -     if (fdt_check_header(params)) {
->>> -             initial_boot_params = NULL;
->>> +     if (fdt_check_header(params))
->>>               return false;
->>> -     }
->>> +
->>> +     /* Setup flat device-tree pointer */
->>> +     initial_boot_params = params;
->>>
->>>       return true;
->>>  }
->>> --
->>> 1.8.0
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
+>> Hi Jens
 >>
-> 
-> .
-> 
+>> So the Kernel closed with a wrong knob and Even with the new merge window
+>> these patches are not merged.
+>>
+>> Could you at least tell me what you do not like about them so I can fix
+>> it?
+>>
+>> Thanks
+>> Boaz
+>>
+>
+> Ping ?
 
+Lets get it applied for 3.19. Some of the patches needed updating, 
+either dropped or commit log changed/updated. Can you resend the series?
+
+
+-- 
+Jens Axboe
 
