@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaKEWKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:10:08 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:36747 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaKEWKF (ORCPT
+	id S1752024AbaKEWKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:10:38 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:62175 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaKEWKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:10:05 -0500
-Date: Wed, 5 Nov 2014 15:10:01 -0700
+	Wed, 5 Nov 2014 17:10:36 -0500
+Date: Wed, 5 Nov 2014 15:10:32 -0700
 From: Bjorn Helgaas <bhelgaas@google.com>
 To: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -28,7 +28,7 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Subject: Re: [Patch Part2 v4 18/31] PCI/MSI, trivial: Fix minor syntax issues
  according to coding styles
-Message-ID: <20141105221001.GD6168@google.com>
+Message-ID: <20141105221032.GE6168@google.com>
 References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
  <1415102525-9898-19-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
@@ -43,18 +43,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Tue, Nov 04, 2014 at 08:01:52PM +0800, Jiang Liu wrote:
 > Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-Needs a changelog, even if it's similar to the topic.
+Oh, I forgot:
 
-Speaking of the topic, please run "git log --oneline drivers/pci/msi.c" and
-make yours look similar to the others.  This doesn't really fix a syntax
-issue; the existing code is syntactically correct.  It's only a style
-issue.
-
-I'd say something like:
-
-  PCI/MSI: Remove unnecessary braces around single statements
-
-  Per Documentation/CodingStyle, don't use braces around single statements.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
 > ---
 >  drivers/pci/msi.c |    9 +++------
