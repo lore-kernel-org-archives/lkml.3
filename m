@@ -1,131 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856AbaKEPCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:02:52 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25535 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834AbaKEPCs (ORCPT
+	id S1755881AbaKEPDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:03:09 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62695 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962AbaKEPCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:02:48 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-ce-545a3c16cc5e
+	Wed, 5 Nov 2014 10:02:50 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-dd-545a3c18bbed
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
         akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v4 4/6] integrity: provide a hook to load keys when rootfs is
- ready
-Date: Wed, 05 Nov 2014 17:01:15 +0200
-Message-id: <1618d51b09e8126689d791edb3ff97b01f0d9a3f.1415197743.git.d.kasatkin@samsung.com>
+Subject: [PATCH v4 6/6] VFS: refactor vfs_read()
+Date: Wed, 05 Nov 2014 17:01:17 +0200
+Message-id: <36f142f6946efc7f0dcde70cbc924f4de20ca2e0.1415197743.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1415197743.git.d.kasatkin@samsung.com>
 References: <cover.1415197743.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1415197743.git.d.kasatkin@samsung.com>
 References: <cover.1415197743.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFLMWRmVeSWpSXmKPExsVy+t/xK7piNlEhBke2SVnMWb+GzeLW373M
-	Fl+W1lm8nDGP3eLyrjlsFh96HrFZnP97nNXi04pJzA4cHjtn3WX3ODHjN4vHg0ObWTx2L/jM
-	5NG3ZRWjx+dNch6bnrxlCmCP4rJJSc3JLEst0rdL4Mq4/fIJY8ET0Yq/8w4wNzA+Fuxi5OCQ
-	EDCR6Pkc3cXICWSKSVy4t56ti5GLQ0hgKaNEx6vLLCAJIYFOJonnd+1BbDYBPYkNzT/YQYpE
-	BBYxSmz6ehGsiFkgXeLTpF52kKHCAqESmy4KgIRZBFQlFi88ygZi8wrESbRvmMYEsUxO4uSx
-	yawgNqeAlcSEJxfZIHZZSix81MSIS3wCI/8CRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GCHh+WUH4+JjVocYBTgYlXh4PZoiQ4RYE8uKK3MPMUpwMCuJ8F6zjAoR4k1JrKxKLcqPLyrN
-	SS0+xMjEwSnVwGieLW+rz9F9N+iU1IKvN3xuR7zXviml8EVdgOFLma2bi9i627WlXT2zZ3me
-	6p/sL5rt3aXkLVxv8ZInmlfY0ebRjx/Rax2/y2z7kvdXZtauy7k1tkfkowxDp033kWOYWOH8
-	2MfpRcvkP7deqgUuVHe+ZDKnfu7M+9sv9fJ9Ovb3psCMr4kVn5RYijMSDbWYi4oTAZVNAFwt	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xK7oSNlEhBh1f5C3mrF/DZnHr715m
+	iy9L6yxezpjHbnF51xw2iw89j9gszv89zmrxacUkZgcOj52z7rJ7nJjxm8XjwaHNLB67F3xm
+	8ujbsorR4/MmOY9NT94yBbBHcdmkpOZklqUW6dslcGVMXneQvaBfsuLRgbWMDYwrRLoYOTkk
+	BEwkXpyZxQhhi0lcuLeerYuRi0NIYCmjxLRj85ghnE4miV9HvzGDVLEJ6ElsaP7BDpIQEVjE
+	KLHp60UWkASzQLrEp0m97CC2sICBxOf/y1hBbBYBVYkVm7aCreAViJP483ENM8Q6OYmTxyaD
+	1XAKWElMeHKRDcQWErCUWPioiRGX+ARG/gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcx
+	QoL0yw7GxcesDjEKcDAq8fB6NEWGCLEmlhVX5h5ilOBgVhLhvWYZFSLEm5JYWZValB9fVJqT
+	WnyIkYmDU6qB0Y/VULn4/Zemcypt+h9XveCbdPFd2uknwm78thHBi1x2BpjoOMzzu/bj/NHp
+	k9JfO8wQr407ue1tfPSf3o0yZ/1bpm3wnC/RHHN6yUxZde05dYaTz369X3S8vVu5skLQq9rm
+	QN49//rXIvo1OTNLpe/Mvz3z7hrJc0vnXmwxPX5D5/MOzhyNfCWW4oxEQy3mouJEACXmMTkw	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keys can only be loaded once the rootfs is mounted. Initcalls
-are not suitable for that. This patch defines a special hook
-to load the x509 public keys onto the IMA keyring, before
-attempting to access any file. The keys are required for
-verifying the file's signature. The hook is called after the
-root filesystem is mounted and before the kernel calls 'init'.
-
-Changes in v3:
-* added more explanation to the patch description (Mimi)
-
-Changes in v2:
-* Hook renamed as 'integrity_load_keys()' to handle both IMA and EVM
-  keys by integrity subsystem.
-* Hook patch moved after defining loading functions
+integrity_kernel_read() duplicates the file read operations code
+in vfs_read(). This patch refactors vfs_read() code creating a
+helper function __vfs_read(). It is used by both vfs_read() and
+integrity_kernel_read().
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- include/linux/integrity.h |  6 ++++++
- init/main.c               |  6 +++++-
- security/integrity/iint.c | 11 +++++++++++
- 3 files changed, 22 insertions(+), 1 deletion(-)
+ fs/read_write.c           | 24 ++++++++++++++++++------
+ include/linux/fs.h        |  1 +
+ security/integrity/iint.c | 10 +++-------
+ 3 files changed, 22 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index 83222ce..c2d6082 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -24,6 +24,7 @@ enum integrity_status {
- #ifdef CONFIG_INTEGRITY
- extern struct integrity_iint_cache *integrity_inode_get(struct inode *inode);
- extern void integrity_inode_free(struct inode *inode);
-+extern void __init integrity_load_keys(void);
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 009d854..f45b2ae 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -412,6 +412,23 @@ ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *p
  
- #else
- static inline struct integrity_iint_cache *
-@@ -36,5 +37,10 @@ static inline void integrity_inode_free(struct inode *inode)
- {
- 	return;
- }
-+
-+static inline void integrity_load_keys(void)
+ EXPORT_SYMBOL(new_sync_read);
+ 
++ssize_t __vfs_read(struct file *file, char __user *buf, size_t count,
++		   loff_t *pos)
 +{
-+}
- #endif /* CONFIG_INTEGRITY */
++	ssize_t ret;
 +
- #endif /* _LINUX_INTEGRITY_H */
-diff --git a/init/main.c b/init/main.c
-index e8ae1fe..2c1928d 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -78,6 +78,7 @@
- #include <linux/context_tracking.h>
- #include <linux/random.h>
- #include <linux/list.h>
-+#include <linux/integrity.h>
++	if (file->f_op->read)
++		ret = file->f_op->read(file, buf, count, pos);
++	else if (file->f_op->aio_read)
++		ret = do_sync_read(file, buf, count, pos);
++	else if (file->f_op->read_iter)
++		ret = new_sync_read(file, buf, count, pos);
++	else
++		ret = -EINVAL;
++
++	return ret;
++}
++
+ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+ {
+ 	ssize_t ret;
+@@ -426,12 +443,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+ 	ret = rw_verify_area(READ, file, pos, count);
+ 	if (ret >= 0) {
+ 		count = ret;
+-		if (file->f_op->read)
+-			ret = file->f_op->read(file, buf, count, pos);
+-		else if (file->f_op->aio_read)
+-			ret = do_sync_read(file, buf, count, pos);
+-		else
+-			ret = new_sync_read(file, buf, count, pos);
++		ret = __vfs_read(file, buf, count, pos);
+ 		if (ret > 0) {
+ 			fsnotify_access(file);
+ 			add_rchar(current, ret);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e11d60c..ac3a36e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1527,6 +1527,7 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
+ 			      struct iovec *fast_pointer,
+ 			      struct iovec **ret_pointer);
  
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -1026,8 +1027,11 @@ static noinline void __init kernel_init_freeable(void)
- 	 * Ok, we have completed the initial bootup, and
- 	 * we're essentially up and running. Get rid of the
- 	 * initmem segments and start the user-mode stuff..
-+	 *
-+	 * rootfs is available now, try loading the public keys
-+	 * and default modules
- 	 */
- 
--	/* rootfs is available now, try loading default modules */
-+	integrity_load_keys();
- 	load_default_modules();
- }
++extern ssize_t __vfs_read(struct file *, char __user *, size_t, loff_t *);
+ extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
+ extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
 diff --git a/security/integrity/iint.c b/security/integrity/iint.c
-index 0a76686..a1f5cd1 100644
+index a1f5cd1..e359477 100644
 --- a/security/integrity/iint.c
 +++ b/security/integrity/iint.c
-@@ -245,3 +245,14 @@ out:
- 	fput(file);
- 	return rc;
- }
+@@ -184,20 +184,16 @@ int integrity_kernel_read(struct file *file, loff_t offset,
+ {
+ 	mm_segment_t old_fs;
+ 	char __user *buf = addr;
+-	ssize_t ret = -EINVAL;
++	ssize_t ret;
+ 
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+ 
+ 	old_fs = get_fs();
+ 	set_fs(get_ds());
+-	if (file->f_op->read)
+-		ret = file->f_op->read(file, buf, count, &offset);
+-	else if (file->f_op->aio_read)
+-		ret = do_sync_read(file, buf, count, &offset);
+-	else if (file->f_op->read_iter)
+-		ret = new_sync_read(file, buf, count, &offset);
++	ret = __vfs_read(file, buf, count, &offset);
+ 	set_fs(old_fs);
 +
-+/*
-+ * integrity_load_keys - load integrity keys hook
-+ *
-+ * Hooks is called from init/main.c:kernel_init_freeable()
-+ * when rootfs is ready
-+ */
-+void __init integrity_load_keys(void)
-+{
-+	ima_load_x509();
-+}
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
