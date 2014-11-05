@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815AbaKER1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:27:20 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48745 "EHLO
+	id S1756503AbaKER1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:27:44 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35080 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932432AbaKER06 (ORCPT
+	with ESMTP id S1756213AbaKER05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:26:58 -0500
+	Wed, 5 Nov 2014 12:26:57 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next 9/9] serial: 8250_em: Remove out-of-memory message
-Date: Wed,  5 Nov 2014 12:26:32 -0500
-Message-Id: <1415208392-16189-10-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH -next 7/9] tty: Document defunct ASYNC_SPLIT_TERMIOS flag in uapi header
+Date: Wed,  5 Nov 2014 12:26:30 -0500
+Message-Id: <1415208392-16189-8-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
 References: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
@@ -25,30 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_kzalloc() already warns if allocation fails; remove duplicate
-message.
+The last vestige of ASYNC_SPLIT_TERMIOS was removed by commit
+'cris: Remove obsolete ASYNC_SPLIT_TERMIOS behavior'. Mark the flag
+as defunct in the uapi header.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/serial/8250/8250_em.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ include/uapi/linux/tty_flags.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/8250/8250_em.c b/drivers/tty/serial/8250/8250_em.c
-index 56c8723..478599d 100644
---- a/drivers/tty/serial/8250/8250_em.c
-+++ b/drivers/tty/serial/8250/8250_em.c
-@@ -102,10 +102,8 @@ static int serial8250_em_probe(struct platform_device *pdev)
- 	}
- 
- 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
--	if (!priv) {
--		dev_err(&pdev->dev, "unable to allocate private data\n");
-+	if (!priv)
- 		return -ENOMEM;
--	}
- 
- 	priv->sclk = devm_clk_get(&pdev->dev, "sclk");
- 	if (IS_ERR(priv->sclk)) {
+diff --git a/include/uapi/linux/tty_flags.h b/include/uapi/linux/tty_flags.h
+index 4e021e3..d2bc4ff 100644
+--- a/include/uapi/linux/tty_flags.h
++++ b/include/uapi/linux/tty_flags.h
+@@ -14,7 +14,7 @@
+ 				    * on the callout port */
+ #define ASYNCB_FOURPORT		 1 /* Set OU1, OUT2 per AST Fourport settings */
+ #define ASYNCB_SAK		 2 /* Secure Attention Key (Orange book) */
+-#define ASYNCB_SPLIT_TERMIOS	 3 /* Separate termios for dialin/callout */
++#define ASYNCB_SPLIT_TERMIOS	 3 /* [x] Separate termios for dialin/callout */
+ #define ASYNCB_SPD_HI		 4 /* Use 56000 instead of 38400 bps */
+ #define ASYNCB_SPD_VHI		 5 /* Use 115200 instead of 38400 bps */
+ #define ASYNCB_SKIP_TEST	 6 /* Skip UART test during autoconfiguration */
 -- 
 2.1.3
 
