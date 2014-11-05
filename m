@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaKEO1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:27:11 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:61086 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753898AbaKEO1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:27:10 -0500
-Date: Wed, 5 Nov 2014 09:27:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juerg Haefliger <juergh@gmail.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [ANNOUNCE] 3.14.23-rt20
-Message-ID: <20141105092707.7c9bb1ae@gandalf.local.home>
-In-Reply-To: <CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
-References: <20141031170326.1491a63f@gandalf.local.home>
-	<1414913427.5380.110.camel@marge.simpson.net>
-	<CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755039AbaKEO16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:27:58 -0500
+Received: from mga14.intel.com ([192.55.52.115]:20357 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753996AbaKEO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:27:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="411829724"
+Message-ID: <1415197672.958.96.camel@sauron.fi.intel.com>
+Subject: Re: [RFC/PATCH 1/5 v2] mtd: ubi: Read disturb infrastructure
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: richard@nod.at, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Nov 2014 16:27:52 +0200
+In-Reply-To: <1414331373-28024-1-git-send-email-tlinder@codeaurora.org>
+References: <1414331373-28024-1-git-send-email-tlinder@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 14:50:41 +0100
-Juerg Haefliger <juergh@gmail.com> wrote:
+Hi,
 
-> On Sun, Nov 2, 2014 at 8:30 AM, Mike Galbraith <umgwanakikbuti@gmail.com>
-> wrote:
-> >
-> > On Fri, 2014-10-31 at 17:03 -0400, Steven Rostedt wrote:
-> > > Dear RT Folks,
-> > >
-> > > I'm pleased to announce the 3.14.23-rt20 stable release.
-> > >
-> > > This is the first 3.14-rt release in the stable-rt series. Normally I
-> > > wait till the next development release is out before I pull in a new
-> > > one. That is, I would pull in 3.14-rt when 3.16-rt or later was
-> > > released. But because development is now moving at a "hobbyist rate"
-> > > (read http://lwn.net/Articles/617140/ for details)
-> > > and 3.14-rt is no longer being developed against, I figured it was
-> > time
-> > > to put it under the "stable-rt" umbrella.
-> >
-> > I piddled about with it yesterday, found that you can't change cpufreq
-> > governor IFF the tree is configured as rt, but works fine as voluntary
-> > preempt.
-> 
-> The problem seems to be this patch: https://lkml.org/lkml/2014/4/8/584
-> 
-> The cpufreq code does nested down_read_trylocks and only the first one
-> succeeds:
-> 
-> drivers/cpufreq/cpufreq.c:
-> store
->   down_read_trylock(cpufreq_rwsem)  <- succeeds
->   store_scaling_governor
->     cpufreq_get_policy
->       cpufreq_cpu_get
->         down_read_trylock(cpufreq_rwsem)  <-- fails
-> 
-> Reverting the above patch 'fixes' the problem. I don't understand Steven's
-> commit comment that readers of rwsem are not allowed to nest in mainline
-> since this works just fine in mainline.
+let me summarize.
 
-When we allow multiple readers, this will be allowed. But even in
-mainline, if a writer were to come in and block between those two
-down_read_trylocks(), the second trylock would fail.
+1. To handle the read disturb problem you selected the read counters
+solution. PEB (physical erase block) read counter is the trigger for
+scrubbing.
 
-PREEMPT_RT just has that fail all the time as we only allow an rwsem to
-be held by a single reader.
+When the PEB read counter reaches a threshold value - we scrub.
+The threshold value is set to 100000 by default. Users may it via sysfs.
+
+Read-counters are stored on the flash media, in the fastmap structure.
 
 
--- Steve
+2. To handle the data retention problem you selected the time-stamps
+approach. Each PEB gets a time-stamp. Time-stamp gets updated when the
+PEB is erased.
+
+When PEB becomes old enough (by comparing to the current system time),
+it gets scrubbed.
+
+The threshold for "old enough" is 120 days by default. Users may change
+it via sysfs.
+
+Timestamps are stored on the flash media, in the erase counter header of
+the PEB.
 
 
+For both, the read-disturb and data retention problems to be taken care
+of, user-space has to periodically trigger scanning, which will go
+through all PEBs, check the read counter and the timestamp, and scrub if
+needed.
 
-> 
-> ...Juerg
-> 
-> 
-> 
-> >  I'll poke about for the entertainment value.  Having no
-> > personal need/use for rt detracts from its hobby value somewhat, but rt
-> > problems do have a tendency to be 'entertaining'.
-> >
-> > I'll follow up with a few patches that folks can apply to their trees if
-> > they so desire.  There being no devel tree to submit against, I can't do
-> > a proper submission (rules), and some of them you surely don't want :)
-> >
-> >         -Mike
-> >
-> >
-> >
-> >
+
+Hopefully I got right. I have concerns.
+
+
+This is rather complex design, and it is not clear why just doing full
+flash read from time to time is not good enough. Why the complexity is
+worth it.
+
+In this case the trigger for scrubbing is a bit-flip. It indicates that
+there is a problem, and this is a reliable trigger.
+
+Is the 100000 reads threshold a reliable trigger? What if it is 10 times
+larger for me, or smaller?
+
+Is the 120 days threshold a reliable trigger? What if it is much larger
+for me?
+
+Do you think it is even possible to get the thresholds right?
+
+Let me re-emphasize: bit-flip is an objective, reliable reason to scrub.
+Thresholds are more of a pessimistic prediction. No?
+
+Let's think of someone having a R/O storage with video files. Compare:
+
+1. Do full media read every 120 days in background with low priority
+(possibly implemented as UBI service). And because it is R/O, cut the
+power all you want.
+
+2. Have UBI write data to media all the time to maintain the read
+counters. Lose your fastmap and have slow mounts on power cuts. Have
+extra work on boot-time. Spend more RAM.
+
+Why 2 is better than 1?
+
+Thanks!
 
