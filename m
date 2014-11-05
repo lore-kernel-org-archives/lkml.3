@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaKEKPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:15:55 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:40722 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129AbaKEKPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:15:52 -0500
-From: Chander Kashyap <k.chander@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
-        lorenzo.pieralisi@arm.com, catalin.marinas@arm.com,
-        mark.rutland@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [PATCH v3] arm64: dts: exynos7: add support for cpuidle core power down
-Date: Wed,  5 Nov 2014 15:45:36 +0530
-Message-Id: <1415182536-11613-1-git-send-email-k.chander@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	id S1754469AbaKEKRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:17:19 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:43554 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753440AbaKEKRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:17:18 -0500
+Date: Wed, 5 Nov 2014 08:17:11 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Cc: Jarod Wilson <jarod@wilsonet.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Matina Maria Trompouki <mtrompou@gmail.com>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: media: lirc: modify print calls
+Message-ID: <20141105081711.4c6abcc3@recife.lan>
+In-Reply-To: <20141104214307.GA6709@localhost.localdomain>
+References: <20141104214307.GA6709@localhost.localdomain>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos7 has core power down state where cores can be powered off independently.
-This patch adds support for this state.
+Em Tue, 4 Nov 2014 23:43:07 +0200
+Aya Mahfouz <mahfouz.saif.elyazal@gmail.com> escreveu:
 
-Entry latency for the core power down is calculated as follows:
-1. Time difference is measured between cpuidle entry and exit.
-2. WFI is skipped measuring the time.
-3. The time is averaged out for 100000 cpuidle transactions with varying load.
+> This patches replaces one pr_debug call by dev_dbg and
+> changes the device used by one of the dev_err calls.
 
-Exit latency and target residency are supplied as per HW team
+Also doesn't apply. Probably made to apply on Greg's tree.
 
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
----
-This patch has following dependencies:
-	- [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
-		http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
-Changes in v2:
-	- Moved the cpu-idle-state property after reg property
-	- removed the status property.
+Regards,
+Mauro
 
-Changes in v3:
-	- Added the Entry latency calculation in commit message.
-
- arch/arm64/boot/dts/exynos/exynos7.dtsi |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-index 50ae936..444dde1 100644
---- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
-+++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-@@ -37,6 +37,7 @@
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
- 			reg = <0x0>;
-+			cpu-idle-states = <&CPU_SLEEP>;
- 		};
- 
- 		cpu@1 {
-@@ -44,6 +45,7 @@
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
- 			reg = <0x1>;
-+			cpu-idle-states = <&CPU_SLEEP>;
- 		};
- 
- 		cpu@2 {
-@@ -51,6 +53,7 @@
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
- 			reg = <0x2>;
-+			cpu-idle-states = <&CPU_SLEEP>;
- 		};
- 
- 		cpu@3 {
-@@ -58,6 +61,20 @@
- 			compatible = "arm,cortex-a57", "arm,armv8";
- 			enable-method = "psci";
- 			reg = <0x3>;
-+			cpu-idle-states = <&CPU_SLEEP>;
-+		};
-+
-+		idle-states {
-+			entry-method = "arm,psci";
-+
-+			CPU_SLEEP: cpu-sleep {
-+				compatible = "arm,idle-state";
-+				local-timer-stop;
-+				arm,psci-suspend-param = <0x0010000>;
-+				entry-latency-us = <20>;
-+				exit-latency-us = <150>;
-+				min-residency-us = <2100>;
-+			};
- 		};
- 	};
- 
--- 
-1.7.9.5
-
+> 
+> Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+> ---
+>  drivers/staging/media/lirc/lirc_zilog.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+> index 52f8e91..dca806a 100644
+> --- a/drivers/staging/media/lirc/lirc_zilog.c
+> +++ b/drivers/staging/media/lirc/lirc_zilog.c
+> @@ -1447,7 +1447,7 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  	int ret;
+>  	bool tx_probe = false;
+>  
+> -	pr_debug("%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+> +	dev_dbg(&client->dev, "%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+>  		__func__, id->name, adap->nr, adap->name, client->addr);
+>  
+>  	/*
+> @@ -1631,7 +1631,7 @@ out_put_xx:
+>  out_put_ir:
+>  	put_ir_device(ir, true);
+>  out_no_ir:
+> -	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+> +	dev_err(&client->dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+>  		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
+>  		   ret);
+>  	mutex_unlock(&ir_devices_lock);
