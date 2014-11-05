@@ -1,314 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaKEJQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:16:33 -0500
-Received: from mout.gmx.net ([212.227.15.19]:56163 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaKEJQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:16:17 -0500
-Message-ID: <545968F5.7070605@gmx.de>
-Date: Wed, 05 Nov 2014 01:01:57 +0100
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+	id S1754376AbaKEJRl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:17:41 -0500
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:31558 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753495AbaKEJRi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:17:38 -0500
+From: Shahed Shaikh <shahed.shaikh@qlogic.com>
+To: Joe Stringer <joestringer@nicira.com>, netdev <netdev@vger.kernel.org>
+CC: "sathya.perla@emulex.com" <sathya.perla@emulex.com>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "linux.nics@intel.com" <linux.nics@intel.com>,
+        "amirv@mellanox.com" <amirv@mellanox.com>,
+        Dept-GE Linux NIC Dev <Dept-GELinuxNICDev@qlogic.com>,
+        "Tom Herbert (Partner - google)" <therbert@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH net 5/5] qlcnic: Implement ndo_gso_check()
+Thread-Topic: [PATCH net 5/5] qlcnic: Implement ndo_gso_check()
+Thread-Index: AQHP+HpQ5eyJBh8kxU2z21df5T0OlJxRuiug
+Date: Wed, 5 Nov 2014 09:17:31 +0000
+Message-ID: <262CB373A6D1F14F9B81E82F74F77D5A4709D060@avmb2.qlogic.org>
+References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
+ <1415138202-1197-6-git-send-email-joestringer@nicira.com>
+In-Reply-To: <1415138202-1197-6-git-send-email-joestringer@nicira.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Jonathan Cameron <jic23@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] DT: iio: vadc: document dt binding
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com> <1415028270-25860-2-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1415028270-25860-2-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:QmUgHEH7WTx0kGLnl6L2FV8bYkSkyvLBCTuZwfIvglfqigEsnNg
- wAKON7ciRD6WQbEvFaxX+ZQQzI1mxEnnRpIMMgya7gB5NMLpH+KZsrij7O8KFOvSyu4gFn5
- bUzfP+Q2InDm5BJE91OvfM+L3edm4FovKRsdno5AwweoJHJ21wnFVkWgT/qfstwVS4Dc2zf
- AQeDtoZOYaLKcmrp0d+FQ==
-X-UI-Out-Filterresults: notjunk:1;
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7612 signatures=670572
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1411050095
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ivan T. Ivanov schrieb am 03.11.2014 16:24:
-> From: Stanimir Varbanov <svarbanov@mm-sol.com>
+> -----Original Message-----
+> From: Joe Stringer [mailto:joestringer@nicira.com]
+> Sent: Wednesday, November 05, 2014 3:27 AM
+> To: netdev
+> Cc: sathya.perla@emulex.com; jeffrey.t.kirsher@intel.com;
+> linux.nics@intel.com; amirv@mellanox.com; Shahed Shaikh; Dept-GE Linux
+> NIC Dev; Tom Herbert (Partner - google); linux-kernel
+> Subject: [PATCH net 5/5] qlcnic: Implement ndo_gso_check()
 > 
-> Document DT binding for Qualcomm SPMI PMIC voltage ADC
-> driver.
+> ndo_gso_check() was recently introduced to allow NICs to report the
+> offloading support that they have on a per-skb basis. Add an implementation
+> for this driver which checks for something that looks like VXLAN.
 > 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> Implementation shamelessly stolen from Tom Herbert:
+> http://thread.gmane.org/gmane.linux.network/332428/focus=333111
+> 
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
 > ---
->  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt | 129 +++++++++++++++++++++
->  include/dt-bindings/iio/qcom,spmi-vadc.h           | 119 +++++++++++++++++++
->  2 files changed, 248 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->  create mode 100644 include/dt-bindings/iio/qcom,spmi-vadc.h
+>  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-> new file mode 100644
-> index 0000000..2253813
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-> @@ -0,0 +1,129 @@
-> +Qualcomm's SPMI PMIC voltage ADC
-> +
-> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
-> +voltage. The VADC is a 15-bit sigma-delta ADC.
-> +
-> +VADC node:
-> +
-> +- compatible:
-> +    Usage: required
-> +    Value type: <string>
-> +    Definition: Should contain "qcom,spmi-vadc".
-> +
-> +- reg:
-> +    Usage: required
-> +    Value type: <prop-encoded-array>
-> +    Definition: VADC base address and length in the SPMI PMIC register map.
-> +
-> +- #address-cells:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: Must be one. Child node 'reg' property should define ADC
-> +            channel number.
-> +
-> +- #size-cells:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: Must be zero.
-> +
-> +- #io-channel-cells:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: Must be one. For details about IIO bindings see:
-> +            Documentation/devicetree/bindings/iio/iio-bindings.txt
-> +
-> +- interrupts:
-> +    Usage: optional
-> +    Value type: <prop-encoded-array>
-> +    Definition: End of conversion interrupt.
-> +
-> +Channel node properties:
-> +
-> +- reg:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: ADC channel number.
-> +            See include/dt-bindings/iio/qcom,spmi-vadc.h
-> +
-> +- qcom,decimation:
-> +    Usage: optional
-> +    Value type: <u32>
-> +    Definition: This parameters is used to decrease ADC sampling rate.
-Typo: This parameter (singular)
-> +            Quicker measurements can be made by reducing decimation ratio.
-> +            Valid values are 512, 1024, 2048, 4096.
-> +            If property is not found, default value of 512 will be used.
-> +
-> +- qcom,pre-scaling:
-> +    Usage: optional
-> +    Value type: <u32 array>
-> +    Definition: Used for scaling the channel input signal before the signal is
-> +            fed to VADC. The configuration for this node is to know the
-> +            pre-determined ratio and use it for post scaling. Select one from
-> +            the following options.
-> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
-> +            If property is not found default value depending of chip will be used.
-> +
-> +- qcom,ratiometric:
-> +    Usage: optional
-> +    Value type: <empty>
-> +    Definition: Channel calibration type. If this property is specified
-> +            VADC will use the VDD reference (1.8V) and GND for channel
-> +            calibration. If property is not found, channel will be
-> +            calibrated with 0.625V and 1.25V reference channels, also
-> +            known as absolute calibration.
-> +
-> +- qcom,hw-settle-time:
-> +    Usage: optional
-> +    Value type: <u32>
-> +    Definition: Time between AMUX getting configured and the ADC starting
-> +            conversion. Delay = 100us * (value) for value < 11, and
-> +            2ms * (value - 10) otherwise.
-> +            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
-> +            900 us and 1, 2, 4, 6, 8, 10 ms
-> +            If property is not found, channel will use 0us.
-> +
-> +- qcom,avg-samples:
-> +    Usage: optional
-> +    Value type: <u32>
-> +    Definition: Number of samples to be used for measurement.
-> +            Averaging provides the option to obtain a single measurement
-> +            from the ADC that is an average of multiple samples. The value
-> +            selected is 2^(value).
-> +            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
-> +            If property is not found, 1 sample will be used.
-> +
-> +NOTE:
-> +
-> +Following channels, also know as reference points channels, are used for
-Typos: <...> also known as reference point channels <...>
-> +result calibration and their channel configuration nodes should be defined:
-> +VADC_REF_625MV and/or VADC_SPARE1, based on PMIC version, VADC_REF_1250MV,
-Better put the "based on PMIC version" into parenthesis.
-> +VADC_GND_REF and VADC_VDD_VADC.
-> +
-> +Example:
-> +
-> +	/* VADC node */
-> +	pmic_vadc: vadc@3100 {
-> +		compatible = "qcom,spmi-vadc";
-> +		reg = <0x3100 0x100>;
-> +		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		#io-channel-cells = <1>;
-> +		io-channel-ranges;
-> +
-> +		/* Channel node */
-> +		usb_id_nopull {
-> +			reg = <VADC_LR_MUX10_USB_ID>;
-> +			qcom,decimation = <512>;
-> +			qcom,ratiometric;
-> +			qcom,hw-settle-time = <200>;
-> +			qcom,avg-samples = <1>;
-> +			qcom,pre-scaling = <1 3>;
-> +		};
-> +	};
-> +
-> +	/* IIO client node */
-> +	usb {
-> +		io-channels = <&pmic_vadc VADC_LR_MUX10_USB_ID>;
-> +		io-channel-names = "vadc";
-> +	};
-> diff --git a/include/dt-bindings/iio/qcom,spmi-vadc.h b/include/dt-bindings/iio/qcom,spmi-vadc.h
-> new file mode 100644
-> index 0000000..42121fa
-> --- /dev/null
-> +++ b/include/dt-bindings/iio/qcom,spmi-vadc.h
-> @@ -0,0 +1,119 @@
-> +/*
-> + * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef _DT_BINDINGS_QCOM_SPMI_VADC_H
-> +#define _DT_BINDINGS_QCOM_SPMI_VADC_H
-> +
-> +/* Voltage ADC channels */
-> +#define VADC_USBIN				0x00
-> +#define VADC_DCIN				0x01
-> +#define VADC_VCHG_SNS				0x02
-> +#define VADC_SPARE1_03				0x03
-> +#define VADC_USB_ID_MV				0x04
-> +#define VADC_VCOIN				0x05
-> +#define VADC_VBAT_SNS				0x06
-> +#define VADC_VSYS				0x07
-> +#define VADC_DIE_TEMP				0x08
-> +#define VADC_REF_625MV				0x09
-> +#define VADC_REF_1250MV				0x0a
-> +#define VADC_CHG_TEMP				0x0b
-> +#define VADC_SPARE1				0x0c
-> +#define VADC_SPARE2				0x0d
-> +#define VADC_GND_REF				0x0e
-> +#define VADC_VDD_VADC				0x0f
-> +
-> +#define VADC_P_MUX1_1_1				0x10
-> +#define VADC_P_MUX2_1_1				0x11
-> +#define VADC_P_MUX3_1_1				0x12
-> +#define VADC_P_MUX4_1_1				0x13
-> +#define VADC_P_MUX5_1_1				0x14
-> +#define VADC_P_MUX6_1_1				0x15
-> +#define VADC_P_MUX7_1_1				0x16
-> +#define VADC_P_MUX8_1_1				0x17
-> +#define VADC_P_MUX9_1_1				0x18
-> +#define VADC_P_MUX10_1_1			0x19
-> +#define VADC_P_MUX11_1_1			0x1a
-> +#define VADC_P_MUX12_1_1			0x1b
-> +#define VADC_P_MUX13_1_1			0x1c
-> +#define VADC_P_MUX14_1_1			0x1d
-> +#define VADC_P_MUX15_1_1			0x1e
-> +#define VADC_P_MUX16_1_1			0x1f
-> +
-> +#define VADC_P_MUX1_1_3				0x20
-> +#define VADC_P_MUX2_1_3				0x21
-> +#define VADC_P_MUX3_1_3				0x22
-> +#define VADC_P_MUX4_1_3				0x23
-> +#define VADC_P_MUX5_1_3				0x24
-> +#define VADC_P_MUX6_1_3				0x25
-> +#define VADC_P_MUX7_1_3				0x26
-> +#define VADC_P_MUX8_1_3				0x27
-> +#define VADC_P_MUX9_1_3				0x28
-> +#define VADC_P_MUX10_1_3			0x29
-> +#define VADC_P_MUX11_1_3			0x2a
-> +#define VADC_P_MUX12_1_3			0x2b
-> +#define VADC_P_MUX13_1_3			0x2c
-> +#define VADC_P_MUX14_1_3			0x2d
-> +#define VADC_P_MUX15_1_3			0x2e
-> +#define VADC_P_MUX16_1_3			0x2f
-> +
-> +#define VADC_LR_MUX1_BAT_THERM			0x30
-> +#define VADC_LR_MUX2_BAT_ID			0x31
-> +#define VADC_LR_MUX3_XO_THERM			0x32
-> +#define VADC_LR_MUX4_AMUX_THM1			0x33
-> +#define VADC_LR_MUX5_AMUX_THM2			0x34
-> +#define VADC_LR_MUX6_AMUX_THM3			0x35
-> +#define VADC_LR_MUX7_HW_ID			0x36
-> +#define VADC_LR_MUX8_AMUX_THM4			0x37
-> +#define VADC_LR_MUX9_AMUX_THM5			0x38
-> +#define VADC_LR_MUX10_USB_ID			0x39
-> +#define VADC_AMUX_PU1				0x3a
-> +#define VADC_AMUX_PU2				0x3b
-> +#define VADC_LR_MUX3_BUF_XO_THERM		0x3c
-> +
-> +#define VADC_LR_MUX1_PU1_BAT_THERM		0x70
-> +#define VADC_LR_MUX2_PU1_BAT_ID			0x71
-> +#define VADC_LR_MUX3_PU1_XO_THERM		0x72
-> +#define VADC_LR_MUX4_PU1_AMUX_THM1		0x73
-> +#define VADC_LR_MUX5_PU1_AMUX_THM2		0x74
-> +#define VADC_LR_MUX6_PU1_AMUX_THM3		0x75
-> +#define VADC_LR_MUX7_PU1_AMUX_HW_ID		0x76
-> +#define VADC_LR_MUX8_PU1_AMUX_THM4		0x77
-> +#define VADC_LR_MUX9_PU1_AMUX_THM5		0x78
-> +#define VADC_LR_MUX10_PU1_AMUX_USB_ID		0x79
-> +#define VADC_LR_MUX3_BUF_PU1_XO_THERM		0x7c
-> +
-> +#define VADC_LR_MUX1_PU2_BAT_THERM		0xb0
-> +#define VADC_LR_MUX2_PU2_BAT_ID			0xb1
-> +#define VADC_LR_MUX3_PU2_XO_THERM		0xb2
-> +#define VADC_LR_MUX4_PU2_AMUX_THM1		0xb3
-> +#define VADC_LR_MUX5_PU2_AMUX_THM2		0xb4
-> +#define VADC_LR_MUX6_PU2_AMUX_THM3		0xb5
-> +#define VADC_LR_MUX7_PU2_AMUX_HW_ID		0xb6
-> +#define VADC_LR_MUX8_PU2_AMUX_THM4		0xb7
-> +#define VADC_LR_MUX9_PU2_AMUX_THM5		0xb8
-> +#define VADC_LR_MUX10_PU2_AMUX_USB_ID		0xb9
-> +#define VADC_LR_MUX3_BUF_PU2_XO_THERM		0xbc
-> +
-> +#define VADC_LR_MUX1_PU1_PU2_BAT_THERM		0xf0
-> +#define VADC_LR_MUX2_PU1_PU2_BAT_ID		0xf1
-> +#define VADC_LR_MUX3_PU1_PU2_XO_THERM		0xf2
-> +#define VADC_LR_MUX4_PU1_PU2_AMUX_THM1		0xf3
-> +#define VADC_LR_MUX5_PU1_PU2_AMUX_THM2		0xf4
-> +#define VADC_LR_MUX6_PU1_PU2_AMUX_THM3		0xf5
-> +#define VADC_LR_MUX7_PU1_PU2_AMUX_HW_ID		0xf6
-> +#define VADC_LR_MUX8_PU1_PU2_AMUX_THM4		0xf7
-> +#define VADC_LR_MUX9_PU1_PU2_AMUX_THM5		0xf8
-> +#define VADC_LR_MUX10_PU1_PU2_AMUX_USB_ID	0xf9
-> +#define VADC_LR_MUX3_BUF_PU1_PU2_XO_THERM	0xfc
-> +
-> +#endif /* _DT_BINDINGS_QCOM_SPMI_VADC_H */
+> diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+> b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+> index f5e29f7..6184f47 100644
+> --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+> +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+> @@ -505,6 +505,17 @@ static void qlcnic_del_vxlan_port(struct net_device
+> *netdev,  }  #endif
 > 
+> +static bool qlcnic_gso_check(struct sk_buff *skb, struct net_device
+> +*dev) {
+> +	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
+> +	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
+> +	     skb->inner_protocol != htons(ETH_P_TEB) ||
+> +	     skb_inner_mac_header(skb) - skb_transport_header(skb) != 16))
+> +		return false;
+> +
 
+Hi Joe,
+
+Yes, qlcnic driver only supports VXLAN offload.
+It would be good to put a comment about value 16 to make it more intuitive. 
+e.g. 16 is the size of outer UDP header + VXLAN header.
+
+Anyway, patch looks good to me.
+
+Acked-by: Shahed Shaikh <shahed.shaikh@qlogic.com>
+
+Thanks,
+Shahed
