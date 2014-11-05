@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaKENpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:45:47 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:36045 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894AbaKENo4 (ORCPT
+	id S1754865AbaKENrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:47:14 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:48881 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaKENrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:44:56 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 3/3] memcg: only check memcg_kmem_skip_account in __memcg_kmem_get_cache
-Date: Wed, 5 Nov 2014 16:44:44 +0300
-Message-ID: <a834fe02d2833e235f6dd35368f4f0b9412bca4b.1415194280.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
-References: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
+	Wed, 5 Nov 2014 08:47:12 -0500
+Date: Wed, 5 Nov 2014 15:40:04 +0200
+From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Matina Maria Trompouki <mtrompou@gmail.com>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: media: lirc: modify print calls
+Message-ID: <20141105134004.GA2493@localhost.localdomain>
+References: <20141104214307.GA6709@localhost.localdomain>
+ <20141105112915.GA2680@sudip-PC>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105112915.GA2680@sudip-PC>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__memcg_kmem_get_cache can recurse if it calls kmalloc (which it does if
-the cgroup's kmem cache doesn't exist), because kmalloc may call
-__memcg_kmem_get_cache internally again. To avoid the recursion, we use
-the task_struct->memcg_kmem_skip_account flag.
+On Wed, Nov 05, 2014 at 04:59:15PM +0530, Sudip Mukherjee wrote:
+> On Tue, Nov 04, 2014 at 11:43:07PM +0200, Aya Mahfouz wrote:
+> > This patches replaces one pr_debug call by dev_dbg and
+> > changes the device used by one of the dev_err calls.
+> 
+> i think you should mention in the commit message why you are changing the device.
+> and also for revised patch its better if you add version number in the subject.
+> like this is v2.
+> 
+> thanks
+> sudip
+> 
 
-However, there's no need in checking the flag in
-memcg_kmem_newpage_charge or memcg_kmem_recharge_slab, because there's
-no way how these two functions could result in recursion, if called from
-memcg_kmem_get_cache. So let's remove the redundant code.
+Thanks Sudip for your feedback. I use versions if I keep the same subject.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/memcontrol.c |   31 -------------------------------
- 1 file changed, 31 deletions(-)
+Kind Regards,
+Aya Saif El-yazal Mahfouz
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 52d1e933bb9f..d7de40cb3c8e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2717,34 +2717,6 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
- 
- 	*_memcg = NULL;
- 
--	/*
--	 * Disabling accounting is only relevant for some specific memcg
--	 * internal allocations. Therefore we would initially not have such
--	 * check here, since direct calls to the page allocator that are
--	 * accounted to kmemcg (alloc_kmem_pages and friends) only happen
--	 * outside memcg core. We are mostly concerned with cache allocations,
--	 * and by having this test at memcg_kmem_get_cache, we are already able
--	 * to relay the allocation to the root cache and bypass the memcg cache
--	 * altogether.
--	 *
--	 * There is one exception, though: the SLUB allocator does not create
--	 * large order caches, but rather service large kmallocs directly from
--	 * the page allocator. Therefore, the following sequence when backed by
--	 * the SLUB allocator:
--	 *
--	 *	memcg_stop_kmem_account();
--	 *	kmalloc(<large_number>)
--	 *	memcg_resume_kmem_account();
--	 *
--	 * would effectively ignore the fact that we should skip accounting,
--	 * since it will drive us directly to this function without passing
--	 * through the cache selector memcg_kmem_get_cache. Such large
--	 * allocations are extremely rare but can happen, for instance, for the
--	 * cache arrays. We bring this test here.
--	 */
--	if (current->memcg_kmem_skip_account)
--		return true;
--
- 	memcg = get_mem_cgroup_from_mm(current->mm);
- 
- 	if (!memcg_kmem_is_active(memcg)) {
-@@ -2800,9 +2772,6 @@ int __memcg_kmem_recharge_slab(void *obj, gfp_t gfp)
- 	int nr_pages;
- 	int ret = 0;
- 
--	if (current->memcg_kmem_skip_account)
--		goto out;
--
- 	page = virt_to_head_page(obj);
- 	page_memcg = ACCESS_ONCE(page->mem_cgroup);
- 
--- 
-1.7.10.4
-
+> > 
+> > Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+> > ---
+> >  drivers/staging/media/lirc/lirc_zilog.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+> > index 52f8e91..dca806a 100644
+> > --- a/drivers/staging/media/lirc/lirc_zilog.c
+> > +++ b/drivers/staging/media/lirc/lirc_zilog.c
+> > @@ -1447,7 +1447,7 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+> >  	int ret;
+> >  	bool tx_probe = false;
+> >  
+> > -	pr_debug("%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+> > +	dev_dbg(&client->dev, "%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+> >  		__func__, id->name, adap->nr, adap->name, client->addr);
+> >  
+> >  	/*
+> > @@ -1631,7 +1631,7 @@ out_put_xx:
+> >  out_put_ir:
+> >  	put_ir_device(ir, true);
+> >  out_no_ir:
+> > -	dev_err(ir->l.dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+> > +	dev_err(&client->dev, "%s: probing IR %s on %s (i2c-%d) failed with %d\n",
+> >  		    __func__, tx_probe ? "Tx" : "Rx", adap->name, adap->nr,
+> >  		   ret);
+> >  	mutex_unlock(&ir_devices_lock);
+> > -- 
+> > 1.9.3
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
