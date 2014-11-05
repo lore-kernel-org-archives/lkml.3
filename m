@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaKEVo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:44:26 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:61565 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaKEVoZ (ORCPT
+	id S1751609AbaKEVqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:46:39 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:50574 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaKEVqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:44:25 -0500
+	Wed, 5 Nov 2014 16:46:35 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:797a:ae27:eb4f:f22]
-In-Reply-To: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <545912D2.5090708@codeaurora.org>
 References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Wed, 5 Nov 2014 13:44:24 -0800
-Message-ID: <CAOesGMheJzkQ9jEmDx9+hpjk0Scbnv_JiK1yH+7eoxY4PYUS4A@mail.gmail.com>
+ <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
+ <20141104082056.GG1618@lahna.fi.intel.com> <545912D2.5090708@codeaurora.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 5 Nov 2014 21:46:14 +0000
+X-Google-Sender-Auth: P3JFkDURXSrxLO6imkAB3DnbWuY
+Message-ID: <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
 Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-From: Olof Johansson <olof@lixom.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+To: Timur Tabi <timur@codeaurora.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
         Heikki Krogerus <heikki.krogerus@linux.intel.com>,
         Mathias Nyman <mathias.nyman@linux.intel.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-
-
-On Mon, Nov 3, 2014 at 3:01 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> Hi,
+On Tue, Nov 4, 2014 at 5:54 PM, Timur Tabi <timur@codeaurora.org> wrote:
+> On 11/04/2014 02:20 AM, Mika Westerberg wrote:
+>>
+>> There is nothing like that yet in ACPI world but with the ACPI _DSD
+>> patches we are getting properties similar to DT which means that we can
+>> provide pinctrl bindings from ACPI systems as well.
 >
-> This is second version of the patch series adding pinctrl/GPIO support
-> for Intel Braswell and Cherrryview. The previous version can be found here:
 >
-> https://lkml.org/lkml/2014/10/27/118
->
-> I've dropped patches [2/4] and [3/4] as they are already applied to the
-> pinctrl tree.
->
-> Changes to the previous version:
->
-> [1/2] - Removed unnecessary cast and added Rafael's ACK.
->
-> [2/2] - Use Ohms instead of kOhms in pin configuration.
->       - Change chv_config_set_pull() to be not so convoluted.
->       - Remove locking when we just read single register. This is not needed.
->       - Use BIT() instead of (1 << something)
->
-> Mika Westerberg (2):
->   gpio / ACPI: Add knowledge about pin controllers to acpi_get_gpiod()
->   pinctrl: Add Intel Cherryview/Braswell pin controller support
+> Do you know if anyone has signed up to actually do the work of defining how
+> pinctrl will look in ACPI?  I'm guessing the simplest approach would be to:
 
+Actually, for the most part we /don't/ want to try and put pinctrl
+into an ACPI binding. The assumption is that on an ACPI platform it
+would be the combination of ACPI and firmware responsible for the pin
+mappings, not the operating system.
 
-Pinctrl setup has traditionally always been done by firmware on x86,
-and some ARM platforms are again moving back to that state (since
-reconfiguring pinctrl in the kernel is in some cases not safe).
+Before even attempting to put pinctrl mappings into your driver, there
+should instead be a conversation at the ACPI spec level about whether
+or not it makes sense and what such a binding should look like.
 
-What's the purpose of exposing this to the kernel on x86 now? I can
-see the need to expose GPIO, but not pinctrl? Having the pin control
-hidden away in firmware has been one of the benefits on x86, and
-you're now undoing it... :)
-
-
-
--Olof
+g.
