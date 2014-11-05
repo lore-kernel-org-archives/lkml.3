@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaKEJa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:30:56 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:42436 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaKEJax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:30:53 -0500
+	id S1754201AbaKEJbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:31:44 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:47210 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751198AbaKEJbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:31:40 -0500
+X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 04:31:40 EST
+Date: Wed, 5 Nov 2014 11:21:13 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Calvin Owens <calvinowens@fb.com>
+cc: Simon Horman <horms@verge.net.au>, Wensong Zhang <wensong@linux-vs.org>,
+        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, agartrell@fb.com, kernel-team@fb.com
+Subject: Re: [PATCH] ipvs: Keep skb->sk when allocating headroom on tunnel
+ xmit
+In-Reply-To: <1415147860-11389-1-git-send-email-calvinowens@fb.com>
+Message-ID: <alpine.LFD.2.11.1411051048540.1631@ja.home.ssi.bg>
+References: <1415147860-11389-1-git-send-email-calvinowens@fb.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <CAFEAcA8JgebH8B4i7aoSxdeon7B-eunXzZJhwOCXQr-ypSgfsQ@mail.gmail.com>
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
-	<CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com>
-	<544E2B18.8010702@huawei.com>
-	<CAFEAcA8JgebH8B4i7aoSxdeon7B-eunXzZJhwOCXQr-ypSgfsQ@mail.gmail.com>
-Date: Wed, 5 Nov 2014 10:30:53 +0100
-Message-ID: <CAMJs5B-OXTCY=FWXK0ed3+VPk_9d3QUVBJ=ny3uq2z53cmv+KA@mail.gmail.com>
-Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
- vhost-net based on virtio-mmio
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Li Liu <john.liuli@huawei.com>, Joel Schopp <joel.schopp@amd.com>,
-        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, remy.gauguey@cea.fr,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
-        QEMU Developers <qemu-devel@nongnu.org>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 12:58 PM, Peter Maydell
-<peter.maydell@linaro.org> wrote:
-> On 27 October 2014 11:23, Li Liu <john.liuli@huawei.com> wrote:
->> So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
->
-> That is the plan, yes. I can't make any promises on
-> timescales at the moment, though...
->
-Linaro has scheduled resources to work on this (Ard, cc'ed) and we
-expect to be able to deliver this within a reasonable time frame.
 
--Christoffer
+	Hello,
+
+On Tue, 4 Nov 2014, Calvin Owens wrote:
+
+> ip_vs_prepare_tunneled_skb() ignores ->sk when allocating a new
+> skb, either unconditionally setting ->sk to NULL or allowing
+> the uninitialized ->sk from a newly allocated skb to leak through
+> to the caller.
+> 
+> This patch properly copies ->sk and increments its reference count.
+> 
+> Signed-off-by: Calvin Owens <calvinowens@fb.com>
+
+	Good catch. Please, extend your patch to
+fix also the second place that has such error,
+ip_vs_tunnel_xmit_v6. This call is missing from long time,
+it was not needed. But commits that allow skb->sk (local
+clients) already need it, eg.
+
+- f2428ed5e7bc89c7 ("ipvs: load balance ipv6 connections from a local
+process"), 2.6.28
+- 4856c84c1358b798 ("ipvs: load balance IPv4 connections from a local 
+process"), 2.6.28
+
+> ---
+>  net/netfilter/ipvs/ip_vs_xmit.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_xmit.c b/net/netfilter/ipvs/ip_vs_xmit.c
+> index 437a366..bd90bf8 100644
+> --- a/net/netfilter/ipvs/ip_vs_xmit.c
+> +++ b/net/netfilter/ipvs/ip_vs_xmit.c
+> @@ -846,6 +846,8 @@ ip_vs_prepare_tunneled_skb(struct sk_buff *skb, int skb_af,
+>  		new_skb = skb_realloc_headroom(skb, max_headroom);
+>  		if (!new_skb)
+>  			goto error;
+> +		if (skb->sk)
+> +			skb_set_owner_w(new_skb, skb->sk);
+>  		consume_skb(skb);
+>  		skb = new_skb;
+>  	}
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
