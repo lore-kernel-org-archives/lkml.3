@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaKEMlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 07:41:14 -0500
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:40494
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaKEMlN (ORCPT
+	id S1754060AbaKEMmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 07:42:00 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:32922 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035AbaKEMl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 07:41:13 -0500
-Date: Wed, 5 Nov 2014 13:41:11 +0100
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Mateusz Guzik <mguzik@redhat.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 1/2v6] procfs: show hierarchy of pid namespace
-Message-ID: <20141105124111.GA19563@mail.hallyn.com>
-References: <1415184115-12022-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1415184115-12022-2-git-send-email-chenhanxiao@cn.fujitsu.com>
- <545A13DA.3090207@nod.at>
+	Wed, 5 Nov 2014 07:41:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545A13DA.3090207@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415138202-1197-5-git-send-email-joestringer@nicira.com>
+References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
+	<1415138202-1197-5-git-send-email-joestringer@nicira.com>
+Date: Wed, 5 Nov 2014 14:41:57 +0200
+Message-ID: <CAJ3xEMjFh=pg-0ytvjsLduO-+Z+oJc=6=2i1fKG_CXBPF2L3UQ@mail.gmail.com>
+Subject: Re: [PATCH net 4/5] net/mlx4_en: Implement ndo_gso_check()
+From: Or Gerlitz <gerlitz.or@gmail.com>
+To: Joe Stringer <joestringer@nicira.com>
+Cc: Linux Netdev List <netdev@vger.kernel.org>, sathya.perla@emulex.com,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux.nics@intel.com,
+        Amir Vadai <amirv@mellanox.com>, shahed.shaikh@qlogic.com,
+        Dept-GELinuxNICDev@qlogic.com, Tom Herbert <therbert@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Weinberger (richard@nod.at):
-> Am 05.11.2014 um 11:41 schrieb Chen Hanxiao:
-> > We lack of pid hierarchy information, and this will lead to:
-> > a) we don't know pids' relationship, who is whose child:
-> >    /proc/PID/ns/pid only tell us whether two pids live in different ns
-> > b) bring trouble to nested lxc container check/restore/migration
-> > c) bring trouble to pid translation between containers;
-> > 
-> > This patch will show the hierarchy of pid namespace
-> > by pidns_hierarchy like:
-> > 
-> > [root@localhost ~]#cat /proc/pidns_hierarchy
-> > 18060 18102 1534
-> > 18060 18102 1600
-> > 1550
-> 
-> Hmm, what about printing the pid hierarchy in the same way as /proc/self/mountinfo
-> does with mount namespaces?
-> Your current approach is not bad but we should really try to be consistent with existing
-> sources of information.
+On Tue, Nov 4, 2014 at 11:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
+> ndo_gso_check() was recently introduced to allow NICs to report the
+> offloading support that they have on a per-skb basis. Add an
+> implementation for this driver which checks for something that looks
+> like VXLAN.
+>
+> Implementation shamelessly stolen from Tom Herbert:
+> http://thread.gmane.org/gmane.linux.network/332428/focus=333111
+>
+> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+> ---
+>  drivers/net/ethernet/mellanox/mlx4/en_netdev.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+>
+> diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+> index f3032fe..aca9908 100644
+> --- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+> +++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+> @@ -2344,6 +2344,17 @@ static void mlx4_en_del_vxlan_port(struct  net_device *dev,
+>  }
+>  #endif
+>
+> +static bool mlx4_en_gso_check(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +       if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
+> +           (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
+> +            skb->inner_protocol != htons(ETH_P_TEB) ||
+> +            skb_inner_mac_header(skb) - skb_transport_header(skb) != 16))
+> +               return false;
 
-Good point.  How would you structure it to make it look mor elike mountinfo?
-Adding the pidns inode number (in place of a mount sequence number) might be
-useful, but it sounds like you have a more concrete idea?
+Let's have this 16 constant to be more clear... e.g make it the sum of
+sizeof struct udphdr and struct vxlanhdr - you would need to move the
+latter from vxlan.c into a public header. All for the general patch I
+suggested
 
+Or.
 
-> > +config PROC_PID_HIERARCHY
-> > +	bool "Enable /proc/pidns_hierarchy support" if EXPERT
-> > +	depends on PROC_FS
-> > +	help
-> > +	  Show pid namespace hierarchy information
-> 
-> Why does this depend on EXPERT?
-> Every Linux distro will enable this option.
-
-Agreed here.
-
-
-> > +static int proc_pidns_list_refresh(struct pid_namespace *curr_ns,
-> > +		struct list_head *pidns_pid_list,
-> > +		struct list_head *pidns_pid_tree)
-> > +{
-> > +	struct pid *pid;
-> > +	int new_nr, nr = 0;
-> > +	int rc;
-> > +
-> > +	/* collect pids in current namespace */
-> > +	while (nr < PID_MAX_LIMIT) {
-> > +		rcu_read_lock();
-> > +		pid = find_ge_pid(nr, curr_ns);
-> > +		if (pid) {
-> > +			new_nr = pid_vnr(pid);
-> > +			if (!is_child_reaper(pid)) {
-> > +				nr = new_nr + 1;
-> > +				rcu_read_unlock();
-> > +				continue;
-> > +			}
-> > +			get_pid(pid);
-> > +			rcu_read_unlock();
-> > +			rc = pidns_list_add(pid, pidns_pid_list);
-> 
-> This function allocates memory per PID. If we have lots of PIDs, how does this scale?
-> I'd go so far and say this can be a DoS'able issue if the pidns_hierarchy file is opened multiple times...
-
-It's not per pid, but per init-pid.  For non-reaper pids he bails and continue
-through the loop a few lines above.  This still may be DOS-able if users don't
-have kmem restrictions to prevent a ton of pid namespaces, but then the
-namespaces themselves will take a lot more memory than the representation here.
-
--serge
+> +
+> +       return true;
+> +}
+> +
+>  static const struct net_device_ops mlx4_netdev_ops = {
+>         .ndo_open               = mlx4_en_open,
+>         .ndo_stop               = mlx4_en_close,
+> @@ -2374,6 +2385,7 @@ static const struct net_device_ops mlx4_netdev_ops = {
+>         .ndo_add_vxlan_port     = mlx4_en_add_vxlan_port,
+>         .ndo_del_vxlan_port     = mlx4_en_del_vxlan_port,
+>  #endif
+> +       .ndo_gso_check          = mlx4_en_gso_check,
+>  };
+>
+>  static const struct net_device_ops mlx4_netdev_ops_master = {
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
