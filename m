@@ -1,197 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141AbaKEQTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:19:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:13990 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888AbaKEQTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:19:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="602841829"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>, <stable@vger.kernel.org>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc V5 3.18] mei: nfc: clean nfc internal struct on host exit
-Date: Wed,  5 Nov 2014 18:18:16 +0200
-Message-Id: <1415204296-11496-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1755087AbaKEQTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:19:33 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:39392 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaKEQTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:19:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141105100827.GP31358@localhost>
+References: <1414568135-8311-1-git-send-email-romain.perier@gmail.com>
+	<1414568135-8311-2-git-send-email-romain.perier@gmail.com>
+	<20141105100827.GP31358@localhost>
+Date: Wed, 5 Nov 2014 17:19:30 +0100
+Message-ID: <CABgxDoJ4CCjvtFxPFu+wBAWDNNJufsRqaDihMVdPkF1ckGZJwA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] of: Rename "poweroff-source" property to "system-power-controller"
+From: Romain Perier <romain.perier@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFC internal structure cleaning was dropped by commit
+2014-11-05 11:08 GMT+01:00 Johan Hovold <johan@kernel.org>:
+> [ Resend with lkml, arm, Felipe on CC -- why were these dropped from CC? ]
+>
+> On Wed, Oct 29, 2014 at 07:35:32AM +0000, Romain Perier wrote:
+>> As discussed on the mailing list, it makes more sense to rename this property
+>> to "system-power-controller".
+>
+> Please also refer to the commit in the regulator tree renaming it to
+> "poweroff-source", and that this in effect is a revert to the old name
+> but without the vendor prefix.
 
-commit 487056932d372cc4f6c636f21a928d6667b151d7
-Author: Tomas Winkler <tomas.winkler@intel.com>
-Date:   Mon Feb 17 15:13:19 2014 +0200
+Ok
 
-    mei: Remove all bus devices from the mei_dev list when stopping the MEI
+>
+>> Problem being that the word "source" usually tends
+>> to be used for inputs and that is out of control of the OS. The poweroff
+>> capability is an output which simply turns the system-power off. Also, this
+>> property might be used by drivers which power-off the system and power back on
+>> subsequent RTC alarms. This seems to suggest to remove "poweroff" from the
+>> property name and to choose "system-power-controller" as the more generic name.
+>> This patchs adds the required renaming changes and defines an helper function
+>> which is compatible with both properties, the old one prefixed by a vendor name
+>> and the new one without any prefix.
+>>
+>> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+>
+> First of all, always run your patches through checkpatch.pl before
+> submitting. There's a few warnings there for you to fix.
 
-    When stopping the MEI, we should remove and potentially unregister
-    all bus devices queued on the mei_dev linked list.
+Ok, noted.
 
-We allocate nfc_dev and free it across the reset
-so we do not keep it in dirty state
+>
+> I think this is the wrong approach. This way any driver will recognise
+> the old deprecated vendor prefixes. But not only those -- also
+> misspelled vendor prefixes.
+>
+> Keep it simple and only parse the new property name (inline in the
+> header file).
+>
+> If we need to support the old property names with vendor prefix (we have
+> dropped vendor prefixes in the past), then you could add a second helper
+>
+>         of_is_system_power_controller_compat(np, compat_propname)
+>
+> where you pass in the whole old property name (e.g.
+> "ti,system-power-controller") and use that name as a fall back.
+>
+> This way it will be clear which drivers are still supporting the
+> deprecated property names, and we can make sure that no new ones will.
+>
 
-Cc: <stable@vger.kernel.org> #3.15+
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
----
-V2: allocate mei_nfc_dev dynamically
-V3: Drop the stable request as manual rebase is required,
-    a separate request will be sent
-V4: use upstream entry for reference for regressing commit
-V5: two hanks were lost in translation (the patch has bad karma)
-
- drivers/misc/mei/bus.c     |  4 ++--
- drivers/misc/mei/mei_dev.h |  1 +
- drivers/misc/mei/nfc.c     | 52 ++++++++++++++++++++++++++++++++++++++--------
- 3 files changed, 46 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 4d20d60ca38d..b3a72bca5242 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -140,7 +140,7 @@ static struct device_type mei_cl_device_type = {
- 	.release	= mei_cl_dev_release,
- };
- 
--static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *dev,
-+struct mei_cl *mei_cl_bus_find_cl_by_uuid(struct mei_device *dev,
- 						uuid_le uuid)
- {
- 	struct mei_cl *cl;
-@@ -160,7 +160,7 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
- 	struct mei_cl *cl;
- 	int status;
- 
--	cl = mei_bus_find_mei_cl_by_uuid(dev, uuid);
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, uuid);
- 	if (cl == NULL)
- 		return NULL;
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 71744b16cc8c..1288a5cf60b9 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -349,6 +349,7 @@ void mei_cl_bus_rx_event(struct mei_cl *cl);
- void mei_cl_bus_remove_devices(struct mei_device *dev);
- int mei_cl_bus_init(void);
- void mei_cl_bus_exit(void);
-+struct mei_cl *mei_cl_bus_find_cl_by_uuid(struct mei_device *dev, uuid_le uuid);
- 
- 
- /**
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 622654323177..60ca9240368e 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -117,8 +117,6 @@ struct mei_nfc_dev {
- 	u16 recv_req_id;
- };
- 
--static struct mei_nfc_dev nfc_dev;
--
- /* UUIDs for NFC F/W clients */
- const uuid_le mei_nfc_guid = UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50,
- 				     0x94, 0xd4, 0x50, 0x26,
-@@ -138,6 +136,9 @@ static const uuid_le mei_nfc_info_guid = UUID_LE(0xd2de1625, 0x382d, 0x417d,
- 
- static void mei_nfc_free(struct mei_nfc_dev *ndev)
- {
-+	if (!ndev)
-+		return;
-+
- 	if (ndev->cl) {
- 		list_del(&ndev->cl->device_link);
- 		mei_cl_unlink(ndev->cl);
-@@ -150,7 +151,7 @@ static void mei_nfc_free(struct mei_nfc_dev *ndev)
- 		kfree(ndev->cl_info);
- 	}
- 
--	memset(ndev, 0, sizeof(struct mei_nfc_dev));
-+	kfree(ndev);
- }
- 
- static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
-@@ -319,9 +320,10 @@ err:
- static int mei_nfc_enable(struct mei_cl_device *cldev)
- {
- 	struct mei_device *dev;
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
- 	int ret;
- 
-+	ndev = (struct mei_nfc_dev *)cldev->priv_data;
- 	dev = ndev->cl->dev;
- 
- 	ret = mei_nfc_connect(ndev);
-@@ -479,15 +481,25 @@ err:
- 
- int mei_nfc_host_init(struct mei_device *dev)
- {
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
- 	struct mei_cl *cl_info, *cl = NULL;
- 	struct mei_me_client *me_cl;
- 	int ret;
- 
--	/* already initialized */
--	if (ndev->cl_info)
-+
-+	/* in case of internal reset bail out
-+	 * as the device is already setup
-+	 */
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, mei_nfc_guid);
-+	if (cl)
- 		return 0;
- 
-+	ndev = kzalloc(sizeof(struct mei_nfc_dev), GFP_KERNEL);
-+	if (!ndev) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
- 	ndev->cl_info = mei_cl_allocate(dev);
- 	ndev->cl = mei_cl_allocate(dev);
- 
-@@ -550,9 +562,31 @@ err:
- 
- void mei_nfc_host_exit(struct mei_device *dev)
- {
--	struct mei_nfc_dev *ndev = &nfc_dev;
-+	struct mei_nfc_dev *ndev;
-+	struct mei_cl *cl;
-+	struct mei_cl_device *cldev;
-+
-+	cl = mei_cl_bus_find_cl_by_uuid(dev, mei_nfc_guid);
-+	if (!cl)
-+		return;
-+
-+	cldev = cl->device;
-+	if (!cldev)
-+		return;
- 
--	cancel_work_sync(&ndev->init_work);
-+	ndev = (struct mei_nfc_dev *)cldev->priv_data;
-+	if (ndev)
-+		cancel_work_sync(&ndev->init_work);
-+
-+	cldev->priv_data = NULL;
-+
-+	mutex_lock(&dev->device_lock);
-+	/* Need to remove the device here
-+	 * since mei_nfc_free will unlink the clients
-+	 */
-+	mei_cl_remove_device(cldev);
-+	mei_nfc_free(ndev);
-+	mutex_unlock(&dev->device_lock);
- }
- 
- 
--- 
-1.9.3
-
+I just want to be sure, do we need to keep backward compatibility or
+not ? Previous series did not contain backward compatibility and it
+was like "The Nursery Chainsaw Massacre" and created a lot of drama...
+People's opinion are welcome.
