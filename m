@@ -1,58 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaKELKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 06:10:50 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:33194 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaKELKs (ORCPT
+	id S1754664AbaKELMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 06:12:14 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:53281 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916AbaKELMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 06:10:48 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: gong.chen@linux.intel.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel@stlinux.com, eric.paire@st.com
-Subject: Re: [PATCH v3] bitops: Fix shift overflow in GENMASK macros
-Organization: D03
-References: <1415098697-16304-1-git-send-email-maxime.coquelin@st.com>
-X-Hashcash: 1:20:141105:stable@vger.kernel.org::WTGLoEeqECdzbX2Z:0000000000000000000000000000000000000000LSN
-X-Hashcash: 1:20:141105:mingo@kernel.org::UofCtWbqbnxy3Q7o:00TLN
-X-Hashcash: 1:20:141105:maxime.coquelin@st.com::8mLk70n7xpWCCiIo:00000000000000000000000000000000000000005QV
-X-Hashcash: 1:20:141105:peterz@infradead.org::Yy4+btWyIRCUHhaX:000000000000000000000000000000000000000001zs4
-X-Hashcash: 1:20:141105:tytso@mit.edu::DfqCJ/Ho4jB8FiFI:00005cso
-X-Hashcash: 1:20:141105:gong.chen@linux.intel.com::XqXWrs3yrTFVvUBB:0000000000000000000000000000000000007mTu
-X-Hashcash: 1:20:141105:paulmck@linux.vnet.ibm.com::wBdJOBeLW8VQ7LEl:000000000000000000000000000000000007ZRC
-X-Hashcash: 1:20:141105:linux-kernel@vger.kernel.org::5D2F8nzCHI9x0qpz:00000000000000000000000000000000080ie
-X-Hashcash: 1:20:141105:kernel@stlinux.com::mwtL3/1fXC40JF/W:00000000000000000000000000000000000000000008uPe
-X-Hashcash: 1:20:141105:eric.paire@st.com::NOYFUsDn2PkIpdEJ:00000000000000000000000000000000000000000000COvG
-Date: Wed, 05 Nov 2014 12:10:45 +0100
-In-Reply-To: <1415098697-16304-1-git-send-email-maxime.coquelin@st.com>
-	(Maxime COQUELIN's message of "Tue, 4 Nov 2014 11:58:17 +0100")
-Message-ID: <87vbmt52dm.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 5 Nov 2014 06:12:12 -0500
+Date: Wed, 5 Nov 2014 11:12:05 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Chander Kashyap <k.chander@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
+Subject: Re: [PATCH v3] arm64: dts: exynos7: add support for cpuidle core
+ power down
+Message-ID: <20141105111205.GA21258@red-moon>
+References: <1415182536-11613-1-git-send-email-k.chander@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415182536-11613-1-git-send-email-k.chander@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04 2014, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
+On Wed, Nov 05, 2014 at 10:15:36AM +0000, Chander Kashyap wrote:
+> Exynos7 has core power down state where cores can be powered off independently.
+> This patch adds support for this state.
+> 
+> Entry latency for the core power down is calculated as follows:
+> 1. Time difference is measured between cpuidle entry and exit.
+> 2. WFI is skipped measuring the time.
+> 3. The time is averaged out for 100000 cpuidle transactions with varying load.
+- entry-latency-us
+	Usage: Required
+	"Definition: u32 value representing worst case latency in microseconds
+		     required to enter the idle state. ..."
 
-> -#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
-> -#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
-> +#define GENMASK(h, l) \
-> +	((~0UL >> (BITS_PER_LONG - ((h) - (l) + 1))) << (l))
+Is that an average value in your opinion ? I am being pedantic, I know,
+but we define bindings to be followed, not interpreted.
+
+Thanks,
+Lorenzo
+
+> Exit latency and target residency are supplied as per HW team
+> 
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> ---
+> This patch has following dependencies:
+> 	- [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
+> 		http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
+> Changes in v2:
+> 	- Moved the cpu-idle-state property after reg property
+> 	- removed the status property.
+> 
+> Changes in v3:
+> 	- Added the Entry latency calculation in commit message.
+> 
+>  arch/arm64/boot/dts/exynos/exynos7.dtsi |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> index 50ae936..444dde1 100644
+> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> @@ -37,6 +37,7 @@
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+>  			reg = <0x0>;
+> +			cpu-idle-states = <&CPU_SLEEP>;
+>  		};
+>  
+>  		cpu@1 {
+> @@ -44,6 +45,7 @@
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+>  			reg = <0x1>;
+> +			cpu-idle-states = <&CPU_SLEEP>;
+>  		};
+>  
+>  		cpu@2 {
+> @@ -51,6 +53,7 @@
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+>  			reg = <0x2>;
+> +			cpu-idle-states = <&CPU_SLEEP>;
+>  		};
+>  
+>  		cpu@3 {
+> @@ -58,6 +61,20 @@
+>  			compatible = "arm,cortex-a57", "arm,armv8";
+>  			enable-method = "psci";
+>  			reg = <0x3>;
+> +			cpu-idle-states = <&CPU_SLEEP>;
+> +		};
 > +
-> +#define GENMASK_ULL(h, l) \
-> +	((~0ULL >> (BITS_PER_LONG_LONG - ((h) - (l) + 1))) << (l))
-
-Slightly bikeshedding here, but may I suggest spelling it
-
-  (((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
-
-? This will ensure the arguments are expanded once each, and will, IMHO,
-DTRT if/when l > h (namely, yield 0).
-
-Rasmus
+> +		idle-states {
+> +			entry-method = "arm,psci";
+> +
+> +			CPU_SLEEP: cpu-sleep {
+> +				compatible = "arm,idle-state";
+> +				local-timer-stop;
+> +				arm,psci-suspend-param = <0x0010000>;
+> +				entry-latency-us = <20>;
+> +				exit-latency-us = <150>;
+> +				min-residency-us = <2100>;
+> +			};
+>  		};
+>  	};
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
