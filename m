@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215AbaKEGXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 01:23:47 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:50600 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaKEGXq (ORCPT
+	id S1751443AbaKEGYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 01:24:18 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:35725 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaKEGYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 01:23:46 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, srikar@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options for cache
-References: <20141031185128.27889.32747.stgit@localhost.localdomain>
-	<20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com>
-	<20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com>
-	<20141104143814.GH18464@kernel.org> <5458FD56.8040304@hitachi.com>
-Date: Wed, 05 Nov 2014 15:23:44 +0900
-In-Reply-To: <5458FD56.8040304@hitachi.com> (Masami Hiramatsu's message of
-	"Wed, 05 Nov 2014 01:22:46 +0900")
-Message-ID: <87h9yew4gf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 5 Nov 2014 01:24:15 -0500
+Message-ID: <5459C287.4050006@gmail.com>
+Date: Wed, 05 Nov 2014 14:24:07 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
+ hotplug
+References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com> <20141103104111.GA23531@worktop.programming.kicks-ass.net> <20141103235747.GA26702@kernel> <20141104083225.GG10501@worktop.programming.kicks-ass.net> <20141104082345.GA22062@kernel> <20141104101022.GH10501@worktop.programming.kicks-ass.net> <5458D506.4080702@gmail.com> <20141104154623.GK10501@worktop.programming.kicks-ass.net> <5458F5C8.1030405@arm.com>
+In-Reply-To: <5458F5C8.1030405@arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Nov 2014 01:22:46 +0900, Masami Hiramatsu wrote:
-> (2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
->> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
->>> OK, I agree using .debug/.buildid/ to store caches.
->>> Here is what I'm thinking,
->>  
->>>   # this makes caches for given pattern instead of adding probes.
->>>   perf probe --cache '* $params'
->> 
->>>   # the cache is stored in .debug/.buildid/<buildid>.probe
->>>   # the cache entry can be queried by buildid and eventname
->> 
->> To follow the existing standard this would instead go to:
->> 
->>>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
->>>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
+Hi Juri,
+On 14/11/4 下午11:50, Juri Lelli wrote:
+> Hi,
 >
-> Ah, I see. so you meant adding a top-level .debug/probes/ dir.
-> But in that case, shouldn't we change .debug/.buildid/bu/ildid to
-> .debug/probes/.buildid/bu/ildid ?
+> On 04/11/14 15:46, Peter Zijlstra wrote:
+>> On Tue, Nov 04, 2014 at 09:30:46PM +0800, Wanpeng Li wrote:
+>>
+>>
+>>> + if (!rq->online) {
+>>> + struct rq *latest_rq = NULL;
+>>> + int cpu;
+>>> + u64 dmin = LONG_MAX;
+>>> +
+>>> + for_each_cpu(cpu, &p->cpus_allowed)
+>>> + if (cpu_online(cpu) &&
+>>> + cpu_rq(cpu)->dl.earliest_dl.curr < dmin) {
+>>> + latest_rq = cpu_rq(cpu);
+>>> + dmin = latest_rq->dl.earliest_dl.curr;
+>>> + }
+>> I would have expected something using find_later_rq(), but I might be
+>> mistaken, I'll let Juri suggest something.
+>>
+> Yeah, we should be able to reuse something that we already have. I'm
+> actually sorry that I'm not responsive on this, but I'm really busy on
+> other things this week. I hope to be able to find some time soon to test
+> this all.
 
-Either is fine to me.  But my concern is that it might be bloated as
-system/package update is going on, so we need to control it somehow.
-That's why I suggested the probe-cache command.
+I have time to do it, your proposal is a great welcome. ;-)
+
+Regards,
+Wanpeng Li
 
 >
->> 
->>>   perf probe --query ${remote_buildid}:do_fork
->>>   p:probe/do_fork _text+298722 clone_flags=%di:u64 stack_start=%si:u64 stack_size=%dx:u64 parent_tidptr=%cx:u64 child_tidptr=%r8:u64
->> 
->>>   # or perf can set it up directly to local
->>>   perf probe --query-add do_fork
->> 
->> You missed the build id above, no? I.e. it would be:
->> 
->>>   # or perf can set it up directly to local
->>>   perf probe --query-add ${remote_buildid}:do_fork
+> Thanks,
 >
-> No, since this command set the event to local machine, perf-probe
-> should check the local build-id and query the appropriate event
-> from the cache.
-> # BTW, maybe we'd better use perf probe --add '$do_fork' (calls
-> # "cache of do_fork")  instead of long --query-add. :)
+> - Juri
+>
+>>> +
+>>> + if (!latest_rq)
+>>> + goto unlock;
+>>> +
+>>> + raw_spin_lock(&latest_rq->lock);
+>>> +
+>>> + deactivate_task(rq, p, 0);
+>>> + set_task_cpu(p, latest_rq->cpu);
+>>> + activate_task(latest_rq, p, 0);
+>>> +
+>>> + raw_spin_unlock(&latest_rq->lock);
+>>> + }
+>>> +
+>>> unlock:
+>>> raw_spin_unlock(&rq->lock);
 
-It should take care of uprobe case too.  So simple do_fork should have
-group/event or provider/marker form instead so that it can help to find
-which binary defines the cached event.  Maybe we also need to keep a
-event-to-binary table and then check (current?) build-id somehow to
-identify correct event to be used.
-
-Also this function entry level event cache can be used with uprobes..
-
-Thanks,
-Namhyung
