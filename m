@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416AbaKEREI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:04:08 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:41581 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123AbaKERAW (ORCPT
+	id S932434AbaKEREf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:04:35 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25793 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932223AbaKEREc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:00:22 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
-        pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: [PATCH v4 01/11] ARM: multi-v7: Enable ST BCH NAND
-Date: Wed,  5 Nov 2014 16:59:43 +0000
-Message-Id: <1415206793-25670-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415206793-25670-1-git-send-email-lee.jones@linaro.org>
-References: <1415206793-25670-1-git-send-email-lee.jones@linaro.org>
+	Wed, 5 Nov 2014 12:04:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
+   d="scan'208";a="617662787"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "jolsa@redhat.com" <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V7 00/17] perf, x86: Haswell LBR call stack support
+Thread-Topic: [PATCH V7 00/17] perf, x86: Haswell LBR call stack support
+Thread-Index: AQHP+KX2mQc4+JvE8EymwJ/+bhfdO5xRQPaAgADzn3D//37EgIAAh4Mg
+Date: Wed, 5 Nov 2014 17:02:48 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701654523@SHSMSX103.ccr.corp.intel.com>
+References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
+ <20141105093759.GQ10501@worktop.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F0770165410A@SHSMSX103.ccr.corp.intel.com>
+ <20141105162723.GW3337@twins.programming.kicks-ass.net>
+In-Reply-To: <20141105162723.GW3337@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Pekon Gupta <pekon@pek-sem.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/configs/multi_v7_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 18e2cd8..b1a507b 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -126,7 +126,9 @@ CONFIG_DMA_CMA=y
- CONFIG_CMA_SIZE_MBYTES=64
- CONFIG_OMAP_OCP2SCP=y
- CONFIG_MTD=y
-+CONFIG_MTD_NAND=y
- CONFIG_MTD_M25P80=y
-+CONFIG_MTD_NAND_STM_BCH=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_ICS932S401=y
- CONFIG_APDS9802ALS=y
--- 
-1.9.1
 
+> On Wed, Nov 05, 2014 at 04:22:09PM +0000, Liang, Kan wrote:
+> >
+> > >>
+> > >
+> > > So if I take all except 11,13,16,17 but instead do something like
+> > > the below, everything will work just fine, right?
+> > >
+> > > Or am I missing something?
+> > >
+> >
+> > Yes, it should work.  Then LBR callstack will rely on user to enable it.
+> > But user never get the LBR callstack data if it's available.
+> > I'm not sure why you do that?
+> 
+> Uhm what? If you request PERF_SAMPLE_BRANCH_CALL_STACK the user
+> will get the data through the regular PERF_SAMPLE_BRANCH_STACK
+> output of PERF_RECORD_SAMPLE, right?
+
+OK, I think I should understand your meaning.
+>From the kernel side, we provide a 3rd callchain option to user.
+The kernel only tries to enable LBR and prepare the data if possible.
+The kernel doesn't guarantee the data must come from hardware LBR,
+even user choose LBR callchain option. 
+
+It's user tool's responsibility to filter the request, choose the data source
+and reconstruct the data. It's not the scope of this kernel patch. That
+should depend on the implementation of another user tool patchset.
+
+What do you think?
+
+Thanks,
+Kan
