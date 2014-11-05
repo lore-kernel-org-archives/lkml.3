@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080AbaKEPVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:21:17 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:44912 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729AbaKEPVP (ORCPT
+	id S932370AbaKEPV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:21:56 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:44487 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468AbaKEPVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:21:15 -0500
+	Wed, 5 Nov 2014 10:21:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <5457C6EA.3080809@intel.com>
-References: <1414771317-5721-1-git-send-email-standby24x7@gmail.com>
-	<5457C6EA.3080809@intel.com>
-Date: Thu, 6 Nov 2014 00:21:14 +0900
-Message-ID: <CALLJCT0fofgUaswpzt1iBqGS1u+fR8L=umwGpV=RG0SvO9TOJA@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: vm: Add 1GB large page support information
-From: Masanari Iida <standby24x7@gmail.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Jonathan Corbet <corbet@lwn.net>,
+In-Reply-To: <20141105082721.GB19607@infradead.org>
+References: <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
+ <CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
+ <CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
+ <20141031084220.GA29085@infradead.org> <CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
+ <CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
+ <20141103083447.GA8617@infradead.org> <CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
+ <CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
+ <CA+55aFw29MUj+w46yneut2yxXOH1RQmDud5KL8V-SPyPWm1WqA@mail.gmail.com> <20141105082721.GB19607@infradead.org>
+From: Eric Rannaud <e@nanocritical.com>
+Date: Wed, 5 Nov 2014 07:21:28 -0800
+Message-ID: <CAH_=xoa36gKcEpi8mSE9cedghqE4FhBCVMQNPV_1qDyk1Bb2ng@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, lcapitulino@redhat.com
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luiz, Dave,
-Thanks for comments.
+On Wed, Nov 5, 2014 at 12:27 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Mon, Nov 03, 2014 at 11:04:27AM -0800, Linus Torvalds wrote:
+>> Oh, so you don't actually need any file contents at all?
+>>
+>> If that is actually a real usage, then maybe we should just say that
+>> "O_TMPFILE|O_RDONLY" is fine, and remove the check that it has to be
+>> writable.
+>
+> Wasn't this disallowed to prevent problems on old kernels that don't use
+> O_TMPFILE?  In that case we'd ignore the flag and would just get a file
+> handle for the directory instead.
 
-I understand that there are some exception cases which doesn't support 1G
-large pages on newer CPUs.
-I like Dave's example, at the same time I would like to add "pdpe1gb flag" in
-the document.
+Yes, that was the idea at first, as discussed at
+http://article.gmane.org/gmane.linux.file-systems/76273, in commit
+bb458c644. But soon after that, O_WRONLY was allowed (ba57ea64cb1),
+and O_RDWR was removed from O_TMPFILE. Now only remain the explicit
+checks in build_open_flags() that Linus mentioned.
 
-For example, x86 CPUs normally support 4K and 2M (1G if pdpe1gb flag exist).
+If we allow
+    fd = open("/tmp", O_TMPFILE|O_RDONLY, 0600)
+it would be seen by an old kernel as
+    fd = open("/tmp", O_DIRECTORY|O_RDONLY, 0600)
+which will succeed.
 
-Masanari
+But unlike the other cases the creative definition of O_TMPFILE was
+meant to prevent, this does not create a security risk for anyone
+implementing a secure tmpfile, as they would be asking for a writable
+fd.
 
-On Tue, Nov 4, 2014 at 3:18 AM, Dave Hansen <dave.hansen@intel.com> wrote:
-> On 10/31/2014 09:01 AM, Masanari Iida wrote:
->> --- a/Documentation/vm/hugetlbpage.txt
->> +++ b/Documentation/vm/hugetlbpage.txt
->> @@ -2,7 +2,8 @@
->>  The intent of this file is to give a brief summary of hugetlbpage support in
->>  the Linux kernel.  This support is built on top of multiple page size support
->>  that is provided by most modern architectures.  For example, i386
->> -architecture supports 4K and 4M (2M in PAE mode) page sizes, ia64
->> +architecture supports 4K and 4M (2M in PAE mode) page sizes, x86_64
->> +architecture supports 4K, 2M and 1G (SandyBridge or later) page sizes. ia64
->>  architecture supports multiple page sizes 4K, 8K, 64K, 256K, 1M, 4M, 16M,
->>  256M and ppc64 supports 4K and 16M.  A TLB is a cache of virtual-to-physical
->>  translations.  Typically this is a very scarce resource on processor.
->
-> I wouldn't mention SandyBridge.  Not all x86 CPUs are Intel. :)
->
-> Also, what of the Intel CPUs like the Xeon Phi or the Atom cores?  I
-> have an IvyBridge (>= Sandybridge) mobile CPU in this laptop which does
-> not support 1G pages.
->
-> I would axe the i386-specific reference and just say something generic like:
->
->        For example, x86 CPUs normally support 4K and 2M (1G sometimes).
->
->
+To implement an atomic open() with O_TMPFILE+flink, if neither
+O_WRONLY nor O_RDWR is in flags, you would have to manually check with
+fstat that fd is indeed a regular file and not a directory. At least
+if you need to run on old kernels.
+
+If such a changes goes in, the man page for open(2) should talk about
+what happens on old kernels (it already has an explanation for the
+writable case).
