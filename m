@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288AbaKEW1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:27:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36029 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaKEW1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:27:39 -0500
-Date: Wed, 5 Nov 2014 23:27:37 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Subject: Re: [PATCH v2 09/13] backports: define C code backport version
-	info using CPTCFG_
-Message-ID: <20141105222737.GV12953@wotan.suse.de>
-References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com> <1415157517-15442-10-git-send-email-mcgrof@do-not-panic.com> <1415174245.2589.9.camel@sipsolutions.net> <20141105202923.GR12953@wotan.suse.de> <1415222458.7485.14.camel@sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415222458.7485.14.camel@sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1751339AbaKEW3C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:29:02 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:48540 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaKEW27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 17:28:59 -0500
+From: Steven Honeyman <stevenhoneyman@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiri Kosina <trivial@kernel.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Steven Honeyman <stevenhoneyman@gmail.com>
+Subject: [PATCH V3] x86, cpu: trivial printk formatting fixes
+Date: Wed,  5 Nov 2014 22:28:36 +0000
+Message-Id: <1415226516-20637-1-git-send-email-stevenhoneyman@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 10:20:58PM +0100, Johannes Berg wrote:
-> On Wed, 2014-11-05 at 21:29 +0100, Luis R. Rodriguez wrote:
-> 
-> > > What difference does this make? It'll break some scripting that we have
-> > > for sure (assuming the BACKPORTED_ prefix), so naturally I'd like to see
-> > > why it is necessary.
-> > 
-> > Sure, let me explain. So if we don't unify we will have to end up with defines
-> > for some packaging version scheme to another. The approach I took here was to
-> > minimize impact on on userspace side generation side of things and only
-> > affect the target C code by modifying the Makefile to define variables
-> > we can share. That's pretty much it. I ended up defining things with
-> > CPTCFG_ as that will get morphed to the other bp_prefix later for us
-> > when integrating. That lets us share it.
-> > 
-> > Addressing this on scripts that do rely on touching C / H files should
-> > just be a matter of doing a direct translation to 3 variables.
-> 
-> In this particular case I'm not really sure I see why it needs to be
-> morphed at all?
-> 
-> Anyway, I realized that the whole thing doesn't matter as much to me as
-> I thought it does, we just have to adjust the one place that changes our
-> versions file.
+dmesg (from util-linux) currently has two methods for reading the kernel message ring buffer: /dev/kmsg and syslog(2). Since kernel 3.5.0 kmsg has been the default, which escapes control characters (e.g. new lines) before they are shown.
 
-If you don't mind the collateral I hope you'd trust me that the alternative
-is ugglier. I will note now, since we'll prbably forget later, that this
-will also require quite a bit of thought when and if multiple integrations
-will be supported. For now sharing the versioning info for packaging and
-integration is at least making the code generic between the two.
+This change means that when dmesg is using /dev/kmsg, a 2 line printk makes the output messy, because the second line does not get a timestamp.
+For example:
 
- Luis
+[    0.012863] CPU0: Thermal monitoring enabled (TM1)
+[    0.012869] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
+Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
+[    0.012958] Freeing SMP alternatives memory: 28K (ffffffff81d86000 - ffffffff81d8d000)
+[    0.014961] dmar: Host address width 39
+
+Because printk.c intentionally escapes control characters, they should not be there in the first place.
+This patch fixes two occurrences of this.
+
+V2: Revert change to log level, only fix the newline formatting issue
+V3: Expand patch description
+
+Signed-off-by: Steven Honeyman <stevenhoneyman@gmail.com>
+---
+ arch/x86/kernel/cpu/common.c | 11 ++++++-----
+ arch/x86/kernel/cpu/intel.c  |  6 ++----
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4b4f78c..fbdd7bf 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -494,12 +494,13 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_detect_tlb)
+ 		this_cpu->c_detect_tlb(c);
+ 
+-	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
+-		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
++	pr_info("Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
+ 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
+-		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
+-		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
+-		tlb_lld_1g[ENTRIES]);
++		tlb_lli_4m[ENTRIES]);
++
++	pr_info("Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
++		tlb_lld_4k[ENTRIES], tlb_lld_2m[ENTRIES],
++		tlb_lld_4m[ENTRIES], tlb_lld_1g[ENTRIES]);
+ }
+ 
+ void detect_ht(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 9cc6b6f..dcd08a3 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -487,10 +487,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 
+ 		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
+-			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
+-				" Set to 'normal', was 'performance'\n"
+-				"ENERGY_PERF_BIAS: View and update with"
+-				" x86_energy_perf_policy(8)\n");
++			pr_info_once("ENERGY_PERF_BIAS: Set to 'normal', was 'performance'\n");
++			pr_info_once("ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)\n");
+ 			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
+ 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		}
+-- 
+2.1.3
+
