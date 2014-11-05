@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaKENpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:45:00 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:36037 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890AbaKENoz (ORCPT
+	id S932165AbaKENpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:45:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:41695 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932141AbaKENpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:44:55 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 2/3] memcg: turn memcg_kmem_skip_account into a bit field
-Date: Wed, 5 Nov 2014 16:44:43 +0300
-Message-ID: <bb4c78a617a67231e539400d7deb2e192c39feb8.1415194280.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
-References: <9ac4c9e767d437f744bb61feb7e042c93c67f727.1415194280.git.vdavydov@parallels.com>
+	Wed, 5 Nov 2014 08:45:04 -0500
+Date: Wed, 5 Nov 2014 14:40:40 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Stefan Monnier <monnier@iro.umontreal.ca>
+Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-sunxi] Re: [PATCH 3/6] phy: Add driver to support
+ individual USB PHYs on sun9i
+Message-ID: <20141105134040.GE27686@lukather>
+References: <1415074039-16590-1-git-send-email-wens@csie.org>
+ <1415074039-16590-4-git-send-email-wens@csie.org>
+ <1415081773.665.1.camel@plaes.org>
+ <20141105094543.GC27686@lukather>
+ <jwvr3xhu6p3.fsf-monnier+gmane.comp.hardware.netbook.arm.sunxi@gnu.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
+Content-Disposition: inline
+In-Reply-To: <jwvr3xhu6p3.fsf-monnier+gmane.comp.hardware.netbook.arm.sunxi@gnu.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It isn't supposed to stack, so turn it into a bit-field to save 4 bytes
-on the task_struct.
 
-Also, remove the memcg_stop/resume_kmem_account helpers - it is clearer
-to set/clear the flag inline. Regarding the overwhelming comment to the
-helpers, which is removed by this patch too, we already have a compact
-yet accurate explanation in memcg_schedule_cache_create, no need in yet
-another one.
+--hwvH6HDNit2nSK4j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- include/linux/sched.h |    7 +++++--
- mm/memcontrol.c       |   35 ++---------------------------------
- 2 files changed, 7 insertions(+), 35 deletions(-)
+Hi Stefan,
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 40497a2ed2d4..7b08b0240736 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1364,6 +1364,10 @@ struct task_struct {
- 	unsigned sched_reset_on_fork:1;
- 	unsigned sched_contributes_to_load:1;
- 
-+#ifdef CONFIG_MEMCG_KMEM
-+	unsigned memcg_kmem_skip_account:1;
-+#endif
-+
- 	unsigned long atomic_flags; /* Flags needing atomic access. */
- 
- 	pid_t pid;
-@@ -1684,8 +1688,7 @@ struct task_struct {
- 	/* bitmask and counter of trace recursion */
- 	unsigned long trace_recursion;
- #endif /* CONFIG_TRACING */
--#ifdef CONFIG_MEMCG /* memcg uses this to do batch job */
--	unsigned int memcg_kmem_skip_account;
-+#ifdef CONFIG_MEMCG
- 	struct memcg_oom_info {
- 		struct mem_cgroup *memcg;
- 		gfp_t gfp_mask;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b3fe830fdb29..52d1e933bb9f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2575,37 +2575,6 @@ void memcg_update_array_size(int num)
- 	memcg_limited_groups_array_size = num;
- }
- 
--/*
-- * During the creation a new cache, we need to disable our accounting mechanism
-- * altogether. This is true even if we are not creating, but rather just
-- * enqueing new caches to be created.
-- *
-- * This is because that process will trigger allocations; some visible, like
-- * explicit kmallocs to auxiliary data structures, name strings and internal
-- * cache structures; some well concealed, like INIT_WORK() that can allocate
-- * objects during debug.
-- *
-- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
-- * to it. This may not be a bounded recursion: since the first cache creation
-- * failed to complete (waiting on the allocation), we'll just try to create the
-- * cache again, failing at the same point.
-- *
-- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
-- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
-- * inside the following two functions.
-- */
--static inline void memcg_stop_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account++;
--}
--
--static inline void memcg_resume_kmem_account(void)
--{
--	VM_BUG_ON(!current->mm);
--	current->memcg_kmem_skip_account--;
--}
--
- struct memcg_cache_create_work {
- 	struct mem_cgroup *memcg;
- 	struct kmem_cache *cachep;
-@@ -2660,9 +2629,9 @@ static void memcg_schedule_cache_create(struct mem_cgroup *memcg,
- 	 * this point we can't allow ourselves back into memcg_kmem_get_cache,
- 	 * the safest choice is to do it like this, wrapping the whole function.
- 	 */
--	memcg_stop_kmem_account();
-+	current->memcg_kmem_skip_account = 1;
- 	__memcg_schedule_cache_create(memcg, cachep);
--	memcg_resume_kmem_account();
-+	current->memcg_kmem_skip_account = 0;
- }
- 
- /*
--- 
-1.7.10.4
+Please keep me in Cc.
 
+On Wed, Nov 05, 2014 at 08:27:41AM -0500, Stefan Monnier wrote:
+> > Until some new SoC part of the sun9i family comes up, and it will just
+> > add to the confusion.
+>=20
+> Maybe, but then again maybe not.  It depends whether such a new member
+> ever shows up, and whether it has a hardware that's compatible enough
+> that the code doesn't need to be changed (seems unlikely).
+
+Yeah, and in all cases, we won't be wrong. While if a new SoCs comes
+out which is part of the sun9i (let's say A842), you'll have to select
+an option that states that it is for the A80.
+
+The list will be confusing for the user and/or a pain to maintain for
+us.
+
+> > Such a person would know that the A80 is part of the sun9i family if
+> > it has some knowledge of the Allwinner SocS.  And if they don't, A80 or
+> > sun9i or both won't make any kind of difference.
+>=20
+> Actually, I'm fairly familiar with Allwinner's family of SoCs, but
+> I kind of lost track of which Ann corresponds to which sunXi.  If I got
+> a board, all the documentation would tell me that it's got an A80 on
+> board, but not that it has a sun9i thingy on board.  So there's a good
+> chance that a user knows "A80" but not "sun9i".
+
+Good thing we do have a wiki page just for that then.
+
+http://linux-sunxi.org/Allwinner_SoC_Family#Comparison_table
+
+> And last I heard the sunXi designations are a bit unreliable since
+> Allwinner renumbered them differently (is the A20 a sun7i or a sun8i).
+
+It might have been both to Allwinner. It's always been sun7i for us.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--hwvH6HDNit2nSK4j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUWijYAAoJEBx+YmzsjxAgkuYP/3nnfRMh3gbpy57Yw766PUeA
+cp+lWZu4Zr1OO5nfY5zpUjkQRNsquq+P0AQ9fIpSX13hUmHrBLXnY6E+v54l6akj
+KGYWOnSsLCNezCnuZzLP/5gQJtJyDWfZE08fF8pjUhE0t660od7yN8X5uc6GVJ29
+j8kbR2wpaPO/JL77acbMYLNT8o6sYChwy0q3ps3UzHVhmEWjLa4/8iga6pYST2Vb
+xumQ4XzRtRXm+HMvDmTJw28v8yJNujftDLch7OYFNXpq8omuWUVc/p8lK7zg65fP
+hkCKR72KPk7Expupdz0CBu4x81E0Cpl7nAsSoXy0Rj1imoYdp9e9xoK54EBjKGon
+b6WUJ0o998f5AprUCFGQCt5zmjPFE/QdVFifieQjQdqNsBnE82aQnE5/kfX9oJTp
+pwkLFjUrdKDX6HPgONKIGveavbPgVBB+7EkDcOhpjMnccy30595AjN8TjEsj2TNH
+zUXbni/5qsjN/DfQVc5Q2LufJnqCF6RrUPZHUZIqyHbTo7Bx8gOf9X8MM007XONH
+DXZHR5q5R7rKpIuEsxB3cjodsqD3ICcGfEfkzPCR3ZaTJGnFNfRDWo37yMY5Z1D2
+2SnvkQoyKgtFVv+qfBk1/IR06i5t/CXRL5HG3SuD2Bi1B9L5gD/BAbFGxzpPvtsS
+476VhDVRpG+iXWpBt8uC
+=JByI
+-----END PGP SIGNATURE-----
+
+--hwvH6HDNit2nSK4j--
