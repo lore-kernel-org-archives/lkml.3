@@ -1,154 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733AbaKEK3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:29:40 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45206 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571AbaKEK2W (ORCPT
+	id S1754070AbaKEKgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:36:09 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:45268 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaKEKgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:28:22 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.18-rc3 v7 3/4] ARM: add basic support for on-demand backtrace of other CPUs
-Date: Wed,  5 Nov 2014 10:27:39 +0000
-Message-Id: <1415183260-6389-4-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 5 Nov 2014 05:36:05 -0500
+Message-ID: <5459FD8E.8070903@gmail.com>
+Date: Wed, 05 Nov 2014 18:35:58 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Juri Lelli <juri.lelli@arm.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
+ cpu hotplug
+References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com> <5459F70C.3060204@arm.com>
+In-Reply-To: <5459F70C.3060204@arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic infrastructure for triggering a backtrace of other CPUs
-via an IPI, preferably at FIQ level.  It is intended that this shall
-be used for cases where we have detected that something has already
-failed in the kernel.
+Hi Juri,
+On 14/11/5 下午6:08, Juri Lelli wrote:
+> Hi,
+>
+> On 05/11/14 08:51, Wanpeng Li wrote:
+>> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+>> addition, task may/may not be running again if cpu is added back. The root cause
+>> which I found is that dl task will be throtted and removed from dl rq after
+>> comsuming all budget, which leads to stop task can't pick it up from dl rq and
+>> migrate to other cpus during hotplug.
+>>
+>> The method to reproduce:
+>> schedtool -E -t 50000:100000 -e ./test
+>> Actually test is just a simple for loop. Then observe which cpu the test
+>> task is on.
+>> echo 0 > /sys/devices/system/cpu/cpuN/online
+>>
+>> This patch fix it by push the task to another cpu in dl_task_timer() if
+>> rq is offline.
+>>
+>> Note: dl task can be migrated successfully if rq is offline currently, however,
+>> I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl
+>> task previous running on, so cpu_active_mask is used in the patch.
+>>
+>> Peterz, Juri?
+>>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>> v1 -> v2:
+>>   * push the task to another cpu in dl_task_timer() if rq is offline.
+>>
+>>   kernel/sched/deadline.c | 39 ++++++++++++++++++++++++++++++++++++---
+>>   1 file changed, 36 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>> index 04c2cbb..233e482 100644
+>> --- a/kernel/sched/deadline.c
+>> +++ b/kernel/sched/deadline.c
+>> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>>   	return hrtimer_active(&dl_se->dl_timer);
+>>   }
+>>   
+>> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>>   /*
+>>    * This is the bandwidth enforcement timer callback. If here, we know
+>>    * a task is not on its dl_rq, since the fact that the timer was running
+>> @@ -538,6 +539,39 @@ again:
+>>   	update_rq_clock(rq);
+>>   	dl_se->dl_throttled = 0;
+>>   	dl_se->dl_yielded = 0;
+>> +
+>> +	/*
+>> +	 * So if we find that the rq the task was on is no longer
+>> +	 * available, we need to select a new rq.
+>> +	 */
+>> +	if (!rq->online) {
+>> +		struct rq *later_rq = NULL;
+>> +
+>> +		/* We will release rq lock */
+>> +		get_task_struct(p);
+>> +
+>> +		raw_spin_unlock(&rq->lock);
+>> +
+>> +		later_rq = find_lock_later_rq(p, rq);
+>> +
+>> +		if (!later_rq) {
+>> +			put_task_struct(p);
+>> +			goto out;
+>> +		}
+>> +
+>> +		deactivate_task(rq, p, 0);
+>> +		set_task_cpu(p, later_rq->cpu);
+>> +		activate_task(later_rq, p, 0);
+>> +
+>> +		resched_curr(later_rq);
+>> +
+>> +		double_unlock_balance(rq, later_rq);
+>> +
+>> +		put_task_struct(p);
+>> +
+>> +		goto out;
+>> +	}
+>> +
+>>   	if (task_on_rq_queued(p)) {
+>>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>>   		if (dl_task(rq->curr))
+>> @@ -555,7 +589,7 @@ again:
+>>   	}
+>>   unlock:
+>>   	raw_spin_unlock(&rq->lock);
+>> -
+>> +out:
+>>   	return HRTIMER_NORESTART;
+>>   }
+>>   
+>> @@ -1182,8 +1216,7 @@ static int find_later_rq(struct task_struct *task)
+>>   	 * We have to consider system topology and task affinity
+>>   	 * first, then we can look for a suitable cpu.
+>>   	 */
+>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>> +	cpumask_copy(later_mask, cpu_active_mask);
+> I fear this breaks what I lately fixed in commit 91ec6778ec4f
+> ("sched/deadline: Fix inter- exclusive cpusets migrations"), as
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- arch/arm/include/asm/irq.h |  5 ++++
- arch/arm/kernel/smp.c      | 62 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+)
+As I mentioned in the patch description:
 
-diff --git a/arch/arm/include/asm/irq.h b/arch/arm/include/asm/irq.h
-index 53c15de..be1d07d 100644
---- a/arch/arm/include/asm/irq.h
-+++ b/arch/arm/include/asm/irq.h
-@@ -35,6 +35,11 @@ extern void (*handle_arch_irq)(struct pt_regs *);
- extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
- #endif
- 
-+#ifdef CONFIG_SMP
-+extern void arch_trigger_all_cpu_backtrace(bool);
-+#define arch_trigger_all_cpu_backtrace(x) arch_trigger_all_cpu_backtrace(x)
-+#endif
-+
- #endif
- 
- #endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 13396d3..14c594a 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -72,8 +72,12 @@ enum ipi_msg_type {
- 	IPI_CPU_STOP,
- 	IPI_IRQ_WORK,
- 	IPI_COMPLETION,
-+	IPI_CPU_BACKTRACE,
- };
- 
-+/* For reliability, we're prepared to waste bits here. */
-+static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-+
- static DECLARE_COMPLETION(cpu_running);
- 
- static struct smp_operations smp_ops;
-@@ -535,6 +539,21 @@ static void ipi_cpu_stop(unsigned int cpu)
- 		cpu_relax();
- }
- 
-+static void ipi_cpu_backtrace(struct pt_regs *regs)
-+{
-+	int cpu = smp_processor_id();
-+
-+	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-+		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+		arch_spin_lock(&lock);
-+		printk(KERN_WARNING "FIQ backtrace for cpu %d\n", cpu);
-+		show_regs(regs);
-+		arch_spin_unlock(&lock);
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+	}
-+}
-+
- static DEFINE_PER_CPU(struct completion *, cpu_completion);
- 
- int register_ipi_completion(struct completion *completion, int cpu)
-@@ -614,6 +633,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		irq_exit();
- 		break;
- 
-+	case IPI_CPU_BACKTRACE:
-+		irq_enter();
-+		ipi_cpu_backtrace(regs);
-+		irq_exit();
-+		break;
-+
- 	default:
- 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
- 		       cpu, ipinr);
-@@ -708,3 +733,40 @@ static int __init register_cpufreq_notifier(void)
- core_initcall(register_cpufreq_notifier);
- 
- #endif
-+
-+void arch_trigger_all_cpu_backtrace(bool include_self)
-+{
-+	static unsigned long backtrace_flag;
-+	int i, cpu = get_cpu();
-+
-+	if (test_and_set_bit(0, &backtrace_flag)) {
-+		/*
-+		 * If there is already a trigger_all_cpu_backtrace() in progress
-+		 * (backtrace_flag == 1), don't output double cpu dump infos.
-+		 */
-+		put_cpu();
-+		return;
-+	}
-+
-+	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
-+	if (!include_self)
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+
-+	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
-+		pr_info("Sending FIQ to %s CPUs:\n",
-+			(include_self ? "all" : "other"));
-+		smp_cross_call(to_cpumask(backtrace_mask), IPI_CPU_BACKTRACE);
-+	}
-+
-+	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
-+	for (i = 0; i < 10 * 1000; i++) {
-+		if (cpumask_empty(to_cpumask(backtrace_mask)))
-+			break;
-+
-+		mdelay(1);
-+	}
-+
-+	clear_bit(0, &backtrace_flag);
-+	smp_mb__after_atomic();
-+	put_cpu();
-+}
--- 
-1.9.3
+Note: dl task can be migrated successfully if rq is offline currently, 
+however, I'm still not sure why
+task_rq(task)->rd->span just include the cpu which the dl task previous 
+running on, so cpu_active_mask is used in the patch.
+
+Any explantion after your test is a great approciated. ;-)
+
+> we first have to consider exclusive cpusets topology in looking
+> for a cpu. But, I'd have to test this to see if I'm right, and
+> I'll try to do it soon.
+
+Thanks for your help. ;-)
+
+Regards,
+Wanpeng Li
+
+>
+> Thanks,
+>
+> - Juri
+>
+>>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>>   			task, later_mask);
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
