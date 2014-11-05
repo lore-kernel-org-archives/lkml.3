@@ -1,112 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaKEOn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:43:27 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:42217 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660AbaKEOn0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:43:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141105092707.7c9bb1ae@gandalf.local.home>
-References: <20141031170326.1491a63f@gandalf.local.home>
-	<1414913427.5380.110.camel@marge.simpson.net>
-	<CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
-	<20141105092707.7c9bb1ae@gandalf.local.home>
-Date: Wed, 5 Nov 2014 15:43:24 +0100
-Message-ID: <CADLDEKsYzpN4uPD7wEE6bxZP21gd3xY4c0fsRqfB1RwEZ53iKg@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.14.23-rt20
-From: Juerg Haefliger <juergh@gmail.com>
+	id S1754803AbaKEOqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:46:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52581 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751198AbaKEOqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:46:08 -0500
+Date: Wed, 5 Nov 2014 15:45:53 +0100
+From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 04/12 v3] tracing: Convert seq_buf_path() to be like
+ seq_path()
+Message-ID: <20141105144553.GE4570@pathway.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+ <20141104160222.048795666@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141104160222.048795666@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 3:27 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 5 Nov 2014 14:50:41 +0100
-> Juerg Haefliger <juergh@gmail.com> wrote:
+On Tue 2014-11-04 10:52:41, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> Rewrite seq_buf_path() like it is done in seq_path() and allow
+> it to accept any escape character instead of just "\n".
+> 
+> Making seq_buf_path() like seq_path() will help prevent problems
+> when converting seq_file to use the seq_buf logic.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/seq_buf.h  |  2 +-
+>  kernel/trace/seq_buf.c   | 30 ++++++++++++++++--------------
+>  kernel/trace/trace_seq.c |  2 +-
+>  3 files changed, 18 insertions(+), 16 deletions(-)
+> 
+> diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> index 97872154d51c..6d1c57d6073f 100644
+> --- a/include/linux/seq_buf.h
+> +++ b/include/linux/seq_buf.h
+> @@ -64,7 +64,7 @@ extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
+>  extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
+>  extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+>  			      unsigned int len);
+> -extern int seq_buf_path(struct seq_buf *s, const struct path *path);
+> +extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
+>  
+>  extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+>  			   int nmaskbits);
+> diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+> index 2bf582753902..243123b12d16 100644
+> --- a/kernel/trace/seq_buf.c
+> +++ b/kernel/trace/seq_buf.c
+> @@ -272,28 +272,30 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+>   * seq_buf_path - copy a path into the sequence buffer
+>   * @s: seq_buf descriptor
+>   * @path: path to write into the sequence buffer.
+> + * @esc: set of characters to escape in the output
+>   *
+>   * Write a path name into the sequence buffer.
+>   *
+>   * Returns zero on success, -1 on overflow
 >
->> On Sun, Nov 2, 2014 at 8:30 AM, Mike Galbraith <umgwanakikbuti@gmail.com>
->> wrote:
->> >
->> > On Fri, 2014-10-31 at 17:03 -0400, Steven Rostedt wrote:
->> > > Dear RT Folks,
->> > >
->> > > I'm pleased to announce the 3.14.23-rt20 stable release.
->> > >
->> > > This is the first 3.14-rt release in the stable-rt series. Normally I
->> > > wait till the next development release is out before I pull in a new
->> > > one. That is, I would pull in 3.14-rt when 3.16-rt or later was
->> > > released. But because development is now moving at a "hobbyist rate"
->> > > (read http://lwn.net/Articles/617140/ for details)
->> > > and 3.14-rt is no longer being developed against, I figured it was
->> > time
->> > > to put it under the "stable-rt" umbrella.
->> >
->> > I piddled about with it yesterday, found that you can't change cpufreq
->> > governor IFF the tree is configured as rt, but works fine as voluntary
->> > preempt.
->>
->> The problem seems to be this patch: https://lkml.org/lkml/2014/4/8/584
->>
->> The cpufreq code does nested down_read_trylocks and only the first one
->> succeeds:
->>
->> drivers/cpufreq/cpufreq.c:
->> store
->>   down_read_trylock(cpufreq_rwsem)  <- succeeds
->>   store_scaling_governor
->>     cpufreq_get_policy
->>       cpufreq_cpu_get
->>         down_read_trylock(cpufreq_rwsem)  <-- fails
->>
->> Reverting the above patch 'fixes' the problem. I don't understand Steven's
->> commit comment that readers of rwsem are not allowed to nest in mainline
->> since this works just fine in mainline.
->
-> When we allow multiple readers, this will be allowed. But even in
-> mainline, if a writer were to come in and block between those two
-> down_read_trylocks(), the second trylock would fail.
+>   */
+> -int seq_buf_path(struct seq_buf *s, const struct path *path)
+> +int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
+>  {
+> -	unsigned int len = SEQ_BUF_LEFT(s);
+> -	unsigned char *p;
+> -
+> -	WARN_ON(s->size == 0);
 
-Thanks for the explanation. So is this considered a temporary failure
-until multiple readers are allowed or does cpufreq need fixing or
-something else? Just trying to figure out what to do next.
+I would keep this check.
 
-...Juerg
+> -	p = d_path(path, s->buffer + s->len, len);
+> -	if (!IS_ERR(p)) {
+> -		p = mangle_path(s->buffer + s->len, p, "\n");
+> -		if (p) {
+> -			s->len = p - s->buffer;
+> -			return 0;
+> +	char *buf = s->buffer + s->len;
+> +	size_t size = SEQ_BUF_LEFT(s);
 
+I would use the variable name "len" to make it consistent with
+the other fucntions in seq_buf.c.
 
-> PREEMPT_RT just has that fail all the time as we only allow an rwsem to
-> be held by a single reader.
->
->
-> -- Steve
->
->
->
->>
->> ...Juerg
->>
->>
->>
->> >  I'll poke about for the entertainment value.  Having no
->> > personal need/use for rt detracts from its hobby value somewhat, but rt
->> > problems do have a tendency to be 'entertaining'.
->> >
->> > I'll follow up with a few patches that folks can apply to their trees if
->> > they so desire.  There being no devel tree to submit against, I can't do
->> > a proper submission (rules), and some of them you surely don't want :)
->> >
->> >         -Mike
->> >
->> >
->> >
->> >
->
+> +	int res = -1;
+> +
+> +	if (size) {
+> +		char *p = d_path(path, buf, size);
+> +		if (!IS_ERR(p)) {
+> +			char *end = mangle_path(buf, p, esc);
+> +			if (end)
+> +				res = end - buf;
+>  		}
+>  	}
+> -	seq_buf_set_overflow(s);
+
+We still should set overflow on failure.
+
+> -	return -1;
+> +	if (res > 0)
+> +		s->len += res;
+> +
+> +	return res;
+
+It returns -1 on failure and the number of written characters on
+success. This is incompatible with the other seq_buf functions
+and with the comment above this function. Also it changes the
+return value from trace_seq_path().
+
+I do not mind about the used scheme but I think that we should
+make it consistent.
+
+Best Regards,
+Petr
