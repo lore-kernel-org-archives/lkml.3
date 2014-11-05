@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125AbaKEXIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 18:08:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38625 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867AbaKEXIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 18:08:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,322,1413270000"; 
-   d="scan'208";a="632251008"
-Message-ID: <545AADCC.5030102@intel.com>
-Date: Wed, 05 Nov 2014 15:07:56 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751303AbaKEXJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:09:14 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:43376 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaKEXJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 18:09:10 -0500
+Date: Thu, 6 Nov 2014 00:09:07 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>, andi@firstfloor.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yann.morin.1998@free.fr, mmarek@suse.cz, sassmann@kpanic.de
+Subject: Re: [PATCH v2 03/13] backports: allow for different backport prefix
+Message-ID: <20141105230907.GD12538@two.firstfloor.org>
+References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
+ <1415157517-15442-4-git-send-email-mcgrof@do-not-panic.com>
+ <1415173596.2589.3.camel@sipsolutions.net>
+ <20141105091610.GM12953@wotan.suse.de>
+ <1415179364.2589.13.camel@sipsolutions.net>
+ <20141105194215.GN12953@wotan.suse.de>
+ <1415222258.7485.10.camel@sipsolutions.net>
+ <20141105222159.GS12953@wotan.suse.de>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Masanari Iida <standby24x7@gmail.com>, Jonathan Corbet <corbet@lwn.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, lcapitulino@redhat.com
-Subject: Re: [PATCH] Documentation: vm: Add 1GB large page support information
-References: <1414771317-5721-1-git-send-email-standby24x7@gmail.com>	<5457C6EA.3080809@intel.com>	<CALLJCT0fofgUaswpzt1iBqGS1u+fR8L=umwGpV=RG0SvO9TOJA@mail.gmail.com>	<545A42C4.6070908@intel.com> <871tphtftg.fsf@tassilo.jf.intel.com>
-In-Reply-To: <871tphtftg.fsf@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105222159.GS12953@wotan.suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 02:58 PM, Andi Kleen wrote:
->>> >> I understand that there are some exception cases which doesn't support 1G
->>> >> large pages on newer CPUs.
->>> >> I like Dave's example, at the same time I would like to add "pdpe1gb flag" in
->>> >> the document.
->>> >> 
->>> >> For example, x86 CPUs normally support 4K and 2M (1G if pdpe1gb flag exist).
->> >
->> > Is 1G supported on CPUs that have pdpe1gb and are running a 32-bit kernel?
-> No, 1GB pages is a 64bit only feature.
+> You know, this use case seems unavoidable so I'll just proceed with the
+> configurability of it. But note that it seems we're both in agreement
+> that right now what you described requires more work before in any way
+> shape or form folks start using it for the exact purpose you described.
+> I also think Andi Kleen's module namespace might be a much better solution to
+> that problem [0], we'd just have to carry the code ourselves as I am not
 
-This is one sentence in a document that nobody reads, so we're all
-putting way more brainpower in to this than we should.
+Just to clarify. My name spaces didn't really provide different
+name spaces (like C++), it just added a ACL to exports to make it possible
+to do "export only to module N". But the name space itself
+was still flat
 
-We can't universally say that "1G if pdpe1gb flag exist" since a 64-bit
-CPU running a 32-bit kernel doesn't support 1G pages *despite* the
-presence of pdpe1gb.  I think that makes it a pretty crappy thing to put
-in a document since it's just misleading.  We can't spell out all the
-pitfalls or all the possible combinations, and it's not the place of our
-stupid documentation to repeat what's in the architecture manuals.
+On the linker side doing real name spaces is probably not too hard,
+but it would be difficult for linked in code without special linker
+support.
 
-	For example, x86 CPUs normally support 4K and 2M (1G if
-	architecturally supported).
+> sure if this is ever going to get upstream as it was originally nacked.
+
+May need to revisit that.
+
+-Andi
