@@ -1,264 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740AbaKEQlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:41:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44624 "EHLO mga09.intel.com"
+	id S1755776AbaKEQlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:41:50 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:64010 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755702AbaKEQli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:41:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="632024264"
-From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
-To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
-        aubrey.li@intel.com
-Cc: linux-kernel@vger.kernel.org, mahesh.kumar.p@intel.com
-Subject: [PATCH 1/3] PMC driver: Add Cherrytrail PMC interface
-Date: Wed,  5 Nov 2014 22:04:14 +0530
-Message-Id: <1415205254-5943-1-git-send-email-mahesh.kumar.p@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755747AbaKEQls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:41:48 -0500
+X-IronPort-AV: E=Sophos;i="5.07,320,1413244800"; 
+   d="scan'208";a="188399416"
+Date: Wed, 5 Nov 2014 16:41:41 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: <linux-kernel@vger.kernel.org>, <mgorman@suse.de>,
+        <akpm@linux-foundation.org>, <hughd@google.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xen.org>,
+        <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Pte_special broken on Xen PV when NUMA balancing is enabled
+Message-ID: <20141105164141.GA27834@zion.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds CHT PMC interface. This exposes all the South IP
-device power states and S0ix states for CHT.
-The bit map of FUNC_DIS and D3_STS registers for SOCs are
-consistent. The D3_STS1 and FUNC_DIS2 registers, however
-are not aligned. This is fixed by adding an extra field,
-fn_dis bit, in the dev_map. Any deviations in these registers
-should be addressed in this manner.
+Hi all
 
-Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
-Signed-off-by: Aubrey Li <aubrey.li@intel.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
- arch/x86/include/asm/pmc_atom.h |   30 ++++++++++----
- arch/x86/kernel/pmc_atom.c      |   87 +++++++++++++++++++++++++++++++++------
- 2 files changed, 98 insertions(+), 19 deletions(-)
+I'm developing virtual NUMA support for Xen. One thing I notice is that when
+NUMA balancing is enabled, kernel will crash with following backtrace.
 
-diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
-index fc7a17c..581ad43 100644
---- a/arch/x86/include/asm/pmc_atom.h
-+++ b/arch/x86/include/asm/pmc_atom.h
-@@ -17,7 +17,10 @@
- #define PMC_ATOM_H
- 
- /* ValleyView Power Control Unit PCI Device ID */
--#define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
-+#define	PCI_DEVICE_ID_BYT_PMC	0x0F1C
-+/* CherryTrail Power Control Unit PCI Device ID */
-+#define	PCI_DEVICE_ID_CHT_PMC	0x229C
-+
- 
- /* PMC Memory mapped IO registers */
- #define	PMC_BASE_ADDR_OFFSET	0x44
-@@ -25,9 +28,6 @@
- #define	PMC_MMIO_REG_LEN	0x100
- #define	PMC_REG_BIT_WIDTH	32
- 
--/* BIOS uses FUNC_DIS to disable specific function */
--#define	PMC_FUNC_DIS		0x34
--#define	PMC_FUNC_DIS_2		0x38
- 
- /* S0ix wake event control */
- #define	PMC_S0IX_WAKE_EN	0x3C
-@@ -56,6 +56,7 @@
- /* These registers reflect D3 status of functions */
- #define	PMC_D3_STS_0		0xA0
- 
-+/* common bit definition */
- #define	BIT_LPSS1_F0_DMA	BIT(0)
- #define	BIT_LPSS1_F1_PWM1	BIT(1)
- #define	BIT_LPSS1_F2_PWM2	BIT(2)
-@@ -91,9 +92,24 @@
- 
- #define	PMC_D3_STS_1		0xA4
- #define	BIT_SMB			BIT(0)
--#define	BIT_OTG_SS_PHY		BIT(1)
--#define	BIT_USH_SS_PHY		BIT(2)
--#define	BIT_DFX			BIT(3)
-+
-+/*BYT specific bits in PMC_D3_STS_1 register*/
-+#define	BIT_OTG_SS_PHY_BYT		BIT(1)
-+#define	BIT_USH_SS_PHY_BYT		BIT(2)
-+#define	BIT_DFX_BYT			BIT(3)
-+
-+/*CHT specific bits in PMC_D3_STS_1 register*/
-+#define	BIT_GMM_CHT			BIT(1)
-+#define	BIT_ISH_CHT			BIT(2)
-+
-+/* BIOS uses FUNC_DIS to disable specific function */
-+#define	PMC_FUNC_DIS		0x34
-+#define	PMC_FUNC_DIS_2		0x38
-+
-+/*CHT specific bits in FUNC_DIS2 register*/
-+#define	BIT_GMM_FD_CHT		BIT(3)
-+#define	BIT_ISH_FD_CHT		BIT(4)
-+
- 
- /* PMC I/O Registers */
- #define	ACPI_BASE_ADDR_OFFSET	0x40
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0c424a6..822fb6a 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -40,10 +40,13 @@ static u32 acpi_base_addr;
- 
- struct pmc_dev_map {
- 	const char *name;
--	u32 bit_mask;
-+	u32 d3_sts_bit;
-+	u32 fn_dis_bit;
- };
- 
--static const struct pmc_dev_map dev_map[] = {
-+static  struct pmc_dev_map *dev_map;
-+static int dev_num;
-+static  struct pmc_dev_map byt_dev_map[] = {
- 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
- 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
- 	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
-@@ -77,9 +80,47 @@ static const struct pmc_dev_map dev_map[] = {
- 	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
- 	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
- 	{"32 - SMB",			BIT_SMB},
--	{"33 - OTG_SS_PHY",		BIT_OTG_SS_PHY},
--	{"34 - USH_SS_PHY",		BIT_USH_SS_PHY},
--	{"35 - DFX",			BIT_DFX},
-+	{"33 - OTG_SS_PHY",		BIT_OTG_SS_PHY_BYT},
-+	{"34 - USH_SS_PHY",		BIT_USH_SS_PHY_BYT},
-+	{"35 - DFX",			BIT_DFX_BYT},
-+};
-+
-+static struct pmc_dev_map cht_dev_map[] = {
-+	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
-+	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
-+	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
-+	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
-+	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
-+	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
-+	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
-+	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
-+	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
-+	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
-+	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
-+	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
-+	{"12 - HDA",			BIT_HDA},
-+	{"13 - LPE",			BIT_LPE},
-+	{"14 - OTG",			BIT_OTG},
-+	{"15 - USH",			BIT_USH},
-+	{"16 - GBE",			BIT_GBE},
-+	{"17 - SATA",			BIT_SATA},
-+	{"18 - USB_XHCI",		BIT_USB_EHCI},
-+	{"19 - SEC",			BIT_SEC},
-+	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
-+	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
-+	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
-+	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
-+	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
-+	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
-+	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
-+	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
-+	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
-+	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
-+	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
-+	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
-+	{"32 - SMB",	BIT_SMB},
-+	{"33 - GMM",	BIT_GMM_CHT,	BIT_GMM_FD_CHT},
-+	{"34 - ISH",	BIT_ISH_CHT,	BIT_ISH_FD_CHT},
- };
- 
- static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
-@@ -128,30 +169,33 @@ static int pmc_dev_state_show(struct seq_file *s, void *unused)
- 	struct pmc_dev *pmc = s->private;
- 	u32 func_dis, func_dis_2, func_dis_index;
- 	u32 d3_sts_0, d3_sts_1, d3_sts_index;
--	int dev_num, dev_index, reg_index;
-+	int dev_index, reg_index;
- 
- 	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
- 	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
- 	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
- 	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
- 
--	dev_num = ARRAY_SIZE(dev_map);
- 
- 	for (dev_index = 0; dev_index < dev_num; dev_index++) {
- 		reg_index = dev_index / PMC_REG_BIT_WIDTH;
-+
-+
- 		if (reg_index) {
--			func_dis_index = func_dis_2;
-+			func_dis_index =
-+				(func_dis_2 & dev_map[dev_index].fn_dis_bit);
- 			d3_sts_index = d3_sts_1;
- 		} else {
--			func_dis_index = func_dis;
-+			func_dis_index =
-+				func_dis & dev_map[dev_index].fn_dis_bit;
- 			d3_sts_index = d3_sts_0;
- 		}
- 
- 		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
- 			dev_map[dev_index].name,
--			dev_map[dev_index].bit_mask & func_dis_index ?
-+			func_dis_index ?
- 			"Disabled" : "Enabled ",
--			dev_map[dev_index].bit_mask & d3_sts_index ?
-+			dev_map[dev_index].d3_sts_bit & d3_sts_index ?
- 			"D3" : "D0");
- 	}
- 	return 0;
-@@ -241,6 +285,7 @@ static int pmc_setup_dev(struct pci_dev *pdev)
- {
- 	struct pmc_dev *pmc = &pmc_device;
- 	int ret;
-+	int dev_index, reg_index;
- 
- 	/* Obtain ACPI base address */
- 	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
-@@ -262,6 +307,13 @@ static int pmc_setup_dev(struct pci_dev *pdev)
- 	/* PMC hardware registers setup */
- 	pmc_hw_reg_setup(pmc);
- 
-+	for (dev_index = 0; dev_index < dev_num; dev_index++) {
-+		reg_index = dev_index / PMC_REG_BIT_WIDTH;
-+		if (!dev_map[dev_index].fn_dis_bit)
-+				dev_map[dev_index].fn_dis_bit =
-+					dev_map[dev_index].d3_sts_bit;
-+	}
-+
- #ifdef CONFIG_DEBUG_FS
- 	ret = pmc_dbgfs_register(pmc, pdev);
- 	if (ret) {
-@@ -281,7 +333,8 @@ static int pmc_setup_dev(struct pci_dev *pdev)
-  * a driver on the same PCI id.
-  */
- static const struct pci_device_id pmc_pci_ids[] = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_BYT_PMC) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_CHT_PMC) },
- 	{ 0, },
- };
- 
-@@ -304,6 +357,16 @@ static int __init pmc_atom_init(void)
- 	for_each_pci_dev(pdev) {
- 		ent = pci_match_id(pmc_pci_ids, pdev);
- 		if (ent) {
-+			switch (ent->device) {
-+			case PCI_DEVICE_ID_BYT_PMC:
-+				dev_map = byt_dev_map;
-+				dev_num = ARRAY_SIZE(byt_dev_map);
-+				break;
-+			case PCI_DEVICE_ID_CHT_PMC:
-+				dev_map = cht_dev_map;
-+				dev_num = ARRAY_SIZE(cht_dev_map);
-+				break;
-+			}
- 			err = pmc_setup_dev(pdev);
- 			goto out;
- 		}
--- 
-1.7.9.5
+[  404.281396] CPU: 0 PID: 1058 Comm: dd Tainted: G    B   W      3.18.0-rc3-bp+ #3
+[  404.281403]  0000000000000000 00007fd62eca3000 ffffffff817b7cac ffff880172d298b8
+[  404.281415]  ffffffff8110383f 0720072007300732 00000007fd62eca3 0720072007200720
+[  404.281426]  ffff880172d298b8 ffff88017300bbb0 00007fd62eca3000 0000000000000000
+[  404.281437] Call Trace:                                                      
+[  404.281444]  [<ffffffff817b7cac>] ? dump_stack+0x41/0x51                     
+[  404.281452]  [<ffffffff8110383f>] ? print_bad_pte+0x19f/0x1cb                
+[  404.281460]  [<ffffffff81104479>] ? vm_normal_page+0x51/0x87                 
+[  404.281469]  [<ffffffff8110c5ef>] ? change_protection+0x4fb/0x76a            
+[  404.281477]  [<ffffffff81106435>] ? handle_mm_fault+0x9e0/0xa11              
+[  404.281486]  [<ffffffff8111cc22>] ? change_prot_numa+0x13/0x24               
+[  404.281495]  [<ffffffff8106abf0>] ? task_numa_work+0x20c/0x2ac               
+[  404.281503]  [<ffffffff810615e7>] ? finish_task_switch+0x83/0xc5             
+[  404.281512]  [<ffffffff8105af10>] ? task_work_run+0x7b/0x8f                  
+[  404.281521]  [<ffffffff8100d732>] ? do_notify_resume+0x5a/0x6d               
+[  404.281529]  [<ffffffff817bf49f>] ? retint_signal+0x48/0x89                  
+[  404.281537]  [<ffffffff810012eb>] ? xen_hypercall_iret+0xb/0x20
 
+Decoding page flags 0x366 we have _PAGE_SPECIAL(_PAGE_NUMA) and
+_PAGE_GLOBAL(_PAGE_PROTNONE) set, _PAGE_PRESENT not set. It's handling
+a NUMA hint page fault and crashes because the PTE in question is
+considered a special PTE by pte_special.
+
+In a Xen PV guest, _PAGE_GLOBAL is added by hypervisor to mark the page
+a guest user space page. Xen PV kernel has already forbidden setting
+that bit during initialisation. It's a bit unfortunate that there's
+still clash with _PAGE_PROTNONE.
+
+Wei.
+
+P.S.  Interestingly, in b38af4721 ("x86,mm: fix pte_special versus
+pte_numa"), the commit which changed pte_special, Hugh (the author)
+wrote "It still appears that this patch may be incomplete: aren't there
+other places which need to be handling PROTNONE along with PRESENT?"
+Looks like now we have a case -- Xen PV -- that PROTNONE and PRESENT
+co-exist.
