@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaKEUOT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:14:19 -0500
-Received: from imap.thunk.org ([74.207.234.97]:40945 "EHLO imap.thunk.org"
+	id S1752268AbaKEUOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:14:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:36377 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787AbaKEUOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:14:09 -0500
-Date: Wed, 5 Nov 2014 15:14:04 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: Martin Tournoij <martin@arp242.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] The SIGINFO signal from BSD
-Message-ID: <20141105201404.GH27083@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Austin S Hemmelgarn <ahferroin7@gmail.com>,
-	Martin Tournoij <martin@arp242.net>, linux-kernel@vger.kernel.org
-References: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com>
- <545A7B00.1040309@gmail.com>
+	id S1751322AbaKEUOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 15:14:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="412009913"
+Date: Wed, 5 Nov 2014 12:14:33 -0800
+From: sostalle <sean.stalley@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: steph <stephanie.s.wallick@intel.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH 01/10] added media agnostic (MA) USB HCD driver
+Message-ID: <20141105201433.GA4354@sean.stalley.intel.com>
+References: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415047377-3139-2-git-send-email-stephanie.s.wallick@intel.com>
+ <20141103212139.GB7379@kroah.com>
+ <20141104000442.GC8890@steph-desktop>
+ <20141104001355.GA10900@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <545A7B00.1040309@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20141104001355.GA10900@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 02:31:12PM -0500, Austin S Hemmelgarn wrote:
-> >
-> >SIGINFO prints the status of the process to the terminal; BSD cp, for example,
-> >shows show much data it's copied:
-> >
-> >     $ cp large_file /dev/null
-> >     <press ^t>
-> >     load: 1.39  cmd: cp 85837 [running] 3.91r 0.00u 0.98s 8% 2340k
-> >     large_file -> /dev/null  15%
-> >
-> >As you see, it shows the current load, pid, process status, memory usage, as
-> >well as how much of the file has been copied. Many other BSD tools print similar
-> >statistics (mv, tar, dd, sleep, fetch, etc.).
+On Mon, Nov 03, 2014 at 04:13:55PM -0800, Greg KH wrote:
+> On Mon, Nov 03, 2014 at 04:04:42PM -0800, steph wrote:
+> > On Mon, Nov 03, 2014 at 01:21:39PM -0800, Greg KH wrote:
+> > > On Mon, Nov 03, 2014 at 12:42:48PM -0800, Stephanie Wallick wrote:
+[snip] 
+> > > > +static int mausb_hcd_init(void)
+> > > > +{
+> > > > +	int ret;
+> > > > +
+> > > > +	/* register HCD driver */
+> > > > +	ret = platform_driver_register(&mausb_driver);
+> > > 
+> > > Why is this a platform driver?  How does this relate to platform
+> > > hardware?
+> > > 
+> > The driver doesn't require platform resources. It looks like a host
+> > controller driver but communicates over the network instead of to
+> > a physical host controller. There is no MA USB-specific hardware.
+> > 
+> > Should we use a struct device instead of a struct platform_device?
 > 
-> You have to understand however, that the reason that SIGINFO works like that
-> on *BSD is that the kernel and core userspace are developed together,
-> whereas on Linux, they are maintained entirely separately. Outside of core
-> userspace components, using SIGINFO that way on *BSD is just convention.
+> Yes, please make it a "virtual" device.
+> 
 
-Actually, the first line:
+Is it OK for our virtual host controller to use struct platform_device?
 
-	load: 1.39  cmd: cp 85837 [running] 3.91r 0.00u 0.98s 8% 2340k
+The other virtual host controllers (usbip/vhci_hcd.c & gadget/udc/dummy_hcd.c)
+use the platform_device struct. Unless I am missing something, it doesn't look
+like the other virtual host controllers use platform resources.
 
-is actually printed by the kernel.  It's actually something which is
-implemented in the BSD N_TTY line displine.  We never implemented it
-(at least when I was maintaining the tty subsystem) mostly out of
-laziness.  Part of the reason is that the main reason was that main
-reason why people (at least systems programmers / kernel programers
-like me) used ^T was to debug an apparently hung system, and for
-Linux, we had a much more powerful system using the magic-sysrq key.
+If it is not ok, is there a good example somewhere of a virtual non-platform
+device?
 
-Changing various userspace utilities to set up a signal handler for
-SIGINFO and then printing some extra information, such as:
-
-	large_file -> /dev/null  15%
-
-is a much more recent innovation (at least, newer than BSD 4.3 in the
-early 90's, which is the last time I hacked on BSD :-), and is largely
-separate from the question of implementing ^T in the N_TTY line
-displine.
-
-In a world where we have a GUI desktop, I suspect implementing ^T is
-much less interesting, but if someone were to submit a patch to at
-least make ^T send a SIGINFO, I can't think of a reason why it
-wouldn't be accepted.  (BTW, if you're going to do this, note that ^T
-could be remapped to any control character via stty; so to do this we
-would need to define an extra index in c_cc[] array in the struct
-termios.)
-
-Cheers,
-
-					- Ted
+Thank You,
+Sean O. Stalley
