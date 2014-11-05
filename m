@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaKEWKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:10:38 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:62175 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaKEWKg (ORCPT
+	id S1752080AbaKEWKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:10:52 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:40993 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaKEWKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:10:36 -0500
-Date: Wed, 5 Nov 2014 15:10:32 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiri Kosina <trivial@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Patch Part2 v4 18/31] PCI/MSI, trivial: Fix minor syntax issues
- according to coding styles
-Message-ID: <20141105221032.GE6168@google.com>
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
- <1415102525-9898-19-git-send-email-jiang.liu@linux.intel.com>
+	Wed, 5 Nov 2014 17:10:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415102525-9898-19-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <tip-bdee237c0343a5d1a6cf72c7ea68e88338b26e08@git.kernel.org>
+References: <1415089784-28779-4-git-send-email-daniel@numascale.com>
+	<tip-bdee237c0343a5d1a6cf72c7ea68e88338b26e08@git.kernel.org>
+Date: Wed, 5 Nov 2014 14:10:48 -0800
+X-Google-Sender-Auth: xacAdu05oYX2hltykq0ikWpqxPc
+Message-ID: <CAE9FiQWSDJdEdDkiWog6xPLnmHo3xXtnnE0y6YGfuR8A5EkLNA@mail.gmail.com>
+Subject: Re: [tip:x86/mm] x86: mm: Use 2GB memory block size on large-memory
+ x86-64 systems
+From: Yinghai Lu <yinghai@kernel.org>
+To: Steffen Persvold <sp@numascale.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Ingo Molnar <mingo@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 08:01:52PM +0800, Jiang Liu wrote:
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-
-Oh, I forgot:
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-
+On Tue, Nov 4, 2014 at 9:22 AM, tip-bot for Daniel J Blueman
+<tipbot@zytor.com> wrote:
+> Commit-ID:  bdee237c0343a5d1a6cf72c7ea68e88338b26e08
+> Gitweb:     http://git.kernel.org/tip/bdee237c0343a5d1a6cf72c7ea68e88338b26e08
+> Author:     Daniel J Blueman <daniel@numascale.com>
+> AuthorDate: Tue, 4 Nov 2014 16:29:44 +0800
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Tue, 4 Nov 2014 18:19:27 +0100
+>
+> x86: mm: Use 2GB memory block size on large-memory x86-64 systems
+>
+> On large-memory x86-64 systems of 64GB or more with memory hot-plug
+> enabled, use a 2GB memory block size. Eg with 64GB memory, this reduces
+> the number of directories in /sys/devices/system/memory from 512 to 32,
+> making it more manageable, and reducing the creation time accordingly.
+>
+> This caveat is that the memory can't be offlined (for hotplug or
+> otherwise) with the finer default 128MB granularity, but this is
+> unimportant due to the high memory densities generally used with such
+> large-memory systems, where eg a single DIMM is the order of 16GB.
+>
+> Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+> Cc: Steffen Persvold <sp@numascale.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Link: http://lkml.kernel.org/r/1415089784-28779-4-git-send-email-daniel@numascale.com
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > ---
->  drivers/pci/msi.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 9fab30af0e75..fb2ccb536324 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -244,9 +244,8 @@ void default_restore_msi_irqs(struct pci_dev *dev)
->  {
->  	struct msi_desc *entry;
->  
-> -	list_for_each_entry(entry, &dev->msi_list, list) {
-> +	list_for_each_entry(entry, &dev->msi_list, list)
->  		default_restore_msi_irq(dev, entry->irq);
-> -	}
->  }
->  
->  void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
-> @@ -451,9 +450,8 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
->  				PCI_MSIX_FLAGS_ENABLE | PCI_MSIX_FLAGS_MASKALL);
->  
->  	arch_restore_msi_irqs(dev);
-> -	list_for_each_entry(entry, &dev->msi_list, list) {
-> +	list_for_each_entry(entry, &dev->msi_list, list)
->  		msix_mask_irq(entry, entry->masked);
-> -	}
->  
->  	msix_clear_and_set_ctrl(dev, PCI_MSIX_FLAGS_MASKALL, 0);
->  }
-> @@ -497,9 +495,8 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->  	int count = 0;
->  
->  	/* Determine how many msi entries we have */
-> -	list_for_each_entry(entry, &pdev->msi_list, list) {
-> +	list_for_each_entry(entry, &pdev->msi_list, list)
->  		++num_msi;
-> -	}
->  	if (!num_msi)
->  		return 0;
->  
-> -- 
-> 1.7.10.4
-> 
+>  arch/x86/mm/init_64.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 4cb8763..ebca30f 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -52,7 +52,6 @@
+>  #include <asm/numa.h>
+>  #include <asm/cacheflush.h>
+>  #include <asm/init.h>
+> -#include <asm/uv/uv.h>
+>  #include <asm/setup.h>
+>
+>  #include "mm_internal.h"
+> @@ -1247,12 +1246,10 @@ static unsigned long probe_memory_block_size(void)
+>         /* start from 2g */
+>         unsigned long bz = 1UL<<31;
+>
+> -#ifdef CONFIG_X86_UV
+> -       if (is_uv_system()) {
+> -               printk(KERN_INFO "UV: memory block size 2GB\n");
+> +       if (totalram_pages >= (64ULL << (30 - PAGE_SHIFT))) {
+> +               pr_info("Using 2GB memory block size for large-memory system\n");
+>                 return 2UL * 1024 * 1024 * 1024;
+>         }
+> -#endif
+>
+>         /* less than 64g installed */
+>         if ((max_pfn << PAGE_SHIFT) < (16UL << 32))
+.....
+
+Come on. Can you remove the following dead lines caused by this patch
+the same time ?
+
+Yinghai
