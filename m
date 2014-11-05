@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbaKEPBf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:01:35 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42341 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755366AbaKEPBc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:01:32 -0500
-Date: Wed, 5 Nov 2014 16:01:28 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-api@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH 02/15] [media] v4l: Update subdev-formats doc with new
- MEDIA_BUS_FMT values
-Message-ID: <20141105160128.0e3599be@bbrezillon>
-In-Reply-To: <20141105145726.GR3136@valkosipuli.retiisi.org.uk>
-References: <1415094910-15899-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1415094910-15899-3-git-send-email-boris.brezillon@free-electrons.com>
-	<20141105145726.GR3136@valkosipuli.retiisi.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1755778AbaKEPBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:01:48 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41184 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755253AbaKEPBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:01:45 -0500
+Date: Wed, 5 Nov 2014 09:02:11 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Huang Rui <ray.huang@amd.com>
+CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Tony Li <tony.li@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: remove warning of disable scramble check
+Message-ID: <20141105150211.GA6548@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415093391-4569-1-git-send-email-ray.huang@amd.com>
+ <20141104144726.GD24983@saruman>
+ <20141105043951.GA9906@hr-slim.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <20141105043951.GA9906@hr-slim.amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sakari,
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 5 Nov 2014 16:57:27 +0200
-Sakari Ailus <sakari.ailus@iki.fi> wrote:
+On Wed, Nov 05, 2014 at 12:39:51PM +0800, Huang Rui wrote:
+> On Tue, Nov 04, 2014 at 08:47:26AM -0600, Felipe Balbi wrote:
+> > On Tue, Nov 04, 2014 at 05:29:51PM +0800, Huang Rui wrote:
+> > > Some SoC's FPGA platform will need this quirk, but it will complain if
+> > > running at true SoC platform. This is a normal case, so remove this
+> > > warning.
+> >=20
+> > nope, why do you need disable_scramble on actual SoC ? Without an
+> > erratum number I will not accept this, sorry.
+> >=20
+>=20
+> Oh, that's my faulty. I can set disable_scramble_quirk=3Dfalse after
+> actual SoC, at that time, we can drop FPGA support. :)
 
-> Hi Boris,
-> 
-> On Tue, Nov 04, 2014 at 10:54:57AM +0100, Boris Brezillon wrote:
-> > In order to have subsytem agnostic media bus format definitions we've
-> > moved media bus definition to include/uapi/linux/media-bus-format.h and
-> > prefixed enum values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
-> > 
-> > Update the v4l documentation accordingly.
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> >  Documentation/DocBook/media/Makefile               |   2 +-
-> >  Documentation/DocBook/media/v4l/subdev-formats.xml | 308 ++++++++++-----------
-> >  include/uapi/linux/v4l2-mediabus.h                 |   2 +
-> >  3 files changed, 157 insertions(+), 155 deletions(-)
-> > 
-> 
-> ...
-> 
-> > diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
-> > index f471064..9fbe891 100644
-> > --- a/include/uapi/linux/v4l2-mediabus.h
-> > +++ b/include/uapi/linux/v4l2-mediabus.h
-> > @@ -32,6 +32,8 @@ enum v4l2_mbus_pixelcode {
-> >  	MEDIA_BUS_TO_V4L2_MBUS(RGB888_2X12_BE),
-> >  	MEDIA_BUS_TO_V4L2_MBUS(RGB888_2X12_LE),
-> >  	MEDIA_BUS_TO_V4L2_MBUS(ARGB8888_1X32),
-> > +	MEDIA_BUS_TO_V4L2_MBUS(RGB444_1X12),
-> > +	MEDIA_BUS_TO_V4L2_MBUS(RGB565_1X16),
-> 
-> Shouldn't this to go to a separate patch?
+correct, thank you
 
-Absolutely, some changes from a different patch have slipped into this
-one.
+--=20
+balbi
 
-I'll fix that.
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Boris
+iQIcBAEBAgAGBQJUWjvzAAoJEIaOsuA1yqREaZcP/2u1J2UWNp2DKQ8GRhiurlUi
+eA29yftg6tifX4o8xHSc6GHU9EOT64w4yYlzuOx0OA3u9F5XoP8cHPZG76Y6ub/6
+NS4D4CzKeVMiGEQ3xTVtGezbeTMYAellqhH0MEy84SuWkKPaRmbKXEhTLd2ma+YM
+3uJxjHBLNjvjE2u129hnQJCBbpedLga1Asvla7Yn41dwIXdgaZwsdz9zTJ92TfQV
++J0eGEldD/fKG+RJB0ytZ2OMUaidgGuFuwKalsn8VHx4ayHoh0h2iAUz8kQWu6pT
+Xl1u92qITvPFk/7W6lPq0cEh1JLl3UTaWqkbT32uI1/24m8R9AuqmHc5IAtURTE3
+1uoQcfBvOxUmEM56ap1+Rx5Ano+wSvv9TYxGaELgcOOIUnGA/wEemtwj6frVfTaJ
+zt6uN4GEXESfSK3Lbat5PaXzQJ0+gwEUXs3NhBlLaUNcIklFN/THuugqA1BKoBlT
+/PKCjQaBO1ugpz5lxTOjXdWXkcav6W+1YZefwSubnmzYbEI6/bE6RSGd1Qb+GNhd
+gcIOCKQicgHFYa55NRDMPxIlGWxyVshnt/5h7n1uor6nQLVBVLvdnBDHQAt8M0bV
+uEKysxByzaporyzT4rewUdY94PZ4cgKqgExwkBTz3miEsvGK1GqDqoAWsjK2R+yn
+IvVIEp/BujG5VldjyuDU
+=BtAC
+-----END PGP SIGNATURE-----
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+--tKW2IUtsqtDRztdT--
