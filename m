@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaKEOy2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:54:28 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25008 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363AbaKEOyW (ORCPT
+	id S1755450AbaKEOyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:54:40 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62147 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755403AbaKEOyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:54:22 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-16-545a3a1b01d8
+	Wed, 5 Nov 2014 09:54:36 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-02-545a3a299ca5
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: akpm@linux-foundation.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -23,67 +23,73 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Vegard Nossum <vegard.nossum@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
         x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v6 02/11] x86_64: load_percpu_segment: read
- irq_stack_union.gs_base before load_segment
-Date: Wed, 05 Nov 2014 17:53:52 +0300
-Message-id: <1415199241-5121-3-git-send-email-a.ryabinin@samsung.com>
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v6 09/11] fs: dcache: manually unpoison dname after allocation
+ to shut up kasan's reports
+Date: Wed, 05 Nov 2014 17:53:59 +0300
+Message-id: <1415199241-5121-10-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.3
 In-reply-to: <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t/xq7rSVlEhBgunK1ls+/WIzeL33pms
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7qaVlEhBn9e21hs+/WIzeL33pms
 	FnPWr2GzOHLtO7vF9W9vGC0+vXzAaLHlehOTxfOHD9ktJjxsY7eYtlHcYmV3M5vF9mdvmSxW
-	dj5gtbi8aw6bxb01/1ktLh1YwGSx+MhtZot3zyYzW2zeNJXZ4uqqg+wWPzY8ZnUQ9Zi/8yOj
-	x85Zd9k9Fmwq9Vi85yWTx6ZVnWwemz5NYvfoenuFyePduXPsHidm/GbxeHJlOpPHx6e3WDze
-	77vK5tG3ZRWjx+dNch4nWr6wBvBHcdmkpOZklqUW6dslcGUs7j7LWLCRu+Ll/q2sDYy3OLsY
-	OTkkBEwkXv4+zQphi0lcuLeerYuRi0NIYCmjxNT/h8ESQgJ9TBJr70iB2GwCehL/Zm1nA7FF
-	BGQlpv49zwLSwCxwllXiz59dYAlhgUyJi7tbmbsYOThYBFQlrn4NBTF5BVwljtwMBzElBOQk
-	tq7zBinmFHCTONK/iAVibSOjxOdbnSwTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/d
-	xAiJn687GJceszrEKMDBqMTD69EUGSLEmlhWXJl7iFGCg1lJhLdJOypEiDclsbIqtSg/vqg0
-	J7X4ECMTB6dUA6Plj+d/a2/8fiL+Tm1H3RfZwgXF5plBugEJsWFFfPmpJzxrmjRu2hYdE5d+
-	y/Poekv0XtfvmiLhsiKGnGGCjt6yWyzmy+s2VfXcjT4tvy9wQQcPS1Hz5cPMSzbz/JPZzpfk
-	GCqyji0gUnhpf1PENtYtCz4flnjQHeVWf6/O+WGNuuDNRQlCSizFGYmGWsxFxYkAQWPAm30C	AAA=
+	dj5gtbi8aw6bxb01/1ktFh+5zWzx7tlkZourqw6yW5z/e5zV4seGx6wOIh7zd35k9Ng56y67
+	x4JNpR6L97xk8ti0qpPNY9OnSeweXW+vMHmcmPGbxePJlelMHh+f3mLxeL/vKptH35ZVjB6f
+	N8l5bHryFqii5QtrAH8Ul01Kak5mWWqRvl0CV8aVC53MBfu5Khb0/mFtYDzH0cXIySEhYCIx
+	Ye1yRghbTOLCvfVsXYxcHEICSxklrn9sBEsICfQxSazdXA9iswnoSfybtZ0NxBYRkJWY+vc8
+	C0gDs8BGVokbH86DJYQFsiUut11iArFZBFQl/k59ATaIV8BNYvuROaxdjBxA2+Qktq7zBglz
+	AoWP9C9igVjcyCjx+VYnywRG3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQiLnyw7G
+	xcesDjEKcDAq8fB6NEWGCLEmlhVX5h5ilOBgVhLhbdKOChHiTUmsrEotyo8vKs1JLT7EyMTB
+	KdXA6K+geHquoOAW8+m5pdMi3xj8Ys+wN72/YtN54ZMes3Z+td69fyXzzeTZ65LU3u1dcy1R
+	MFH1UMLnxzJ6J9dvv/OEc8KquutpIV+V/8z4+PNqv6fd9BdeF3VE566d7DX/O2OJ6LUnn6/u
+	LJRwFN7do6Xxwih1YjHHSu98SeubU7jiGrjiso/c7lBiKc5INNRiLipOBAD0tGD2egIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reading irq_stack_union.gs_base after load_segment creates troubles for kasan.
-Compiler inserts __asan_load in between load_segment and wrmsrl. If kernel
-built with stackprotector this will result in boot failure because __asan_load
-has stackprotector.
+We need to manually unpoison rounded up allocation size for dname
+to avoid kasan's reports in dentry_string_cmp().
+When CONFIG_DCACHE_WORD_ACCESS=y dentry_string_cmp may access
+few bytes beyound requested in kmalloc() size.
 
-To avoid this irq_stack_union.gs_base stored to temporary variable before
-load_segment, so __asan_load will be called before load_segment().
+dentry_string_cmp() relates on that fact that dentry allocated
+using kmalloc and kmalloc internally round up allocation size.
+So this is not a bug, but this makes kasan to complain about
+such accesses.
+To avoid such reports we mark rounded up allocation size in
+shadow as accessible.
 
-There are two alternative ways to fix this:
- a) Add __attribute__((no_sanitize_address)) to load_percpu_segment(),
-    which tells compiler to not instrument this function. However this
-    will result in build failure with CONFIG_KASAN=y and CONFIG_OPTIMIZE_INLINING=y.
-
- b) Add -fno-stack-protector for mm/kasan/kasan.c
-
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- arch/x86/kernel/cpu/common.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/dcache.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 4b4f78c..ee5c286 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -389,8 +389,10 @@ void load_percpu_segment(int cpu)
- #ifdef CONFIG_X86_32
- 	loadsegment(fs, __KERNEL_PERCPU);
- #else
-+	void *gs_base = per_cpu(irq_stack_union.gs_base, cpu);
+diff --git a/fs/dcache.c b/fs/dcache.c
+index d5a23fd..d58ffcc6 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -38,6 +38,8 @@
+ #include <linux/prefetch.h>
+ #include <linux/ratelimit.h>
+ #include <linux/list_lru.h>
++#include <linux/kasan.h>
 +
- 	loadsegment(gs, 0);
--	wrmsrl(MSR_GS_BASE, (unsigned long)per_cpu(irq_stack_union.gs_base, cpu));
-+	wrmsrl(MSR_GS_BASE, (unsigned long)gs_base);
- #endif
- 	load_stack_canary_segment();
- }
+ #include "internal.h"
+ #include "mount.h"
+ 
+@@ -1429,6 +1431,10 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
+ 		}
+ 		atomic_set(&p->u.count, 1);
+ 		dname = p->name;
++#ifdef CONFIG_DCACHE_WORD_ACCESS
++		kasan_unpoison_shadow(dname,
++				round_up(name->len + 1,	sizeof(unsigned long)));
++#endif
+ 	} else  {
+ 		dname = dentry->d_iname;
+ 	}	
 -- 
 2.1.3
 
