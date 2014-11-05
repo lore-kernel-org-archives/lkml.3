@@ -1,317 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaKESRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:17:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42404 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535AbaKESRZ (ORCPT
+	id S1751909AbaKESSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:18:07 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:51760 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaKESSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 13:17:25 -0500
-Date: Wed, 5 Nov 2014 09:16:07 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-051825cab15c8180f2f0dbc3a9de5a3db7476065@git.kernel.org>
-Cc: konrad.wilk@oracle.com, bp@alien8.de, benh@kernel.crashing.org,
-        bhelgaas@google.com, tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, rjw@rjwysocki.net, gregkh@linuxfoundation.org,
-        tglx@linutronix.de, mingo@kernel.org, joro@8bytes.org,
-        jiang.liu@linux.intel.com, rdunlap@infradead.org, hpa@zytor.com,
-        prarit@redhat.com, yinghai@kernel.org
-Reply-To: mingo@kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, joro@8bytes.org, grant.likely@linaro.org,
-        prarit@redhat.com, yinghai@kernel.org, hpa@zytor.com,
-        rdunlap@infradead.org, jiang.liu@linux.intel.com,
-        benh@kernel.crashing.org, bp@alien8.de, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com, tony.luck@intel.com
-In-Reply-To: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq:
-  Move HT IRQ related code from io_apic.c into htirq.c
-Git-Commit-ID: 051825cab15c8180f2f0dbc3a9de5a3db7476065
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 5 Nov 2014 13:18:04 -0500
+Date: Wed, 5 Nov 2014 19:14:54 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Nix <nix@esperi.org.uk>
+Cc: Johan Hovold <johan@kernel.org>, Paul Martin <pm@debian.org>,
+        Daniel Silverstone <dsilvers@debian.org>,
+        Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm)
+ broken in 3.16
+Message-ID: <20141105181454.GW31358@localhost>
+References: <20141012185845.GB2786@localhost>
+ <878uklynq9.fsf@spindle.srvr.nix>
+ <20141014083432.GB7958@localhost>
+ <871tq04fiy.fsf@spindle.srvr.nix>
+ <20141022101458.GK2113@localhost>
+ <87y4s8yv38.fsf@spindle.srvr.nix>
+ <20141024111442.GA19377@localhost>
+ <87d298i3y9.fsf@spindle.srvr.nix>
+ <20141105115643.GR31358@localhost>
+ <87vbmtbrx2.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <87vbmtbrx2.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  051825cab15c8180f2f0dbc3a9de5a3db7476065
-Gitweb:     http://git.kernel.org/tip/051825cab15c8180f2f0dbc3a9de5a3db7476065
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:03 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 5 Nov 2014 18:10:47 +0100
+On Wed, Nov 05, 2014 at 03:14:49PM +0000, Nix wrote:
+> On 5 Nov 2014, Johan Hovold stated:
+> 
+> > On Fri, Oct 31, 2014 at 04:44:46PM +0000, Nix wrote:
+> >> Sorry for the delay: illness and work-related release time flurries.
+> >> 
+> >> On 24 Oct 2014, Johan Hovold told this:
+> >> 
 
-x86, irq: Move HT IRQ related code from io_apic.c into htirq.c
+> > The log appears incomplete again, this time it seems the last part is
+> > completely missing (the device is never closed for example). The device
+> > still seems to be responding.
+> 
+> Nope -- by the time I clipped the log, the device was definitely
+> nonresponsive.
+>
+> I've appended the remaining log, just in case. This is the same as the
+> snapshot I added to the email itself last time: a close-and-open as I
+> tried restarting the daemon, and another close as part of system
+> shutdown.
 
-Create arch/x86/kernel/apic/htirq.c to host Hypertransport IRQ related
-code, preparing for enabling hierarchy irqdomain.
+Ok, yeah, there's the crash.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> >> >                                                      What if you
+> >> > physically disconnect and reconnect the device instead, or simply
+> >> 
+> >> That fixes it, in fact it's the only way to fix it once it's broken by
+> >> this bug.
+> >
+> > I didn't mean whether it would get the device working again, but rather
+> > whether you could kill it this way.
+> 
+> Never seen it fail after a physical disconnection.
+
+Ok.
+
+And it has to include an enumeration, since just opening and closing it
+(restarting the daemon) repeatedly seems to work?
+
+> >> ... no, that doesn't help. Additional log from that shows a lot of what
+> >> looks like error returns:
+> >> 
+> >> Oct 31 16:38:03 fold kern debug: : [  168.135213] cdc_acm 2-1:1.0: acm_tty_close
+> >> Oct 31 16:38:08 fold kern debug: : [  173.130531] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x0, len 0x0, result -110
+> >
+> > Yeah, it seems your device firmware has crashed. It stops responding to
+> > control requests.
+> 
+> Not surprising: I was fairly sure we were provoking a key firmware crash
+> or something like that. This is a device with no support for flow
+> control at all, after all, so I'm not terribly surprised that trying to
+> do flow control confuses it.
+
+Only weird thing is that it has been coping with those calls for a long
+time. Only the slightly changed timings seems to have triggered this
+issue.
+
+> > The above is all normal, but
+> >
+> >> Oct 31 16:38:08 fold kern debug: : [  173.161489] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x3, len 0x0, result -62
+> >
+> > here's another timeout. It's dead.
+> 
+> Again, not surprising.
+> 
+> > Did you get anywhere with trying to look at the device firmware?
+> 
+> Look at it? Only Daniel Silverstone (Cc:ed) can do that. The only copy
+> of the firmware I have is baked into the sealed key. :)
+
+Ah, ok. I guess we need a new quirk then. There's already a quirk in the
+driver to suppress error from when trying to set the control lines.
+
+But that doesn't help this device, which happily accepts the requests
+and then dies at random times.
+
+Could you try two more things (too make sure line control is really the
+culprit):
+
+1. If you clear HUPCL in ekeyd so that the lines are never lowered, does
+that fix the stability issue?
+
+2. Can you verify that the patch below works? Did I use the correct
+VID/PID? Could you provide "lsusb -v" output (for the capability flags)
+as well?
+
+Note that the patch is against the usb-linus branch of the usb tree,
+which also contains another fix which could affect this device
+(set_termios will now be called an extra time on every open). You also
+need this one, which have not yet been applied:
+
+	http://marc.info/?l=linux-usb&m=141520959813505&w=2
+
+Thanks,
+Johan
+
+
+>From 76abc8a7eda9ea1978ee3527c773210c28332317 Mon Sep 17 00:00:00 2001
+From: Johan Hovold <johan@kernel.org>
+Date: Wed, 5 Nov 2014 18:51:54 +0100
+Subject: [PATCH] USB: cdc-acm: add quirk for control-line state requests
+
+Add new quirk for devices that cannot handle control-line state
+requests.
+
+Note that we currently send these requests to all devices, regardless of
+whether they claim to support it, but that errors are only logged if
+support is claimed.
+
+Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
+only changed the timings for these requests slightly, this has been
+reported to cause occasional firmware crashes on Simtec Electronics
+Entropy Key devices after re-enumeration. Enable the quirk for this
+device.
+
+Reported-by: Nix <nix@esperi.org.uk>
+Cc: stable <stable@vger.kernel.org>	# v3.16
+Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- arch/x86/kernel/apic/Makefile  |   1 +
- arch/x86/kernel/apic/htirq.c   | 107 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/apic/io_apic.c |  92 -----------------------------------
- 3 files changed, 108 insertions(+), 92 deletions(-)
+ drivers/usb/class/cdc-acm.c | 14 ++++++++++++--
+ drivers/usb/class/cdc-acm.h |  2 ++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
-index aac3007..8bb12dd 100644
---- a/arch/x86/kernel/apic/Makefile
-+++ b/arch/x86/kernel/apic/Makefile
-@@ -7,6 +7,7 @@ obj-y				+= hw_nmi.o
- 
- obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
- obj-$(CONFIG_PCI_MSI)		+= msi.o
-+obj-$(CONFIG_HT_IRQ)		+= htirq.o
- obj-$(CONFIG_SMP)		+= ipi.o
- 
- ifeq ($(CONFIG_X86_64),y)
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-new file mode 100644
-index 0000000..a4980c5
---- /dev/null
-+++ b/arch/x86/kernel/apic/htirq.c
-@@ -0,0 +1,107 @@
-+/*
-+ * Support Hypertransport IRQ
-+ *
-+ * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
-+ *	Moved from arch/x86/kernel/apic/io_apic.c.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/mm.h>
-+#include <linux/interrupt.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/pci.h>
-+#include <linux/htirq.h>
-+#include <asm/hw_irq.h>
-+#include <asm/apic.h>
-+#include <asm/hypertransport.h>
-+
-+/*
-+ * Hypertransport interrupt support
-+ */
-+static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 9d6495424b06..077d58ac3dcb 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -148,8 +148,15 @@ static int acm_ctrl_msg(struct acm *acm, int request, int value,
+ /* devices aren't required to support these requests.
+  * the cdc acm descriptor tells whether they do...
+  */
+-#define acm_set_control(acm, control) \
+-	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
++static inline int acm_set_control(struct acm *acm, int control)
 +{
-+	struct ht_irq_msg msg;
++	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
++		return -EOPNOTSUPP;
 +
-+	fetch_ht_irq_msg(irq, &msg);
-+
-+	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
-+	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
-+
-+	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
-+	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
-+
-+	write_ht_irq_msg(irq, &msg);
++	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
++			control, NULL, 0);
 +}
 +
-+static int
-+ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
-+{
-+	struct irq_cfg *cfg = data->chip_data;
-+	unsigned int dest;
-+	int ret;
-+
-+	ret = apic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
-+
-+	target_ht_irq(data->irq, dest, cfg->vector);
-+	return IRQ_SET_MASK_OK_NOCOPY;
-+}
-+
-+static struct irq_chip ht_irq_chip = {
-+	.name			= "PCI-HT",
-+	.irq_mask		= mask_ht_irq,
-+	.irq_unmask		= unmask_ht_irq,
-+	.irq_ack		= apic_ack_edge,
-+	.irq_set_affinity	= ht_set_affinity,
-+	.irq_retrigger		= apic_retrigger_irq,
-+	.flags			= IRQCHIP_SKIP_SET_WAKE,
-+};
-+
-+int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
-+{
-+	struct irq_cfg *cfg;
-+	struct ht_irq_msg msg;
-+	unsigned dest;
-+	int err;
-+
-+	if (disable_apic)
-+		return -ENXIO;
-+
-+	cfg = irq_cfg(irq);
-+	err = assign_irq_vector(irq, cfg, apic->target_cpus());
-+	if (err)
-+		return err;
-+
-+	err = apic->cpu_mask_to_apicid_and(cfg->domain,
-+					   apic->target_cpus(), &dest);
-+	if (err)
-+		return err;
-+
-+	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
-+
-+	msg.address_lo =
-+		HT_IRQ_LOW_BASE |
-+		HT_IRQ_LOW_DEST_ID(dest) |
-+		HT_IRQ_LOW_VECTOR(cfg->vector) |
-+		((apic->irq_dest_mode == 0) ?
-+			HT_IRQ_LOW_DM_PHYSICAL :
-+			HT_IRQ_LOW_DM_LOGICAL) |
-+		HT_IRQ_LOW_RQEOI_EDGE |
-+		((apic->irq_delivery_mode != dest_LowestPrio) ?
-+			HT_IRQ_LOW_MT_FIXED :
-+			HT_IRQ_LOW_MT_ARBITRATED) |
-+		HT_IRQ_LOW_IRQ_MASKED;
-+
-+	write_ht_irq_msg(irq, &msg);
-+
-+	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
-+				      handle_edge_irq, "edge");
-+
-+	dev_dbg(&dev->dev, "irq %d for HT\n", irq);
-+
-+	return 0;
-+}
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 653fe21..b1acb68 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -32,7 +32,6 @@
- #include <linux/module.h>
- #include <linux/syscore_ops.h>
- #include <linux/irqdomain.h>
--#include <linux/htirq.h>
- #include <linux/freezer.h>
- #include <linux/kthread.h>
- #include <linux/jiffies.h>	/* time_after() */
-@@ -49,7 +48,6 @@
- #include <asm/dma.h>
- #include <asm/timer.h>
- #include <asm/i8259.h>
--#include <asm/hypertransport.h>
- #include <asm/setup.h>
- #include <asm/irq_remapping.h>
- #include <asm/hw_irq.h>
-@@ -2450,96 +2448,6 @@ static int __init ioapic_init_ops(void)
+ #define acm_set_line(acm, line) \
+ 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
+ #define acm_send_break(acm, ms) \
+@@ -1320,6 +1327,7 @@ made_compressed_probe:
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
+ 	init_usb_anchor(&acm->delayed);
++	acm->quirks = quirks;
  
- device_initcall(ioapic_init_ops);
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1687,6 +1695,8 @@ static const struct usb_device_id acm_ids[] = {
+ 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
+ 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
+ 	},
++	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
++	.driver_info = QUIRK_CONTROL_LINE_STATE, },
+ 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
+ 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+ 	},
+diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
+index fc75651afe1c..d3251ebd09e2 100644
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -121,6 +121,7 @@ struct acm {
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+ 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
++	unsigned long quirks;
+ };
  
--/*
-- * Hypertransport interrupt support
-- */
--#ifdef CONFIG_HT_IRQ
--
--static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
--{
--	struct ht_irq_msg msg;
--	fetch_ht_irq_msg(irq, &msg);
--
--	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
--	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
--
--	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
--	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
--
--	write_ht_irq_msg(irq, &msg);
--}
--
--static int
--ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
--{
--	struct irq_cfg *cfg = data->chip_data;
--	unsigned int dest;
--	int ret;
--
--	ret = apic_set_affinity(data, mask, &dest);
--	if (ret)
--		return ret;
--
--	target_ht_irq(data->irq, dest, cfg->vector);
--	return IRQ_SET_MASK_OK_NOCOPY;
--}
--
--static struct irq_chip ht_irq_chip = {
--	.name			= "PCI-HT",
--	.irq_mask		= mask_ht_irq,
--	.irq_unmask		= unmask_ht_irq,
--	.irq_ack		= apic_ack_edge,
--	.irq_set_affinity	= ht_set_affinity,
--	.irq_retrigger		= apic_retrigger_irq,
--	.flags			= IRQCHIP_SKIP_SET_WAKE,
--};
--
--int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
--{
--	struct irq_cfg *cfg;
--	struct ht_irq_msg msg;
--	unsigned dest;
--	int err;
--
--	if (disable_apic)
--		return -ENXIO;
--
--	cfg = irq_cfg(irq);
--	err = assign_irq_vector(irq, cfg, apic->target_cpus());
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(cfg->domain,
--					   apic->target_cpus(), &dest);
--	if (err)
--		return err;
--
--	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
--
--	msg.address_lo =
--		HT_IRQ_LOW_BASE |
--		HT_IRQ_LOW_DEST_ID(dest) |
--		HT_IRQ_LOW_VECTOR(cfg->vector) |
--		((apic->irq_dest_mode == 0) ?
--			HT_IRQ_LOW_DM_PHYSICAL :
--			HT_IRQ_LOW_DM_LOGICAL) |
--		HT_IRQ_LOW_RQEOI_EDGE |
--		((apic->irq_delivery_mode != dest_LowestPrio) ?
--			HT_IRQ_LOW_MT_FIXED :
--			HT_IRQ_LOW_MT_ARBITRATED) |
--		HT_IRQ_LOW_IRQ_MASKED;
--
--	write_ht_irq_msg(irq, &msg);
--
--	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
--				      handle_edge_irq, "edge");
--
--	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for HT\n", irq);
--
--	return 0;
--}
--#endif /* CONFIG_HT_IRQ */
--
- static int
- io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
- {
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
+@@ -132,3 +133,4 @@ struct acm {
+ #define NOT_A_MODEM			BIT(3)
+ #define NO_DATA_INTERFACE		BIT(4)
+ #define IGNORE_DEVICE			BIT(5)
++#define QUIRK_CONTROL_LINE_STATE	BIT(6)
+-- 
+2.0.4
+
