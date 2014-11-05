@@ -1,47 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690AbaKEPBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:01:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:50433 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753916AbaKEPA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:00:58 -0500
-Date: Wed, 5 Nov 2014 10:00:56 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juerg Haefliger <juergh@gmail.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [ANNOUNCE] 3.14.23-rt20
-Message-ID: <20141105100056.152fd532@gandalf.local.home>
-In-Reply-To: <CADLDEKsYzpN4uPD7wEE6bxZP21gd3xY4c0fsRqfB1RwEZ53iKg@mail.gmail.com>
-References: <20141031170326.1491a63f@gandalf.local.home>
-	<1414913427.5380.110.camel@marge.simpson.net>
-	<CADLDEKvFvw7Aa98tVtM3z5JV8oocKqAdV4PqOMoZH2mXZ6x2jg@mail.gmail.com>
-	<20141105092707.7c9bb1ae@gandalf.local.home>
-	<CADLDEKsYzpN4uPD7wEE6bxZP21gd3xY4c0fsRqfB1RwEZ53iKg@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755712AbaKEPBL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:01:11 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:35291 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754939AbaKEPBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:01:07 -0500
+Message-ID: <1415199681.3660.8.camel@mm-sol.com>
+Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Wed, 05 Nov 2014 17:01:21 +0200
+In-Reply-To: <545A2EDB.5040801@kernel.org>
+References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>
+		 <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>
+		 <545A218F.5060301@kernel.org> <1415195855.3660.4.camel@mm-sol.com>
+	 <545A2EDB.5040801@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.6-fta3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 15:43:24 +0100
-Juerg Haefliger <juergh@gmail.com> wrote:
 
-> Thanks for the explanation. So is this considered a temporary failure
-> until multiple readers are allowed or does cpufreq need fixing or
-> something else? Just trying to figure out what to do next.
+On Wed, 2014-11-05 at 14:06 +0000, Jonathan Cameron wrote:
+> On 05/11/14 13:57, Ivan T. Ivanov wrote:
+> > On Wed, 2014-11-05 at 13:09 +0000, Jonathan Cameron wrote:
+> > > On 03/11/14 15:24, Ivan T. Ivanov wrote:
+> > > > From: Stanimir Varbanov <svarbanov@mm-sol.com>
+> > > > 
+> > > > The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+> > > > 15 bits resolution and register space inside PMIC accessible across
+> > > > SPMI bus.
+> > > > 
+> > > > The vadc driver registers itself through IIO interface.
+> > > > 
+> > > > Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > Hi Ivan,
+> > > 
+> > > Couple of utterly tiny bits inline.  The biggest one is that
+> > > you store some info about the calibration that you never actually
+> > > use... Left over from some debugging perhaps?
+> > > 
+> > > Jonathan
+> > 
+> > <snip>
+> > 
+> > > > +
+> > > > +/*
+> > > > + * VADC_CALIB_ABSOLUTE: uses the 625mV and 1.25V as reference channels.
+> > > > + * VADC_CALIB_RATIOMETRIC: uses the reference voltage (1.8V) and GND for
+> > > > + * calibration.
+> > > > + */
+> > > > +enum vadc_calibration {
+> > > > +       VADC_CALIB_ABSOLUTE = 0,
+> > > > +       VADC_CALIB_RATIOMETRIC
+> > > > +};
+> > > > +
+> > > > +/**
+> > > > + * struct vadc_linear_graph - Represent ADC characteristics.
+> > > > + * @dy: numerator slope to calculate the gain.
+> > > As dy is always equal to vref-gnd you could drop it and use those
+> > > directly...
+> > > 
+> > > Conversly you store vref or grnd and never use them...
+> > 
+> > I am not sure I am following you. Please take a look in
+> > vadc_measure_ref_points() and vadc_calibrate().
+> Good point on grnd, but vref is set but never read anywhere that I can find..
+> 
 
-Good question. Unfortunately I don't know the answer to that.
+Right. At this point it is not used. Driver right now provide basic per
+channel voltage measurements. The plan is to add temperature compensation for the
+measurements and additional scaling functions which are specific per channel.
 
--- Steve
+I could drop this field from initial driver version if you like.
+
+Regards,
+Ivan
+
