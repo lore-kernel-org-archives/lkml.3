@@ -1,79 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaKEK2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:28:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45029 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583AbaKEK23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:28:29 -0500
-Date: Wed, 5 Nov 2014 11:28:14 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [RFC][PATCH 01/12 v3] x86/kvm/tracing: Use helper function
- trace_seq_buffer_ptr()
-Message-ID: <20141105102814.GA4570@pathway.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
- <20141104160221.585025609@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104160221.585025609@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932084AbaKEK2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:28:25 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51256 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554AbaKEK2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:28:17 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>
+Subject: [PATCH 3.18-rc3 v7 0/4] arm: Implement arch_trigger_all_cpu_backtrace
+Date: Wed,  5 Nov 2014 10:27:36 +0000
+Message-Id: <1415183260-6389-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-04 10:52:38, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> To allow for the restructiong of the trace_seq code, we need users
-> of it to use the helper functions instead of accessing the internals
-> of the trace_seq structure itself.
-> 
-> Cc: Mark Rustad <mark.d.rustad@intel.com>
-> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This patchset modifies the GIC driver to allow it, on supported
+platforms, to route IPI interrupts to FIQ and uses this feature
+to implement arch_trigger_all_cpu_backtrace for arm.
 
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+On platforms not capable of supporting FIQ the signal to generate a
+backtrace we fall back to using IRQ for propagation instead (relying
+on a timeout to avoid wedging the CPU requesting the backtrace if other
+CPUs are not responsive).
 
-Best Regards,
-Petr
+It has been tested on two systems capable of supporting grouping
+(Freescale i.MX6 and STiH416) and two that do not (vexpress-a9 and
+Qualcomm Snapdragon 600).
 
-> ---
->  arch/x86/kvm/mmutrace.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-> index 5aaf35641768..ce463a9cc8fb 100644
-> --- a/arch/x86/kvm/mmutrace.h
-> +++ b/arch/x86/kvm/mmutrace.h
-> @@ -22,7 +22,7 @@
->  	__entry->unsync = sp->unsync;
->  
->  #define KVM_MMU_PAGE_PRINTK() ({				        \
-> -	const u32 saved_len = p->len;					\
-> +	const char *saved_ptr = trace_seq_buffer_ptr(p);		\
->  	static const char *access_str[] = {			        \
->  		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
->  	};							        \
-> @@ -41,7 +41,7 @@
->  			 role.nxe ? "" : "!",				\
->  			 __entry->root_count,				\
->  			 __entry->unsync ? "unsync" : "sync", 0);	\
-> -	p->buffer + saved_len;						\
-> +	saved_ptr;							\
->  		})
->  
->  #define kvm_mmu_trace_pferr_flags       \
-> -- 
-> 2.1.1
-> 
-> 
+Changes since v7:
+
+* Fixed boot regression on vexpress-a9 (reported by Russell King).
+
+* Rebased on v3.18-rc3; removed one patch from set that is already
+  included in mainline.
+
+* Dropped arm64/fiq.h patch from the set (still useful but not related
+  to issuing backtraces).
+
+Changes since v6:
+
+* Re-arranged code within the patch series to fix a regression
+  introduced midway through the series and corrected by a later patch
+  (testing by Olof's autobuilder). Tested offending patch in isolation
+  using defconfig identified by the autobuilder.
+
+Changes since v5:
+
+* Renamed svc_entry's call_trace argument to just trace (example code
+  from Russell King).
+
+* Fixed mismatched ENDPROC() in __fiq_abt (example code from Russell
+  King).
+
+* Modified usr_entry to optional avoid calling into the trace code and
+  used this in FIQ entry from usr path. Modified corresponding exit code
+  to avoid calling into trace code and the scheduler (example code from
+  Russell King).
+
+* Ensured the default FIQ register state is restored when the default
+  FIQ handler is reinstalled (example code from Russell King).
+
+* Renamed no_fiq_insn to dfl_fiq_insn to reflect the effect of adopting
+  a default FIQ handler.
+
+* Re-instated fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq(). gic_raise_softirq() is called by wake_up_klogd()
+  in the console unlock logic.
+
+Changes since v4:
+
+* Rebased on 3.17-rc4.
+
+* Removed a spurious line from the final "glue it together" patch
+  that broke the build.
+
+Changes since v3:
+
+* Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
+  Pitre).
+
+* Really fix bad pt_regs pointer generation in __fiq_abt.
+
+* Remove fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq() (review of Russell King)
+
+* Restructured to introduce the default FIQ handler first, before the
+  new features (review of Russell King).
+
+Changes since v2:
+
+* Removed redundant header guards from arch/arm64/include/asm/fiq.h
+  (review of Catalin Marinas).
+
+* Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
+  Pitre).
+
+Changes since v1:
+
+* Restructured to sit nicely on a similar FYI patchset from Russell
+  King. It now effectively replaces the work in progress final patch
+  with something much more complete.
+
+* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
+  (review of Nicolas Pitre)
+
+* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
+  being acknowledged by the IRQ handler does still exist but should be
+  harmless because the IRQ handler will still wind up calling
+  ipi_cpu_backtrace().
+
+* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
+  becomes a platform feature (although the use of non-maskable
+  interrupts to implement it is best effort rather than guaranteed).
+
+* Better comments highlighting usage of RAZ/WI registers (and parts of
+  registers) in the GIC code.
+
+Changes *before* v1:
+
+* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+  the new structure. For historic details see:
+        https://lkml.org/lkml/2014/9/2/227
+
+* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+  In fixing this we also remove the useless indirection previously
+  found in the fiq_handler macro.
+
+* Make default fiq handler "always on" by migrating from fiq.c to
+  traps.c and replace do_unexp_fiq with the new handler (review
+  of Russell King).
+
+* Add arm64 version of fiq.h (review of Russell King)
+
+* Removed conditional branching and code from irq-gic.c, this is
+  replaced by much simpler code that relies on the GIC specification's
+  heavy use of read-as-zero/write-ignored (review of Russell King)
+
+
+Daniel Thompson (4):
+  irqchip: gic: Make gic_raise_softirq() FIQ-safe
+  irqchip: gic: Introduce plumbing for IPI FIQ
+  ARM: add basic support for on-demand backtrace of other CPUs
+  arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+
+ arch/arm/include/asm/irq.h      |   5 ++
+ arch/arm/include/asm/smp.h      |   3 +
+ arch/arm/kernel/smp.c           |  64 +++++++++++++++
+ arch/arm/kernel/traps.c         |   8 +-
+ drivers/irqchip/irq-gic.c       | 171 +++++++++++++++++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h |   8 ++
+ 6 files changed, 246 insertions(+), 13 deletions(-)
+
+--
+1.9.3
+
