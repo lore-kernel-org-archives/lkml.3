@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaKEVGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:06:54 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:64907 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaKEVGv (ORCPT
+	id S1751800AbaKEVHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:07:52 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44703 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaKEVHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:06:51 -0500
-Date: Wed, 5 Nov 2014 13:06:47 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Marek Vasut <marex@denx.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
-        Harini Katakam <harini.katakam@xilinx.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] mtd: spi-nor: Add support for SST spi flash
-Message-ID: <20141105210647.GU23619@ld-irv-0074>
-References: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
+	Wed, 5 Nov 2014 16:07:50 -0500
+Date: Wed, 5 Nov 2014 21:07:45 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141105210745.GT7996@ZenIV.linux.org.uk>
+References: <20141105022251.GA19136@gondor.apana.org.au>
+ <20141104.222727.275422581392488793.davem@davemloft.net>
+ <20141105035536.GO7996@ZenIV.linux.org.uk>
+ <20141105.155054.2198151263164321219.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <29606567142da0d52c462ef0aebacc2b91fe2508.1413891469.git.michal.simek@xilinx.com>
+In-Reply-To: <20141105.155054.2198151263164321219.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 01:37:59PM +0200, Michal Simek wrote:
-> From: Harini Katakam <harini.katakam@xilinx.com>
-> 
-> Add sst25wf080 to the spi-nor device id table.
-> 
-> Signed-off-by: Harini Katakam <harinik@xilinx.com>
-> Reviewed-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+On Wed, Nov 05, 2014 at 03:50:54PM -0500, David Miller wrote:
+> I think we can get away with it if, as you say, we don't export a 'msghdr'
+> from any uapi headers.
 
-Applied to l2-mtd.git. Thanks!
+OK.  I'm about halfway through the review of struct msghdr instances in the
+current tree right now, will post user_msghdr patch once I'm done.  Already
+found a dumb bug in o2net_send_tcp_msg() while doing that - broken by me
+back in 3.15 ;-/  Will send a fix to Linus in an hour or so...
 
-Brian
+> And indeed, double checking, it's purely a linux/socket.h thing.
+> 
+> If this patch is OK, mind if I toss it into net-next Al?
+
+Sure, no problem - AFAICS, the only real difference from rebase of April one
+I've quoted upthread is that you add include of socket.h into skbuff.h; the
+rest of the differences is pure whitespace noise.
+
+Ping me when you put it there, OK?  I'll rebase the rest of old stuff on
+top of it (similar helpers, mostly).
