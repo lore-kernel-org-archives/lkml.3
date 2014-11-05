@@ -1,185 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503AbaKEP4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:56:35 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63535 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590AbaKEP4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:56:32 -0500
+	id S1755591AbaKEP4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:56:53 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755447AbaKEP4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:56:52 -0500
+Message-ID: <545A48BD.9010904@nod.at>
+Date: Wed, 05 Nov 2014 16:56:45 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 5 Nov 2014 07:56:08 -0800
-Message-ID: <CALCETrVJHFzyjOjUhAjzsknm1VVnUcDU2i=Ymhpmy8q1Pef8PQ@mail.gmail.com>
-Subject: Early comments on kdbus v2 (Re: [PATCH 00/12] Add kdbus implementation)
-To: Daniel Mack <daniel@zonque.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        Ryan Lortie <desrt@desrt.ca>, Bastien Nocera <hadess@hadess.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Simon McVittie <simon.mcvittie@collabora.co.uk>,
-        "alban.crequy" <alban.crequy@collabora.co.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=UTF-8
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tlinder@codeaurora.org
+Subject: Re: [PATCH 03/35] UBI: Fastmap: Add self check to detect absent PEBs
+References: <1414586758-9972-1-git-send-email-richard@nod.at>	 <1414586758-9972-4-git-send-email-richard@nod.at> <1415201029.958.118.camel@sauron.fi.intel.com>
+In-Reply-To: <1415201029.958.118.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 6:34 AM, Daniel Mack <daniel@zonque.org> wrote:
-> On 10/29/2014 11:19 PM, Andy Lutomirski wrote:
->> I think that each piece of trustable metadata needs to be explicitly
->> opted-in to by the sender at the time of capture.  Otherwise you're
->> asking for lots of information leaks and privilege escalations.  This
->> is especially important given that some of the items in the current
->> list could be rather sensitive.
->
-> Alright, the above seems to pretty much sum up that end of our
-> discussion. To address this, We've now added the following functionality
-> for v2:
->
->  * The attach_flags in kdbus_cmd_hello was split into two parts,
->    attach_flags_send and attach_flags_recv, so each peer may chose what
->    exactly it want to transmit or receive.
->
->  * Metadata will only be attached to the final message in the
->    receiver's pool if both the sender's attach_flags_send and the
->    receiver's attach_flags_recv bit are set.
->
->  * Consequently, the existing KDBUS_ITEM_ATTACH_FLAGS item type is
->    split into KDBUS_ITEM_ATTACH_FLAGS_SEND and
->    KDBUS_ITEM_ATTACH_FLAGS_RECV, so that both connection details can be
->    separately updated through KDBUS_CMD_CONN_UPDATE.
->
->  * To allow for use cases that require certain metadata to be attached
->    on each message, we've added a negotiation mechanism to the HELLO
->    ioctl: An optional metadata mask can be passed during the creation
->    of buses, so bus owners may require certain bits in
->    attach_flags_send to be set. That way, the creator of the bus will
->    specify which metadata is required to fulfill the requirements of
->    the specification of the role of the bus.
->
->
+Am 05.11.2014 um 16:23 schrieb Artem Bityutskiy:
+> On Wed, 2014-10-29 at 13:45 +0100, Richard Weinberger wrote:
+>> This self check allows Fastmap to detect absent PEBs while
+>> writing a new fastmap to the MTD device.
+>> It will help to find implementation issues in Fastmap.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  drivers/mtd/ubi/fastmap.c | 86 +++++++++++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 84 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+>> index cfd5b5e..adccc1f 100644
+>> --- a/drivers/mtd/ubi/fastmap.c
+>> +++ b/drivers/mtd/ubi/fastmap.c
+>> @@ -1,5 +1,6 @@
+>>  /*
+>>   * Copyright (c) 2012 Linutronix GmbH
+>> + * Copyright (c) 2014 sigma star gmbh
+>>   * Author: Richard Weinberger <richard@nod.at>
+>>   *
+>>   * This program is free software; you can redistribute it and/or modify
+>> @@ -17,6 +18,69 @@
+>>  #include "ubi.h"
+>>  
+>>  /**
+>> + * init_seen - allocate the seen logic integer array
+> 
+> How about
+> 
+> init_seen - allocate memory for used for debugging.
+> 
+> 
+> And I think there should be a dot at the end of the title comment. Not
+> that it is very important, but I tried to follow this rule everywhere.
+> 
+>> +/**
+>> + * free_seen - free the seen logic integer array
+>> + * @seen: integer array of @ubi->peb_count size
+>> + */
+>> +static inline void free_seen(int *seen)
+>> +{
+>> +	kfree(seen);
+>> +}
+> 
+> Just do not introduce a function for this. And the commentary does not
+> make it any more clear. Or if you are going to add more stuff to this
+> function later - rephrase the comment please.
 
-Thanks!
+Why? I did that to have alloc and free balanced.
+I.e. to not have a naked kfree(). Always when I see a kfree() somewhere
+I'd like to see the k*alloc().
 
-Here are some early thoughts based on reading what I think is the v2
-documentation online.
+>> +/**
+>> + * set_seen - mark a PEB as seen
+>> + * @ubi: UBI device description object
+>> + * @pnum: the to be marked PEB
+>> + * @seen: integer array of @ubi->peb_count size
+>> + */
+> 
+> The dot at the end of the title line. And the return code could be
+> documented too.
 
-My general impression is that the semantics of and use cases for
-passing fds around (including through execve) are not well thought
-out.  I think that the kdbus designers need to decide whether kdbus
-fds will ever be passed between processes (via execve, SCM_RIGHTS, or
-kdbus).  If yes, there are several issues:
+I need a script for this. ;-)
 
-The docs for metadata and namespaces suggest that passing fds between
-namespaces turns off metadata.  I don't want to reopen this particular
-discussion until Eric is back, and I don't think that the code matches
-the docs, but to me this suggests that no one has really considered
-how this case is supposed to behave.
+> "The to be marked PEB" is understandable, but not well-said :-)
+> 
+> Not sure if this adds much value, but I am trying to be consistent.
+> 
+>> +/**
+>> + * self_check_seen - check whether all PEB have been seen by fastmap
+>> + * @ubi: UBI device description object
+>> + * @seen: integer array of @ubi->peb_count size
+>> + */
+> 
+> Similar nit-picks.
+> 
+>> +static int self_check_seen(struct ubi_device *ubi, int *seen)
+>> +{
+>> +	int pnum, ret = 0;
+>> +
+>> +	if (!ubi_dbg_chk_fastmap(ubi) || !seen)
+>> +		return 0;
+>> +
+>> +	for (pnum = 0; pnum < ubi->peb_count; pnum++) {
+>> +		if (!seen[pnum] && ubi->lookuptbl[pnum]) {
+>> +			ubi_err("self-check failed for PEB %d, fastmap didn't see it", pnum);
+> 
+> Didn't Tanya add the 'ubi' parameter in the printing functions?
 
-I think that KDBUS_MESSAGE_SEND needs to specify metadata items to
-send.  Otherwise you'll introduce security problems the first time you
-ever have a process that accepts a kdbus fd from a process that it
-should not fully trust.  (Note that this is not just my overly
-paranoid imagination.  I've found real security bugs in netlink and
-procfs based on this.  And SCM_CREDENTIALS is broken for similar
-reasons.)  Also, the userspace libraries will need to be rather
-careful about setting those bits.
+At the time I wrote this patch Tanya's work was not mainline...
 
-I don't see a mechanism to prevent resource exhaustion issues in which
-many fds are recursively shoved into kdbus.  (You still may need to
-address this to some extent if you disallow the transfer of kdbus fds,
-but it's probably easier to handle.)
+>>  	int scrub_peb_count, erase_peb_count;
+>> +	int *seen_pebs = NULL;
+> 
+> Is the initialization really needed?
+> 
 
+Correct, we can drop it.
 
-If no:
-
-KDBUS_MESSAGE_SEND should not send metadata items at all, because they
-will never be interesting.
-
-
-
-What privilege do you need to create a custom endpoint?  What
-privilege do you need to set its policy?  Why do custom endpoints have
-names at all?
-
-
-
-Metadata:
-
-Please justify each and every metadata with an actual use case or
-remove it.  The justification should include an explanation of why the
-same thing can't be achieved with policy.
-
-Off the top of my head:
-
- - KDBUS_ATTACH_TIMESTAMP is fine.
-
- - KDBUS_ATTACH_CREDS should be just uid and gid
-
- - I tend to think that pid and tid should be separate.  They're
-really their own thing, and, as noted in all the perfectly valid
-dislike directed at SO_PEERCRED, they have extremely limited value.
-
- - starttime should have a justification or be removed.
-
- - KDBUS_ATTACH_AUXGROUPS: I'm not sure what to think about this.  I
-feel like it's only useful for implementing strange types of policies.
-
- - KDBUS_ATTACH_COMM, KDBUS_ATTACH_CMDLINE, and KDBUS_ATTACH_EXE: Just
-remove them.  There is no point whatsoever in having the kernel try to
-validate comm and cmdline, and exe is barely better [1].  You realize
-that there's this thing called PR_SET_NAME, right?  Removing these may
-benefit your arguments about the whole metadata mechanism, too --
-these three items are wonderful straw men to poke at, because any
-concept of trusting them is absurd even ignoring the framework in
-which they're used.  But you can't tell people to shut up and stop
-attacking straw men, because you've actually proposed these particular
-straw men. :)
-
- - KDBUS_ATTACH_CGROUP: This sounds legitimately useful.
-
- - KDBUS_ATTACH_SECLABEL: The docs talk about selinux.  What does this
-even mean on a non-selinux system?  I tend to think that this
-shouldn't exist as a metadata item and that all selinux integration
-should go through the LSM hooks.  Otherwise we'll end up with two
-separate selinux policy databases -- the normal one and whatever dbus
-tries to do, and the result will be even more unwieldy than the
-current state of affairs.  Also, turning off selinux enforcing mode
-really ought to continue turning it all the way off, and I don't think
-that dbus should be allowed to interfere with that.
-
- - KDBUS_ATTACH_AUDIT: Please define what an audit label is.  I'm
-serious: audit doesn't have a great track record for interface
-stability.  Please consider disallowing anyone without
-CAP_AUDIT_CONTROL from *receiving* this item.  (Also, the docs here
-are full of typos.)
-
-Are caps missing from this list?  I swear they're in the code but not
-in either version of the docs...  If they're still in the code, I
-really don't like it.  The Linux capability system sucks, and to avoid
-having that suckage spread, those bits should IMO not gain any new
-powers like this.  One of the great things about polkit and dbus is
-that you don't *need* caps to ask system software to do things for
-you.  This means that you can, for example, have the ability to ask
-for a graceful reboot but not to call reboot(2).  This is a good
-thing, and actually using caps as a metadata item risks undoing that.
-(Also, keep in mind that actually granting caps to uid != 0 processes
-is a royal PITA, and every attempt to fix it gets shot down.
-Furthermore, since I fully expect Eric to eventually nak you hard
-enough that you get kdbus namespacing to work well, I think you'll
-find that namespacing caps will be even less pleasant that the rest of
-it.)
-
-[1] I say that exe is barely better than comm because of two factors.
-The first is ptrace.  The second is that, if you fix namespacing,
-you'll have a high probability of getting mostly-attacker-controlled
-garbage out of it.  (It will be 100% garbage, and attackers will have
-lots of influence on that garbage.)
-
---Andy
+Thanks,
+//richard
