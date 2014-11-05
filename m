@@ -1,135 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaKEF0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 00:26:53 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:22037 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841AbaKEF0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 00:26:48 -0500
-X-IronPort-AV: E=Sophos;i="5.07,317,1413270000"; 
-   d="scan'208";a="49757040"
-Message-ID: <5459B516.30300@broadcom.com>
-Date: Tue, 4 Nov 2014 21:26:46 -0800
-From: Scott Branden <sbranden@broadcom.com>
+	id S1751328AbaKEF4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 00:56:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38378 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaKEF4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 00:56:49 -0500
+Message-ID: <5459BC1C.3000807@suse.de>
+Date: Wed, 05 Nov 2014 06:56:44 +0100
+From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "Peter Griffin" <peter.griffin@linaro.org>,
-        Chris Ball <chris@printf.net>, "Piotr Krol" <pietrushnic@gmail.com>
-CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, <linux-rpi-kernel@lists.infradead.org>,
-        Ray Jui <rjui@broadcom.com>, <bcm-kernel-feedback-list@broadcom.com>
-Subject: Re: [PATCHv2 4/5] mmc: shdci-bcm2835: add verify for 32-bit back-to-back
- workaround
-References: <Scott Branden <sbranden@broadcom.com> <1414651017-3545-1-git-send-email-sbranden@broadcom.com> <1414651017-3545-5-git-send-email-sbranden@broadcom.com> <5459AB41.8080101@wwwdotorg.org>
-In-Reply-To: <5459AB41.8080101@wwwdotorg.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Heiko Stuebner <heiko@sntech.de>, linux-sh@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>, Olof Johansson <olof@lixom.net>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        Andreas Olofsson <andreas@adapteva.com>
+Subject: Re: [PATCH 0/7] Pinctrl support for Zynq
+References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="7IchI7Vel7pe60H9xXHiup0qR20NGLJha"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-11-04 08:44 PM, Stephen Warren wrote:
-> On 10/30/2014 12:36 AM, Scott Branden wrote:
->> Add a verify option to driver to print out an error message if a
->> potential back to back write could cause a clock domain issue.
->
->> diff --git a/drivers/mmc/host/sdhci-bcm2835.c b/drivers/mmc/host/sdhci-bcm2835.c
->
->>   static inline void bcm2835_sdhci_writel(struct sdhci_host *host,
->>   						u32 val, int reg)
->>   {
->> +#ifdef CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND
->> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->> +	struct bcm2835_sdhci_host *bcm2835_host = pltfm_host->priv;
->> +
->> +	if (bcm2835_host->previous_reg == reg) {
->> +		if ((reg != SDHCI_HOST_CONTROL)
->> +			&& (reg != SDHCI_CLOCK_CONTROL)) {
->> +			dev_err(mmc_dev(host->mmc),
->> +			"back-to-back write to 0x%x\n", reg);
->
-> This fires a *ton* on reg 0x20 and 0x30 on my rev 2 model B with the
-> patches applied on top of next-20141031. Without the patches applied,
-> everything works fine. As far as I can tell, SD card accesses no longer
-> work (or perhaps there's just so much log spew over serial that it takes
-> more than 1.5 minutes to get to the login prompt).
->
-Thanks for testing.  Like I said in the cover message - I've never run 
-this on a PI actually.  I've run it on other hardware with the same core 
-arasan block having the same clock domain issue.  The registers printed 
-out do not have the clock domain issue - I'm still getting more details 
-from the silicon designers on this.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--7IchI7Vel7pe60H9xXHiup0qR20NGLJha
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Without the verify patch the performance is actually quite good.  See 
-tests result from Piotr:
+Hi S=F6ren,
 
-On Fri, Oct 31, 2014 at 05:02:59PM +0000, Scott Branden wrote:
- > Please let me know how this works for you.
- >
-Scott,
-please ignore my previous mail I made mistake when applying patches.
+Am 03.11.2014 um 20:05 schrieb Soren Brinkmann:
+> Soren Brinkmann (7):
+>   pinctrl: pinconf-generic: Declare dt_params/conf_items const
+>   pinctrl: pinconf-generic: Infer map type from DT property
+>   pinctrl: pinconf-generic: Allow driver to specify DT params
+>   pinctrl: zynq: Document DT binding
+>   pinctrl: Add driver for Zynq
+>   ARM: zynq: Enable pinctrl
+>   ARM: zynq: DT: Add pinctrl information
 
-Results of testing your code on top of 3.18-rc2 with Kingston SDC10/8GB:
+Thanks for your work on this,
 
-* when compiling with CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND=y there 
-is a
-lot of:
+Tested-by: Andreas F=E4rber <afaerber@suse.de>
 
-sdhci-bcm2835 20300000.sdhci: back-to-back write to 0x30
-and
-sdhci-bcm2835 20300000.sdhci: back-to-back write to 0x20
+I've tracked down all 54 MIO pins of the Parallella and cooked up the
+equivalent DT patch. QSPI and USB still seem to be missing drivers
+upstream; I reused the SPI driver for the QSPI with pinctrl and
+Punnaiah's chipidea driver (not fully working) without pinctrl for lack
+of group/function definitions. For testing purposes I've configured a
+heartbeat trigger for the USER_LED (CR10).
 
-* performance w/o patches:
-yncraspberrypi:~$ sync; time dd if=/dev/zero of=~/test.tmp bs=500K 
-count=1024; sy
-1024+0 records in
-1024+0 records out
-524288000 bytes (524 MB) copied, 787.384 s, 666 kB/s
+To my disappointment these pinctrl additions did not fix one issue:
+Whenever a write access to be handled by the bitstream (0x808f0f04) is
+performed, the board hangs and the heartbeat stops. Would a bug in the
+bitstream allow this to happen, or are more drivers missing to actually
+make use of the PL in general? With a downstream ADI/Xilinx 3.12 kernel
+that problem does not surface.
 
-real    13m7.404s
-user    0m0.080s
-sys     0m56.300s
-pi@raspberrypi:~$ time dd if=~/test.tmp of=/dev/null bs=500K count=1024
-1024+0 records in
-1024+0 records out
-524288000 bytes (524 MB) copied, 34.2115 s, 15.3 MB/s
+Regards,
+Andreas
 
-real    0m34.232s
-user    0m0.020s
-sys     0m31.190s
+https://github.com/afaerber/linux/commits/parallella-next
+
+--=20
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=FCrnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imend=F6rffer; HRB 21284 AG N=FCrnbe=
+rg
 
 
-* performance w/ patches is great IMHO:
-yncraspberrypi:~$ sync; time dd if=/dev/zero of=~/test.tmp bs=500K 
-count=1024; sy
-1024+0 records in
-1024+0 records out
-524288000 bytes (524 MB) copied, 45.4886 s, 11.5 MB/s
+--7IchI7Vel7pe60H9xXHiup0qR20NGLJha
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-real    0m45.515s
-user    0m0.060s
-sys     0m30.050s time dd if=~/test.tmp of=/dev/null bs=500K count=1024
-1024+0 records in
-1024+0 records out
-524288000 bytes (524 MB) copied, 33.6292 s, 15.6 MB/s
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-real    0m33.649s
-user    0m0.020s
-sys     0m30.730s
+iQIcBAEBAgAGBQJUWbwcAAoJEPou0S0+fgE/RjgP/Rv9mvYJOZxmXGnlfhtE+poG
+bqoHZz9y4vszCvtNSCz6gIsyg+Cw0/hEX2Kwmbqe0b87OTv+16hTAhd3xqY4A0gL
+hwSju7S4zy/aV3WAebDBETmryv6uH297uKsX7uZ+UacfvnBiOzwt9o2p6PdpDEwJ
+O0z122Fy/cNldS7amrgJJXOEYH2XLyIIuZ53viyvbPbneF5PhZvxj5e1t3dyDZtm
+4mPdcy3PqIseZl2Egbtad6B96tcUvr3BwbGs9gWkyKHNQMqhqqaeG+7uTlFncV2Y
+BCV6Hn1SOEfLLXDCpXTYb5lAAVr1915PRzXcSOzzi2AmeyaE71Z0zZKWJpP2yna3
+JQuNuo4BATzVmv8pzzU6LisVv9n/ccUXJP3zATGKxI5pakei9ylJWIj8CKuoqGbB
+10eE5JwbH1qMkVa4nz079khP6bRV4jzeyHaxNobZuMmTny50wavQmnAS3gWH6+Ez
+DQN64BYDD8ghLQz03Mt/GcwOdxhh3rEesPyVCQ445rL7PkP+FHhwSVn95P5YWVlB
+rgUIqFfWJJG1Y7PVD50BJ5wBP9I75AiQu58/QdtO600fRio57M5X/jZoycBm69rC
+20hSZ7PC94p8GimARS5tK4FxxMWhYvOiuZnzURU1DStUsE9C2dbJeGcT4E16azBL
+yqoCFMqKh3mfbDyseq2Q
+=JI8m
+-----END PGP SIGNATURE-----
 
-Great work!
-
-Have you got plans to enable DMA for this controller ? sys CPU load is quite
-big for above code, my tests with bcm2835-mmc and slave_sg from RaspberryPi
-Foundation gives about 15s instead of 31s. It would be great to relive CPU a
-little bit.
-
-Best Regards,
-Piotr Król
-
-
-
+--7IchI7Vel7pe60H9xXHiup0qR20NGLJha--
