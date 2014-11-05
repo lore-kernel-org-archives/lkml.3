@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaKERKN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:10:13 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53149 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaKERKL (ORCPT
+	id S1755695AbaKERKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:10:21 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53141 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755585AbaKERKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:10:11 -0500
+	Wed, 5 Nov 2014 12:10:17 -0500
+Message-ID: <545A59F5.8000202@hurleysoftware.com>
+Date: Wed, 05 Nov 2014 12:10:13 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXDq_k+7w0RXJMpPv36w_Jf+3rJiihfMxS=TFo8rq95ew@mail.gmail.com>
-References: <CA+55aFw5xL4jk_=oJK1tTwpGG5Y_cibK3y9L=VvYx9jugqrUuQ@mail.gmail.com>
-	<CA+55aFw5GqoTF3r=OK+pmdbvm_sdDvkeZMdwk_3TdSg2eyr7MQ@mail.gmail.com>
-	<CALCETrUpMOX-0=7Pdv_etjzOjZVH4nrtiqCdWYqtM-ECKFrsYA@mail.gmail.com>
-	<20141031084220.GA29085@infradead.org>
-	<CALCETrXdPV5+qJ438Ky=tfBiEmqeeTYNuukQS7TcjbEwDgzwGQ@mail.gmail.com>
-	<CA+55aFxUdjsm0gC0ULaOq_RhDLjWp=RDOE_O9qXdQRPqJUrZVA@mail.gmail.com>
-	<20141103083447.GA8617@infradead.org>
-	<CALCETrUjbfSiPUvTzTfOVAbxy5dy3PpKnnC+h4P_+FOeibTgDw@mail.gmail.com>
-	<CAH_=xobsXZq9M-vXDN_+cQmvRLtgPOzHMbrnzsEToMgLD5CoxA@mail.gmail.com>
-	<CA+55aFw29MUj+w46yneut2yxXOH1RQmDud5KL8V-SPyPWm1WqA@mail.gmail.com>
-	<20141105082721.GB19607@infradead.org>
-	<CAH_=xoa36gKcEpi8mSE9cedghqE4FhBCVMQNPV_1qDyk1Bb2ng@mail.gmail.com>
-	<CALCETrXDq_k+7w0RXJMpPv36w_Jf+3rJiihfMxS=TFo8rq95ew@mail.gmail.com>
-Date: Wed, 5 Nov 2014 09:10:10 -0800
-X-Google-Sender-Auth: 3XpXZXjUDjUUMHe3VN3clnwr0kg
-Message-ID: <CA+55aFx6iqZJNz08yu=nB-drU0Z2D4KM7d1T9zcz3N3NQFEjbQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Eric Rannaud <e@nanocritical.com>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] tty: serial: men_z135_uart: Fix driver for changes
+ in hardware
+References: <1415030753-26885-1-git-send-email-johannes.thumshirn@men.de> <5457ED0C.3090705@hurleysoftware.com> <5457F30F.2030203@hurleysoftware.com> <20141105163952.GA21159@jtlinux>
+In-Reply-To: <20141105163952.GA21159@jtlinux>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 7:32 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> I have no idea whether it's a security risk, but it's a serious "wtf?!?" risk.
+On 11/05/2014 11:39 AM, Johannes Thumshirn wrote:
+> On Mon, Nov 03, 2014 at 04:26:39PM -0500, Peter Hurley wrote:
+>> On 11/03/2014 04:01 PM, Peter Hurley wrote:
+>>> On 11/03/2014 11:05 AM, Johannes Thumshirn wrote:
+>>>> * Enable the handling of UART core's automatic flow control feature.
+>>>>   When AFE is active disable generation of modem status IRQs.
+>>>
+>>> So HUPCL doesn't work when CRTSCTS is set?
+>>
+>> Sorry, I meant !CLOCAL. IOW,
+>>
+>> 'So !CLOCAL doesn't work when CRTSCTS is set?'
+> 
+> Yes, unfortunately
 
-Yeah. And considering that the only apparently user of this read-only
-O_TMPFILE interface doesn't actually need it anyway because it carries
-around the whole "read-only to the client" information independently,
-I think the issue is moot. We don't need zero-sized read-only
-O_TMPFILE files.
+Then you want to reset CLOCAL back on in the termios when
+you enable auto flow control. That way, the process can see which
+termios changes were successful and which were unsuccessful.
+Plus, it keeps the serial core state sync'd with the driver.
 
-                      Linus
+Optionally, you could consider overriding CRTSCTS when !CLOCAL; iow,
+if !CLOCAL, then disable CRTSCTS instead. (In that case, you would
+reset CRTSCTS in the termios as well, so the process would be aware
+of the changes).
+
+>>
+>>> Is this because there's actually a problem with the IP core that
+>>> MSIs trash the autoCTS state, or is the problem that the driver
+>>> just shouldn't be calling uart_handle_cts_change() when autoCTS is
+>>> on?
+>>
+> 
+> From our investigations it looks like it trashes the autoCTS state.
+
+Ok.
+
+Regards,
+Peter Hurley
