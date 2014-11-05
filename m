@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761AbaKEHUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 02:20:07 -0500
-Received: from mail-bn1bon0070.outbound.protection.outlook.com ([157.56.111.70]:43003
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753644AbaKEHUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 02:20:02 -0500
-Date: Wed, 5 Nov 2014 08:19:41 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753837AbaKEHUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 02:20:15 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:42753 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753766AbaKEHUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 02:20:08 -0500
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, <michal.simek@xilinx.com>,
-        <soren.brinkmann@xilinx.com>, <davem@davemloft.net>,
-        <sthokal@xilinx.com>, <manuel.schoelling@gmx.de>,
-        <f.fainelli@gmail.com>, <paul.gortmaker@windriver.com>,
-        <ebiederm@xmission.com>
-CC: <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: net: ethernet: xilinx: xilinx_emaclite: revert
- the original commit "1db3ddff1602edf2390b7667dcbaa0f71512e3ea"
-References: <5458E605.6070801@gmail.com>
-In-Reply-To: <5458E605.6070801@gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21076.003
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <a39951cc744047679d13b23e76c97347@BN1BFFO11FD022.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(479174003)(31014004)(377454003)(24454002)(189002)(164054003)(51704005)(31966008)(108616004)(74316001)(47776003)(20776003)(65956001)(64706001)(23676002)(76176999)(86362001)(64126003)(50986999)(6806004)(87936001)(19580405001)(92566001)(44976005)(19580395003)(104016003)(54356999)(2201001)(83506001)(95666004)(50466002)(4396001)(99396003)(46102003)(120916001)(62966003)(33646002)(21056001)(77156002)(107046002)(106466001)(102836001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB025;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB025;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0386B406AA
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <CADtm3G7bU6Y2aKco5Vb81KSqsy=FH9zmdDJm=Tixjoep1YeJ7Q@mail.gmail.com>
+References: <CADtm3G7DtGkvPk36Fiunwen8grw-94V6=iv82iusGumfNJkn-g@mail.gmail.com>
+	<xa1tlhnq7ga7.fsf@mina86.com>
+	<CADtm3G7bU6Y2aKco5Vb81KSqsy=FH9zmdDJm=Tixjoep1YeJ7Q@mail.gmail.com>
+Date: Wed, 5 Nov 2014 15:20:07 +0800
+Message-ID: <CAL1ERfMYmQcQ_sX7E0HC2bXmC-imh4T-7Q4nBVQRXkQSaTjvQQ@mail.gmail.com>
+Subject: Re: CMA alignment question
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Gregory Fong <gregory.0xf0@gmail.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        Laura Abbott <lauraa@codeaurora.org>, iamjoonsoo.kim@lge.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 03:43 PM, Chen Gang wrote:
-> Microblaze is a fpga soft core, it can be customized easily, which may
-> cause many various hardware version strings.
-> 
-> So the original fix patch based on hard-coded compatible version strings
-> is not a good idea (although it is correct for current issue). For it,
-> there will be a new solving way soon (which based on the device tree).
-> 
-> The original issue is related with qemu, so can only change the hardware
-> version string in qemu for it, then keep the original driver no touch (
-> qemu is for virtualization which has much easier life than real world).
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/net/ethernet/xilinx/xilinx_emaclite.c | 1 -
->  1 file changed, 1 deletion(-)
+On Wed, Nov 5, 2014 at 12:18 PM, Gregory Fong <gregory.0xf0@gmail.com> wrote:
+> On Tue, Nov 4, 2014 at 2:27 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
+>> On Tue, Nov 04 2014, Gregory Fong wrote:
+>>> The alignment in cma_alloc() is done w.r.t. the bitmap.  This is a
+>>> problem when, for example:
+>>>
+>>> - a device requires 16M (order 12) alignment
+>>> - the CMA region is not 16 M aligned
 
-Acked-by: Michal Simek <michal.simek@xilinx.com>
+I think the device driver should ensure that situation could not occur,
+by assign suitable alignment parameter in cma_declare_contiguous().
 
-Thanks,
-Michal
-
+>>> In such a case, can result with the CMA region starting at, say,
+>>> 0x2f800000 but any allocation you make from there will be aligned from
+>>> there.  Requesting an allocation of 32 M with 16 M alignment, will
+>>> result in an allocation from 0x2f800000 to 0x31800000, which doesn't
+>>> work very well if your strange device requires 16M alignment.
+>>>
+>>> This doesn't have the behavior I would expect, which would be for the
+>>> allocation to be aligned w.r.t. the start of memory.  I realize that
+>>> aligning the CMA region is an option, but don't see why cma_alloc()
+>>> aligns to the start of the CMA region.  Is there a good reason for
+>>> having cma_alloc() alignment work this way?
+>>
+>> No, it's a bug.  The alignment should indicate alignment of physical
+>> address not position in CMA region.
+>>
+>
+> Ah, now I see that Marek submitted this patch from you back in 2011
+> that would have allowed the bitmap lib to support an alignment offset:
+> http://thread.gmane.org/gmane.linux.kernel/1121103/focus=1121100
+>
+> Any idea why this didn't make it into the later changesets?  If not,
+> I'll resubmit it and to use it to fix this bug.
+>
+> Thanks,
+> Gregory
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
