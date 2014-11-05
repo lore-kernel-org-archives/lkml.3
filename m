@@ -1,70 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaKEAVu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 19:21:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36127 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaKEAVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 19:21:49 -0500
-Date: Wed, 5 Nov 2014 01:21:47 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Subject: Re: [PATCH v1 10/11] backports: prefix c-file / h-file auto
-	backport with BPAUTO
-Message-ID: <20141105002147.GJ12953@wotan.suse.de>
-References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com> <1415090582-14129-11-git-send-email-mcgrof@do-not-panic.com> <1415096092.2064.13.camel@sipsolutions.net> <20141104215002.GF12953@wotan.suse.de> <1415137850.2064.23.camel@sipsolutions.net>
+	id S1752699AbaKEAYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 19:24:08 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:55444 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaKEAYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 19:24:05 -0500
+From: =?UTF-8?q?Kristina=20Mart=C5=A1enko?= 
+	<kristina.martsenko@gmail.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stefan Wahren <stefan.wahren@i2se.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Michael Heimpold <mhei@heimpold.de>, linux-mmc@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Kristina=20Mart=C5=A1enko?= 
+	<kristina.martsenko@gmail.com>
+Subject: [PATCH] mmc: core: fix card detection regression
+Date: Wed,  5 Nov 2014 02:22:41 +0200
+Message-Id: <1415146961-25993-1-git-send-email-kristina.martsenko@gmail.com>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1747777414.897866.1414878004147.JavaMail.open-xchange@oxbsltgw09.schlund.de>
+References: <1747777414.897866.1414878004147.JavaMail.open-xchange@oxbsltgw09.schlund.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415137850.2064.23.camel@sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 10:50:50PM +0100, Johannes Berg wrote:
-> On Tue, 2014-11-04 at 22:50 +0100, Luis R. Rodriguez wrote:
-> > On Tue, Nov 04, 2014 at 11:14:52AM +0100, Johannes Berg wrote:
-> > > On Tue, 2014-11-04 at 00:43 -0800, Luis R. Rodriguez wrote:
-> > > 
-> > > > -            mf.write('compat-$(%s%s) += %s\n' % (bp_prefix, sym, ' '.join(o_files)))
-> > > > +            if bp_prefix not in sym:
-> > > > +                mf.write('compat-$(%s%s) += %s\n' % (bp_prefix, sym, ' '.join(o_files)))
-> > > > +            else:
-> > > > +                mf.write('compat-$(%s) += %s\n' % (sym, ' '.join(o_files)))
-> > > 
-> > > I don't think these changes are correct, the bp_prefix is needed anyway,
-> > > and there's no way it could already be. Looks like this comes from a
-> > > previous attempt where you misunderstood and thought
-> > > CONFIG_BACKPORT_BACKPORT_... was actually wrong, when in fact it is
-> > > correct (and would now be CONFIG_BACKPORT_BPAUTO_...)
-> > 
-> > I did at one point have BACKPORT_BPAUTO_* stuff on the compat/Kconfig for
-> > the auto stuff but figured that was superfluous. I'll respin with it.
-> 
-> Not sure what you mean? It seems to me you should just drop the changes
-> like the one I quoted above.
+Since commit 89168b489915 ("mmc: core: restore detect line inversion
+semantics"), the SD card on i.MX28 (and possibly other) devices isn't
+detected and booting stops at:
 
-If we keep BACKPORT_BPAUTO as prefix on compat/Kconfig for auto backport
-stuff we'll end up with BACKPORT_BACKPORT_BPAUTO, while technically correct
-as you have pointed out, I find it personally superfluous. If we however
-only use BPAUTO_ prefix on the compat/Kconfig we'll end up with BACKPORT_BPAUTO.
-Its subjective then, but I was opting in to prefer to just keep BPAUTO_ prefix
-with the resulting CPTCFG_BPAUTO for packaging and CONFIG_BACKPORT_BPAUTO for
-integration for these, if you however feel its best to double the BACKPORT
-prefix that's fine too, it just seemed odd (although I realize correct).
+[    4.120617] Waiting for root device /dev/mmcblk0p3...
 
-To do what I just described I think you're right will try removing that,
-testing that now. The other case that I ran into issues was the backport
-versioning variables but I have solved that through other non intrusive means
-to packaging (just use the C define with CPTCFG_ prefix, keeping the original
-Makefile variables) which will be part of my next respin.
+This is caused by the MMC_CAP2_CD_ACTIVE_HIGH flag being set incorrectly
+when the host controller doesn't use a GPIO for card detection (but
+instead uses a dedicated pin). In this case mmc_gpiod_request_cd() will
+return before assigning to the gpio_invert variable, leaving the
+variable uninitialized. The variable then gets used to set the flag.
+This patch fixes the issue by making sure gpio_invert is set to false
+when a GPIO isn't used. After this patch, i.MX28 boots fine.
 
-We still do need to decide if we want double BACKPORT_ prefix for BPAUTO
-though, that remains subjective and I don't feel strongly about any way
-we go.
+The MMC_CAP2_RO_ACTIVE_HIGH (write protect) flag is also set incorrectly
+for the exact same reason (it uses the same uninitialized variable), so
+this patch fixes that too.
 
-  Luis
+Fixes: 89168b489915 ("mmc: core: restore detect line inversion semantics")
+Reported-by: Stefan Wahren <stefan.wahren@i2se.com>
+Signed-off-by: Kristina Martšenko <kristina.martsenko@gmail.com>
+---
+This is a different version of the previous patch [1], so I haven't
+included the Reviewed-by and Tested-by's. Would be nice if someone could
+test this version as well.
+
+[1] http://thread.gmane.org/gmane.linux.kernel.gpio/4609/focus=29576
+
+ drivers/mmc/core/host.c | 21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+index 03c53b72a2d6..270d58a4c43d 100644
+--- a/drivers/mmc/core/host.c
++++ b/drivers/mmc/core/host.c
+@@ -311,7 +311,8 @@ int mmc_of_parse(struct mmc_host *host)
+ 	struct device_node *np;
+ 	u32 bus_width;
+ 	int len, ret;
+-	bool cap_invert, gpio_invert;
++	bool cd_cap_invert, cd_gpio_invert = false;
++	bool ro_cap_invert, ro_gpio_invert = false;
+ 
+ 	if (!host->parent || !host->parent->of_node)
+ 		return 0;
+@@ -359,16 +360,13 @@ int mmc_of_parse(struct mmc_host *host)
+ 	if (of_find_property(np, "non-removable", &len)) {
+ 		host->caps |= MMC_CAP_NONREMOVABLE;
+ 	} else {
+-		if (of_property_read_bool(np, "cd-inverted"))
+-			cap_invert = true;
+-		else
+-			cap_invert = false;
++		cd_cap_invert = of_property_read_bool(np, "cd-inverted");
+ 
+ 		if (of_find_property(np, "broken-cd", &len))
+ 			host->caps |= MMC_CAP_NEEDS_POLL;
+ 
+ 		ret = mmc_gpiod_request_cd(host, "cd", 0, true,
+-					   0, &gpio_invert);
++					   0, &cd_gpio_invert);
+ 		if (ret) {
+ 			if (ret == -EPROBE_DEFER)
+ 				return ret;
+@@ -391,17 +389,14 @@ int mmc_of_parse(struct mmc_host *host)
+ 		 * both inverted, the end result is that the CD line is
+ 		 * not inverted.
+ 		 */
+-		if (cap_invert ^ gpio_invert)
++		if (cd_cap_invert ^ cd_gpio_invert)
+ 			host->caps2 |= MMC_CAP2_CD_ACTIVE_HIGH;
+ 	}
+ 
+ 	/* Parse Write Protection */
+-	if (of_property_read_bool(np, "wp-inverted"))
+-		cap_invert = true;
+-	else
+-		cap_invert = false;
++	ro_cap_invert = of_property_read_bool(np, "wp-inverted");
+ 
+-	ret = mmc_gpiod_request_ro(host, "wp", 0, false, 0, &gpio_invert);
++	ret = mmc_gpiod_request_ro(host, "wp", 0, false, 0, &ro_gpio_invert);
+ 	if (ret) {
+ 		if (ret == -EPROBE_DEFER)
+ 			goto out;
+@@ -414,7 +409,7 @@ int mmc_of_parse(struct mmc_host *host)
+ 		dev_info(host->parent, "Got WP GPIO\n");
+ 
+ 	/* See the comment on CD inversion above */
+-	if (cap_invert ^ gpio_invert)
++	if (ro_cap_invert ^ ro_gpio_invert)
+ 		host->caps2 |= MMC_CAP2_RO_ACTIVE_HIGH;
+ 
+ 	if (of_find_property(np, "cap-sd-highspeed", &len))
+-- 
+2.0.2
+
