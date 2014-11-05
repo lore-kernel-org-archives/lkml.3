@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaKEUdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:33:00 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:58855 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaKEUc4 (ORCPT
+	id S1752294AbaKEUeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:34:14 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:14379 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751422AbaKEUeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:32:56 -0500
+	Wed, 5 Nov 2014 15:34:09 -0500
+Date: Wed, 5 Nov 2014 15:33:55 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 10/12 v3] seq-buf: Make seq_buf_bprintf()
+ conditional on CONFIG_BINARY_PRINTF
+Message-ID: <20141105153355.22167d0a@gandalf.local.home>
+In-Reply-To: <20141105170605.GL4570@pathway.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+	<20141104160222.969013383@goodmis.org>
+	<20141105170605.GL4570@pathway.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <x49oat1o4gf.fsf@segfault.boston.devel.redhat.com>
-References: <cover.1413923420.git.milosz@adfin.com>
-	<1613303dfaa91e6ff09cdd7860e0316765663ba6.1413923420.git.milosz@adfin.com>
-	<x49oat1o4gf.fsf@segfault.boston.devel.redhat.com>
-Date: Wed, 5 Nov 2014 15:32:54 -0500
-Message-ID: <CANP1eJE1GbTQ3=AjL=xQ773rQEGsWnQy=GnY=_VzsFnTRVJKeQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] vfs: Define new syscalls preadv2,pwritev2
-From: Milosz Tanski <milosz@adfin.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have fixed this in the version I'm going to be resubmitting today.
+On Wed, 5 Nov 2014 18:06:05 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-- Milosz
+> On Tue 2014-11-04 10:52:47, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > The function bstr_printf() from lib/vsprnintf.c is only available if
+> > CONFIG_BINARY_PRINTF is defined. This is due to the only user currently
+> > being the tracing infrastructure, which needs to select this config
+> > when tracing is configured. Until there is another user of the binary
+> > printf formats, this will continue to be the case.
+> > 
+> > Since seq_buf.c is now lives in lib/ and is compiled even without
+> > tracing, it must encompass its use of bstr_printf() which is used
+> > by seq_buf_printf(). This too is only used by the tracing infrastructure
+> > and is still encapsulated by the CONFIG_BINARY_PRINTF.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Please switch the order and do this change before moving to lib/.
+> IMHO, the current order would break bisecting when tracing is
+> disabled.
 
-On Fri, Oct 24, 2014 at 11:46 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Milosz Tanski <milosz@adfin.com> writes:
->
->> diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
->> index 22749c1..10f8883 100644
->> --- a/include/uapi/asm-generic/unistd.h
->> +++ b/include/uapi/asm-generic/unistd.h
->> @@ -213,6 +213,10 @@ __SC_COMP(__NR_pwrite64, sys_pwrite64, compat_sys_pwrite64)
->>  __SC_COMP(__NR_preadv, sys_preadv, compat_sys_preadv)
->>  #define __NR_pwritev 70
->>  __SC_COMP(__NR_pwritev, sys_pwritev, compat_sys_pwritev)
->> +#define __NR_preadv2 281
->> +__SC_COMP(__NR_preadv2, sys_preadv2)
->> +#define __NR_pwritev2 282
->> +__SC_COMP(__NR_pwritev2, sys_pwritev2)
->
-> This looks odd.  First, __SC_COMP takes 3 arguments.  Second, you are
-> going to need to implement compat wrappers for the new system calls.
->
-> Cheers,
-> Jeff
+I agree. I was being lazy and when my test broke, I added the update to
+test again. But to move this change to before the move, I need to
+monkey with the patch file.
 
+I'll move it before the move regardless.
 
+> 
+> Otherwise, the change looks good in itself, so:
+> 
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
 
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
+Thanks,
 
-p: 646-253-9055
-e: milosz@adfin.com
+-- Steve
+
