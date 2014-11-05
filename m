@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbaKEDKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 22:10:54 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23438 "EHLO mga01.intel.com"
+	id S932099AbaKEDKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 22:10:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23442 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436AbaKEDKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 22:10:51 -0500
+	id S1753440AbaKEDKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 22:10:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,317,1413270000"; 
-   d="scan'208";a="617287024"
+   d="scan'208";a="617287027"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V7 16/17] perf tools: handle LBR call stack data
-Date: Tue,  4 Nov 2014 21:56:12 -0500
-Message-Id: <1415156173-10035-17-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V7 17/17] perf tools: choose to dump callchain from LBR and FP
+Date: Tue,  4 Nov 2014 21:56:13 -0500
+Message-Id: <1415156173-10035-18-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
 References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
@@ -26,172 +26,404 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-The LBR call stack data will be output as PERF_SAMPLE_BRANCH_STACK data
-format. ip_callchain is changed to show available callchain source.
-LBR call stack also need to be shown in user space.
-Perf test also changes accordingly.
+Extend call-graph option in perf report to support callchain source (fp
+or lbr).
+The default value is fp. It means that frame pointers is preferred call
+chain source. If it isn't available, lbr data will be used then.
+If the value is set to lbr, it means lbr data is preferred call chain
+source. If lbr data isn't available, try fp data then.
 
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- tools/perf/tests/hists_cumulate.c | 20 ++++++++++----------
- tools/perf/tests/sample-parsing.c |  2 +-
- tools/perf/util/event.h           |  8 ++++++++
- tools/perf/util/evsel.c           | 21 +++++++++++++--------
- 4 files changed, 32 insertions(+), 19 deletions(-)
+ tools/perf/builtin-report.c |   8 +-
+ tools/perf/util/callchain.c |  18 +++-
+ tools/perf/util/callchain.h |   6 ++
+ tools/perf/util/machine.c   | 198 ++++++++++++++++++++++++++++++--------------
+ tools/perf/util/session.c   |  34 +++++++-
+ 5 files changed, 194 insertions(+), 70 deletions(-)
 
-diff --git a/tools/perf/tests/hists_cumulate.c b/tools/perf/tests/hists_cumulate.c
-index 614d5c4..8967ae6 100644
---- a/tools/perf/tests/hists_cumulate.c
-+++ b/tools/perf/tests/hists_cumulate.c
-@@ -48,29 +48,29 @@ static struct sample fake_samples[] = {
-  */
- static u64 fake_callchains[][10] = {
- 	/*   schedule => run_command => main */
--	{ 3, FAKE_IP_KERNEL_SCHEDULE, FAKE_IP_PERF_RUN_COMMAND, FAKE_IP_PERF_MAIN, },
-+	{ 1, 3, FAKE_IP_KERNEL_SCHEDULE, FAKE_IP_PERF_RUN_COMMAND, FAKE_IP_PERF_MAIN, },
- 	/*   main  */
--	{ 1, FAKE_IP_PERF_MAIN, },
-+	{ 1, 1, FAKE_IP_PERF_MAIN, },
- 	/*   cmd_record => run_command => main */
--	{ 3, FAKE_IP_PERF_CMD_RECORD, FAKE_IP_PERF_RUN_COMMAND, FAKE_IP_PERF_MAIN, },
-+	{ 1, 3, FAKE_IP_PERF_CMD_RECORD, FAKE_IP_PERF_RUN_COMMAND, FAKE_IP_PERF_MAIN, },
- 	/*   malloc => cmd_record => run_command => main */
--	{ 4, FAKE_IP_LIBC_MALLOC, FAKE_IP_PERF_CMD_RECORD, FAKE_IP_PERF_RUN_COMMAND,
-+	{ 1, 4, FAKE_IP_LIBC_MALLOC, FAKE_IP_PERF_CMD_RECORD, FAKE_IP_PERF_RUN_COMMAND,
- 	     FAKE_IP_PERF_MAIN, },
- 	/*   free => cmd_record => run_command => main */
--	{ 4, FAKE_IP_LIBC_FREE, FAKE_IP_PERF_CMD_RECORD, FAKE_IP_PERF_RUN_COMMAND,
-+	{ 1, 4, FAKE_IP_LIBC_FREE, FAKE_IP_PERF_CMD_RECORD, FAKE_IP_PERF_RUN_COMMAND,
- 	     FAKE_IP_PERF_MAIN, },
- 	/*   main */
--	{ 1, FAKE_IP_PERF_MAIN, },
-+	{ 1, 1, FAKE_IP_PERF_MAIN, },
- 	/*   page_fault => sys_perf_event_open => run_command => main */
--	{ 4, FAKE_IP_KERNEL_PAGE_FAULT, FAKE_IP_KERNEL_SYS_PERF_EVENT_OPEN,
-+	{ 1, 4, FAKE_IP_KERNEL_PAGE_FAULT, FAKE_IP_KERNEL_SYS_PERF_EVENT_OPEN,
- 	     FAKE_IP_PERF_RUN_COMMAND, FAKE_IP_PERF_MAIN, },
- 	/*   main */
--	{ 1, FAKE_IP_BASH_MAIN, },
-+	{ 1, 1, FAKE_IP_BASH_MAIN, },
- 	/*   xmalloc => malloc => xmalloc => malloc => xmalloc => main */
--	{ 6, FAKE_IP_BASH_XMALLOC, FAKE_IP_LIBC_MALLOC, FAKE_IP_BASH_XMALLOC,
-+	{ 1, 6, FAKE_IP_BASH_XMALLOC, FAKE_IP_LIBC_MALLOC, FAKE_IP_BASH_XMALLOC,
- 	     FAKE_IP_LIBC_MALLOC, FAKE_IP_BASH_XMALLOC, FAKE_IP_BASH_MAIN, },
- 	/*   page_fault => malloc => main */
--	{ 3, FAKE_IP_KERNEL_PAGE_FAULT, FAKE_IP_LIBC_MALLOC, FAKE_IP_BASH_MAIN, },
-+	{ 1, 3, FAKE_IP_KERNEL_PAGE_FAULT, FAKE_IP_LIBC_MALLOC, FAKE_IP_BASH_MAIN, },
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 140a6cd..23fad5a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -575,7 +575,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct stat st;
+ 	bool has_br_stack = false;
+ 	int branch_mode = -1;
+-	char callchain_default_opt[] = "fractal,0.5,callee";
++	char callchain_default_opt[] = "fractal,0.5,callee,function,fp";
+ 	const char * const report_usage[] = {
+ 		"perf report [<options>]",
+ 		NULL
+@@ -637,9 +637,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "regex filter to identify parent, see: '--sort parent'"),
+ 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+ 		    "Only display entries with parent-match"),
+-	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+-		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+-		     "Default: fractal,0.5,callee,function", &report_parse_callchain_opt, callchain_default_opt),
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order,source",
++		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address), callchain source(fp or lbr). "
++		     "Default: fractal,0.5,callee,function,fp", &report_parse_callchain_opt, callchain_default_opt),
+ 	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
+ 		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 0022980..2f7d2c9 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -152,6 +152,19 @@ static int parse_callchain_sort_key(const char *value)
+ 	return -1;
+ }
+ 
++static int parse_callchain_source(const char *value)
++{
++	if (!strncmp(value, "fp", strlen(value))) {
++		callchain_param.source = SOURCE_FP;
++		return 0;
++	}
++	if (!strncmp(value, "lbr", strlen(value))) {
++		callchain_param.source = SOURCE_LBR;
++		return 0;
++	}
++	return -1;
++}
++
+ int
+ parse_callchain_report_opt(const char *arg)
+ {
+@@ -173,7 +186,8 @@ parse_callchain_report_opt(const char *arg)
+ 
+ 		if (!parse_callchain_mode(tok) ||
+ 		    !parse_callchain_order(tok) ||
+-		    !parse_callchain_sort_key(tok)) {
++		    !parse_callchain_sort_key(tok) ||
++		    !parse_callchain_source(tok)) {
+ 			/* parsing ok - move on to the next */
+ 		} else if (!minpcnt_set) {
+ 			/* try to get the min percent */
+@@ -225,6 +239,8 @@ int perf_callchain_config(const char *var, const char *value)
+ 		return parse_callchain_order(value);
+ 	if (!strcmp(var, "sort-key"))
+ 		return parse_callchain_sort_key(value);
++	if (!strcmp(var, "source"))
++		return parse_callchain_source(value);
+ 	if (!strcmp(var, "threshold")) {
+ 		callchain_param.min_percent = strtod(value, &endptr);
+ 		if (value == endptr)
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3caccc2..267a976 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -53,6 +53,11 @@ enum chain_key {
+ 	CCKEY_ADDRESS
  };
  
- static int add_hist_entries(struct hists *hists, struct machine *machine)
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-index ca292f9..dfa9dfa 100644
---- a/tools/perf/tests/sample-parsing.c
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -145,7 +145,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		u64 data[64];
- 	} callchain = {
- 		/* 3 ips */
--		.data = {3, 201, 202, 203},
-+		.data = {1, 3, 201, 202, 203},
- 	};
- 	union {
- 		struct branch_stack branch_stack;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 8c7fe9d..efeefe7 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -119,7 +119,15 @@ struct sample_read {
- 	};
++enum chain_source {
++	SOURCE_FP,
++	SOURCE_LBR
++};
++
+ struct callchain_param {
+ 	bool			enabled;
+ 	enum perf_call_graph_mode record_mode;
+@@ -63,6 +68,7 @@ struct callchain_param {
+ 	sort_chain_func_t	sort;
+ 	enum chain_order	order;
+ 	enum chain_key		key;
++	enum chain_source	source;
  };
  
-+/*
-+ * From Haswell, the existing Last Branch Record facility can
-+ * also be used to record call chains.
-+ * source: indicates the available call chains source.
-+ */
-+#define	PERF_FP_CALLCHAIN	0x01
-+#define	PERF_LBR_CALLCHAIN	0x02
- struct ip_callchain {
-+	u64 source;
- 	u64 nr;
- 	u64 ips[0];
- };
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 2f9e680..ff472d6 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1028,7 +1028,6 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
- 	ret += PRINT_ATTR2(exclude_host, exclude_guest);
- 	ret += PRINT_ATTR2N("excl.callchain_kern", exclude_callchain_kernel,
- 			    "excl.callchain_user", exclude_callchain_user);
+ extern struct callchain_param callchain_param;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 51a6303..22a7f00 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1367,18 +1367,80 @@ struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
+ 	return bi;
+ }
+ 
++static inline int __thread__resolve_callchain_sample(
++			struct thread *thread,
++			u64 ip,
++			u8 *cpumode,
++			struct symbol **parent,
++			struct addr_location *root_al,
++			struct addr_location *al)
++{
++	int err;
++
++	if (ip >= PERF_CONTEXT_MAX) {
++		switch (ip) {
++		case PERF_CONTEXT_HV:
++			*cpumode = PERF_RECORD_MISC_HYPERVISOR;
++			break;
++		case PERF_CONTEXT_KERNEL:
++			*cpumode = PERF_RECORD_MISC_KERNEL;
++			break;
++		case PERF_CONTEXT_USER:
++			*cpumode = PERF_RECORD_MISC_USER;
++			break;
++		default:
++			pr_debug("invalid callchain context: "
++				 "%"PRId64"\n", (s64) ip);
++			/*
++			 * It seems the callchain is corrupted.
++			 * Discard all.
++			 */
++			callchain_cursor_reset(&callchain_cursor);
++			return 1;
++		}
++		return 0;
++	}
++
++	al->filtered = 0;
++	thread__find_addr_location(thread, *cpumode,
++				   MAP__FUNCTION, ip, al);
++	if (al->sym != NULL) {
++		if (sort__has_parent && !*parent &&
++		    symbol__match_regex(al->sym, &parent_regex))
++			*parent = al->sym;
++		else if (have_ignore_callees && root_al &&
++		  symbol__match_regex(al->sym, &ignore_callees_regex)) {
++			/* Treat this symbol as the root,
++			   forgetting its callees. */
++			*root_al = *al;
++			callchain_cursor_reset(&callchain_cursor);
++		}
++	}
++
++	err = callchain_cursor_append(&callchain_cursor,
++				      ip, al->map, al->sym);
++	if (err)
++		return err;
++	return 0;
++}
++
+ static int thread__resolve_callchain_sample(struct thread *thread,
+-					     struct ip_callchain *chain,
++					     struct perf_sample *sample,
+ 					     struct symbol **parent,
+ 					     struct addr_location *root_al,
+ 					     int max_stack)
+ {
++	struct ip_callchain *chain = sample->callchain;
+ 	u8 cpumode = PERF_RECORD_MISC_USER;
+ 	int chain_nr = min(max_stack, (int)chain->nr);
+-	int i;
+-	int j;
+-	int err;
++	int i, j, err;
+ 	int skip_idx __maybe_unused;
++	int use_fp = (callchain_param.source == SOURCE_FP) ? 1 : 0;
++	u64 ip;
++
++	/* If there isn't user fp callchain available, try LBR */
++	if (!(chain->source & PERF_FP_CALLCHAIN))
++		use_fp = 0;
+ 
+ 	callchain_cursor_reset(&callchain_cursor);
+ 
+@@ -1387,73 +1449,83 @@ static int thread__resolve_callchain_sample(struct thread *thread,
+ 		return 0;
+ 	}
+ 
+-	/*
+-	 * Based on DWARF debug information, some architectures skip
+-	 * a callchain entry saved by the kernel.
+-	 */
+-	skip_idx = arch_skip_callchain_idx(thread, chain);
 -
- 	ret += PRINT_ATTR_U32(wakeup_events);
- 	ret += PRINT_ATTR_U32(wakeup_watermark);
- 	ret += PRINT_ATTR_X32(bp_type);
-@@ -1440,10 +1439,10 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		const u64 max_callchain_nr = UINT64_MAX / sizeof(u64);
+-	for (i = 0; i < chain_nr; i++) {
+-		u64 ip;
+-		struct addr_location al;
++again:
++	/* try LBR */
++	if (!use_fp && (chain->source & PERF_LBR_CALLCHAIN)) {
++		struct branch_stack *lbr_stack = sample->branch_stack;
++		int lbr_nr = lbr_stack->nr;
++		int mix_chain_nr;
  
- 		OVERFLOW_CHECK_u64(array);
--		data->callchain = (struct ip_callchain *)array++;
-+		data->callchain = (struct ip_callchain *)array;
- 		if (data->callchain->nr > max_callchain_nr)
- 			return -EFAULT;
--		sz = data->callchain->nr * sizeof(u64);
-+		sz = (data->callchain->nr + 2) * sizeof(u64);
- 		OVERFLOW_CHECK(array, sz, max_size);
- 		array = (void *)array + sz;
- 	}
-@@ -1466,7 +1465,9 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array = (void *)array + data->raw_size;
- 	}
+-		if (callchain_param.order == ORDER_CALLEE)
+-			j = i;
+-		else
+-			j = chain->nr - i - 1;
++		for (i = 0; i < chain_nr; i++) {
++			if (chain->ips[i] == PERF_CONTEXT_USER)
++				break;
++		}
  
--	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+	if ((type & PERF_SAMPLE_BRANCH_STACK) ||
-+		(data->callchain &&
-+		(data->callchain->source & PERF_LBR_CALLCHAIN))) {
- 		const u64 max_branch_nr = UINT64_MAX /
- 					  sizeof(struct branch_entry);
+-#ifdef HAVE_SKIP_CALLCHAIN_IDX
+-		if (j == skip_idx)
+-			continue;
+-#endif
+-		ip = chain->ips[j];
++		/* LBR only affects the user callchain */
++		if (i == chain_nr) {
++			use_fp = 1;
++			goto again;
++		}
  
-@@ -1590,7 +1591,7 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
- 	}
+-		if (ip >= PERF_CONTEXT_MAX) {
+-			switch (ip) {
+-			case PERF_CONTEXT_HV:
+-				cpumode = PERF_RECORD_MISC_HYPERVISOR;
+-				break;
+-			case PERF_CONTEXT_KERNEL:
+-				cpumode = PERF_RECORD_MISC_KERNEL;
+-				break;
+-			case PERF_CONTEXT_USER:
+-				cpumode = PERF_RECORD_MISC_USER;
+-				break;
+-			default:
+-				pr_debug("invalid callchain context: "
+-					 "%"PRId64"\n", (s64) ip);
+-				/*
+-				 * It seems the callchain is corrupted.
+-				 * Discard all.
+-				 */
+-				callchain_cursor_reset(&callchain_cursor);
+-				return 0;
+-			}
+-			continue;
++		mix_chain_nr = i + 2 + lbr_nr;
++		if (mix_chain_nr > PERF_MAX_STACK_DEPTH) {
++			pr_warning("corrupted callchain. skipping...\n");
++			return 0;
+ 		}
  
- 	if (type & PERF_SAMPLE_CALLCHAIN) {
--		sz = (sample->callchain->nr + 1) * sizeof(u64);
-+		sz = (sample->callchain->nr + 2) * sizeof(u64);
- 		result += sz;
- 	}
+-		al.filtered = 0;
+-		thread__find_addr_location(thread, cpumode,
+-					   MAP__FUNCTION, ip, &al);
+-		if (al.sym != NULL) {
+-			if (sort__has_parent && !*parent &&
+-			    symbol__match_regex(al.sym, &parent_regex))
+-				*parent = al.sym;
+-			else if (have_ignore_callees && root_al &&
+-			  symbol__match_regex(al.sym, &ignore_callees_regex)) {
+-				/* Treat this symbol as the root,
+-				   forgetting its callees. */
+-				*root_al = al;
+-				callchain_cursor_reset(&callchain_cursor);
++		for (j = 0; j < mix_chain_nr; j++) {
++			struct addr_location al;
++
++			if (callchain_param.order == ORDER_CALLEE) {
++				if (j < i + 2)
++					ip = chain->ips[j];
++				else
++					ip = lbr_stack->entries[j - i - 2].from;
++			} else {
++				if (j < lbr_nr)
++					ip = lbr_stack->entries[lbr_nr - j - 1].from;
++				else
++					ip = chain->ips[i + 1 - (j - lbr_nr)];
+ 			}
++			err = __thread__resolve_callchain_sample(thread,
++				ip, &cpumode, parent, root_al, &al);
++			/* Discard all when the callchain is corrupted */
++			if (err > 0)
++				return 0;
++			else if (err)
++				return err;
+ 		}
++	} else {
  
-@@ -1599,7 +1600,9 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
- 		result += sample->raw_size;
- 	}
+-		err = callchain_cursor_append(&callchain_cursor,
+-					      ip, al.map, al.sym);
+-		if (err)
+-			return err;
+-	}
++		/*
++		 * Based on DWARF debug information, some architectures skip
++		 * a callchain entry saved by the kernel.
++		 */
++		skip_idx = arch_skip_callchain_idx(thread, chain);
++
++		for (i = 0; i < chain_nr; i++) {
++			struct addr_location al;
++
++			if (callchain_param.order == ORDER_CALLEE)
++				j = i;
++			else
++				j = chain->nr - i - 1;
++
++#ifdef HAVE_SKIP_CALLCHAIN_IDX
++			if (j == skip_idx)
++				continue;
++#endif
++			ip = chain->ips[j];
++			err = __thread__resolve_callchain_sample(thread,
++				ip, &cpumode, parent, root_al, &al);
  
--	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+	if ((type & PERF_SAMPLE_BRANCH_STACK) ||
-+		(sample->callchain &&
-+		(sample->callchain->source & PERF_LBR_CALLCHAIN))) {
- 		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
- 		sz += sizeof(u64);
- 		result += sz;
-@@ -1745,7 +1748,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 	}
++			/* Discard all when the callchain is corrupted */
++			if (err > 0)
++				return 0;
++			else if (err)
++				return err;
++		}
++	}
+ 	return 0;
+ }
  
- 	if (type & PERF_SAMPLE_CALLCHAIN) {
--		sz = (sample->callchain->nr + 1) * sizeof(u64);
-+		sz = (sample->callchain->nr + 2) * sizeof(u64);
- 		memcpy(array, sample->callchain, sz);
- 		array = (void *)array + sz;
- 	}
-@@ -1768,7 +1771,9 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		array = (void *)array + sample->raw_size;
- 	}
+@@ -1471,7 +1543,7 @@ int thread__resolve_callchain(struct thread *thread,
+ 			      struct addr_location *root_al,
+ 			      int max_stack)
+ {
+-	int ret = thread__resolve_callchain_sample(thread, sample->callchain,
++	int ret = thread__resolve_callchain_sample(thread, sample,
+ 						   parent, root_al, max_stack);
+ 	if (ret)
+ 		return ret;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index f4478ce..8866014 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -560,12 +560,42 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ static void callchain__printf(struct perf_sample *sample)
+ {
+ 	unsigned int i;
++	u64 total_nr, callchain_nr;
++	int use_fp = (callchain_param.source == SOURCE_FP) ? 1 : 0;
  
--	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+	if ((type & PERF_SAMPLE_BRANCH_STACK) ||
-+		(sample->callchain &&
-+		(sample->callchain->source & PERF_LBR_CALLCHAIN))) {
- 		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
- 		sz += sizeof(u64);
- 		memcpy(array, sample->branch_stack, sz);
+-	printf("... chain: nr:%" PRIu64 "\n", sample->callchain->nr);
++	total_nr = callchain_nr = sample->callchain->nr;
+ 
+-	for (i = 0; i < sample->callchain->nr; i++)
++	/* If there isn't user fp callchain available, try LBR */
++	if (!(sample->callchain->source & PERF_FP_CALLCHAIN))
++		use_fp = 0;
++
++	if (!use_fp && (sample->callchain->source & PERF_LBR_CALLCHAIN)) {
++		struct branch_stack *lbr_stack = sample->branch_stack;
++
++		for (i = 0; i < callchain_nr; i++) {
++			if (sample->callchain->ips[i] == PERF_CONTEXT_USER)
++				break;
++		}
++
++		if (i != callchain_nr) {
++			total_nr = i + 1 + lbr_stack->nr;
++			callchain_nr = i + 1;
++		}
++	}
++
++	printf("... chain: nr:%" PRIu64 "\n", total_nr);
++
++	for (i = 0; i < callchain_nr + 1; i++)
+ 		printf("..... %2d: %016" PRIx64 "\n",
+ 		       i, sample->callchain->ips[i]);
++
++	if (total_nr > callchain_nr) {
++		struct branch_stack *lbr_stack = sample->branch_stack;
++
++		for (i = 0; i < lbr_stack->nr; i++)
++			printf("..... %2d: %016" PRIx64 "\n",
++				(int)(i + callchain_nr + 1), lbr_stack->entries[i].from);
++	}
+ }
+ 
+ static void branch_stack__printf(struct perf_sample *sample)
 -- 
 1.8.3.2
 
