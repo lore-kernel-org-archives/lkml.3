@@ -1,88 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784AbaKERXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:23:49 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36623 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755392AbaKERNd (ORCPT
+	id S1756384AbaKERZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:25:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42058 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360AbaKERZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:13:33 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH -next v2 02/26] tty: Invert tty_lock/ldisc_sem lock order
-Date: Wed,  5 Nov 2014 12:12:45 -0500
-Message-Id: <1415207589-15967-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
-References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
- <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 5 Nov 2014 12:25:14 -0500
+Date: Wed, 5 Nov 2014 09:16:39 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-b09198f7b59101e52bcf238ed3b7bfc64de055ef@git.kernel.org>
+Cc: tglx@linutronix.de, prarit@redhat.com, bp@alien8.de, tony.luck@intel.com,
+        rdunlap@infradead.org, jiang.liu@linux.intel.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        joro@8bytes.org, gregkh@linuxfoundation.org, konrad.wilk@oracle.com,
+        rjw@rjwysocki.net, benh@kernel.crashing.org, grant.likely@linaro.org,
+        bhelgaas@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, joro@8bytes.org, prarit@redhat.com,
+        tglx@linutronix.de, tony.luck@intel.com, bp@alien8.de,
+        rdunlap@infradead.org, jiang.liu@linux.intel.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
+        benh@kernel.crashing.org, grant.likely@linaro.org, bhelgaas@google.com,
+        gregkh@linuxfoundation.org, konrad.wilk@oracle.com
+In-Reply-To: <1414397531-28254-15-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-15-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq:
+  Move IRQ initialization routines from io_apic.c into vector.c
+Git-Commit-ID: b09198f7b59101e52bcf238ed3b7bfc64de055ef
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dropping the tty lock to acquire the tty->ldisc_sem allows several
-race conditions (such as hangup while changing the ldisc) which requires
-extra states and testing. The ldisc_sem->tty_lock lock order has
-not been required since tty buffer ownership was moved to tty_port.
+Commit-ID:  b09198f7b59101e52bcf238ed3b7bfc64de055ef
+Gitweb:     http://git.kernel.org/tip/b09198f7b59101e52bcf238ed3b7bfc64de055ef
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:12:05 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Nov 2014 18:10:47 +0100
 
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+x86, irq: Move IRQ initialization routines from io_apic.c into vector.c
+
+Move IRQ initialization routines from io_apic.c into vector.c,
+preparing for enabling hierarchy irqdomain.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-15-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/tty/tty_ldisc.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/io_apic.h |  2 ++
+ arch/x86/kernel/apic/io_apic.c | 22 +---------------------
+ arch/x86/kernel/apic/vector.c  | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 31 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 332a622..28858eb 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -523,9 +523,11 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	if (IS_ERR(new_ldisc))
- 		return PTR_ERR(new_ldisc);
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index b7f1499..bf006cc 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -145,6 +145,7 @@ extern unsigned long io_apic_irqs;
  
-+	tty_lock(tty);
- 	retval = tty_ldisc_lock_pair_timeout(tty, o_tty, 5 * HZ);
- 	if (retval) {
- 		tty_ldisc_put(new_ldisc);
-+		tty_unlock(tty);
- 		return retval;
- 	}
+ struct irq_cfg;
+ extern void ioapic_insert_resources(void);
++extern int arch_early_ioapic_init(void);
  
-@@ -536,11 +538,11 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	if (tty->ldisc->ops->num == ldisc) {
- 		tty_ldisc_enable_pair(tty, o_tty);
- 		tty_ldisc_put(new_ldisc);
-+		tty_unlock(tty);
- 		return 0;
- 	}
+ extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
+ 				     unsigned int, int,
+@@ -248,6 +249,7 @@ extern void print_IO_APICs(void);
+ #define io_apic_assign_pci_irqs 0
+ #define setup_ioapic_ids_from_mpc x86_init_noop
+ static inline void ioapic_insert_resources(void) { }
++static inline int arch_early_ioapic_init(void) { return 0; }
+ static inline void print_IO_APICs(void) {}
+ #define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 8dcdb7b..2619cbe 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -245,7 +245,7 @@ static void free_ioapic_saved_registers(int idx)
+ 	ioapics[idx].saved_registers = NULL;
+ }
  
- 	old_ldisc = tty->ldisc;
--	tty_lock(tty);
+-int __init arch_early_irq_init(void)
++int __init arch_early_ioapic_init(void)
+ {
+ 	struct irq_cfg *cfg;
+ 	int i, node = cpu_to_node(0);
+@@ -2487,26 +2487,6 @@ unsigned int arch_dynirq_lower_bound(unsigned int from)
+ 	return ioapic_initialized ? ioapic_dynirq_base : gsi_top;
+ }
  
- 	if (test_bit(TTY_HUPPING, &tty->flags) ||
- 	    test_bit(TTY_HUPPED, &tty->flags)) {
-@@ -675,8 +677,6 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	wake_up_interruptible_poll(&tty->write_wait, POLLOUT);
- 	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
- 
--	tty_unlock(tty);
+-int __init arch_probe_nr_irqs(void)
+-{
+-	int nr;
 -
- 	/*
- 	 * Shutdown the current line discipline, and reset it to
- 	 * N_TTY if need be.
-@@ -684,7 +684,6 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	 * Avoid racing set_ldisc or tty_ldisc_release
- 	 */
- 	tty_ldisc_lock_pair(tty, tty->link);
--	tty_lock(tty);
+-	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
+-		nr_irqs = NR_VECTORS * nr_cpu_ids;
+-
+-	nr = (gsi_top + nr_legacy_irqs()) + 8 * nr_cpu_ids;
+-#if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
+-	/*
+-	 * for MSI and HT dyn irq
+-	 */
+-	nr += gsi_top * 16;
+-#endif
+-	if (nr < nr_irqs)
+-		nr_irqs = nr;
+-
+-	return 0;
+-}
+-
+ #ifdef CONFIG_X86_32
+ static int io_apic_get_unique_id(int ioapic, int apic_id)
+ {
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 938108f..19fcb57 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -235,6 +235,34 @@ void clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 	raw_spin_unlock_irqrestore(&vector_lock, flags);
+ }
  
- 	if (tty->ldisc) {
- 
--- 
-2.1.3
-
++int __init arch_probe_nr_irqs(void)
++{
++	int nr;
++
++	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
++		nr_irqs = NR_VECTORS * nr_cpu_ids;
++
++	nr = (gsi_top + nr_legacy_irqs()) + 8 * nr_cpu_ids;
++#if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
++	/*
++	 * for MSI and HT dyn irq
++	 */
++	if (gsi_top <= NR_IRQS_LEGACY)
++		nr +=  8 * nr_cpu_ids;
++	else
++		nr += gsi_top * 16;
++#endif
++	if (nr < nr_irqs)
++		nr_irqs = nr;
++
++	return nr_legacy_irqs();
++}
++
++int __init arch_early_irq_init(void)
++{
++	return arch_early_ioapic_init();
++}
++
+ static void __setup_vector_irq(int cpu)
+ {
+ 	/* Initialize vector_irq on a new cpu */
