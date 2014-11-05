@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaKELRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 06:17:01 -0500
-Received: from 8bytes.org ([81.169.241.247]:40691 "EHLO theia.8bytes.org"
+	id S1754707AbaKELRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 06:17:39 -0500
+Received: from 8bytes.org ([81.169.241.247]:40716 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479AbaKELQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 06:16:58 -0500
-Date: Wed, 5 Nov 2014 12:16:56 +0100
+	id S1753520AbaKELRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 06:17:37 -0500
+Date: Wed, 5 Nov 2014 12:17:36 +0100
 From: Joerg Roedel <joro@8bytes.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build failure after merge of the iommu tree
-Message-ID: <20141105111656.GJ10744@8bytes.org>
-References: <20141105134731.799a1a3d@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jon Mason <jdmason@kudzu.us>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: Kernel NULL pointer deref in pci_get_hp_params with v3.18-rc3
+Message-ID: <20141105111736.GK10744@8bytes.org>
+References: <20141104162251.GF10744@8bytes.org>
+ <CAErSpo4Zx8hNjJdHvJeLzj_wAJSa6WCDuJ0XYymK-QU_i+MECg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141105134731.799a1a3d@canb.auug.org.au>
+In-Reply-To: <CAErSpo4Zx8hNjJdHvJeLzj_wAJSa6WCDuJ0XYymK-QU_i+MECg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 01:47:31PM +1100, Stephen Rothwell wrote:
-> Hi Joerg,
-> 
-> After merging the iommu tree, today's linux-next build (powerpc
-> pc64_defconfig) failed like this:
-> 
-> In file included from arch/powerpc/platforms/powernv/pci.c:33:0:
-> arch/powerpc/include/asm/iommu.h:140:12: error: conflicting types for 'iommu_map_sg'
->  extern int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
->             ^
-> In file included from arch/powerpc/platforms/powernv/pci.c:23:0:
-> include/linux/iommu.h:311:22: note: previous definition of 'iommu_map_sg' was here
->  static inline size_t iommu_map_sg(struct iommu_domain *domain,
->                       ^
-> 
-> Caused by commit 315786ebbf4a ("iommu: Add iommu_map_sg() function").
-> Grep is your friend ...
-> 
-> I have used the iommu tree from next-20141104 for today.
+Hi Bjorn,
 
-Thanks Stephen, I exluded the my core branch from next for now until the
-issue is fixed.
+On Tue, Nov 04, 2014 at 11:38:09AM -0700, Bjorn Helgaas wrote:
+> [+cc Yinghai]
+> 
+> On Tue, Nov 4, 2014 at 9:22 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> > Hi,
+> >
+> > booting v3.18-rc3 (havn't tested earlier -rcs on this box) on a Xeon box
+> > with a Neterion 10GBit card (vxge driver) I see the following NULL
+> > pointer deref in dmesg:
+> >
+> > [    7.221747] vxge: Copyright(c) 2002-2010 Exar Corp.
+> > [    7.221749] vxge: Driver version: 2.5.3.22640-k
+> > [    7.324070] pci 0000:07:00.1: [17d5:5833] type 00 class 0x020000
+> > [    7.324144] BUG: unable to handle kernel NULL pointer dereference at 00000000000002d8
+> > [    7.324162] IP: [<ffffffff8136733b>] pci_get_hp_params+0x2b/0x620
+> 
+> I think this is the same problem Yinghai posted a patch for:
+> http://lkml.kernel.org/r/1414621570-20777-1-git-send-email-yinghai@kernel.org
+> 
+> I broke things with 6cd33649fa83, and I'd like to try a different fix
+> than Yinghai's, so I guess I should get busy :)  Thanks for the
+> reminder.
+
+Okay, let me know if there is any patch for me to test :)
 
 
 	Joerg
