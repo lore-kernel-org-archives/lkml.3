@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaKEA7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 19:59:08 -0500
-Received: from ozlabs.org ([103.22.144.67]:46412 "EHLO ozlabs.org"
+	id S1752593AbaKEBAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 20:00:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36295 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687AbaKEA7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 19:59:06 -0500
-Date: Wed, 5 Nov 2014 11:58:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the f2fs tree
-Message-ID: <20141105115858.047a7a60@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/L=_W4c97BplK_7=3bcc5sqk"; protocol="application/pgp-signature"
+	id S1751435AbaKEBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 20:00:00 -0500
+Message-ID: <1415149183.6673.12.camel@linux-t7sj.site>
+Subject: Re: [PATCH 10/10] mm/hugetlb: share the i_mmap_rwsem
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
+        riel@redhat.com, mgorman@suse.de, peterz@infradead.org,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Tue, 04 Nov 2014 16:59:43 -0800
+In-Reply-To: <alpine.LSU.2.11.1411032208390.15596@eggly.anvils>
+References: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
+	 <1414697657-1678-11-git-send-email-dave@stgolabs.net>
+	 <alpine.LSU.2.11.1411032208390.15596@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/L=_W4c97BplK_7=3bcc5sqk
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-11-03 at 22:35 -0800, Hugh Dickins wrote:
+> On Thu, 30 Oct 2014, Davidlohr Bueso wrote:
+> 
+> > The i_mmap_rwsem protects shared pages against races
+> > when doing the sharing and unsharing, ultimately
+> > calling huge_pmd_share/unshare() for PMD pages --
+> > it also needs it to avoid races when populating the pud
+> > for pmd allocation when looking for a shareable pmd page
+> > for hugetlb. Ultimately the interval tree remains intact.
+> > 
+> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> > Acked-by: Kirill A. Shutemov <kirill.shutemov@intel.linux.com>
+>                                                 linux.intel.com
+> 
+> I'm uncomfortable with this one: I'm certainly not prepared to Ack it;
+> but that could easily be that I'm just not thinking hard enough - I'd
+> rather leave the heavy thinking to someone else!
+> 
+> The fs/hugetlbfs/inode.c part of it should be okay, but the rest is
+> iffy.  It gets into huge page table sharing territory, which is very
+> tricky and surprising territory indeed (take a look at my
+> __unmap_hugepage_range_final() comment, for one example).
+> 
+> You're right that the interval tree remains intact, but I've a feeling
+> we end up using i_mmap_mutex for more exclusion than just that (rather
+> like how huge_memory.c finds anon_vma lock useful for other exclusions).
 
-Hi Jaegeuk,
+Yeah, that certainly wouldn't surprise me, and this particular patch was
+the one I was most unsure about for that exact same reason. Hopefully
+others could confirm if this is truly doable and safe.
 
-After merging the f2fs tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> I think Mel (already Cc'ed) and Michal (adding him) both have past
+> experience with the shared page table (as do I, but I'm in denial).
+> 
+> I wonder if the huge shared page table would be a good next target
+> for Kirill's removal of mm nastiness.  (Removing it wouldn't hurt
+> Google for one: we have it "#if 0"ed out, though I forget why at
+> this moment.)
+> 
+> But, returning to the fs/hugetlbfs/inode.c part of it, that reminds
+> me: you're missing one patch from the series, aren't you?  Why no
+> i_mmap_lock_read() in mm/memory.c unmap_mapping_range()?  I doubt
+> it will add much useful parallelism, but it would be correct.
 
-fs/f2fs/data.c: In function 'f2fs_write_begin':
-fs/f2fs/data.c:960:19: error: 'fi' undeclared (first use in this function)
-    set_inode_flag(fi, FI_DATA_EXIST);
-                   ^
+Oh yes, not sure why I didn't update that function, I had it marked it
+safe to share the lock. Thanks for taking a close look at the series.
 
-Caused by commit 2bac4643efc1 ("f2fs: revisit inline_data to avoid data
-races and potential bugs").
+8<------------------------------------------------
+From: Davidlohr Bueso <dave@stgolabs.net>
+Subject: [PATCH 11/10] mm/memory.c: share the i_mmap_rwsem
 
-I have used the f2fs tree from next-20141104 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The unmap_mapping_range family of functions do the unmapping
+of user pages (ultimately via zap_page_range_single) without
+touching the actual interval tree, thus share the lock.
 
---Sig_/L=_W4c97BplK_7=3bcc5sqk
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+---
+ mm/memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+diff --git a/mm/memory.c b/mm/memory.c
+index 2ca3105..06f2458 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2396,12 +2396,12 @@ void unmap_mapping_range(struct address_space *mapping,
+ 		details.last_index = ULONG_MAX;
+ 
+ 
+-	i_mmap_lock_write(mapping);
++	i_mmap_lock_read(mapping);
+ 	if (unlikely(!RB_EMPTY_ROOT(&mapping->i_mmap)))
+ 		unmap_mapping_range_tree(&mapping->i_mmap, &details);
+ 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
+ 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
+-	i_mmap_unlock_write(mapping);
++	i_mmap_unlock_read(mapping);
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
+-- 
+1.8.4.5
 
-iQIcBAEBCAAGBQJUWXZXAAoJEMDTa8Ir7ZwVMuwQAICV6i7Oo6z71XgP534frgwZ
-iPM8p/Kb2cE2P3J0/V6DMfyraqpzrsP8XhefasaDx/fChVwDQja3SiSeKAXkaeYK
-WmyxQB07OxqtNY0Ymap9ookQzavErvCfLaluenTaffZEIfiarTeUvTQXJqo+S4Vh
-XKBwjy0tH4e6XzKltqE2kK/EVg71V+Pm/HL0elT2MV7E7UAHCmO2KIA2NLke229Q
-EjaWpnSsYYJk78Y7rCqnpR6adfAE4HwNN8KvEbB3DNfErMZaX7yiWKAXDtJcqfzC
-7msC8KtWtDqESfGg9DhxbFnevAGJFgs9g6F0Ra2NKZ4R+3cnO7fMMvdBdW2swKJ4
-1MfSI39X/hDx3wbvYYtmQhD5KykvUs2cqLTBvaUz/LCR2LFLkoYdnM+I8DZQ6W4O
-XFabbeoByOec9QIQMF6Xx78xLSvrbOqD2iFIBqYEarxmttBhkit7nMpq0F8kAr2C
-VtWYTSceEzdNINCW/vooxOKmGoQMqAD5HWRh41ZJ+48zES2jXN6Z1Uyp3qT5Ssnz
-+ujG35f9QqNrDqea95pKCJyeaPPuDyIa+eBvF4rLqJyPfQafvtklt1Kva3MaNGrK
-goKKRQPSUqkiMmUVkNVKq+36AQ1YzKUP1SRjYwUrvJn48bVbIPs8j3XmjArRtsn+
-zlof7ESXsCLqKx6KvFBq
-=X2Xh
------END PGP SIGNATURE-----
 
---Sig_/L=_W4c97BplK_7=3bcc5sqk--
+
