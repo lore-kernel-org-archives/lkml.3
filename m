@@ -1,155 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaKEPEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:04:13 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:43135 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822AbaKEPCq (ORCPT
+	id S1755904AbaKEPEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:04:33 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62684 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291AbaKEPCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 10:02:46 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-c8-545a3c1549b4
+X-AuditID: cbfec7f5-b7f956d000005ed7-02-545a3c1489b7
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
         akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v4 3/6] ima: load x509 certificate from the kernel
-Date: Wed, 05 Nov 2014 17:01:14 +0200
-Message-id: <874ac8915c305145c816085c3e18dbfae91298cf.1415197743.git.d.kasatkin@samsung.com>
+Subject: [PATCH v4 2/6] integrity: provide a function to load x509 certificate
+ from the kernel
+Date: Wed, 05 Nov 2014 17:01:13 +0200
+Message-id: <33a4fc659a45203dbf8fa9624058a36577d6b631.1415197743.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1415197743.git.d.kasatkin@samsung.com>
 References: <cover.1415197743.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1415197743.git.d.kasatkin@samsung.com>
 References: <cover.1415197743.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t/xK7qiNlEhBs8nilnMWb+GzeLW373M
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xK7oiNlEhBs+3s1jMWb+GzeLW373M
 	Fl+W1lm8nDGP3eLyrjlsFh96HrFZnP97nNXi04pJzA4cHjtn3WX3ODHjN4vHg0ObWTx2L/jM
-	5NG3ZRWjx+dNch6bnrxlCmCP4rJJSc3JLEst0rdL4Mq4s28RW8FumYoLL/+xNTC+FO9i5OSQ
-	EDCR2LbhCzuELSZx4d56ti5GLg4hgaWMEs2ft7BAOJ1MEp9OT2YDqWIT0JPY0PyDHSQhIrCI
-	UWLT14ssIAlmgXSJT5N6wUYJCzhJdK9tZQKxWQRUJXbMA1nBwcErECdx+bwUxDY5iZPHJrOC
-	2JwCVhITnlwEmy8kYCmx8FETIy7xCYz8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKE
-	hOiXHYyLj1kdYhTgYFTi4fVoigwRYk0sK67MPcQowcGsJMJ7zTIqRIg3JbGyKrUoP76oNCe1
-	+BAjEwenVAOj7QP7Wx/Xf3lw7z2vzmouW+OZ/RO3vL35/1jksu1rGzPPmAjut3wu8dgzhWOG
-	bdv6b4FlNzZ6OWl3vVry8GyhXdL2ZZ0Zh/PtlwoI/FSycnzx99l51vlTfz2o5bl7ItzoYvk6
-	1qNZrKG3v/zKDa5w7Hi8SfAdR+nNKau3rIiIu7yVjUHUy8MnVImlOCPRUIu5qDgRAGqD6Bsv	AgAA
+	5NG3ZRWjx+dNch6bnrxlCmCP4rJJSc3JLEst0rdL4MpofXqPvWCOcMWdu/9ZGhgP8HcxcnJI
+	CJhIrHn0mQXCFpO4cG89WxcjF4eQwFJGiWn/j7NDOJ1MEpv6PrCBVLEJ6ElsaP4BlhARWMQo
+	senrRbB2ZoF0iU+TetlBbGGBBIk7k/rB4iwCqhJP/88Fi/MKxEms6GphhFgnJ3Hy2GRWEJtT
+	wEpiwpOLYAuEBCwlFj5qYsQlPoGRfwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkCD9
+	uoNx6TGrQ4wCHIxKPLweTZEhQqyJZcWVuYcYJTiYlUR4r1lGhQjxpiRWVqUW5ccXleakFh9i
+	ZOLglGpgjJFbWizzUHnHh++u/B/Upqo+nhaSbON1eMbVo9OXvU+LXjKP477Jxla9LhHBrfsP
+	ysrITXxq/M372YnFi6/MELnEmBPAoLnu0DvpI6zRdomn1CVLih7PY4vp0sn8JTLt57WDZeae
+	IdVZ53e8Y3FeaWlWMTVtUen7NqPY1Xc/yZSeklhWcjTptxJLcUaioRZzUXEiAGUbtBAwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define configuration option to load X509 certificate into the
-IMA trusted kernel keyring. It implements ima_load_x509() hook
-to load X509 certificate into the .ima trusted kernel keyring
-from the root filesystem.
-
-Changes in v3:
-* use ima_policy_flag in ima_get_action()
-  ima_load_x509 temporarily clears ima_policy_flag to disable
-  appraisal to load key. Use it to skip appraisal rules.
-* Key directory path changed to /etc/keys (Mimi)
+Provide the function to load x509 certificates from the kernel into the
+integrity kernel keyring.
 
 Changes in v2:
-* added '__init'
-* use ima_policy_flag to disable appraisal to load keys
+* configuration option removed
+* function declared as '__init'
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/Kconfig    | 15 +++++++++++++++
- security/integrity/ima/ima_api.c  |  3 +--
- security/integrity/ima/ima_init.c | 17 +++++++++++++++++
- security/integrity/integrity.h    |  8 ++++++++
- 4 files changed, 41 insertions(+), 2 deletions(-)
+ security/integrity/digsig.c    | 37 ++++++++++++++++++++++++++++++++++++-
+ security/integrity/integrity.h |  2 ++
+ 2 files changed, 38 insertions(+), 1 deletion(-)
 
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index e099875..8288edc 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -131,3 +131,18 @@ config IMA_TRUSTED_KEYRING
- 	help
- 	   This option requires that all keys added to the .ima
- 	   keyring be signed by a key on the system trusted keyring.
-+
-+config IMA_LOAD_X509
-+	bool "Load X509 certificate to the '.ima' trusted keyring"
-+	depends on IMA_TRUSTED_KEYRING
-+	default n
-+	help
-+	   This option enables X509 certificate loading from the kernel
-+	   to the '.ima' trusted keyring.
-+
-+config IMA_X509_PATH
-+	string "IMA X509 certificate path"
-+	depends on IMA_LOAD_X509
-+	default "/etc/keys/x509_ima.der"
-+	help
-+	   This option defines IMA X509 certificate path.
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index a99eb6d..b0dc922 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -173,8 +173,7 @@ int ima_get_action(struct inode *inode, int mask, int function)
- {
- 	int flags = IMA_MEASURE | IMA_AUDIT | IMA_APPRAISE;
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 4f643d1..fa383fd 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -14,7 +14,7 @@
  
--	if (!ima_appraise)
--		flags &= ~IMA_APPRAISE;
-+	flags &= ima_policy_flag;
- 
- 	return ima_match_policy(inode, function, mask, flags);
+ #include <linux/err.h>
+ #include <linux/sched.h>
+-#include <linux/rbtree.h>
++#include <linux/slab.h>
+ #include <linux/cred.h>
+ #include <linux/key-type.h>
+ #include <linux/digsig.h>
+@@ -84,3 +84,38 @@ int __init integrity_init_keyring(const unsigned int id)
+ 	}
+ 	return err;
  }
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 9164fc8..5e4c29d 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -24,6 +24,12 @@
- #include <crypto/hash_info.h>
- #include "ima.h"
- 
-+#ifdef CONFIG_IMA_X509_PATH
-+#define IMA_X509_PATH	CONFIG_IMA_X509_PATH
-+#else
-+#define IMA_X509_PATH	"/etc/keys/x509_ima.der"
-+#endif
 +
- /* name for boot aggregate entry */
- static const char *boot_aggregate_name = "boot_aggregate";
- int ima_used_chip;
-@@ -91,6 +97,17 @@ err_out:
- 	return result;
- }
- 
-+#ifdef CONFIG_IMA_LOAD_X509
-+void __init ima_load_x509(void)
++int __init integrity_load_x509(const unsigned int id, char *path)
 +{
-+	int unset_flags = ima_policy_flag & IMA_APPRAISE;
++	key_ref_t key;
++	char *data;
++	int rc;
 +
-+	ima_policy_flag &= ~unset_flags;
-+	integrity_load_x509(INTEGRITY_KEYRING_IMA, IMA_X509_PATH);
-+	ima_policy_flag |= unset_flags;
++	if (!keyring[id])
++		return -EINVAL;
++
++	rc = integrity_read_file(path, &data);
++	if (rc < 0)
++		return rc;
++
++	key = key_create_or_update(make_key_ref(keyring[id], 1),
++				   "asymmetric",
++				   NULL,
++				   data,
++				   rc,
++				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				   KEY_USR_VIEW | KEY_USR_READ),
++				   KEY_ALLOC_NOT_IN_QUOTA |
++				   KEY_ALLOC_TRUSTED);
++	if (IS_ERR(key)) {
++		rc = PTR_ERR(key);
++		pr_err("Problem loading X.509 certificate (%d): %s\n",
++		       rc, path);
++	} else {
++		pr_notice("Loaded X.509 cert '%s': %s\n",
++			  key_ref_to_ptr(key)->description, path);
++		key_ref_put(key);
++	}
++	kfree(data);
++	return 0;
 +}
-+#endif
-+
- int __init ima_init(void)
- {
- 	u8 pcr_i[TPM_DIGEST_SIZE];
 diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 1057abb..caa1f6c 100644
+index 20d2204..1057abb 100644
 --- a/security/integrity/integrity.h
 +++ b/security/integrity/integrity.h
-@@ -162,6 +162,14 @@ static inline int asymmetric_verify(struct key *keyring, const char *sig,
- }
- #endif
+@@ -134,6 +134,7 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
  
-+#ifdef CONFIG_IMA_LOAD_X509
-+void __init ima_load_x509(void);
-+#else
-+static inline void ima_load_x509(void)
-+{
-+}
-+#endif
+ int __init integrity_init_keyring(const unsigned int id);
++int __init integrity_load_x509(const unsigned int id, char *path);
+ #else
+ 
+ static inline int integrity_digsig_verify(const unsigned int id,
+@@ -147,6 +148,7 @@ static inline int integrity_init_keyring(const unsigned int id)
+ {
+ 	return 0;
+ }
 +
- #ifdef CONFIG_INTEGRITY_AUDIT
- /* declarations */
- void integrity_audit_msg(int audit_msgno, struct inode *inode,
+ #endif /* CONFIG_INTEGRITY_SIGNATURE */
+ 
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
 -- 
 1.9.1
 
