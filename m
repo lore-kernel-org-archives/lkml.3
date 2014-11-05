@@ -1,51 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaKEPLC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:11:02 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42434 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754811AbaKEPKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:10:04 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 0/3] input: ft5x06: Fix userspace reported maximum value
-Date: Wed,  5 Nov 2014 16:07:47 +0100
-Message-Id: <1415200070-19346-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
+	id S1755334AbaKEPLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:11:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25184 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755041AbaKEPLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:11:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
+   d="scan'208";a="602788352"
+From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
+        aubrey.li@intel.com, linux-kernel@vger.kernel.org
+Cc: mahesh.kumar.p@intel.com
+Subject: [PATCH] Add North complex power state debug driver for BYT and CHT
+Date: Wed,  5 Nov 2014 20:34:12 +0530
+Message-Id: <1415199852-29795-1-git-send-email-mahesh.kumar.p@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The patch adds a debug driver which dumps the power states
+of all the North complex devices. This debug interface is
+useful to figure out the NC IPs which blocks the S0ix
+transitions on the platform. This is extremely useful during
+enabling PM on customer platforms and derivatives.
 
-The current ft5x06 reports to the user-space that its maximum
-coordinates are, on both X and Y, way higher than what could be
-actually usable on the screen (in my case, 5759x1151 instead of
-480x800).
+Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+---
+ arch/x86/Kconfig                     |    3 -
+ arch/x86/kernel/Makefile             |    1 +
+ arch/x86/kernel/intel_nc_dev_state.c |  186 ++++++++++++++++++++++++++++++++++
+ kernel/power/Kconfig                 |   24 +++++
+ 4 files changed, 211 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/kernel/intel_nc_dev_state.c
 
-This causes trouble on some userspace stacks that then try to re-scale
-these coordinates back to the framebuffer resolution, like QT does.
-
-Use the of_touchscreen code to find the real touchscreen limits in the
-DT case, and report that to the userspace.
-
-Thanks,
-Maxime
-
-Maxime Ripard (3):
-  input: touchscreen: of: Use input_set_abs_params
-  input: touchscreen: of: Register multitouch axes
-  input: ft5x06: Allow to set the maximum axes value through the DT
-
- drivers/input/touchscreen/edt-ft5x06.c     |  5 ++++
- drivers/input/touchscreen/of_touchscreen.c | 39 ++++++++++++++++++++++--------
- 2 files changed, 34 insertions(+), 10 deletions(-)
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 6e67ad4..ee0ccaf 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2450,9 +2450,6 @@ config IOSF_MBI
+ 	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
+ 	  enumerable by PCI.
+ 
+-config PMC_ATOM
+-	def_bool y
+-        depends on PCI
+ 
+ source "net/Kconfig"
+ 
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index ed65a6b..b11786f 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -106,6 +106,7 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
+ obj-$(CONFIG_TRACING)			+= tracepoint.o
+ obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
+ obj-$(CONFIG_PMC_ATOM)          += pmc_atom.o
++obj-$(CONFIG_INTEL_SOC_NC_STATE)	+= intel_nc_dev_state.o
+ 
+ 
+ ###
+diff --git a/arch/x86/kernel/intel_nc_dev_state.c b/arch/x86/kernel/intel_nc_dev_state.c
+new file mode 100644
+index 0000000..c3d5e40
+--- /dev/null
++++ b/arch/x86/kernel/intel_nc_dev_state.c
+@@ -0,0 +1,186 @@
++/*
++ * Intel SOC North Complex devices state Driver
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
++#include <linux/io.h>
++
++#include <asm/cpu_device_id.h>
++#include <asm/intel_mid_pcihelpers.h>
++
++#define	DRIVER_NAME	KBUILD_MODNAME
++
++#define PUNIT_PORT		0x04
++#define PWRGT_CNT		0x60
++#define PWRGT_STATUS		0x61
++#define VED_SS_PM0		0x32
++#define ISP_SS_PM0		0x39
++#define MIO_SS_PM		0x3B
++#define SSS_SHIFT		24
++#define RENDER_POS		0
++#define MEDIA_POS		2
++#define DISPLAY_POS		6
++#define DSP_SSS_CHT		0x36
++#define DSP_SSS_POS_CHT		16
++
++#define PMC_D0I3_MASK		3
++
++static char *dstates[] = {"D0", "D0i1", "D0i2", "D0i3"};
++
++struct nc_device {
++	char *name;
++	int reg;
++	int sss_pos;
++};
++
++struct nc_device nc_devices_vlv[] = {
++	{ "GFX RENDER", PWRGT_STATUS,  RENDER_POS },
++	{ "GFX MEDIA", PWRGT_STATUS, MEDIA_POS },
++	{ "DISPLAY", PWRGT_STATUS,  DISPLAY_POS },
++	{ "VED", VED_SS_PM0, SSS_SHIFT},
++	{ "ISP", ISP_SS_PM0, SSS_SHIFT},
++	{ "MIO", MIO_SS_PM, SSS_SHIFT},
++};
++
++struct nc_device nc_devices_cht[] = {
++	{ "GFX RENDER", PWRGT_STATUS,  RENDER_POS },
++	{ "GFX MEDIA", PWRGT_STATUS, MEDIA_POS },
++	{ "DSP", DSP_SSS_CHT,  DSP_SSS_POS_CHT },
++	{ "VED", VED_SS_PM0, SSS_SHIFT},
++	{ "ISP", ISP_SS_PM0, SSS_SHIFT},
++	{ "MIO", MIO_SS_PM, SSS_SHIFT},
++};
++#define NC_NUM_DEVICES 6
++
++#define ICPU(model, cpu) \
++	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
++
++
++MODULE_DEVICE_TABLE(x86cpu, intel_pmc_cpu_ids);
++
++struct pmc_config {
++	struct nc_device *nc_table;
++	u32 num_nc;
++};
++static const struct pmc_config vlv_config = {
++	.nc_table = nc_devices_vlv,
++	.num_nc = NC_NUM_DEVICES,
++};
++
++static const struct pmc_config cht_config = {
++	.nc_table = nc_devices_cht,
++	.num_nc = NC_NUM_DEVICES,
++};
++
++static const struct pmc_config *icpu;
++
++static const struct x86_cpu_id intel_pmc_cpu_ids[] = {
++	ICPU(0x4c, cht_config),
++	ICPU(0x37, vlv_config),
++	{}
++};
++
++static int nc_dev_state_show(struct seq_file *seq_file, void *unused)
++{
++	struct seq_file *s = (struct seq_file *)seq_file;
++	u32 nc_pwr_sts, nc_reg, nc_val;
++	const struct x86_cpu_id *id;
++	int dev_num, dev_index;
++	static struct nc_device *nc_dev;
++
++	id = x86_match_cpu(intel_pmc_cpu_ids);
++	if (!id)
++		return -ENODEV;
++	icpu = (const struct pmc_config *)id->driver_data;
++
++	if (!icpu->nc_table)
++		return -ENODEV;
++	nc_dev = icpu->nc_table;
++	dev_num = icpu->num_nc;
++
++	seq_puts(s, "\n\nNORTH COMPLEX DEVICES :\n");
++	for (dev_index = 0; dev_index < dev_num; dev_index++) {
++		nc_reg = nc_dev[dev_index].reg;
++		nc_pwr_sts = intel_mid_msgbus_read32(PUNIT_PORT, nc_reg);
++		nc_pwr_sts >>= nc_dev[dev_index].sss_pos;
++		nc_val = nc_pwr_sts & PMC_D0I3_MASK;
++		seq_printf(s, "%9s : %s\n", nc_dev[dev_index].name,
++				dstates[nc_val]);
++	}
++	return 0;
++}
++
++static int nc_dev_state_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, nc_dev_state_show, inode->i_private);
++}
++
++static const struct file_operations nc_dev_state_ops = {
++	.open		= nc_dev_state_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static struct dentry *dbg_file;
++
++static int nc_dbgfs_register(void)
++{
++
++	dbg_file = debugfs_create_dir("nc_atom", NULL);
++	if (!dbg_file)
++		return -ENOMEM;
++
++	dbg_file = debugfs_create_file("nc_dev_state", S_IFREG | S_IRUGO,
++				dbg_file, NULL, &nc_dev_state_ops);
++	if (!dbg_file) {
++		pr_err("nc_dev_state register failed\n");
++		return -ENODEV;
++	}
++	return 0;
++}
++
++static void nc_dbgfs_unregister(void)
++{
++	if (!dbg_file)
++		return;
++
++	debugfs_remove_recursive(dbg_file);
++	dbg_file = NULL;
++}
++
++static int __init nc_dev_state_module_init(void)
++{
++	int ret = nc_dbgfs_register();
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static void __exit nc_dev_state_module_exit(void)
++{
++	nc_dbgfs_unregister();
++}
++
++module_init(nc_dev_state_module_init);
++module_exit(nc_dev_state_module_exit);
++
++MODULE_AUTHOR("Kumar P, Mahesh <mahesh.kumar.p.intel.com>");
++MODULE_DESCRIPTION("Driver for get North Complex devices state");
++MODULE_LICENSE("GPL v2");
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index 6c78fe5..399e192 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -217,6 +217,30 @@ config PM_TRACE
+ 	  dependent, x86 will print the information during a
+ 	  late_initcall.
+ 
++menu "Intel PM Debug Driver"
++
++config INTEL_SOC_NC_STATE
++	bool "North Complex devices power state driver"
++	def_bool y
++	---help---
++		This is a debug driver which gets the power states
++		of all North Complex devices.The power states of
++		each IP is exposed as part of the debugfs
++		interface
++
++config PMC_ATOM
++	bool "South Complex devices power state driver"
++	def_bool y
++        depends on PCI
++	---help---
++		This is a debug driver which gets the power states
++		of all South Complex devices.The driver also dumps
++		the information on S0ix residencies.The power states
++		of each IP is exposed as part of the debugfs
++		interface
++
++endmenu
++
+ config PM_TRACE_RTC
+ 	bool "Suspend/resume event tracing"
+ 	depends on PM_SLEEP_DEBUG
 -- 
-2.1.1
+1.7.9.5
 
