@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaKEJHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:07:18 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:22884 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaKEJHE (ORCPT
+	id S1754194AbaKEJHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:07:24 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41808 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841AbaKEJHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:07:04 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-15-5459e8a45fbe
-Message-id: <1415178403.15850.17.camel@AMDC1943>
-Subject: Re: [PATCH v2] Add ltc3562 voltage regulator driver
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mike Looijmans <mike.looijmans@topic.nl>, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Date: Wed, 05 Nov 2014 10:06:43 +0100
-In-reply-to: <20141104194729.GV3815@sirena.org.uk>
-References: <1414668415-597-1-git-send-email-mike.looijmans@topic.nl>
- <20141030165133.GB18557@sirena.org.uk> <54573860.4060708@topic.nl>
- <20141103120919.GE3815@sirena.org.uk> <545795D8.1040600@topic.nl>
- <20141103151058.GP3815@sirena.org.uk> <5457BD85.2070901@topic.nl>
- <54589472.8030305@topic.nl> <20141104113417.GG3815@sirena.org.uk>
- <5458D636.3000401@topic.nl> <20141104194729.GV3815@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xy7pLXkSGGJx/rmgx9eETNoujvwss
-	vl3pYLK4vGsOm0XXzi1sDqwef59fZ/HYOesuu8emVZ1sHi+2XWPz+LxJLoA1issmJTUnsyy1
-	SN8ugSvjStcypoLdHBWvDqxmbmB8xNbFyMkhIWAisfzcDnYIW0ziwr31QHEuDiGBpYwSWzdu
-	gXI+M0rsODCLGaSKV8BA4uPtxUxdjBwcwgI2Eg++6YKE2QSMJTYvXwI2VERAWeLq970sIL3M
-	AvMZJU5MWM8CkmARUJVY/XATK4jNKWAk8eX7GagFs5glzp9ZDZZgFlCXmDRvETPIAgmgSY39
-	bhB7BSV+TL7HAlEiL7F5zVvmCYwCs5B0zEJSNgtJ2QJG5lWMoqmlyQXFSem5RnrFibnFpXnp
-	esn5uZsYIQH9dQfj0mNWhxgFOBiVeHg9miJDhFgTy4orcw8xSnAwK4nwcl4CCvGmJFZWpRbl
-	xxeV5qQWH2Jk4uCUamD0uJ6v0hBovJ13/qHZDeKN2xr9uq7/rZwpmasvX7EzSeutypL980pY
-	CjUNP0r73Flq3Kf2eV61jNtbuVczPddMfO/sspgpMGLNN74+5oAjj/mC19y69Ue069AW6zu/
-	t+akWs07dYe93kX++09+piO/i7X4tn6XXeH/8J6q9+vLwvn53PZVBtVKLMUZiYZazEXFiQCw
-	zjf+RgIAAA==
+	Wed, 5 Nov 2014 04:07:15 -0500
+Message-ID: <5459E8BC.8030500@hitachi.com>
+Date: Wed, 05 Nov 2014 18:07:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: Re: Re: Re: [PATCH v4 5/5] perf/sdt: Add support to perf record
+ to trace SDT events
+References: <5458CD15.4010101@hitachi.com> <5459BD3E.7010804@linux.vnet.ibm.com> <5459C8BE.30809@linux.vnet.ibm.com>
+In-Reply-To: <5459C8BE.30809@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-11-04 at 19:47 +0000, Mark Brown wrote:
-> On Tue, Nov 04, 2014 at 02:35:50PM +0100, Mike Looijmans wrote:
+(2014/11/05 15:50), Hemant Kumar wrote:
+> Hi Masami,
 > 
-> > I still need help with one thing that isn't clear to me though. The DT is
-> > parsed when calling regulator_register. But then how do I fetch my "private"
-> > settings in there BEFORE the regulator gets enabled? The feedback resistors
-> > and regulator mode must be set to the correct board before the output is
-> > enabled, otherwise it may damage the chip and its periferals.
+>> Hi,
+>>
+>> (2014/11/04 17:06), Hemant Kumar wrote:
+>>> Hi Namhyung,
+>>>
+>>> On 11/04/2014 01:08 PM, Namhyung Kim wrote:
+>>>> Hi Hemant,
+>>>>
+>>>> As you know, you need to keep an eye on how (kprobes) event cache
+>>>> patchset from Masami settles down.  For those who aren't CC'ed, please
+>>>> see the link below:
+>>>>
+>>>>    https://lkml.org/lkml/2014/10/31/207
+>>>>
+>>>> On Sun, 02 Nov 2014 16:26:28 +0530, Hemant Kumar wrote:
+>>>>> This patch adds support to perf to record SDT events. When invoked,
+>>>>> the SDT event is looked up in the sdt-cache. If its found, an entry is
+>>>>> made silently to uprobe_events file and then recording is invoked, and
+>>>>> then the entry for the SDT event in uprobe_events is silently 
+>>>>> discarded.
+>>>>>
+>>>>> The SDT events are already stored in a cache file
+>>>>> (/var/cache/perf/perf-sdt-file.cache).
+>>>>> Although the file_hash table helps in addition or deletion of SDT 
+>>>>> events
+>>>>> from the cache, its not of much use when it comes to probing the 
+>>>>> actual
+>>>>> SDT event, because the key to this hash list is a file name and not 
+>>>>> the
+>>>>> SDT event name (which is given as an argument to perf record). So, we
+>>>>> won't be able to hash into it.
+>>>> It likely to be ended up with per-file or per-buildid cache files under
+>>>> ~/.debug directory.  In this case we also need to have the (central)
+>>>> event-to-cache table anyway IMHO.
+>>
+>> What we are talking is to make a new caching file with buildid under
+>> .debug/.
+>> We already has ~/.debug/.build-id/<build-id> for string the binary
+>> symbol maps. I think there are 2 options, one is expanding the current
+>> build-id file format to include sdt and probe-event caches. The other is
 > 
-> Add a callback for this.  Javier and/or Krzysztof were looking at this
-> for some other stuff, though I think they were intending to add core
-> functionality for their specific feature.
+> Like a single cache to manage all the events for that file? How do we 
+> distinguish between the events as we will be having perf record to read 
+> SDT events from this cache?
+> 
+>> to add ~/.debug/.build-id/<build-id>.probe and
+>> ~/.debug/.build-id/<build-id>.sdt for caching probe/sdt information.
+>>
+> 
+> This approach looks convenient.
+> 
+>> And also, user interface is a discussion point. This series defines new
+>> sdt-cache command, and we already have buildid-cache command. We should
+>> have probe-cache command too? or consolidate those cache managing 
+>> commands?
+>> This question should be involving your series too.
+>>
+> 
+> I think, we need not have multiple sub-commands to manage the cache. We 
+> can consolidate the cache management of probe events (including SDT 
+> events) to a single command.
 
-I needed a callback and added such. The callback was called on each DT
-node parsed. However I dropped that idea because it turned our to be
-unsuitable to my case.
+Agreed. maybe perf-cache --buildid/--sdt/--probe would be good.
 
-I needed to feed regulator_config.ena_gpio with data parsed from such
-callback. But the callback called from inside the regulator_register()
-has the regulator_config const.
+>>>>> To avoid this problem, we can create another hash list "event_hash" 
+>>>>> list
+>>>>> which will be maintained along with the file_hash list.
+>>>>> Whenever a user invokes 'perf record -e %provider:event, perf should
+>>>>> initialize the event_hash list and the file_hash list.
+>>>>> The key to event_hash list is calculated from the event name and its
+>>>>> provider name.
+>>>> Isn't it enough just to use provide name?  I guess the provider names
+>>>> are (should be?) unique among a system although there's no absolute
+>>>> guarantee for that.
+>>>>
+>>>
+>>> Yes, there is no guarantee for the provider names to be unique.
+>>> If we use only provider name with "perf record", then, what if a user
+>>> wants to trace
+>>> only a specific SDT event (not all the events for that provider)?
+>>> What do you think?
+>>
+>> How about failing if the provider name is not unique unless user
+>> gives the actual binary path?
+>>
+>>
+> 
+> You mean something like this:
+> # perf record -e %provider @/path/to/file ...?
 
-Best regards,
-Krzysztof
+Yes, that is what I meant. :)
+
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
