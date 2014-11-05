@@ -1,212 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaKEKBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:01:06 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:34755 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298AbaKEKBD convert rfc822-to-8bit (ORCPT
+	id S1754226AbaKEKDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:03:03 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:35383 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaKEKC5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:01:03 -0500
+	Wed, 5 Nov 2014 05:02:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141021163341.GB17610@e102568-lin.cambridge.arm.com>
-References: <1413354920-20165-1-git-send-email-k.chander@samsung.com>
-	<20141015090047.GA26484@red-moon>
-	<CADWw7Ojgttk3cjaac=GGL1D9pejCJw8sJB2JvPFWtyBh3JHYKA@mail.gmail.com>
-	<20141021163341.GB17610@e102568-lin.cambridge.arm.com>
-Date: Wed, 5 Nov 2014 15:31:02 +0530
-X-Google-Sender-Auth: euq2Tenq6WWElAQffsbmd53oAGg
-Message-ID: <CADWw7OiD8TdN75G0zecowAL9GniSU9hKLN0_H6UQL85LX1E9Xw@mail.gmail.com>
-Subject: Re: [PATCH] arm64: dts: exynos7: add support for cpuidle core power down
-From: Chander Kashyap <k.chander@samsung.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Chander Kashyap <k.chander@samsung.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20141104165733.GI26729@lukather>
+References: <1415074039-16590-1-git-send-email-wens@csie.org>
+ <1415074039-16590-2-git-send-email-wens@csie.org> <20141104165733.GI26729@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Wed, 5 Nov 2014 18:02:35 +0800
+X-Google-Sender-Auth: M_nGUbdrwixtyfb4VJEySz3U4V4
+Message-ID: <CAGb2v65VojZVEijdjXYGkMud7dMFzMzagfN=_4S3msZygu3YPQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and resets
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for very late response. As i was on vacation so couldn’t reply.
+Hi,
 
-On Tue, Oct 21, 2014 at 10:03 PM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
-> On Fri, Oct 17, 2014 at 10:43:59AM +0100, Chander Kashyap wrote:
->> Hi Lorenzo,
->>
->> On Wed, Oct 15, 2014 at 2:30 PM, Lorenzo Pieralisi
->> <lorenzo.pieralisi@arm.com> wrote:
->> > On Wed, Oct 15, 2014 at 07:35:20AM +0100, Chander Kashyap wrote:
->> >> Exynos7 has core power down state where cores can be powered off independently.
->> >> This patch adds support for this state.
->> >
->> > Please tell us more about the idle-state values you are adding, in particular
->> > entry, exit latencies and min-residency values.
->>
->> Entry latency: This value is calculated as follows:
->>
->> On entry to arm64_enter_idle_state:
->> timestamp1 = ktimeget();
->>
->> after returning from cpu_suspend()
->>
->> timestamp2 = ktimeget();
->>
->> latency = timestamp2-timestamp1;
->>
->> Cpu is not allowed to enter core powerdown by skipping wfi instruction at end.
-> This may not be the worst case (because the worst case depends on the state
-> of the cache in the core unless the latency is power down command dominated,
-> so at the cost of being pedantic, please make sure that's what you are
-> measuring and document it in the commit log).
+On Wed, Nov 5, 2014 at 12:57 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> Hi,
 >
+> On Tue, Nov 04, 2014 at 12:07:14PM +0800, Chen-Yu Tsai wrote:
+>> The USB controller/phy clocks and reset controls are in a separate
+>> address block, unlike previous SoCs where they were in the clock
+>> controller.
+>>
+>> This patch copies the original gates clk functions used for usb
+>> clocks into a separate file, and renames them to *_usb_*. Also
+>> add a per-gate parent index, so we can set different parents for
+>> each gate.
+>>
+>> In time we may move the other usb clock drivers to this file.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> ---
+>>  Documentation/devicetree/bindings/clock/sunxi.txt |   5 +
+>>  drivers/clk/sunxi/Makefile                        |   1 +
+>>  drivers/clk/sunxi/clk-usb.c                       | 192 ++++++++++++++++++++++
+>>  3 files changed, 198 insertions(+)
+>>  create mode 100644 drivers/clk/sunxi/clk-usb.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+>> index 0455cb9..b953fe5 100644
+>> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
+>> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+>> @@ -66,6 +66,8 @@ Required properties:
+>>       "allwinner,sun4i-a10-usb-clk" - for usb gates + resets on A10 / A20
+>>       "allwinner,sun5i-a13-usb-clk" - for usb gates + resets on A13
+>>       "allwinner,sun6i-a31-usb-clk" - for usb gates + resets on A31
+>> +     "allwinner,sun9i-a80-usb-mod-clk" - for usb gates + resets on A80
+>> +     "allwinner,sun9i-a80-usb-phy-clk" - for usb phy gates + resets on A80
+>>
+>>  Required properties for all clocks:
+>>  - reg : shall be the control register address for the clock.
+>> @@ -82,6 +84,9 @@ Required properties for all clocks:
+>>  And "allwinner,*-usb-clk" clocks also require:
+>>  - reset-cells : shall be set to 1
+>>
+>> +"allwinner,sun9i-a80-usb-*-clk" clocks require:
+>> +- clocks : shall be the usb hci ahb1 gate and peripheral pll clocks
+>> +
+>
+> In this particular order, I assume?
 
-If i understood correctly you are referring to cache flush time.
-The measured entry latency time is averaged time for 100000
-transactions with varying load.
-I will document entry latency calculation in the commit message.
+Yes, I will make it clear.
 
->> Hence calculated time contains entry time + failure exit time.
+>>  For "allwinner,sun7i-a20-gmac-clk", the parent clocks shall be fixed rate
+>>  dummy clocks at 25 MHz and 125 MHz, respectively. See example.
 >>
+>> diff --git a/drivers/clk/sunxi/Makefile b/drivers/clk/sunxi/Makefile
+>> index a66953c..f19ce54 100644
+>> --- a/drivers/clk/sunxi/Makefile
+>> +++ b/drivers/clk/sunxi/Makefile
+>> @@ -8,6 +8,7 @@ obj-y += clk-a20-gmac.o
+>>  obj-y += clk-mod0.o
+>>  obj-y += clk-sun8i-mbus.o
+>>  obj-y += clk-sun9i-core.o
+>> +obj-y += clk-usb.o
 >>
->> Regarding
->> exit-latency and target-residency time, got these values from HW team.
->>
->> I am using these as initial values and I will be working on optimizing
->> these values with further experiments.
->> If you could suggest any formal method of deriving these values, i can
->> try those methods as well.
+>>  obj-$(CONFIG_MFD_SUN6I_PRCM) += \
+>>       clk-sun6i-ar100.o clk-sun6i-apb0.o clk-sun6i-apb0-gates.o \
+>> diff --git a/drivers/clk/sunxi/clk-usb.c b/drivers/clk/sunxi/clk-usb.c
+>> new file mode 100644
+>> index 0000000..d92ee36
+>> --- /dev/null
+>> +++ b/drivers/clk/sunxi/clk-usb.c
+>> @@ -0,0 +1,192 @@
+>> +/*
+>> + * Copyright 2013 Emilio López
+>> + *
+>> + * Emilio López <emilio@elopez.com.ar>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/clk-provider.h>
+>> +#include <linux/clkdev.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/reset-controller.h>
+>> +#include <linux/spinlock.h>
+>> +
+>> +
+>> +/**
+>> + * sunxi_usb_reset... - reset bits in usb clk registers handling
+>> + */
+>> +
+>> +struct usb_reset_data {
+>> +     void __iomem                    *reg;
+>> +     spinlock_t                      *lock;
+>> +     struct reset_controller_dev     rcdev;
+>> +};
+>> +
+>> +static int sunxi_usb_reset_assert(struct reset_controller_dev *rcdev,
+>> +                           unsigned long id)
+>> +{
+>> +     struct usb_reset_data *data = container_of(rcdev,
+>> +                                                struct usb_reset_data,
+>> +                                                rcdev);
+>> +     unsigned long flags;
+>> +     u32 reg;
+>> +
+>> +     spin_lock_irqsave(data->lock, flags);
+>> +
+>> +     reg = readl(data->reg);
+>> +     writel(reg & ~BIT(id), data->reg);
+>> +
+>> +     spin_unlock_irqrestore(data->lock, flags);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int sunxi_usb_reset_deassert(struct reset_controller_dev *rcdev,
+>> +                             unsigned long id)
+>> +{
+>> +     struct usb_reset_data *data = container_of(rcdev,
+>> +                                                  struct usb_reset_data,
+>> +                                                  rcdev);
+>> +     unsigned long flags;
+>> +     u32 reg;
+>> +
+>> +     spin_lock_irqsave(data->lock, flags);
+>> +
+>> +     reg = readl(data->reg);
+>> +     writel(reg | BIT(id), data->reg);
+>> +
+>> +     spin_unlock_irqrestore(data->lock, flags);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static struct reset_control_ops sunxi_usb_reset_ops = {
+>> +     .assert         = sunxi_usb_reset_assert,
+>> +     .deassert       = sunxi_usb_reset_deassert,
+>> +};
+>> +
+>> +/**
+>> + * sunxi_usb_clk_setup() - Setup function for usb gate clocks
+>> + */
+>> +
+>> +#define SUNXI_USB_MAX_SIZE 32
+>> +
+>> +struct usb_clk_data {
+>> +     u32 clk_mask;
+>> +     u32 reset_mask;
+>> +     /* which parent to use, should match clock-output-names */
+>> +     char parents[SUNXI_USB_MAX_SIZE];
+>> +};
+>> +
+>> +static void __init sunxi_usb_clk_setup(struct device_node *node,
+>> +                                    const struct usb_clk_data *data,
+>> +                                    spinlock_t *lock)
+>> +{
+>> +     struct clk_onecell_data *clk_data;
+>> +     struct usb_reset_data *reset_data;
+>> +     const char *clk_parent;
+>> +     const char *clk_name;
+>> +     void __iomem *reg;
+>> +     int qty;
+>> +     int i = 0;
+>> +     int j = 0;
+>> +
+>> +     reg = of_iomap(node, 0);
 >
-> Well, you have to set the core/cluster in worst case scenario and
-> compute the break-even residency against wfi (since you have two
-> states); it certainly has a dependency on PSCI implementation too among
-> other things.
->
-> exit-latency should come from HW design even though there is a cache
-> refill factor to be considered too and should be factored in.
+> of_io_request_and_map?
 
-Exit and target residency are provided by HW team.
+OK. About that, any recommended naming style for the 3rd argument?
+Maybe the driver name "clk_sun9i_usb"? Or just a generic name like
+"usb_clk"?
 
-I will post the V3 with changed commit message.
+I'm asking now as we'll likely be changing the existing drivers to
+use it as well.
+
+>> +
+>> +     /* Worst-case size approximation and memory allocation */
+>> +     qty = find_last_bit((unsigned long *)&data->clk_mask,
+>> +                         SUNXI_USB_MAX_SIZE);
+>> +     clk_data = kmalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
+>> +     if (!clk_data)
+>> +             return;
+>> +     clk_data->clks = kzalloc((qty+1) * sizeof(struct clk *), GFP_KERNEL);
+>> +     if (!clk_data->clks) {
+>> +             kfree(clk_data);
+>> +             return;
+>> +     }
+>> +
+>> +     for_each_set_bit(i, (unsigned long *)&data->clk_mask,
+>> +                      SUNXI_USB_MAX_SIZE) {
+>> +             of_property_read_string_index(node, "clock-output-names",
+>> +                                           j, &clk_name);
+>> +             clk_parent = of_clk_get_parent_name(node, data->parents[j]);
+>> +
+>> +             clk_data->clks[i] = clk_register_gate(NULL, clk_name,
+>> +                                                   clk_parent, 0,
+>> +                                                   reg, i, 0, lock);
+>> +             WARN_ON(IS_ERR(clk_data->clks[i]));
+>> +             clk_register_clkdev(clk_data->clks[i], clk_name, NULL);
+>> +
+>> +             j++;
+>> +     }
+>> +
+>> +     /* Adjust to the real max */
+>> +     clk_data->clk_num = i;
+>> +
+>> +     of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+>> +
+>> +     /* Register a reset controller for usb with reset bits */
+>> +     if (data->reset_mask == 0)
+>> +             return;
+>> +
+>> +     reset_data = kzalloc(sizeof(*reset_data), GFP_KERNEL);
+>> +     if (!reset_data)
+>> +             return;
+>> +
+>> +     reset_data->reg = reg;
+>> +     reset_data->lock = lock;
+>> +     reset_data->rcdev.nr_resets = __fls(data->reset_mask) + 1;
+>> +     reset_data->rcdev.ops = &sunxi_usb_reset_ops;
+>> +     reset_data->rcdev.of_node = node;
+>> +     reset_controller_register(&reset_data->rcdev);
+>> +}
+>> +
+>> +static const struct usb_clk_data sun9i_a80_usb_mod_data __initconst = {
+>> +     .clk_mask = BIT(6) | BIT(5) | BIT(4) | BIT(3) | BIT(2) | BIT(1),
+>> +     .reset_mask = BIT(19) | BIT(18) | BIT(17),
+>> +     .parents = {0, 1, 0, 1, 0, 1},
+>> +};
+>> +
+>> +static DEFINE_SPINLOCK(a80_usb_mod_lock);
+>> +
+>> +static void __init sun9i_a80_usb_mod_setup(struct device_node *node)
+>> +{
+>> +     /* AHB1 gate must be enabled to access registers */
+>> +     struct clk *ahb = of_clk_get(node, 0);
+>> +
+>> +     WARN_ON(IS_ERR(ahb));
+>> +     clk_prepare_enable(ahb);
 >
-> Lorenzo
+> Hmmmm. That look off.
 >
->>
->> >
->> >> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
->> >> ---
->> >> This patch has following dependencies:
->> >>       - [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
->> >>               http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
->> >>       - [PATCH v9 0/8] ARM generic idle states
->> >>               http://permalink.gmane.org/gmane.linux.power-management.general/49224
->> >
->> > Series above was merged, so dependency is stale.
->>
->> i will remove this
->>
->> >
->> >>  arch/arm64/boot/dts/exynos/exynos7.dtsi |   18 ++++++++++++++++++
->> >>  1 file changed, 18 insertions(+)dont
->> >>
->> >> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
->> >> index ce221ac..8e0a034 100644
->> >> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
->> >> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
->> >> @@ -36,6 +36,7 @@
->> >>                       device_type = "cpu";
->> >>                       compatible = "arm,cortex-a57", "arm,armv8";
->> >>                       enable-method = "psci";
->> >> +                     cpu-idle-states = <&CPU_SLEEP>;
->> >
->> > I would add cpu-idle-states phandle after the reg property, as defined
->> > in the idle states bindings.
->>
->> i will move this after reg property.
->>
->> >
->> >>                       reg = <0x0>;
->> >>               };
->> >>
->> >> @@ -43,6 +44,7 @@
->> >>                       device_type = "cpu";
->> >>                       compatible = "arm,cortex-a57", "arm,armv8";
->> >>                       enable-method = "psci";
->> >> +                     cpu-idle-states = <&CPU_SLEEP>;
->> >>                       reg = <0x1>;
->> >>               };
->> >>
->> >> @@ -50,6 +52,7 @@
->> >>                       device_type = "cpu";
->> >>                       compatible = "arm,cortex-a57", "arm,armv8";
->> >>                       enable-method = "psci";
->> >> +                     cpu-idle-states = <&CPU_SLEEP>;
->> >>                       reg = <0x2>;
->> >>               };
->> >>
->> >> @@ -57,8 +60,23 @@
->> >>                       device_type = "cpu";
->> >>                       compatible = "arm,cortex-a57", "arm,armv8";
->> >>                       enable-method = "psci";
->> >> +                     cpu-idle-states = <&CPU_SLEEP>;
->> >>                       reg = <0x3>;
->> >>               };
->> >> +
->> >> +             idle-states {
->> >> +                     entry-method = "arm,psci";
->> >> +
->> >> +                     CPU_SLEEP: cpu-sleep {
->> >> +                             compatible = "arm,idle-state";
->> >> +                             local-timer-stop;
->> >> +                             arm,psci-suspend-param = <0x0010000>;
->> >> +                             entry-latency-us = <20>;
->> >> +                             exit-latency-us = <150>;
->> >> +                             min-residency-us = <2100>;
->> >> +                             status = "enabled";
->> >
->> > status ? This is not a documented property. If you need it please explain
->> > why, define its bindings and we can see how to accommodate it.
->>
->> I will add okay for status property. As per the bindings posted by you.
->>
->> regards,
->> >
->> > Thank you,
->> > Lorenzo
->> >
->> >> +                     };
->> >> +             };
->> >>       };
->> >>
->> >>       psci {
->> >> --
->> >> 1.7.9.5
->> >>
->> >>
->> >
->> >
->> > _______________________________________________
->> > linux-arm-kernel mailing list
->> > linux-arm-kernel@lists.infradead.org
->> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Why do you need the clock to be enabled all the time? Isn't the CCF
+> already taking care of enabling the parent clock whenever it needs to
+> access any register?
+
+There are also resets in the same block. That and I couldn't get it
+working without enabling the clock beforehand.
+
+
+ChenYu
