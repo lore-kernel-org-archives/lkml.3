@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbaKERBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:01:37 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:50727 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932261AbaKERBP (ORCPT
+	id S1755151AbaKERCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:02:07 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:47497 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123AbaKERAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:01:15 -0500
-Date: Wed, 5 Nov 2014 12:01:11 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Message-ID: <20141105170111.GG14386@htj.dyndns.org>
-References: <20141104192705.GA22163@htj.dyndns.org>
- <20141105124620.GB4527@dhcp22.suse.cz>
- <20141105130247.GA14386@htj.dyndns.org>
- <20141105133100.GC4527@dhcp22.suse.cz>
- <20141105134219.GD4527@dhcp22.suse.cz>
- <20141105154436.GB14386@htj.dyndns.org>
- <20141105160115.GA28226@dhcp22.suse.cz>
- <20141105162929.GD14386@htj.dyndns.org>
- <20141105163956.GD28226@dhcp22.suse.cz>
- <20141105165428.GF14386@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105165428.GF14386@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 5 Nov 2014 12:00:42 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
+        pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: [PATCH v4 09/11] mtd: nand: stm_nand_bch: adding BBT header
+Date: Wed,  5 Nov 2014 16:59:51 +0000
+Message-Id: <1415206793-25670-10-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415206793-25670-1-git-send-email-lee.jones@linaro.org>
+References: <1415206793-25670-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 11:54:28AM -0500, Tejun Heo wrote:
-> > Still not following. How do you want to detect an on-going OOM without
-> > any interface around out_of_memory?
-> 
-> I thought you were using oom_killer_allowed_start() outside OOM path.
-> Ugh.... why is everything weirdly structured?  oom_killer_disabled
-> implies that oom killer may fail, right?  Why is
-> __alloc_pages_slowpath() checking it directly?  If whether oom killing
-> failed or not is relevant to its users, make out_of_memory() return an
-> error code.  There's no reason for the exclusion detail to leak out of
-> the oom killer proper.  The only interface should be disable/enable
-> and whether oom killing failed or not.
+This header will be used firstly by the BCH main driver, then the
+Bad Block Table (BBT) code which will be added immediately after.
+Doing it this way provides the cleanest method of keeping the
+patch-set bisectable.
 
-And what's implemented is wrong.  What happens if oom killing is
-already in progress and then a task blocks trying to write-lock the
-rwsem and then that task is selected as the OOM victim?  disable()
-call must be able to fail.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ include/linux/mtd/stm_nand_bbt.h | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 include/linux/mtd/stm_nand_bbt.h
 
+diff --git a/include/linux/mtd/stm_nand_bbt.h b/include/linux/mtd/stm_nand_bbt.h
+new file mode 100644
+index 0000000..8f5deaa
+--- /dev/null
++++ b/include/linux/mtd/stm_nand_bbt.h
+@@ -0,0 +1,22 @@
++#ifndef __LINUX_MTD_STM_BBT_H
++#define __LINUX_MTD_STM_BBT_H
++
++#include <linux/mtd/stm_nand.h>
++
++/* BCH ECC sizes */
++static int bch_ecc_sizes[] = {
++	[BCH_18BIT_ECC] = 32,
++	[BCH_30BIT_ECC] = 54,
++	[BCH_NO_ECC] = 0,
++};
++
++#if IS_ENABLED(CONFIG_MTD_NAND_STM_BCH_BBT)
++extern void nandi_dump_bad_blocks(struct nandi_controller *nandi);
++extern int bch_scan_bbt(struct mtd_info *mtd);
++extern int bch_block_isbad(struct mtd_info *mtd, loff_t offs, int getchip);
++extern int bch_block_markbad(struct mtd_info *mtd, loff_t offs);
++#else
++static inline void nandi_dump_bad_blocks(struct nandi_controller *nandi) {}
++#endif
++
++#endif /* __LINUX_MTD_STM_BBT_H */
 -- 
-tejun
+1.9.1
+
