@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaKENco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 08:32:44 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:44452 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaKENcm (ORCPT
+	id S1754780AbaKENeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 08:34:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41421 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644AbaKENen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 08:32:42 -0500
-Message-ID: <545A2680.2@imgtec.com>
-Date: Wed, 5 Nov 2014 13:30:40 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 5 Nov 2014 08:34:43 -0500
+Date: Wed, 5 Nov 2014 13:34:08 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Message-ID: <20141105133408.GU3729@sirena.org.uk>
+References: <1414668415-597-1-git-send-email-mike.looijmans@topic.nl>
+ <1415083845-27079-1-git-send-email-mike.looijmans@topic.nl>
+ <20141104202638.GZ3815@sirena.org.uk>
+ <545A0CEE.2050101@topic.nl>
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>
-Subject: Re: [PATCH V2 1/2] imx-drm: imx-hdmi: split imx soc specific code
- from imx-hdmi
-References: <1415192385-6572-1-git-send-email-andy.yan@rock-chips.com>
-In-Reply-To: <1415192385-6572-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
+Content-Disposition: inline
+In-Reply-To: <545A0CEE.2050101@topic.nl>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.197.121.157
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] Add ltc3562 voltage regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This one patch does too much to be reviewed easily.
+--AonAANj1daC6QcQu
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-One patch is supposed to modify/add one thing at a time in the kernel.
+On Wed, Nov 05, 2014 at 12:41:34PM +0100, Mike Looijmans wrote:
+> =EF=BB=BFOn 11/04/2014 09:26 PM, Mark Brown wrote:
 
-Separating platform specific code from imx-drm/imx-hdmi is one thing.
+> >So, I managed to find a datasheet[1] and this does actually seem to be a
+> >standard register map.  It looks like this is a 4x12 register map with
+> >the program bytes being essentially register addresses (called sub
+> >addresses in the datasheet), two pad bits (normally we'd include these
+> >in the data for convenience) and the rest of the bits data.  What am I
+> >missing here?
 
-Adding support for multi-byte register access is something different.
+> Things that makes me think it's NOT a register map:
+> - You cannot read from the device
 
-i.e. Something like.
-1/3 split platform specific code out.
-2/3 move/rename imx-hdmi outside the folder
-3/3 add support for multi byte register width access.
+That's entirely normal for older devices, on larger process nodes the
+extra digital to implement read was expensive enough for people to care
+and I believe there were some IP issues with implementing read support.
 
-If there are other things that are not directly relevant to the patch,
-it goes in a different patch. Bug fixes are also separate.
+> - You always have to send a complete command set (two bytes)
+> - There is data (the regulator mode) in the address byte
 
-This should result in readable patches that can be reviewed easily.
+Having to send both a register and a value is the standard thing, and
+with older write only devices things frequently weren't full byte
+multiples, 7x9 was extremely common.
 
-Also, the approach with 4 byte access is ok. But you could use reg-shifts as well perhaps.
-Then you won't have to change so much of the code.
+> - The 'address' is not an index but a bitmask in bits 4..7
 
-static inline void hdmi_writeb(struct dwc_hdmi *hdmi, u8 val, int offset)
-+{
-+ writeb(val, hdmi->regs + (offset << hdmi->reg_shift));
-+}
-+
-+static inline u8 hdmi_readb(struct dwc_hdmi *hdmi, int offset)
-+{
-+ return readb(hdmi->regs + (offset << hdmi->reg_shift));
-+}
+That's just a sparse register map, again very common (you'll also often
+see holes in the register map due to undocumented registers or with
+larger register addresses just to keep the map neat).
 
-And then in probe
+> I fail to see the use for regmap here, but if your view on this is "regmap
+> or burst" then I'll implement it.
 
-+hdmi->reg_shift = 0;
-+
-+ if (of_property_read_u32(np, "reg-shift", &hdmi->reg_shift))
-+ dev_warn(hdmi->dev, "No reg-shift\n");
+The biggest advantage is that it means that a large proportion of the
+code in the driver can be removed and standard implementations in the
+core used instead.  In general removing code is good and this means that
+if we do things like impement support for enabling and disabling
+multiple regulators with a single write then the driver will support
+this for free.
 
-This way the reg-shift property can be defined using DT
+--AonAANj1daC6QcQu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Cheers,
-ZubairLK
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-On 05/11/14 12:59, Andy Yan wrote:
-> imx6 and rockchip rk3288 and JZ4780 (Ingenic Xburst/MIPS)
-> use the interface compatible Designware HDMI IP, but they
-> also have some lightly difference, such as phy pll configuration,
-> register width(imx hdmi register is one byte, but rk3288 is 4
-> bytes width), 4K support(imx6 doesn't support 4k, but rk3288 does),
-> clk useage,and the crtc mux configuration is also platform specific.
-> 
-> To reuse the imx hdmi driver, split the platform specific code out
-> to dw_hdmi-imx.c.
-> 
-> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-> ---
->  drivers/staging/imx-drm/Makefile      |   2 +-
->  drivers/staging/imx-drm/dw_hdmi-imx.c | 214 ++++++++++
->  drivers/staging/imx-drm/imx-hdmi.c    | 726 ++++++++++++++--------------------
->  include/drm/bridge/dw_hdmi.h          | 114 ++++++
->  4 files changed, 634 insertions(+), 422 deletions(-)
->  create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
->  create mode 100644 include/drm/bridge/dw_hdmi.h
+iQEcBAEBAgAGBQJUWidPAAoJECTWi3JdVIfQxsUH/3ztNU9CfoB4OUQ0MkHDi/cP
+GcRRY7y51Ob/MpS58PXJh9Q8arpTR7LqZIEAubyyEBhv/iAvCBkDA93LjQR3K8dm
+xk5qpkuYrrvPZFG0nKyT3Cu5jfnIWKcYaerxlU9pr7j6LC1zZKy/L8fPlT3LrZU5
+BQfTM8/UgyV678Jm3II0ambE/rlw0sSbIg8Zdl8lmwFHSrPYuJd/b4R7AX1V3DR4
+aiaaEccFU8tKyQXFyY2YOXQ5srqRXuD6f4zHfRK7fyopORT7NNGTdVwJnW+O21uq
+w2/Q8JuJAq6a1ZE7n8MOFg/Q9L95LC7K8P818JzfodPEyCjYV4yvD4u+z9SjNag=
+=xfC+
+-----END PGP SIGNATURE-----
+
+--AonAANj1daC6QcQu--
