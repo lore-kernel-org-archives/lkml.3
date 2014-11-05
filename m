@@ -1,236 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaKEQjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:39:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41307 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaKEQjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:39:17 -0500
-Date: Wed, 5 Nov 2014 08:37:43 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-4451646b745acafc89a88a17f09c6d0be4213161@git.kernel.org>
-Cc: jiang.liu@linux.intel.com, tglx@linutronix.de, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, rdunlap@infradead.org,
-        konrad.wilk@oracle.com, bp@alien8.de, bhelgaas@google.com,
-        yinghai@kernel.org, tony.luck@intel.com, hpa@zytor.com,
-        joro@8bytes.org, rjw@rjwysocki.net, gregkh@linuxfoundation.org
-Reply-To: tglx@linutronix.de, benh@kernel.crashing.org,
-        jiang.liu@linux.intel.com, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, bp@alien8.de, rdunlap@infradead.org,
-        konrad.wilk@oracle.com, hpa@zytor.com, tony.luck@intel.com,
-        yinghai@kernel.org, bhelgaas@google.com, joro@8bytes.org,
-        gregkh@linuxfoundation.org, rjw@rjwysocki.net
-In-Reply-To: <1414397531-28254-11-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-11-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Replace printk(KERN_LVL) with pr_lvl()
-  utilities
-Git-Commit-ID: 4451646b745acafc89a88a17f09c6d0be4213161
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1755461AbaKEQj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:39:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:44561 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468AbaKEQjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:39:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
+   d="scan'208";a="632024798"
+From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
+        aubrey.li@intel.com
+Cc: linux-kernel@vger.kernel.org, mahesh.kumar.p@intel.com,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 2/3] PMC Driver : Expose the power gate status for BYT
+Date: Wed,  5 Nov 2014 22:04:58 +0530
+Message-Id: <1415205298-6047-1-git-send-email-mahesh.kumar.p@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4451646b745acafc89a88a17f09c6d0be4213161
-Gitweb:     http://git.kernel.org/tip/4451646b745acafc89a88a17f09c6d0be4213161
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:01 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 5 Nov 2014 11:04:47 +0100
+The PSS register reflects the power state of each island on SoC.
+It would be useful to know which of the islands is on or off at the momemnt.
+This interface would help indicate the S0ix blocker IPs in the system.
 
-x86, irq: Replace printk(KERN_LVL) with pr_lvl() utilities
-
-Replace printk(KENR_LVL) with pr_lvl() to keep checkpatch script silent.
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1414397531-28254-11-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
 ---
- arch/x86/kernel/apic/vector.c | 69 +++++++++++++++++++++----------------------
- 1 file changed, 34 insertions(+), 35 deletions(-)
+ arch/x86/include/asm/pmc_atom.h |   23 ++++++++++++++
+ arch/x86/kernel/pmc_atom.c      |   63 +++++++++++++++++++++++++++++++++++----
+ 2 files changed, 81 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index 641bbaa..c03d5ca 100644
---- a/arch/x86/kernel/apic/vector.c
-+++ b/arch/x86/kernel/apic/vector.c
-@@ -504,28 +504,27 @@ static void __init print_local_APIC(void *dummy)
- 	unsigned int i, v, ver, maxlvt;
- 	u64 icr;
+diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
+index 581ad43..7f09fe0 100644
+--- a/arch/x86/include/asm/pmc_atom.h
++++ b/arch/x86/include/asm/pmc_atom.h
+@@ -44,6 +44,29 @@
+ 				BIT_ORED_DEDICATED_IRQ_GPSC | \
+ 				BIT_SHARED_IRQ_GPSS)
  
--	printk(KERN_DEBUG "printing local APIC contents on CPU#%d/%d:\n",
--		smp_processor_id(), hard_smp_processor_id());
-+	pr_debug("printing local APIC contents on CPU#%d/%d:\n",
-+		 smp_processor_id(), hard_smp_processor_id());
- 	v = apic_read(APIC_ID);
--	printk(KERN_INFO "... APIC ID:      %08x (%01x)\n", v, read_apic_id());
-+	pr_info("... APIC ID:      %08x (%01x)\n", v, read_apic_id());
- 	v = apic_read(APIC_LVR);
--	printk(KERN_INFO "... APIC VERSION: %08x\n", v);
-+	pr_info("... APIC VERSION: %08x\n", v);
- 	ver = GET_APIC_VERSION(v);
- 	maxlvt = lapic_get_maxlvt();
++/* Power gate status register */
++#define	PMC_PSS			0x98
++
++#define PMC_PSS_BIT_GBE			BIT(0)
++#define PMC_PSS_BIT_SATA		BIT(1)
++#define PMC_PSS_BIT_HDA			BIT(2)
++#define PMC_PSS_BIT_SEC			BIT(3)
++#define PMC_PSS_BIT_PCIE		BIT(4)
++#define PMC_PSS_BIT_LPSS		BIT(5)
++#define PMC_PSS_BIT_LPE			BIT(6)
++#define PMC_PSS_BIT_DFX			BIT(7)
++#define PMC_PSS_BIT_USH_CTRL		BIT(8)
++#define PMC_PSS_BIT_USH_SUS		BIT(9)
++#define PMC_PSS_BIT_USH_VCCS		BIT(10)
++#define PMC_PSS_BIT_USH_VCCA		BIT(11)
++#define PMC_PSS_BIT_OTG_CTRL		BIT(12)
++#define PMC_PSS_BIT_OTG_VCCS		BIT(13)
++#define PMC_PSS_BIT_OTG_VCCA_CLK	BIT(14)
++#define PMC_PSS_BIT_OTG_VCCA		BIT(15)
++#define PMC_PSS_BIT_USB			BIT(16)
++#define PMC_PSS_BIT_USB_SUS		BIT(17)
++
++
+ /* The timers acumulate time spent in sleep state */
+ #define	PMC_S0IR_TMR		0x80
+ #define	PMC_S0I1_TMR		0x84
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+index 822fb6a..b435e7c 100644
+--- a/arch/x86/kernel/pmc_atom.c
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -38,15 +38,15 @@ struct pmc_dev {
+ static struct pmc_dev pmc_device;
+ static u32 acpi_base_addr;
  
- 	v = apic_read(APIC_TASKPRI);
--	printk(KERN_DEBUG "... APIC TASKPRI: %08x (%02x)\n",
--	       v, v & APIC_TPRI_MASK);
-+	pr_debug("... APIC TASKPRI: %08x (%02x)\n", v, v & APIC_TPRI_MASK);
+-struct pmc_dev_map {
++struct pmc_bit_map {
+ 	const char *name;
+ 	u32 d3_sts_bit;
+ 	u32 fn_dis_bit;
+ };
  
- 	/* !82489DX */
- 	if (APIC_INTEGRATED(ver)) {
- 		if (!APIC_XAPIC(ver)) {
- 			v = apic_read(APIC_ARBPRI);
--			printk(KERN_DEBUG "... APIC ARBPRI: %08x (%02x)\n", v,
--			       v & APIC_ARBPRI_MASK);
-+			pr_debug("... APIC ARBPRI: %08x (%02x)\n",
-+				 v, v & APIC_ARBPRI_MASK);
- 		}
- 		v = apic_read(APIC_PROCPRI);
--		printk(KERN_DEBUG "... APIC PROCPRI: %08x\n", v);
-+		pr_debug("... APIC PROCPRI: %08x\n", v);
+-static  struct pmc_dev_map *dev_map;
++static  struct pmc_bit_map *dev_map;
+ static int dev_num;
+-static  struct pmc_dev_map byt_dev_map[] = {
++static  struct pmc_bit_map byt_dev_map[] = {
+ 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
+ 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
+ 	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
+@@ -85,7 +85,28 @@ static  struct pmc_dev_map byt_dev_map[] = {
+ 	{"35 - DFX",			BIT_DFX_BYT},
+ };
+ 
+-static struct pmc_dev_map cht_dev_map[] = {
++static const struct pmc_bit_map pss_map[] = {
++	{"0  - GBE",			PMC_PSS_BIT_GBE},
++	{"1  - SATA",			PMC_PSS_BIT_SATA},
++	{"2  - HDA",			PMC_PSS_BIT_HDA},
++	{"3  - SEC",			PMC_PSS_BIT_SEC},
++	{"4  - PCIE",			PMC_PSS_BIT_PCIE},
++	{"5  - LPSS",			PMC_PSS_BIT_LPSS},
++	{"6  - LPE",			PMC_PSS_BIT_LPE},
++	{"7  - DFX",			PMC_PSS_BIT_DFX},
++	{"8  - USH_CTRL",		PMC_PSS_BIT_USH_CTRL},
++	{"9  - USH_SUS",		PMC_PSS_BIT_USH_SUS},
++	{"10 - USH_VCCS",		PMC_PSS_BIT_USH_VCCS},
++	{"11 - USH_VCCA",		PMC_PSS_BIT_USH_VCCA},
++	{"12 - OTG_CTRL",		PMC_PSS_BIT_OTG_CTRL},
++	{"13 - OTG_VCCS",		PMC_PSS_BIT_OTG_VCCS},
++	{"14 - OTG_VCCA_CLK",		PMC_PSS_BIT_OTG_VCCA_CLK},
++	{"15 - OTG_VCCA",		PMC_PSS_BIT_OTG_VCCA},
++	{"16 - USB",			PMC_PSS_BIT_USB},
++	{"17 - USB_SUS",		PMC_PSS_BIT_USB_SUS},
++};
++
++static struct pmc_bit_map cht_dev_map[] = {
+ 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
+ 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
+ 	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
+@@ -213,6 +234,32 @@ static const struct file_operations pmc_dev_state_ops = {
+ 	.release	= single_release,
+ };
+ 
++static int pmc_pss_state_show(struct seq_file *s, void *unused)
++{
++	struct pmc_dev *pmc = s->private;
++	u32 pss = pmc_reg_read(pmc, PMC_PSS);
++	int pss_index;
++
++	for (pss_index = 0; pss_index < ARRAY_SIZE(pss_map); pss_index++) {
++		seq_printf(s, "Island: %-32s\tState: %s\n",
++			pss_map[pss_index].name,
++			pss_map[pss_index].d3_sts_bit & pss ? "Off" : "On");
++	}
++	return 0;
++}
++
++static int pmc_pss_state_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pmc_pss_state_show, inode->i_private);
++}
++
++static const struct file_operations pmc_pss_state_ops = {
++	.open		= pmc_pss_state_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
+ static int pmc_sleep_tmr_show(struct seq_file *s, void *unused)
+ {
+ 	struct pmc_dev *pmc = s->private;
+@@ -264,7 +311,7 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
+ 	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
+ 				dir, pmc, &pmc_dev_state_ops);
+ 	if (!f) {
+-		dev_err(&pdev->dev, "dev_states register failed\n");
++		dev_err(&pdev->dev, "dev_state register failed\n");
+ 		goto err;
  	}
- 
- 	/*
-@@ -534,23 +533,23 @@ static void __init print_local_APIC(void *dummy)
- 	 */
- 	if (!APIC_INTEGRATED(ver) || maxlvt == 3) {
- 		v = apic_read(APIC_RRR);
--		printk(KERN_DEBUG "... APIC RRR: %08x\n", v);
-+		pr_debug("... APIC RRR: %08x\n", v);
+ 	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
+@@ -273,6 +320,12 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
+ 		dev_err(&pdev->dev, "sleep_state register failed\n");
+ 		goto err;
  	}
- 
- 	v = apic_read(APIC_LDR);
--	printk(KERN_DEBUG "... APIC LDR: %08x\n", v);
-+	pr_debug("... APIC LDR: %08x\n", v);
- 	if (!x2apic_enabled()) {
- 		v = apic_read(APIC_DFR);
--		printk(KERN_DEBUG "... APIC DFR: %08x\n", v);
-+		pr_debug("... APIC DFR: %08x\n", v);
- 	}
- 	v = apic_read(APIC_SPIV);
--	printk(KERN_DEBUG "... APIC SPIV: %08x\n", v);
-+	pr_debug("... APIC SPIV: %08x\n", v);
- 
--	printk(KERN_DEBUG "... APIC ISR field:\n");
-+	pr_debug("... APIC ISR field:\n");
- 	print_APIC_field(APIC_ISR);
--	printk(KERN_DEBUG "... APIC TMR field:\n");
-+	pr_debug("... APIC TMR field:\n");
- 	print_APIC_field(APIC_TMR);
--	printk(KERN_DEBUG "... APIC IRR field:\n");
-+	pr_debug("... APIC IRR field:\n");
- 	print_APIC_field(APIC_IRR);
- 
- 	/* !82489DX */
-@@ -560,48 +559,48 @@ static void __init print_local_APIC(void *dummy)
- 			apic_write(APIC_ESR, 0);
- 
- 		v = apic_read(APIC_ESR);
--		printk(KERN_DEBUG "... APIC ESR: %08x\n", v);
-+		pr_debug("... APIC ESR: %08x\n", v);
- 	}
- 
- 	icr = apic_icr_read();
--	printk(KERN_DEBUG "... APIC ICR: %08x\n", (u32)icr);
--	printk(KERN_DEBUG "... APIC ICR2: %08x\n", (u32)(icr >> 32));
-+	pr_debug("... APIC ICR: %08x\n", (u32)icr);
-+	pr_debug("... APIC ICR2: %08x\n", (u32)(icr >> 32));
- 
- 	v = apic_read(APIC_LVTT);
--	printk(KERN_DEBUG "... APIC LVTT: %08x\n", v);
-+	pr_debug("... APIC LVTT: %08x\n", v);
- 
- 	if (maxlvt > 3) {
- 		/* PC is LVT#4. */
- 		v = apic_read(APIC_LVTPC);
--		printk(KERN_DEBUG "... APIC LVTPC: %08x\n", v);
-+		pr_debug("... APIC LVTPC: %08x\n", v);
- 	}
- 	v = apic_read(APIC_LVT0);
--	printk(KERN_DEBUG "... APIC LVT0: %08x\n", v);
-+	pr_debug("... APIC LVT0: %08x\n", v);
- 	v = apic_read(APIC_LVT1);
--	printk(KERN_DEBUG "... APIC LVT1: %08x\n", v);
-+	pr_debug("... APIC LVT1: %08x\n", v);
- 
- 	if (maxlvt > 2) {
- 		/* ERR is LVT#3. */
- 		v = apic_read(APIC_LVTERR);
--		printk(KERN_DEBUG "... APIC LVTERR: %08x\n", v);
-+		pr_debug("... APIC LVTERR: %08x\n", v);
- 	}
- 
- 	v = apic_read(APIC_TMICT);
--	printk(KERN_DEBUG "... APIC TMICT: %08x\n", v);
-+	pr_debug("... APIC TMICT: %08x\n", v);
- 	v = apic_read(APIC_TMCCT);
--	printk(KERN_DEBUG "... APIC TMCCT: %08x\n", v);
-+	pr_debug("... APIC TMCCT: %08x\n", v);
- 	v = apic_read(APIC_TDCR);
--	printk(KERN_DEBUG "... APIC TDCR: %08x\n", v);
-+	pr_debug("... APIC TDCR: %08x\n", v);
- 
- 	if (boot_cpu_has(X86_FEATURE_EXTAPIC)) {
- 		v = apic_read(APIC_EFEAT);
- 		maxlvt = (v >> 16) & 0xff;
--		printk(KERN_DEBUG "... APIC EFEAT: %08x\n", v);
-+		pr_debug("... APIC EFEAT: %08x\n", v);
- 		v = apic_read(APIC_ECTRL);
--		printk(KERN_DEBUG "... APIC ECTRL: %08x\n", v);
-+		pr_debug("... APIC ECTRL: %08x\n", v);
- 		for (i = 0; i < maxlvt; i++) {
- 			v = apic_read(APIC_EILVTn(i));
--			printk(KERN_DEBUG "... APIC EILVT%d: %08x\n", i, v);
-+			pr_debug("... APIC EILVT%d: %08x\n", i, v);
- 		}
- 	}
- 	pr_cont("\n");
-@@ -631,15 +630,15 @@ static void __init print_PIC(void)
- 	if (!nr_legacy_irqs())
- 		return;
- 
--	printk(KERN_DEBUG "\nprinting PIC contents\n");
-+	pr_debug("\nprinting PIC contents\n");
- 
- 	raw_spin_lock_irqsave(&i8259A_lock, flags);
- 
- 	v = inb(0xa1) << 8 | inb(0x21);
--	printk(KERN_DEBUG "... PIC  IMR: %04x\n", v);
-+	pr_debug("... PIC  IMR: %04x\n", v);
- 
- 	v = inb(0xa0) << 8 | inb(0x20);
--	printk(KERN_DEBUG "... PIC  IRR: %04x\n", v);
-+	pr_debug("... PIC  IRR: %04x\n", v);
- 
- 	outb(0x0b, 0xa0);
- 	outb(0x0b, 0x20);
-@@ -649,10 +648,10 @@ static void __init print_PIC(void)
- 
- 	raw_spin_unlock_irqrestore(&i8259A_lock, flags);
- 
--	printk(KERN_DEBUG "... PIC  ISR: %04x\n", v);
-+	pr_debug("... PIC  ISR: %04x\n", v);
- 
- 	v = inb(0x4d1) << 8 | inb(0x4d0);
--	printk(KERN_DEBUG "... PIC ELCR: %04x\n", v);
-+	pr_debug("... PIC ELCR: %04x\n", v);
- }
- 
- static int show_lapic __initdata = 1;
++	f = debugfs_create_file("pss_state", S_IFREG | S_IRUGO,
++				dir, pmc, &pmc_pss_state_ops);
++	if (!f) {
++		dev_err(&pdev->dev, "pss_state register failed\n");
++		goto err;
++	}
+ 	pmc->dbgfs_dir = dir;
+ 	return 0;
+ err:
+-- 
+1.7.9.5
+
