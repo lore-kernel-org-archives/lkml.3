@@ -1,143 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaKESM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 13:12:27 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:50110 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751431AbaKESME (ORCPT
+	id S1751578AbaKESMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 13:12:42 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:56402 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaKESMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 13:12:04 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH -next 5/5] serial: Test/disable MSIs if switching from N_PPS
-Date: Wed,  5 Nov 2014 13:11:45 -0500
-Message-Id: <1415211105-16668-6-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1415211105-16668-1-git-send-email-peter@hurleysoftware.com>
-References: <1415211105-16668-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 5 Nov 2014 13:12:39 -0500
+Message-ID: <545A6894.7040506@lwfinger.net>
+Date: Wed, 05 Nov 2014 12:12:36 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
+Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
+References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>	 <5451BED0.2060906@lwfinger.net> <1415178975.5402.66.camel@marge.simpson.net>
+In-Reply-To: <1415178975.5402.66.camel@marge.simpson.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switching to the N_PPS line discipline may require enabling
-modem status interrupts; conversely switching from N_PPS may
-require disabling modem status interrupts.
+On 11/05/2014 03:16 AM, Mike Galbraith wrote:
+> On Wed, 2014-10-29 at 23:30 -0500, Larry Finger wrote:
+>> On 10/29/2014 06:28 PM, Murilo Opsfelder Araujo wrote:
+>>> This is a complement of commit 08054200117a95afc14c3d2ed3a38bf4e345bf78
+>>> "rtlwifi: Add check for get_btc_status callback".
+>>>
+>>> With this patch, next-20141029 at least does not panic with rtl8192se
+>>> device.
+>>>
+>>
+>> This patch is OK, but as noted it is not complete.
+>>
+>> I have patches to fix all the kernel panics for rtl8192se AND rtl8192ce. There
+>> are missing parts, but I would prefer submitting mine, which would conflict with
+>> this one. For that reason, NACK for this one, and please apply the set I am
+>> submitting now.
+>
+> It's all in there now, but my RTL8191SEvB is still dead.  Squabbling
+> with it isn't going all that well either.
+>
+> As soon as 38506ece rtlwifi: rtl_pci: Start modification for new drivers
+> is applied, explosions appear.  Subsequently applying...
+>
+> 08054200 rtlwifi: Add check for get_btc_status callback
+> c0386f15 rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for missing get_btc_status
+> 50147969 rtlwifi: rtl8192se: Fix duplicate calls to ieee80211_register_hw()
+> 30c5ccc6 rtlwifi: rtl8192se: Add missing section to read descriptor setting
+> 75a916e1 rtlwifi: rtl8192se: Fix firmware loading
+>
+> ...fixes that mess up, but leaves the interface dead in the same manner
+> as if nothing has been reverted.  So it _seems_ the bustage lurks in
+> 38506ece somewhere.  Too bad it's non-dinky, and written in wifi-ese :)
 
-Affected drivers:
-8250
-amba-pl010
-atmel
+Yes, I am aware that rtl8192se is failing, and now that I am back from vacation, 
+I am working on the problem. If you want to use the driver with kernel 3.18, 
+clone the repo at http://github.com/lwfinger/rtlwifi_new.git and build and 
+install either the master or kernel_version branches. Both work.
 
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/8250/8250_core.c | 21 ++++++++++++++++++++-
- drivers/tty/serial/amba-pl010.c     | 18 +++++++++++++++++-
- drivers/tty/serial/atmel_serial.c   |  5 +++++
- 3 files changed, 42 insertions(+), 2 deletions(-)
+I am in the process of trying to find what the crucial difference is between 
+that repo and the kernel version.
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 8eb0654..095319b 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1397,6 +1397,19 @@ static void serial8250_stop_rx(struct uart_port *port)
- 	serial8250_rpm_put(up);
- }
- 
-+static void serial8250_disable_ms(struct uart_port *port)
-+{
-+	struct uart_8250_port *up =
-+		container_of(port, struct uart_8250_port, port);
-+
-+	/* no MSR capabilities */
-+	if (up->bugs & UART_BUG_NOMSR)
-+		return;
-+
-+	up->ier &= ~UART_IER_MSI;
-+	serial_port_out(port, UART_IER, up->ier);
-+}
-+
- static void serial8250_enable_ms(struct uart_port *port)
- {
- 	struct uart_8250_port *up = up_to_u8250p(port);
-@@ -2610,8 +2623,14 @@ serial8250_set_ldisc(struct uart_port *port, struct ktermios *termios)
- 		spin_lock_irq(&port->lock);
- 		serial8250_enable_ms(port);
- 		spin_unlock_irq(&port->lock);
--	} else
-+	} else {
- 		port->flags &= ~UPF_HARDPPS_CD;
-+		if (!UART_ENABLE_MS(port, termios->c_cflag)) {
-+			spin_lock_irq(&port->lock);
-+			serial8250_disable_ms(port);
-+			spin_unlock_irq(&port->lock);
-+		}
-+	}
- }
- 
- 
-diff --git a/drivers/tty/serial/amba-pl010.c b/drivers/tty/serial/amba-pl010.c
-index 04b83bf..6f8464e 100644
---- a/drivers/tty/serial/amba-pl010.c
-+++ b/drivers/tty/serial/amba-pl010.c
-@@ -103,6 +103,16 @@ static void pl010_stop_rx(struct uart_port *port)
- 	writel(cr, uap->port.membase + UART010_CR);
- }
- 
-+static void pl010_disable_ms(struct uart_port *port)
-+{
-+	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	unsigned int cr;
-+
-+	cr = readb(uap->port.membase + UART010_CR);
-+	cr &= ~UART010_CR_MSIE;
-+	writel(cr, uap->port.membase + UART010_CR);
-+}
-+
- static void pl010_enable_ms(struct uart_port *port)
- {
- 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-@@ -475,8 +485,14 @@ static void pl010_set_ldisc(struct uart_port *port, struct ktermios *termios)
- 		spin_lock_irq(&port->lock);
- 		pl010_enable_ms(port);
- 		spin_unlock_irq(&port->lock);
--	} else
-+	} else {
- 		port->flags &= ~UPF_HARDPPS_CD;
-+		if (!UART_ENABLE_MS(port, termios->c_cflag)) {
-+			spin_lock_irq(&port->lock);
-+			pl010_disable_ms(port);
-+			spin_unlock_irq(&port->lock);
-+		}
-+	}
- }
- 
- static const char *pl010_type(struct uart_port *port)
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index b68dfa5..21380b6 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -2051,6 +2051,11 @@ static void atmel_set_ldisc(struct uart_port *port, struct ktermios *termios)
- 		spin_unlock_irq(&port->lock);
- 	} else {
- 		port->flags &= ~UPF_HARDPPS_CD;
-+		if (!UART_ENABLE_MS(port, termios->c_cflag)) {
-+			spin_lock_irq(&port->lock);
-+			atmel_disable_ms(port);
-+			spin_unlock_irq(&port->lock);
-+		}
- 	}
- }
- 
--- 
-2.1.3
+Larry
+
 
