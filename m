@@ -1,143 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaKEQBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:01:52 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:43028 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755338AbaKEQBk (ORCPT
+	id S932131AbaKEQC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:02:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50147 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755791AbaKEQCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:01:40 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 10/11] ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
-Date: Wed,  5 Nov 2014 17:01:26 +0100
-Message-Id: <1415203287-21517-11-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 5 Nov 2014 11:02:55 -0500
+Date: Wed, 5 Nov 2014 16:02:49 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Amos Kong <akong@redhat.com>
+Cc: stable@vger.kernel.org, gregkh@linuxfoundation.org, rusty@rustcorp.com.au,
+        amit.shah@redhat.com, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.16 stable PATCH 0/2] virtio-rng: two backports to fix stuck
+Message-ID: <20141105160249.GG9403@hercules>
+References: <1412981509-30025-1-git-send-email-akong@redhat.com>
+ <20141104043227.GA13409@air.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141104043227.GA13409@air.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add EBI node and EBI pin muxing.
+Hi Amos
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- arch/arm/boot/dts/sama5d3.dtsi | 83 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+On Tue, Nov 04, 2014 at 12:32:27PM +0800, Amos Kong wrote:
+> On Sat, Oct 11, 2014 at 06:51:47AM +0800, Amos Kong wrote:
+> > I received two mails about faile to apply patches to 3.16-stable tree:
+> > 
+> > FAILED: patch "[PATCH] virtio-rng: skip reading when we start to remove the device" failed to apply to 3.16-stable tree
+> > FAILED: patch "[PATCH] virtio-rng: fix stuck of hot-unplugging busy device" failed to apply to 3.16-stable tree
+> > 
+> > Amit already backported two patches for 3.16-stable, then cherry-pick
+> > of my two patches works.
+> > 
+> > Thanks.
+> 
+> Ping Greg, thanks.
+>  
 
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index d49dab7..d011ade 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -530,6 +530,63 @@
- 					};
- 				};
- 
-+				ebi {
-+					pinctrl_ebi_addr: ebi-addr-0 {
-+						atmel,pins =
-+							<AT91_PIOE 0 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 1 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 2 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 3 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 4 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 5 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 6 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 7 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 8 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 9 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 10 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 11 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 12 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 13 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 14 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 15 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 16 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 17 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 18 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 19 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 20 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 21 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 22 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 23 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 24 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_cs0: ebi-cs0-0 {
-+						atmel,pins =
-+							<AT91_PIOE 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_cs1: ebi-cs1-0 {
-+						atmel,pins =
-+							<AT91_PIOE 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_cs2: ebi-cs2-0 {
-+						atmel,pins =
-+							<AT91_PIOE 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_nwr1_nbs1: ebi-nwr1-nbs1-0 {
-+						atmel,pins =
-+							<AT91_PIOE 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_nwait: ebi-nwait-0 {
-+						atmel,pins =
-+							<AT91_PIOE 30 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+				};
-+
- 				i2c0 {
- 					pinctrl_i2c0: i2c0-0 {
- 						atmel,pins =
-@@ -1407,6 +1464,32 @@
- 			status = "disabled";
- 		};
- 
-+		ebi: ebi@10000000 {
-+			compatible = "atmel,sama5d3-ebi", "simple-bus";
-+			#address-cells = <2>;
-+			#size-cells = <1>;
-+			atmel,smc = <&hsmc>;
-+			atmel,matrix = <&matrix>;
-+			reg = <0x10000000 0x10000000
-+			       0x40000000 0x30000000>;
-+			ranges = <0x0 0x0 0x10000000 0x10000000
-+				  0x1 0x0 0x40000000 0x10000000
-+				  0x2 0x0 0x50000000 0x10000000
-+				  0x3 0x0 0x60000000 0x10000000>;
-+			clocks = <&mck>;
-+
-+			/*
-+			 * TODO: EBI pins should be referenced here, but they
-+			 * conflict with NAND pins, which should actually be a
-+			 * sub device of the EBI bus and thus should not
-+			 * request it's own set of pins as they are shared
-+			 * with other devices connected on the EBI bus.
-+			 *
-+			 * pinctrl-names = "default";
-+			 * pinctrl-0 = <&pinctrl_ebi_addr>;
-+			 */
-+		};
-+
- 		nand0: nand@60000000 {
- 			compatible = "atmel,at91rm9200-nand";
- 			#address-cells = <1>;
--- 
-1.9.1
+I'm now doing the extended stable maintenance of the 3.16 kernel, as
+Greg has EOL'ed it.
 
+Anyway, I will be queuing these 2 patches for the extended 3.16
+kernel.  Thank you!
+
+Cheers,
+--
+Luís
+
+> > Amos Kong (2):
+> >   virtio-rng: fix stuck of hot-unplugging busy device
+> >   virtio-rng: skip reading when we start to remove the device
+> > 
+> >  drivers/char/hw_random/virtio-rng.c | 7 +++++++
+> >  1 file changed, 7 insertions(+)
+> > 
+> > -- 
+> > 1.9.3
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> 			Amos.
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
