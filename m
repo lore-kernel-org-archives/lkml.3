@@ -1,74 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174AbaKEQhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:37:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34720 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121AbaKEQhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:37:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="627078365"
-Message-ID: <5459646E.9000707@linux.intel.com>
-Date: Tue, 04 Nov 2014 15:42:38 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932208AbaKEQhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:37:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41219 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121AbaKEQh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:37:28 -0500
+Date: Wed, 5 Nov 2014 08:36:07 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-a66bbbf38e9df1a1e33c8f8ff3cc48b16f7d65f7@git.kernel.org>
+Cc: prarit@redhat.com, rjw@rjwysocki.net, benh@kernel.crashing.org,
+        hpa@zytor.com, yinghai@kernel.org, tony.luck@intel.com,
+        rdunlap@infradead.org, konrad.wilk@oracle.com, bp@alien8.de,
+        gregkh@linuxfoundation.org, joro@8bytes.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@kernel.org,
+        bhelgaas@google.com, grant.likely@linaro.org,
+        jiang.liu@linux.intel.com
+Reply-To: rjw@rjwysocki.net, prarit@redhat.com, benh@kernel.crashing.org,
+        yinghai@kernel.org, rdunlap@infradead.org, tony.luck@intel.com,
+        hpa@zytor.com, bp@alien8.de, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, joro@8bytes.org,
+        gregkh@linuxfoundation.org, mingo@kernel.org, bhelgaas@google.com,
+        grant.likely@linaro.org, tglx@linutronix.de, jiang.liu@linux.intel.com
+In-Reply-To: <1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq:
+  Rename local APIC related functions in io_apic.c as apic_xxx()
+Git-Commit-ID: a66bbbf38e9df1a1e33c8f8ff3cc48b16f7d65f7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index()
- when using properties
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <CACxGe6uXogQaT9m_Zysb+daSHCz2B97OdMBHuCzJvNYj9oNWfQ@mail.gmail.com> <2107668.8toVpPDgB1@vostro.rjw.lan> <3196606.Sy6xFg88zg@vostro.rjw.lan>
-In-Reply-To: <3196606.Sy6xFg88zg@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  a66bbbf38e9df1a1e33c8f8ff3cc48b16f7d65f7
+Gitweb:     http://git.kernel.org/tip/a66bbbf38e9df1a1e33c8f8ff3cc48b16f7d65f7
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:11:57 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Nov 2014 11:04:46 +0100
 
+x86, irq: Rename local APIC related functions in io_apic.c as apic_xxx()
 
-On 11/4/14 14:54, Rafael J. Wysocki wrote:
+Rename local APIC related functions in io_apic.c as apic_xxx() instead
+of ioapic_xxx(), later they will be moved into separate file.
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: ACPI / property: Drop size_prop from acpi_dev_get_property_reference()
-> 
-> The size_prop argument of the recently added function
-> acpi_dev_get_property_reference() is not used by the only current
-> caller of that function and is very unlikely to be used at any time
-> going forward.
-> 
-> Namely, for a property whose value is a list of items each containing
-> a references to a device object possibly accompanied by some integers,
-> the number of items in the list can always be computed as the number
-> of elements of type ACPI_TYPE_LOCAL_REFERENCE in the property package.
-> Thus it should never be necessary to provide an additional "cells"
-> property with a value equal to the number of items in that list.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/hw_irq.h  |  4 ++--
+ arch/x86/kernel/apic/io_apic.c | 42 +++++++++++++++++++++---------------------
+ arch/x86/platform/uv/uv_irq.c  |  2 +-
+ 3 files changed, 24 insertions(+), 24 deletions(-)
 
-In this case, do we never expect a property to contain more than one
-ACPI_TYPE_LOCAL_REFERENCE?
-
-Package () { "foobar",
-              Package () {
-                  "PCI0.FOO", "PCI0.BAR", 0, 1, 0,
-                  "PCI0.FOO", "PCI0.BAR2", 0, 1, 1
-              }
-}
-
-This seems like it could be useful for connecting various types of
-devices together, but I confess not to have a specific exmaple in mind.
-It does concern me to limit the data format in this way.
-
-I suppose should such a case become necessary, we can deal with the
-issue then - and still avoid having a potential abuse point in the API
-from the start.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 9e2d08b..e1acbba 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -141,8 +141,8 @@ static inline void send_cleanup_vector(struct irq_cfg *c) { }
+ #endif
+ 
+ struct irq_data;
+-int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+-			  unsigned int *dest_id);
++int apic_set_affinity(struct irq_data *, const struct cpumask *,
++		      unsigned int *dest_id);
+ #endif	/* CONFIG_X86_LOCAL_APIC */
+ 
+ #ifdef CONFIG_X86_IO_APIC
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fac6be1..f629c43 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2252,7 +2252,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 	return was_pending;
+ }
+ 
+-static int ioapic_retrigger_irq(struct irq_data *data)
++static int apic_retrigger_irq(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned long flags;
+@@ -2407,8 +2407,8 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
+  * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
+  * leaves data->affinity untouched.
+  */
+-int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+-			  unsigned int *dest_id)
++int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
++		      unsigned int *dest_id)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned int irq = data->irq;
+@@ -2449,7 +2449,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 		return -EPERM;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (!ret) {
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+@@ -2460,7 +2460,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	return ret;
+ }
+ 
+-static void ack_apic_edge(struct irq_data *data)
++static void apic_ack_edge(struct irq_data *data)
+ {
+ 	irq_complete_move(data->chip_data);
+ 	irq_move_irq(data);
+@@ -2549,7 +2549,7 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ }
+ #endif
+ 
+-static void ack_apic_level(struct irq_data *data)
++static void ack_ioapic_level(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	int i, irq = data->irq;
+@@ -2621,10 +2621,10 @@ static struct irq_chip ioapic_chip __read_mostly = {
+ 	.irq_startup		= startup_ioapic_irq,
+ 	.irq_mask		= mask_ioapic_irq,
+ 	.irq_unmask		= unmask_ioapic_irq,
+-	.irq_ack		= ack_apic_edge,
+-	.irq_eoi		= ack_apic_level,
++	.irq_ack		= apic_ack_edge,
++	.irq_eoi		= ack_ioapic_level,
+ 	.irq_set_affinity	= native_ioapic_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3159,7 +3159,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3183,9 +3183,9 @@ static struct irq_chip msi_chip = {
+ 	.name			= "PCI-MSI",
+ 	.irq_unmask		= unmask_msi_irq,
+ 	.irq_mask		= mask_msi_irq,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= msi_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3261,7 +3261,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct msi_msg msg;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3282,9 +3282,9 @@ static struct irq_chip dmar_msi_type = {
+ 	.name			= "DMAR_MSI",
+ 	.irq_unmask		= dmar_msi_unmask,
+ 	.irq_mask		= dmar_msi_mask,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= dmar_msi_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3313,7 +3313,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3333,9 +3333,9 @@ static struct irq_chip hpet_msi_type = {
+ 	.name = "HPET_MSI",
+ 	.irq_unmask = hpet_msi_unmask,
+ 	.irq_mask = hpet_msi_mask,
+-	.irq_ack = ack_apic_edge,
++	.irq_ack = apic_ack_edge,
+ 	.irq_set_affinity = hpet_msi_set_affinity,
+-	.irq_retrigger = ioapic_retrigger_irq,
++	.irq_retrigger = apic_retrigger_irq,
+ 	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3385,7 +3385,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3397,9 +3397,9 @@ static struct irq_chip ht_irq_chip = {
+ 	.name			= "PCI-HT",
+ 	.irq_mask		= mask_ht_irq,
+ 	.irq_unmask		= unmask_ht_irq,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= ht_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index b233681..3e8fab7 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -204,7 +204,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct uv_IO_APIC_route_entry *entry;
+ 	int mmr_pnode;
+ 
+-	if (__ioapic_set_affinity(data, mask, &dest))
++	if (apic_set_affinity(data, mask, &dest))
+ 		return -1;
+ 
+ 	mmr_value = 0;
