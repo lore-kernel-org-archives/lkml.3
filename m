@@ -1,53 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaKEW6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:58:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:3597 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaKEW6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:58:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,322,1413270000"; 
-   d="scan'208";a="627292760"
-From: Andi Kleen <andi@firstfloor.org>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Masanari Iida <standby24x7@gmail.com>, Jonathan Corbet <corbet@lwn.net>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, lcapitulino@redhat.com
-Subject: Re: [PATCH] Documentation: vm: Add 1GB large page support information
-References: <1414771317-5721-1-git-send-email-standby24x7@gmail.com>
-	<5457C6EA.3080809@intel.com>
-	<CALLJCT0fofgUaswpzt1iBqGS1u+fR8L=umwGpV=RG0SvO9TOJA@mail.gmail.com>
-	<545A42C4.6070908@intel.com>
-Date: Wed, 05 Nov 2014 14:58:51 -0800
-In-Reply-To: <545A42C4.6070908@intel.com> (Dave Hansen's message of "Wed, 05
-	Nov 2014 07:31:16 -0800")
-Message-ID: <871tphtftg.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751062AbaKEXCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:02:53 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:34672 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaKEXCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 18:02:52 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v2] [RESEND] mmc: add Toshiba PCI SD controller driver
+Date: Thu, 6 Nov 2014 00:02:24 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: "linux-mmc" <linux-mmc@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <1414965074-4784-1-git-send-email-linux@rainbow-software.org> <CAPDyKFrf+kHbyzyr1O906NRcPh2jr0TGkeoAxpd1aSK8a0bqRA@mail.gmail.com> <201411042241.45125.linux@rainbow-software.org>
+In-Reply-To: <201411042241.45125.linux@rainbow-software.org>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201411060002.25257.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen <dave.hansen@intel.com> writes:
+On Tuesday 04 November 2014 22:41:44 Ondrej Zary wrote:
+> On Tuesday 04 November 2014 12:09:44 Ulf Hansson wrote:
+> > On 2 November 2014 22:51, Ondrej Zary <linux@rainbow-software.org> wrote:
+> > > This patch resurrects an old never-finished driver for Toshiba PCI SD
+> > > controllers found in some older Toshiba laptops (such as Portege R100):
+> > >
+> > > 02:0d.0 System peripheral [0880]: Toshiba America Info Systems SD TypA Controller [1179:0805] (rev 05)
+> > >
+> > > The code is fixed, cleaned up and successfully tested with SD, SDHC, SDXC and
+> > > MMC cards on Portege R100. (MMC cards don't even work in Windows!)
+> > > SDIO probably does not work (don't have any SDIO card).
+> > >
+> > > The hardware is slow (around 2 MB/s - same in Windows) because it does not
+> > > support bus mastering (busmaster enable bit cannot be set in PCI control reg).
+> > > Also the card clock is limited to 16MHz (33MHz PCI clock divided by 2).
+> > >
+> > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > 
+> > Hi Ondrej,
+> > 
+> > Sorry for a very very late reply.
+> > 
+> 
+> ...
+> 
+> > > +static void toshsd_init(struct toshsd_host *host);
+> > > +static void toshsd_set_ios_unlocked(struct mmc_host *mmc, struct mmc_ios *ios);
+> > 
+> > I would implement these functions at the proper place instead of
+> > having them defined here.
+> > 
+> > Moreover I think toshsd_set_ios_unlocked() could be renamed to
+> > "__toshsd_set_ios()".
+> 
+> OK, will do.
+>  
+> > > +
+> > > +static inline u16 toshsd_readw(struct toshsd_host *host, u16 reg)
+> > > +{
+> > > +       return ioread16(host->ioaddr + reg);
+> > > +}
+> > > +
+> > > +static inline u32 toshsd_readl(struct toshsd_host *host, u16 reg)
+> > > +{
+> > > +       return ioread32(host->ioaddr + reg);
+> > > +}
+> > > +
+> > > +static inline void toshsd_writew(struct toshsd_host *host, u16 reg, u16 val)
+> > > +{
+> > > +       iowrite16(val, host->ioaddr + reg);
+> > > +}
+> > > +
+> > > +static inline void toshsd_writel(struct toshsd_host *host, u16 reg, u32 val)
+> > > +{
+> > > +       iowrite32(val, host->ioaddr + reg);
+> > > +}
+> > > +
+> > > +static inline void toshsd_readl_rep(struct toshsd_host *host, u16 reg,
+> > > +                                   void *dst, unsigned long count)
+> > > +{
+> > > +       ioread32_rep(host->ioaddr + reg, dst, count);
+> > > +}
+> > > +
+> > > +static inline void toshsd_writel_rep(struct toshsd_host *host, u16 reg,
+> > > +                                    const void *src, unsigned long count)
+> > > +{
+> > > +       iowrite32_rep(host->ioaddr + reg, src, count);
+> > > +}
+> > 
+> > To me, all these wrapper functions seems a bit ugly. How about
+> > invoking io* functions directly instead?
+> 
+> It's a matter of preference, some drivers use wrappers, some don't.
+> I can remove them if they're not recommended in mmc subsystem.
+>  
+> ...
+> 
+> > > +               tasklet_schedule(&host->data_read_tasklet);
+> > 
+> > Instead of using a tasklet, I would advise to use a threaded IRQ.
+>  
+> Haven't used threaded IRQ yet, will try.
+> 
+> ...
+> 
+> > > +#ifdef CONFIG_PM
+> > 
+> > This should be CONFIG_PM_SLEEP.
+> > 
+> > > +
+> > > +static int toshsd_suspend(struct pci_dev *pdev, pm_message_t state)
+> > 
+> > This is the legacy version of system PM callbacks. You need to convert
+> > to the modern ones instead.
+> > 
+> > > +{
+> > > +       struct toshsd_host *host = pci_get_drvdata(pdev);
+> > > +
+> > > +       toshsd_powerdown(host);
+> > > +
+> > > +       pci_save_state(pdev);
+> > > +       pci_enable_wake(pdev, pci_choose_state(pdev, state), 0);
+> > > +       pci_disable_device(pdev);
+> > > +       pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> > > +
+> > > +       return 0;
+> > > +}
+> > > +
+> > > +static int toshsd_resume(struct pci_dev *pdev)
+> > 
+> > This is the legacy version of system PM callbacks. You need to convert
+> > to the modern ones instead.
+> 
+> I just converted them and found that suspend does not work on current kernels
+> when a SD card is inserted (even with unmodified toshsd driver):
+> [  188.960862] dpm_run_callback(): mmc_bus_suspend+0x0/0x2c [mmc_core] returns -110
+> [  188.960867] PM: Device mmc0:b368 failed to suspend: error -110
+> [  188.960869] PM: Some devices failed to suspend, or early wake event detected
+> 
+> Is it a kernel bug or the driver is missing something?
+> 
 
-> On 11/05/2014 07:21 AM, Masanari Iida wrote:
->> Luiz, Dave,
->> Thanks for comments.
->> 
->> I understand that there are some exception cases which doesn't support 1G
->> large pages on newer CPUs.
->> I like Dave's example, at the same time I would like to add "pdpe1gb flag" in
->> the document.
->> 
->> For example, x86 CPUs normally support 4K and 2M (1G if pdpe1gb flag exist).
->
-> Is 1G supported on CPUs that have pdpe1gb and are running a 32-bit kernel?
-
-No, 1GB pages is a 64bit only feature.
-
--Andi
+The same kernel with sdhci-pci works fine (on another HW) so the problem is
+limited only to toshsd...
+Seems that the MMC core is trying to do something with the card and it fails
+with timeout:
+[  885.750001] PM: Entering mem sleep
+[  885.750023] Suspending console(s) (use no_console_suspend to debug)
+[  885.750281] Command opcode: 7
+[  885.750432] timeout!!!!!
+[  885.750453] Command opcode: 7
+[  885.750597] timeout!!!!!
+[  885.750615] Command opcode: 7
+[  885.750758] timeout!!!!!
+[  885.750776] Command opcode: 7
+[  885.750920] timeout!!!!!
+[  885.750956] dpm_run_callback(): mmc_bus_suspend+0x0/0x2c [mmc_core] returns -110
+[  885.750961] PM: Device mmc0:0007 failed to suspend: error -110
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Ondrej Zary
