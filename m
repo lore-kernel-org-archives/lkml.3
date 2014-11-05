@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaKEK5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:57:54 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:45226 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060AbaKEK5w (ORCPT
+	id S1754640AbaKEK6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:58:14 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:55049 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060AbaKEK6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:57:52 -0500
+	Wed, 5 Nov 2014 05:58:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <1415167740-5762-1-git-send-email-vincent.wan@amd.com>
-References: <1415167740-5762-1-git-send-email-vincent.wan@amd.com>
-Date: Wed, 5 Nov 2014 11:57:51 +0100
-Message-ID: <CAPDyKFpyDeodZcvvhS76q_fB2mujJYP-n_oF=H5BRq5E+dn0ng@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] mmc:sdhci: Add a quirk for AMD SDHC transfer mode
- register need to be cleared for cmd without data
+In-Reply-To: <1415167754-5801-1-git-send-email-vincent.wan@amd.com>
+References: <1415167754-5801-1-git-send-email-vincent.wan@amd.com>
+Date: Wed, 5 Nov 2014 11:58:11 +0100
+Message-ID: <CAPDyKFpdqACk-g-3eAqLgiMJERnKuQH4baE3mxfYEwomc=zyFQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] mmc:sdhci-pci: enable the clear transfer mode
+ register quirk for AMD sdhci
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Vincent Wan <vincent.wan@amd.com>
 Cc: linux-mmc <linux-mmc@vger.kernel.org>,
@@ -26,61 +26,67 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 5 November 2014 07:09, Vincent Wan <vincent.wan@amd.com> wrote:
-> SDHC controller in AMD chipsets require SDHC transfer mode
-> register to be cleared for commands without data. The issue was
-> uncovered during testing eMMC cards on KB/ML based platforms
+> This patch is to enable the quirk for AMD sdhci requiring transfer
+> mode register need to be cleared for commands without data
 >
 > Signed-off-by: Vincent Wan <vincent.wan@amd.com>
 > Signed-off-by: Wan Zongshun <mcuos.com@gmail.com>
-> Signed-off-by: Arindam Nath <arindam.nath@amd.com>
-> Tested-by: Vikram B <vikram.b@amd.com>
-> Tested-by: Raghavendra Swamy <raghavendra.swamy@amd.com>
 
 Thanks! Applied for next.
 
 Kind regards
 Uffe
 
+
 > ---
->  drivers/mmc/host/sdhci.c  | 9 +++++++--
->  include/linux/mmc/sdhci.h | 2 ++
->  2 files changed, 9 insertions(+), 2 deletions(-)
+>  drivers/mmc/host/sdhci-pci.c | 27 ++++++++++++++++++++++++++-
+>  1 file changed, 26 insertions(+), 1 deletion(-)
 >
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index f895ab0..a743d52 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -915,10 +915,15 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
->         struct mmc_data *data = cmd->data;
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index c25639b..5a77f18 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -645,6 +645,23 @@ static const struct sdhci_pci_fixes sdhci_rtsx = {
+>         .probe_slot     = rtsx_probe_slot,
+>  };
 >
->         if (data == NULL) {
-> +               if (host->quirks2 &
-> +                       SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD) {
-> +                       sdhci_writew(host, 0x0, SDHCI_TRANSFER_MODE);
-> +               } else {
->                 /* clear Auto CMD settings for no data CMDs */
-> -               mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-> -               sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
-> +                       mode = sdhci_readw(host, SDHCI_TRANSFER_MODE);
-> +                       sdhci_writew(host, mode & ~(SDHCI_TRNS_AUTO_CMD12 |
->                                 SDHCI_TRNS_AUTO_CMD23), SDHCI_TRANSFER_MODE);
-> +               }
->                 return;
->         }
->
-> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-> index 931ac5e..ae7f357 100644
-> --- a/include/linux/mmc/sdhci.h
-> +++ b/include/linux/mmc/sdhci.h
-> @@ -102,6 +102,8 @@ struct sdhci_host {
->  #define SDHCI_QUIRK2_STOP_WITH_TC                      (1<<8)
->  /* Controller does not support 64-bit DMA */
->  #define SDHCI_QUIRK2_BROKEN_64_BIT_DMA                 (1<<9)
-> +/* need clear transfer mode register before send cmd */
-> +#define SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD (1<<10)
->
->         int irq;                /* Device IRQ */
->         void __iomem *ioaddr;   /* Mapped address */
+> +static int amd_probe(struct sdhci_pci_chip *chip)
+> +{
+> +       struct pci_dev  *smbus_dev;
+> +
+> +       smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
+> +                       PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
+> +
+> +       if (smbus_dev && (smbus_dev->revision < 0x51))
+> +               chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct sdhci_pci_fixes sdhci_amd = {
+> +       .probe          = amd_probe,
+> +};
+> +
+>  static const struct pci_device_id pci_ids[] = {
+>         {
+>                 .vendor         = PCI_VENDOR_ID_RICOH,
+> @@ -1044,7 +1061,15 @@ static const struct pci_device_id pci_ids[] = {
+>                 .subdevice      = PCI_ANY_ID,
+>                 .driver_data    = (kernel_ulong_t)&sdhci_o2,
+>         },
+> -
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_AMD,
+> +               .device         = PCI_ANY_ID,
+> +               .class          = PCI_CLASS_SYSTEM_SDHCI << 8,
+> +               .class_mask     = 0xFFFF00,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_amd,
+> +       },
+>         {       /* Generic SD host controller */
+>                 PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
+>         },
 > --
 > 1.8.1.2
 >
