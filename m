@@ -1,236 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaKEJsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:48:18 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:23130 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbaKEJsK (ORCPT
+	id S1754351AbaKEJs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:48:26 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:43347 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaKEJsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:48:10 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-cb-5459f257defd
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 1/3] regulator: max77802: Remove support for board files
-Date: Wed, 05 Nov 2014 10:47:49 +0100
-Message-id: <1415180871-25293-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4Nd3wT5EhBg1PTSw2zljPajH14RM2
-	i6O/CyxevzC0ONv0ht3i/tejjBbfrnQwWVzeNYfNYu2Ru+wWp7tZHbg8/j6/zuKxc9Zddo9N
-	qzrZPO5c28PmMe9koEffllWMHp83yQWwR3HZpKTmZJalFunbJXBl3Pzwkr1gi0nF08NHmRoY
-	v2p2MXJySAiYSHw4spwVwhaTuHBvPVsXIxeHkMBSRok99z4zQTh9TBLTe/ezg1SxCRhLbF6+
-	BKxKRGATo8Sk/itg7cwCzUwSp9/ngNjCAt4SO7fcAmtgEVCVuN7/gg3E5hVwl7hzvocNYp2c
-	xMljk8F6OQU8JE7d/sgMYgsB1TTuvMA8gZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95Pzc
-	TYyQEPyyg3HxMatDjAIcjEo8vB5NkSFCrIllxZW5hxglOJiVRHg5LwGFeFMSK6tSi/Lji0pz
-	UosPMTJxcEo1MPbW1N2OEZwrGmu0+hjrG+brJe+uH7wqq/tumpXIavf2XutDGUHq5o1PKzxS
-	FvN3m/Mdbu7Zc7z7961DH461XljoybJX9OqPz7EGxwRzbBb83XDf8/v1bW9Wn+Kbzb5wplKC
-	ycnpd/ytxSuj5nWxLnk2MXzGqvfv2sSnrWPrt3Eweft49leJuSJKLMUZiYZazEXFiQC8kdv1
-	HwIAAA==
+	Wed, 5 Nov 2014 04:48:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141105093430.GH22361@norris-Latitude-E6410>
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
+	<1401142372-14148-2-git-send-email-holler@ahsoftware.de>
+	<20140528084344.GB4285@norris-Latitude-E6410>
+	<20141102210353.GA9968@gmail.com>
+	<20141105093430.GH22361@norris-Latitude-E6410>
+Date: Wed, 5 Nov 2014 10:48:16 +0100
+Message-ID: <CAH6sp9NgHAJDFTOznBRD79aj5rPeAVzsSFCpYr6LN_FfNP6_-A@mail.gmail.com>
+Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
+ in most nand-drivers not showing a device in sysfs
+From: Frans Klaver <fransklaver@gmail.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is used only on Exynos based boards with DTS support.
-Simplify the driver and remove dead (unused) entries in platform_data
-structure.
+On Wed, Nov 5, 2014 at 10:34 AM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Sun, Nov 02, 2014 at 10:03:53PM +0100, Frans Klaver wrote:
+>> On Wed, May 28, 2014 at 01:43:44AM -0700, Brian Norris wrote:
+>> > And in fact, if any drivers are missing mtd->name, perhaps it's best to
+>> > just modify the MTD registration to give them a default:
+>> >
+>> >     if (!mtd->name)
+>> >             mtd->name = dev_name(&pdev->dev);
+>> >
+>>
+>> ...
+>>
+>> > How about we rethink the "helper" approach, and instead just do
+>> > validation in the core code? This would cover most of the important
+>> > parts of your helper, I think:
+>> >
+>> > diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+>> > index d201feeb3ca6..39ba5812a5a3 100644
+>> > --- a/drivers/mtd/mtdcore.c
+>> > +++ b/drivers/mtd/mtdcore.c
+>> > @@ -397,6 +397,11 @@ int add_mtd_device(struct mtd_info *mtd)
+>> >     if (device_register(&mtd->dev) != 0)
+>> >             goto fail_added;
+>> >
+>> > +   if (mtd->dev.parent)
+>> > +           mtd->owner = mtd->dev.parent->driver->owner;
+>> > +   else
+>> > +           WARN_ON(1);
+>> > +
+>>
+>> So I've picked this up now. I do largely agree with the suggested
+>> approach where the validation and default settings are done in the core
+>> code. There is a problem with this, though. There are MTD devices that
+>> call mtd_device_parse_register() in the _init() function (such as the
+>> maps drivers). These don't have a device ready to be used as parent, and
+>> they would always be throwing this warning.
+>
+> Yeah, I came across the same thing. I think gluebi is another example.
+>
+>> So either not having a parent device is bad, or it isn't. The comment
+>> suggests it is, the existing code suggests it isn't. So we'll need to
+>> make a decision about who's right.
+>
+> I think not having a parent is not really bad. It's helpful for tracking
+> the device hierarchy in sysfs, but it's not strictly necessary. So we
+> should probably not do anything drastic like WARN_ON() yet.
 
-Convert the driver to DTS-only version. Parse all regulators at once,
-not one-by-one. Remove dependency on data provided by max77686 MFD
-driver. Use new DT style parsing method for regulators init data.
+OK. I'll probably add some sane defaults to add_mtd_device() and have
+the mtd drivers make use of that fact. Since this isn't really
+critical, I guess fixing the sysfs entry won't need back-porting.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/regulator/max77802.c | 92 +++++++++-----------------------------------
- 1 file changed, 19 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index 8168dbfc532f..9b4d127387b9 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -70,6 +70,7 @@ static unsigned int ramp_table_77802_4bit[] = {
- };
- 
- struct max77802_regulator_prv {
-+	/* Array indexed by regulator id */
- 	unsigned int opmode[MAX77802_REG_MAX];
- };
- 
-@@ -362,6 +363,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* LDOs 3-7, 9-14, 18-26, 28, 29, 32-34 */
- #define regulator_77802_desc_p_ldo(num, supply, log)	{		\
- 	.name		= "LDO"#num,					\
-+	.of_match	= of_match_ptr("LDO"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_LDO##num,				\
- 	.supply_name	= "inl"#supply,					\
- 	.ops		= &max77802_ldo_ops_logic##log,			\
-@@ -380,6 +383,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* LDOs 1, 2, 8, 15, 17, 27, 30, 35 */
- #define regulator_77802_desc_n_ldo(num, supply, log)   {		\
- 	.name		= "LDO"#num,					\
-+	.of_match	= of_match_ptr("LDO"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_LDO##num,				\
- 	.supply_name	= "inl"#supply,					\
- 	.ops		= &max77802_ldo_ops_logic##log,			\
-@@ -398,6 +403,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCKs 1, 6 */
- #define regulator_77802_desc_16_buck(num)	{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_16_dvs_ops,			\
-@@ -416,6 +423,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCKS 2-4 */
- #define regulator_77802_desc_234_buck(num)	{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_234_ops,			\
-@@ -435,6 +444,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCK 5 */
- #define regulator_77802_desc_buck5(num)		{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_dvs_ops,			\
-@@ -453,6 +464,8 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- /* BUCKs 7-10 */
- #define regulator_77802_desc_buck7_10(num)	{		\
- 	.name		= "BUCK"#num,					\
-+	.of_match	= of_match_ptr("BUCK"#num),			\
-+	.regulators_node	= of_match_ptr("regulators"),		\
- 	.id		= MAX77802_BUCK##num,				\
- 	.supply_name	= "inb"#num,					\
- 	.ops		= &max77802_buck_dvs_ops,			\
-@@ -513,85 +526,19 @@ static const struct regulator_desc regulators[] = {
- 	regulator_77802_desc_n_ldo(35, 2, 1),
- };
- 
--#ifdef CONFIG_OF
--static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
--					struct max77686_platform_data *pdata)
--{
--	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct device_node *pmic_np, *regulators_np;
--	struct max77686_regulator_data *rdata;
--	struct of_regulator_match rmatch = { };
--	unsigned int i;
--
--	pmic_np = iodev->dev->of_node;
--	regulators_np = of_get_child_by_name(pmic_np, "regulators");
--	if (!regulators_np) {
--		dev_err(&pdev->dev, "could not find regulators sub-node\n");
--		return -EINVAL;
--	}
--
--	pdata->num_regulators = ARRAY_SIZE(regulators);
--	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
--			     pdata->num_regulators, GFP_KERNEL);
--	if (!rdata) {
--		of_node_put(regulators_np);
--		return -ENOMEM;
--	}
--
--	for (i = 0; i < pdata->num_regulators; i++) {
--		rmatch.name = regulators[i].name;
--		rmatch.init_data = NULL;
--		rmatch.of_node = NULL;
--		if (of_regulator_match(&pdev->dev, regulators_np, &rmatch,
--				       1) != 1) {
--			dev_warn(&pdev->dev, "No matching regulator for '%s'\n",
--				 rmatch.name);
--			continue;
--		}
--		rdata[i].initdata = rmatch.init_data;
--		rdata[i].of_node = rmatch.of_node;
--		rdata[i].id = regulators[i].id;
--	}
--
--	pdata->regulators = rdata;
--	of_node_put(regulators_np);
--
--	return 0;
--}
--#else
--static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
--					struct max77686_platform_data *pdata)
--{
--	return 0;
--}
--#endif /* CONFIG_OF */
--
- static int max77802_pmic_probe(struct platform_device *pdev)
- {
- 	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
- 	struct max77802_regulator_prv *max77802;
--	int i, ret = 0, val;
-+	int i, val;
- 	struct regulator_config config = { };
- 
--	/* This is allocated by the MFD driver */
--	if (!pdata) {
--		dev_err(&pdev->dev, "no platform data found for regulator\n");
--		return -ENODEV;
--	}
--
- 	max77802 = devm_kzalloc(&pdev->dev,
- 				sizeof(struct max77802_regulator_prv),
- 				GFP_KERNEL);
- 	if (!max77802)
- 		return -ENOMEM;
- 
--	if (iodev->dev->of_node) {
--		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
--		if (ret)
--			return ret;
--	}
--
- 	config.dev = iodev->dev;
- 	config.regmap = iodev->regmap;
- 	config.driver_data = max77802;
-@@ -599,11 +546,9 @@ static int max77802_pmic_probe(struct platform_device *pdev)
- 
- 	for (i = 0; i < MAX77802_REG_MAX; i++) {
- 		struct regulator_dev *rdev;
--		int id = pdata->regulators[i].id;
-+		int id = regulators[i].id;
- 		int shift = max77802_get_opmode_shift(id);
--
--		config.init_data = pdata->regulators[i].initdata;
--		config.of_node = pdata->regulators[i].of_node;
-+		int ret;
- 
- 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
- 		if (ret < 0) {
-@@ -627,9 +572,10 @@ static int max77802_pmic_probe(struct platform_device *pdev)
- 		rdev = devm_regulator_register(&pdev->dev,
- 					       &regulators[i], &config);
- 		if (IS_ERR(rdev)) {
-+			ret = PTR_ERR(rdev);
- 			dev_err(&pdev->dev,
--				"regulator init failed for %d\n", i);
--			return PTR_ERR(rdev);
-+				"regulator init failed for %d: %d\n", i, ret);
-+			return ret;
- 		}
- 	}
- 
--- 
-1.9.1
+>> >     if (MTD_DEVT(i))
+>> >             device_create(&mtd_class, mtd->dev.parent,
+>> >                           MTD_DEVT(i) + 1,
+>> > diff --git a/drivers/mtd/mtdpart.c b/drivers/mtd/mtdpart.c
+>> > index 1ca9aec141ff..9869bbef50cf 100644
+>> > --- a/drivers/mtd/mtdpart.c
+>> > +++ b/drivers/mtd/mtdpart.c
+>> > @@ -370,7 +370,6 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
+>> >     slave->mtd.subpage_sft = master->subpage_sft;
+>> >
+>> >     slave->mtd.name = name;
+>> > -   slave->mtd.owner = master->owner;
+>>
+>> What would be the purpose of removing this line? Owner is already set?
+>> Can we rely on that?
+>
+> I'm not completely sure why I wrote that, but I think the only call site
+> for alloc_partition() is in mtd_add_partition(), which calls
+> add_mtd_device().
 
+Alright, I'll have a brief look into that again, then.
+
+Thanks,
+Frans
