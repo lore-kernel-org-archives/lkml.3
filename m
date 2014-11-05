@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaKEPEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:04:33 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62684 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291AbaKEPCq (ORCPT
+	id S1755911AbaKEPEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:04:49 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:43135 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445AbaKEPCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:02:46 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-02-545a3c1489b7
+	Wed, 5 Nov 2014 10:02:45 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-c0-545a3c12c519
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
         akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v4 2/6] integrity: provide a function to load x509 certificate
- from the kernel
-Date: Wed, 05 Nov 2014 17:01:13 +0200
-Message-id: <33a4fc659a45203dbf8fa9624058a36577d6b631.1415197743.git.d.kasatkin@samsung.com>
+Subject: [PATCH v4 1/6] integrity: define a new function integrity_read_file()
+Date: Wed, 05 Nov 2014 17:01:12 +0200
+Message-id: <35eb73a6857df72b823c39991c0f017bf5f93390.1415197743.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1415197743.git.d.kasatkin@samsung.com>
 References: <cover.1415197743.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1415197743.git.d.kasatkin@samsung.com>
 References: <cover.1415197743.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xK7oiNlEhBs+3s1jMWb+GzeLW373M
-	Fl+W1lm8nDGP3eLyrjlsFh96HrFZnP97nNXi04pJzA4cHjtn3WX3ODHjN4vHg0ObWTx2L/jM
-	5NG3ZRWjx+dNch6bnrxlCmCP4rJJSc3JLEst0rdL4MpofXqPvWCOcMWdu/9ZGhgP8HcxcnJI
-	CJhIrHn0mQXCFpO4cG89WxcjF4eQwFJGiWn/j7NDOJ1MEpv6PrCBVLEJ6ElsaP4BlhARWMQo
-	senrRbB2ZoF0iU+TetlBbGGBBIk7k/rB4iwCqhJP/88Fi/MKxEms6GphhFgnJ3Hy2GRWEJtT
-	wEpiwpOLYAuEBCwlFj5qYsQlPoGRfwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkCD9
-	uoNx6TGrQ4wCHIxKPLweTZEhQqyJZcWVuYcYJTiYlUR4r1lGhQjxpiRWVqUW5ccXleakFh9i
-	ZOLglGpgjJFbWizzUHnHh++u/B/Upqo+nhaSbON1eMbVo9OXvU+LXjKP477Jxla9LhHBrfsP
-	ysrITXxq/M372YnFi6/MELnEmBPAoLnu0DvpI6zRdomn1CVLih7PY4vp0sn8JTLt57WDZeae
-	IdVZ53e8Y3FeaWlWMTVtUen7NqPY1Xc/yZSeklhWcjTptxJLcUaioRZzUXEiAGUbtBAwAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xK7pCNlEhBi0/dS3mrF/DZnHr715m
+	iy9L6yxezpjHbnF51xw2iw89j9gszv89zmrxacUkZgcOj52z7rJ7nJjxm8XjwaHNLB67F3xm
+	8ujbsorR4/MmOY9NT94yBbBHcdmkpOZklqUW6dslcGXcXnKCseC2TsXczT1sDYwzVboYOTkk
+	BEwk9v/fxgJhi0lcuLeerYuRi0NIYCmjxOb909ghnE4mic8ft7KCVLEJ6ElsaP4BlhARWMQo
+	senrRbB2ZoF0iU+TetlBbGEBP4nW7oNgDSwCqhI3Vt0Eq+EViJP4f76ZFWKdnMTJY5PBbE4B
+	K4kJTy6ygdhCApYSCx81MeISn8DIv4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSJB+
+	2cG4+JjVIUYBDkYlHl6PpsgQIdbEsuLK3EOMEhzMSiK81yyjQoR4UxIrq1KL8uOLSnNSiw8x
+	MnFwSjUwTp6Uu3/ihcv/7hesOnHuYpTcj9TmRrb9kz584hPUMVv2dqbd7oCEmYazps+/Us69
+	xer2m7OH+18lcdZs3P8k7VNm0e/L50/Yr2R5f+tiYGvi6WVKteW31t6Y6F2348AkDkujEjnL
+	Rv/mo/FnO+5/YKm0qE/K/RfoWBV4ePktg+e7+fwtt389oaDEUpyRaKjFXFScCADfrmOFMAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the function to load x509 certificates from the kernel into the
-integrity kernel keyring.
+This patch defines a new function called integrity_read_file()
+to read file from the kernel into a buffer. Subsequent patches
+will read a file containing the public keys and load them onto
+the IMA keyring.
+
+This patch moves and renames ima_kernel_read(), the non-security
+checking version of kernel_read(), to integrity_kernel_read().
+
+Changes in v3:
+* Patch descriptions improved (Mimi)
 
 Changes in v2:
 * configuration option removed
@@ -46,82 +53,179 @@ Changes in v2:
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/digsig.c    | 37 ++++++++++++++++++++++++++++++++++++-
- security/integrity/integrity.h |  2 ++
- 2 files changed, 38 insertions(+), 1 deletion(-)
+ security/integrity/iint.c           | 78 +++++++++++++++++++++++++++++++++++++
+ security/integrity/ima/ima_crypto.c | 35 ++---------------
+ security/integrity/integrity.h      |  4 ++
+ 3 files changed, 85 insertions(+), 32 deletions(-)
 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 4f643d1..fa383fd 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -14,7 +14,7 @@
+diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+index cc3eb4d..0a76686 100644
+--- a/security/integrity/iint.c
++++ b/security/integrity/iint.c
+@@ -19,6 +19,8 @@
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+ #include <linux/rbtree.h>
++#include <linux/file.h>
++#include <linux/uaccess.h>
+ #include "integrity.h"
  
- #include <linux/err.h>
- #include <linux/sched.h>
--#include <linux/rbtree.h>
-+#include <linux/slab.h>
- #include <linux/cred.h>
- #include <linux/key-type.h>
- #include <linux/digsig.h>
-@@ -84,3 +84,38 @@ int __init integrity_init_keyring(const unsigned int id)
- 	}
- 	return err;
- }
-+
-+int __init integrity_load_x509(const unsigned int id, char *path)
-+{
-+	key_ref_t key;
-+	char *data;
-+	int rc;
-+
-+	if (!keyring[id])
-+		return -EINVAL;
-+
-+	rc = integrity_read_file(path, &data);
-+	if (rc < 0)
-+		return rc;
-+
-+	key = key_create_or_update(make_key_ref(keyring[id], 1),
-+				   "asymmetric",
-+				   NULL,
-+				   data,
-+				   rc,
-+				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+				   KEY_USR_VIEW | KEY_USR_READ),
-+				   KEY_ALLOC_NOT_IN_QUOTA |
-+				   KEY_ALLOC_TRUSTED);
-+	if (IS_ERR(key)) {
-+		rc = PTR_ERR(key);
-+		pr_err("Problem loading X.509 certificate (%d): %s\n",
-+		       rc, path);
-+	} else {
-+		pr_notice("Loaded X.509 cert '%s': %s\n",
-+			  key_ref_to_ptr(key)->description, path);
-+		key_ref_put(key);
-+	}
-+	kfree(data);
-+	return 0;
-+}
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 20d2204..1057abb 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -134,6 +134,7 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 			    const char *digest, int digestlen);
- 
- int __init integrity_init_keyring(const unsigned int id);
-+int __init integrity_load_x509(const unsigned int id, char *path);
- #else
- 
- static inline int integrity_digsig_verify(const unsigned int id,
-@@ -147,6 +148,7 @@ static inline int integrity_init_keyring(const unsigned int id)
- {
+ static struct rb_root integrity_iint_tree = RB_ROOT;
+@@ -167,3 +169,79 @@ static int __init integrity_iintcache_init(void)
  	return 0;
  }
+ security_initcall(integrity_iintcache_init);
 +
- #endif /* CONFIG_INTEGRITY_SIGNATURE */
++
++/*
++ * integrity_kernel_read - read data from the file
++ *
++ * This is a function for reading file content instead of kernel_read().
++ * It does not perform locking checks to ensure it cannot be blocked.
++ * It does not perform security checks because it is irrelevant for IMA.
++ *
++ */
++int integrity_kernel_read(struct file *file, loff_t offset,
++			  char *addr, unsigned long count)
++{
++	mm_segment_t old_fs;
++	char __user *buf = addr;
++	ssize_t ret = -EINVAL;
++
++	if (!(file->f_mode & FMODE_READ))
++		return -EBADF;
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++	if (file->f_op->read)
++		ret = file->f_op->read(file, buf, count, &offset);
++	else if (file->f_op->aio_read)
++		ret = do_sync_read(file, buf, count, &offset);
++	else if (file->f_op->read_iter)
++		ret = new_sync_read(file, buf, count, &offset);
++	set_fs(old_fs);
++	return ret;
++}
++
++/*
++ * integrity_read_file - read entire file content into the buffer
++ *
++ * This is function opens a file, allocates the buffer of required
++ * size, read entire file content to the buffer and closes the file
++ *
++ * It is used only by init code.
++ *
++ */
++int __init integrity_read_file(const char *path, char **data)
++{
++	struct file *file;
++	loff_t size;
++	char *buf;
++	int rc = -EINVAL;
++
++	file = filp_open(path, O_RDONLY, 0);
++	if (IS_ERR(file)) {
++		rc = PTR_ERR(file);
++		pr_err("Unable to open file: %s (%d)", path, rc);
++		return rc;
++	}
++
++	size = i_size_read(file_inode(file));
++	if (size <= 0)
++		goto out;
++
++	buf = kmalloc(size, GFP_KERNEL);
++	if (!buf) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	rc = integrity_kernel_read(file, 0, buf, size);
++	if (rc < 0)
++		kfree(buf);
++	else if (rc != size)
++		rc = -EIO;
++	else
++		*data = buf;
++out:
++	fput(file);
++	return rc;
++}
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index d34e7df..5df4d96 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -67,36 +67,6 @@ MODULE_PARM_DESC(ahash_bufsize, "Maximum ahash buffer size");
+ static struct crypto_shash *ima_shash_tfm;
+ static struct crypto_ahash *ima_ahash_tfm;
  
- #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
+-/**
+- * ima_kernel_read - read file content
+- *
+- * This is a function for reading file content instead of kernel_read().
+- * It does not perform locking checks to ensure it cannot be blocked.
+- * It does not perform security checks because it is irrelevant for IMA.
+- *
+- */
+-static int ima_kernel_read(struct file *file, loff_t offset,
+-			   char *addr, unsigned long count)
+-{
+-	mm_segment_t old_fs;
+-	char __user *buf = addr;
+-	ssize_t ret = -EINVAL;
+-
+-	if (!(file->f_mode & FMODE_READ))
+-		return -EBADF;
+-
+-	old_fs = get_fs();
+-	set_fs(get_ds());
+-	if (file->f_op->read)
+-		ret = file->f_op->read(file, buf, count, &offset);
+-	else if (file->f_op->aio_read)
+-		ret = do_sync_read(file, buf, count, &offset);
+-	else if (file->f_op->read_iter)
+-		ret = new_sync_read(file, buf, count, &offset);
+-	set_fs(old_fs);
+-	return ret;
+-}
+-
+ int __init ima_init_crypto(void)
+ {
+ 	long rc;
+@@ -324,7 +294,8 @@ static int ima_calc_file_hash_atfm(struct file *file,
+ 		}
+ 		/* read buffer */
+ 		rbuf_len = min_t(loff_t, i_size - offset, rbuf_size[active]);
+-		rc = ima_kernel_read(file, offset, rbuf[active], rbuf_len);
++		rc = integrity_kernel_read(file, offset, rbuf[active],
++					   rbuf_len);
+ 		if (rc != rbuf_len)
+ 			goto out3;
+ 
+@@ -417,7 +388,7 @@ static int ima_calc_file_hash_tfm(struct file *file,
+ 	while (offset < i_size) {
+ 		int rbuf_len;
+ 
+-		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
++		rbuf_len = integrity_kernel_read(file, offset, rbuf, PAGE_SIZE);
+ 		if (rbuf_len < 0) {
+ 			rc = rbuf_len;
+ 			break;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index f51ad65..20d2204 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -119,6 +119,10 @@ struct integrity_iint_cache {
+  */
+ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+ 
++int integrity_kernel_read(struct file *file, loff_t offset,
++			  char *addr, unsigned long count);
++int __init integrity_read_file(const char *path, char **data);
++
+ #define INTEGRITY_KEYRING_EVM		0
+ #define INTEGRITY_KEYRING_MODULE	1
+ #define INTEGRITY_KEYRING_IMA		2
 -- 
 1.9.1
 
