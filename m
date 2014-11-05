@@ -1,158 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809AbaKEQlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:41:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:10969 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755782AbaKEQlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:41:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="627083257"
-From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
-To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
-        aubrey.li@intel.com
-Cc: linux-kernel@vger.kernel.org, mahesh.kumar.p@intel.com
-Subject: [PATCH 3/3] PMC Driver : Expose the power gate status for CHT
-Date: Wed,  5 Nov 2014 22:05:34 +0530
-Message-Id: <1415205334-6141-1-git-send-email-mahesh.kumar.p@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755854AbaKEQmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:42:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41422 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762AbaKEQlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:41:49 -0500
+Date: Wed, 5 Nov 2014 08:35:32 -0800
+From: tip-bot for Yinghai Lu <tipbot@zytor.com>
+Message-ID: <tip-ad6b879eac110587bc6dc01ccea479e15de017df@git.kernel.org>
+Cc: bhelgaas@google.com, konrad.wilk@oracle.com, gregkh@linuxfoundation.org,
+        joro@8bytes.org, hpa@zytor.com, sebastian@breakpoint.cc,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        grant.likely@linaro.org, tony.luck@intel.com, rjw@rjwysocki.net,
+        tglx@linutronix.de, prarit@redhat.com, jiang.liu@linux.intel.com,
+        benh@kernel.crashing.org, rdunlap@infradead.org, yinghai@kernel.org
+Reply-To: rjw@rjwysocki.net, tglx@linutronix.de, jiang.liu@linux.intel.com,
+        prarit@redhat.com, benh@kernel.crashing.org, rdunlap@infradead.org,
+        yinghai@kernel.org, konrad.wilk@oracle.com, bhelgaas@google.com,
+        joro@8bytes.org, hpa@zytor.com, gregkh@linuxfoundation.org,
+        tony.luck@intel.com, sebastian@breakpoint.cc, mingo@kernel.org,
+        grant.likely@linaro.org, linux-kernel@vger.kernel.org, bp@alien8.de
+In-Reply-To: <1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq: Convert irq_2_pin list to generic list
+Git-Commit-ID: ad6b879eac110587bc6dc01ccea479e15de017df
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PSS register reflects the power state of each island on SoC.
-It would be useful to know which of the islands is on or off at
-the moment.
-The patch adds the Pwr Gate status interface to CHT
+Commit-ID:  ad6b879eac110587bc6dc01ccea479e15de017df
+Gitweb:     http://git.kernel.org/tip/ad6b879eac110587bc6dc01ccea479e15de017df
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Mon, 27 Oct 2014 16:11:55 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Nov 2014 11:04:46 +0100
 
-Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+x86, irq: Convert irq_2_pin list to generic list
+
+Use generic list to replace private list implementation so we can use
+the existing helper functions.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1414397531-28254-5-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Joerg Roedel <joro@8bytes.org>
 ---
- arch/x86/include/asm/pmc_atom.h |   20 +++++++++++++++++++-
- arch/x86/kernel/pmc_atom.c      |   33 +++++++++++++++++++++++++++++++--
- 2 files changed, 50 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |  2 +-
+ arch/x86/kernel/apic/io_apic.c | 28 +++++++++++-----------------
+ 2 files changed, 12 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
-index 7f09fe0..d634125 100644
---- a/arch/x86/include/asm/pmc_atom.h
-+++ b/arch/x86/include/asm/pmc_atom.h
-@@ -47,13 +47,16 @@
- /* Power gate status register */
- #define	PMC_PSS			0x98
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index b12c45c..66e59e6 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -138,7 +138,7 @@ struct irq_2_irte {
+  * Most irqs are mapped 1:1 with pins.
+  */
+ struct irq_cfg {
+-	struct irq_pin_list	*irq_2_pin;
++	struct list_head	irq_2_pin;
+ 	cpumask_var_t		domain;
+ 	cpumask_var_t		old_domain;
+ 	u8			vector;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 192ca0a..fac6be1 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -74,7 +74,7 @@
+ 		for_each_pin((idx), (pin))
  
--#define PMC_PSS_BIT_GBE			BIT(0)
-+/* common bit definition */
- #define PMC_PSS_BIT_SATA		BIT(1)
- #define PMC_PSS_BIT_HDA			BIT(2)
- #define PMC_PSS_BIT_SEC			BIT(3)
- #define PMC_PSS_BIT_PCIE		BIT(4)
- #define PMC_PSS_BIT_LPSS		BIT(5)
- #define PMC_PSS_BIT_LPE			BIT(6)
-+
-+/* BYT specific bits */
-+#define PMC_PSS_BIT_GBE			BIT(0)
- #define PMC_PSS_BIT_DFX			BIT(7)
- #define PMC_PSS_BIT_USH_CTRL		BIT(8)
- #define PMC_PSS_BIT_USH_SUS		BIT(9)
-@@ -66,6 +69,21 @@
- #define PMC_PSS_BIT_USB			BIT(16)
- #define PMC_PSS_BIT_USB_SUS		BIT(17)
+ #define for_each_irq_pin(entry, head) \
+-	for (entry = head; entry; entry = entry->next)
++	list_for_each_entry(entry, &head, list)
  
-+/* CHT specific bits */
-+#define PMC_PSS_BIT_UFS			BIT(7)
-+#define PMC_PSS_BIT_UXD			BIT(11)
-+#define PMC_PSS_BIT_UXD_FD		BIT(12)
-+#define PMC_PSS_BIT_UX_ENG		BIT(15)
-+#define PMC_PSS_BIT_USB_SUS_CHT		BIT(16)
-+#define PMC_PSS_BIT_GMM		BIT(17)
-+#define PMC_PSS_BIT_ISH		BIT(18)
-+#define PMC_PSS_BIT_DFX_MASTER		BIT(26)
-+#define PMC_PSS_BIT_DFX_CLSTR1		BIT(27)
-+#define PMC_PSS_BIT_DFX_CLSTR2		BIT(28)
-+#define PMC_PSS_BIT_DFX_CLSTR3		BIT(29)
-+#define PMC_PSS_BIT_DFX_CLSTR4		BIT(30)
-+#define PMC_PSS_BIT_DFX_CLSTR5		BIT(31)
-+
+ /*
+  *      Is the SiS APIC rmw bug present ?
+@@ -229,8 +229,8 @@ void mp_save_irq(struct mpc_intsrc *m)
+ }
  
- /* The timers acumulate time spent in sleep state */
- #define	PMC_S0IR_TMR		0x80
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index b435e7c..50dde36 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -45,7 +45,10 @@ struct pmc_bit_map {
+ struct irq_pin_list {
++	struct list_head list;
+ 	int apic, pin;
+-	struct irq_pin_list *next;
  };
  
- static  struct pmc_bit_map *dev_map;
-+static  struct pmc_bit_map *pss_map;
- static int dev_num;
-+static int pss_num;
-+
- static  struct pmc_bit_map byt_dev_map[] = {
- 	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
- 	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
-@@ -85,7 +88,7 @@ static  struct pmc_bit_map byt_dev_map[] = {
- 	{"35 - DFX",			BIT_DFX_BYT},
- };
- 
--static const struct pmc_bit_map pss_map[] = {
-+static struct pmc_bit_map pss_map_vlv[] = {
- 	{"0  - GBE",			PMC_PSS_BIT_GBE},
- 	{"1  - SATA",			PMC_PSS_BIT_SATA},
- 	{"2  - HDA",			PMC_PSS_BIT_HDA},
-@@ -144,6 +147,28 @@ static struct pmc_bit_map cht_dev_map[] = {
- 	{"34 - ISH",	BIT_ISH_CHT,	BIT_ISH_FD_CHT},
- };
- 
-+static struct pmc_bit_map pss_map_cht[] = {
-+	{"1  - SATA",			PMC_PSS_BIT_SATA},
-+	{"2  - HDA",			PMC_PSS_BIT_HDA},
-+	{"3  - SEC",			PMC_PSS_BIT_SEC},
-+	{"4  - PCIE",			PMC_PSS_BIT_PCIE},
-+	{"5  - LPSS",			PMC_PSS_BIT_LPSS},
-+	{"6  - LPE",			PMC_PSS_BIT_LPE},
-+	{"7  - UFS",			PMC_PSS_BIT_UFS},
-+	{"11  - UXD(xDCI)",		PMC_PSS_BIT_UXD},
-+	{"12  - UXD FD SX(xDCI)",		PMC_PSS_BIT_UXD_FD},
-+	{"15 -  UX Engine(xHCI) ",		PMC_PSS_BIT_UX_ENG},
-+	{"16 - USB SUS ",		PMC_PSS_BIT_USB_SUS_CHT},
-+	{"17 - GMM",		PMC_PSS_BIT_GMM},
-+	{"18 - ISH",		PMC_PSS_BIT_ISH},
-+	{"26 - DFX Master",		PMC_PSS_BIT_DFX_MASTER},
-+	{"27 - DFX Cluster1",		PMC_PSS_BIT_DFX_CLSTR1},
-+	{"28 - DFX Cluster2",		PMC_PSS_BIT_DFX_CLSTR2},
-+	{"29 - DFX Cluster3",		PMC_PSS_BIT_DFX_CLSTR3},
-+	{"30 - DFX Cluster4",		PMC_PSS_BIT_DFX_CLSTR4},
-+	{"31 - DFX Cluster5",		PMC_PSS_BIT_DFX_CLSTR5},
-+};
-+
- static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
+ static struct irq_pin_list *alloc_irq_pin_list(int node)
+@@ -297,6 +297,7 @@ static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
+ 		goto out_cfg;
+ 	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
+ 		goto out_domain;
++	INIT_LIST_HEAD(&cfg->irq_2_pin);
+ 	return cfg;
+ out_domain:
+ 	free_cpumask_var(cfg->domain);
+@@ -460,15 +461,12 @@ static void ioapic_mask_entry(int apic, int pin)
+  */
+ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
  {
- 	return readl(pmc->regmap + reg_offset);
-@@ -240,7 +265,7 @@ static int pmc_pss_state_show(struct seq_file *s, void *unused)
- 	u32 pss = pmc_reg_read(pmc, PMC_PSS);
- 	int pss_index;
+-	struct irq_pin_list **last, *entry;
++	struct irq_pin_list *entry;
  
--	for (pss_index = 0; pss_index < ARRAY_SIZE(pss_map); pss_index++) {
-+	for (pss_index = 0; pss_index < pss_num; pss_index++) {
- 		seq_printf(s, "Island: %-32s\tState: %s\n",
- 			pss_map[pss_index].name,
- 			pss_map[pss_index].d3_sts_bit & pss ? "Off" : "On");
-@@ -414,10 +439,14 @@ static int __init pmc_atom_init(void)
- 			case PCI_DEVICE_ID_BYT_PMC:
- 				dev_map = byt_dev_map;
- 				dev_num = ARRAY_SIZE(byt_dev_map);
-+				pss_map = pss_map_vlv;
-+				pss_num = ARRAY_SIZE(pss_map_vlv);
- 				break;
- 			case PCI_DEVICE_ID_CHT_PMC:
- 				dev_map = cht_dev_map;
- 				dev_num = ARRAY_SIZE(cht_dev_map);
-+				pss_map = pss_map_cht;
-+				pss_num = ARRAY_SIZE(pss_map_cht);
- 				break;
- 			}
- 			err = pmc_setup_dev(pdev);
--- 
-1.7.9.5
-
+ 	/* don't allow duplicates */
+-	last = &cfg->irq_2_pin;
+-	for_each_irq_pin(entry, cfg->irq_2_pin) {
++	for_each_irq_pin(entry, cfg->irq_2_pin)
+ 		if (entry->apic == apic && entry->pin == pin)
+ 			return 0;
+-		last = &entry->next;
+-	}
+ 
+ 	entry = alloc_irq_pin_list(node);
+ 	if (!entry) {
+@@ -479,22 +477,19 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
+ 	entry->apic = apic;
+ 	entry->pin = pin;
+ 
+-	*last = entry;
++	list_add_tail(&entry->list, &cfg->irq_2_pin);
+ 	return 0;
+ }
+ 
+ static void __remove_pin_from_irq(struct irq_cfg *cfg, int apic, int pin)
+ {
+-	struct irq_pin_list **last, *entry;
++	struct irq_pin_list *tmp, *entry;
+ 
+-	last = &cfg->irq_2_pin;
+-	for_each_irq_pin(entry, cfg->irq_2_pin)
++	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
+ 		if (entry->apic == apic && entry->pin == pin) {
+-			*last = entry->next;
++			list_del(&entry->list);
+ 			kfree(entry);
+ 			return;
+-		} else {
+-			last = &entry->next;
+ 		}
+ }
+ 
+@@ -1739,8 +1734,7 @@ __apicdebuginit(void) print_IO_APICs(void)
+ 		cfg = irq_cfg(irq);
+ 		if (!cfg)
+ 			continue;
+-		entry = cfg->irq_2_pin;
+-		if (!entry)
++		if (list_empty(&cfg->irq_2_pin))
+ 			continue;
+ 		printk(KERN_DEBUG "IRQ%d ", irq);
+ 		for_each_irq_pin(entry, cfg->irq_2_pin)
+@@ -4076,7 +4070,7 @@ void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq)
+ 
+ 	ioapic_mask_entry(ioapic, pin);
+ 	__remove_pin_from_irq(cfg, ioapic, pin);
+-	WARN_ON(cfg->irq_2_pin != NULL);
++	WARN_ON(!list_empty(&cfg->irq_2_pin));
+ 	arch_teardown_hwirq(virq);
+ }
+ 
