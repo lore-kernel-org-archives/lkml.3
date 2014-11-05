@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaKEVR0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:17:26 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:56842 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752176AbaKEVRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:17:22 -0500
-Date: Wed, 5 Nov 2014 16:17:20 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in
- trace_seq
-Message-ID: <20141105161720.71abdbdb@gandalf.local.home>
-In-Reply-To: <20141105150007.1c543b9e@gandalf.local.home>
-References: <20141104155237.228431433@goodmis.org>
-	<20141104160221.864997179@goodmis.org>
-	<20141105142222.GC4570@pathway.suse.cz>
-	<20141105134147.226a23ef@gandalf.local.home>
-	<20141105150007.1c543b9e@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752285AbaKEVRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:17:50 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:38017 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827AbaKEVRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 16:17:44 -0500
+Message-ID: <1415222258.7485.10.camel@sipsolutions.net>
+Subject: Re: [PATCH v2 03/13] backports: allow for different backport prefix
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        sassmann@kpanic.de
+Date: Wed, 05 Nov 2014 22:17:38 +0100
+In-Reply-To: <20141105194215.GN12953@wotan.suse.de>
+References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1415157517-15442-4-git-send-email-mcgrof@do-not-panic.com>
+	 <1415173596.2589.3.camel@sipsolutions.net>
+	 <20141105091610.GM12953@wotan.suse.de>
+	 <1415179364.2589.13.camel@sipsolutions.net>
+	 <20141105194215.GN12953@wotan.suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 15:00:07 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Wed, 2014-11-05 at 20:42 +0100, Luis R. Rodriguez wrote:
 
-> On Wed, 5 Nov 2014 13:41:47 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+> > No, I mean if bp_prefix were to contain some special character like [.
+> > This can't actually happen though.
 > 
-> > > 
-> > > > + */
-> > > > +int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-> > > > +		    int nmaskbits)
-> > > > +{
-> > > > +	unsigned int len = SEQ_BUF_LEFT(s);
-> > > >
-> > > > +	int ret;
-> > > > +
-> > > > +	WARN_ON(s->size == 0);
-> > > > +
-> > > > +	if (s->len < s->size) {
-> > > > +		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-> > > 
-> > > It writes to the beginning of the buffer. It should be
-> > > 
-> > > 		ret = bitmap_scnprintf(s->buffer + s->len, len,
-> > > 				       maskp, nmaskbits);
-> > >
-> > 
-> > Yep thanks. Luckily its only user didn't care.
-> > 
-> > Will fix.
-> >  
-> > > 
-> > > > +		if (s->len + ret < s->size) {
-> > > 
-> > > This will always happen because bitmap_scnprintf() is limited by SEQ_BUF_LEFT(s)
-> > > and it currently returns the remaining size - len - 1.
-> > 
-> > Hmm, that's correct, as bitmap_scnprintf() returns the amount written
-> > instead of the amount that it would write like snprintf() would.
-> > 
-> > 
-> > > 
-> > > You might want to use "s->size - s->len" instead of SEQ_BUF_LEFT(s).
-> > 
-> > That wont help when we make overflow len > size.
-> > 
-> > Probably should see if ret == the amount of bits required for the
-> > bitmask.
+> OK if that can't happen then I don't see the point.
+
+Where by "can't happen" I mean that Kconfig probably wouldn't be happy
+about it :-)
+
+> How about:
 > 
-> Here's the new version:
-> 
+> if integrate:
+> 	kconfig_prefix = "CONFIG_"
+> 	project_prefix = "BACKPORT_"
+> else:
+> 	kconfig_prefix = "CPTCFG_"
+> 	# implied by kconfig_prefix
+> 	project_prefix = ""
+> full_prefix = kconfig_prefix + project_prefix
 
-Take 2:
+Yeah, this seems like decent naming.
 
-int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-		    int nmaskbits)
-{
-	unsigned int len = seq_buf_buffer_left(s);
-	int ret;
+> But note that we special case things all over for when the bp_prefix is 'CPTCFG'
+> and the reason is that it is used when the kconfig getenv trick is used. I suppose
+> we can infer that the kconfig trick is used when kconfig_prefix != 'CONFIG_' though.
+> But the question still stands: why do we want to make these configurable? As it
+> stands I actually hard code things mostly, I can clean this up but would prefer
+> to deal with just the above.
 
-	WARN_ON(s->size == 0);
+I'm not sure where that's really the case? The one thing you did was use
+CPTCFG_ in some places like the version, but that was independent of
+this and could just be hardcoded there?
 
-	if (s->len < s->size) {
-		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-		/*
-		 * Note, because bitmap_scnprintf() only returns the
-		 * number of bytes written and not the number that
-		 * would be written, we use the last byte of the buffer
-		 * to let us know if we overflowed. There's a small
-		 * chance that the bitmap could have fit exactly inside
-		 * the buffer, but it's not that critical if that does
-		 * happen.
-		 */
-		if (s->len + ret < s->size) {
-			s->len += ret;
-			return 0;
-		}
-	}
-	seq_buf_set_overflow(s);
-	return -1;
-}
+> Also note that in some places we use BACKPORT vs BACKPORT_ so a sub or another
+> variable would be needed.
 
--- Steve
+I also didn't see that, why would that ever be needed?
+
+> As it stands in the v2 series packaging gets no BACKPORT_ prefix as the
+> kconfig getenv() CTPCFG_ trick is used, however for integration we
+> do add the prefix everywhere as we are carrying code into the kernel,
+> we then use this to easily make this symbol depend on the non backported
+> respective symbol making them mutually exclusive. Because of these two
+> things I think a BACKPORT_ prefix for things we carry in is proper. This
+> applies to the BACKPORT_BPAUTO and versioning entries, BACKPORT_KERNEL_3_18
+> and so on.
+
+Sure.
+
+> I am not sure what other prefix we could possibly use here for integration.
+
+Well, in theory you could imagine having two people backport different
+subsystems and trying to integrate them both into a backport kernel ...
+seems unlikely and will conflict on other levels (e.g. compat.ko) but
+still.
+
+Anyway, I don't really care if you don't make this configurable, but I
+don't like the way you're doing string manipulation to figure out what
+you want :-) That was really the reason for suggesting to split the
+existing prefix variable into two pieces. You have it today, after all,
+in theory you could have gotten rid of it completely and just pass the
+"integrate" flag around.
+
+johannes
+
