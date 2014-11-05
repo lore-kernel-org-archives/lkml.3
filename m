@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaKEJRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:17:41 -0500
-Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:31558 "EHLO
-	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753495AbaKEJRi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:17:38 -0500
-From: Shahed Shaikh <shahed.shaikh@qlogic.com>
-To: Joe Stringer <joestringer@nicira.com>, netdev <netdev@vger.kernel.org>
-CC: "sathya.perla@emulex.com" <sathya.perla@emulex.com>,
-        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "linux.nics@intel.com" <linux.nics@intel.com>,
-        "amirv@mellanox.com" <amirv@mellanox.com>,
-        Dept-GE Linux NIC Dev <Dept-GELinuxNICDev@qlogic.com>,
-        "Tom Herbert (Partner - google)" <therbert@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH net 5/5] qlcnic: Implement ndo_gso_check()
-Thread-Topic: [PATCH net 5/5] qlcnic: Implement ndo_gso_check()
-Thread-Index: AQHP+HpQ5eyJBh8kxU2z21df5T0OlJxRuiug
-Date: Wed, 5 Nov 2014 09:17:31 +0000
-Message-ID: <262CB373A6D1F14F9B81E82F74F77D5A4709D060@avmb2.qlogic.org>
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
- <1415138202-1197-6-git-send-email-joestringer@nicira.com>
-In-Reply-To: <1415138202-1197-6-git-send-email-joestringer@nicira.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.4.10]
-disclaimer: bypass
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754413AbaKEJSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:18:41 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:51347 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488AbaKEJSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:18:37 -0500
+Date: Wed, 5 Nov 2014 01:18:33 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Michal Sojka <sojkam1@fel.cvut.cz>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Update help of CONFIG_MTD_OF_PARTS
+Message-ID: <20141105091833.GG22361@norris-Latitude-E6410>
+References: <1412946377-18933-1-git-send-email-sojkam1@fel.cvut.cz>
+ <20141022053453.GA16128@brian-ubuntu>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7612 signatures=670572
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1411050095
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022053453.GA16128@brian-ubuntu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Joe Stringer [mailto:joestringer@nicira.com]
-> Sent: Wednesday, November 05, 2014 3:27 AM
-> To: netdev
-> Cc: sathya.perla@emulex.com; jeffrey.t.kirsher@intel.com;
-> linux.nics@intel.com; amirv@mellanox.com; Shahed Shaikh; Dept-GE Linux
-> NIC Dev; Tom Herbert (Partner - google); linux-kernel
-> Subject: [PATCH net 5/5] qlcnic: Implement ndo_gso_check()
+On Tue, Oct 21, 2014 at 10:34:53PM -0700, Brian Norris wrote:
+> On Fri, Oct 10, 2014 at 03:06:17PM +0200, Michal Sojka wrote:
+> > The help text of CONFIG_MTD_OF_PARTS refers to additional documentation
+> > in booting-without-of.txt but this documentation was moved to another
+> > file in commit efcc2da3fd148c9acb7d7cf1d9800e0649f950fc (Stefan Roese:
+> > Factor MTD physmap bindings out of booting-without-of). This updates the
+> > help text to point to the right place.
+> > 
+> > Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+> > ---
+> >  drivers/mtd/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
+> > index 94b8210..fa8371a 100644
+> > --- a/drivers/mtd/Kconfig
+> > +++ b/drivers/mtd/Kconfig
+> > @@ -133,7 +133,7 @@ config MTD_OF_PARTS
+> >  	help
+> >  	  This provides a partition parsing function which derives
+> >  	  the partition map from the children of the flash node,
+> > -	  as described in Documentation/devicetree/booting-without-of.txt.
+> > +	  as described in Documentation/devicetree/bindings/mtd/mtd-physmap.txt.
 > 
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an implementation
-> for this driver which checks for something that looks like VXLAN.
+> Did you read this file before sending the patch? I'm pretty sure you're
+> looking for this file instead:
 > 
-> Implementation shamelessly stolen from Tom Herbert:
-> http://thread.gmane.org/gmane.linux.network/332428/focus=333111
-> 
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> ---
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> index f5e29f7..6184f47 100644
-> --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> @@ -505,6 +505,17 @@ static void qlcnic_del_vxlan_port(struct net_device
-> *netdev,  }  #endif
-> 
-> +static bool qlcnic_gso_check(struct sk_buff *skb, struct net_device
-> +*dev) {
-> +	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
-> +	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
-> +	     skb->inner_protocol != htons(ETH_P_TEB) ||
-> +	     skb_inner_mac_header(skb) - skb_transport_header(skb) != 16))
-> +		return false;
-> +
+>   Documentation/devicetree/bindings/mtd/partition.txt
 
-Hi Joe,
+Fixed this up and pushed to l2-mtd.git.
 
-Yes, qlcnic driver only supports VXLAN offload.
-It would be good to put a comment about value 16 to make it more intuitive. 
-e.g. 16 is the size of outer UDP header + VXLAN header.
-
-Anyway, patch looks good to me.
-
-Acked-by: Shahed Shaikh <shahed.shaikh@qlogic.com>
-
-Thanks,
-Shahed
+Brian
