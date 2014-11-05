@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaKEPQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:16:10 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42519 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932149AbaKEPPu (ORCPT
+	id S932252AbaKEPRq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:17:46 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52720 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932236AbaKEPRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:15:50 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv9 2/2] pwm: sunxi: document OF bindings
-Date: Wed,  5 Nov 2014 16:15:45 +0100
-Message-Id: <1415200545-26238-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 5 Nov 2014 10:17:45 -0500
+Message-Id: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com>
+X-Sasl-Enc: F4eE2gP2/mwDag4A5f73RWc+CxDJ9NuotfgApkFXc6ce 1415200663
+From: Martin Tournoij <martin@arp242.net>
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-c51dec4f
+Subject: [RFC] The SIGINFO signal from BSD
+Date: Wed, 05 Nov 2014 16:17:43 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the documentation for the Allwinner SoCs PWM bindings.
+Hi there,
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- Documentation/devicetree/bindings/pwm/pwm-sun4i.txt | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
+As a long-time BSD user, I have become quite used to the SIGINFO (sent with ^t)
+feature; after switching to Linux as my desktop a few months ago, I very much
+miss this.
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-sun4i.txt b/Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
-new file mode 100644
-index 000000000000..ae0273e19506
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
-@@ -0,0 +1,20 @@
-+Allwinner sun4i and sun7i SoC PWM controller
-+
-+Required properties:
-+  - compatible: should be one of:
-+    - "allwinner,sun4i-a10-pwm"
-+    - "allwinner,sun7i-a20-pwm"
-+  - reg: physical base address and length of the controller's registers
-+  - #pwm-cells: should be 3. See pwm.txt in this directory for a description of
-+    the cells format.
-+  - clocks: From common clock binding, handle to the parent clock.
-+
-+Example:
-+
-+	pwm: pwm@01c20e00 {
-+		compatible = "allwinner,sun7i-a20-pwm";
-+		reg = <0x01c20e00 0xc>;
-+		clocks = <&osc24M>;
-+		#pwm-cells = <3>;
-+		status = "disabled";
-+	};
--- 
-2.1.0
+SIGINFO prints the status of the process to the terminal; BSD cp, for example,
+shows show much data it's copied:
 
+    $ cp large_file /dev/null
+    <press ^t>
+    load: 1.39  cmd: cp 85837 [running] 3.91r 0.00u 0.98s 8% 2340k
+    large_file -> /dev/null  15%
+
+As you see, it shows the current load, pid, process status, memory usage, as
+well as how much of the file has been copied. Many other BSD tools print similar
+statistics (mv, tar, dd, sleep, fetch, etc.).
+
+On Linux, sometimes SIGUSR1 is used for similar purposes, the problem with this
+is that SIGUSR{1,2} will terminate a program if a program doesn't have a signal
+handler installed(!)
+SIGUSR1 also has no defined meaning, and may do something radically different;
+nginx, for example, reopens the logfiles on SIGUSR1, and SIGUSR2 upgrades the
+nginx executable on-the-fly.
+
+So you need to carefully inspect the documentation, hope it's not out of date,
+and then send SIGUSR1 and pray.
+
+This is different from SIGINFO, which does nothing when it's not installed,
+which is safe. You can send SIGINFO to any process, and not be afraid you kill
+it.
+
+In addition, it's also not easy to send SIGUSR1, you need to open a new
+terminal, find the pid, and use a kill command (you could also use
+pkill/killall, with the risk of sending the signal to other processes).
+
+SIGINFO is, AFAIK, supported since 4.4BSD & descendants (ie. all modern BSD
+systems), as well as MacOS X. Perhaps other systems as well (but did not
+investigate).
+
+Why don't we have SIGINFO on Linux? Would a patch to implement this be accepted?
+
+SIGINFO is not defined in any standard, but Linux already implements other
+useful non-standard signals (most notably SIGWINCH). IMHO it's a very useful
+feature.
+
+Thanks,
+Martin
+
+PS.
+I am *not* subscribed to this maillist; please cc me in replies!
