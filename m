@@ -1,294 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaKEPLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 10:11:21 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25184 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755041AbaKEPLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 10:11:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,320,1413270000"; 
-   d="scan'208";a="602788352"
-From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
-To: linux-pm@vger.kernel.org, rafael.j.wysocki@intel.com, len.brown@intel.com,
-        aubrey.li@intel.com, linux-kernel@vger.kernel.org
-Cc: mahesh.kumar.p@intel.com
-Subject: [PATCH] Add North complex power state debug driver for BYT and CHT
-Date: Wed,  5 Nov 2014 20:34:12 +0530
-Message-Id: <1415199852-29795-1-git-send-email-mahesh.kumar.p@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755602AbaKEPMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 10:12:33 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:26080 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152AbaKEPMc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 10:12:32 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f6c6d00000120b-f0-545a3e5daf43
+Content-transfer-encoding: 8BIT
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] mm: slub: fix format mismatches in slab_err() callers
+Date: Wed, 05 Nov 2014 18:12:21 +0300
+Message-id: <1415200341-9619-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t/xK7qxdlEhBls2aFls+/WIzWLO+jVs
+	Fte/vWG0WNndzGZxedccNot7a/6zWrR9/gcklmxkcuDwWLCp1GPTqk42j02fJrF7dL29wuRx
+	YsZvFo8nV6YzefRtWcXo8XmTXABHFJdNSmpOZllqkb5dAlfGj94r7AVbBCte3V7D2MC4lK+L
+	kZNDQsBEomtZNxuELSZx4d56IJuLQ0hgKaPEhnmz2UESvAKCEj8m32PpYuTgYBaQlzhyKRsk
+	zCygLjFp3iJmiPo+JomXz5+zgCTYBPQk/s3aDjZUREBWYurf8ywQDV8ZJY7ckAexhQXcJNa2
+	dTKCzGQRUJVofVgPscpVYueP36wgYQkBOYmt67wnMPLNQnLELIQjZiE5YgEj8ypG0dTS5ILi
+	pPRcQ73ixNzi0rx0veT83E2MkKD+soNx8TGrQ4wCHIxKPLweTZEhQqyJZcWVuYcYJTiYlUR4
+	r1lGhQjxpiRWVqUW5ccXleakFh9iZOLglGpgdNd37M+/raG0xCtgh09w4Km9Sh+Slu+ROWe+
+	LdJF4swcgYbZHefXPW0/cd7dseGJ0uwsvR6L+Lec8TXSOzZ+vuN96ZJShWOc0s/5X/5kbrda
+	uqwgzu9y859Pk4I5O4SEvb54VKULCb7dEhtSeT0qsdNYY3nkPW5u37b5p5fufX3o+F7dGL13
+	SizFGYmGWsxFxYkA0r+GaUgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds a debug driver which dumps the power states
-of all the North complex devices. This debug interface is
-useful to figure out the NC IPs which blocks the S0ix
-transitions on the platform. This is extremely useful during
-enabling PM on customer platforms and derivatives.
+Adding __printf(3, 4) to slab_err exposed following:
 
-Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+mm/slub.c: In function ‘check_slab’:
+mm/slub.c:852:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
+    s->name, page->objects, maxobj);
+    ^
+mm/slub.c:852:4: warning: too many arguments for format [-Wformat-extra-args]
+mm/slub.c:857:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
+    s->name, page->inuse, page->objects);
+    ^
+mm/slub.c:857:4: warning: too many arguments for format [-Wformat-extra-args]
+
+mm/slub.c: In function ‘on_freelist’:
+mm/slub.c:905:4: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘long unsigned int’ [-Wformat=]
+    "should be %d", page->objects, max_objects);
+
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- arch/x86/Kconfig                     |    3 -
- arch/x86/kernel/Makefile             |    1 +
- arch/x86/kernel/intel_nc_dev_state.c |  186 ++++++++++++++++++++++++++++++++++
- kernel/power/Kconfig                 |   24 +++++
- 4 files changed, 211 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/kernel/intel_nc_dev_state.c
+ mm/slub.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6e67ad4..ee0ccaf 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2450,9 +2450,6 @@ config IOSF_MBI
- 	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
- 	  enumerable by PCI.
+diff --git a/mm/slub.c b/mm/slub.c
+index 80c170e..850a94a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -849,12 +849,12 @@ static int check_slab(struct kmem_cache *s, struct page *page)
+ 	maxobj = order_objects(compound_order(page), s->size, s->reserved);
+ 	if (page->objects > maxobj) {
+ 		slab_err(s, page, "objects %u > max %u",
+-			s->name, page->objects, maxobj);
++			page->objects, maxobj);
+ 		return 0;
+ 	}
+ 	if (page->inuse > page->objects) {
+ 		slab_err(s, page, "inuse %u > max %u",
+-			s->name, page->inuse, page->objects);
++			page->inuse, page->objects);
+ 		return 0;
+ 	}
+ 	/* Slab_pad_check fixes things up after itself */
+@@ -902,7 +902,7 @@ static int on_freelist(struct kmem_cache *s, struct page *page, void *search)
  
--config PMC_ATOM
--	def_bool y
--        depends on PCI
- 
- source "net/Kconfig"
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index ed65a6b..b11786f 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -106,6 +106,7 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
- obj-$(CONFIG_TRACING)			+= tracepoint.o
- obj-$(CONFIG_IOSF_MBI)			+= iosf_mbi.o
- obj-$(CONFIG_PMC_ATOM)          += pmc_atom.o
-+obj-$(CONFIG_INTEL_SOC_NC_STATE)	+= intel_nc_dev_state.o
- 
- 
- ###
-diff --git a/arch/x86/kernel/intel_nc_dev_state.c b/arch/x86/kernel/intel_nc_dev_state.c
-new file mode 100644
-index 0000000..c3d5e40
---- /dev/null
-+++ b/arch/x86/kernel/intel_nc_dev_state.c
-@@ -0,0 +1,186 @@
-+/*
-+ * Intel SOC North Complex devices state Driver
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+#include <linux/io.h>
-+
-+#include <asm/cpu_device_id.h>
-+#include <asm/intel_mid_pcihelpers.h>
-+
-+#define	DRIVER_NAME	KBUILD_MODNAME
-+
-+#define PUNIT_PORT		0x04
-+#define PWRGT_CNT		0x60
-+#define PWRGT_STATUS		0x61
-+#define VED_SS_PM0		0x32
-+#define ISP_SS_PM0		0x39
-+#define MIO_SS_PM		0x3B
-+#define SSS_SHIFT		24
-+#define RENDER_POS		0
-+#define MEDIA_POS		2
-+#define DISPLAY_POS		6
-+#define DSP_SSS_CHT		0x36
-+#define DSP_SSS_POS_CHT		16
-+
-+#define PMC_D0I3_MASK		3
-+
-+static char *dstates[] = {"D0", "D0i1", "D0i2", "D0i3"};
-+
-+struct nc_device {
-+	char *name;
-+	int reg;
-+	int sss_pos;
-+};
-+
-+struct nc_device nc_devices_vlv[] = {
-+	{ "GFX RENDER", PWRGT_STATUS,  RENDER_POS },
-+	{ "GFX MEDIA", PWRGT_STATUS, MEDIA_POS },
-+	{ "DISPLAY", PWRGT_STATUS,  DISPLAY_POS },
-+	{ "VED", VED_SS_PM0, SSS_SHIFT},
-+	{ "ISP", ISP_SS_PM0, SSS_SHIFT},
-+	{ "MIO", MIO_SS_PM, SSS_SHIFT},
-+};
-+
-+struct nc_device nc_devices_cht[] = {
-+	{ "GFX RENDER", PWRGT_STATUS,  RENDER_POS },
-+	{ "GFX MEDIA", PWRGT_STATUS, MEDIA_POS },
-+	{ "DSP", DSP_SSS_CHT,  DSP_SSS_POS_CHT },
-+	{ "VED", VED_SS_PM0, SSS_SHIFT},
-+	{ "ISP", ISP_SS_PM0, SSS_SHIFT},
-+	{ "MIO", MIO_SS_PM, SSS_SHIFT},
-+};
-+#define NC_NUM_DEVICES 6
-+
-+#define ICPU(model, cpu) \
-+	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
-+
-+
-+MODULE_DEVICE_TABLE(x86cpu, intel_pmc_cpu_ids);
-+
-+struct pmc_config {
-+	struct nc_device *nc_table;
-+	u32 num_nc;
-+};
-+static const struct pmc_config vlv_config = {
-+	.nc_table = nc_devices_vlv,
-+	.num_nc = NC_NUM_DEVICES,
-+};
-+
-+static const struct pmc_config cht_config = {
-+	.nc_table = nc_devices_cht,
-+	.num_nc = NC_NUM_DEVICES,
-+};
-+
-+static const struct pmc_config *icpu;
-+
-+static const struct x86_cpu_id intel_pmc_cpu_ids[] = {
-+	ICPU(0x4c, cht_config),
-+	ICPU(0x37, vlv_config),
-+	{}
-+};
-+
-+static int nc_dev_state_show(struct seq_file *seq_file, void *unused)
-+{
-+	struct seq_file *s = (struct seq_file *)seq_file;
-+	u32 nc_pwr_sts, nc_reg, nc_val;
-+	const struct x86_cpu_id *id;
-+	int dev_num, dev_index;
-+	static struct nc_device *nc_dev;
-+
-+	id = x86_match_cpu(intel_pmc_cpu_ids);
-+	if (!id)
-+		return -ENODEV;
-+	icpu = (const struct pmc_config *)id->driver_data;
-+
-+	if (!icpu->nc_table)
-+		return -ENODEV;
-+	nc_dev = icpu->nc_table;
-+	dev_num = icpu->num_nc;
-+
-+	seq_puts(s, "\n\nNORTH COMPLEX DEVICES :\n");
-+	for (dev_index = 0; dev_index < dev_num; dev_index++) {
-+		nc_reg = nc_dev[dev_index].reg;
-+		nc_pwr_sts = intel_mid_msgbus_read32(PUNIT_PORT, nc_reg);
-+		nc_pwr_sts >>= nc_dev[dev_index].sss_pos;
-+		nc_val = nc_pwr_sts & PMC_D0I3_MASK;
-+		seq_printf(s, "%9s : %s\n", nc_dev[dev_index].name,
-+				dstates[nc_val]);
-+	}
-+	return 0;
-+}
-+
-+static int nc_dev_state_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, nc_dev_state_show, inode->i_private);
-+}
-+
-+static const struct file_operations nc_dev_state_ops = {
-+	.open		= nc_dev_state_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static struct dentry *dbg_file;
-+
-+static int nc_dbgfs_register(void)
-+{
-+
-+	dbg_file = debugfs_create_dir("nc_atom", NULL);
-+	if (!dbg_file)
-+		return -ENOMEM;
-+
-+	dbg_file = debugfs_create_file("nc_dev_state", S_IFREG | S_IRUGO,
-+				dbg_file, NULL, &nc_dev_state_ops);
-+	if (!dbg_file) {
-+		pr_err("nc_dev_state register failed\n");
-+		return -ENODEV;
-+	}
-+	return 0;
-+}
-+
-+static void nc_dbgfs_unregister(void)
-+{
-+	if (!dbg_file)
-+		return;
-+
-+	debugfs_remove_recursive(dbg_file);
-+	dbg_file = NULL;
-+}
-+
-+static int __init nc_dev_state_module_init(void)
-+{
-+	int ret = nc_dbgfs_register();
-+	if (ret < 0)
-+		return ret;
-+	return 0;
-+}
-+
-+static void __exit nc_dev_state_module_exit(void)
-+{
-+	nc_dbgfs_unregister();
-+}
-+
-+module_init(nc_dev_state_module_init);
-+module_exit(nc_dev_state_module_exit);
-+
-+MODULE_AUTHOR("Kumar P, Mahesh <mahesh.kumar.p.intel.com>");
-+MODULE_DESCRIPTION("Driver for get North Complex devices state");
-+MODULE_LICENSE("GPL v2");
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 6c78fe5..399e192 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -217,6 +217,30 @@ config PM_TRACE
- 	  dependent, x86 will print the information during a
- 	  late_initcall.
- 
-+menu "Intel PM Debug Driver"
-+
-+config INTEL_SOC_NC_STATE
-+	bool "North Complex devices power state driver"
-+	def_bool y
-+	---help---
-+		This is a debug driver which gets the power states
-+		of all North Complex devices.The power states of
-+		each IP is exposed as part of the debugfs
-+		interface
-+
-+config PMC_ATOM
-+	bool "South Complex devices power state driver"
-+	def_bool y
-+        depends on PCI
-+	---help---
-+		This is a debug driver which gets the power states
-+		of all South Complex devices.The driver also dumps
-+		the information on S0ix residencies.The power states
-+		of each IP is exposed as part of the debugfs
-+		interface
-+
-+endmenu
-+
- config PM_TRACE_RTC
- 	bool "Suspend/resume event tracing"
- 	depends on PM_SLEEP_DEBUG
+ 	if (page->objects != max_objects) {
+ 		slab_err(s, page, "Wrong number of objects. Found %d but "
+-			"should be %d", page->objects, max_objects);
++			"should be %ld", page->objects, max_objects);
+ 		page->objects = max_objects;
+ 		slab_fix(s, "Number of objects adjusted.");
+ 	}
 -- 
-1.7.9.5
+2.1.3
 
