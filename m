@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaKEXqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 18:46:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38805 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaKEXqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 18:46:03 -0500
-Date: Thu, 6 Nov 2014 00:45:56 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg
-Subject: Re: N900 modem support in 3.18-rc1
-Message-ID: <20141105234555.GA7097@earth.universe>
-References: <20141104205117.GA17606@amd>
- <201411052137.31452@pali>
- <20141105203918.GA29199@amd>
- <201411052206.05379@pali>
- <20141105220359.GA32052@amd>
+	id S1751070AbaKEXtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 18:49:41 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39986 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaKEXtj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 18:49:39 -0500
+Date: Thu, 6 Nov 2014 00:48:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [Patch Part2 v4 01/31] irqdomain: Introduce new interfaces to
+ support hierarchy irqdomains
+In-Reply-To: <1415102525-9898-2-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1411060044100.24960@nanos>
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-2-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
-Content-Disposition: inline
-In-Reply-To: <20141105220359.GA32052@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 4 Nov 2014, Jiang Liu wrote:
+>  /* Number of irqs reserved for a legacy isa controller */
+>  #define NUM_ISA_INTERRUPTS	16
+> @@ -64,6 +66,16 @@ struct irq_domain_ops {
+>  	int (*xlate)(struct irq_domain *d, struct device_node *node,
+>  		     const u32 *intspec, unsigned int intsize,
+>  		     unsigned long *out_hwirq, unsigned int *out_type);
+> +
+> +#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+> +	/* extended V2 interfaces to support hierarchy irq_domains */
+> +	int (*alloc)(struct irq_domain *d, unsigned int virq,
+> +		     unsigned int nr_irqs, void *arg);
+> +	void (*free)(struct irq_domain *d, unsigned int virq,
+> +		     unsigned int nr_irqs);
+> +	int (*activate)(struct irq_domain *d, struct irq_data *irq_data);
+> +	int (*deactivate)(struct irq_domain *d, struct irq_data *irq_data);
 
---3V7upXqbjpZ4EhLz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Why do we have a return value here? Especially the deactivate one
+makes no sense at all.
 
-Hi,
+> +extern int irq_domain_activate_irq(struct irq_data *irq_data);
+> +extern int irq_domain_deactivate_irq(struct irq_data *irq_data);
 
-On Wed, Nov 05, 2014 at 11:03:59PM +0100, Pavel Machek wrote:
-> > Maybe you need to enable modem?
-> >=20
-> > This is n900 init sequence from script: nokia-n900-configs.sh
->=20
-> From the dts, it looks like this should somehow work without this.
+And here.
 
-Right :) The n900-modem driver will take care of this if the "pm"
-parameter is set to 1 (which should be the default).
+> @@ -178,6 +179,7 @@ int irq_startup(struct irq_desc *desc, bool resend)
+>  	irq_state_clr_disabled(desc);
+>  	desc->depth = 0;
+>  
+> +	irq_domain_activate_irq(&desc->irq_data);
 
-> I can try but.. is it safe? I'm using DT-based config, and interrupt
-> numbers definitely changed. If GPIO numbers changed, it will not be
-> funny.
+We do not check it and we cannot do here AFAICT.
 
-Can you provide the output from dmesg?
+>  	if (desc->irq_data.chip->irq_startup) {
+>  		ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
+>  		irq_state_clr_masked(desc);
+> @@ -199,6 +201,7 @@ void irq_shutdown(struct irq_desc *desc)
+>  		desc->irq_data.chip->irq_disable(&desc->irq_data);
+>  	else
+>  		desc->irq_data.chip->irq_mask(&desc->irq_data);
+> +	irq_domain_deactivate_irq(&desc->irq_data);
 
--- Sebastian
+Ditto.
 
---3V7upXqbjpZ4EhLz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So the return value for irq_domain_deactivate_irq() is silly to begin
+with, but also the return value for irq_domain_activate_irq() does not
+really make sense. We've allocated the resources for the interrupt
+already down the hierarchy chain. So there is no reason why the actual
+activation should fail.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks,
 
-iQIcBAEBCgAGBQJUWrazAAoJENju1/PIO/qaIz8P/AjvTCrHDwrRhLWaQY7fPsVF
-OYph4g8z5P2JEmB7AMCW1pG53di1AKAGGPGLzIgIitDH3n4t67LmHCrpyjwR/eGS
-cU0JJUQfgVXy27pZ7inAbHLN9hXi+sIvaz/NeeWek+5jEF2WO66YHh7fJ+GzymLS
-5vq/+e+MhJKD1OkGJt9NTGpBwU/peYQCKa4BxZdbyy4wXODMHtTWC5Q9DFoYlNaw
-+e2B/eaNajCiIt9HiHmQbar7GyYGi8fd7OAmzIgOvhlqW/VhuI4M5zootXJpGIHe
-87cJ/gxYgLOIHA753tsRCSjhTmnhjQEBSC7YzLygGTMXSOg0Aip48u6xVj81z+OC
-CvucQo6feQLyqeFEsVCMX6mIeCfD7JQv2I/kdYPREfAjwhrMWD+gy7K2WofXKESH
-nz8pSmfQEhPsx/6Wi6drN470j9xUzIdF+CHGEkgVpNcYY2NuZYu6T/rjgUqy1gio
-ZVaYby8ZGo/E9LWvVqxwSHgLXuxD2DsOOgmW57Qz9nkp57aWF49bSWn+BUx6ZyaU
-8U4OXLqljLvfHpRm6dUlzv3PdPL76JyckICe67RfwIZ1Fla8FzdeimlsijljUstJ
-5KFvhWauzyvPrQPoc5BGipqbzciYz5lu3pNRkc2OGiXboetdYKlWhzAUCKkTxVE5
-mu7ok3+DRzML4h3jFbf3
-=bkA8
------END PGP SIGNATURE-----
-
---3V7upXqbjpZ4EhLz--
+	tglx
