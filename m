@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaKEWvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:51:53 -0500
-Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:59951 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750867AbaKEWvw (ORCPT
+	id S1751420AbaKEWwb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:52:31 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61576 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaKEWw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:51:52 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:6119:6261:7901:9121:10004:10400:10848:10967:11026:11232:11233:11473:11658:11914:12296:12438:12517:12519:12679:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: gold52_84697b7d0832b
-X-Filterd-Recvd-Size: 2601
-Message-ID: <1415227908.6634.30.camel@perches.com>
-Subject: Re: [PATCH 4/6] trace: Replace seq_printf by simpler equivalents
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Nov 2014 14:51:48 -0800
-In-Reply-To: <20141105173454.7aa47289@gandalf.local.home>
-References: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
-	 <1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
-	 <20141105173454.7aa47289@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Nov 2014 17:52:29 -0500
+From: Steven Honeyman <stevenhoneyman@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiri Kosina <trivial@kernel.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Steven Honeyman <stevenhoneyman@gmail.com>
+Subject: [PATCH V3b] x86, cpu: trivial printk formatting fixes
+Date: Wed,  5 Nov 2014 22:52:18 +0000
+Message-Id: <1415227938-16927-1-git-send-email-stevenhoneyman@gmail.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415227284.6634.26.camel@perches.com>
+References: <1415227284.6634.26.camel@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 17:34 -0500, Steven Rostedt wrote:
-> On Fri, 12 Sep 2014 11:25:52 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
-> > Using seq_printf to print a simple string or a single character is a
-> > lot more expensive than it needs to be, since seq_puts and seq_putc
-> > exist.
-[]
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-[]
-> @@ -556,13 +556,13 @@ static int function_stat_cmp(void *p1, void *p2)
-> >  static int function_stat_headers(struct seq_file *m)
-> >  {
-> >  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> > -	seq_printf(m, "  Function                               "
-> > -		   "Hit    Time            Avg             s^2\n"
-> > -		      "  --------                               "
-> > -		   "---    ----            ---             ---\n");
-> > +	seq_puts(m,
-> > +		 "  Function                               " "Hit    Time            Avg             s^2\n"
-> > +		 "  --------                               " "---    ----            ---             ---\n");
-> 
-> Please keep the original format. I know that it's considered bad form
-> to split strings like this, but I consider this one of the exceptions
-> to the rule.
+dmesg (from util-linux) currently has two methods for reading the kernel message ring buffer: /dev/kmsg and syslog(2). Since kernel 3.5.0 kmsg has been the default, which escapes control characters (e.g. new lines) before they are shown.
 
-Why is that?
+This change means that when dmesg is using /dev/kmsg, a 2 line printk makes the output messy, because the second line does not get a timestamp.
+For example:
 
-btw: when the strings fragments are put on the same line,
-it's nicer to take out the intermediate joining " " bits too.
+[    0.012863] CPU0: Thermal monitoring enabled (TM1)
+[    0.012869] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
+Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
+[    0.012958] Freeing SMP alternatives memory: 28K (ffffffff81d86000 - ffffffff81d8d000)
+[    0.014961] dmar: Host address width 39
 
-I'd've probably used 2 seq_puts calls like:
+Because printk.c intentionally escapes control characters, they should not be there in the first place.
+This patch fixes two occurrences of this.
 
-	seq_puts(m, "  Function                               Hit    Time            Avg             s^2\n");
-	seq_puts(m, "  --------                               ---    ----            ---             ---\n");
+V2: Revert change to log level, only fix the newline formatting issue
+V3: Expand patch description
+V3b: Fix silly mistake (log level) 
 
+Signed-off-by: Steven Honeyman <stevenhoneyman@gmail.com>
+---
+ arch/x86/kernel/cpu/common.c | 11 ++++++-----
+ arch/x86/kernel/cpu/intel.c  |  6 ++----
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4b4f78c..fbdd7bf 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -494,12 +494,13 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
+ 	if (this_cpu->c_detect_tlb)
+ 		this_cpu->c_detect_tlb(c);
+ 
+-	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
+-		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
++	pr_info("Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
+ 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
+-		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
+-		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
+-		tlb_lld_1g[ENTRIES]);
++		tlb_lli_4m[ENTRIES]);
++
++	pr_info("Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
++		tlb_lld_4k[ENTRIES], tlb_lld_2m[ENTRIES],
++		tlb_lld_4m[ENTRIES], tlb_lld_1g[ENTRIES]);
+ }
+ 
+ void detect_ht(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 9cc6b6f..dcd08a3 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -487,10 +487,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 
+ 		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
+-			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
+-				" Set to 'normal', was 'performance'\n"
+-				"ENERGY_PERF_BIAS: View and update with"
+-				" x86_energy_perf_policy(8)\n");
++			pr_warn_once("ENERGY_PERF_BIAS: Set to 'normal', was 'performance'\n");
++			pr_warn_once("ENERGY_PERF_BIAS: View and update with x86_energy_perf_policy(8)\n");
+ 			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
+ 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		}
+-- 
+2.1.3
 
