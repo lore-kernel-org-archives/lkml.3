@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaKEIHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 03:07:03 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:46582 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaKEIG7 (ORCPT
+	id S1753819AbaKEILJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 03:11:09 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15801 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaKEILH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 03:06:59 -0500
-Message-ID: <5459DA9C.6020704@hitachi.com>
-Date: Wed, 05 Nov 2014 17:06:52 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 5 Nov 2014 03:11:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 05 Nov 2014 00:11:56 -0800
+Message-ID: <5459DB82.9080100@nvidia.com>
+Date: Wed, 5 Nov 2014 17:10:42 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Sachin Kamat <spk.linux@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [PATCH v3 0/3] perf: User/kernel time correlation and
- event generation
-References: <1415060918-19954-1-git-send-email-pawel.moll@arm.com>  <54589B58.7080102@hitachi.com> <1415116269.24819.14.camel@arm.com>
-In-Reply-To: <1415116269.24819.14.camel@arm.com>
-Content-Type: text/plain; charset=UTF-8
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+References: <54584260.8030602@nvidia.com>	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>	<545895B2.2000101@nvidia.com> <CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+In-Reply-To: <CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: HKMAIL102.nvidia.com (10.18.16.11) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/05 0:51), Pawel Moll wrote:
-> On Tue, 2014-11-04 at 09:24 +0000, Masami Hiramatsu wrote:
->> What I'd like to do is the binary version of ftrace-marker, the text
->> version is already supported by qemu (see below).
->> https://lists.gnu.org/archive/html/qemu-devel/2013-04/msg00505.html
+On 11/05/2014 12:31 AM, Tim Kryger wrote:
+> On Tue, Nov 4, 2014 at 1:00 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Hi Tim, thanks for your reply!
 >>
->> But since that is just a string data (not structured data), it is hard to
->> analyze via perf-script or some other useful filters/triggers in ftrace.
+>> On 11/04/2014 02:28 PM, Tim Kryger wrote:
+>>>
+>>> On Mon, Nov 3, 2014 at 7:05 PM, Alexandre Courbot <acourbot@nvidia.com>
+>>> wrote:
+>>>>
+>>>> Hi guys,
+>>>>
+>>>> On the NVIDIA shield (tegra114-roth) platform, I have noticed that MMC
+>>>> stopped working completely on recent kernels. MMC devices will not show
+>>>> up
+>>>> and the message "mmc1: Controller never released inhibit bit(s)." shows
+>>>> up
+>>>> repeatedly in the console.
+>>>>
+>>>> After bisecting I tracked commit 52221610dd84dc3e9196554f0292ca9e8ab3541d
+>>>> ("mmc: sdhci: Improve external VDD regulator support") as the one that
+>>>> introduced this issue, which seems somehow surprising to me since it has
+>>>> been around for a while and nobody else complained about this AFAICT.
+>>>
+>>>
+>>> I'm not too familiar with the Nvidia Shield so can you please confirm
+>>> the following?
+>>>
+>>> The controller in the Tegra114 is SDHCI compliant and as such
+>>> sdhci_tegra_probe calls sdhci_add_host.  External regulators are
+>>> sought in sdhci_add_host with a call to mmc_regulator_get_supply.
 >>
->> In my idea, the new event will be defined via a special file in debugfs like
->> kprobe-events, like below.
 >>
->>   # cd $debugfs/tracing
->>   # echo "newgrp/newevent signarg:s32 flag:u64" >> marker_events
->>   # cat events/newgrp/newevent/format
->>   name: newevent
->>   ID: 2048
->>   format:
->>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
->>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
->>         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
->>         field:int common_pid;   offset:4;       size:4; signed:1;
+>> This is correct.
 >>
->>         field:s32 signarg;      offset:8;      size:4; signed:1;
->>         field:u64 flag; offset:12;      size:8; signed:0;
+>>> Since no external regulators are specified in tegra114.dtsi or
+>>> tegra114-roth.dts, mmc->supply.vmmc and mmc->supply.vqmmc are set to
+>>> -ENODEV.
 >>
->>   print fmt: "signarg=%d flag=0x%Lx", REC->signarg, REC->flag
 >>
->> Then, users will write the data (excluded common fields) when the event happens
->> via trace_marker which start with '\0'ID(in u32). Kernel just checks the ID and
->> its data size, but doesn't parse, filter/trigger it and log it into the kernel buffer.
-> 
-> Very neat, I like it! Certainly useful with scripting. Any gut feeling
-> regarding the kernel version it will be ready for? 3.19 or later than
-> that?
+>> Actually 2 of the MMC nodes in tegra114-roth.dts (for SD card and eMMC) have
+>> a vmmc-supply property, so for two of them at least mmc->supply.vmmc is a
+>> valid pointer.
+>>
+>
+> I must have been looking at an old version of the file.  Thanks for
+> clearing this up.
+>
+>> As explained above, vmmc is a valid pointer for 2 instances of the MMC
+>> controller. Interestingly, if I just remove the "return" line in the
+>> IS_ERR() block (without moving it around), the issue also seems to be fixed.
+>>
+>>>
+>>> Can you provide the relevant parts of the log before the problem occurs?
+>>
+>>
+>> There is not much unfortunately ; the only relevant log I have is this:
+>>
+>> [   12.246022] mmc2: Timeout waiting for hardware interrupt.
+>> [   12.264990] mmc2: Controller never released inhibit bit(s).
+>>
+>> Some hardware interrupt timed out. I don't know much about the MMC
+>> subsystem. but could it be because initially the controller is not in a
+>> powered-on state, and that return statement causes the function to leave it
+>> unpowered?
+>
+> In a nutshell, the issue here is that the SDHCI spec demands that VMMC
+> be supplied by the controller itself with the specific voltage
+> configured using the SDHCI_POWER_CONTROL register but almost nobody
+> does this.  Many SoCs omit this capability from their controllers and
+> instead rely upon external regulators.  In such cases there isn't
+> normally any need to update the voltage bits of the power control
+> register.  It sounds like you are saying this isn't true for the
+> Tegra114.
 
-Thanks, and not yet implemented, I'd like to ask people about the format etc.
-before that :)
+Thanks for your explanation, it makes sense now.
 
->> Of course, this has a downside that the user must have a privilege to access to debugfs.
->> Thus maybe we need both of prctl() IF for perf and this IF for ftrace.
-> 
-> I don't have any particularly strong feelings about the solution as long
-> as I'm able to create this "synchronisation point" of mine in the perf
-> data. In one of this patch's previous incarnations I was also doing a
-> write() to the perf fd to achieve pretty much the same result.
-> 
-> In my personal use case root access to debugfs isn't a problem (I need
-> it for other ftrace operations anyway). However Ingo and some other guys
-> seemed interested in prctl() approach because: 1. it's much simpler to
-> use even comparing with simple trace_marker's open(path)/write()/close()
-> and 2. because any process can do it at any time and the results are
-> quietly discarded if no one is listening. I also remember that when I
-> proposed sort of "unification" between trace_marker and the uevents,
-> Ingo straight away "suggested" keeping it separate.
+Looking at other Tegra boards .dts I noticed that SHIELD is the only one 
+using a vmmc-supply. Maybe this is the part that is wrong? I wrote this 
+DTS and cannot exclude I misread the schematics. Maybe that regulator is 
+used for some other (still sdmmc-related) purpose but the actual power 
+provider is the controller itself.
 
-Agreed, I think we can keep trace_marker opened (so application will just
-need to write() the events), but for the second reason, prctl will be
-better for per-application usage. Actually, ftrace is "system-wide" oriented,
-but the perf is not.
+If you can confirm that the driver is performing as it should, I will 
+look in that direction and revise my DTS.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks!
+Alex.
 
 
