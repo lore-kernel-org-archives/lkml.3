@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaKEHS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 02:18:57 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54823 "EHLO
+	id S1753453AbaKEHTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 02:19:03 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54844 "EHLO
 	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaKEHSx (ORCPT
+	with ESMTP id S1752664AbaKEHSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 02:18:53 -0500
+	Wed, 5 Nov 2014 02:18:54 -0500
 X-Original-SENDERIP: 10.177.226.38
 X-Original-MAILFROM: byungchul.park@lge.com
 From: byungchul.park@lge.com
 To: rostedt@goodmis.org, mingo@redhat.com
 Cc: linux-kernel@vger.kernel.org, seungho1.park@lge.com, jolsa@redhat.com,
         Byungchul Park <byungchul.park@lge.com>
-Subject: [PATCH v2 1/3] tracing, function_graph: fix micro seconds notation in comment
-Date: Wed,  5 Nov 2014 16:18:44 +0900
-Message-Id: <1415171926-9782-2-git-send-email-byungchul.park@lge.com>
+Subject: [PATCH v2 3/3] tracing: add additional marks to signal very large delay
+Date: Wed,  5 Nov 2014 16:18:46 +0900
+Message-Id: <1415171926-9782-4-git-send-email-byungchul.park@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
 References: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
@@ -25,56 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Byungchul Park <byungchul.park@lge.com>
 
-Usually, "msecs" notation means milli-seconds, and "usecs" notation
-means micro-seconds. Since the unit used in the code is micro-seconds,
-the notation should be replaced from msecs to usecs.
+Currently, some tracers tracing latency print "!" or "+" just after time
+to signal overhead, depending on the interval between events. Even it is
+usually enough to do that, we sometimes need to be signaled for bigger
+interval than 100 micro seconds.
 
 Signed-off-by: Byungchul Park <byungchul.park@lge.com>
 ---
- kernel/trace/trace_functions_graph.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ Documentation/trace/ftrace.txt |    8 +++++---
+ kernel/trace/trace_output.c    |   15 ++++++++++-----
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index f0a0c98..cb33f46 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -759,19 +759,19 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
- {
- 	unsigned long nsecs_rem = do_div(duration, 1000);
- 	/* log10(ULONG_MAX) + '\0' */
--	char msecs_str[21];
-+	char usecs_str[21];
- 	char nsecs_str[5];
- 	int ret, len;
- 	int i;
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index f827e2f..64efb3e 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -680,9 +680,11 @@ The above is mostly meaningful for kernel developers.
+ 	 needs to be fixed to be only relative to the same CPU.
+ 	 The marks are determined by the difference between this
+ 	 current trace and the next trace.
+-	  '!' - greater than preempt_mark_thresh (default 100)
+-	  '+' - greater than 1 microsecond
+-	  ' ' - less than or equal to 1 microsecond.
++	  '$' - greater than 1 second
++	  '#' - greater than 1000 microsecond
++	  '!' - greater than 100 microsecond
++	  '+' - greater than 10 microsecond
++	  ' ' - less than or equal to 10 microsecond.
  
--	sprintf(msecs_str, "%lu", (unsigned long) duration);
-+	sprintf(usecs_str, "%lu", (unsigned long) duration);
+   The rest is the same as the 'trace' file.
  
- 	/* Print msecs */
--	ret = trace_seq_printf(s, "%s", msecs_str);
-+	ret = trace_seq_printf(s, "%s", usecs_str);
- 	if (!ret)
- 		return TRACE_TYPE_PARTIAL_LINE;
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index c6977d5..e63fac3 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -124,7 +124,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
  
--	len = strlen(msecs_str);
-+	len = strlen(usecs_str);
+ 	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
+ 		trace_seq_printf(p, "0x%lx", val);
+-		
++
+ 	trace_seq_putc(p, 0);
  
- 	/* Print nsecs (we don't want to exceed 7 numbers) */
- 	if (len < 7) {
-@@ -822,10 +822,10 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+ 	return ret;
+@@ -471,7 +471,13 @@ lat_print_generic(struct trace_seq *s, struct trace_entry *entry, int cpu)
+ 	return trace_print_lat_fmt(s, entry);
+ }
  
- 	/* Signal a overhead of time execution to the output */
- 	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
--		/* Duration exceeded 100 msecs */
-+		/* Duration exceeded 100 usecs */
- 		if (duration > 100000ULL)
- 			ret = trace_seq_puts(s, "! ");
--		/* Duration exceeded 10 msecs */
-+		/* Duration exceeded 10 usecs */
- 		else if (duration > 10000ULL)
- 			ret = trace_seq_puts(s, "+ ");
+-static unsigned long preempt_mark_thresh_us = 100;
++DEFINE_MARK_STRUCT = {
++	DEFINE_MARK(0ULL		, ' '), /* 0 usecs */
++	DEFINE_MARK(10000ULL		, '+'), /* 10 usecs */
++	DEFINE_MARK(100000ULL		, '!'), /* 100 usecs */
++	DEFINE_MARK(1000000ULL		, '#'), /* 1000 usecs */
++	DEFINE_MARK(1000000000ULL	, '$'), /* 1 sec */
++};
+ 
+ static int
+ lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
+@@ -506,8 +512,7 @@ lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
+ 		return trace_seq_printf(
+ 				s, " %4lldus%c: ",
+ 				abs_ts,
+-				rel_ts > preempt_mark_thresh_us ? '!' :
+-				  rel_ts > 1 ? '+' : ' ');
++				MARK(rel_ts * NSEC_PER_USEC));
+ 	} else { /* !verbose && !in_ns */
+ 		return trace_seq_printf(s, " %4lld: ", abs_ts);
  	}
+@@ -692,7 +697,7 @@ int register_ftrace_event(struct trace_event *event)
+ 				goto out;
+ 
+ 		} else {
+-			
++
+ 			event->type = next_event_type++;
+ 			list = &ftrace_event_list;
+ 		}
 -- 
 1.7.9.5
 
