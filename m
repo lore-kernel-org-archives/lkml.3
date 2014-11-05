@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaKEUOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:14:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:36377 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbaKEUOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:14:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="412009913"
-Date: Wed, 5 Nov 2014 12:14:33 -0800
-From: sostalle <sean.stalley@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: steph <stephanie.s.wallick@intel.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 01/10] added media agnostic (MA) USB HCD driver
-Message-ID: <20141105201433.GA4354@sean.stalley.intel.com>
-References: <1415047377-3139-1-git-send-email-stephanie.s.wallick@intel.com>
- <1415047377-3139-2-git-send-email-stephanie.s.wallick@intel.com>
- <20141103212139.GB7379@kroah.com>
- <20141104000442.GC8890@steph-desktop>
- <20141104001355.GA10900@kroah.com>
+	id S1752317AbaKEUO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:14:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:21365 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752284AbaKEUO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 15:14:56 -0500
+Date: Wed, 5 Nov 2014 15:14:46 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 05/12 v3] tracing: Convert seq_buf fields to be
+ like seq_file fields
+Message-ID: <20141105151446.5c4adb7f@gandalf.local.home>
+In-Reply-To: <20141105155710.GG4570@pathway.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+	<20141104160222.195301024@goodmis.org>
+	<20141105155710.GG4570@pathway.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104001355.GA10900@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 04:13:55PM -0800, Greg KH wrote:
-> On Mon, Nov 03, 2014 at 04:04:42PM -0800, steph wrote:
-> > On Mon, Nov 03, 2014 at 01:21:39PM -0800, Greg KH wrote:
-> > > On Mon, Nov 03, 2014 at 12:42:48PM -0800, Stephanie Wallick wrote:
-[snip] 
-> > > > +static int mausb_hcd_init(void)
-> > > > +{
-> > > > +	int ret;
-> > > > +
-> > > > +	/* register HCD driver */
-> > > > +	ret = platform_driver_register(&mausb_driver);
-> > > 
-> > > Why is this a platform driver?  How does this relate to platform
-> > > hardware?
-> > > 
-> > The driver doesn't require platform resources. It looks like a host
-> > controller driver but communicates over the network instead of to
-> > a physical host controller. There is no MA USB-specific hardware.
+On Wed, 5 Nov 2014 16:57:11 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
+
+> On Tue 2014-11-04 10:52:42, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > > 
-> > Should we use a struct device instead of a struct platform_device?
+> > In facilitating the conversion of seq_file to use seq_buf,
+> > have the seq_buf fields match the types used by seq_file.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/seq_buf.h | 8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> > index 6d1c57d6073f..a4d114e6f740 100644
+> > --- a/include/linux/seq_buf.h
+> > +++ b/include/linux/seq_buf.h
+> > @@ -19,10 +19,10 @@
+> >   * @overflow:	Set if more bytes should have been written to buffer
+> >   */
+> >  struct seq_buf {
+> > -	unsigned char		*buffer;
+> > -	unsigned int		size;
+> > -	unsigned int		len;
+> > -	unsigned int		readpos;
+> > +	char			*buffer;
 > 
-> Yes, please make it a "virtual" device.
+> It would make sense to use "char" from the beginning. In fact, it is
+> already used on many locations in seq_buf.c. Or we might want to get
+> rid of "unsigned char" in seq_buf.c here as well.
+
+I could, but I'm being lazy ;-) No reason to change the patch series for
+something as small as this. It doesn't break bisect.
+
 > 
+> > +	size_t			size;
+> > +	size_t			len;
+> > +	loff_t			readpos;
+> 
+> I have just noticed that the variable is called "read_pos" in
+> seq_file. Are you going to sync the name later?
 
-Is it OK for our virtual host controller to use struct platform_device?
+Yeah, I purposely kept them different to find the two when needed.
 
-The other virtual host controllers (usbip/vhci_hcd.c & gadget/udc/dummy_hcd.c)
-use the platform_device struct. Unless I am missing something, it doesn't look
-like the other virtual host controllers use platform resources.
+> 
+> Also I am a bit curious that "readpos" use another type than "len"
+> and "size". Well, this is not in the scope of this patchset. I am fine
+> with keeping "loff_t" at this point.
 
-If it is not ok, is there a good example somewhere of a virtual non-platform
-device?
+Again, seq_file has been around for a long time with these types. But
+as you said, it's out of scope for this patch series. I'm just trying
+to keep with what's been the norm here.
 
-Thank You,
-Sean O. Stalley
+-- Steve
