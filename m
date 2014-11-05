@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaKEH35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 02:29:57 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:59441 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096AbaKEH34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 02:29:56 -0500
-Message-ID: <1415172590.2589.1.camel@sipsolutions.net>
-Subject: Re: [PATCH v1 10/11] backports: prefix c-file / h-file auto
- backport with BPAUTO
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de
-Date: Wed, 05 Nov 2014 08:29:50 +0100
-In-Reply-To: <20141105002147.GJ12953@wotan.suse.de>
-References: <1415090582-14129-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1415090582-14129-11-git-send-email-mcgrof@do-not-panic.com>
-	 <1415096092.2064.13.camel@sipsolutions.net>
-	 <20141104215002.GF12953@wotan.suse.de>
-	 <1415137850.2064.23.camel@sipsolutions.net>
-	 <20141105002147.GJ12953@wotan.suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753444AbaKEHaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 02:30:55 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:12959 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaKEHay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 02:30:54 -0500
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] x86/iommu: fix incorrect bit operations in setting values
+Date: Wed,  5 Nov 2014 15:30:19 +0800
+Message-Id: <1415172619-4801-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 2.0.0-rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 01:21 +0100, Luis R. Rodriguez wrote:
+The function context_set_address_root() and set_root_value are setting new
+address in a wrong way, and this patch is trying to fix this problem.
 
-> > > I did at one point have BACKPORT_BPAUTO_* stuff on the compat/Kconfig for
-> > > the auto stuff but figured that was superfluous. I'll respin with it.
-> > 
-> > Not sure what you mean? It seems to me you should just drop the changes
-> > like the one I quoted above.
-> 
-> If we keep BACKPORT_BPAUTO as prefix on compat/Kconfig for auto backport
-> stuff we'll end up with BACKPORT_BACKPORT_BPAUTO, while technically correct
-> as you have pointed out, I find it personally superfluous. If we however
-> only use BPAUTO_ prefix on the compat/Kconfig we'll end up with BACKPORT_BPAUTO.
+According to Intel Vt-d specs(Feb 2011, Revision 1.3), Chapter 9.1 and 9.2,
+field ctp in root entry is using bits 12:63, field asr in context entry is
+using bits 12:63.
 
-Correct.
+To set these fields, the following functions are used:
+static inline void context_set_address_root(struct context_entry *context,
+        unsigned long value);
+and
+static inline void set_root_value(struct root_entry *root, unsigned long value)
 
-> Its subjective then, but I was opting in to prefer to just keep BPAUTO_ prefix
-> with the resulting CPTCFG_BPAUTO for packaging and CONFIG_BACKPORT_BPAUTO for
-> integration for these, if you however feel its best to double the BACKPORT
-> prefix that's fine too, it just seemed odd (although I realize correct).
+But they are using an invalid method to set these fields, in current code, only
+a '|' operator is used to set it. This will not set the asr to the expected
+value if it has an old value.
 
-No, I'm perfectly happy with CPTCFG_BPAUTO. But the *code* changes
-you're making here that check whether bp_prefix is being duplicated
-aren't necessary for that, and are in fact confusing and dangerous.
+For example:
+Before calling this function,
+	context->lo = 0x3456789012111;
+	value = 0x123456789abcef12;
 
-johannes
+After we call context_set_address_root(context, value), expected result is
+	context->lo == 0x123456789abce111;
+
+But the actual result is:
+	context->lo == 0x1237577f9bbde111;
+
+So we need to clear bits 12:63 before setting the new value, this will fix
+this problem.
+
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/iommu/intel-iommu.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index a27d6cb..11ac47b 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -195,6 +195,7 @@ static inline void set_root_present(struct root_entry *root)
+ }
+ static inline void set_root_value(struct root_entry *root, unsigned long value)
+ {
++	root->val &= ~VTD_PAGE_MASK;
+ 	root->val |= value & VTD_PAGE_MASK;
+ }
+ 
+@@ -247,6 +248,7 @@ static inline void context_set_translation_type(struct context_entry *context,
+ static inline void context_set_address_root(struct context_entry *context,
+ 					    unsigned long value)
+ {
++	context->lo &= ~VTD_PAGE_MASK;
+ 	context->lo |= value & VTD_PAGE_MASK;
+ }
+ 
+-- 
+2.0.0-rc0
 
