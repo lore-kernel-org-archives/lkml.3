@@ -1,40 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717AbaKEQCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:02:06 -0500
-Received: from mga14.intel.com ([192.55.52.115]:26148 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755683AbaKEQCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:02:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411879162"
-Message-ID: <1415203295.958.133.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 03/35] UBI: Fastmap: Add self check to detect absent PEBs
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tlinder@codeaurora.org
-Date: Wed, 05 Nov 2014 18:01:35 +0200
-In-Reply-To: <545A48BD.9010904@nod.at>
-References: <1414586758-9972-1-git-send-email-richard@nod.at>
-		 <1414586758-9972-4-git-send-email-richard@nod.at>
-	 <1415201029.958.118.camel@sauron.fi.intel.com> <545A48BD.9010904@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755583AbaKEQBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:01:52 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43028 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755338AbaKEQBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:01:40 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 10/11] ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
+Date: Wed,  5 Nov 2014 17:01:26 +0100
+Message-Id: <1415203287-21517-11-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 16:56 +0100, Richard Weinberger wrote:
->  I did that to have alloc and free balanced.
-> I.e. to not have a naked kfree(). Always when I see a kfree()
-> somewhere
-> I'd like to see the k*alloc().
+Add EBI node and EBI pin muxing.
 
-OK. Please, just make the comment simpler then. Say that you are freeing
-the debugging buffer or something.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ arch/arm/boot/dts/sama5d3.dtsi | 83 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 83 insertions(+)
+
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index d49dab7..d011ade 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -530,6 +530,63 @@
+ 					};
+ 				};
+ 
++				ebi {
++					pinctrl_ebi_addr: ebi-addr-0 {
++						atmel,pins =
++							<AT91_PIOE 0 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 1 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 2 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 3 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 4 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 5 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 6 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 7 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 8 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 9 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 10 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 11 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 12 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 13 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 14 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 15 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 16 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 17 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 18 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 19 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 20 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 21 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 22 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 23 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 24 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOE 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_ebi_cs0: ebi-cs0-0 {
++						atmel,pins =
++							<AT91_PIOE 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_ebi_cs1: ebi-cs1-0 {
++						atmel,pins =
++							<AT91_PIOE 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_ebi_cs2: ebi-cs2-0 {
++						atmel,pins =
++							<AT91_PIOE 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_ebi_nwr1_nbs1: ebi-nwr1-nbs1-0 {
++						atmel,pins =
++							<AT91_PIOE 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++
++					pinctrl_ebi_nwait: ebi-nwait-0 {
++						atmel,pins =
++							<AT91_PIOE 30 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				i2c0 {
+ 					pinctrl_i2c0: i2c0-0 {
+ 						atmel,pins =
+@@ -1407,6 +1464,32 @@
+ 			status = "disabled";
+ 		};
+ 
++		ebi: ebi@10000000 {
++			compatible = "atmel,sama5d3-ebi", "simple-bus";
++			#address-cells = <2>;
++			#size-cells = <1>;
++			atmel,smc = <&hsmc>;
++			atmel,matrix = <&matrix>;
++			reg = <0x10000000 0x10000000
++			       0x40000000 0x30000000>;
++			ranges = <0x0 0x0 0x10000000 0x10000000
++				  0x1 0x0 0x40000000 0x10000000
++				  0x2 0x0 0x50000000 0x10000000
++				  0x3 0x0 0x60000000 0x10000000>;
++			clocks = <&mck>;
++
++			/*
++			 * TODO: EBI pins should be referenced here, but they
++			 * conflict with NAND pins, which should actually be a
++			 * sub device of the EBI bus and thus should not
++			 * request it's own set of pins as they are shared
++			 * with other devices connected on the EBI bus.
++			 *
++			 * pinctrl-names = "default";
++			 * pinctrl-0 = <&pinctrl_ebi_addr>;
++			 */
++		};
++
+ 		nand0: nand@60000000 {
+ 			compatible = "atmel,at91rm9200-nand";
+ 			#address-cells = <1>;
+-- 
+1.9.1
 
