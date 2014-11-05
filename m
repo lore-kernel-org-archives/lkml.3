@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaKEVqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:46:39 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:50574 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaKEVqf (ORCPT
+	id S1751558AbaKEVss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:48:48 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:37499 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaKEVsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:46:35 -0500
+	Wed, 5 Nov 2014 16:48:45 -0500
+Date: Wed, 5 Nov 2014 13:48:42 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH] mm: slub: fix format mismatches in slab_err() callers
+In-Reply-To: <1415200341-9619-1-git-send-email-a.ryabinin@samsung.com>
+Message-ID: <alpine.DEB.2.10.1411051344490.31575@chino.kir.corp.google.com>
+References: <1415200341-9619-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <545912D2.5090708@codeaurora.org>
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
- <20141104082056.GG1618@lahna.fi.intel.com> <545912D2.5090708@codeaurora.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 5 Nov 2014 21:46:14 +0000
-X-Google-Sender-Auth: P3JFkDURXSrxLO6imkAB3DnbWuY
-Message-ID: <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-382633830-1415224123=:31575"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 5:54 PM, Timur Tabi <timur@codeaurora.org> wrote:
-> On 11/04/2014 02:20 AM, Mika Westerberg wrote:
->>
->> There is nothing like that yet in ACPI world but with the ACPI _DSD
->> patches we are getting properties similar to DT which means that we can
->> provide pinctrl bindings from ACPI systems as well.
->
->
-> Do you know if anyone has signed up to actually do the work of defining how
-> pinctrl will look in ACPI?  I'm guessing the simplest approach would be to:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Actually, for the most part we /don't/ want to try and put pinctrl
-into an ACPI binding. The assumption is that on an ACPI platform it
-would be the combination of ACPI and firmware responsible for the pin
-mappings, not the operating system.
+--531381512-382633830-1415224123=:31575
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Before even attempting to put pinctrl mappings into your driver, there
-should instead be a conversation at the ACPI spec level about whether
-or not it makes sense and what such a binding should look like.
+On Wed, 5 Nov 2014, Andrey Ryabinin wrote:
 
-g.
+> Adding __printf(3, 4) to slab_err exposed following:
+> 
+> mm/slub.c: In function ‘check_slab’:
+> mm/slub.c:852:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
+>     s->name, page->objects, maxobj);
+>     ^
+> mm/slub.c:852:4: warning: too many arguments for format [-Wformat-extra-args]
+> mm/slub.c:857:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
+>     s->name, page->inuse, page->objects);
+>     ^
+> mm/slub.c:857:4: warning: too many arguments for format [-Wformat-extra-args]
+> 
+
+Wow, that's an ancient issue, thanks for finding it.
+
+> mm/slub.c: In function ‘on_freelist’:
+> mm/slub.c:905:4: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘long unsigned int’ [-Wformat=]
+>     "should be %d", page->objects, max_objects);
+> 
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/slub.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 80c170e..850a94a 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -849,12 +849,12 @@ static int check_slab(struct kmem_cache *s, struct page *page)
+>  	maxobj = order_objects(compound_order(page), s->size, s->reserved);
+>  	if (page->objects > maxobj) {
+>  		slab_err(s, page, "objects %u > max %u",
+> -			s->name, page->objects, maxobj);
+> +			page->objects, maxobj);
+>  		return 0;
+>  	}
+>  	if (page->inuse > page->objects) {
+>  		slab_err(s, page, "inuse %u > max %u",
+> -			s->name, page->inuse, page->objects);
+> +			page->inuse, page->objects);
+>  		return 0;
+>  	}
+>  	/* Slab_pad_check fixes things up after itself */
+> @@ -902,7 +902,7 @@ static int on_freelist(struct kmem_cache *s, struct page *page, void *search)
+>  
+>  	if (page->objects != max_objects) {
+>  		slab_err(s, page, "Wrong number of objects. Found %d but "
+> -			"should be %d", page->objects, max_objects);
+> +			"should be %ld", page->objects, max_objects);
+>  		page->objects = max_objects;
+>  		slab_fix(s, "Number of objects adjusted.");
+>  	}
+
+Instead of this hunk, I think that max_objects should be declared as int 
+rather than unsigned long since that's what order_objects() returns and it 
+is being compared to page->objects which is also int.
+--531381512-382633830-1415224123=:31575--
