@@ -1,203 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaKEMAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 07:00:01 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:59795 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126AbaKEL76 (ORCPT
+	id S1754716AbaKEMBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 07:01:39 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:48798 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaKEMBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 06:59:58 -0500
-Date: Wed, 5 Nov 2014 12:56:43 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Nix <nix@esperi.org.uk>
-Cc: Johan Hovold <johan@kernel.org>, Paul Martin <pm@debian.org>,
-        Daniel Silverstone <dsilvers@debian.org>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm)
- broken in 3.16
-Message-ID: <20141105115643.GR31358@localhost>
-References: <20141011195108.GA8275@thinkpad.nowster.org.uk>
- <87y4smz1l0.fsf@spindle.srvr.nix>
- <20141012185845.GB2786@localhost>
- <878uklynq9.fsf@spindle.srvr.nix>
- <20141014083432.GB7958@localhost>
- <871tq04fiy.fsf@spindle.srvr.nix>
- <20141022101458.GK2113@localhost>
- <87y4s8yv38.fsf@spindle.srvr.nix>
- <20141024111442.GA19377@localhost>
- <87d298i3y9.fsf@spindle.srvr.nix>
+	Wed, 5 Nov 2014 07:01:38 -0500
+Date: Wed, 5 Nov 2014 12:01:31 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 8/9] mtd: nand: stm_nand_bch: add support for ST's BCH
+ NAND controller
+Message-ID: <20141105120131.GA26543@x1>
+References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
+ <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
+ <20141006062127.GH3248@norris-Latitude-E6410>
+ <20141009143923.GR20647@lee--X1>
+ <20141015230213.GY1193@ld-irv-0074>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <87d298i3y9.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141015230213.GY1193@ld-irv-0074>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 04:44:46PM +0000, Nix wrote:
-> Sorry for the delay: illness and work-related release time flurries.
+On Wed, 15 Oct 2014, Brian Norris wrote:
+
+> On Thu, Oct 09, 2014 at 03:39:23PM +0100, Lee Jones wrote:
+> > > > +static int check_erased_page(uint8_t *data, uint32_t page_size, int max_zeros)
+> > > > +{
+> > > > +	uint8_t *b = data;
+> > > > +	int zeros = 0;
+> > > > +	int i;
+> > > > +
+> > > > +	for (i = 0; i < page_size; i++) {
+> > > > +		zeros += hweight8(~*b++);
+> > > > +		if (zeros > max_zeros)
+> > > > +			return -1;
+> > > > +	}
+> > > > +
+> > > > +	if (zeros)
+> > > > +		memset(data, 0xff, page_size);
+> > > > +
+> > > > +	return zeros;
+> > > > +}
+> > > 
+> > > I pointed out some flaws in this function back in July [1]. You said
+> > > you'd look into this one [2]. I really don't want to accept yet another
+> > > custom, unsound erased-page check if at all possible.
+> > 
+> > That's not quite true.  I said that I think it doesn't matter about
+> > not taking the OOB area into consideration, which I still believe is
+> > the case.  This controller does not allow access into the OOB area.
 > 
-> On 24 Oct 2014, Johan Hovold told this:
+> Perhaps I'm not being clear enough.
 > 
-> > [ +CC: linux-usb ]
-> >
-> > On Wed, Oct 22, 2014 at 04:36:59PM +0100, Nix wrote:
-> >> On 22 Oct 2014, Johan Hovold outgrape:
-> >> 
-> >> > On Wed, Oct 22, 2014 at 10:31:17AM +0100, Nix wrote:
-> >> >> On 14 Oct 2014, Johan Hovold verbalised:
-> >> >> 
-> >> >> > On Sun, Oct 12, 2014 at 10:36:30PM +0100, Nix wrote:
-> >> >> >> I have checked: this code is being executed against a symlink that
-> >> >> >> points to /dev/ttyACM0, and the tcsetattr() succeeds. (At least, it's
-> >> >> >> succeeding on the kernel I'm running now, but of course that's 3.16.5
-> >> >> >> with this commit reverted...)
-> >> >> >
-> >> >> > You could verify that by enabling debugging in the cdc-acm driver and
-> >> >> > making sure that the corresponding control messages are indeed sent on
-> >> >> > close.
-> >> >> 
-> >> >> I have a debugging dump at
-> >> >> <http://www.esperi.org.uk/~nix/temporary/cdc-acm.log>; it's fairly
-> >> >
-> >> > What kernel were you using here? The log seems to suggest that it was
-> >> > generated with the commit in question reverted.
-> >> 
-> >> Look now :) (the previous log is still there in cdc-acm-reverted.log.)
-> >
-> > Unfortunately, it seems the logs are incomplete. There are lots of
-> > entries missing (e.g. "acm_tty_install" when opening, but also some
-> > "acm_submit_read_urb"), some of which were there in your first log.
+> While the controller may not allow you to program the spare area
+> directly, you do so implicitly by allowing the controller to program BCH
+> parity bytes to the spare area, right? So when you want to check if the
+> page is blank, you have to consider ALL areas that will be used -- both
+> in-band and out-of-band.
 > 
-> OK. What we have now in
-> <http://www.esperi.org.uk/~nix/temporary/cdc-acm.log> is a log from the
-> pristine upstream 3.16.6 kernel with cdc-acm debugging turned on and the
-> acm_tty_write - count stuff in acm_tty_write() disabled: I've increased
-> the dmesg buffer size so the top isn't being cut off any more. It took a
-> lot of boots for it to fail this time: about a dozen. The log contains
-> the boot that failed and the one before.
+> So, I'll repeat my question and try to elaborate:
 > 
-> (To my uneducated eye, the initial traffic to/from the key looks *very*
-> different in the second boot. Something is clearly wrong by this point,
-> but that's not much of a surprise!)
-
-The log appears incomplete again, this time it seems the last part is
-completely missing (the device is never closed for example). The device
-still seems to be responding.
-
-> >> This contains two boots -- one on which the USB key worked, and the next
-> >> (with an identical kernel) with which the key was broken. (I'm not sure
-> >> whether this problem happens at startup or shutdown time, so it seemed
-> >> best to provide both.)
-> >
-> > That's a good idea.
-> >
-> > Is it only after reboot you've seen the device fail?
+>   "What if this is a mostly-blank page, with ECC data, but most of the
+>   bitflips are in the spare area? Then you will "correct" this page to
+>   all 0xFF, not noticing that this was really not a blank page at all."
 > 
-> So far.
+> More specifically:
 > 
-> >                                                      What if you
-> > physically disconnect and reconnect the device instead, or simply
+>   1. Suppose you program a page with just a single byte of non-0xff
+>   data, and your correction strength is at least 8 bits per sector
 > 
-> That fixes it, in fact it's the only way to fix it once it's broken by
-> this bug.
-
-I didn't mean whether it would get the device working again, but rather
-whether you could kill it this way.
-
-> > repeatedly open and close it?
+>   2. When programming this page, your BCH controller writes parity bytes
+>   to the spare area
 > 
-> Hm. Good idea.
-
-Same here, but the below test was also informative.
- 
-> ... no, that doesn't help. Additional log from that shows a lot of what
-> looks like error returns:
+>   3. Over time (a lot of reads, for example), suppose you develop a lot
+>   of bit flips in the spare area, such that your controller cannot
+>   correct them any longer
 > 
-> Oct 31 16:38:03 fold kern debug: : [  168.135213] cdc_acm 2-1:1.0: acm_tty_close
-> Oct 31 16:38:08 fold kern debug: : [  173.130531] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x0, len 0x0, result -110
+> Now consider two algorithms:
+> 
+>   (A) Your current proposal, to just check the in-band data that you can
+>   easily access. If there are more than X zero-bits in the page, return
+>   an error. Otherwise, clear the page and log a correctable error.
+> 
+>   (B) My suggestion, to check both the in-band and out-of-band. Same as
+>   algorithm (A), except you check for X total zero-bits in both the
+>   in-band and out-of-band
+> 
+> In the scenario I described, algorithm A will only notice up to 8 zero
+> bits (in that single byte we programmed), so if X is greater than 8,
+> algorithm A will falsely declare this an erased page and silently
+> clobber the data we programmed to it.
+> 
+> Algorithm B would notice that there are many zero bits in the spare area
+> (due to the programmed parity bytes) and will correctly declare this a
+> corrupt, non-erased page.
+> 
+> If I've made any false assumptions in here, please point them out. But
+> otherwise, I'd say that any erased-page detection algorithm that ignores
+> the spare area is incorrect.
+> 
+> If you agree with me, then you have at least two options:
+> 
+> (1) Remove this erased page check entirely from the initial driver, with
+>     a TODO item to add spare area read support and to improve this
+>     algorithm
+> 
+> (2) Keep the check as-is, but put a large FIXME warning which notes why
+>     the algorithm is wrong. It's possible the wrong algorithm is still
+>     marginally better than no erased-page detection at all. I'm not sure
+>     what the probability distributions are like for this sort of error.
 
-Yeah, it seems your device firmware has crashed. It stops responding to
-control requests.
+Thanks for taking the time to explain your points so thoughly, I
+appreciate that a great deal.  After chatting with Angus it transpires
+that check_erased_page() does not check the OOB intentionally. This
+behaviour is documented (in a Documentation/ file that I didn't know
+exsited).  I will take the liberty of placing an extract of this
+document and placing it in the driver as a comment.
 
-> Oct 31 16:38:08 fold kern debug: : [  173.130557] cdc_acm 2-1:1.0: acm_port_shutdown
-> Oct 31 16:38:08 fold kern debug: : [  173.131475] cdc_acm 2-1:1.0: acm_ctrl_irq - urb shutting down with status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.132474] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.132519] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.133473] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.133510] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.134471] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.134507] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.135471] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.135509] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.136472] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.136507] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.137471] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.137517] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.138471] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.138520] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.139469] cdc_acm 2-1:1.1: acm_write_bulk - len 0/1, status -2
-> Oct 31 16:38:08 fold kern debug: : [  173.139515] cdc_acm 2-1:1.1: acm_softint
-> Oct 31 16:38:08 fold kern debug: : [  173.140470] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 0, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.140491] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.141469] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 1, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.141489] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.142469] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 2, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.142490] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.143468] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 3, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.143488] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.144468] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 4, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.144488] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.145467] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 5, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.145488] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.146467] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 6, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.146487] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.147477] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 7, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.147498] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.153496] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 8, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.153524] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.154468] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 9, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.154489] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.155466] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 10, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.155487] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.156466] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 11, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.156487] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.157466] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 12, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.157487] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.158466] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 13, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.158486] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.159465] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 14, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.159486] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.160475] cdc_acm 2-1:1.1: acm_read_bulk_callback - urb 15, len 0
-> Oct 31 16:38:08 fold kern debug: : [  173.160496] cdc_acm 2-1:1.1: acm_read_bulk_callback - non-zero urb status: -2
-> Oct 31 16:38:08 fold kern debug: : [  173.160567] tty ttyACM0: acm_tty_open
-> Oct 31 16:38:08 fold kern debug: : [  173.160588] cdc_acm 2-1:1.0: acm_port_activate
-> Oct 31 16:38:08 fold kern debug: : [  173.160626] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 0
-> Oct 31 16:38:08 fold kern debug: : [  173.160651] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 1
-> Oct 31 16:38:08 fold kern debug: : [  173.160674] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 2
-> Oct 31 16:38:08 fold kern debug: : [  173.160796] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 3
-> Oct 31 16:38:08 fold kern debug: : [  173.160820] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 4
-> Oct 31 16:38:08 fold kern debug: : [  173.160842] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 5
-> Oct 31 16:38:08 fold kern debug: : [  173.160863] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 6
-> Oct 31 16:38:08 fold kern debug: : [  173.160884] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 7
-> Oct 31 16:38:08 fold kern debug: : [  173.160906] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 8
-> Oct 31 16:38:08 fold kern debug: : [  173.160927] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 9
-> Oct 31 16:38:08 fold kern debug: : [  173.160948] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 10
-> Oct 31 16:38:08 fold kern debug: : [  173.160969] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 11
-> Oct 31 16:38:08 fold kern debug: : [  173.160991] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 12
-> Oct 31 16:38:08 fold kern debug: : [  173.161012] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 13
-> Oct 31 16:38:08 fold kern debug: : [  173.161033] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 14
-> Oct 31 16:38:08 fold kern debug: : [  173.161054] cdc_acm 2-1:1.1: acm_submit_read_urb - urb 15
+FYI:
 
-The above is all normal, but
+  "The most robust approach would be to use Hamming-FLEX to re-read the entire
+  raw page+OOB data.  However, it is assumed that just checking the returned
+  'raw' page data offers an acceptable compromise with minimal impact on
+  performance.  (Is is possible to get a genuine uncorrectable ECC error where
+  the page data is all 0xff?)"
 
-> Oct 31 16:38:08 fold kern debug: : [  173.161489] cdc_acm 2-1:1.0: acm_ctrl_msg - rq 0x22, val 0x3, len 0x0, result -62
+> > > > +/* Returns the number of ECC errors, or '-1' for uncorrectable error */
+> > > > +int bch_read_page(struct nandi_controller *nandi,
+> > > > +		  loff_t offs,
+> > > > +		  uint8_t *buf)
+> > > > +{
+> > > > +	struct nand_chip *chip = &nandi->info.chip;
+> > > > +	struct bch_prog *prog = &bch_prog_read_page;
+> > > > +	uint32_t page_size = nandi->info.mtd.writesize;
+> > > > +	unsigned long list_phys;
+> > > 
+> > > Please use dma_addr_t. This is an intentionally opaque (to some degree)
+> > > type.
+> > > 
+> > > > +	unsigned long buf_phys;
+> > > 
+> > > Ditto.
+> > > 
+> > > BTW, is your hardware actually restricted to a 32-bit address space? If
+> > > it has some expanded registers for larger physical address ranges, it'd
+> > > be good to handle the upper bits of the DMA address when mapping. Or
+> > > else, it would be good to reflect this in your driver with
+> > > dma_set_mask() I think.
+> > 
+> > Yes, it's 32bit only.  I will add a call to dma_set_mask() to reflect
+> > this.
+> > 
+> > ... or not.  See below.
 
-here's another timeout. It's dead.
+Added.
 
-Did you get anywhere with trying to look at the device firmware?
+> > > > +	uint32_t ecc_err;
+> > > > +	int ret = 0;
+> > > > +
+> > > > +	dev_dbg(nandi->dev, "%s: offs = 0x%012llx\n", __func__, offs);
+> > > > +
+> > > > +	BUG_ON(offs & (NANDI_BCH_DMA_ALIGNMENT - 1));
+> > > > +
+> > > > +	emiss_nandi_select(nandi, STM_NANDI_BCH);
+> > > > +
+> > > > +	nandi_enable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
+> > > > +	reinit_completion(&nandi->seq_completed);
+> > > > +
+> > > > +	/* Reset ECC stats */
+> > > > +	writel(CFG_RESET_ECC_ALL | CFG_ENABLE_AFM,
+> > > > +	       nandi->base + NANDBCH_CONTROLLER_CFG);
+> > > > +	writel(CFG_ENABLE_AFM, nandi->base + NANDBCH_CONTROLLER_CFG);
+> > > > +
+> > > > +	prog->addr = (uint32_t)((offs >> (chip->page_shift - 8)) & 0xffffff00);
+> > > > +
+> > > > +	buf_phys = dma_map_single(NULL, buf, page_size, DMA_FROM_DEVICE);
+> > > 
+> > > Why NULL for the first arg? You should use the proper device (which will
+> > > help with the 32-bit / 64-bit masking, I think.
+> > > 
+> > > Also, dma_map_single() can fail. It's good practice to check the return
+> > > value with dma_mapping_error(). Same in a few other places.
+> > 
+> > If you do not supply the first parameter here, it falls back to
+> > arm_dma_ops, which is what we want.  I guess this is also why we do
+> > not have to set the DMA mask, as we're running on ARM32, rather than
+> > AARCH64.
+> 
+> I think it's standard practice to make your hardware limitations
+> explicit when writing a driver. From Documentation/DMA-API-HOWTO.txt
+> under "DMA addressing limitations":
+> 
+>   "It is good style to do this even if your device holds the default
+>   setting, because this shows that you did think about these issues wrt.
+>   your device."
+> 
+> But I won't press this issue.
 
-Johan
+As above.  Although, I think the first parameter of dma_map_single()
+needs to stay NULL for the desired behaviour.
+
+> > > > +static int bch_mtd_read_oob(struct mtd_info *mtd,
+> > > > +			    struct nand_chip *chip, int page)
+> > > > +{
+> > > > +	BUG();
+> > > 
+> > > Are you sure this can't be implemented, even if it's not the expected
+> > > mode of operation? That's really unforunate.
+> > 
+> > It can.  We have a 'special' function for it using the extended
+> > flexible mode.  Trying to upstream this has been hard enough already,
+> > without more crud to deal with.  I will hopefully be adding this
+> > functionality as small, succinct patches subsequently.
+> 
+> OK. But this is relevant to my points above -- particularly, you might
+> want the 'read OOB' functionality to properly implement the erased page
+> check.
+
+I have added it anyway, as it's required by our BBT code.
+
+> > > > +	for_each_child_of_node(np, banknp) {
+> > > 
+> > > If you change the DT binding to require a proper compatible property,
+> > > you'll need of_device_is_compatible() here.
+> > 
+> > I see no reason to allocate a compatible property to the bank
+> > descriptors.  They're not being registered/actioned through
+> > of_platform_populate(), so ...
+> 
+> Well, this is all dependent on my comments on your DT binding patches. I
+> commented there that you did, at times, list a "compatible" property,
+> but you never actually used it and/or it was put in the wrong place. If
+> you determine that you do not need the property, then this comment is
+> also not applicable.
+> 
+> One reason for a "compatible" property might be if you have different
+> types of subnodes eventually, and you'll need to differentiate them. I
+> only see a need for a single type of subnode right now (the "bank"), but
+> it's possible you'd need to plan for the future.
+
+Right, if that's the case I'll add them then.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
