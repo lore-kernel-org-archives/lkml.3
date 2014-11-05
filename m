@@ -1,79 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440AbaKEJsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:48:54 -0500
-Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:57676 "EHLO
-	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753884AbaKEJsv (ORCPT
+	id S1754509AbaKEJtT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:49:19 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:42478 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaKEJsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:48:51 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <5459F281.2010302@mev.co.uk>
-Date: Wed, 05 Nov 2014 09:48:49 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Hartley Sweeten <HartleyS@visionengravers.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] staging: comedi: per-file read/write subdevice choice
-References: <1415124541-13648-1-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D8826023C34@P3PWEX4MB008.ex4.secureserver.net>
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8826023C34@P3PWEX4MB008.ex4.secureserver.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Nov 2014 04:48:11 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-d2-5459f2589bfd
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 3/3] mfd: max77686/802: Remove support for board files
+Date: Wed, 05 Nov 2014 10:47:51 +0100
+Message-id: <1415180871-25293-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4Nd2IT5EhBvNuGFpsnLGe1WLqwyds
+	Fkd/F1i8fmFocbbpDbvF/a9HGS2+Xelgsri8aw6bxdojd9ktTnezOnB5/H1+ncVj56y77B6b
+	VnWyedy5tofNY97JQI++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKmPblJVPBGZWKBTuesjcw
+	tsl1MXJwSAiYSOxZm9vFyAlkiklcuLeerYuRi0NIYCmjxIJdW9khnD4miSdnXzODVLEJGEts
+	Xr4ErEpEYBOjxKT+K6wgCWaBZiaJ0+9zQGxhAU+Jg2/XgDWwCKhKzF+zkQnE5hVwl/j2cwIT
+	xDo5iZPHJoP1cgp4SJy6/RGsXgiopnHnBeYJjLwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl
+	5+duYoQE4JcdjIuPWR1iFOBgVOLh9WiKDBFiTSwrrsw9xCjBwawkwst5CSjEm5JYWZValB9f
+	VJqTWnyIkYmDU6qB0UGzdWIb75t+B9YK/5zwk2zn9scbxVlNcnr+Xrj19ud53102P3r70N30
+	4IaOaBuLk/Kmtgvux6iYxOzfc/tA/KvyZVbKNxZ0vVzw5JNXtW4t3/Y9aSo/LQ69fSj5RO69
+	9ffryx5qbhR5nR//b4HDUfPc9jvzttdcip4lm31naU5Lcvdpb2/OSiWW4oxEQy3mouJEAKjh
+	gz8eAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 18:44, Hartley Sweeten wrote:
-> On Tuesday, November 04, 2014 11:09 AM, Ian Abbott wrote:
->> This series of patches adds a couple of ioctl codes to the Comedi core
->> to allow the current "read" and "write" subdevice to be changed after
->> opening the comedi device.  The current read and write subdevice
->> information is stored in file private data allocated for the lifetime of
->> the file object, so the notion of current "read" and "write" subdevice
->> is local to the file object and does not alter anything in the main
->> control structure for the comedi device.  An extra level of indirection
->> is now required to access the main control structure.
->>
->> I've tested the multiple "read" subdevice case using a modified version
->> of the "comedi_test" module (modifying it to clone the existing AI
->> subdevice), and a modified version of the "comedi_test" application
->> (part of the "comedilib" installation) modified to use the new ioctls.
->> There isn't any support in comedilib itself yet.
->>
->> 1) staging: comedi: prepare support for per-file read and write
->>     subdevices
->> 2) staging: comedi: add ioctls to set per-file read and write subdevice
->>
->>   drivers/staging/comedi/comedi.h          |   2 +
->>   drivers/staging/comedi/comedi_compat32.c |   2 +
->>   drivers/staging/comedi/comedi_fops.c     | 217 +++++++++++++++++++++++++++----
->>   3 files changed, 196 insertions(+), 25 deletions(-)
->
-> Ian,
->
-> If I understand this correctly, the user can now open the "comediX"
-> device which will give then access to the default dev->read_subdev
-> and dev->write_subdev. They can then use the new ioctls to change
-> the read/write subdevice and use them without having the open the
-> "comediX_subdY" devices.
->
-> If this is correct it seems like a good idea.
+The driver is used only on Exynos based boards with DTS support.
+After removal of board file support from max77686 and max77802 regulator
+drivers, the MFD driver can be converted to DTS-only version. This
+simplifies a little the code:
+1. No dead (unused) entries in platform_data structure.
+2. More code removed.
+3. Regulator driver does not depend on allocated memory
+   from MFD driver.
+4. It makes also easier extending the regulator driver.
 
-That's correct.
+Add to the max77686 MFD driver dependency on CONFIG_OF because without
+DTS the regulator drivers (max77686 and max77802) won't bind.
 
-> Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/Kconfig                  |  1 +
+ drivers/mfd/max77686.c               | 23 -----------------------
+ include/linux/mfd/max77686-private.h |  1 -
+ include/linux/mfd/max77686.h         | 28 ----------------------------
+ 4 files changed, 1 insertion(+), 52 deletions(-)
 
-Thanks for the review!
-
-> Also, does this mean we can get rid of comedi_alloc_subdevice_minor()
-> and the "comediX_sudbY" stuff?
-
-That would be a bit premature at this stage.  Maybe in a year or two.
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index cbdb10918af1..fd9d19ccf8c0 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -401,6 +401,7 @@ config MFD_MAX14577
+ config MFD_MAX77686
+ 	bool "Maxim Semiconductor MAX77686/802 PMIC Support"
+ 	depends on I2C=y
++	depends on OF
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 929795eae9fc..3da237afacde 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -205,24 +205,10 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
+ 	{ },
+ };
+ 
+-static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+-								  *dev)
+-{
+-	struct max77686_platform_data *pd;
+-
+-	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+-	if (!pd)
+-		return NULL;
+-
+-	dev->platform_data = pd;
+-	return pd;
+-}
+-
+ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+ 	struct max77686_dev *max77686 = NULL;
+-	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	const struct of_device_id *match;
+ 	unsigned int data;
+ 	int ret = 0;
+@@ -233,14 +219,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	const struct mfd_cell *cells;
+ 	int n_devs;
+ 
+-	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
+-		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
+-
+-	if (!pdata) {
+-		dev_err(&i2c->dev, "No platform data found.\n");
+-		return -EINVAL;
+-	}
+-
+ 	max77686 = devm_kzalloc(&i2c->dev,
+ 				sizeof(struct max77686_dev), GFP_KERNEL);
+ 	if (!max77686)
+@@ -259,7 +237,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	max77686->dev = &i2c->dev;
+ 	max77686->i2c = i2c;
+ 
+-	max77686->wakeup = pdata->wakeup;
+ 	max77686->irq = i2c->irq;
+ 
+ 	if (max77686->type == TYPE_MAX77686) {
+diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
+index 960b92ad450d..f5043490d67c 100644
+--- a/include/linux/mfd/max77686-private.h
++++ b/include/linux/mfd/max77686-private.h
+@@ -447,7 +447,6 @@ struct max77686_dev {
+ 	struct regmap_irq_chip_data *rtc_irq_data;
+ 
+ 	int irq;
+-	bool wakeup;
+ 	struct mutex irqlock;
+ 	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
+ 	int irq_masks_cache[MAX77686_IRQ_GROUP_NR];
+diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
+index 553f7d09258a..bb995ab9a575 100644
+--- a/include/linux/mfd/max77686.h
++++ b/include/linux/mfd/max77686.h
+@@ -119,12 +119,6 @@ enum max77802_regulators {
+ 	MAX77802_REG_MAX,
+ };
+ 
+-struct max77686_regulator_data {
+-	int id;
+-	struct regulator_init_data *initdata;
+-	struct device_node *of_node;
+-};
+-
+ enum max77686_opmode {
+ 	MAX77686_OPMODE_NORMAL,
+ 	MAX77686_OPMODE_LP,
+@@ -136,26 +130,4 @@ struct max77686_opmode_data {
+ 	int mode;
+ };
+ 
+-struct max77686_platform_data {
+-	int ono;
+-	int wakeup;
+-
+-	/* ---- PMIC ---- */
+-	struct max77686_regulator_data *regulators;
+-	int num_regulators;
+-
+-	struct max77686_opmode_data *opmode_data;
+-
+-	/*
+-	 * GPIO-DVS feature is not enabled with the current version of
+-	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
+-	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
+-	 */
+-	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
+-	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
+-	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
+-	unsigned int buck3_voltage[8];
+-	unsigned int buck4_voltage[8];
+-};
+-
+ #endif /* __LINUX_MFD_MAX77686_H */
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+1.9.1
+
