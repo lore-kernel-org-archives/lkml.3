@@ -1,242 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaKEKPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:15:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:2289 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396AbaKEKP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:15:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,319,1413270000"; 
-   d="scan'208";a="602631990"
-Date: Wed, 5 Nov 2014 12:15:20 +0200
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Denis Turischev <denis.turischev@compulab.co.il>
-Subject: Re: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
-Message-ID: <20141105101520.GY1618@lahna.fi.intel.com>
-References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1413431475-12799-4-git-send-email-rebecca.swee.fun.chang@intel.com>
- <20141016101918.GC2255@lahna.fi.intel.com>
- <50B33AC5ED75F74F991980326F1C438D0FC047C5@PGSMSX108.gar.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B33AC5ED75F74F991980326F1C438D0FC047C5@PGSMSX108.gar.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754650AbaKEKPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:15:55 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40722 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129AbaKEKPw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:15:52 -0500
+From: Chander Kashyap <k.chander@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
+        lorenzo.pieralisi@arm.com, catalin.marinas@arm.com,
+        mark.rutland@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: [PATCH v3] arm64: dts: exynos7: add support for cpuidle core power down
+Date: Wed,  5 Nov 2014 15:45:36 +0530
+Message-Id: <1415182536-11613-1-git-send-email-k.chander@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 11:33:01AM +0200, Chang, Rebecca Swee Fun wrote:
-> Sorry for the late reply, was working on something else.
-> 
-> > -----Original Message-----
-> > From: Westerberg, Mika
-> > Sent: 16 October, 2014 6:19 PM
-> > To: Chang, Rebecca Swee Fun
-> > Cc: Linus Walleij; GPIO Subsystem Mailing List; Linux Kernel Mailing List; Denis
-> > Turischev
-> > Subject: Re: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
-> > 
-> > On Thu, Oct 16, 2014 at 11:51:15AM +0800, Chang Rebecca Swee Fun wrote:
-> > > Intel Quark X1000 GPIO controller supports interrupt handling for both
-> > > core power well and resume power well. This patch is to enable the IRQ
-> > > support and provide IRQ handling for Intel Quark X1000 GPIO-SCH device
-> > > driver.
-> > >
-> > > This piece of work is derived from Dan O'Donovan's initial work for
-> > > Quark X1000 enabling.
-> > >
-> > > Signed-off-by: Chang Rebecca Swee Fun
-> > > <rebecca.swee.fun.chang@intel.com>
-> > 
-> > In addition to what Varka Bhadram pointed out, I have few comments. See
-> > below.
-> > 
-> > Overall, looks good.
-> > 
-> > > ---
-> > >  drivers/gpio/gpio-sch.c |  257
-> > > ++++++++++++++++++++++++++++++++++++++++++++---
-> > >  1 file changed, 245 insertions(+), 12 deletions(-)
-> > >
-> (...)
-> 
-> > > +static void sch_gpio_irq_disable(struct irq_data *d) {
-> > > +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> > > +	u32 gpio_num;
-> > > +
-> > > +	gpio_num = d->irq - sch->irq_base;
-> > > +	sch_gpio_register_clear(sch, gpio_num, GGPE); }
-> > > +
-> > > +static void sch_gpio_irq_ack(struct irq_data *d) {
-> > > +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> > > +	u32 gpio_num;
-> > > +
-> > > +	gpio_num = d->irq - sch->irq_base;
-> > > +	sch_gpio_reg_set(&(sch->chip), gpio_num, GTS, 1);
-> > 
-> > Maybe use the new sch_gpio_register_set() here instead?
-> 
-> According to Alexandre's review feedback, sch_gpio_register_set() and
-> sch_gpio_register_clear() actually having similar block of codes with
-> sch_gpio_reg_set(). He suggested to call sch_gpio_reg_set(gc, gpio,
-> reg, 1) in place of sch_gpio_register_set() and sch_gpio_reg_set(gc,
-> gpio, reg, 0) for sch_gpio_register_clear(). I'm now in the progress
-> of reworking the patches in that direction.
+Exynos7 has core power down state where cores can be powered off independently.
+This patch adds support for this state.
 
-Sounds good.
+Entry latency for the core power down is calculated as follows:
+1. Time difference is measured between cpuidle entry and exit.
+2. WFI is skipped measuring the time.
+3. The time is averaged out for 100000 cpuidle transactions with varying load.
 
-> > 
-> > > +}
-> > > +
-> > > +static int sch_gpio_irq_type(struct irq_data *d, unsigned type) {
-> > > +	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> > > +	unsigned long flags;
-> > > +	u32 gpio_num;
-> > > +
-> > > +	if (d == NULL)
-> > > +		return -EINVAL;
-> > 
-> > How can that happen?
-> 
-> This is just to ensure the irq_data struct contains data. If you think
-> this is no needed, I will remove it in next submission.
+Exit latency and target residency are supplied as per HW team
 
-I think you can drop that check. Also if 'd' would be NULL you will
-crash already in
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+---
+This patch has following dependencies:
+	- [PATCH v5 0/8] arch: arm64: Enable support for Samsung Exynos7 SoC
+		http://www.spinics.net/lists/linux-samsung-soc/msg37047.html
+Changes in v2:
+	- Moved the cpu-idle-state property after reg property
+	- removed the status property.
 
-	struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
+Changes in v3:
+	- Added the Entry latency calculation in commit message.
 
-> (...)
-> > > +
-> > > +static void sch_gpio_irqs_init(struct sch_gpio *sch, unsigned int
-> > > +num) {
-> > > +	unsigned int i;
-> > > +
-> > > +	for (i = 0; i < num; i++) {
-> > > +		irq_set_chip_data(i + sch->irq_base, sch);
-> > > +		irq_set_chip_and_handler_name(i + sch->irq_base,
-> > > +					      &sch_irq_chip,
-> > > +					      handle_simple_irq,
-> > > +					      "sch_gpio_irq_chip");
-> > 
-> > Hmm, I wonder if this
-> > 
-> > 		irq_set_chip_and_handler_name(i + sch->irq_base,
-> > &sch_irq_chip,
-> > 					handle_simple_irq,
-> > "sch_gpio_irq_chip");
-> > 
-> > looks better. Up to you.
-> > 
-> I think I will take what you've suggested. :)
-> 
-> (...)
-> > >  static int sch_gpio_probe(struct platform_device *pdev)  {
-> > >  	struct sch_gpio *sch;
-> > > -	struct resource *res;
-> > > +	struct resource *res, *irq;
-> > > +	int err;
-> > >
-> > >  	sch = devm_kzalloc(&pdev->dev, sizeof(*sch), GFP_KERNEL);
-> > >  	if (!sch)
-> > > @@ -203,6 +376,17 @@ static int sch_gpio_probe(struct platform_device
-> > *pdev)
-> > >  				 pdev->name))
-> > >  		return -EBUSY;
-> > >
-> > > +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> > > +	sch->irq_support = !!irq;
-> > > +	if (sch->irq_support) {
-> > > +		sch->irq_num = irq->start;
-> > > +		if (sch->irq_num < 0) {
-> > 
-> > Is this really possible? I mean can't you just detect the irq support by looking
-> > sch->irq_num? If it is > 0 then it has interrupt support. I think that irq 0 is not
-> > valid.
-> 
-> Yes, I can do that, but the irq_num was being passed from MFD LPC_SCH.
-> This implementation is to avoid enabling irq support if LPC_SCH passed
-> in a negative value.  As for irq 0, I think it is valid. Based on my
-> observation in "cat /proc/interrupt" there is a 0 irq line available.
+ arch/arm64/boot/dts/exynos/exynos7.dtsi |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-I see.
+diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+index 50ae936..444dde1 100644
+--- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
++++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+@@ -37,6 +37,7 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x0>;
++			cpu-idle-states = <&CPU_SLEEP>;
+ 		};
+ 
+ 		cpu@1 {
+@@ -44,6 +45,7 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x1>;
++			cpu-idle-states = <&CPU_SLEEP>;
+ 		};
+ 
+ 		cpu@2 {
+@@ -51,6 +53,7 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x2>;
++			cpu-idle-states = <&CPU_SLEEP>;
+ 		};
+ 
+ 		cpu@3 {
+@@ -58,6 +61,20 @@
+ 			compatible = "arm,cortex-a57", "arm,armv8";
+ 			enable-method = "psci";
+ 			reg = <0x3>;
++			cpu-idle-states = <&CPU_SLEEP>;
++		};
++
++		idle-states {
++			entry-method = "arm,psci";
++
++			CPU_SLEEP: cpu-sleep {
++				compatible = "arm,idle-state";
++				local-timer-stop;
++				arm,psci-suspend-param = <0x0010000>;
++				entry-latency-us = <20>;
++				exit-latency-us = <150>;
++				min-residency-us = <2100>;
++			};
+ 		};
+ 	};
+ 
+-- 
+1.7.9.5
 
-In that case, how about following?
-
-	irq = platform_get_irq(pdev, 0)
-	if (irq >= 0) {
-		/* Add irq support here */
-	}
-
-> 
-> > 
-> > > +			dev_warn(&pdev->dev,
-> > > +				 "failed to obtain irq number for device\n");
-> > > +			sch->irq_support = false;
-> > > +		}
-> > > +	}
-> > > +
-> > >  	spin_lock_init(&sch->lock);
-> > >  	sch->iobase = res->start;
-> > >  	sch->chip = sch_gpio_chip;
-> > > @@ -251,15 +435,64 @@ static int sch_gpio_probe(struct platform_device
-> > *pdev)
-> > >  		return -ENODEV;
-> > >  	}
-> > >
-> > > +	err = gpiochip_add(&sch->chip);
-> > > +	if (err < 0)
-> > > +		goto err_sch_gpio;
-> > > +
-> > > +	if (sch->irq_support) {
-> > > +		sch->irq_base = irq_alloc_descs(-1, 0, sch->chip.ngpio,
-> > > +						NUMA_NO_NODE);
-> > > +		if (sch->irq_base < 0) {
-> > > +			dev_err(&pdev->dev,
-> > > +				"failed to allocate GPIO IRQ descs\n");
-> > > +			goto err_sch_intr_chip;
-> > > +		}
-> > > +
-> > > +		/* disable interrupts */
-> > > +		sch_gpio_irq_disable_all(sch, sch->chip.ngpio);
-> > > +
-> > > +		err = request_irq(sch->irq_num, sch_gpio_irq_handler,
-> > > +				  IRQF_SHARED, KBUILD_MODNAME, sch);
-> > > +		if (err) {
-> > > +			dev_err(&pdev->dev,
-> > > +				"%s failed to request IRQ\n", __func__);
-> > > +			goto err_sch_request_irq;
-> > > +		}
-> > > +
-> > > +		sch_gpio_irqs_init(sch, sch->chip.ngpio);
-> > > +	}
-> > > +
-> > >  	platform_set_drvdata(pdev, sch);
-> > >
-> > > -	return gpiochip_add(&sch->chip);
-> > > +	return 0;
-> > > +
-> > > +err_sch_request_irq:
-> > > +	irq_free_descs(sch->irq_base, sch->chip.ngpio);
-> > > +
-> > > +err_sch_intr_chip:
-> > > +	if (gpiochip_remove(&sch->chip))
-> > > +		dev_err(&pdev->dev,
-> > > +			"%s gpiochip_remove() failed\n", __func__);
-> > > +
-> > > +err_sch_gpio:
-> > > +	release_region(res->start, resource_size(res));
-> > 
-> > This is not needed as devm_request_region() will clean it up for you
-> > automatically. Even if probe() fails.
-> 
-> Noted with thanks.
-> 
-> Rebecca
