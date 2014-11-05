@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038AbaKEQBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:01:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54935 "EHLO mx2.suse.de"
+	id S1755178AbaKEQBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:01:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54950 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754952AbaKEQBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:01:01 -0500
-Date: Wed, 5 Nov 2014 17:00:46 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	id S1754617AbaKEQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:01:17 -0500
+Date: Wed, 5 Nov 2014 17:01:15 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 06/12 v3] tracing: Add a seq_buf_clear() helper and
- clear len and readpos in init
-Message-ID: <20141105160046.GH4570@pathway.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
- <20141104160222.352309995@goodmis.org>
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Message-ID: <20141105160115.GA28226@dhcp22.suse.cz>
+References: <2156351.pWp6MNRoWm@vostro.rjw.lan>
+ <20141021141159.GE9415@dhcp22.suse.cz>
+ <4766859.KSKPTm3b0x@vostro.rjw.lan>
+ <20141021142939.GG9415@dhcp22.suse.cz>
+ <20141104192705.GA22163@htj.dyndns.org>
+ <20141105124620.GB4527@dhcp22.suse.cz>
+ <20141105130247.GA14386@htj.dyndns.org>
+ <20141105133100.GC4527@dhcp22.suse.cz>
+ <20141105134219.GD4527@dhcp22.suse.cz>
+ <20141105154436.GB14386@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141104160222.352309995@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141105154436.GB14386@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-04 10:52:43, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Wed 05-11-14 10:44:36, Tejun Heo wrote:
+> On Wed, Nov 05, 2014 at 02:42:19PM +0100, Michal Hocko wrote:
+> > On Wed 05-11-14 14:31:00, Michal Hocko wrote:
+> > > On Wed 05-11-14 08:02:47, Tejun Heo wrote:
+> > [...]
+> > > > Also, why isn't this part of
+> > > > oom_killer_disable/enable()?  The way they're implemented is really
+> > > > silly now.  It just sets a flag and returns whether there's a
+> > > > currently running instance or not.  How were these even useful? 
+> > > > Why can't you just make disable/enable to what they were supposed to
+> > > > do from the beginning?
+> > > 
+> > > Because then we would block all the potential allocators coming from
+> > > workqueues or kernel threads which are not frozen yet rather than fail
+> > > the allocation.
+> > 
+> > After thinking about this more it would be doable by using trylock in
+> > the allocation oom path. I will respin the patch. The API will be
+> > cleaner this way.
 > 
-> Add a helper function seq_buf_clear() that resets the len and readpos
-> fields of a seq_buf. Currently it is only used in the seq_buf_init()
-> but will be used later when updating the seq_file code.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> In disable, block new invocations of OOM killer and then drain the
+> in-progress ones.  This is a common pattern, isn't it?
 
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+I am not sure I am following. With the latest patch OOM path is no
+longer blocked by the PM (aka oom_killer_disable()). Allocations simply
+fail if the read_trylock fails.
+oom_killer_disable is moved before tasks are frozen and it will wait for
+all on-going OOM killers on the write lock. OOM killer is enabled again
+on the resume path.
 
-Best Regards,
-Petr
+-- 
+Michal Hocko
+SUSE Labs
