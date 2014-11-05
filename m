@@ -1,152 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaKETZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 14:25:22 -0500
-Received: from mout.gmx.net ([212.227.17.20]:52070 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046AbaKETZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 14:25:20 -0500
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: Jan Kara <jack@suse.cz>, Eric Paris <eparis@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Christoph Hellwig <hch@lst.de>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] fanotify: ignore marks not respected
-Date: Wed,  5 Nov 2014 20:24:47 +0100
-Message-Id: <1415215487-821-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 2.1.1
-X-Provags-ID: V03:K0:mhPVkvYQ7pea21o5hMAG9PBBqHN99etkteoqp3gfVubwvcim3Hv
- g0QTwVXUEm4fC2MXqxqWJN5SicKaba/nf+zHpafztPBpZEBLqQKrXFvClMughwtt5ob9DIb
- snmbdulpC8NAWlLD+tbMHTUjwPXDqNMfBwKxHgB3rg8xXvdJNPSQnZcoj5b4kEKU6uwlKyw
- glM5LzQhzwl6y+sKnIb4w==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751578AbaKETZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 14:25:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:56989 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751464AbaKETZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 14:25:46 -0500
+Message-Id: <20141105192426.348510548@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Wed, 05 Nov 2014 14:24:26 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/8] [GIT PULL] seq_file: Add seq_has_overflowed() and start using it
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fanotify API allows to mark mounts, directories, and files for
-notification. Furthermore it allows to create marks with an ignore mask to
-indicate which events shall be ignored.
 
-Function fsnotify_add_inode_mark() stores marks for inodes as list in attribute
-i_list of the inode. The list is sorted by priority and group.
+Al,
 
-Function fsnotify_add_vfsmount_mark() stores marks for mounts as list in
-attribute m_list of the vfsmount. The list is sorted by priority and group.
+I'm looking to clean up the seq_file code and to eventually merge the
+trace_seq code with seq_file as well, since they basically do the same thing.
 
-If an event occurs function fsnotify() is called. This function loops over all
-mount and inode marks and sends the event to the respective groups using
-function send_to_group().
+Part of this process is to remove the return code of seq_printf() and friends
+as they are rather inconsistent. It is better to use the new function
+seq_has_overflowed() if you want to stop processing when the buffer
+is full. Note, if the buffer is full, the seq_file code will throw away
+the contents, allocate a bigger buffer, and then call your code again
+to fill in the data. The only thing that breaking out of the function
+early does is to save a little time which is probably never noticed.
 
-For an event and a group both an inode mark and a vfsmount mark may coexist.
-E.g. a user program may want to monitor one mount for FAN_MODIFY events but
-wants to ignore FAN_MODIFY events for some file.
+I started with patches from Joe Perches and modified them as well.
+There's many more places that need to be updated before we can convert
+seq_printf() and friends to return void. But this patch set introduces
+the seq_has_overflowed() and does some initial updates.
 
-If for an event and a group both an inode mark and a vfsmount mark exist, it is
-important to call send_to_group() for both marks as once. Otherwise ignore mask
-bits set on the one mark cannot be considered for the other mark.
+Please pull the latest trace-seq-file-cleanup tree, which can be found at:
 
-Function fsnotify() assumes that m_list and i_list are sorted by group and
-ignores the sorting by priority. Hence some ignore marks may not be correctly
-considered.
 
-Bug report 87721 provides an example code demonstrating the error.
-https://bugzilla.kernel.org/show_bug.cgi?id=87721
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-seq-file-cleanup
 
-The appended patch changes fsnotify() to assume sorting by priority and group.
-Furthermore some comments are added to render the function more legible.
+Tag SHA1: d82a9bf9340e6ede47454c8a7d849adf140a30b1
+Head SHA1: 9761536e1d9e9e1f325fb04d4ad46b15a39eb94a
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- fs/notify/fsnotify.c | 56 +++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 42 insertions(+), 14 deletions(-)
 
-diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
-index 9d3e9c5..afc1215 100644
---- a/fs/notify/fsnotify.c
-+++ b/fs/notify/fsnotify.c
-@@ -187,6 +187,13 @@ static int send_to_group(struct inode *to_tell,
-  * in linux/fsnotify.h.  Those functions then in turn call here.  Here will call
-  * out to all of the registered fsnotify_group.  Those groups can then use the
-  * notification event in whatever means they feel necessary.
-+ *
-+ * To correctly interprete the ignore mask it is necessary to pass the inode
-+ * mark and the vfsmount mark of the same notification group in a single call
-+ * to send_to_group().
-+ *
-+ * The marks of each inode and each vfsmount are sorted by group-priority and
-+ * group (see fsnotify_add_inode_mark() and fsnotify_add_vfsmount_mark()).
-  */
- int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
- 	     const unsigned char *file_name, u32 cookie)
-@@ -232,6 +239,9 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
- 	while (inode_node || vfsmount_node) {
- 		inode_group = vfsmount_group = NULL;
- 
-+		/*
-+		 * Read current marks and groups.
-+		 */
- 		if (inode_node) {
- 			inode_mark = hlist_entry(srcu_dereference(inode_node, &fsnotify_mark_srcu),
- 						 struct fsnotify_mark, i.i_list);
-@@ -244,25 +254,43 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
- 			vfsmount_group = vfsmount_mark->group;
- 		}
- 
--		if (inode_group > vfsmount_group) {
--			/* handle inode */
--			ret = send_to_group(to_tell, inode_mark, NULL, mask,
--					    data, data_is, cookie, file_name);
--			/* we didn't use the vfsmount_mark */
--			vfsmount_group = NULL;
--		} else if (vfsmount_group > inode_group) {
--			ret = send_to_group(to_tell, NULL, vfsmount_mark, mask,
--					    data, data_is, cookie, file_name);
--			inode_group = NULL;
--		} else {
--			ret = send_to_group(to_tell, inode_mark, vfsmount_mark,
--					    mask, data, data_is, cookie,
--					    file_name);
-+		/*
-+		 * Determine if the inode group or the vfsmount group is
-+		 * first in the sorting order.
-+		 * Only the mark for the group that is first will be passed to
-+		 * send_to_group().
-+		 */
-+		if (inode_group == NULL)
-+			inode_mark = NULL;
-+		else if (vfsmount_group == NULL)
-+			vfsmount_mark = NULL;
-+		else {
-+			if (inode_group->priority
-+			    > vfsmount_group->priority) {
-+				vfsmount_mark = NULL;
-+				vfsmount_group = NULL;
-+			} else if (inode_group->priority
-+				   < vfsmount_group->priority) {
-+				inode_mark = NULL;
-+				inode_group = NULL;
-+			} else if (inode_group > vfsmount_group) {
-+				vfsmount_mark = NULL;
-+				vfsmount_group = NULL;
-+			} else if (inode_group < vfsmount_group) {
-+				inode_mark = NULL;
-+				inode_group = NULL;
-+			}
- 		}
-+		ret = send_to_group(to_tell, inode_mark, vfsmount_mark,
-+				    mask, data, data_is, cookie,
-+				    file_name);
- 
- 		if (ret && (mask & ALL_FSNOTIFY_PERM_EVENTS))
- 			goto out;
- 
-+		/*
-+		 * Point to the next marks.
-+		 */
- 		if (inode_group)
- 			inode_node = srcu_dereference(inode_node->next,
- 						      &fsnotify_mark_srcu);
--- 
-2.1.1
+Joe Perches (6):
+      seq_file: Rename seq_overflow() to seq_has_overflowed() and make public
+      netfilter: Convert print_tuple functions to return void
+      dlm: Remove seq_printf() return checks and use seq_has_overflowed()
+      dlm: Use seq_puts() instead of seq_printf() for constant strings
+      fs: Convert show_fdinfo functions to void
+      debugfs: Have debugfs_print_regs32() return void
 
+Steven Rostedt (Red Hat) (2):
+      netfilter: Remove return values for print_conntrack callbacks
+      netfilter: Remove checks of seq_printf() return values
+
+----
+ Documentation/filesystems/debugfs.txt              |   2 +-
+ Documentation/filesystems/seq_file.txt             |  22 +-
+ Documentation/filesystems/vfs.txt                  |   2 +-
+ drivers/net/tun.c                                  |   4 +-
+ fs/debugfs/file.c                                  |  15 +-
+ fs/dlm/debug_fs.c                                  | 263 ++++++++++-----------
+ fs/eventfd.c                                       |   9 +-
+ fs/eventpoll.c                                     |  13 +-
+ fs/notify/fdinfo.c                                 |  78 +++---
+ fs/notify/fdinfo.h                                 |   4 +-
+ fs/proc/fd.c                                       |   3 +-
+ fs/seq_file.c                                      |  15 +-
+ fs/signalfd.c                                      |   4 +-
+ fs/timerfd.c                                       |  27 ++-
+ include/linux/debugfs.h                            |   7 +-
+ include/linux/fs.h                                 |   2 +-
+ include/linux/seq_file.h                           |  15 ++
+ include/net/netfilter/nf_conntrack_core.h          |   2 +-
+ include/net/netfilter/nf_conntrack_l3proto.h       |   4 +-
+ include/net/netfilter/nf_conntrack_l4proto.h       |   6 +-
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c     |   6 +-
+ .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   |  53 +++--
+ net/ipv4/netfilter/nf_conntrack_proto_icmp.c       |  10 +-
+ net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c     |   6 +-
+ net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c     |  10 +-
+ net/netfilter/nf_conntrack_l3proto_generic.c       |   5 +-
+ net/netfilter/nf_conntrack_proto_dccp.c            |  14 +-
+ net/netfilter/nf_conntrack_proto_generic.c         |   5 +-
+ net/netfilter/nf_conntrack_proto_gre.c             |  18 +-
+ net/netfilter/nf_conntrack_proto_sctp.c            |  14 +-
+ net/netfilter/nf_conntrack_proto_tcp.c             |  14 +-
+ net/netfilter/nf_conntrack_proto_udp.c             |  10 +-
+ net/netfilter/nf_conntrack_proto_udplite.c         |  10 +-
+ net/netfilter/nf_conntrack_standalone.c            |  77 +++---
+ net/netfilter/nf_log.c                             |  30 +--
+ net/netfilter/nfnetlink_queue_core.c               |  13 +-
+ net/netfilter/x_tables.c                           |  19 +-
+ net/netfilter/xt_hashlimit.c                       |  36 ++-
+ 38 files changed, 410 insertions(+), 437 deletions(-)
