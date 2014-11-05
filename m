@@ -1,137 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaKEJHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:07:24 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41808 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841AbaKEJHP (ORCPT
+	id S1753621AbaKEJLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:11:38 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:49776 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751176AbaKEJLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:07:15 -0500
-Message-ID: <5459E8BC.8030500@hitachi.com>
-Date: Wed, 05 Nov 2014 18:07:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: Re: Re: Re: [PATCH v4 5/5] perf/sdt: Add support to perf record
- to trace SDT events
-References: <5458CD15.4010101@hitachi.com> <5459BD3E.7010804@linux.vnet.ibm.com> <5459C8BE.30809@linux.vnet.ibm.com>
-In-Reply-To: <5459C8BE.30809@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Nov 2014 04:11:33 -0500
+Message-ID: <1415178691.20372.225.camel@x220>
+Subject: Re: [PATCH v3] ARM: mvebu: rename ARM_ERRATA_753970
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 05 Nov 2014 10:11:31 +0100
+In-Reply-To: <20140912133142.GJ12361@n2100.arm.linux.org.uk>
+References: <1396777049.30640.9.camel@x220>
+	 <53418889.2050002@free-electrons.com> <1396805315.7723.8.camel@x220>
+	 <1401094871.25902.20.camel@x220>
+	 <20140620202100.GG21711@titan.lakedaemon.net>
+	 <20140620205340.GX32514@n2100.arm.linux.org.uk>
+	 <1403514104.12982.20.camel@x220>
+	 <20140623090714.GH32514@n2100.arm.linux.org.uk>
+	 <1403516086.12982.35.camel@x220> <1410520205.31130.33.camel@x220>
+	 <20140912133142.GJ12361@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Nov 2014 09:11:31.0697 (UTC) FILETIME=[7D5DFE10:01CFF8D8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/05 15:50), Hemant Kumar wrote:
-> Hi Masami,
-> 
->> Hi,
->>
->> (2014/11/04 17:06), Hemant Kumar wrote:
->>> Hi Namhyung,
->>>
->>> On 11/04/2014 01:08 PM, Namhyung Kim wrote:
->>>> Hi Hemant,
->>>>
->>>> As you know, you need to keep an eye on how (kprobes) event cache
->>>> patchset from Masami settles down.  For those who aren't CC'ed, please
->>>> see the link below:
->>>>
->>>>    https://lkml.org/lkml/2014/10/31/207
->>>>
->>>> On Sun, 02 Nov 2014 16:26:28 +0530, Hemant Kumar wrote:
->>>>> This patch adds support to perf to record SDT events. When invoked,
->>>>> the SDT event is looked up in the sdt-cache. If its found, an entry is
->>>>> made silently to uprobe_events file and then recording is invoked, and
->>>>> then the entry for the SDT event in uprobe_events is silently 
->>>>> discarded.
->>>>>
->>>>> The SDT events are already stored in a cache file
->>>>> (/var/cache/perf/perf-sdt-file.cache).
->>>>> Although the file_hash table helps in addition or deletion of SDT 
->>>>> events
->>>>> from the cache, its not of much use when it comes to probing the 
->>>>> actual
->>>>> SDT event, because the key to this hash list is a file name and not 
->>>>> the
->>>>> SDT event name (which is given as an argument to perf record). So, we
->>>>> won't be able to hash into it.
->>>> It likely to be ended up with per-file or per-buildid cache files under
->>>> ~/.debug directory.  In this case we also need to have the (central)
->>>> event-to-cache table anyway IMHO.
->>
->> What we are talking is to make a new caching file with buildid under
->> .debug/.
->> We already has ~/.debug/.build-id/<build-id> for string the binary
->> symbol maps. I think there are 2 options, one is expanding the current
->> build-id file format to include sdt and probe-event caches. The other is
-> 
-> Like a single cache to manage all the events for that file? How do we 
-> distinguish between the events as we will be having perf record to read 
-> SDT events from this cache?
-> 
->> to add ~/.debug/.build-id/<build-id>.probe and
->> ~/.debug/.build-id/<build-id>.sdt for caching probe/sdt information.
->>
-> 
-> This approach looks convenient.
-> 
->> And also, user interface is a discussion point. This series defines new
->> sdt-cache command, and we already have buildid-cache command. We should
->> have probe-cache command too? or consolidate those cache managing 
->> commands?
->> This question should be involving your series too.
->>
-> 
-> I think, we need not have multiple sub-commands to manage the cache. We 
-> can consolidate the cache management of probe events (including SDT 
-> events) to a single command.
+Hi Russell,
 
-Agreed. maybe perf-cache --buildid/--sdt/--probe would be good.
+On Fri, 2014-09-12 at 14:31 +0100, Russell King - ARM Linux wrote:
+> On Fri, Sep 12, 2014 at 01:10:05PM +0200, Paul Bolle wrote:
+> > ARM_ERRATA_753970 was renamed to PL310_ERRATA_753970 in v3.2, through
+> > commit fa0ce4035d48 ("ARM: 7162/1: errata: tidy up Kconfig options for
+> > PL310 errata workarounds"). Two selects were added in v3.15 that still
+> > use the previous name. Rename these. Make these select statements depend
+> > on CACHE_L2X0, like all other select statements for PL310_ERRATA_753970
+> > do, to be safe we don't inadvertently start to allow pointless
+> > configurations in the future.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > v3: add CACHE_L2X0 dependency, as Russell requested.
+> > 
+> > Tested with "git grep" and fiddling with "make ARCH=arm [...]config".
+> > Please shout if that's deemed insufficient.
+> > 
+> > Note that I promised this v3 over two months ago. Taking two months to
+> > update this patch is not really something to be proud of. On the other
+> > hand: no one bothered to prod me for this v3 or send in a proper fix
+> > themselves. Add to this that I first reported these selects for an
+> > outdated Kconfig symbol in April. So I begin to wonder whether these
+> > selects statements are really needed to begin with.
 
->>>>> To avoid this problem, we can create another hash list "event_hash" 
->>>>> list
->>>>> which will be maintained along with the file_hash list.
->>>>> Whenever a user invokes 'perf record -e %provider:event, perf should
->>>>> initialize the event_hash list and the file_hash list.
->>>>> The key to event_hash list is calculated from the event name and its
->>>>> provider name.
->>>> Isn't it enough just to use provide name?  I guess the provider names
->>>> are (should be?) unique among a system although there's no absolute
->>>> guarantee for that.
->>>>
->>>
->>> Yes, there is no guarantee for the provider names to be unique.
->>> If we use only provider name with "perf record", then, what if a user
->>> wants to trace
->>> only a specific SDT event (not all the events for that provider)?
->>> What do you think?
->>
->> How about failing if the provider name is not unique unless user
->> gives the actual binary path?
->>
->>
+Whatever will be done in the long run: no one else said anything about
+my v3. It's now nearly seven months since I first reported this issue.
+In the mean time three releases contained the bogus selects. Apparently
+neither Marvell Armada 375 boards nor Marvell Armada 380/385 boards
+actually need to select PL310_ERRATA_753970.
+
+I think I'll send a trivial cleanup shortly.
+
+> I wonder whether we should deal with this a different way: rather than
+> having this stuff as a configuration option, have the work-arounds
+> default to being enabled, and have kernel command parameters to disable
+> them should that be necessary.
 > 
-> You mean something like this:
-> # perf record -e %provider @/path/to/file ...?
+> I expect the normal case is that everyone normally runs with these
+> errata workarounds enabled (especially with a single zImage kernel), so
+> there will be relatively few who need to disable them.  Plus, this gives
+> flexibility on single zImage to turn the errata workarounds off without
+> needing to rebuild.
+> 
+> The other major advantage is less Kconfig options with dependencies
+> which seem all to easily to result in select abuse.
 
-Yes, that is what I meant. :)
+I have no idea what CACHE_L2X0, ie the L2x0 outer cache controller,
+actually does nor what those PL310 errata are all about. So I can't
+comment on the feasibility of your idea. Obviously, dropping Kconfig
+symbols, and making configuration a bit easier would be one of the
+benefits of that idea. But I wouldn't know whether it outweighs the
+costs involved.
 
-Thank you,
+Thanks,
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Paul Bolle
 
