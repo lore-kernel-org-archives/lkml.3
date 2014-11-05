@@ -1,122 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaKEDVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 22:21:03 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51861 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889AbaKEDTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 22:19:23 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v2 08/13] backports: move version file generation to run earlier
-Date: Tue,  4 Nov 2014 19:18:32 -0800
-Message-Id: <1415157517-15442-9-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1753293AbaKEDYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 22:24:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37315 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039AbaKEDYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 22:24:08 -0500
+Message-ID: <54599853.9050706@suse.de>
+Date: Wed, 05 Nov 2014 04:24:03 +0100
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Heiko Stuebner <heiko@sntech.de>, linux-sh@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 5/7] pinctrl: Add driver for Zynq
+References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com> <1415041531-15520-6-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1415041531-15520-6-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Hi,
 
-The version file contains:
+Am 03.11.2014 um 20:05 schrieb Soren Brinkmann:
+> +	PINCTRL_PIN(54, "EMIO_SD0_WP"),
+> +	PINCTRL_PIN(55, "EMIO_SD0_CD"),
+> +	PINCTRL_PIN(56, "EMIO_SD1_WP"),
+> +	PINCTRL_PIN(57, "EMIO_SD0_CD"),
 
-  * BACKPORTS_VERSION
-  * BACKPORTED_KERNEL_VERSION
-  * BACKPORTED_KERNEL_NAME
+Should this be "EMIO_SD1_CD"?
 
-This file is used by the Makefile to export variable
-definitions used to identify the backport. For kernel
-integration we'll be using a generated Kconfig file
-instead and since these are needed when processing
-kconfig logic this will need to be defined earlier.
+Regards,
+Andreas
 
-Just move the generation of the version file for packaging
-up early to match where we will generate the Kconfig with
-the backports versioning identification.
-
-This change has no real functional change other than the
-move of some code running earlier.
-
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- gentree.py | 50 ++++++++++++++++++++++++++------------------------
- 1 file changed, 26 insertions(+), 24 deletions(-)
-
-diff --git a/gentree.py b/gentree.py
-index 860bb71..1b6dc89 100755
---- a/gentree.py
-+++ b/gentree.py
-@@ -789,6 +789,25 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
- 
-     git_debug_snapshot(args, 'Add driver sources')
- 
-+    if git_tracked_version:
-+        backports_version = "(see git)"
-+        kernel_version = "(see git)"
-+    else:
-+        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
-+        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
-+                                      tree=args.kerneldir,
-+                                      extra_args=['--long'])
-+
-+    if not integrate:
-+        f = open(os.path.join(args.outdir, 'versions'), 'w')
-+        f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
-+        f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
-+        f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
-+        if git_tracked_version:
-+            f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
-+        f.close()
-+        git_debug_snapshot(args, "generate kernel version info file: version")
-+
-     disable_list = add_automatic_backports(args, bp_prefix)
-     if disable_list:
-         bpcfg = kconfig.ConfigTree(os.path.join(args.outdir, 'compat', 'Kconfig'))
-@@ -815,32 +834,15 @@ def process(kerneldir, outdir, copy_list_file, git_revision=None,
-     configtree.modify_selects()
-     git_debug_snapshot(args, "convert select to depends on")
- 
--    # write the versioning file
--    if git_tracked_version:
--        backports_version = "(see git)"
--        kernel_version = "(see git)"
--    else:
--        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
--        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
--                                      tree=args.kerneldir,
--                                      extra_args=['--long'])
--    f = open(os.path.join(args.outdir, 'versions'), 'w')
--    f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
--    f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
--    f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
--    if git_tracked_version:
--        f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
--    f.close()
--
-     symbols = configtree.symbols()
- 
--    # write local symbol list -- needed during build
--    f = open(os.path.join(args.outdir, '.local-symbols'), 'w')
--    for sym in symbols:
--        f.write('%s=\n' % sym)
--    f.close()
--
--    git_debug_snapshot(args, "add versions/symbols files")
-+    if not integrate:
-+        # write local symbol list -- needed during build
-+        f = open(os.path.join(args.outdir, '.local-symbols'), 'w')
-+        for sym in symbols:
-+            f.write('%s=\n' % sym)
-+        f.close()
-+        git_debug_snapshot(args, "add symbols files")
- 
-     # add defconfigs that we want
-     defconfigs_dir = os.path.join(source_dir, 'backport', 'defconfigs')
 -- 
-2.1.1
-
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
