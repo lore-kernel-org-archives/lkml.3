@@ -1,102 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039AbaKEO16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:27:58 -0500
-Received: from mga14.intel.com ([192.55.52.115]:20357 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753996AbaKEO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:27:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="411829724"
-Message-ID: <1415197672.958.96.camel@sauron.fi.intel.com>
-Subject: Re: [RFC/PATCH 1/5 v2] mtd: ubi: Read disturb infrastructure
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: richard@nod.at, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Nov 2014 16:27:52 +0200
-In-Reply-To: <1414331373-28024-1-git-send-email-tlinder@codeaurora.org>
-References: <1414331373-28024-1-git-send-email-tlinder@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932087AbaKEO2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:28:42 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:51631 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754803AbaKEO2k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:28:40 -0500
+Message-ID: <545A3414.7030500@linaro.org>
+Date: Wed, 05 Nov 2014 15:28:36 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Preeti Murthy <preeti.lkml@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        patches@linaro.org
+Subject: Re: [PATCH V2 1/5] sched: idle: cpuidle: Check the latency req before
+ idle
+References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOg1GFW82WD8b6Vas5xhYQrQtdP1STGxyzYtrBNSa+-Pw@mail.gmail.com> <544FE787.8090108@linaro.org> <54504A60.2090908@linux.vnet.ibm.com>
+In-Reply-To: <54504A60.2090908@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/29/2014 03:01 AM, Preeti U Murthy wrote:
+> On 10/29/2014 12:29 AM, Daniel Lezcano wrote:
+>> On 10/28/2014 04:51 AM, Preeti Murthy wrote:
+>>> Hi Daniel,
+>>>
+>>> On Thu, Oct 23, 2014 at 2:31 PM, Daniel Lezcano
+>>> <daniel.lezcano@linaro.org> wrote:
+>>>> When the pmqos latency requirement is set to zero that means "poll in
+>>>> all the
+>>>> cases".
+>>>>
+>>>> That is correctly implemented on x86 but not on the other archs.
+>>>>
+>>>> As how is written the code, if the latency request is zero, the
+>>>> governor will
+>>>> return zero, so corresponding, for x86, to the poll function, but for
+>>>> the
+>>>> others arch the default idle function. For example, on ARM this is
+>>>> wait-for-
+>>>> interrupt with a latency of '1', so violating the constraint.
+>>>
+>>> This is not true actually. On PowerPC the idle state 0 has an
+>>> exit_latency of 0.
+>>>
+>>>>
+>>>> In order to fix that, do the latency requirement check *before*
+>>>> calling the
+>>>> cpuidle framework in order to jump to the poll function without entering
+>>>> cpuidle. That has several benefits:
+>>>
+>>> Doing so actually hurts on PowerPC. Because the idle loop defined for
+>>> idle state 0 is different from what cpu_relax() does in cpu_idle_loop().
+>>> The spinning is more power efficient in the former case. Moreover we
+>>> also set
+>>> certain register values which indicate an idle cpu. The ppc_runlatch bits
+>>> do precisely this. These register values are being read by some user
+>>> space
+>>> tools.  So we will end up breaking them with this patch
+>>>
+>>> My suggestion is very well keep the latency requirement check in
+>>> kernel/sched/idle.c
+>>> like your doing in this patch. But before jumping to cpu_idle_loop
+>>> verify if the
+>>> idle state 0 has an exit_latency > 0 in addition to your check on the
+>>> latency_req == 0.
+>>> If not, you can fall through to the regular path of calling into the
+>>> cpuidle driver.
+>>> The scheduler can query the cpuidle_driver structure anyway.
+>>>
+>>> What do you think?
+>>
+>> Thanks for reviewing the patch and spotting this.
+>>
+>> Wouldn't make sense to create:
+>>
+>> void __weak_cpu_idle_poll(void) ?
+>>
+>> and override it with your specific poll function ?
+>>
+>
+> No this would become ugly as far as I can see. A weak function has to be
+> defined under arch/* code. We will either need to duplicate the idle
+> loop that we already have in the drivers or point the weak function to
+> the first idle state defined by our driver. Both of which is not
+> desirable (calling into the driver from arch code is ugly). Another
+> reason why I don't like the idea of a weak function is that if you have
+> missed looking at a specific driver and they have an idle loop with
+> features similar to on powerpc, you will have to spot it yourself and
+> include the arch specific cpu_idle_poll() for them.
 
-let me summarize.
+Yes, I agree this is a fair point. But actually I don't see the interest 
+of having the poll loop in the cpuidle driver. These cleanups are 
+preparing the removal of the CPUIDLE_DRIVER_STATE_START macro which 
+leads to a lot of mess in the cpuidle code.
 
-1. To handle the read disturb problem you selected the read counters
-solution. PEB (physical erase block) read counter is the trigger for
-scrubbing.
+With the removal of this macro, we should be able to move the select 
+loop from the menu governor and use it everywhere else. Furthermore, 
+this state which is flagged with TIME_VALID, isn't because the local 
+interrupt are enabled so we are measuring the interrupt time processing.
+Beside that the idle loop for x86 is mostly not used.
 
-When the PEB read counter reaches a threshold value - we scrub.
-The threshold value is set to 100000 by default. Users may it via sysfs.
+So the idea would be to extract those idle loop from the drivers and use 
+them directly when:
+  1. the idle selection fails (use the poll loop under certain 
+circumstances we have to redefine)
+  2. when the latency req is zero
 
-Read-counters are stored on the flash media, in the fastmap structure.
+That will result in a cleaner code in cpuidle and in the governor.
 
+Do you agree with that ?
 
-2. To handle the data retention problem you selected the time-stamps
-approach. Each PEB gets a time-stamp. Time-stamp gets updated when the
-PEB is erased.
-
-When PEB becomes old enough (by comparing to the current system time),
-it gets scrubbed.
-
-The threshold for "old enough" is 120 days by default. Users may change
-it via sysfs.
-
-Timestamps are stored on the flash media, in the erase counter header of
-the PEB.
-
-
-For both, the read-disturb and data retention problems to be taken care
-of, user-space has to periodically trigger scanning, which will go
-through all PEBs, check the read counter and the timestamp, and scrub if
-needed.
+> But by having a check on the exit_latency, you are claiming that since
+> the driver's 0th idle state is no better than the generic idle loop in
+> cases of 0 latency req, we are better off calling the latter, which
+> looks reasonable. That way you don't have to bother about worsening the
+> idle loop behavior on any other driver.
 
 
-Hopefully I got right. I have concerns.
 
 
-This is rather complex design, and it is not clear why just doing full
-flash read from time to time is not good enough. Why the complexity is
-worth it.
 
-In this case the trigger for scrubbing is a bit-flip. It indicates that
-there is a problem, and this is a reliable trigger.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Is the 100000 reads threshold a reliable trigger? What if it is 10 times
-larger for me, or smaller?
-
-Is the 120 days threshold a reliable trigger? What if it is much larger
-for me?
-
-Do you think it is even possible to get the thresholds right?
-
-Let me re-emphasize: bit-flip is an objective, reliable reason to scrub.
-Thresholds are more of a pessimistic prediction. No?
-
-Let's think of someone having a R/O storage with video files. Compare:
-
-1. Do full media read every 120 days in background with low priority
-(possibly implemented as UBI service). And because it is R/O, cut the
-power all you want.
-
-2. Have UBI write data to media all the time to maintain the read
-counters. Lose your fastmap and have slow mounts on power cuts. Have
-extra work on boot-time. Spend more RAM.
-
-Why 2 is better than 1?
-
-Thanks!
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
