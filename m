@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaKEHQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 02:16:56 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59747 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaKEHQy (ORCPT
+	id S1752388AbaKEHSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 02:18:52 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54798 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaKEHSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 02:16:54 -0500
+	Wed, 5 Nov 2014 02:18:50 -0500
 X-Original-SENDERIP: 10.177.226.38
 X-Original-MAILFROM: byungchul.park@lge.com
 From: byungchul.park@lge.com
@@ -14,8 +14,8 @@ To: rostedt@goodmis.org, mingo@redhat.com
 Cc: linux-kernel@vger.kernel.org, seungho1.park@lge.com, jolsa@redhat.com,
         Byungchul Park <byungchul.park@lge.com>
 Subject: [PATCH v2 0/3] tracing: signaling large duration and delay
-Date: Wed,  5 Nov 2014 16:16:46 +0900
-Message-Id: <1415171806-5063-1-git-send-email-byungchul.park@lge.com>
+Date: Wed,  5 Nov 2014 16:18:43 +0900
+Message-Id: <1415171926-9782-1-git-send-email-byungchul.park@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
