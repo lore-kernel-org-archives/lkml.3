@@ -1,93 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaKEKFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:05:52 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:23943 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457AbaKEKFt convert rfc822-to-8bit (ORCPT
+	id S1754383AbaKEKII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:08:08 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53356 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaKEKIE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:05:49 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>
-CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "khilman@kernel.org" <khilman@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v3 0/3] i2c/at91: add support PM functions
-Thread-Topic: [PATCH v3 0/3] i2c/at91: add support PM functions
-Thread-Index: AQHP71cf7xghZ72fhUm/27PTMv8HKJxGPrmAgAuhGZA=
-Date: Wed, 5 Nov 2014 10:05:10 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BF5A90B2@penmbx01>
-References: <1414133417-11530-1-git-send-email-wenyou.yang@atmel.com>
- <20141029082429.GG9284@ldesroches-Latitude-E6320>
-In-Reply-To: <20141029082429.GG9284@ldesroches-Latitude-E6320>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Nov 2014 05:08:04 -0500
+Message-ID: <5459F70C.3060204@arm.com>
+Date: Wed, 05 Nov 2014 10:08:12 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
+ cpu hotplug
+References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 05 Nov 2014 10:07:58.0988 (UTC) FILETIME=[605994C0:01CFF8E0]
+X-MC-Unique: 114110510080005701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+Hi,
 
-Could you give me some advice?  Thank you in advance.
+On 05/11/14 08:51, Wanpeng Li wrote:
+> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+> addition, task may/may not be running again if cpu is added back. The root cause
+> which I found is that dl task will be throtted and removed from dl rq after
+> comsuming all budget, which leads to stop task can't pick it up from dl rq and
+> migrate to other cpus during hotplug.
+> 
+> The method to reproduce:
+> schedtool -E -t 50000:100000 -e ./test
+> Actually test is just a simple for loop. Then observe which cpu the test
+> task is on.
+> echo 0 > /sys/devices/system/cpu/cpuN/online
+> 
+> This patch fix it by push the task to another cpu in dl_task_timer() if 
+> rq is offline.
+> 
+> Note: dl task can be migrated successfully if rq is offline currently, however, 
+> I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl 
+> task previous running on, so cpu_active_mask is used in the patch. 
+> 
+> Peterz, Juri?
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>  * push the task to another cpu in dl_task_timer() if rq is offline.
+> 
+>  kernel/sched/deadline.c | 39 ++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 36 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 04c2cbb..233e482 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+>  	return hrtimer_active(&dl_se->dl_timer);
+>  }
+>  
+> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+>  /*
+>   * This is the bandwidth enforcement timer callback. If here, we know
+>   * a task is not on its dl_rq, since the fact that the timer was running
+> @@ -538,6 +539,39 @@ again:
+>  	update_rq_clock(rq);
+>  	dl_se->dl_throttled = 0;
+>  	dl_se->dl_yielded = 0;
+> +
+> +	/*
+> +	 * So if we find that the rq the task was on is no longer
+> +	 * available, we need to select a new rq.
+> +	 */
+> +	if (!rq->online) {
+> +		struct rq *later_rq = NULL;
+> +
+> +		/* We will release rq lock */
+> +		get_task_struct(p);
+> +
+> +		raw_spin_unlock(&rq->lock);
+> +
+> +		later_rq = find_lock_later_rq(p, rq);
+> +
+> +		if (!later_rq) {
+> +			put_task_struct(p);
+> +			goto out;
+> +		}
+> +
+> +		deactivate_task(rq, p, 0);
+> +		set_task_cpu(p, later_rq->cpu);
+> +		activate_task(later_rq, p, 0);
+> +
+> +		resched_curr(later_rq);
+> +
+> +		double_unlock_balance(rq, later_rq);
+> +
+> +		put_task_struct(p);
+> +
+> +		goto out;
+> +	}
+> +
+>  	if (task_on_rq_queued(p)) {
+>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>  		if (dl_task(rq->curr))
+> @@ -555,7 +589,7 @@ again:
+>  	}
+>  unlock:
+>  	raw_spin_unlock(&rq->lock);
+> -
+> +out:
+>  	return HRTIMER_NORESTART;
+>  }
+>  
+> @@ -1182,8 +1216,7 @@ static int find_later_rq(struct task_struct *task)
+>  	 * We have to consider system topology and task affinity
+>  	 * first, then we can look for a suitable cpu.
+>  	 */
+> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+> +	cpumask_copy(later_mask, cpu_active_mask);
 
-> -----Original Message-----
-> From: Ludovic Desroches [mailto:ludovic.desroches@atmel.com]
-> Sent: Wednesday, October 29, 2014 4:24 PM
-> To: Yang, Wenyou
-> Cc: wsa@the-dreams.de; Desroches, Ludovic; linux-i2c@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Ferre, Nicolas; khilman@kernel.org; linux-arm-
-> kernel@lists.infradead.org
-> Subject: Re: [PATCH v3 0/3] i2c/at91: add support PM functions
-> 
-> For the whole serie
-> 
-> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> 
-> On Fri, Oct 24, 2014 at 02:50:14PM +0800, Wenyou Yang wrote:
-> > Hi Wolfram,
-> >
-> > The patches is to add the PM functions support for the at91 i2c controller.
-> >
-> > It is based on the i2c/for-next branch of
-> > git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git.
-> >
-> > Best Regards,
-> > Wenyou Yang
-> >
-> > ------
-> > Change log:
-> > v2.0
-> >
-> > According to the advice from Kevin Hilman, 1./ Wrap the runtime
-> > suspend/resume functions in CONFIG_PM instead of CONFIG_PM_RUNTIME.
-> > 2./ Call the runtime suspend/resume functions directly in the system
-> suspend/resume.
-> >
-> > v3.0
-> >    Covert the system suspend/resume to suspend_noirq/resume_noirq.
-> >
-> > Wenyou Yang (3):
-> >   i2c/at91: add support for runtime PM
-> >   i2c/at91: add support for system PM
-> >   i2c/at91: adopt pinctrl support
-> >
-> >  drivers/i2c/busses/i2c-at91.c |   71
-> +++++++++++++++++++++++++++++++++++++----
-> >  1 file changed, 65 insertions(+), 6 deletions(-)
-> >
-> > --
-> > 1.7.9.5
-> >
+I fear this breaks what I lately fixed in commit 91ec6778ec4f
+("sched/deadline: Fix inter- exclusive cpusets migrations"), as
+we first have to consider exclusive cpusets topology in looking
+for a cpu. But, I'd have to test this to see if I'm right, and
+I'll try to do it soon.
 
-Best Regards,
-Wenyou Yang
+Thanks,
+
+- Juri
+
+>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>  			task, later_mask);
+> 
+
