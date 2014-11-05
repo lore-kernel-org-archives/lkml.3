@@ -1,95 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaKEFYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 00:24:34 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:46917 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750702AbaKEFYc (ORCPT
+	id S1752108AbaKEF0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 00:26:53 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:22037 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaKEF0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 00:24:32 -0500
-Date: Wed, 5 Nov 2014 10:53:35 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "pmladek@suse.cz" <pmladek@suse.cz>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "peter.chen@freescale.com" <peter.chen@freescale.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [Regression][v3.17][v3.18]   USB: Fix persist resume of some SS
- USB devices
-Message-ID: <20141105052335.GB2517@pratyush-vbox>
-References: <54595116.1050802@canonical.com>
+	Wed, 5 Nov 2014 00:26:48 -0500
+X-IronPort-AV: E=Sophos;i="5.07,317,1413270000"; 
+   d="scan'208";a="49757040"
+Message-ID: <5459B516.30300@broadcom.com>
+Date: Tue, 4 Nov 2014 21:26:46 -0800
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <54595116.1050802@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-05_03:2014-11-04,2014-11-05,1970-01-01 signatures=0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "Peter Griffin" <peter.griffin@linaro.org>,
+        Chris Ball <chris@printf.net>, "Piotr Krol" <pietrushnic@gmail.com>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, <linux-rpi-kernel@lists.infradead.org>,
+        Ray Jui <rjui@broadcom.com>, <bcm-kernel-feedback-list@broadcom.com>
+Subject: Re: [PATCHv2 4/5] mmc: shdci-bcm2835: add verify for 32-bit back-to-back
+ workaround
+References: <Scott Branden <sbranden@broadcom.com> <1414651017-3545-1-git-send-email-sbranden@broadcom.com> <1414651017-3545-5-git-send-email-sbranden@broadcom.com> <5459AB41.8080101@wwwdotorg.org>
+In-Reply-To: <5459AB41.8080101@wwwdotorg.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Joe,
+On 14-11-04 08:44 PM, Stephen Warren wrote:
+> On 10/30/2014 12:36 AM, Scott Branden wrote:
+>> Add a verify option to driver to print out an error message if a
+>> potential back to back write could cause a clock domain issue.
+>
+>> diff --git a/drivers/mmc/host/sdhci-bcm2835.c b/drivers/mmc/host/sdhci-bcm2835.c
+>
+>>   static inline void bcm2835_sdhci_writel(struct sdhci_host *host,
+>>   						u32 val, int reg)
+>>   {
+>> +#ifdef CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND
+>> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+>> +	struct bcm2835_sdhci_host *bcm2835_host = pltfm_host->priv;
+>> +
+>> +	if (bcm2835_host->previous_reg == reg) {
+>> +		if ((reg != SDHCI_HOST_CONTROL)
+>> +			&& (reg != SDHCI_CLOCK_CONTROL)) {
+>> +			dev_err(mmc_dev(host->mmc),
+>> +			"back-to-back write to 0x%x\n", reg);
+>
+> This fires a *ton* on reg 0x20 and 0x30 on my rev 2 model B with the
+> patches applied on top of next-20141031. Without the patches applied,
+> everything works fine. As far as I can tell, SD card accesses no longer
+> work (or perhaps there's just so much log spew over serial that it takes
+> more than 1.5 minutes to get to the login prompt).
+>
+Thanks for testing.  Like I said in the cover message - I've never run 
+this on a PI actually.  I've run it on other hardware with the same core 
+arasan block having the same clock domain issue.  The registers printed 
+out do not have the clock domain issue - I'm still getting more details 
+from the silicon designers on this.
 
-On Wed, Nov 05, 2014 at 06:20:06AM +0800, Joseph Salisbury wrote:
-> Hello Pratyush,
-> 
-> A kernel bug report was opened against Ubuntu [0].  After a kernel
-> bisect, it was found that reverting the following commit resolved this bug:
-> 
-> commit a40178b2fa6ad87670fb1e5fa4024db00c149629
-> Author: Pratyush Anand <pratyush.anand@st.com>
-> Date:   Fri Jul 18 12:37:10 2014 +0530
-> 
->     USB: Fix persist resume of some SS USB devices
-> 
-> The regression was introduced as of v3.17-rc1.  The regression still
-> exists in the 3.18-rc3 mainline kernel, and has made it's way into the
-> stable kernels.
+Without the verify patch the performance is actually quite good.  See 
+tests result from Piotr:
 
-Its strange, as per my understanding patch does not introduce any side
-effect for devices whose resume time is normal. So, if a device is
-connected to the SS port and it was working after resume from
-suspend to ram without this patch, then that device should still work
-with this patch.
+On Fri, Oct 31, 2014 at 05:02:59PM +0000, Scott Branden wrote:
+ > Please let me know how this works for you.
+ >
+Scott,
+please ignore my previous mail I made mistake when applying patches.
 
-Infact this has resolved another bug reported to bugzilla
-https://bugzilla.kernel.org/show_bug.cgi?id=53211
+Results of testing your code on top of 3.18-rc2 with Kingston SDC10/8GB:
+
+* when compiling with CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND=y there 
+is a
+lot of:
+
+sdhci-bcm2835 20300000.sdhci: back-to-back write to 0x30
+and
+sdhci-bcm2835 20300000.sdhci: back-to-back write to 0x20
+
+* performance w/o patches:
+yncraspberrypi:~$ sync; time dd if=/dev/zero of=~/test.tmp bs=500K 
+count=1024; sy
+1024+0 records in
+1024+0 records out
+524288000 bytes (524 MB) copied, 787.384 s, 666 kB/s
+
+real    13m7.404s
+user    0m0.080s
+sys     0m56.300s
+pi@raspberrypi:~$ time dd if=~/test.tmp of=/dev/null bs=500K count=1024
+1024+0 records in
+1024+0 records out
+524288000 bytes (524 MB) copied, 34.2115 s, 15.3 MB/s
+
+real    0m34.232s
+user    0m0.020s
+sys     0m31.190s
 
 
-> 
-> I was hoping to get your feedback, since you are the patch author.  Do
-> you think gathering any additional data will help diagnose this issue,
+* performance w/ patches is great IMHO:
+yncraspberrypi:~$ sync; time dd if=/dev/zero of=~/test.tmp bs=500K 
+count=1024; sy
+1024+0 records in
+1024+0 records out
+524288000 bytes (524 MB) copied, 45.4886 s, 11.5 MB/s
 
-Yaa, sure additional info will help to understand the issue.
--- dmesg log of suspend resume when this patch is not applied and also
-when applied.
--- dmesg log with following additional debug print.
-@@ -3318,6 +3318,7 @@ static int wait_for_ss_port_enable(struct usb_device *udev,
-        int status = 0, delay_ms = 0;
-         
-        while (delay_ms < 2000) {
-+               printk("%s:portstatus is %x and portchange is %x\n", __func__, *portstatus, *portchange);
-               if (status || *portstatus & USB_PORT_STAT_CONNECTION)
-                        break;
+real    0m45.515s
+user    0m0.060s
+sys     0m30.050s time dd if=~/test.tmp of=/dev/null bs=500K count=1024
+1024+0 records in
+1024+0 records out
+524288000 bytes (524 MB) copied, 33.6292 s, 15.6 MB/s
 
-> or would it be best to submit a revert request?
+real    0m33.649s
+user    0m0.020s
+sys     0m30.730s
 
-Let me see what is the portstatus value and why didn't it break loop in first
-iteration if device was OK.
+Great work!
 
-Regards
-Pratyush
+Have you got plans to enable DMA for this controller ? sys CPU load is quite
+big for above code, my tests with bcm2835-mmc and slave_sg from RaspberryPi
+Foundation gives about 15s instead of 31s. It would be great to relive CPU a
+little bit.
 
->    
-> 
-> Thanks,
->    
-> Joe
-> 
-> [0] http://pad.lv/1384041
+Best Regards,
+Piotr Król
+
+
+
