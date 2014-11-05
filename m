@@ -1,181 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaKEUBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:01:38 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:38294 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaKEUBe (ORCPT
+	id S1752136AbaKEUBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:01:51 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62614 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091AbaKEUBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:01:34 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 4/5] of: Add old prop argument on
- OF_RECONFIG_UPDATE_PROPERTY
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1414528433-9650-5-git-send-email-pantelis.antoniou@konsulko.com>
-References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<1414528433-9650-5-git-send-email-pantelis.antoniou@konsulko.com>
-Date: Wed, 05 Nov 2014 20:01:29 +0000
-Message-Id: <20141105200129.B4438C41C40@trevor.secretlab.ca>
+	Wed, 5 Nov 2014 15:01:44 -0500
+Date: Wed, 5 Nov 2014 12:01:40 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Rodrigo Freire <rfreire@redhat.com>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        linux-mtd@lists.infradead.org, Felix Fietkau <nbd@openwrt.org>,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        Herton Krzesinski <hkrzesin@redhat.com>
+Subject: Re: [RESEND PATCH V2] mtd: block2mtd: Present block2mtd timely on
+ boot time
+Message-ID: <20141105200140.GM23619@ld-irv-0074>
+References: <1807144344.40128259.1410985683342.JavaMail.zimbra@redhat.com>
+ <515696553.1577613.1412867251670.JavaMail.zimbra@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515696553.1577613.1412867251670.JavaMail.zimbra@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014 22:33:52 +0200
-, Pantelis Antoniou <pantelis.antoniou@konsulko.com>
- wrote:
-> The notifier now includes the old_prop argument when updating
-> properties, propagate this API to changeset internals while
-> also retaining the old behaviour of retrieving the old_property
-> when NULL is passed.
+On Thu, Oct 09, 2014 at 11:07:31AM -0400, Rodrigo Freire wrote:
+> From: Felix Fietkau <nbd@openwrt.org> 
 > 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-
-I'm still fuzzy on the need for this patch. Is this just an optimization
-so that the property doesn't get looked up twice? Or is there a reason
-when the oldprop really needs to be passed in explicitly?
-
-g.
-
-> ---
->  drivers/of/dynamic.c  | 18 ++++++++++++++----
->  drivers/of/selftest.c |  2 +-
->  include/linux/of.h    | 20 +++++++++++++-------
->  3 files changed, 28 insertions(+), 12 deletions(-)
+> mtd: block2mtd: Ensure that block2mtd is presented in a timely fashion 
 > 
-> diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
-> index 8e8b614..9eb8528 100644
-> --- a/drivers/of/dynamic.c
-> +++ b/drivers/of/dynamic.c
-> @@ -627,6 +627,7 @@ int of_changeset_revert(struct of_changeset *ocs)
->   * @action:	action to perform
->   * @np:		Pointer to device node
->   * @prop:	Pointer to property
-> + * @old_prop:	Pointer to old property (if updating)
->   *
->   * On action being one of:
->   * + OF_RECONFIG_ATTACH_NODE
-> @@ -637,10 +638,21 @@ int of_changeset_revert(struct of_changeset *ocs)
->   * Returns 0 on success, a negative error value in case of an error.
->   */
->  int of_changeset_action(struct of_changeset *ocs, unsigned long action,
-> -		struct device_node *np, struct property *prop)
-> +		struct device_node *np, struct property *prop,
-> +		struct property *oldprop)
->  {
->  	struct of_changeset_entry *ce;
->  
-> +	/* in case someone passed NULL as old_prop, find it */
-> +	if (action == OF_RECONFIG_UPDATE_PROPERTY && prop && !oldprop) {
-> +		oldprop = of_find_property(np, prop->name, NULL);
-> +		if (!oldprop) {
-> +			pr_err("%s: Failed to find old_prop for \"%s/%s\"\n",
-> +					__func__, np->full_name, prop->name);
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
->  	ce = kzalloc(sizeof(*ce), GFP_KERNEL);
->  	if (!ce) {
->  		pr_err("%s: Failed to allocate\n", __func__);
-> @@ -650,9 +662,7 @@ int of_changeset_action(struct of_changeset *ocs, unsigned long action,
->  	ce->action = action;
->  	ce->np = of_node_get(np);
->  	ce->prop = prop;
-> -
-> -	if (action == OF_RECONFIG_UPDATE_PROPERTY && prop)
-> -		ce->old_prop = of_find_property(np, prop->name, NULL);
-> +	ce->old_prop = oldprop;
->  
->  	/* add it to the list */
->  	list_add_tail(&ce->node, &ocs->entries);
-> diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-> index 7800127..16102fd 100644
-> --- a/drivers/of/selftest.c
-> +++ b/drivers/of/selftest.c
-> @@ -427,7 +427,7 @@ static void __init of_selftest_changeset(void)
->  	selftest(!of_changeset_detach_node(&chgset, nremove), "fail remove node\n");
->  	selftest(!of_changeset_attach_node(&chgset, n21), "fail attach n21\n");
->  	selftest(!of_changeset_add_property(&chgset, parent, ppadd), "fail add prop\n");
-> -	selftest(!of_changeset_update_property(&chgset, parent, ppupdate), "fail update prop\n");
-> +	selftest(!of_changeset_update_property(&chgset, parent, ppupdate, NULL), "fail update prop\n");
->  	selftest(!of_changeset_remove_property(&chgset, parent, ppremove), "fail remove prop\n");
->  	mutex_lock(&of_mutex);
->  	selftest(!of_changeset_apply(&chgset), "apply failed\n");
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 6545e7a..71d25aa 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -830,36 +830,42 @@ extern int of_changeset_apply(struct of_changeset *ocs);
->  extern int of_changeset_revert(struct of_changeset *ocs);
->  extern int of_changeset_action(struct of_changeset *ocs,
->  		unsigned long action, struct device_node *np,
-> -		struct property *prop);
-> +		struct property *prop, struct property *old_prop);
->  
->  static inline int of_changeset_attach_node(struct of_changeset *ocs,
->  		struct device_node *np)
->  {
-> -	return of_changeset_action(ocs, OF_RECONFIG_ATTACH_NODE, np, NULL);
-> +	return of_changeset_action(ocs, OF_RECONFIG_ATTACH_NODE, np, NULL,
-> +			NULL);
->  }
->  
->  static inline int of_changeset_detach_node(struct of_changeset *ocs,
->  		struct device_node *np)
->  {
-> -	return of_changeset_action(ocs, OF_RECONFIG_DETACH_NODE, np, NULL);
-> +	return of_changeset_action(ocs, OF_RECONFIG_DETACH_NODE, np, NULL,
-> +			NULL);
->  }
->  
->  static inline int of_changeset_add_property(struct of_changeset *ocs,
->  		struct device_node *np, struct property *prop)
->  {
-> -	return of_changeset_action(ocs, OF_RECONFIG_ADD_PROPERTY, np, prop);
-> +	return of_changeset_action(ocs, OF_RECONFIG_ADD_PROPERTY, np, prop,
-> +			NULL);
->  }
->  
->  static inline int of_changeset_remove_property(struct of_changeset *ocs,
->  		struct device_node *np, struct property *prop)
->  {
-> -	return of_changeset_action(ocs, OF_RECONFIG_REMOVE_PROPERTY, np, prop);
-> +	return of_changeset_action(ocs, OF_RECONFIG_REMOVE_PROPERTY, np, prop,
-> +			NULL);
->  }
->  
->  static inline int of_changeset_update_property(struct of_changeset *ocs,
-> -		struct device_node *np, struct property *prop)
-> +		struct device_node *np, struct property *prop,
-> +		struct property *old_prop)
->  {
-> -	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop);
-> +	return of_changeset_action(ocs, OF_RECONFIG_UPDATE_PROPERTY, np, prop,
-> +			old_prop);
->  }
->  #endif
->  
-> -- 
-> 1.7.12
+> Currently, a block MTD device is not presented to the system on time, in 
+> order to start mounting the filesystems. This patch ensures that block2mtd 
+> is presented at the right time, so filesystems can be mounted on boot time. 
+> This issue was seen on BCM2835 (Raspberry Pi) systems when mounting JFFS2 
+> block2mtd filesystems. 
+> This patchset also adds a MTD device name and a timeout option to the driver. 
+> Original patchset: 
+> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/440-block2mtd_init.patch?rev=40444 
+> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/441-block2mtd_probe.patch?rev=40444 
 > 
+> Signed-off-by: Felix Fietkau <nbd@openwrt.org> 
+> Signed-off-by: Rodrigo Freire <rfreire@redhat.com> 
+> Signed-off-by: Herton Krzesinski <herton@redhat.com> 
+> --- 
+> V2: Uses kstrdup, removed PAGE_MASK. 
 
+FYI, this copy was malformed. All the indentation and formatting is
+wrong, so it doesn't apply. I'll look at the previous copy you sent, but
+please fix this in the future.
+
+Brian
+
+> --- a/drivers/mtd/devices/block2mtd.c 2014-09-16 21:38:12.543952627 -0300 
+> +++ b/drivers/mtd/devices/block2mtd.c 2014-09-17 17:43:21.424944394 -0300 
+> @@ -9,7 +9,15 @@ 
+> 
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt 
+> 
+> +/* 
+> +* When the first attempt at device initialization fails, we may need to 
+> +* wait a little bit and retry. This timeout, by default 3 seconds, gives 
+> +* device time to start up. Required on BCM2708 and a few other chipsets. 
+> +*/ 
+> +#define MTD_DEFAULT_TIMEOUT 3 
+> + 
+> #include <linux/module.h> 
+> +#include <linux/delay.h> 
+> #include <linux/fs.h> 
+> #include <linux/blkdev.h> 
+> #include <linux/bio.h> 
+> @@ -17,6 +25,7 @@ 
+> #include <linux/list.h> 
+> #include <linux/init.h> 
+> #include <linux/mtd/mtd.h> 
+> +#include <linux/mtd/partitions.h> 
+> #include <linux/mutex.h> 
+> #include <linux/mount.h> 
+> #include <linux/slab.h> 
+> @@ -209,12 +218,14 @@ static void block2mtd_free_device(struct 
+> } 
+> 
+> 
+> -static struct block2mtd_dev *add_device(char *devname, int erase_size) 
+> +static struct block2mtd_dev *add_device(char *devname, int erase_size, const char *mtdname, int timeout) 
+> { 
+> const fmode_t mode = FMODE_READ | FMODE_WRITE | FMODE_EXCL; 
+> - struct block_device *bdev; 
+> + struct block_device *bdev = ERR_PTR(-ENODEV); 
+> struct block2mtd_dev *dev; 
+> + struct mtd_partition *part; 
+> char *name; 
+> + int i; 
+> 
+> if (!devname) 
+> return NULL; 
+> @@ -225,15 +236,28 @@ static struct block2mtd_dev *add_device( 
+> 
+> /* Get a handle on the device */ 
+> bdev = blkdev_get_by_path(devname, mode, dev); 
+> -#ifndef MODULE 
+> - if (IS_ERR(bdev)) { 
+> 
+> - /* We might not have rootfs mounted at this point. Try 
+> - to resolve the device name by other means. */ 
+> - 
+> - dev_t devt = name_to_dev_t(devname); 
+> - if (devt) 
+> - bdev = blkdev_get_by_dev(devt, mode, dev); 
+> +#ifndef MODULE 
+> +/* 
+> +* We might not have the root device mounted at this point. 
+> +* Try to resolve the device name by other means. 
+> +*/ 
+> + for (i = 0; IS_ERR(bdev) && i <= timeout; i++) { 
+> + dev_t devt; 
+> + 
+> + if (i) 
+> + /* 
+> + * Calling wait_for_device_probe in the first loop 
+> + * was not enough, sleep for a bit in subsequent 
+> + * go-arounds. 
+> + */ 
+> + msleep(1000); 
+> + wait_for_device_probe(); 
+> + 
+> + devt = name_to_dev_t(devname); 
+> + if (!devt) 
+> + continue; 
+> + bdev = blkdev_get_by_dev(devt, mode, dev); 
+> } 
+> #endif 
+> 
+> @@ -257,13 +281,14 @@ static struct block2mtd_dev *add_device( 
+> 
+> /* Setup the MTD structure */ 
+> /* make the name contain the block device in */ 
+> - name = kasprintf(GFP_KERNEL, "block2mtd: %s", devname); 
+> + if (!mtdname) 
+> + mtdname = devname; 
+> + name = kstrdup (mtdname, GFP_KERNEL); 
+> if (!name) 
+> goto err_destroy_mutex; 
+> 
+> dev->mtd.name = name; 
+> - 
+> - dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK; 
+> + dev->mtd.size = dev->blkdev->bd_inode->i_size & ~(erase_size - 1); 
+> dev->mtd.erasesize = erase_size; 
+> dev->mtd.writesize = 1; 
+> dev->mtd.writebufsize = PAGE_SIZE; 
+> @@ -276,15 +301,19 @@ static struct block2mtd_dev *add_device( 
+> dev->mtd.priv = dev; 
+> dev->mtd.owner = THIS_MODULE; 
+> 
+> - if (mtd_device_register(&dev->mtd, NULL, 0)) { 
+> + part = kzalloc(sizeof(struct mtd_partition), GFP_KERNEL); 
+> + part->name = name; 
+> + part->offset = 0; 
+> + part->size = dev->mtd.size; 
+> + if (mtd_device_register(&dev->mtd, part, 1)) { 
+> /* Device didn't get added, so free the entry */ 
+> goto err_destroy_mutex; 
+> } 
+> + 
+> list_add(&dev->list, &blkmtd_device_list); 
+> pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n", 
+> dev->mtd.index, 
+> - dev->mtd.name + strlen("block2mtd: "), 
+> - dev->mtd.erasesize >> 10, dev->mtd.erasesize); 
+> + mtdname, dev->mtd.erasesize >> 10, dev->mtd.erasesize); 
+> return dev; 
+> 
+> err_destroy_mutex: 
+> @@ -353,11 +382,12 @@ static char block2mtd_paramline[80 + 12] 
+> 
+> static int block2mtd_setup2(const char *val) 
+> { 
+> - char buf[80 + 12]; /* 80 for device, 12 for erase size */ 
+> + char buf[80 + 12 + 80 + 8]; /* 80 for device, 12 for erase size, 80 for name, 8 for timeout */ 
+> char *str = buf; 
+> - char *token[2]; 
+> + char *token[4]; 
+> char *name; 
+> size_t erase_size = PAGE_SIZE; 
+> + unsigned long timeout = MTD_DEFAULT_TIMEOUT; 
+> int i, ret; 
+> 
+> if (strnlen(val, sizeof(buf)) >= sizeof(buf)) { 
+> @@ -368,7 +398,7 @@ static int block2mtd_setup2(const char * 
+> strcpy(str, val); 
+> kill_final_newline(str); 
+> 
+> - for (i = 0; i < 2; i++) 
+> + for (i = 0; i < 4; i++) 
+> token[i] = strsep(&str, ","); 
+> 
+> if (str) { 
+> @@ -395,7 +425,13 @@ static int block2mtd_setup2(const char * 
+> } 
+> } 
+> 
+> - add_device(name, erase_size); 
+> + if (token[2] && (strlen(token[2]) + 1 > 80)) 
+> + pr_err("mtd device name too long"); 
+> + 
+> + 
+> + if (token[3] && kstrtoul(token[3], 0, &timeout)) 
+> + pr_err("invalid timeout"); 
+> + add_device(name, erase_size, token[2], timeout); 
+> 
+> return 0; 
+> } 
+> @@ -429,7 +465,7 @@ static int block2mtd_setup(const char *v 
+> 
+> 
+> module_param_call(block2mtd, block2mtd_setup, NULL, NULL, 0200); 
+> -MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>]\""); 
+> +MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>[,<name>[,<timeout>]]]\""); 
+> 
+> static int __init block2mtd_init(void) 
+> { 
+> @@ -463,8 +499,7 @@ static void block2mtd_exit(void) 
+> } 
+> } 
+> 
+> - 
+> -module_init(block2mtd_init); 
+> +late_initcall(block2mtd_init); 
+> module_exit(block2mtd_exit); 
+> 
+> MODULE_LICENSE("GPL"); 
+> --- 
+> 1.7.1 
+> 
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
