@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaKEVYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:24:06 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:45570 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751447AbaKEVYD (ORCPT
+	id S1751475AbaKEVcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:32:47 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:41971 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaKEVcp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:24:03 -0500
-Date: Wed, 5 Nov 2014 16:24:02 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lu Baolu <baolu.lu@linux.intel.com>
-cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/3] usb: xhci: This reworks ff8cbf250b448aac35589f6075082c3fcad8a8fe
-In-Reply-To: <1415164036-68517-3-git-send-email-baolu.lu@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1411051621280.1531-100000@iolanthe.rowland.org>
+	Wed, 5 Nov 2014 16:32:45 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CA+mtBx_BOmV+tOtio48M+xRatK79B31LoGnf4uvFJAbxYqOt_w@mail.gmail.com>
+References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
+	<CAJ3xEMjkxRg=uM+0kjOM0Zh84XYm_O6PiWoeYSw=LirU=ZJ+rA@mail.gmail.com>
+	<CANr6G5xtNYenhd8KDWx+kRcnSZ0fahUdAL+6Wcz=5_dNvrQR6Q@mail.gmail.com>
+	<CA+mtBx_BOmV+tOtio48M+xRatK79B31LoGnf4uvFJAbxYqOt_w@mail.gmail.com>
+Date: Wed, 5 Nov 2014 23:32:44 +0200
+Message-ID: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
+Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
+From: Or Gerlitz <gerlitz.or@gmail.com>
+To: Tom Herbert <therbert@google.com>
+Cc: Joe Stringer <joestringer@nicira.com>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        "sathya.perla" <sathya.perla@emulex.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>, Amir Vadai <amirv@mellanox.com>,
+        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
+        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014, Lu Baolu wrote:
+On Wed, Nov 5, 2014 at 8:00 PM, Tom Herbert <therbert@google.com> wrote:
+> On Wed, Nov 5, 2014 at 9:50 AM, Joe Stringer <joestringer@nicira.com> wrote:
+>>
+>> On 5 November 2014 04:38, Or Gerlitz <gerlitz.or@gmail.com> wrote:
+>>>
+>>> On Tue, Nov 4, 2014 at 11:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>> > Most NICs that report NETIF_F_GSO_UDP_TUNNEL support VXLAN, and not other
+>>> > UDP-based encapsulation protocols where the format and size of the header may
+>>> > differ. This patch series implements ndo_gso_check() for these NICs,
+>>> > restricting the GSO handling to something that looks and smells like VXLAN.
+>>> >
+>>> > Implementation shamelessly stolen from Tom Herbert (with minor fixups):
+>>> > http://thread.gmane.org/gmane.linux.network/332428/focus=333111
+>>>
+>>>
+>>> Hi Joe,
+>>>
+>>> 1st, thanks for picking this task...2nd, for drivers that currently
+>>> support only pure VXLAN, I don't see the point
+>>> to replicate the helper suggested by Tom (good catch on the size check
+>>> to be 16 and not 12) four times and who know how more in the future.
+>>> Let's just have one generic helper and make the mlx4/be/fm10k/benet
+>>> drivers to have it as their ndo, OK?
+>>
+>>
+>> Thanks for taking a look.
+>>
+>> I had debated whether to do this or not as the actual support on each NIC may differ, and each implementation may morph over time to match these capabilities better. Obviously the vendors will know better than me on this, so I'm posing this series to prod them for more information. At this point I've had just one maintainer come back and confirm that this helper is a good fit for their hardware, so I'd like to confirm that multiple drivers will use a ndo_gso_check_vxlan_helper() function before I go and create it.
+>
+>
+> Thanks for implementing this fix!
+>
+> Personally, I would rather not have the helper. This is already a
+> small number of drivers, and each driver owner should consider what
+> limitations are of their device and try to enable to allow the maximum
+> number of use cases possible. I'm also hoping that new devices will
+> implement the more generic mechanism so that VXLAN is just one
+> supported protocol.
 
-> xhci: clear root port wake on bits if controller isn't allowed to do wakeup
-> 
-> When system is being suspended, if host device is not allowed to do wakeup,
-> xhci_suspend() needs to clear all root port wake on bits. Otherwise, some
-> platforms may generate spurious wakeup, even if PCI PME# is disabled.
-> 
-> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
-
-This looks pretty good now.
-
-> +static void xhci_disable_port_wake_on_bits(struct xhci_hcd *xhci)
-> +{
-> +	int port_index;
-> +	__le32 __iomem **port_array;
-> +	unsigned long flags;
-> +	u32 t1, t2;
-> +
-> +	spin_lock_irqsave(&xhci->lock, flags);
-> +
-> +	/* disble usb3 ports Wake bits*/
-> +	port_index = xhci->num_usb3_ports;
-> +	port_array = xhci->usb3_ports;
-> +	while (port_index--) {
-> +		t1 = readl(port_array[port_index]);
-> +		t2 = xhci_port_state_to_neutral(t1);
-> +		t2 &= ~PORT_WAKE_BITS;
-> +		t1 = xhci_port_state_to_neutral(t1);
-> +		if (t1 != t2)
-> +			writel(t2, port_array[port_index]);
-
-Why not just do:
-
-		t1 = readl(port_array[port_index]);
-		t1 = xhci_port_state_to_neutral(t1);
-		t2 = t1 & ~PORT_WAKE_BITS;
-		if (t1 != t2) ...
-
-Apart from that minor point,
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-Alan Stern
-
+but fact is that the proposed patch series has the --same-- helper for
+four drivers, so why not start with a that limited helper which would
+be picked up by these drivers and we'll take it from there.
