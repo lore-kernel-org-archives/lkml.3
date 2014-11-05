@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaKEQBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:01:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54950 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617AbaKEQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:01:17 -0500
-Date: Wed, 5 Nov 2014 17:01:15 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Message-ID: <20141105160115.GA28226@dhcp22.suse.cz>
-References: <2156351.pWp6MNRoWm@vostro.rjw.lan>
- <20141021141159.GE9415@dhcp22.suse.cz>
- <4766859.KSKPTm3b0x@vostro.rjw.lan>
- <20141021142939.GG9415@dhcp22.suse.cz>
- <20141104192705.GA22163@htj.dyndns.org>
- <20141105124620.GB4527@dhcp22.suse.cz>
- <20141105130247.GA14386@htj.dyndns.org>
- <20141105133100.GC4527@dhcp22.suse.cz>
- <20141105134219.GD4527@dhcp22.suse.cz>
- <20141105154436.GB14386@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105154436.GB14386@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755531AbaKEQBr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:01:47 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43042 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755307AbaKEQBi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:01:38 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 08/11] ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
+Date: Wed,  5 Nov 2014 17:01:24 +0100
+Message-Id: <1415203287-21517-9-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-11-14 10:44:36, Tejun Heo wrote:
-> On Wed, Nov 05, 2014 at 02:42:19PM +0100, Michal Hocko wrote:
-> > On Wed 05-11-14 14:31:00, Michal Hocko wrote:
-> > > On Wed 05-11-14 08:02:47, Tejun Heo wrote:
-> > [...]
-> > > > Also, why isn't this part of
-> > > > oom_killer_disable/enable()?  The way they're implemented is really
-> > > > silly now.  It just sets a flag and returns whether there's a
-> > > > currently running instance or not.  How were these even useful? 
-> > > > Why can't you just make disable/enable to what they were supposed to
-> > > > do from the beginning?
-> > > 
-> > > Because then we would block all the potential allocators coming from
-> > > workqueues or kernel threads which are not frozen yet rather than fail
-> > > the allocation.
-> > 
-> > After thinking about this more it would be doable by using trylock in
-> > the allocation oom path. I will respin the patch. The API will be
-> > cleaner this way.
-> 
-> In disable, block new invocations of OOM killer and then drain the
-> in-progress ones.  This is a common pattern, isn't it?
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ arch/arm/boot/dts/sama5d3.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-I am not sure I am following. With the latest patch OOM path is no
-longer blocked by the PM (aka oom_killer_disable()). Allocations simply
-fail if the read_trylock fails.
-oom_killer_disable is moved before tasks are frozen and it will wait for
-all on-going OOM killers on the write lock. OOM killer is enabled again
-on the resume path.
-
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 5f4144d..9f1eed5 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -395,6 +395,11 @@
+ 				clock-names = "tdes_clk";
+ 			};
+ 
++			hsmc: hsmc@ffffc000 {
++				compatible = "atmel,sama5d3-smc", "syscon";
++				reg = <0xffffc000 0x1000>;
++			};
++
+ 			dma0: dma-controller@ffffe600 {
+ 				compatible = "atmel,at91sam9g45-dma";
+ 				reg = <0xffffe600 0x200>;
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
