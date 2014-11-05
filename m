@@ -1,315 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaKEO72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:59:28 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62106 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344AbaKEOyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755355AbaKEO70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:59:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755348AbaKEOyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 09:54:19 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-08-545a3a17f3ce
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: akpm@linux-foundation.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 00/11] Kernel address sanitizer - runtime memory debugger.
-Date: Wed, 05 Nov 2014 17:53:50 +0300
-Message-id: <1415199241-5121-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.3
-In-reply-to: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAyWRa0iTYRTHe9671uhlzXwTNBIKUloZhg9iElLxQBoVVqTQmvqiwqayOcsw
-	sBWak0RcNlPJlUo6RXPesszWMCckKt5vedu0hFQ2S0NRc/rtf37nd875cBhcWEB4MPEJybwi
-	QSrzplyJ71uWwVPugRHhZ6zrYti0PkvBjc+vSFhcW03B9qE1Gg6v/gbQZsoE0LEwDWDDsBqD
-	P2dmaJg7k0HDl3XusDL7CQWLpqwEbJ5fxGBl1jQJ+z8WU3CyepuEfSY9Bp+29WIwY2WLhJbn
-	JgwuTugImFFWh8HS9nEcLs1rcVhvzMfhoOErDXs2LST8995KXvBEJS12gFoKf9BIb1Sh+gof
-	VNq6gCGjIYtCRkcejTSLAxha6u6mUWfBBoFsAzoMleZoSWSfGyPQH8MQjpbbBimU02AA10QR
-	rkExvCw+hVecDr7nGmefe0smTUY+eDaqodLB1EUNcGE41p/rV69Qe/kw1ztZu5NdGSFbDrh3
-	mb/wvSIH4xo61cBpUayY2yps3p0QsZ5c/mYP4ZRwdo3mBuxG2tk4xIZxq7VvSGcm2ONcq023
-	ywXsJS6rr2NnEbNzzotrrLnixC7sZS5XN4Q7sXBHya04kQsEerDPANx4VXSSMipWflaslMqV
-	qoRYcXSi3Aj2vvn3AyjvCDQDlgHeBwRIfSdcSEpTlKlyM+AY3FskUPtGhAsFMdLUh7wiUaJQ
-	yXilGWCMi0c68E8WlEW97h+SvcCtNs32VX7MLfjup67raePptY9U2rmRc3xISeRGgF5vCQit
-	ktSnaUN05pFEU6ifxGJb1n05JgmKL67ZbBJYjxRpv4Xl0yj7aFhpl3bs4OjshmjKt7PnpNrB
-	Gu/vj+C81Ozticejt6o0570aJ5Lzbu5z2G94E8o4qZ8PrlBK/wM8OZq+qwIAAA==
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: robert.schoene@tu-dresden.de, sboyd@codeaurora.org,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: [PATCH 3/5] cpufreq, dbs_data->usage count must be atomic
+Date: Wed,  5 Nov 2014 09:53:57 -0500
+Message-Id: <1415199239-19019-4-git-send-email-prarit@redhat.com>
+In-Reply-To: <1415199239-19019-1-git-send-email-prarit@redhat.com>
+References: <1415199239-19019-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KASan is a runtime memory debugger designed to find use-after-free
-and out-of-bounds bugs.
+The usage_count value can be modified from several cpus concurrently if
+!CPUFREQ_HAVE_GOVERNOR_PER_POLICY.  This leads to a variety of panics in
+which the usage_count is negative or exceeds the number of cpus in the
+system.  It must be switched to atomic_t and protected with a mutex to make sure
+that future read/writes obtain the correct data.
 
-Currently KASAN supported only for x86_64 architecture and requires kernel
-to be build with SLUB allocator.
-KASAN uses compile-time instrumentation for checking every memory access, therefore you
-will need a fresh GCC >= v4.9.2
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-pm@vger.kernel.org
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+---
+ drivers/cpufreq/cpufreq_governor.c |   16 ++++++++++++----
+ drivers/cpufreq/cpufreq_governor.h |    3 ++-
+ 2 files changed, 14 insertions(+), 5 deletions(-)
 
-Patches are based on mmotm-2014-10-23-16-26 tree and also avaliable in git:
-
-	git://github.com/aryabinin/linux --branch=kasan/kasan_v6
-
-Changes since v5:
-    - Added  __printf(3, 4) to slab_err to catch format mismatches (Joe Perches)
-
-    - Changed in Documentation/kasan.txt per Jonathan.
-
-    - Patch for inline instrumentation support merged to the first patch.
-        GCC 5.0 finally has support for this.
-    - Patch 'kasan: Add support for upcoming GCC 5.0 asan ABI changes' also merged into the first.
-         Those GCC ABI changes are in GCC's master branch now.
-
-    - Added information about instrumentation types to documentation.
-
-    - Added -fno-conserve-stack to CFLAGS for mm/kasan/kasan.c file, because -fconserve-stack is bogus
-      and it causing unecessary split in __asan_load1/__asan_store1. Because of this split
-      kasan_report() is actually not inlined (even though it __always_inline) and _RET_IP_ gives
-      unexpected value. GCC bugzilla entry: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63533
-
-Changes since v4:
-    - rebased on top of mmotm-2014-10-23-16-26
-
-    - merge patch 'efi: libstub: disable KASAN for efistub in' into the first patch.
-        No reason to keep it separate.
-
-    - Added support for upcoming asan ABI changes in GCC 5.0 (second patch).
-        GCC patch has not been published/upstreamed yet, but to will be soon. I'm adding this in advance
-        in order to avoid breaking kasan with future GCC update.
-        Details about gcc ABI changes in this thread: https://gcc.gnu.org/ml/gcc-patches/2014-10/msg02510.html
-
-    - Updated GCC verison requirements in doc (GCC kasan patches were backported into 4.9 branch)
-
-    - Dropped last patch with inline instrumentation support. At first let's wait for merging GCC patches.
-
-Changes since v3:
-
-    - rebased on last mm
-    - Added comment about rcu slabs.
-    - Removed useless kasan_free_slab_pages().
-    - Removed __asan_init_v*() stub. GCC doesn't generate this call anymore:
-       https://gcc.gnu.org/ml/gcc-patches/2014-10/msg00269.html
-    - Replaced CALL_KASAN_REPORT define with inline function
-
-Changes since v2:
-
-    - Shadow moved to vmalloc area.
-    - Added posion page. This page mapped to shadow correspondig to
-      shadow region itself:
-       [kasan_mem_to_shadow(KASAN_SHADOW_START) - kasan_mem_to_shadow(KASAN_SHADOW_END)]
-      It used to catch memory access to shadow outside mm/kasan/.
-
-    - Fixed boot with CONFIG_DEBUG_VIRTUAL=y
-    - Fixed boot with KASan and stack protector enabled
-         (patch "x86_64: load_percpu_segment: read irq_stack_union.gs_base before load_segment")
-
-    - Fixed build with CONFIG_EFI_STUB=y
-    - Some slub specific stuf moved from mm/slab.h to include/linux/slub_def.h
-    - Fixed Kconfig dependency. CONFIG_KASAN depends on CONFIG_SLUB_DEBUG.
-    - Optimizations of __asan_load/__asan_store.
-    - Spelling fixes from Randy.
-    - Misc minor cleanups in different places.
-
-
-    - Added inline instrumentation in last patch. This will require two not
-         yet-in-trunk-patches for GCC:
-             https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00452.html
-             https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00605.html
-
-Changes since v1:
-
-    - The main change is in shadow memory laoyut.
-      Now for shadow memory we reserve 1/8 of all virtual addresses available for kernel.
-      16TB on x86_64 to cover all 128TB of kernel's address space.
-      At early stage we map whole shadow region with zero page.
-      Latter, after physical memory mapped to direct mapping address range
-      we unmap zero pages from corresponding shadow and allocate and map a real
-      memory.
-
-     - Since per-arch work is much bigger now, support for arm/x86_32 platforms was dropped.
-
-     - CFLAGS was change from -fsanitize=address with different --params to -fsanitize=kernel-address
-
-     - If compiler doesn't support -fsanitize=kernel-address warning printed and build continues without -fsanitize
-
-     - Removed kasan_memset/kasan_memcpy/kasan_memmove hooks. It turned out that this hooks are not needed. Compiler
-       already instrument memset/memcpy/memmove (inserts __asan_load/__asan_store call before mem*() calls).
-
-     - branch profiling disabled for mm/kasan/kasan.c to avoid recursion (__asan_load -> ftrace_likely_update -> __asan_load -> ...)
-
-     - kasan hooks for buddy allocator moved to right places
-
-
-Comparison with other debuggin features:
-=======================================
-
-KMEMCHECK:
-	- KASan can do almost everything that kmemcheck can. KASan uses compile-time
-	  instrumentation, which makes it significantly faster than kmemcheck.
-	  The only advantage of kmemcheck over KASan is detection of unitialized
-	  memory reads.
-
-DEBUG_PAGEALLOC:
-	- KASan is slower than DEBUG_PAGEALLOC, but KASan works on sub-page
-	  granularity level, so it able to find more bugs.
-
-SLUB_DEBUG (poisoning, redzones):
-	- SLUB_DEBUG has lower overhead than KASan.
-
-	- SLUB_DEBUG in most cases are not able to detect bad reads,
-	  KASan able to detect both reads and writes.
-
-	- In some cases (e.g. redzone overwritten) SLUB_DEBUG detect
-	  bugs only on allocation/freeing of object. KASan catch
-	  bugs right before it will happen, so we always know exact
-	  place of first bad read/write.
-
-
-Basic idea:
-===========
-
-    The main idea of KASAN is to use shadow memory to record whether each byte of memory
-    is safe to access or not, and use compiler's instrumentation to check the shadow memory
-    on each memory access.
-
-    Address sanitizer uses 1/8 of the memory addressable in kernel for shadow memory
-    (on x86_64 16TB of virtual address space reserved for shadow to cover all 128TB)
-    and uses direct mapping with a scale and offset to translate a memory
-    address to its corresponding shadow address.
-
-    Here is function to translate address to corresponding shadow address:
-
-         unsigned long kasan_mem_to_shadow(unsigned long addr)
-         {
-                    return (addr >> KASAN_SHADOW_SCALE_SHIFT) + KASAN_SHADOW_OFFSET;
-         }
-    where KASAN_SHADOW_SCALE_SHIFT = 3.
-
-    So for every 8 bytes there is one corresponding byte of shadow memory.
-    The following encoding used for each shadow byte: 0 means that all 8 bytes of the
-    corresponding memory region are valid for access; k (1 <= k <= 7) means that
-    the first k bytes are valid for access, and other (8 - k) bytes are not;
-    Any negative value indicates that the entire 8-bytes are inaccessible.
-    Different negative values used to distinguish between different kinds of
-    inaccessible memory (redzones, freed memory) (see mm/kasan/kasan.h).
-
-    To be able to detect accesses to bad memory we need a special compiler.
-    Such compiler inserts a specific function calls (__asan_load*(addr), __asan_store*(addr))
-    before each memory access of size 1, 2, 4, 8 or 16.
-
-    These functions check whether memory region is valid to access or not by checking
-    corresponding shadow memory. If access is not valid an error printed.
-
-Andrey Ryabinin (11):
-  Add kernel address sanitizer infrastructure.
-  x86_64: load_percpu_segment: read irq_stack_union.gs_base before
-    load_segment
-  x86_64: add KASan support
-  mm: page_alloc: add kasan hooks on alloc and free paths
-  mm: slub: introduce virt_to_obj function.
-  mm: slub: share slab_err and object_err functions
-  mm: slub: introduce metadata_access_enable()/metadata_access_disable()
-  mm: slub: add kernel address sanitizer support for slub allocator
-  fs: dcache: manually unpoison dname after allocation to shut up
-    kasan's reports
-  kmemleak: disable kasan instrumentation for kmemleak
-  lib: add kasan test module
-
- Documentation/kasan.txt               | 169 ++++++++++++
- Makefile                              |  23 +-
- arch/x86/Kconfig                      |   1 +
- arch/x86/boot/Makefile                |   2 +
- arch/x86/boot/compressed/Makefile     |   2 +
- arch/x86/include/asm/kasan.h          |  27 ++
- arch/x86/kernel/Makefile              |   2 +
- arch/x86/kernel/cpu/common.c          |   4 +-
- arch/x86/kernel/dumpstack.c           |   5 +-
- arch/x86/kernel/head64.c              |   9 +-
- arch/x86/kernel/head_64.S             |  28 ++
- arch/x86/mm/Makefile                  |   3 +
- arch/x86/mm/init.c                    |   3 +
- arch/x86/mm/kasan_init_64.c           |  87 +++++++
- arch/x86/realmode/Makefile            |   2 +-
- arch/x86/realmode/rm/Makefile         |   1 +
- arch/x86/vdso/Makefile                |   1 +
- drivers/firmware/efi/libstub/Makefile |   1 +
- fs/dcache.c                           |   6 +
- include/linux/kasan.h                 |  69 +++++
- include/linux/sched.h                 |   3 +
- include/linux/slab.h                  |  11 +-
- include/linux/slub_def.h              |  10 +
- lib/Kconfig.debug                     |   2 +
- lib/Kconfig.kasan                     |  54 ++++
- lib/Makefile                          |   1 +
- lib/test_kasan.c                      | 254 ++++++++++++++++++
- mm/Makefile                           |   4 +
- mm/compaction.c                       |   2 +
- mm/kasan/Makefile                     |   7 +
- mm/kasan/kasan.c                      | 468 ++++++++++++++++++++++++++++++++++
- mm/kasan/kasan.h                      |  54 ++++
- mm/kasan/report.c                     | 238 +++++++++++++++++
- mm/kmemleak.c                         |   6 +
- mm/page_alloc.c                       |   3 +
- mm/slab_common.c                      |   5 +-
- mm/slub.c                             |  55 +++-
- scripts/Makefile.lib                  |  10 +
- 38 files changed, 1617 insertions(+), 15 deletions(-)
- create mode 100644 Documentation/kasan.txt
- create mode 100644 arch/x86/include/asm/kasan.h
- create mode 100644 arch/x86/mm/kasan_init_64.c
- create mode 100644 include/linux/kasan.h
- create mode 100644 lib/Kconfig.kasan
- create mode 100644 lib/test_kasan.c
- create mode 100644 mm/kasan/Makefile
- create mode 100644 mm/kasan/kasan.c
- create mode 100644 mm/kasan/kasan.h
- create mode 100644 mm/kasan/report.c
-
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 1b44496..32ad9db 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -265,7 +265,9 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		if (have_governor_per_policy()) {
+ 			WARN_ON(dbs_data);
+ 		} else if (dbs_data) {
+-			dbs_data->usage_count++;
++			mutex_lock(&dbs_data->usage_count_mutex);
++			atomic_inc(&dbs_data->usage_count);
++			mutex_unlock(&dbs_data->usage_count_mutex);
+ 			policy->governor_data = dbs_data;
+ 			return 0;
+ 		}
+@@ -277,7 +279,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		}
+ 
+ 		dbs_data->cdata = cdata;
+-		dbs_data->usage_count = 1;
++		mutex_init(&dbs_data->usage_count_mutex);
++		mutex_lock(&dbs_data->usage_count_mutex);
++		atomic_set(&dbs_data->usage_count, 1);
++		mutex_unlock(&dbs_data->usage_count_mutex);
+ 		rc = cdata->init(dbs_data);
+ 		if (rc) {
+ 			pr_err("%s: POLICY_INIT: init() failed\n", __func__);
+@@ -322,7 +327,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 
+ 		return 0;
+ 	case CPUFREQ_GOV_POLICY_EXIT:
+-		if (!--dbs_data->usage_count) {
++		mutex_lock(&dbs_data->usage_count_mutex);
++		if (atomic_dec_and_test(&dbs_data->usage_count)) {
+ 			sysfs_remove_group(get_governor_parent_kobj(policy),
+ 					get_sysfs_attr(dbs_data));
+ 
+@@ -338,9 +344,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 			}
+ 
+ 			cdata->exit(dbs_data);
++			mutex_unlock(&dbs_data->usage_count_mutex);
+ 			kfree(dbs_data);
+ 			cdata->gdbs_data = NULL;
+-		}
++		} else
++			mutex_unlock(&dbs_data->usage_count_mutex);
+ 
+ 		policy->governor_data = NULL;
+ 		return 0;
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index cc401d1..53ca449 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -219,7 +219,8 @@ struct common_dbs_data {
+ struct dbs_data {
+ 	struct common_dbs_data *cdata;
+ 	unsigned int min_sampling_rate;
+-	int usage_count;
++	struct mutex usage_count_mutex;
++	atomic_t usage_count;
+ 	void *tuners;
+ 
+ 	/* dbs_mutex protects dbs_enable in governor start/stop */
 -- 
-Cc: Dmitry Vyukov <dvyukov@google.com>
-Cc: Konstantin Serebryany <kcc@google.com>
-Cc: Dmitry Chernenkov <dmitryc@google.com>
-Cc: Andrey Konovalov <adech.fo@gmail.com>
-Cc: Yuri Gribov <tetra2005@gmail.com>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Vegard Nossum <vegard.nossum@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: <x86@kernel.org>
-Cc: <linux-mm@kvack.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Joe Perches <joe@perches.com>
--- 
-2.1.3
+1.7.9.3
 
