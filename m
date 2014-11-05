@@ -1,111 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273AbaKEJQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 04:16:39 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:39697 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaKEJQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 04:16:21 -0500
-Message-ID: <1415178975.5402.66.camel@marge.simpson.net>
-Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
-Date: Wed, 05 Nov 2014 10:16:15 +0100
-In-Reply-To: <5451BED0.2060906@lwfinger.net>
-References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>
-	 <5451BED0.2060906@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1754209AbaKEJQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 04:16:33 -0500
+Received: from mout.gmx.net ([212.227.15.19]:56163 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302AbaKEJQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 04:16:17 -0500
+Message-ID: <545968F5.7070605@gmx.de>
+Date: Wed, 05 Nov 2014 01:01:57 +0100
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+MIME-Version: 1.0
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Jonathan Cameron <jic23@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
+CC: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] DT: iio: vadc: document dt binding
+References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com> <1415028270-25860-2-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1415028270-25860-2-git-send-email-iivanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Provags-ID: V03:K0:QmUgHEH7WTx0kGLnl6L2FV8bYkSkyvLBCTuZwfIvglfqigEsnNg
+ wAKON7ciRD6WQbEvFaxX+ZQQzI1mxEnnRpIMMgya7gB5NMLpH+KZsrij7O8KFOvSyu4gFn5
+ bUzfP+Q2InDm5BJE91OvfM+L3edm4FovKRsdno5AwweoJHJ21wnFVkWgT/qfstwVS4Dc2zf
+ AQeDtoZOYaLKcmrp0d+FQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-29 at 23:30 -0500, Larry Finger wrote: 
-> On 10/29/2014 06:28 PM, Murilo Opsfelder Araujo wrote:
-> > This is a complement of commit 08054200117a95afc14c3d2ed3a38bf4e345bf78
-> > "rtlwifi: Add check for get_btc_status callback".
-> >
-> > With this patch, next-20141029 at least does not panic with rtl8192se
-> > device.
-> >
+Ivan T. Ivanov schrieb am 03.11.2014 16:24:
+> From: Stanimir Varbanov <svarbanov@mm-sol.com>
 > 
-> This patch is OK, but as noted it is not complete.
+> Document DT binding for Qualcomm SPMI PMIC voltage ADC
+> driver.
 > 
-> I have patches to fix all the kernel panics for rtl8192se AND rtl8192ce. There 
-> are missing parts, but I would prefer submitting mine, which would conflict with 
-> this one. For that reason, NACK for this one, and please apply the set I am 
-> submitting now.
-
-It's all in there now, but my RTL8191SEvB is still dead.  Squabbling
-with it isn't going all that well either.
-
-As soon as 38506ece rtlwifi: rtl_pci: Start modification for new drivers
-is applied, explosions appear.  Subsequently applying...
-
-08054200 rtlwifi: Add check for get_btc_status callback
-c0386f15 rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for missing get_btc_status
-50147969 rtlwifi: rtl8192se: Fix duplicate calls to ieee80211_register_hw()
-30c5ccc6 rtlwifi: rtl8192se: Add missing section to read descriptor setting
-75a916e1 rtlwifi: rtl8192se: Fix firmware loading
-
-...fixes that mess up, but leaves the interface dead in the same manner
-as if nothing has been reverted.  So it _seems_ the bustage lurks in
-38506ece somewhere.  Too bad it's non-dinky, and written in wifi-ese :)
-
--Mike
-
-Full revert series: 
-patches/revert-75a916e1944fea8347d2245c62567187e4eff9dd
-patches/revert-8ae3c16e41b02db8ffe4121468519d6352baedc1
-patches/revert-30c5ccc6afee39754cff75ad8d775ad39a2ce989
-patches/revert-501479699ff484ba8acc1d07022271f00cfc55a3
-patches/revert-c0386f1584127442d0f2aea41bc948056d6b1337
-patches/revert-08054200117a95afc14c3d2ed3a38bf4e345bf78
-patches/revert-4f2b244c7d5b81ce4f0c6c0382f3a3b7c2dbec1c
-patches/revert-cefe3dfdb9f5f498cae9871f7e52800f5e22c614
-patches/revert-b2d624a5810203a1a8b7735e1ec5685109b22fc3
-patches/revert-d514aefb8ce89562ef2d7dcddc530e5de6287c4b
-patches/revert-598a0df07fc6c4642f9b0497cef1233e41d4c987
-patches/revert-47481d977cb2987ab363202c68a79ec1bccd357c
-patches/revert-1fca350b761631d182c2e8bce530896e66404bc2
-patches/revert-3f08e47291879fb047d7d4464d2beaedfea4eb63
-patches/revert-989377e1cc9e713822d148d2e638d6c63d8a94b1
-patches/revert-574a7930d7c4d0fe4295868e52a5277bd9595b5e
-patches/revert-ef09396ef622572c604d4977e76f6151ef68ed21
-patches/revert-557f933113a42a48ec617b81b5ea53fd7202b1ed
-patches/revert-9f087a924427c01190b205f0051be00808c99828
-patches/revert-5c99f04fec93068147a3e95b439b345f203ac5b9
-patches/revert-0529c6b8176135bcae1ab66bed6c1288456fbdec
-patches/revert-b1a3bfc97cd95681c511515534b84843998f3ea0
-patches/revert-7fe3b3abb5da3a105d87640db693c41259138294
-patches/revert-34ed780a6afc4df5e3285d20fac721c591e0724e
-patches/revert-21e4b0726dc671c423e2dc9a85364716219c4502
-patches/revert-c151aed6aa146e9587590051aba9da68b9370f9b
-patches/revert-f3a97e93814aeac3f13e857a0071726acc9bd626
-patches/revert-d3feae41a3473a0f7b431d6af4e092865d586e52
-patches/revert-3c67b8f9f3b5bb1207c9bb198e5ef04ff56921dd
-patches/revert-9afa2e44f4d8f9d031f815c32bb8f225f0f6746b
-patches/revert-f7953b2ad66cc5fc66e13d5c0a40e61b45cdfca8
-patches/revert-38506ecefab911785d5e1aa5889f6eeb462e0954
-patches/revert-fd09ff958777cf583d7541f180991c0fc50bd2f7
-patches/revert-560e334dbd9907ecdd25318fbdb33179c5d5a3bd
-patches/revert-5eef40e5687da4ad0123e231e4fe952a12655f0b
-patches/revert-6b5447ce630cdc231caf4f958325f8fa925216bf
-patches/revert-dbb30ebeefaf01121b32ae6b5baf29524f3a0b30
-patches/revert-4f4378dead3792d21577739f07869fbd843dab23
-patches/revert-ed364abffd6e19bec67b7ccda8237213b8b37640
-patches/revert-c96fd200e9af8ad4c4891ef579044a75c659d8c7
-patches/revert-2ec7f01c35727574953dbd884d7d45da940a25ee
-patches/revert-f5b5869095819970333dc9de54eed5c552407d35
-patches/revert-2187e9a2ce575ee85a1ce31fa2ecbc0f580c105f
-patches/revert-e8f3fef412d4ffd8cb1bd5cd7a6e5572e21bf80a
-patches/revert-e79fff28587c9437282c863722d1fa186143f62a
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt | 129 +++++++++++++++++++++
+>  include/dt-bindings/iio/qcom,spmi-vadc.h           | 119 +++++++++++++++++++
+>  2 files changed, 248 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+>  create mode 100644 include/dt-bindings/iio/qcom,spmi-vadc.h
+> 
+> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+> new file mode 100644
+> index 0000000..2253813
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+> @@ -0,0 +1,129 @@
+> +Qualcomm's SPMI PMIC voltage ADC
+> +
+> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
+> +voltage. The VADC is a 15-bit sigma-delta ADC.
+> +
+> +VADC node:
+> +
+> +- compatible:
+> +    Usage: required
+> +    Value type: <string>
+> +    Definition: Should contain "qcom,spmi-vadc".
+> +
+> +- reg:
+> +    Usage: required
+> +    Value type: <prop-encoded-array>
+> +    Definition: VADC base address and length in the SPMI PMIC register map.
+> +
+> +- #address-cells:
+> +    Usage: required
+> +    Value type: <u32>
+> +    Definition: Must be one. Child node 'reg' property should define ADC
+> +            channel number.
+> +
+> +- #size-cells:
+> +    Usage: required
+> +    Value type: <u32>
+> +    Definition: Must be zero.
+> +
+> +- #io-channel-cells:
+> +    Usage: required
+> +    Value type: <u32>
+> +    Definition: Must be one. For details about IIO bindings see:
+> +            Documentation/devicetree/bindings/iio/iio-bindings.txt
+> +
+> +- interrupts:
+> +    Usage: optional
+> +    Value type: <prop-encoded-array>
+> +    Definition: End of conversion interrupt.
+> +
+> +Channel node properties:
+> +
+> +- reg:
+> +    Usage: required
+> +    Value type: <u32>
+> +    Definition: ADC channel number.
+> +            See include/dt-bindings/iio/qcom,spmi-vadc.h
+> +
+> +- qcom,decimation:
+> +    Usage: optional
+> +    Value type: <u32>
+> +    Definition: This parameters is used to decrease ADC sampling rate.
+Typo: This parameter (singular)
+> +            Quicker measurements can be made by reducing decimation ratio.
+> +            Valid values are 512, 1024, 2048, 4096.
+> +            If property is not found, default value of 512 will be used.
+> +
+> +- qcom,pre-scaling:
+> +    Usage: optional
+> +    Value type: <u32 array>
+> +    Definition: Used for scaling the channel input signal before the signal is
+> +            fed to VADC. The configuration for this node is to know the
+> +            pre-determined ratio and use it for post scaling. Select one from
+> +            the following options.
+> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
+> +            If property is not found default value depending of chip will be used.
+> +
+> +- qcom,ratiometric:
+> +    Usage: optional
+> +    Value type: <empty>
+> +    Definition: Channel calibration type. If this property is specified
+> +            VADC will use the VDD reference (1.8V) and GND for channel
+> +            calibration. If property is not found, channel will be
+> +            calibrated with 0.625V and 1.25V reference channels, also
+> +            known as absolute calibration.
+> +
+> +- qcom,hw-settle-time:
+> +    Usage: optional
+> +    Value type: <u32>
+> +    Definition: Time between AMUX getting configured and the ADC starting
+> +            conversion. Delay = 100us * (value) for value < 11, and
+> +            2ms * (value - 10) otherwise.
+> +            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
+> +            900 us and 1, 2, 4, 6, 8, 10 ms
+> +            If property is not found, channel will use 0us.
+> +
+> +- qcom,avg-samples:
+> +    Usage: optional
+> +    Value type: <u32>
+> +    Definition: Number of samples to be used for measurement.
+> +            Averaging provides the option to obtain a single measurement
+> +            from the ADC that is an average of multiple samples. The value
+> +            selected is 2^(value).
+> +            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
+> +            If property is not found, 1 sample will be used.
+> +
+> +NOTE:
+> +
+> +Following channels, also know as reference points channels, are used for
+Typos: <...> also known as reference point channels <...>
+> +result calibration and their channel configuration nodes should be defined:
+> +VADC_REF_625MV and/or VADC_SPARE1, based on PMIC version, VADC_REF_1250MV,
+Better put the "based on PMIC version" into parenthesis.
+> +VADC_GND_REF and VADC_VDD_VADC.
+> +
+> +Example:
+> +
+> +	/* VADC node */
+> +	pmic_vadc: vadc@3100 {
+> +		compatible = "qcom,spmi-vadc";
+> +		reg = <0x3100 0x100>;
+> +		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		#io-channel-cells = <1>;
+> +		io-channel-ranges;
+> +
+> +		/* Channel node */
+> +		usb_id_nopull {
+> +			reg = <VADC_LR_MUX10_USB_ID>;
+> +			qcom,decimation = <512>;
+> +			qcom,ratiometric;
+> +			qcom,hw-settle-time = <200>;
+> +			qcom,avg-samples = <1>;
+> +			qcom,pre-scaling = <1 3>;
+> +		};
+> +	};
+> +
+> +	/* IIO client node */
+> +	usb {
+> +		io-channels = <&pmic_vadc VADC_LR_MUX10_USB_ID>;
+> +		io-channel-names = "vadc";
+> +	};
+> diff --git a/include/dt-bindings/iio/qcom,spmi-vadc.h b/include/dt-bindings/iio/qcom,spmi-vadc.h
+> new file mode 100644
+> index 0000000..42121fa
+> --- /dev/null
+> +++ b/include/dt-bindings/iio/qcom,spmi-vadc.h
+> @@ -0,0 +1,119 @@
+> +/*
+> + * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef _DT_BINDINGS_QCOM_SPMI_VADC_H
+> +#define _DT_BINDINGS_QCOM_SPMI_VADC_H
+> +
+> +/* Voltage ADC channels */
+> +#define VADC_USBIN				0x00
+> +#define VADC_DCIN				0x01
+> +#define VADC_VCHG_SNS				0x02
+> +#define VADC_SPARE1_03				0x03
+> +#define VADC_USB_ID_MV				0x04
+> +#define VADC_VCOIN				0x05
+> +#define VADC_VBAT_SNS				0x06
+> +#define VADC_VSYS				0x07
+> +#define VADC_DIE_TEMP				0x08
+> +#define VADC_REF_625MV				0x09
+> +#define VADC_REF_1250MV				0x0a
+> +#define VADC_CHG_TEMP				0x0b
+> +#define VADC_SPARE1				0x0c
+> +#define VADC_SPARE2				0x0d
+> +#define VADC_GND_REF				0x0e
+> +#define VADC_VDD_VADC				0x0f
+> +
+> +#define VADC_P_MUX1_1_1				0x10
+> +#define VADC_P_MUX2_1_1				0x11
+> +#define VADC_P_MUX3_1_1				0x12
+> +#define VADC_P_MUX4_1_1				0x13
+> +#define VADC_P_MUX5_1_1				0x14
+> +#define VADC_P_MUX6_1_1				0x15
+> +#define VADC_P_MUX7_1_1				0x16
+> +#define VADC_P_MUX8_1_1				0x17
+> +#define VADC_P_MUX9_1_1				0x18
+> +#define VADC_P_MUX10_1_1			0x19
+> +#define VADC_P_MUX11_1_1			0x1a
+> +#define VADC_P_MUX12_1_1			0x1b
+> +#define VADC_P_MUX13_1_1			0x1c
+> +#define VADC_P_MUX14_1_1			0x1d
+> +#define VADC_P_MUX15_1_1			0x1e
+> +#define VADC_P_MUX16_1_1			0x1f
+> +
+> +#define VADC_P_MUX1_1_3				0x20
+> +#define VADC_P_MUX2_1_3				0x21
+> +#define VADC_P_MUX3_1_3				0x22
+> +#define VADC_P_MUX4_1_3				0x23
+> +#define VADC_P_MUX5_1_3				0x24
+> +#define VADC_P_MUX6_1_3				0x25
+> +#define VADC_P_MUX7_1_3				0x26
+> +#define VADC_P_MUX8_1_3				0x27
+> +#define VADC_P_MUX9_1_3				0x28
+> +#define VADC_P_MUX10_1_3			0x29
+> +#define VADC_P_MUX11_1_3			0x2a
+> +#define VADC_P_MUX12_1_3			0x2b
+> +#define VADC_P_MUX13_1_3			0x2c
+> +#define VADC_P_MUX14_1_3			0x2d
+> +#define VADC_P_MUX15_1_3			0x2e
+> +#define VADC_P_MUX16_1_3			0x2f
+> +
+> +#define VADC_LR_MUX1_BAT_THERM			0x30
+> +#define VADC_LR_MUX2_BAT_ID			0x31
+> +#define VADC_LR_MUX3_XO_THERM			0x32
+> +#define VADC_LR_MUX4_AMUX_THM1			0x33
+> +#define VADC_LR_MUX5_AMUX_THM2			0x34
+> +#define VADC_LR_MUX6_AMUX_THM3			0x35
+> +#define VADC_LR_MUX7_HW_ID			0x36
+> +#define VADC_LR_MUX8_AMUX_THM4			0x37
+> +#define VADC_LR_MUX9_AMUX_THM5			0x38
+> +#define VADC_LR_MUX10_USB_ID			0x39
+> +#define VADC_AMUX_PU1				0x3a
+> +#define VADC_AMUX_PU2				0x3b
+> +#define VADC_LR_MUX3_BUF_XO_THERM		0x3c
+> +
+> +#define VADC_LR_MUX1_PU1_BAT_THERM		0x70
+> +#define VADC_LR_MUX2_PU1_BAT_ID			0x71
+> +#define VADC_LR_MUX3_PU1_XO_THERM		0x72
+> +#define VADC_LR_MUX4_PU1_AMUX_THM1		0x73
+> +#define VADC_LR_MUX5_PU1_AMUX_THM2		0x74
+> +#define VADC_LR_MUX6_PU1_AMUX_THM3		0x75
+> +#define VADC_LR_MUX7_PU1_AMUX_HW_ID		0x76
+> +#define VADC_LR_MUX8_PU1_AMUX_THM4		0x77
+> +#define VADC_LR_MUX9_PU1_AMUX_THM5		0x78
+> +#define VADC_LR_MUX10_PU1_AMUX_USB_ID		0x79
+> +#define VADC_LR_MUX3_BUF_PU1_XO_THERM		0x7c
+> +
+> +#define VADC_LR_MUX1_PU2_BAT_THERM		0xb0
+> +#define VADC_LR_MUX2_PU2_BAT_ID			0xb1
+> +#define VADC_LR_MUX3_PU2_XO_THERM		0xb2
+> +#define VADC_LR_MUX4_PU2_AMUX_THM1		0xb3
+> +#define VADC_LR_MUX5_PU2_AMUX_THM2		0xb4
+> +#define VADC_LR_MUX6_PU2_AMUX_THM3		0xb5
+> +#define VADC_LR_MUX7_PU2_AMUX_HW_ID		0xb6
+> +#define VADC_LR_MUX8_PU2_AMUX_THM4		0xb7
+> +#define VADC_LR_MUX9_PU2_AMUX_THM5		0xb8
+> +#define VADC_LR_MUX10_PU2_AMUX_USB_ID		0xb9
+> +#define VADC_LR_MUX3_BUF_PU2_XO_THERM		0xbc
+> +
+> +#define VADC_LR_MUX1_PU1_PU2_BAT_THERM		0xf0
+> +#define VADC_LR_MUX2_PU1_PU2_BAT_ID		0xf1
+> +#define VADC_LR_MUX3_PU1_PU2_XO_THERM		0xf2
+> +#define VADC_LR_MUX4_PU1_PU2_AMUX_THM1		0xf3
+> +#define VADC_LR_MUX5_PU1_PU2_AMUX_THM2		0xf4
+> +#define VADC_LR_MUX6_PU1_PU2_AMUX_THM3		0xf5
+> +#define VADC_LR_MUX7_PU1_PU2_AMUX_HW_ID		0xf6
+> +#define VADC_LR_MUX8_PU1_PU2_AMUX_THM4		0xf7
+> +#define VADC_LR_MUX9_PU1_PU2_AMUX_THM5		0xf8
+> +#define VADC_LR_MUX10_PU1_PU2_AMUX_USB_ID	0xf9
+> +#define VADC_LR_MUX3_BUF_PU1_PU2_XO_THERM	0xfc
+> +
+> +#endif /* _DT_BINDINGS_QCOM_SPMI_VADC_H */
+> 
 
