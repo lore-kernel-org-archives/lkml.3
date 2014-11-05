@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaKEOqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:46:24 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:41299 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808AbaKEOqW (ORCPT
+	id S1754965AbaKEOs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:48:59 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:39785 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbaKEOs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:46:22 -0500
-From: Ryo Munakata <ryomnktml@gmail.com>
-To: ericvh@gmail.com
-Cc: rminnich@sandia.gov, lucho@ionkov.net, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ryo Munakata <ryomnktml@gmail.com>
-Subject: [PATCH] net/9p: remove a comment about pref member which doesn't exist
-Date: Wed,  5 Nov 2014 23:45:58 +0900
-Message-Id: <1415198758-18680-1-git-send-email-ryomnktml@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Wed, 5 Nov 2014 09:48:58 -0500
+Message-ID: <545A379D.30608@plexistor.com>
+Date: Wed, 05 Nov 2014 16:43:41 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Boaz Harrosh <boaz@plexistor.com>
+CC: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] brd: Request from fdisk 4k alignment
+References: <545A2D69.8090003@plexistor.com> <545A2F52.3040303@plexistor.com> <yq1k339enl5.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1k339enl5.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ryo Munakata <ryomnktml@gmail.com>
----
- include/net/9p/transport.h | 1 -
- 1 file changed, 1 deletion(-)
+On 11/05/2014 04:20 PM, Martin K. Petersen wrote:
+>>>>>> "Boaz" == Boaz Harrosh <boaz@plexistor.com> writes:
+> 
+> Hey Boaz,
+> 
+> Boaz> Note that blk_queue_physical_block_size() also trashes io_min, but
+> Boaz> we can leave this one to be 512. io_min as opposed to
+> Boaz> physical_block_size will actually change Kernel behavior
+> 
+> Care to elaborate?
+> 
+> Boaz> before this patch running fdisk on a default size brd of 4M
+> Boaz> the first sector offered is 34 (BAD), but after this patch it
+> Boaz> will be 40, ie 8 sectors aligned. Also when entering some random
+> Boaz> partition sizes the next partition-start sector is offered 8 sectors
+> Boaz> aligned after this patch. (Please note that with fdisk the user
+> Boaz> can still enter bad values, only the offered default values will
+> Boaz> be correct)
 
-diff --git a/include/net/9p/transport.h b/include/net/9p/transport.h
-index d9fa68f..2a25dec 100644
---- a/include/net/9p/transport.h
-+++ b/include/net/9p/transport.h
-@@ -34,7 +34,6 @@
-  * @list: used to maintain a list of currently available transports
-  * @name: the human-readable name of the transport
-  * @maxsize: transport provided maximum packet size
-- * @pref: Preferences of this transport
-  * @def: set if this transport should be considered the default
-  * @create: member function to create a new connection on this transport
-  * @close: member function to discard a connection on this transport
--- 
-2.1.3
+I did elaborate, Please try with these numbers above and see for
+yourself. (Summery brd-size=4M before this patch will offer 34 as
+first-sector, after 40)
+
+> Also, fdisk and parted should be aligning on 1MB by default regardless
+> of block size. So I'm also not sure why you need to trick fdisk to align
+> by setting the pbs.
+> 
+
+fdisk will not align partition-start on 1M, only the very first-sector,
+libgparted and cfdisk are as you say, but with fdisk if you put any odd
+numbered partition-size, the next start-sector will just be the sum, but
+with this patch it will offer a small hole and will align the
+partition-start on 4K.
+(And even with this patch user can enter bad values)
+
+Please believe me that I did not try to invent work for myself. I wanted
+to fix the partition bugs, with the use of direct_access and to my dismay
+I found that it is very easy to have broken partition alignments. With this
+patch it is still possible but mach harder to do so.
+
+Thanks
+Boaz
 
