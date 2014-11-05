@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156AbaKEWoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 17:44:22 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:54101 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaKEWoV (ORCPT
+	id S1751333AbaKEWpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 17:45:12 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:60620 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaKEWpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 17:44:21 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] trace: Replace seq_printf by simpler equivalents
-Organization: D03
-References: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
-	<20141105173454.7aa47289@gandalf.local.home>
-X-Hashcash: 1:20:141105:rostedt@goodmis.org::gN876Z2KedUtu7Dd:0000000000000000000000000000000000000000001mUy
-X-Hashcash: 1:20:141105:linux-kernel@vger.kernel.org::quQNdEr3B2Sbu+un:0000000000000000000000000000000002V5Q
-X-Hashcash: 1:20:141105:julia.lawall@lip6.fr::o6/cnuLYJqHYnSLk:0000000000000000000000000000000000000000047R3
-X-Hashcash: 1:20:141105:mingo@redhat.com::n19aH5SFQAB5RjHR:05moU
-Date: Wed, 05 Nov 2014 23:44:17 +0100
-In-Reply-To: <20141105173454.7aa47289@gandalf.local.home> (Steven Rostedt's
-	message of "Wed, 5 Nov 2014 17:34:54 -0500")
-Message-ID: <87tx2de08u.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 5 Nov 2014 17:45:08 -0500
+Date: Wed, 5 Nov 2014 15:45:04 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch Part2 v4 20/31] PCI/MSI: Kill redundant calling for
+ irq_set_msi_desc() for MSIx interrupts
+Message-ID: <20141105224504.GG6168@google.com>
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
+ <1415102525-9898-21-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415102525-9898-21-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05 2014, Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tue, Nov 04, 2014 at 08:01:54PM +0800, Jiang Liu wrote:
+> It's arch_setup_msi_irq()/arch_setup_msi_irqs()'s responsibility to call
+> irq_set_msi_desc() to associate IRQ descriptors and MSI descriptors,
+> so kill the redundant call of irq_set_msi_desc() for MSIx interrupts
+> in PCI MSI core.
 
-> On Fri, 12 Sep 2014 11:25:52 +0200
-> Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
->
->> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
->> index 5916a8e..7b9ce28 100644
->> --- a/kernel/trace/ftrace.c
->> +++ b/kernel/trace/ftrace.c
->> @@ -556,13 +556,13 @@ static int function_stat_cmp(void *p1, void *p2)
->>  static int function_stat_headers(struct seq_file *m)
->>  {
->>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->> -	seq_printf(m, "  Function                               "
->> -		   "Hit    Time            Avg             s^2\n"
->> -		      "  --------                               "
->> -		   "---    ----            ---             ---\n");
->> +	seq_puts(m,
->> +		 "  Function                               " "Hit    Time            Avg             s^2\n"
->> +		 "  --------                               " "---    ----            ---             ---\n");
->
-> Please keep the original format. I know that it's considered bad form
-> to split strings like this, but I consider this one of the exceptions
-> to the rule.
+"MSI-X" in English text, "msix" in code.
 
-OK. Want me to resend?
+The default arch_setup_msi_irq() in drivers/pci/msi.c doesn't call
+irq_set_msi_desc().  Does it happen somewhere inside chip->setup_irq()?
 
->> @@ -3250,7 +3250,7 @@ static int t_show(struct seq_file *m, void *v)
->>  	if (!t)
->>  		return 0;
->>  
->> -	seq_printf(m, "%s", t->name);
->> +	seq_puts(m, t->name);
->
-> This is wrong and dangerous.
->
-> What happens if "t->name" contains "%d" or "%s"?
+I don't know how to verify that there are calls in all the places needed.
+That makes me wonder if the factoring is wrong -- maybe irq_set_msi_desc()
+could be done in some common place.
 
-Then those characters will be printed to the seq_file, just as they
-would previously? puts doesn't interpret its string argument in any
-way...
-
->> --- a/kernel/trace/trace_events_trigger.c
->> +++ b/kernel/trace/trace_events_trigger.c
->> @@ -373,7 +373,7 @@ event_trigger_print(const char *name, struct seq_file *m,
->>  {
->>  	long count = (long)data;
->>  
->> -	seq_printf(m, "%s", name);
->> +	seq_puts(m, name);
->
-> Again, this is wrong and dangerous.
-
-I'm pretty sure it's neither :-)
-
-Rasmus
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/pci/msi.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index afe974600c7d..da181c59394b 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -685,7 +685,6 @@ static void msix_program_entries(struct pci_dev *dev,
+>  						PCI_MSIX_ENTRY_VECTOR_CTRL;
+>  
+>  		entries[i].vector = entry->irq;
+> -		irq_set_msi_desc(entry->irq, entry);
+>  		entry->masked = readl(entry->mask_base + offset);
+>  		msix_mask_irq(entry, 1);
+>  		i++;
+> -- 
+> 1.7.10.4
+> 
