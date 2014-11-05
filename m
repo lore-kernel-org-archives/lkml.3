@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaKEVcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:32:47 -0500
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:41971 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaKEVcp convert rfc822-to-8bit (ORCPT
+	id S1751731AbaKEVel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:34:41 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50912 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751133AbaKEVei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:32:45 -0500
+	Wed, 5 Nov 2014 16:34:38 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, wsa@the-dreams.de, robert.moore@intel.com,
+        lv.zheng@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devel@acpica.org
+Subject: Re: [RFC PATCH V2] ACPI: Add _DEP(Operation Region Dependencies) support to fix battery issue on the Asus T100TA
+Date: Wed, 05 Nov 2014 22:55:23 +0100
+Message-ID: <7320898.JB9z5hUzdG@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141105085414.GV1618@lahna.fi.intel.com>
+References: <1414422584-2638-1-git-send-email-tianyu.lan@intel.com> <20141105085414.GV1618@lahna.fi.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+mtBx_BOmV+tOtio48M+xRatK79B31LoGnf4uvFJAbxYqOt_w@mail.gmail.com>
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
-	<CAJ3xEMjkxRg=uM+0kjOM0Zh84XYm_O6PiWoeYSw=LirU=ZJ+rA@mail.gmail.com>
-	<CANr6G5xtNYenhd8KDWx+kRcnSZ0fahUdAL+6Wcz=5_dNvrQR6Q@mail.gmail.com>
-	<CA+mtBx_BOmV+tOtio48M+xRatK79B31LoGnf4uvFJAbxYqOt_w@mail.gmail.com>
-Date: Wed, 5 Nov 2014 23:32:44 +0200
-Message-ID: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
-Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
-From: Or Gerlitz <gerlitz.or@gmail.com>
-To: Tom Herbert <therbert@google.com>
-Cc: Joe Stringer <joestringer@nicira.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        "sathya.perla" <sathya.perla@emulex.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "linux.nics" <linux.nics@intel.com>, Amir Vadai <amirv@mellanox.com>,
-        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
-        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 8:00 PM, Tom Herbert <therbert@google.com> wrote:
-> On Wed, Nov 5, 2014 at 9:50 AM, Joe Stringer <joestringer@nicira.com> wrote:
->>
->> On 5 November 2014 04:38, Or Gerlitz <gerlitz.or@gmail.com> wrote:
->>>
->>> On Tue, Nov 4, 2014 at 11:56 PM, Joe Stringer <joestringer@nicira.com> wrote:
->>> > Most NICs that report NETIF_F_GSO_UDP_TUNNEL support VXLAN, and not other
->>> > UDP-based encapsulation protocols where the format and size of the header may
->>> > differ. This patch series implements ndo_gso_check() for these NICs,
->>> > restricting the GSO handling to something that looks and smells like VXLAN.
->>> >
->>> > Implementation shamelessly stolen from Tom Herbert (with minor fixups):
->>> > http://thread.gmane.org/gmane.linux.network/332428/focus=333111
->>>
->>>
->>> Hi Joe,
->>>
->>> 1st, thanks for picking this task...2nd, for drivers that currently
->>> support only pure VXLAN, I don't see the point
->>> to replicate the helper suggested by Tom (good catch on the size check
->>> to be 16 and not 12) four times and who know how more in the future.
->>> Let's just have one generic helper and make the mlx4/be/fm10k/benet
->>> drivers to have it as their ndo, OK?
->>
->>
->> Thanks for taking a look.
->>
->> I had debated whether to do this or not as the actual support on each NIC may differ, and each implementation may morph over time to match these capabilities better. Obviously the vendors will know better than me on this, so I'm posing this series to prod them for more information. At this point I've had just one maintainer come back and confirm that this helper is a good fit for their hardware, so I'd like to confirm that multiple drivers will use a ndo_gso_check_vxlan_helper() function before I go and create it.
->
->
-> Thanks for implementing this fix!
->
-> Personally, I would rather not have the helper. This is already a
-> small number of drivers, and each driver owner should consider what
-> limitations are of their device and try to enable to allow the maximum
-> number of use cases possible. I'm also hoping that new devices will
-> implement the more generic mechanism so that VXLAN is just one
-> supported protocol.
+On Wednesday, November 05, 2014 10:54:14 AM Mika Westerberg wrote:
+> On Mon, Oct 27, 2014 at 11:09:44PM +0800, Lan Tianyu wrote:
+> > ACPI 5.0 introduces _DEP to designate device objects that OSPM should
+> > assign a higher priority in start ordering due to future operation region
+> > accesses.
+> > 
+> > On Asus T100TA, ACPI battery info are read from a I2C slave device via
+> > I2C operation region. Before I2C operation region handler is installed,
+> > battery _STA always returns 0. There is a _DEP method of designating
+> > start order under battery device node.
+> > 
+> > This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
+> > Introducing acpi_dep_list and adding dep_unmet count in the struct
+> > acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
+> > valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
+> > master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
+> > count will increase by one if there is a device under its _DEP. Driver's probe() should
+> > return EPROBE_DEFER when find dep_unmet larger than 0. When I2C operation
+> > region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
+> > whose master is pointed to I2C host controller and decrease slave's dep_unmet.
+> > When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
+> > for the device in order to resolve battery _STA issue on the Asus T100TA.
+> 
+> Is there a reason why the driver core can't handle this automatically in
+> such way that when there are unmet dependencies, it will not probe the
+> device? Or am I missing something?
 
-but fact is that the proposed patch series has the --same-- helper for
-four drivers, so why not start with a that limited helper which would
-be picked up by these drivers and we'll take it from there.
+Yes, there is a reason: There's no way to represent such dependencies in the
+driver core. :-)
+
+That's been discussed for several times (and I've even mentioned _DEP in one
+of those discussions) and it's always ended up being seen as "complexity
+nightmare".
+
+> Now it looks like the driver itself needs to know about these and handle
+> them somehow.
+
+The patch is missing the user of it which is going to be the battery driver
+only for the time being.  Tianyu, can you please include the battery changes
+into the patch at least for now?
+
+> I'm asking this because there are other things like devices using GPIOs
+> that also take advantage of _DEP, like this on Asus T100:
+> 
+>         Device (SDHB)
+>         {
+>             Name (_ADR, Zero)  // _ADR: Address
+>             Name (_HID, "INT33BB")  // _HID: Hardware ID
+>             ...
+>             Name (_DEP, Package (0x02)  // _DEP: Dependencies
+>             {
+>                 PEPD,
+>                 GPO2
+>             })
+> 
+> I don't know what PEPD is but GPO2 is the GPIO controller.
+
+Well, if you read the definition of _DEP in ACPI 5.1, it is all about operation
+regions, so this smells like abuse of sorts.  In any case, it is hard to argue
+that _DEP is not internal to ACPI because of that definition.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
