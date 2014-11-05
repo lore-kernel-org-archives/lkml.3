@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaKER5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 12:57:16 -0500
-Received: from mga03.intel.com ([134.134.136.65]:8093 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288AbaKER5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 12:57:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,321,1413270000"; 
-   d="scan'208";a="632073905"
-Date: Wed, 5 Nov 2014 09:57:03 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Kan Liang <kan.liang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH V7 13/17] perf, x86: enable LBR callstack when recording
- callchain
-Message-ID: <20141105175703.GQ3274@tassilo.jf.intel.com>
-References: <1415156173-10035-1-git-send-email-kan.liang@intel.com>
- <1415156173-10035-14-git-send-email-kan.liang@intel.com>
- <20141105092145.GP10501@worktop.programming.kicks-ass.net>
- <CABPqkBS89jrjOMR9b_7WudJ0rDn0uD8XxX2gCJYDvTEssjXcww@mail.gmail.com>
- <20141105104359.GP3337@twins.programming.kicks-ass.net>
- <CABPqkBQFqoZdRZvRT3kHukpYXHBJdB4mUWARNoo1QZmgH24p4w@mail.gmail.com>
- <20141105124926.GS3337@twins.programming.kicks-ass.net>
- <CABPqkBRF6VEigBcBr+6Hy5E3tmfk4vpDiR8Zui8=853GTjG_XQ@mail.gmail.com>
+	id S1752759AbaKER6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 12:58:19 -0500
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:53901 "EHLO
+	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631AbaKER6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 12:58:16 -0500
+X-TM-IMSS-Message-ID: <c1752dee000658d1@nsa.gov>
+Message-ID: <545A6464.5070702@tycho.nsa.gov>
+Date: Wed, 05 Nov 2014 12:54:44 -0500
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRF6VEigBcBr+6Hy5E3tmfk4vpDiR8Zui8=853GTjG_XQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Howells <dhowells@redhat.com>, linux-unionfs@vger.kernel.org,
+        selinux@tycho.nsa.gov
+CC: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] SELinux: The copy-up operation must have read permission
+ on the lower file
+References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154318.2555.7052.stgit@warthog.procyon.org.uk> <545A53A9.4060009@tycho.nsa.gov>
+In-Reply-To: <545A53A9.4060009@tycho.nsa.gov>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> LBR callstack fails for leaf function optimization. Where the callee does
-> not return to its caller but instead to the caller's caller. That is the one
-> case I know about. There are others I believe.
+On 11/05/2014 11:43 AM, Stephen Smalley wrote:
+> On 11/05/2014 10:43 AM, David Howells wrote:
+>> The copy-up operation must have read permission on the lower file for the task
+>> that caused the copy-up.  This helps prevent overlayfs from being used to
+>> access something it shouldn't.
+>>
+>> Signed-off-by: David Howells <dhowells@redhat.com>
+>> ---
+>>
+>>  security/selinux/hooks.c |    3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+>> index f43f07fdc028..57f9c641779f 100644
+>> --- a/security/selinux/hooks.c
+>> +++ b/security/selinux/hooks.c
+>> @@ -3144,7 +3144,8 @@ static void selinux_inode_getsecid(const struct inode *inode, u32 *secid)
+>>  
+>>  static int selinux_inode_copy_up(struct dentry *src, struct dentry *dst)
+>>  {
+>> -	return 0;
+>> +	const struct cred *cred = current_cred();
+>> +	return dentry_has_perm(cred, src, FILE__OPEN | FILE__READ);
+>>  }
+> 
+> Won't this get checked anyway when overlayfs calls vfs helpers to open
+> the source and those vfs helpers call the security hooks and apply the
+> usual checks?
+> 
+> Or, if not, where do you check permissions for the destination?
 
-No it should work fine for this case. You just don't see the tail call,
-but the call stack does not get out of sync, so future calls work fine. 
-It's the same as with frame pointers or even dwarf.
+BTW, a quick look at overlayfs suggests further problems with regard to
+permission checking, e.g. ovl_copy_up_one() does:
+        /*
+         * CAP_SYS_ADMIN for copying up extended attributes
+         * CAP_DAC_OVERRIDE for create
+         * CAP_FOWNER for chmod, timestamp update
+         * CAP_FSETID for chmod
+         * CAP_CHOWN for chown
+         * CAP_MKNOD for mknod
+         */
+        cap_raise(override_cred->cap_effective, CAP_SYS_ADMIN);
+        cap_raise(override_cred->cap_effective, CAP_DAC_OVERRIDE);
+        cap_raise(override_cred->cap_effective, CAP_FOWNER);
+        cap_raise(override_cred->cap_effective, CAP_FSETID);
+        cap_raise(override_cred->cap_effective, CAP_CHOWN);
+        cap_raise(override_cred->cap_effective, CAP_MKNOD);
+        old_cred = override_creds(override_cred);
 
-Typical cases that throw it off are throwing exceptions or user space
-context switching.
+This means that it expects to trigger those capability checks as part of
+its subsequent actions.  Raising those capabilities temporarily in its
+credentials will pass the capability module checks but won't address the
+corresponding SELinux checks (both capability and file-based), so you'll
+end up triggering an entire set of checks against the current process'
+credentials.  This same pattern is repeated elsewhere in overlayfs.
 
-One somewhat common case that used to throw it off was the
-call 1f ; 1: pop %ebx
-older 32bit binaries used to do to get the PIC offset. That has been
-fixed in newer compilers by using an out of line function
-(and also Broadwell has a workaround for this)
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
