@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaKEQMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 11:12:53 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34535 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754004AbaKEQMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 11:12:52 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@kernel.org, drew.richardson@arm.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, vincent.weaver@maine.edu, will.deacon@arm.com,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 1/1] perf: fix corruption of sibling list with hotplug
-Date: Wed,  5 Nov 2014 16:11:44 +0000
-Message-Id: <1415203904-25308-2-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415203904-25308-1-git-send-email-mark.rutland@arm.com>
-References: <1415203904-25308-1-git-send-email-mark.rutland@arm.com>
+	id S1754919AbaKEQOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 11:14:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753191AbaKEQOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 11:14:20 -0500
+Date: Thu, 6 Nov 2014 00:14:16 +0800
+From: Amos Kong <akong@redhat.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: stable@vger.kernel.org, gregkh@linuxfoundation.org, rusty@rustcorp.com.au,
+        amit.shah@redhat.com, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.16 stable PATCH 0/2] virtio-rng: two backports to fix stuck
+Message-ID: <20141105161416.GB19104@air.nay.redhat.com>
+References: <1412981509-30025-1-git-send-email-akong@redhat.com>
+ <20141104043227.GA13409@air.redhat.com>
+ <20141105160249.GG9403@hercules>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gatW/ieO32f1wygP"
+Content-Disposition: inline
+In-Reply-To: <20141105160249.GG9403@hercules>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU hotplugged out, we call perf_remove_from_context (via
-perf_event_exit_cpu) to rip each CPU-bound event out of its PMU's cpu
-context, but leave siblings grouped together. Freeing of these events is
-left to the mercy of the usual refcounting.
 
-When a CPU-bound event's refcount drops to zero we cross-call to
-__perf_remove_from_context to clean it up, detaching grouped siblings.
-This works when the relevant CPU is online, but will fail if the CPU is
-currently offline, and we won't detach the event from its siblings
-before freeing the event, leaving the sibling list corrupt. If the
-sibling list is later walked (e.g. because the CPU cam online again
-before a remaining sibling's refcount drops to zero), we will walk the
-now corrupted siblings list, potentially dereferencing garbage values.
+--gatW/ieO32f1wygP
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Given that the events should never be scheduled again (as we removed
-them from their context), we can simply detatch siblings when the CPU
-goes down in the first place. If the CPU comes back online, the
-redundant call to __perf_remove_from_context is safe.
+On Wed, Nov 05, 2014 at 04:02:49PM +0000, Luis Henriques wrote:
+> Hi Amos
+>=20
+> On Tue, Nov 04, 2014 at 12:32:27PM +0800, Amos Kong wrote:
+> > On Sat, Oct 11, 2014 at 06:51:47AM +0800, Amos Kong wrote:
+> > > I received two mails about faile to apply patches to 3.16-stable tree:
+> > >=20
+> > > FAILED: patch "[PATCH] virtio-rng: skip reading when we start to remo=
+ve the device" failed to apply to 3.16-stable tree
+> > > FAILED: patch "[PATCH] virtio-rng: fix stuck of hot-unplugging busy d=
+evice" failed to apply to 3.16-stable tree
+> > >=20
+> > > Amit already backported two patches for 3.16-stable, then cherry-pick
+> > > of my two patches works.
+> > >=20
+> > > Thanks.
+> >=20
+> > Ping Greg, thanks.
+> > =20
+>=20
+> I'm now doing the extended stable maintenance of the 3.16 kernel, as
+> Greg has EOL'ed it.
+>=20
+> Anyway, I will be queuing these 2 patches for the extended 3.16
+> kernel.  Thank you!
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Will Deacon <will.deacon@arm.com>
----
- kernel/events/core.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Thanks a lot!
+=20
+> Cheers,
+> --
+> Lu=EDs
+>=20
+> > > Amos Kong (2):
+> > >   virtio-rng: fix stuck of hot-unplugging busy device
+> > >   virtio-rng: skip reading when we start to remove the device
+> > >=20
+> > >  drivers/char/hw_random/virtio-rng.c | 7 +++++++
+> > >  1 file changed, 7 insertions(+)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2b02c9f..1cd5eef 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1562,8 +1562,10 @@ static void perf_remove_from_context(struct perf_event *event, bool detach_group
- 
- 	if (!task) {
- 		/*
--		 * Per cpu events are removed via an smp call and
--		 * the removal is always successful.
-+		 * Per cpu events are removed via an smp call. The removal can
-+		 * fail if the CPU is currently offline, but in that case we
-+		 * already called __perf_remove_from_context from
-+		 * perf_event_exit_cpu.
- 		 */
- 		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
- 		return;
-@@ -8117,7 +8119,7 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
- 
- static void __perf_event_exit_context(void *__info)
- {
--	struct remove_event re = { .detach_group = false };
-+	struct remove_event re = { .detach_group = true };
- 	struct perf_event_context *ctx = __info;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
--- 
-1.9.1
+--=20
+			Amos.
 
+--gatW/ieO32f1wygP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUWkzYAAoJELxSv6I5vP9jRSwP/1+dUka3wv4bPl+FG1JjKNn+
+PUaJGk4zSWe9Uo8yN/+L5T/W/qvutwt4uw+IRTgRVuK2Rf8eGjZsCrmcADnCDQe1
+qNFz5lkT7g47xWv/Ikr9lrigBFUJGdHmj29/FwDb7UyXNaIWmChoDULwKYAnJAg7
+DqGiEOdJ4X2ztz1ieQO0VkhkDieM1p6PYkBx3JEhALlSSGt/zPLPTN0MxH5hXOv1
+ivRzsV+rgG7mCrZ+IFYNuLkqd6yHvr6wU9UsvRpXknZ+h8AYn6DT4r5ZLg+Uv3XG
+LeFFAqp9OFWqCryHwDPfjW+8mnCjdxddl/w86rItbG17G6NEmWG8s5JqfOiRGMFS
+nMsyyCCJGx/6C39TXzym5RNk4rho2fNrE1O5qZkCs2iFIoPCiO8TuFkvq7nvZ7DX
+AprV4nOVgcuKMOEEb7T3rsUzEnS75h1ZK8XmRmfERDui/d7JKRI/91+ru8TsTSbp
+qUJbhCtf5F2I2woHQmCVziuez9btZ5qBx15mKtJtZvRQY6QOnFVFi3BwekZ5lEBw
+Pt/PAQoDZGK/nj+Y/GFjbA/SZnL+2RXFx2EXofcYsTNTl0u5ib5d8LFuVZJGkYNZ
+LeUxIeR+VIEF5IxPWKKUTMG/JjW67EoxkA8RWihT9IIU8pkzyhcodqlpErpyEt8X
+f+1iwleNlwNgd1NP6+7P
+=5g+q
+-----END PGP SIGNATURE-----
+
+--gatW/ieO32f1wygP--
