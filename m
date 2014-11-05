@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaKEBAB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 20:00:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36295 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaKEBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 20:00:00 -0500
-Message-ID: <1415149183.6673.12.camel@linux-t7sj.site>
-Subject: Re: [PATCH 10/10] mm/hugetlb: share the i_mmap_rwsem
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
-        riel@redhat.com, mgorman@suse.de, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Tue, 04 Nov 2014 16:59:43 -0800
-In-Reply-To: <alpine.LSU.2.11.1411032208390.15596@eggly.anvils>
-References: <1414697657-1678-1-git-send-email-dave@stgolabs.net>
-	 <1414697657-1678-11-git-send-email-dave@stgolabs.net>
-	 <alpine.LSU.2.11.1411032208390.15596@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	id S1752793AbaKEBC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 20:02:29 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:42261 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaKEBC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 20:02:28 -0500
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: linux-arm-kernel@lists.infradead.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <9272b58185e80cb3ebed20c8b5c4957b>
+X-DNS-TYPE: 1
+Message-ID: <54597714.3050406@rock-chips.com>
+Date: Wed, 05 Nov 2014 09:02:12 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Tao Huang <huangtao@rock-chips.com>,
+        =?UTF-8?B?IuaItOWFi+mcliAoSmFjayk=?= =?UTF-8?B?Ig==?= 
+	<dkl@rock-chips.com>,
+        Addy Ke <addy.ke@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Jianqun Xu <xjq@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: rockchip: change hierarchy for some clocks
+References: <1414747777-12625-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=VByf=YKw7q4L2493C-z9uJ3dTSk9WZyCFdOkSjD2XoDw@mail.gmail.com>
+In-Reply-To: <CAD=FV=VByf=YKw7q4L2493C-z9uJ3dTSk9WZyCFdOkSjD2XoDw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 22:35 -0800, Hugh Dickins wrote:
-> On Thu, 30 Oct 2014, Davidlohr Bueso wrote:
-> 
-> > The i_mmap_rwsem protects shared pages against races
-> > when doing the sharing and unsharing, ultimately
-> > calling huge_pmd_share/unshare() for PMD pages --
-> > it also needs it to avoid races when populating the pud
-> > for pmd allocation when looking for a shareable pmd page
-> > for hugetlb. Ultimately the interval tree remains intact.
-> > 
-> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> > Acked-by: Kirill A. Shutemov <kirill.shutemov@intel.linux.com>
->                                                 linux.intel.com
-> 
-> I'm uncomfortable with this one: I'm certainly not prepared to Ack it;
-> but that could easily be that I'm just not thinking hard enough - I'd
-> rather leave the heavy thinking to someone else!
-> 
-> The fs/hugetlbfs/inode.c part of it should be okay, but the rest is
-> iffy.  It gets into huge page table sharing territory, which is very
-> tricky and surprising territory indeed (take a look at my
-> __unmap_hugepage_range_final() comment, for one example).
-> 
-> You're right that the interval tree remains intact, but I've a feeling
-> we end up using i_mmap_mutex for more exclusion than just that (rather
-> like how huge_memory.c finds anon_vma lock useful for other exclusions).
+Hi Doug,
 
-Yeah, that certainly wouldn't surprise me, and this particular patch was
-the one I was most unsure about for that exact same reason. Hopefully
-others could confirm if this is truly doable and safe.
+On 11/05/2014 05:32 AM, Doug Anderson wrote:
+> Kever
+>
+> On Fri, Oct 31, 2014 at 2:29 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>> This patch change the hierarchy for some clocks, to met the following
+>> bus hierarchy:
+>> hclk_usb_peri is bus clock for
+>> |- hclk_otg0,
+>> |- hclk_host0,
+>> |- hclk_host1,
+>> |- hclk_hsic
+>>
+>> hclk_emem is bus clock for
+>> |- hclk_nandc0
+>> |- hclk_nandc1
+>>
+>> hclk_mem is bus clock for
+>> |- hclk_sdmmc
+>> |- hclk_sdio0
+>> |- hclk_sdio1
+>> |- hclk_emmc
+> So as I understand it the "parent" clocks aren't really parents but
+> are actually peer clocks.  That is if "hclk_usb_peri" is gated
+> "hclk_otg0" continues to run.  ...but the OTG periperhal is useless
+> without "hclk_usb_peri" also being enabled.
+Correct.
+>
+> There doesn't seem to be any real downside to modeling thing as you
+> have done it, though it's not quite a true representation of the
+> world.  A slightly more true representation would be to make it so
+> that whenever "hclk_otg0" is enabled/disabled that it makes an
+> enable/disable call to "hclk_usb_peri".  I think you'd have to
+> subclass the gate clock and patch your stuff in the "enable" function.
+>
+> I'm personally OK with things landing as you've described it (I can
+> see no downside), but it seems like this at least deserves a comment
+> (either in the code or the commit message).
+I will update the commit message in new version, I describe it
+in a private mail ask for how to handle this kind of clock, but not
+in this patch, I will add it.
+>
+> If Mike T. thinks that we should use a more truthful model or if
+> there's some better way to express this, you should of course listen
+> to him and not to me.
+Sure, I'm always looks for a better way for these kind of clocks,
+there are many other clocks like *_arbi and *_niu still on rk3288
+are not handled by any module which we have to use
+CLK_IGNORE_UNUSED tag when disable unused init.
 
-> I think Mel (already Cc'ed) and Michal (adding him) both have past
-> experience with the shared page table (as do I, but I'm in denial).
-> 
-> I wonder if the huge shared page table would be a good next target
-> for Kirill's removal of mm nastiness.  (Removing it wouldn't hurt
-> Google for one: we have it "#if 0"ed out, though I forget why at
-> this moment.)
-> 
-> But, returning to the fs/hugetlbfs/inode.c part of it, that reminds
-> me: you're missing one patch from the series, aren't you?  Why no
-> i_mmap_lock_read() in mm/memory.c unmap_mapping_range()?  I doubt
-> it will add much useful parallelism, but it would be correct.
-
-Oh yes, not sure why I didn't update that function, I had it marked it
-safe to share the lock. Thanks for taking a close look at the series.
-
-8<------------------------------------------------
-From: Davidlohr Bueso <dave@stgolabs.net>
-Subject: [PATCH 11/10] mm/memory.c: share the i_mmap_rwsem
-
-The unmap_mapping_range family of functions do the unmapping
-of user pages (ultimately via zap_page_range_single) without
-touching the actual interval tree, thus share the lock.
-
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
----
- mm/memory.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 2ca3105..06f2458 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2396,12 +2396,12 @@ void unmap_mapping_range(struct address_space *mapping,
- 		details.last_index = ULONG_MAX;
- 
- 
--	i_mmap_lock_write(mapping);
-+	i_mmap_lock_read(mapping);
- 	if (unlikely(!RB_EMPTY_ROOT(&mapping->i_mmap)))
- 		unmap_mapping_range_tree(&mapping->i_mmap, &details);
- 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
- 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
--	i_mmap_unlock_write(mapping);
-+	i_mmap_unlock_read(mapping);
- }
- EXPORT_SYMBOL(unmap_mapping_range);
- 
--- 
-1.8.4.5
-
-
-
+- Kever
