@@ -1,101 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaKEVRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 16:17:12 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:34522 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaKEVPJ (ORCPT
+	id S1752208AbaKEVR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 16:17:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:56842 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752176AbaKEVRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 16:15:09 -0500
-From: Milosz Tanski <milosz@adfin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@lst.de>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org,
-        linux-xfs@vger.kernel.org
-Subject: [PATCH v5 5/7] xfs: add RWF_NONBLOCK support
-Date: Wed,  5 Nov 2014 16:14:51 -0500
-Message-Id: <23798acaf272aea30908e619ff40b2b173d6e57c.1415220890.git.milosz@adfin.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1415220890.git.milosz@adfin.com>
-References: <cover.1415220890.git.milosz@adfin.com>
-In-Reply-To: <cover.1415220890.git.milosz@adfin.com>
-References: <cover.1415220890.git.milosz@adfin.com>
+	Wed, 5 Nov 2014 16:17:22 -0500
+Date: Wed, 5 Nov 2014 16:17:20 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in
+ trace_seq
+Message-ID: <20141105161720.71abdbdb@gandalf.local.home>
+In-Reply-To: <20141105150007.1c543b9e@gandalf.local.home>
+References: <20141104155237.228431433@goodmis.org>
+	<20141104160221.864997179@goodmis.org>
+	<20141105142222.GC4570@pathway.suse.cz>
+	<20141105134147.226a23ef@gandalf.local.home>
+	<20141105150007.1c543b9e@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@lst.de>
+On Wed, 5 Nov 2014 15:00:07 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Add support for non-blocking reads.  The guts are handled by the generic
-code, the only addition is a non-blocking variant of xfs_rw_ilock.
+> On Wed, 5 Nov 2014 13:41:47 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > > 
+> > > > + */
+> > > > +int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+> > > > +		    int nmaskbits)
+> > > > +{
+> > > > +	unsigned int len = SEQ_BUF_LEFT(s);
+> > > >
+> > > > +	int ret;
+> > > > +
+> > > > +	WARN_ON(s->size == 0);
+> > > > +
+> > > > +	if (s->len < s->size) {
+> > > > +		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
+> > > 
+> > > It writes to the beginning of the buffer. It should be
+> > > 
+> > > 		ret = bitmap_scnprintf(s->buffer + s->len, len,
+> > > 				       maskp, nmaskbits);
+> > >
+> > 
+> > Yep thanks. Luckily its only user didn't care.
+> > 
+> > Will fix.
+> >  
+> > > 
+> > > > +		if (s->len + ret < s->size) {
+> > > 
+> > > This will always happen because bitmap_scnprintf() is limited by SEQ_BUF_LEFT(s)
+> > > and it currently returns the remaining size - len - 1.
+> > 
+> > Hmm, that's correct, as bitmap_scnprintf() returns the amount written
+> > instead of the amount that it would write like snprintf() would.
+> > 
+> > 
+> > > 
+> > > You might want to use "s->size - s->len" instead of SEQ_BUF_LEFT(s).
+> > 
+> > That wont help when we make overflow len > size.
+> > 
+> > Probably should see if ret == the amount of bits required for the
+> > bitmask.
+> 
+> Here's the new version:
+> 
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- fs/xfs/xfs_file.c | 32 +++++++++++++++++++++++++++-----
- 1 file changed, 27 insertions(+), 5 deletions(-)
+Take 2:
 
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index b1f6334..0655915 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -61,6 +61,25 @@ xfs_rw_ilock(
- 	xfs_ilock(ip, type);
- }
- 
-+static inline bool
-+xfs_rw_ilock_nowait(
-+	struct xfs_inode	*ip,
-+	int			type)
-+{
-+	if (type & XFS_IOLOCK_EXCL) {
-+		if (!mutex_trylock(&VFS_I(ip)->i_mutex))
-+			return false;
-+		if (!xfs_ilock_nowait(ip, type)) {
-+			mutex_unlock(&VFS_I(ip)->i_mutex);
-+			return false;
-+		}
-+	} else {
-+		if (!xfs_ilock_nowait(ip, type))
-+			return false;
-+	}
-+	return true;
-+}
-+
- static inline void
- xfs_rw_iunlock(
- 	struct xfs_inode	*ip,
-@@ -246,10 +265,6 @@ xfs_file_read_iter(
- 
- 	XFS_STATS_INC(xs_read_calls);
- 
--	/* XXX: need a non-blocking iolock helper, shouldn't be too hard */
--	if (iocb->ki_rwflags & RWF_NONBLOCK)
--		return -EAGAIN;
--
- 	if (unlikely(file->f_flags & O_DIRECT))
- 		ioflags |= XFS_IO_ISDIRECT;
- 	if (file->f_mode & FMODE_NOCMTIME)
-@@ -287,7 +302,14 @@ xfs_file_read_iter(
- 	 * This allows the normal direct IO case of no page cache pages to
- 	 * proceeed concurrently without serialisation.
- 	 */
--	xfs_rw_ilock(ip, XFS_IOLOCK_SHARED);
-+	if (iocb->ki_rwflags & RWF_NONBLOCK) {
-+		if (ioflags & XFS_IO_ISDIRECT)
-+			return -EAGAIN;
-+		if (!xfs_rw_ilock_nowait(ip, XFS_IOLOCK_SHARED))
-+			return -EAGAIN;
-+	} else {
-+		xfs_rw_ilock(ip, XFS_IOLOCK_SHARED);
-+	}
- 	if ((ioflags & XFS_IO_ISDIRECT) && inode->i_mapping->nrpages) {
- 		xfs_rw_iunlock(ip, XFS_IOLOCK_SHARED);
- 		xfs_rw_ilock(ip, XFS_IOLOCK_EXCL);
--- 
-1.9.1
+int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+		    int nmaskbits)
+{
+	unsigned int len = seq_buf_buffer_left(s);
+	int ret;
 
+	WARN_ON(s->size == 0);
+
+	if (s->len < s->size) {
+		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
+		/*
+		 * Note, because bitmap_scnprintf() only returns the
+		 * number of bytes written and not the number that
+		 * would be written, we use the last byte of the buffer
+		 * to let us know if we overflowed. There's a small
+		 * chance that the bitmap could have fit exactly inside
+		 * the buffer, but it's not that critical if that does
+		 * happen.
+		 */
+		if (s->len + ret < s->size) {
+			s->len += ret;
+			return 0;
+		}
+	}
+	seq_buf_set_overflow(s);
+	return -1;
+}
+
+-- Steve
