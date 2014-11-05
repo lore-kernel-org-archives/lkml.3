@@ -1,159 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaKEO4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:56:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57076 "EHLO mail.skyhub.de"
+	id S1755496AbaKEO4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:56:25 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:47234 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754811AbaKEO4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:56:13 -0500
-Date: Wed, 5 Nov 2014 15:56:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tomasz Pala <gotar@polanet.pl>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd64_edac: Build module on x86-32
-Message-ID: <20141105145603.GE5245@pd.tnic>
-References: <20141102102212.GA7034@polanet.pl>
- <20141102103300.GB5229@pd.tnic>
- <20141102121139.GA7000@polanet.pl>
- <20141102123538.GE5229@pd.tnic>
- <20141102140839.GA27342@polanet.pl>
- <20141103105508.GB27384@pd.tnic>
- <20141105120324.GB3467@polanet.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1755192AbaKEO4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 09:56:21 -0500
+Date: Wed, 5 Nov 2014 09:56:20 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-aio@kvack.org, m.koenigshaus@wut.de,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] aio: fix uncorrent dirty pages accouting when truncating AIO ring buffer
+Message-ID: <20141105145620.GA23695@kvack.org>
+References: <1414750042-20832-1-git-send-email-guz.fnst@cn.fujitsu.com> <5459F387.909@cn.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20141105120324.GB3467@polanet.pl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5459F387.909@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 01:03:24PM +0100, Tomasz Pala wrote:
-> This system was backed-up by some Intel one without 64-bit support and
-> it needed to be fully binary-compatible (including databases storage).
+On Wed, Nov 05, 2014 at 05:53:11PM +0800, Gu Zheng wrote:
+> ping...
+
+I need someone a bit more familiar with this area of code to chime in on 
+reviewing this.  Andrew, can you provide any feedback on this fix?
+
+		-ben
+
+> On 10/31/2014 06:07 PM, Gu Zheng wrote:
 > 
-> Over the time, as older hardware is disposed, it might eventually be
-> upgraded to 64-bit kernel running 32-bit userland in compat mode (full
-> transition is not going to happen soon as costs of such operation, i.e.
-> dumping and restoring all the data, application tests etc. greatly
-> overweight any benefits), but even the kernel change is not trivial due
-> to many quirks that happened every time before (and it was really hard
-> to find some stable configuration). Thus, until there is some bigger
-> maintaince undergoing or the hardware reaches it's lifetime, noone is
-> going to "pay" (allocate time, people at night shifts etc.) for such
-> change.
-
-Ok, understood.
-
-> There's not much of if related (system is running 3.14.4):
-
-CONFIG_EDAC_DEBUG gives additional debugging output and this is without
-it but it doesn't matter - I see you have a K8 box.
-
-> That is decent solution IMHO. There is a warning visible in logs (not
-> only in sources or during configuration), so everyone interested would
-> be informed in the first place they should start reading after any
-> possible error happens.
-
-I hope :)
-
-> Mostly because "If it ain't broke, don't fix it" rule. These are systems
-> with a few hundreds days uptime (e.g. 3 weeks ago some malfunction
-> caused 1,5 half year uptime machine to reboot, 500-900 days are not so
-> uncommon, I remember my pain rebooting machines over 1200 days online).
-> Restarting them usually causes some minor troubles (not saved changes),
-> changing software leads to compat troubles (that might be tested before
-> going to production), but changing kernel makes uncertainty about entire
-> platform, so it is avoided until necessary (and these running are
-> polished as much as possible, with backported bugfixes etc.) So
-> replacing rock-solid kernel with some other is a no-go, even preserving
-> the current sources (there might always be some 64-bit related bugs).
-
-I see.
-
-Just FYI though, one serious advantage of 64-bit is that gets orders of
-magnitude more testing than 32-bit so if you still are contemplating a
-64-bit switch someday, remember that fact. :)
-
-> > The driver supports everything from K8 on which can do ECC. Family 11h
-> > doesn't support ECC so no need for an EDAC driver. I hope this answers
+> > https://bugzilla.kernel.org/show_bug.cgi?id=86831
+> > 
+> > Markus reported that when shutting down mysqld (with AIO support,
+> > on a ext3 formatted Harddrive) leads to a negative number of dirty pages
+> > (underrun to the counter). The negative number results in a drastic reduction
+> > of the write performance because the page cache is not used, because the kernel
+> > thinks it is still 2 ^ 32 dirty pages open.
+> > 
+> > Add a warn trace in __dec_zone_state will catch this easily:
+> > 
+> > static inline void __dec_zone_state(struct zone *zone, enum
+> > 	zone_stat_item item)
+> > {
+> >      atomic_long_dec(&zone->vm_stat[item]);
+> > +    WARN_ON_ONCE(item == NR_FILE_DIRTY &&
+> > 	atomic_long_read(&zone->vm_stat[item]) < 0);
+> >      atomic_long_dec(&vm_stat[item]);
+> > }
+> > 
+> > [   21.341632] ------------[ cut here ]------------
+> > [   21.346294] WARNING: CPU: 0 PID: 309 at include/linux/vmstat.h:242
+> > cancel_dirty_page+0x164/0x224()
+> > [   21.355296] Modules linked in: wutbox_cp sata_mv
+> > [   21.359968] CPU: 0 PID: 309 Comm: kworker/0:1 Not tainted 3.14.21-WuT #80
+> > [   21.366793] Workqueue: events free_ioctx
+> > [   21.370760] [<c0016a64>] (unwind_backtrace) from [<c0012f88>]
+> > (show_stack+0x20/0x24)
+> > [   21.378562] [<c0012f88>] (show_stack) from [<c03f8ccc>]
+> > (dump_stack+0x24/0x28)
+> > [   21.385840] [<c03f8ccc>] (dump_stack) from [<c0023ae4>]
+> > (warn_slowpath_common+0x84/0x9c)
+> > [   21.393976] [<c0023ae4>] (warn_slowpath_common) from [<c0023bb8>]
+> > (warn_slowpath_null+0x2c/0x34)
+> > [   21.402800] [<c0023bb8>] (warn_slowpath_null) from [<c00c0688>]
+> > (cancel_dirty_page+0x164/0x224)
+> > [   21.411524] [<c00c0688>] (cancel_dirty_page) from [<c00c080c>]
+> > (truncate_inode_page+0x8c/0x158)
+> > [   21.420272] [<c00c080c>] (truncate_inode_page) from [<c00c0a94>]
+> > (truncate_inode_pages_range+0x11c/0x53c)
+> > [   21.429890] [<c00c0a94>] (truncate_inode_pages_range) from
+> > [<c00c0f6c>] (truncate_pagecache+0x88/0xac)
+> > [   21.439252] [<c00c0f6c>] (truncate_pagecache) from [<c00c0fec>]
+> > (truncate_setsize+0x5c/0x74)
+> > [   21.447731] [<c00c0fec>] (truncate_setsize) from [<c013b3a8>]
+> > (put_aio_ring_file.isra.14+0x34/0x90)
+> > [   21.456826] [<c013b3a8>] (put_aio_ring_file.isra.14) from
+> > [<c013b424>] (aio_free_ring+0x20/0xcc)
+> > [   21.465660] [<c013b424>] (aio_free_ring) from [<c013b4f4>]
+> > (free_ioctx+0x24/0x44)
+> > [   21.473190] [<c013b4f4>] (free_ioctx) from [<c003d8d8>]
+> > (process_one_work+0x134/0x47c)
+> > [   21.481132] [<c003d8d8>] (process_one_work) from [<c003e988>]
+> > (worker_thread+0x130/0x414)
+> > [   21.489350] [<c003e988>] (worker_thread) from [<c00448ac>]
+> > (kthread+0xd4/0xec)
+> > [   21.496621] [<c00448ac>] (kthread) from [<c000ec18>]
+> > (ret_from_fork+0x14/0x20)
+> > [   21.503884] ---[ end trace 79c4bf42c038c9a1 ]---
+> > 
+> > The cause is that we set the aio ring file pages as *DIRTY* via SetPageDirty
+> > (bypasses the VFS dirty pages increment) when init, and aio fs uses
+> > *default_backing_dev_info* as the backing dev, which does not disable
+> > the dirty pages accounting capability.
+> > So truncating aio ring file contributes to accounting dirty pages,
+> > error occurs.
+> > The original goal is keeping these pages in memory (can not be reclaimed
+> > or swapped) in life-time via marking it dirty. But thinking more,
+> > pinning pages can already achieve the goal, so the SetPageDirty seems
+> > unnecessary.
+> > In order to fix the issue, using the __set_page_dirty_no_writeback instead
+> > of the nop .set_page_dirty, and dropped the SetPageDirty (don't manually
+> > set the dirty flags, don't disable set_page_dirty(), rely on default behaviour).
+> > And an aio private backing dev info (disabled the ACCT_DIRTY/WRITEBACK/ACCT_WB
+> > capabilities) is introduced to replace the default one to avoid accounting
+> > dirty pages.
+> > 
+> > Reported-by: Markus Königshaus <m.koenigshaus@wut.de>
+> > Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> > Cc: stable <stable@vger.kernel.org>
+> > ---
+> >  fs/aio.c |   18 +++++++++++-------
+> >  1 files changed, 11 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/fs/aio.c b/fs/aio.c
+> > index 84a7510..b23dc31 100644
+> > --- a/fs/aio.c
+> > +++ b/fs/aio.c
+> > @@ -165,6 +165,12 @@ static struct vfsmount *aio_mnt;
+> >  static const struct file_operations aio_ring_fops;
+> >  static const struct address_space_operations aio_ctx_aops;
+> >  
+> > +static struct backing_dev_info aio_fs_backing_dev_info = {
+> > +	.name           = "aiofs",
+> > +	.state          = 0,
+> > +	.capabilities   = BDI_CAP_NO_ACCT_AND_WRITEBACK | BDI_CAP_MAP_COPY,
+> > +};
+> > +
+> >  static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+> >  {
+> >  	struct qstr this = QSTR_INIT("[aio]", 5);
+> > @@ -176,6 +182,7 @@ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+> >  
+> >  	inode->i_mapping->a_ops = &aio_ctx_aops;
+> >  	inode->i_mapping->private_data = ctx;
+> > +	inode->i_mapping->backing_dev_info = &aio_fs_backing_dev_info;
+> >  	inode->i_size = PAGE_SIZE * nr_pages;
+> >  
+> >  	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb, &this);
+> > @@ -220,6 +227,9 @@ static int __init aio_setup(void)
+> >  	if (IS_ERR(aio_mnt))
+> >  		panic("Failed to create aio fs mount.");
+> >  
+> > +	if (bdi_init(&aio_fs_backing_dev_info))
+> > +		panic("Failed to init aio fs backing dev info.");
+> > +
+> >  	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+> >  	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+> >  
+> > @@ -281,11 +291,6 @@ static const struct file_operations aio_ring_fops = {
+> >  	.mmap = aio_ring_mmap,
+> >  };
+> >  
+> > -static int aio_set_page_dirty(struct page *page)
+> > -{
+> > -	return 0;
+> > -}
+> > -
+> >  #if IS_ENABLED(CONFIG_MIGRATION)
+> >  static int aio_migratepage(struct address_space *mapping, struct page *new,
+> >  			struct page *old, enum migrate_mode mode)
+> > @@ -357,7 +362,7 @@ out:
+> >  #endif
+> >  
+> >  static const struct address_space_operations aio_ctx_aops = {
+> > -	.set_page_dirty = aio_set_page_dirty,
+> > +	.set_page_dirty = __set_page_dirty_no_writeback,
+> >  #if IS_ENABLED(CONFIG_MIGRATION)
+> >  	.migratepage	= aio_migratepage,
+> >  #endif
+> > @@ -412,7 +417,6 @@ static int aio_setup_ring(struct kioctx *ctx)
+> >  		pr_debug("pid(%d) page[%d]->count=%d\n",
+> >  			 current->pid, i, page_count(page));
+> >  		SetPageUptodate(page);
+> > -		SetPageDirty(page);
+> >  		unlock_page(page);
+> >  
+> >  		ctx->ring_pages[i] = page;
 > 
-> I mean your '[PATCH] amd64_edac: Document why it is 64-bit only':
-> 
-> -         the AMD64 families of memory controllers (K8 and F10h)
-> +         the AMD64 families of memory controllers, everything >= K8.
-> 
-> "everything >= K8" mislead me.
 
-Ok, it is supposed to say, on everything K8 and later. K8 is what you
-have. What would make it more understandable?
-
-So here's an updated version of your patch:
-
----
-From: Tomasz Pala <gotar@polanet.pl>
-Subject: [PATCH] amd64_edac: Build module on x86-32
-
-By popular demand, enable amd64_edac on 32-bit too.
-
-Boris:
- - update Kconfig text.
- - add a warning on load which states that 32-bit configurations are unsupported.
-
-Signed-off-by: Tomasz Pala <gotar@polanet.pl>
-Link: http://lkml.kernel.org/r/20141102102212.GA7034@polanet.pl
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/edac/Kconfig      | 6 +++---
- drivers/edac/amd64_edac.c | 5 +++++
- 2 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 7072c2892d63..4316c9e955b3 100644
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -105,11 +105,11 @@ config EDAC_GHES
- 	  In doubt, say 'Y'.
- 
- config EDAC_AMD64
--	tristate "AMD64 (Opteron, Athlon64) K8, F10h"
--	depends on EDAC_MM_EDAC && AMD_NB && X86_64 && EDAC_DECODE_MCE
-+	tristate "AMD64 (Opteron, Athlon64)"
-+	depends on EDAC_MM_EDAC && AMD_NB && EDAC_DECODE_MCE
- 	help
- 	  Support for error detection and correction of DRAM ECC errors on
--	  the AMD64 families of memory controllers (K8 and F10h)
-+	  the AMD64 families (>= K8) of memory controllers.
- 
- config EDAC_AMD64_ERROR_INJECTION
- 	bool "Sysfs HW Error injection facilities"
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 1a1d7c43a20f..17638d7cf5c2 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -3035,6 +3035,11 @@ static int __init amd64_edac_init(void)
- 		goto err_no_instances;
- 
- 	setup_pci_device();
-+
-+#ifdef CONFIG_X86_32
-+	amd64_err("%s on 32-bit is unsupported. USE AT YOUR OWN RISK!\n", EDAC_MOD_STR);
-+#endif
-+
- 	return 0;
- 
- err_no_instances:
 -- 
-2.0.0
-
-
-Thanks.
-
-
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+"Thought is the essence of where you are now."
