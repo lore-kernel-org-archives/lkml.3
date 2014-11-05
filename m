@@ -1,212 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaKEBWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Nov 2014 20:22:20 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:51460 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaKEBTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Nov 2014 20:19:25 -0500
-From: Chris Rorvick <chris@rorvick.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 01/10] usb: Create separate header for ehci-dbgp
-Date: Tue,  4 Nov 2014 19:18:45 -0600
-Message-Id: <1415150334-2402-2-git-send-email-chris@rorvick.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415150334-2402-1-git-send-email-chris@rorvick.com>
-References: <1415150334-2402-1-git-send-email-chris@rorvick.com>
+	id S1752990AbaKEBYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Nov 2014 20:24:54 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43268 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751303AbaKEBYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Nov 2014 20:24:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,316,1413270000"; 
+   d="scan'208";a="602412350"
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: bhelgaas@google.com, aaron.lu@intel.com, tj@kernel.org, rjw@rjwysocki.net,
+        mister.freeman@laposte.net
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Subject: [PATCH] PCI: Do not enable async suspend for JMicron chips
+Date: Wed,  5 Nov 2014 09:07:45 +0800
+Message-Id: <1415149665-26669-1-git-send-email-chuansheng.liu@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FUSBH200 and FOTG210 controllers implement sufficiently EHCI-
-compatible debug ports to leverage ehci-dbgp from their respective
-drivers.  Rather than including <linux/usb/ehci_def.h> header, though,
-they replicate the necessary declarations in their own headers.  Move
-the ehci-dbgp stuff into its own header as a first step towards removing
-this redundancy.
+The JMicron chip 361/363/368 contains one SATA controller and
+one PATA controller, they are brother-relation ship in PCI tree,
+but for powering on these both controller, we must follow the
+sequence one by one, otherwise one of them can not be powered on
+successfully.
 
-Signed-off-by: Chris Rorvick <chris@rorvick.com>
+So here we disable the async suspend method for Jmicron chip.
+
+Cc: stable@vger.kernel.org # 3.15+
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 ---
- include/linux/usb/ehci-dbgp.h | 84 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/usb/ehci_def.h  | 65 ++-------------------------------
- 2 files changed, 86 insertions(+), 63 deletions(-)
- create mode 100644 include/linux/usb/ehci-dbgp.h
+ drivers/pci/pci.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/usb/ehci-dbgp.h b/include/linux/usb/ehci-dbgp.h
-new file mode 100644
-index 0000000..796c1cd
---- /dev/null
-+++ b/include/linux/usb/ehci-dbgp.h
-@@ -0,0 +1,84 @@
-+/*
-+ * Standalone EHCI usb debug driver
-+ *
-+ * Originally written by:
-+ *  Eric W. Biederman" <ebiederm@xmission.com> and
-+ *  Yinghai Lu <yhlu.kernel@gmail.com>
-+ *
-+ * Changes for early/late printk and HW errata:
-+ *  Jason Wessel <jason.wessel@windriver.com>
-+ *  Copyright (C) 2009 Wind River Systems, Inc.
-+ *
-+ */
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 625a4ac..53128f0 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2046,7 +2046,17 @@ void pci_pm_init(struct pci_dev *dev)
+ 	pm_runtime_forbid(&dev->dev);
+ 	pm_runtime_set_active(&dev->dev);
+ 	pm_runtime_enable(&dev->dev);
+-	device_enable_async_suspend(&dev->dev);
 +
-+#ifndef __LINUX_USB_EHCI_DBGP_H
-+#define __LINUX_USB_EHCI_DBGP_H
-+
-+#include <linux/console.h>
-+#include <linux/types.h>
-+
-+/* Appendix C, Debug port ... intended for use with special "debug devices"
-+ * that can help if there's no serial console.  (nonstandard enumeration.)
-+ */
-+struct ehci_dbg_port {
-+	u32	control;
-+#define DBGP_OWNER	(1<<30)
-+#define DBGP_ENABLED	(1<<28)
-+#define DBGP_DONE	(1<<16)
-+#define DBGP_INUSE	(1<<10)
-+#define DBGP_ERRCODE(x)	(((x)>>7)&0x07)
-+#	define DBGP_ERR_BAD	1
-+#	define DBGP_ERR_SIGNAL	2
-+#define DBGP_ERROR	(1<<6)
-+#define DBGP_GO		(1<<5)
-+#define DBGP_OUT	(1<<4)
-+#define DBGP_LEN(x)	(((x)>>0)&0x0f)
-+	u32	pids;
-+#define DBGP_PID_GET(x)		(((x)>>16)&0xff)
-+#define DBGP_PID_SET(data, tok)	(((data)<<8)|(tok))
-+	u32	data03;
-+	u32	data47;
-+	u32	address;
-+#define DBGP_EPADDR(dev, ep)	(((dev)<<8)|(ep))
-+};
-+
-+#ifdef CONFIG_EARLY_PRINTK_DBGP
-+#include <linux/init.h>
-+extern int __init early_dbgp_init(char *s);
-+extern struct console early_dbgp_console;
-+#endif /* CONFIG_EARLY_PRINTK_DBGP */
-+
-+struct usb_hcd;
-+
-+#ifdef CONFIG_XEN_DOM0
-+extern int xen_dbgp_reset_prep(struct usb_hcd *);
-+extern int xen_dbgp_external_startup(struct usb_hcd *);
-+#else
-+static inline int xen_dbgp_reset_prep(struct usb_hcd *hcd)
-+{
-+	return 1; /* Shouldn't this be 0? */
-+}
-+
-+static inline int xen_dbgp_external_startup(struct usb_hcd *hcd)
-+{
-+	return -1;
-+}
-+#endif
-+
-+#ifdef CONFIG_EARLY_PRINTK_DBGP
-+/* Call backs from ehci host driver to ehci debug driver */
-+extern int dbgp_external_startup(struct usb_hcd *);
-+extern int dbgp_reset_prep(struct usb_hcd *);
-+#else
-+static inline int dbgp_reset_prep(struct usb_hcd *hcd)
-+{
-+	return xen_dbgp_reset_prep(hcd);
-+}
-+
-+static inline int dbgp_external_startup(struct usb_hcd *hcd)
-+{
-+	return xen_dbgp_external_startup(hcd);
-+}
-+#endif
-+
-+#endif /* __LINUX_USB_EHCI_DBGP_H */
-diff --git a/include/linux/usb/ehci_def.h b/include/linux/usb/ehci_def.h
-index daec99a..966889a 100644
---- a/include/linux/usb/ehci_def.h
-+++ b/include/linux/usb/ehci_def.h
-@@ -19,6 +19,8 @@
- #ifndef __LINUX_USB_EHCI_DEF_H
- #define __LINUX_USB_EHCI_DEF_H
++	/*
++	 * The JMicron chip 361/363/368 contains one SATA controller and
++	 * one PATA controller, they are brother-relation ship in PCI tree,
++	 * but for powering on these both controller, we must follow the
++	 * sequence one by one, otherwise one of them can not be powered on
++	 * successfully, so here we disable the async suspend method for
++	 * Jmicron chip.
++	 */
++	if (dev->vendor != PCI_VENDOR_ID_JMICRON)
++		device_enable_async_suspend(&dev->dev);
+ 	dev->wakeup_prepared = false;
  
-+#include <linux/usb/ehci-dbgp.h>
-+
- /* EHCI register interface, corresponds to EHCI Revision 0.95 specification */
- 
- /* Section 2.2 Host Controller Capability Registers */
-@@ -190,67 +192,4 @@ struct ehci_regs {
- #define USBMODE_EX_HC	(3<<0)		/* host controller mode */
- };
- 
--/* Appendix C, Debug port ... intended for use with special "debug devices"
-- * that can help if there's no serial console.  (nonstandard enumeration.)
-- */
--struct ehci_dbg_port {
--	u32	control;
--#define DBGP_OWNER	(1<<30)
--#define DBGP_ENABLED	(1<<28)
--#define DBGP_DONE	(1<<16)
--#define DBGP_INUSE	(1<<10)
--#define DBGP_ERRCODE(x)	(((x)>>7)&0x07)
--#	define DBGP_ERR_BAD	1
--#	define DBGP_ERR_SIGNAL	2
--#define DBGP_ERROR	(1<<6)
--#define DBGP_GO		(1<<5)
--#define DBGP_OUT	(1<<4)
--#define DBGP_LEN(x)	(((x)>>0)&0x0f)
--	u32	pids;
--#define DBGP_PID_GET(x)		(((x)>>16)&0xff)
--#define DBGP_PID_SET(data, tok)	(((data)<<8)|(tok))
--	u32	data03;
--	u32	data47;
--	u32	address;
--#define DBGP_EPADDR(dev, ep)	(((dev)<<8)|(ep))
--};
--
--#ifdef CONFIG_EARLY_PRINTK_DBGP
--#include <linux/init.h>
--extern int __init early_dbgp_init(char *s);
--extern struct console early_dbgp_console;
--#endif /* CONFIG_EARLY_PRINTK_DBGP */
--
--struct usb_hcd;
--
--#ifdef CONFIG_XEN_DOM0
--extern int xen_dbgp_reset_prep(struct usb_hcd *);
--extern int xen_dbgp_external_startup(struct usb_hcd *);
--#else
--static inline int xen_dbgp_reset_prep(struct usb_hcd *hcd)
--{
--	return 1; /* Shouldn't this be 0? */
--}
--
--static inline int xen_dbgp_external_startup(struct usb_hcd *hcd)
--{
--	return -1;
--}
--#endif
--
--#ifdef CONFIG_EARLY_PRINTK_DBGP
--/* Call backs from ehci host driver to ehci debug driver */
--extern int dbgp_external_startup(struct usb_hcd *);
--extern int dbgp_reset_prep(struct usb_hcd *hcd);
--#else
--static inline int dbgp_reset_prep(struct usb_hcd *hcd)
--{
--	return xen_dbgp_reset_prep(hcd);
--}
--static inline int dbgp_external_startup(struct usb_hcd *hcd)
--{
--	return xen_dbgp_external_startup(hcd);
--}
--#endif
--
- #endif /* __LINUX_USB_EHCI_DEF_H */
+ 	dev->pm_cap = 0;
 -- 
-1.9.3
+1.7.9.5
 
