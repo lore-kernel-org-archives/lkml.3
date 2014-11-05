@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaKEUK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:10:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:61949 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751133AbaKEUKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:10:55 -0500
-Date: Wed, 5 Nov 2014 15:10:53 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 04/12 v3] tracing: Convert seq_buf_path() to be
- like seq_path()
-Message-ID: <20141105151053.744b77f2@gandalf.local.home>
-In-Reply-To: <20141105144553.GE4570@pathway.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
-	<20141104160222.048795666@goodmis.org>
-	<20141105144553.GE4570@pathway.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1752160AbaKEULL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:11:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33486 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023AbaKEULH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 15:11:07 -0500
+Date: Wed, 5 Nov 2014 21:11:05 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, backports@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        sassmann@kpanic.de
+Subject: Re: [PATCH v2 05/13] backports: use BACKPORT_DIR prefix on kconfig
+	sources
+Message-ID: <20141105201105.GO12953@wotan.suse.de>
+References: <1415157517-15442-1-git-send-email-mcgrof@do-not-panic.com> <1415157517-15442-6-git-send-email-mcgrof@do-not-panic.com> <1415173905.2589.5.camel@sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415173905.2589.5.camel@sipsolutions.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014 15:45:53 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
-
-
-> >   */
-> > -int seq_buf_path(struct seq_buf *s, const struct path *path)
-> > +int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
-> >  {
-> > -	unsigned int len = SEQ_BUF_LEFT(s);
-> > -	unsigned char *p;
-> > -
-> > -	WARN_ON(s->size == 0);
+On Wed, Nov 05, 2014 at 08:51:45AM +0100, Johannes Berg wrote:
+> On Tue, 2014-11-04 at 19:18 -0800, Luis R. Rodriguez wrote:
 > 
-> I would keep this check.
-
-Yeah, I could.
-
+> > @@ -21,23 +22,53 @@ class ConfigTree(object):
+> >          yield f
+> >          for l in open(os.path.join(self.basedir, f), 'r'):
+> >              m = src_line.match(l)
+> > -            if m and os.path.exists(os.path.join(self.basedir, m.group('src'))):
+> > -                for i in self._walk(m.group('src')):
+> > -                    yield i
+> > +            if m:
+> > +                bm = bk_src_line.match(l)
+> > +                if bm:
+> > +                    if os.path.exists(os.path.join(self.basedir, bm.group('src'))):
+> > +                        for i in self._walk(os.path.join(self.basedir, bm.group('src'))):
+> > +                            yield i
+> > +                    elif os.path.exists(os.path.join(self.basedir, 'backports/' + bm.group('src'))):
+> > +                        for i in self._walk(os.path.join(self.basedir, 'backports/' + bm.group('src'))):
+> > +                            yield i
+> > +                else:
+> > +                    if os.path.exists(os.path.join(self.basedir, m.group('src'))):
+> > +                        for i in self._walk(m.group('src')):
+> > +                            yield i
 > 
-> > -	p = d_path(path, s->buffer + s->len, len);
-> > -	if (!IS_ERR(p)) {
-> > -		p = mangle_path(s->buffer + s->len, p, "\n");
-> > -		if (p) {
-> > -			s->len = p - s->buffer;
-> > -			return 0;
-> > +	char *buf = s->buffer + s->len;
-> > +	size_t size = SEQ_BUF_LEFT(s);
+> Shouldn't this depend on "integrate" rather than on existence?
 > 
-> I would use the variable name "len" to make it consistent with
-> the other fucntions in seq_buf.c.
-
-Note, seq_path() is a different beast than the other seq_*() functions
-(this will be keeping a return code). And the inconsistency is in
-seq_file.c as well. I'm not saying we shouldn't keep it consistent. But
-as this patch is to make seq_buf like seq_file, I'll keep the
-inconsistencies the same too.
-
-We can always do a clean up later.
-
-
+> Ah, this is what you were alluding to in the commit log? The fact that
+> you hardcode "backports/" into this? IMHO it would make more sense to
+> pass in the "base" directory (either "backports/" or "") though, instead
+> of making *that* depend on the existence of the directory as well.
 > 
-> > +	int res = -1;
-> > +
-> > +	if (size) {
-> > +		char *p = d_path(path, buf, size);
-> > +		if (!IS_ERR(p)) {
-> > +			char *end = mangle_path(buf, p, esc);
-> > +			if (end)
-> > +				res = end - buf;
-> >  		}
-> >  	}
-> > -	seq_buf_set_overflow(s);
+> Remember, the existence check here serves to remove includes that cannot
+> be satisfied; your existence check mixes in the differentiation between
+> packaged and integrated, which doesn't seem right.
 > 
-> We still should set overflow on failure.
+> Regardless of whether you make the "backports/" prefix configurable or
+> not, you should pass it to this library function and use it
+> unconditionally instead of trying to determine package vs. integrated
+> from the existence of directories.
 
-Again, this is different in seq_file too. I'm leaving it as is.
+Fair enough.
 
+> >      def _prune_sources(self, f, ignore):
+> >          for nf in self._walk(f):
+> >              out = ''
+> >              for l in open(os.path.join(self.basedir, nf), 'r'):
+> > -                m = src_line.match(l)
+> > -                if not m:
+> > -                    out += l
+> > -                    continue
+> > -                src = m.group('src')
+> > -                if src in ignore or os.path.exists(os.path.join(self.basedir, src)):
+> > -                    out += l
+> > +                bm = bk_src_line.match(l)
+> > +                if bm:
+> > +                    bp_src = bm.group('src')
+> > +                    if bp_src in ignore or \
+> > +                       os.path.exists(os.path.join(self.basedir, bp_src)) or \
+> > +                       os.path.exists(os.path.join(self.basedir, 'backports/' + bp_src)):
 > 
-> > -	return -1;
-> > +	if (res > 0)
-> > +		s->len += res;
-> > +
-> > +	return res;
-> 
-> It returns -1 on failure and the number of written characters on
-> success. This is incompatible with the other seq_buf functions
-> and with the comment above this function. Also it changes the
-> return value from trace_seq_path().
-> 
-> I do not mind about the used scheme but I think that we should
-> make it consistent.
-> 
+> same here.
 
-As seq_file has had this inconsistency for a long time, and this code
-is to try to merge the code between trace_seq and seq_file, I'm going
-to follow seq_file as that has been around much longer than trace_seq.
+Yeah I get it, good points.
 
--- Steve
+This does mean that bp_prefix topic *can* also be tied down
+with this other directory prefix as a form of 'builder' for
+integration. Making the prefix configurable would make sense
+then only if also making the directory prefix should be
+configurable.
 
+I think we're better off right now with just supporting two
+approaches with their own directory prefix, and prefixes
+for variables.
+
+  Luis
