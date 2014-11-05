@@ -1,131 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaKEMJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 07:09:58 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33384 "EHLO comal.ext.ti.com"
+	id S1754732AbaKEMLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 07:11:17 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753994AbaKEMJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 07:09:54 -0500
-Message-ID: <545A1343.4060002@ti.com>
-Date: Wed, 5 Nov 2014 17:38:35 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753916AbaKEMLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 07:11:13 -0500
+Message-ID: <545A13DA.3090207@nod.at>
+Date: Wed, 05 Nov 2014 13:11:06 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Griffis, Brad" <bgriffis@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Jan Kardell <jan.kardell@telliq.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com> <544E821D.5040004@linutronix.de> <912A29987EAE174BA6CF187D7CDFA9CE26F46B2B@DLEE08.ent.ti.com> <54577258.9080508@linutronix.de> <5458BC0B.1040803@ti.com> <5458C87F.80409@linutronix.de>
-In-Reply-To: <5458C87F.80409@linutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: Re: [PATCH 1/2v6] procfs: show hierarchy of pid namespace
+References: <1415184115-12022-1-git-send-email-chenhanxiao@cn.fujitsu.com> <1415184115-12022-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+In-Reply-To: <1415184115-12022-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tuesday 04 November 2014 06:07 PM, Sebastian Andrzej Siewior wrote:
-> On 11/04/2014 12:44 PM, Vignesh R wrote:
+Am 05.11.2014 um 11:41 schrieb Chen Hanxiao:
+> We lack of pid hierarchy information, and this will lead to:
+> a) we don't know pids' relationship, who is whose child:
+>    /proc/PID/ns/pid only tell us whether two pids live in different ns
+> b) bring trouble to nested lxc container check/restore/migration
+> c) bring trouble to pid translation between containers;
 > 
->> I ran following commands
->> $ evtest /dev/input/touchscreen0 &
->> (with heavy item on touchscreen)
->>  and
->> $ cat /sys/bus/iio/devices/iio\:device0/scan_elements/in_voltage4_en
->> (in a busy loop)
->> I tried above experiment on my board but I didn't hit any problem even
->> after running for close to 30 minutes. I was unable to reproduce failure
+> This patch will show the hierarchy of pid namespace
+> by pidns_hierarchy like:
 > 
-> Just to make sure: You had the touchscreen and iio command running in
-> parallel and you saw evtest output while there was iio operation?
+> [root@localhost ~]#cat /proc/pidns_hierarchy
+> 18060 18102 1534
+> 18060 18102 1600
+> 1550
+
+Hmm, what about printing the pid hierarchy in the same way as /proc/self/mountinfo
+does with mount namespaces?
+Your current approach is not bad but we should really try to be consistent with existing
+sources of information.
+
+> *Note: numbers represent the pid 1 in different ns
 > 
-
-Yeah.. I see both evtest and IIO outputs. Touch events are received
-consistently (decent samples per second) and atleast one IIO output per
-second.
-Here is a part from console log
----------------------------
-928
-Event: time 1413204484.240114, type 3 (Absolute), code 0 (X), value 1746
-Event: time 1413204484.240114, type 3 (Absolute), code 1 (Y), value 1720
-Event: time 1413204484.240114, type 3 (Absolute), code 24 (Pressure),
-value 99
-Event: time 1413204484.240114, -------------- Report Sync ------------
-Event: time 1413204484.255318, type 1 (Key), code 330 (Touch), value 0
-Event: time 1413204484.255318, type 3 (Absolute), code 24 (Pressure),
-value 0
-Event: time 1413204484.255318, -------------- Report Sync ------------
-933
-Event: time 1413204484.273599, type 3 (Absolute), code 1 (Y), value 1718
-Event: time 1413204484.273599, type 3 (Absolute), code 24 (Pressure),
-value 99
-Event: time 1413204484.273599, type 1 (Key), code 330 (Touch), value 1
-Event: time 1413204484.273599, -------------- Report Sync ------------
-Event: time 1413204484.290195, type 3 (Absolute), code 24 (Pressure),
-value 98
-Event: time 1413204484.290195, -------------- Report Sync ------------
-Event: time 1413204484.306783, type 3 (Absolute), code 1 (Y), value 1719
-Event: time 1413204484.306783, -------------- Report Sync ------------
-946
-Event: time 1413204484.322164, type 1 (Key), code 330 (Touch), value 0
-Event: time 1413204484.322164, type 3 (Absolute), code 24 (Pressure),
-value 0
-Event: time 1413204484.322164, -------------- Report Sync ------------
-Event: time 1413204484.340435, type 3 (Absolute), code 1 (Y), value 1721
-Event: time 1413204484.340435, type 3 (Absolute), code 24 (Pressure),
-value 98
-Event: time 1413204484.340435, type 1 (Key), code 330 (Touch), value 1
-Event: time 1413204484.340435, -------------- Report Sync ------------
-Event: time 1413204484.357025, type 3 (Absolute), code 0 (X), value 1745
-Event: time 1413204484.357025, type 3 (Absolute), code 24 (Pressure),
-value 97
-Event: time 1413204484.357025, -------------- Report Sync ------------
-Event: time 1413204484.373621, type 3 (Absolute), code 0 (X), value 1746
-Event: time 1413204484.373621, type 3 (Absolute), code 1 (Y), value 1720
-Event: time 1413204484.373621, -------------- Report Sync ------------
-942
-
----------------------------
-The numbers 928, 933 etc are from oneshot ADC read. The above output is
-pretty consistent over time.
-
->> The problem may be in configuring correct charge-delay value. Please run:
->> $ ts_test > /dev/null
->> and let me know if pen events are being detected properly.
+> It shows the pid hierarchy below:
 > 
-> Well I get the touch events but not while busy loop on iio interface is
-> running (I get maybe one event every 5 seconds or so).
-> After all, it is the same HW you have.
-
-Yeah.. I believe HW is same. I am using rev 1.5B with
-omap2plus_defconfig (+ TSC/ADC enabled)
-
-Regards
-Vignesh
+>       init_pid_ns (not showed in /proc/pidns_hierarchy)
+>               │
+> ┌────────────┐
+> ns1                      ns2
+> │                        │
+> 1550                    18060
+>                           │
+>                           │
+>                          ns3
+>                           │
+>                         18102
+>                           │
+>                  ┌──────────┐
+>                  ns4                   ns5
+>                  │                    │
+>                 1534                  1600
 > 
-> Sebastian
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Every pid printed in pidns_hierarchy
+> is the init pid of that pid ns level.
 > 
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+> v6: fix get_pid leaks and do some cleanups;
+> v5: collect pid by find_ge_pid;
+>     use local list inside nslist_proc_show;
+>     use get_pid, remove mutex lock.
+> v4: simplify pid collection and some performance optimizamtion
+>     fix another race issue.
+> v3: fix a race issue and memory leak issue
+> v2: use a procfs text file instead of dirs under /proc
+> 
+>  fs/proc/Kconfig           |   6 ++
+>  fs/proc/Makefile          |   1 +
+>  fs/proc/pidns_hierarchy.c | 227 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 234 insertions(+)
+>  create mode 100644 fs/proc/pidns_hierarchy.c
+> 
+> diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+> index 2183fcf..4bb111c 100644
+> --- a/fs/proc/Kconfig
+> +++ b/fs/proc/Kconfig
+> @@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
+>  	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+>  	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+>            interfaces will reduce the size of the kernel by approximately 4kb.
+> +
+> +config PROC_PID_HIERARCHY
+> +	bool "Enable /proc/pidns_hierarchy support" if EXPERT
+> +	depends on PROC_FS
+> +	help
+> +	  Show pid namespace hierarchy information
+
+Why does this depend on EXPERT?
+Every Linux distro will enable this option.
+
+> diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+> index 7151ea4..33e384b 100644
+> --- a/fs/proc/Makefile
+> +++ b/fs/proc/Makefile
+> @@ -30,3 +30,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+>  proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
+>  proc-$(CONFIG_PRINTK)	+= kmsg.o
+>  proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
+> +proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
+> diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
+> new file mode 100644
+> index 0000000..aee359f
+> --- /dev/null
+> +++ b/fs/proc/pidns_hierarchy.c
+> @@ -0,0 +1,227 @@
+> +#include <linux/init.h>
+> +#include <linux/errno.h>
+> +#include <linux/proc_fs.h>
+> +#include <linux/module.h>
+> +#include <linux/list.h>
+> +#include <linux/slab.h>
+> +#include <linux/pid_namespace.h>
+> +#include <linux/seq_file.h>
+> +
+> +/*
+> + *  /proc/pidns_hierarchy
+> + *
+> + *  show the hierarchy of pid namespace
+> + */
+> +
+> +#define NS_HIERARCHY	"pidns_hierarchy"
+> +
+> +/* list for host pid collection */
+> +struct pidns_list {
+> +	struct list_head list;
+> +	struct pid *pid;
+> +};
+> +
+> +static void free_pidns_list(struct list_head *head)
+> +{
+> +	struct pidns_list *tmp, *pos;
+> +
+> +	list_for_each_entry_safe(pos, tmp, head, list) {
+> +		list_del(&pos->list);
+> +		put_pid(pos->pid);
+> +		kfree(pos);
+> +	}
+> +}
+> +
+> +static int
+> +pidns_list_add(struct pid *pid, struct list_head *list_head)
+> +{
+> +	struct pidns_list *ent;
+> +
+> +	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+> +	if (!ent)
+> +		return -ENOMEM;
+> +
+> +	ent->pid = pid;
+> +	list_add_tail(&ent->list, list_head);
+> +
+> +	return 0;
+> +}
+> +
+> +static int
+> +pidns_list_filter(struct list_head *pidns_pid_list,
+> +		struct list_head *pidns_pid_tree)
+> +{
+> +	struct pidns_list *pos, *pos_t;
+> +	struct pid_namespace *ns0, *ns1;
+> +	struct pid *pid0, *pid1;
+> +	int rc, flag = 0;
+> +
+> +	/*
+> +	 * screen pids with relationship
+> +	 * in pidns_pid_list, we may add pids like:
+> +	 * ns0   ns1   ns2
+> +	 * pid1->pid2->pid3
+> +	 * we should screen pid1, pid2 and keep pid3
+> +	 */
+> +	list_for_each_entry(pos, pidns_pid_list, list) {
+> +		list_for_each_entry(pos_t, pidns_pid_list, list) {
+> +			flag = 0;
+> +			pid0 = pos->pid;
+> +			pid1 = pos_t->pid;
+> +			ns0 = pid0->numbers[pid0->level].ns;
+> +			ns1 = pid1->numbers[pid1->level].ns;
+> +			if (pos->pid->level < pos_t->pid->level)
+> +				for (; ns1 != NULL; ns1 = ns1->parent)
+> +					if (ns0 == ns1) {
+> +						flag = 1;
+> +						break;
+> +					}
+> +			/* a redundant pid found */
+> +			if (flag == 1)
+> +				break;
+> +		}
+> +
+> +		if (flag == 0) {
+> +			rcu_read_lock();
+> +			get_pid(pos->pid);
+> +			rcu_read_unlock();
+> +			rc = pidns_list_add(pos->pid, pidns_pid_tree);
+> +			if (rc) {
+> +				put_pid(pos->pid);
+> +				goto out;
+> +                        }
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * Now all usefull stuffs are in pidns_pid_tree,
+> +	 * free pidns_pid_list
+> +	 */
+> +	free_pidns_list(pidns_pid_list);
+> +
+> +	return 0;
+> +
+> +out:
+> +	free_pidns_list(pidns_pid_tree);
+> +	return rc;
+> +}
+> +
+> +/* 
+> + * collect pids and stored in pidns_pid_list,
+> + * then remove duplicated ones,
+> + * add the rest to pidns_pid_tree
+> + */
+> +static int proc_pidns_list_refresh(struct pid_namespace *curr_ns,
+> +		struct list_head *pidns_pid_list,
+> +		struct list_head *pidns_pid_tree)
+> +{
+> +	struct pid *pid;
+> +	int new_nr, nr = 0;
+> +	int rc;
+> +
+> +	/* collect pids in current namespace */
+> +	while (nr < PID_MAX_LIMIT) {
+> +		rcu_read_lock();
+> +		pid = find_ge_pid(nr, curr_ns);
+> +		if (pid) {
+> +			new_nr = pid_vnr(pid);
+> +			if (!is_child_reaper(pid)) {
+> +				nr = new_nr + 1;
+> +				rcu_read_unlock();
+> +				continue;
+> +			}
+> +			get_pid(pid);
+> +			rcu_read_unlock();
+> +			rc = pidns_list_add(pid, pidns_pid_list);
+
+This function allocates memory per PID. If we have lots of PIDs, how does this scale?
+I'd go so far and say this can be a DoS'able issue if the pidns_hierarchy file is opened multiple times...
+
+Thanks,
+//richard
