@@ -1,75 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942AbaKEOVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 09:21:53 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:54149 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754906AbaKEOVs (ORCPT
+	id S1754991AbaKEOWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 09:22:10 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56256 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963AbaKEOWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 09:21:48 -0500
-X-Listener-Flag: 11101
-From: Flora Fu <flora.fu@mediatek.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, <arm@kernel.org>
-CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Flora Fu <flora.fu@mediatek.com>
-Subject: [PATCH v3 0/3] Add Reset Controller for MediaTek SoC 
-Date: Wed, 5 Nov 2014 22:21:29 +0800
-Message-ID: <1415197292-10546-1-git-send-email-flora.fu@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
+	Wed, 5 Nov 2014 09:22:05 -0500
+Date: Wed, 5 Nov 2014 06:21:49 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
+Cc: jdelvare@suse.de, benh@au1.ibm.com, linux-kernel@vger.kernel.org,
+        michaele@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v2] hwmon: (ibmpowernv) Use platform 'id_table' to probe
+ the device
+Message-ID: <20141105142149.GA23212@roeck-us.net>
+References: <20141105110848.6183.55611.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105110848.6183.55611.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.545A328C.005D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-The patch is based on https://lkml.org/lkml/2014/5/27/422
+On Wed, Nov 05, 2014 at 04:45:14PM +0530, Neelesh Gupta wrote:
+> The current driver probe() function assumes the sensor device to be
+> alwary present and gets executed every time if the driver is loaded,
+> but the appropriate hardware could not be present.
+> 
+> So, move the platform device creation as part of platform init code
+> and use the 'id_table' to check if the device present or not.
+> 
+> Signed-off-by: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
 
-Changes since v2
-================
-- Correct #size-cell to be 1.
-- Add header file "mt8135-resets.h" for supported resets in MT8135.
+Looks good. We'll need an ack from one of the powerpc maintainers to proceed.
 
-Changes since v1
-================
-(1) Patch 1/3: Update reset controller driver's implementation. 
-  - rename mt_ prefixes to the prefix mtk_
-  - use module_platform_driver() macro for driver init.
-  - clean up includes of header files.
-  - reset controll is a child of syscon. Get regamp through its parent node.
-  - rename data->size to data->num_regs. It is number of registers in syscon for reset usage. 
-(2) Patch 2/3: update bindings document according to new dts layout of reset-controller. 
-(3) Patch 3/3: change reset-controller device node as child of syscon. 
+Guenter
 
-
-This driver is based on 3.18-rc1.
-
-Flora Fu (3):
-  ARM: mediatek: Add Reset Controller for MediaTek SoC
-  dt-bindings: Add Reset Controller for MediaTek SoC
-  ARM: dts: mt8135: Add Reset Controller for MediaTek SoC
-
- .../devicetree/bindings/reset/mediatek,reset.txt   |  50 ++++++++
- arch/arm/boot/dts/mt8135.dtsi                      |  27 +++++
- drivers/reset/Makefile                             |   1 +
- drivers/reset/reset-mtk.c                          | 131 +++++++++++++++++++++
- .../dt-bindings/reset-controller/mt8135-resets.h   |  64 ++++++++++
- 5 files changed, 273 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/reset/mediatek,reset.txt
- create mode 100644 drivers/reset/reset-mtk.c
- create mode 100644 include/dt-bindings/reset-controller/mt8135-resets.h
-
---
-1.8.1.1.dirty
-
-
-
+> ---
+> 
+> Changes in v2
+> =============
+> - Improve readability in error case if 'sensors' not found, also log
+>   the using 'pr_err'.
+> 
+>  arch/powerpc/platforms/powernv/opal-sensor.c |   20 ++++++++
+>  drivers/hwmon/ibmpowernv.c                   |   67 +++++++-------------------
+>  2 files changed, 39 insertions(+), 48 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/powernv/opal-sensor.c b/arch/powerpc/platforms/powernv/opal-sensor.c
+> index 10271ad..4ab67ef 100644
+> --- a/arch/powerpc/platforms/powernv/opal-sensor.c
+> +++ b/arch/powerpc/platforms/powernv/opal-sensor.c
+> @@ -20,7 +20,9 @@
+>  
+>  #include <linux/delay.h>
+>  #include <linux/mutex.h>
+> +#include <linux/of_platform.h>
+>  #include <asm/opal.h>
+> +#include <asm/machdep.h>
+>  
+>  static DEFINE_MUTEX(opal_sensor_mutex);
+>  
+> @@ -64,3 +66,21 @@ out:
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(opal_get_sensor_data);
+> +
+> +static __init int opal_sensor_init(void)
+> +{
+> +	struct platform_device *pdev;
+> +	struct device_node *sensor;
+> +
+> +	sensor = of_find_node_by_path("/ibm,opal/sensors");
+> +	if (!sensor) {
+> +		pr_err("Opal node 'sensors' not found\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	pdev = of_platform_device_create(sensor, "opal-sensor", NULL);
+> +	of_node_put(sensor);
+> +
+> +	return PTR_ERR_OR_ZERO(pdev);
+> +}
+> +machine_subsys_initcall(powernv, opal_sensor_init);
+> diff --git a/drivers/hwmon/ibmpowernv.c b/drivers/hwmon/ibmpowernv.c
+> index 6a30eee..c7577b8 100644
+> --- a/drivers/hwmon/ibmpowernv.c
+> +++ b/drivers/hwmon/ibmpowernv.c
+> @@ -74,9 +74,6 @@ struct platform_data {
+>  	u32 sensors_count; /* Total count of sensors from each group */
+>  };
+>  
+> -/* Platform device representing all the ibmpowernv sensors */
+> -static struct platform_device *pdevice;
+> -
+>  static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
+>  			   char *buf)
+>  {
+> @@ -99,7 +96,7 @@ static ssize_t show_sensor(struct device *dev, struct device_attribute *devattr,
+>  	return sprintf(buf, "%u\n", x);
+>  }
+>  
+> -static int __init get_sensor_index_attr(const char *name, u32 *index,
+> +static int get_sensor_index_attr(const char *name, u32 *index,
+>  					char *attr)
+>  {
+>  	char *hash_pos = strchr(name, '#');
+> @@ -136,7 +133,7 @@ static int __init get_sensor_index_attr(const char *name, u32 *index,
+>   * which need to be mapped as fan2_input, temp1_max respectively before
+>   * populating them inside hwmon device class.
+>   */
+> -static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
+> +static int create_hwmon_attr_name(struct device *dev, enum sensors type,
+>  					 const char *node_name,
+>  					 char *hwmon_attr_name)
+>  {
+> @@ -172,7 +169,7 @@ static int __init create_hwmon_attr_name(struct device *dev, enum sensors type,
+>  	return 0;
+>  }
+>  
+> -static int __init populate_attr_groups(struct platform_device *pdev)
+> +static int populate_attr_groups(struct platform_device *pdev)
+>  {
+>  	struct platform_data *pdata = platform_get_drvdata(pdev);
+>  	const struct attribute_group **pgroups = pdata->attr_groups;
+> @@ -180,11 +177,6 @@ static int __init populate_attr_groups(struct platform_device *pdev)
+>  	enum sensors type;
+>  
+>  	opal = of_find_node_by_path("/ibm,opal/sensors");
+> -	if (!opal) {
+> -		dev_dbg(&pdev->dev, "Opal node 'sensors' not found\n");
+> -		return -ENODEV;
+> -	}
+> -
+>  	for_each_child_of_node(opal, np) {
+>  		if (np->name == NULL)
+>  			continue;
+> @@ -221,7 +213,7 @@ static int __init populate_attr_groups(struct platform_device *pdev)
+>   * to the name required by the higher 'hwmon' driver like fan1_input, temp1_max
+>   * etc..
+>   */
+> -static int __init create_device_attrs(struct platform_device *pdev)
+> +static int create_device_attrs(struct platform_device *pdev)
+>  {
+>  	struct platform_data *pdata = platform_get_drvdata(pdev);
+>  	const struct attribute_group **pgroups = pdata->attr_groups;
+> @@ -280,7 +272,7 @@ exit_put_node:
+>  	return err;
+>  }
+>  
+> -static int __init ibmpowernv_probe(struct platform_device *pdev)
+> +static int ibmpowernv_probe(struct platform_device *pdev)
+>  {
+>  	struct platform_data *pdata;
+>  	struct device *hwmon_dev;
+> @@ -309,52 +301,31 @@ static int __init ibmpowernv_probe(struct platform_device *pdev)
+>  	return PTR_ERR_OR_ZERO(hwmon_dev);
+>  }
+>  
+> +static const struct platform_device_id opal_sensor_driver_ids[] = {
+> +	{
+> +		.name = "opal-sensor",
+> +	},
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(platform, opal_sensor_driver_ids);
+> +
+>  static struct platform_driver ibmpowernv_driver = {
+> -	.driver = {
+> -		.owner = THIS_MODULE,
+> -		.name = DRVNAME,
+> +	.probe		= ibmpowernv_probe,
+> +	.id_table	= opal_sensor_driver_ids,
+> +	.driver		= {
+> +		.owner	= THIS_MODULE,
+> +		.name	= DRVNAME,
+>  	},
+>  };
+>  
+>  static int __init ibmpowernv_init(void)
+>  {
+> -	int err;
+> -
+> -	pdevice = platform_device_alloc(DRVNAME, 0);
+> -	if (!pdevice) {
+> -		pr_err("Device allocation failed\n");
+> -		err = -ENOMEM;
+> -		goto exit;
+> -	}
+> -
+> -	err = platform_device_add(pdevice);
+> -	if (err) {
+> -		pr_err("Device addition failed (%d)\n", err);
+> -		goto exit_device_put;
+> -	}
+> -
+> -	err = platform_driver_probe(&ibmpowernv_driver, ibmpowernv_probe);
+> -	if (err) {
+> -		if (err != -ENODEV)
+> -			pr_err("Platform driver probe failed (%d)\n", err);
+> -
+> -		goto exit_device_del;
+> -	}
+> -
+> -	return 0;
+> -
+> -exit_device_del:
+> -	platform_device_del(pdevice);
+> -exit_device_put:
+> -	platform_device_put(pdevice);
+> -exit:
+> -	return err;
+> +	return platform_driver_register(&ibmpowernv_driver);
+>  }
+>  
+>  static void __exit ibmpowernv_exit(void)
+>  {
+>  	platform_driver_unregister(&ibmpowernv_driver);
+> -	platform_device_unregister(pdevice);
+>  }
+>  
+>  MODULE_AUTHOR("Neelesh Gupta <neelegup@linux.vnet.ibm.com>");
+> 
