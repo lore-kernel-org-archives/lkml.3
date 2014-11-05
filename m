@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaKEKtj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 05:49:39 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58923 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477AbaKEKth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 05:49:37 -0500
-Date: Wed, 5 Nov 2014 11:49:35 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [for-next][PATCH 4/4] ftrace: Add more information to
- ftrace_bug() output
-Message-ID: <20141105104935.GD5245@pd.tnic>
-References: <20141027182702.778680710@goodmis.org>
- <20141027182948.733905051@goodmis.org>
+	id S1754608AbaKEKvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 05:51:09 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:43995 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262AbaKEKvI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 05:51:08 -0500
+Date: Wed, 5 Nov 2014 11:50:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
+        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
+ cpu hotplug
+Message-ID: <20141105105058.GQ3337@twins.programming.kicks-ass.net>
+References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141027182948.733905051@goodmis.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 02:27:06PM -0400, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Wed, Nov 05, 2014 at 04:51:57PM +0800, Wanpeng Li wrote:
+> Note: dl task can be migrated successfully if rq is offline currently, however, 
+> I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl 
+> task previous running on, so cpu_active_mask is used in the patch. 
 > 
-> With the introduction of the dynamic trampolines, it is useful that if
-> things go wrong that ftrace_bug() produces more information about what
-> the current state is. This can help debug issues that may arise.
-> 
-> Ftrace has lots of checks to make sure that the state of the system it
-> touchs is exactly what it expects it to be. When it detects an abnormality
-> it calls ftrace_bug() and disables itself to prevent any further damage.
-> It is crucial that ftrace_bug() produces sufficient information that
-> can be used to debug the situation.
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Peterz, Juri?
 
-Acked-by: Borislav Petkov <bp@suse.de>
+So the root domain span is for exclusive cpusets
+(Documentation/cgroups/cpusets.txt) where we fully separate sets of CPUs
+and have no load-balancing between the sets.
 
--- 
-Regards/Gruss,
-    Boris.
+For 'normal' setups the rd->span is the entire machine, but using
+cpusets you can create more (smaller) domains.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Is this what you were asking?
