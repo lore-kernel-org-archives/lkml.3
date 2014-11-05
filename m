@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaKEGYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 01:24:18 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:35725 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaKEGYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 01:24:15 -0500
-Message-ID: <5459C287.4050006@gmail.com>
-Date: Wed, 05 Nov 2014 14:24:07 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751971AbaKEGY2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 01:24:28 -0500
+Received: from mail-by2on0112.outbound.protection.outlook.com ([207.46.100.112]:7104
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751335AbaKEGYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 01:24:25 -0500
+X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Nov 2014 01:24:24 EST
+X-WSS-ID: 0NEJYFW-07-A9Q-02
+X-M-MSG: 
+From: Vincent Wan <vincent.wan@amd.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Arindam Nath <arindam.nath@amd.com>, Huang Rui <ray.huang@amd.com>,
+        Wan Zongshun <mcuos.com@gmail.com>, Vincent Wan <vincent.wan@amd.com>
+Subject: [PATCH v3 2/3] mmc:sdhci-pci: enable the clear transfer mode register quirk for AMD sdhci
+Date: Wed, 5 Nov 2014 14:09:14 +0800
+Message-ID: <1415167754-5801-1-git-send-email-vincent.wan@amd.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: [PATCH RFC] sched/deadline: support dl task migrate during cpu
- hotplug
-References: <1414740497-7232-1-git-send-email-wanpeng.li@linux.intel.com> <20141103104111.GA23531@worktop.programming.kicks-ass.net> <20141103235747.GA26702@kernel> <20141104083225.GG10501@worktop.programming.kicks-ass.net> <20141104082345.GA22062@kernel> <20141104101022.GH10501@worktop.programming.kicks-ass.net> <5458D506.4080702@gmail.com> <20141104154623.GK10501@worktop.programming.kicks-ass.net> <5458F5C8.1030405@arm.com>
-In-Reply-To: <5458F5C8.1030405@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(44976005)(93916002)(97736003)(104166001)(33646002)(110136001)(68736004)(84676001)(19580395003)(19580405001)(102836001)(36756003)(87286001)(77096003)(87936001)(88136002)(229853001)(89996001)(77156002)(21056001)(50986999)(92566001)(106466001)(64706001)(50466002)(31966008)(217423001)(86362001)(107046002)(53416004)(4396001)(92726001)(101416001)(48376002)(50226001)(105586002)(46102003)(20776003)(99396003)(47776003)(120916001)(62966003)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0386B406AA
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Vincent.Wan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-On 14/11/4 下午11:50, Juri Lelli wrote:
-> Hi,
->
-> On 04/11/14 15:46, Peter Zijlstra wrote:
->> On Tue, Nov 04, 2014 at 09:30:46PM +0800, Wanpeng Li wrote:
->>
->>
->>> + if (!rq->online) {
->>> + struct rq *latest_rq = NULL;
->>> + int cpu;
->>> + u64 dmin = LONG_MAX;
->>> +
->>> + for_each_cpu(cpu, &p->cpus_allowed)
->>> + if (cpu_online(cpu) &&
->>> + cpu_rq(cpu)->dl.earliest_dl.curr < dmin) {
->>> + latest_rq = cpu_rq(cpu);
->>> + dmin = latest_rq->dl.earliest_dl.curr;
->>> + }
->> I would have expected something using find_later_rq(), but I might be
->> mistaken, I'll let Juri suggest something.
->>
-> Yeah, we should be able to reuse something that we already have. I'm
-> actually sorry that I'm not responsive on this, but I'm really busy on
-> other things this week. I hope to be able to find some time soon to test
-> this all.
+This patch is to enable the quirk for AMD sdhci requiring transfer
+mode register need to be cleared for commands without data
 
-I have time to do it, your proposal is a great welcome. ;-)
+Signed-off-by: Vincent Wan <vincent.wan@amd.com>
+Signed-off-by: Wan Zongshun <mcuos.com@gmail.com>
+---
+ drivers/mmc/host/sdhci-pci.c | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-Regards,
-Wanpeng Li
-
->
-> Thanks,
->
-> - Juri
->
->>> +
->>> + if (!latest_rq)
->>> + goto unlock;
->>> +
->>> + raw_spin_lock(&latest_rq->lock);
->>> +
->>> + deactivate_task(rq, p, 0);
->>> + set_task_cpu(p, latest_rq->cpu);
->>> + activate_task(latest_rq, p, 0);
->>> +
->>> + raw_spin_unlock(&latest_rq->lock);
->>> + }
->>> +
->>> unlock:
->>> raw_spin_unlock(&rq->lock);
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index c25639b..5a77f18 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -645,6 +645,23 @@ static const struct sdhci_pci_fixes sdhci_rtsx = {
+ 	.probe_slot	= rtsx_probe_slot,
+ };
+ 
++static int amd_probe(struct sdhci_pci_chip *chip)
++{
++	struct pci_dev	*smbus_dev;
++
++	smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD,
++			PCI_DEVICE_ID_AMD_HUDSON2_SMBUS, NULL);
++
++	if (smbus_dev && (smbus_dev->revision < 0x51))
++		chip->quirks2 |= SDHCI_QUIRK2_CLEAR_TRANSFERMODE_REG_BEFORE_CMD;
++
++	return 0;
++}
++
++static const struct sdhci_pci_fixes sdhci_amd = {
++	.probe		= amd_probe,
++};
++
+ static const struct pci_device_id pci_ids[] = {
+ 	{
+ 		.vendor		= PCI_VENDOR_ID_RICOH,
+@@ -1044,7 +1061,15 @@ static const struct pci_device_id pci_ids[] = {
+ 		.subdevice	= PCI_ANY_ID,
+ 		.driver_data	= (kernel_ulong_t)&sdhci_o2,
+ 	},
+-
++	{
++		.vendor		= PCI_VENDOR_ID_AMD,
++		.device		= PCI_ANY_ID,
++		.class		= PCI_CLASS_SYSTEM_SDHCI << 8,
++		.class_mask	= 0xFFFF00,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_amd,
++	},
+ 	{	/* Generic SD host controller */
+ 		PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
+ 	},
+-- 
+1.8.1.2
 
