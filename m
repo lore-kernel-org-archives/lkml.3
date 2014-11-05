@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712AbaKEUx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 15:53:59 -0500
-Received: from mga03.intel.com ([134.134.136.65]:52899 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218AbaKEUx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 15:53:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,321,1413270000"; 
-   d="scan'208";a="632177367"
-Message-ID: <545A8E62.7000004@linux.intel.com>
-Date: Wed, 05 Nov 2014 12:53:54 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
+	id S1751307AbaKEU6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 15:58:24 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59574 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750867AbaKEU6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 15:58:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Timur Tabi <timur@codeaurora.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index()
- when using properties
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <3196606.Sy6xFg88zg@vostro.rjw.lan> <5459646E.9000707@linux.intel.com> <2251117.W1kfIOl2SD@vostro.rjw.lan>
-In-Reply-To: <2251117.W1kfIOl2SD@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+Date: Wed, 05 Nov 2014 22:19:09 +0100
+Message-ID: <3242341.BG0xCMgUSF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <545959A8.7010305@codeaurora.org>
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <3210901.7DuAVnBdHS@vostro.rjw.lan> <545959A8.7010305@codeaurora.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, November 04, 2014 04:56:40 PM Timur Tabi wrote:
+> On 11/04/2014 05:13 PM, Rafael J. Wysocki wrote:
+> > Well, first of all, you won't use phandles with ACPI.:-)
+> 
+> Yes, which makes things complicated for me.  The pinctrl binding makes 
+> heavy use of phandles, so it will be a challenge to come up with a 
+> substitue.
+> 
+> > That seems to be the case in which some ACPI-specific code would need to be
+> > written.  In ACPI, instead of the list of phandles you'll have a list of
+> > references to device objects that you can walk in an analogous way.
+> 
+> Can you point me to an example Linux driver that parses references?
 
+The GPIO subsystem does that, but it probably is too complicated for your case,
+because ACPI has its own native way of representing GPIOs and what we do there
+is to translate the ACPI way into what the GPIO core expects.  Not exactly
+straightforward, that.
 
-On 11/5/14 12:59, Rafael J. Wysocki wrote:
-> On Tuesday, November 04, 2014 03:42:38 PM Darren Hart wrote:
->>
->> On 11/4/14 14:54, Rafael J. Wysocki wrote:
->>
->>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> Subject: ACPI / property: Drop size_prop from acpi_dev_get_property_reference()
->>>
->>> The size_prop argument of the recently added function
->>> acpi_dev_get_property_reference() is not used by the only current
->>> caller of that function and is very unlikely to be used at any time
->>> going forward.
->>>
->>> Namely, for a property whose value is a list of items each containing
->>> a references to a device object possibly accompanied by some integers,
->>> the number of items in the list can always be computed as the number
->>> of elements of type ACPI_TYPE_LOCAL_REFERENCE in the property package.
->>> Thus it should never be necessary to provide an additional "cells"
->>> property with a value equal to the number of items in that list.
->>
->> In this case, do we never expect a property to contain more than one
->> ACPI_TYPE_LOCAL_REFERENCE?
->>
->> Package () { "foobar",
->>               Package () {
->>                   "PCI0.FOO", "PCI0.BAR", 0, 1, 0,
->>                   "PCI0.FOO", "PCI0.BAR2", 0, 1, 1
->>               }
->> }
->>
->> This seems like it could be useful for connecting various types of
->> devices together, but I confess not to have a specific exmaple in mind.
->> It does concern me to limit the data format in this way.
-> 
-> We don't support this even with size_prop, so it doesn't seem to be relevant here.
-> 
-> Now, if we were to support this, I'd rather not use acpi_dev_get_property_reference()
-> for that, but add a new function specifically for it.  Moreover, I would extend the
-> format definition then so that we could do
-> 
-> Package () {
-> 	"foobar", Package () {
-> 			Package () {"PCI0.FOO", "PCI0.BAR", 0, 1, 0},
-> 			Package () {"PCI0.FOO", "PCI0.BAR2", 0, 1, 1}
-> 	}
-> }
-> 
-> in which case adding a special "size" property could be avoided.
-> 
-> That said, I have no idea why it might be necessary.  One reference in a property
-> value means that we're connecting the current node (the owner of the _DSD
-> containing that property) with some other node in the namespace.  Two references
-> in there would mean that the current node is to be connected with *two* other
-> nodes in the namespace at the same time.  That raises some questions that I'd
-> rather not consider in detail here, unless you insist. ;-)
-> 
->> I suppose should such a case become necessary, we can deal with the
->> issue then - and still avoid having a potential abuse point in the API
->> from the start.
-> 
-> What we have today is sufficient for all of the cases we've considered so far.
-> If we find a case where it is not sufficient, we'll need to consider extending
-> the data format as well as the API.
-> 
-> Rafael
+Anyway, if you want me to describe it to you, please let me know.
 
-Agreed on all points. Thanks Rafael.
+For pinctrl we don't have any "native ACPI way" of representing things, so
+we'll need to start with the DT binding directly.  That's why I asked about it.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+[cut]
+
+> > And it looks like we'll need a device_property_read_string_index().:-)
+> 
+> Multi-string properties are also very popular in device tree.
+
+Those we do handle already.
+
+> >
+> > BTW, where's the pinctrl binding documented?
+> 
+> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+
+Thanks!
+
+Rafael
+
