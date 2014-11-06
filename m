@@ -1,87 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaKFDZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:25:58 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57026 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750975AbaKFDZv (ORCPT
+	id S1751382AbaKFDZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:25:56 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44711 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751311AbaKFDZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:25:51 -0500
-Message-ID: <1415244343.3398.47.camel@decadent.org.uk>
-Subject: [PATCH 1/3] i2o: Fix DMA mapping leak in failure path of
- i2o_cfg_passthru32()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 06 Nov 2014 03:25:43 +0000
-In-Reply-To: <1415244281.3398.46.camel@decadent.org.uk>
-References: <1415244281.3398.46.camel@decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-zA3967wS7pRnXbLNFIcQ"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 5 Nov 2014 22:25:52 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au8NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjDwEFHiMFCwsYAgIFFA0CAg8CKBUJBg0BBwEBiDQJDbZvlHYBAQEBAQUBAQEBAQEcgSyFCIg3gh0HgneBVAWWT4hDg0mCcoxTgW+DeTwvAQEBAYJHAQEB
+X-IPAS-Result: Au8NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjDwEFHiMFCwsYAgIFFA0CAg8CKBUJBg0BBwEBiDQJDbZvlHYBAQEBAQUBAQEBAQEcgSyFCIg3gh0HgneBVAWWT4hDg0mCcoxTgW+DeTwvAQEBAYJHAQEB
+X-IronPort-AV: E=Sophos;i="5.04,797,1406606400"; 
+   d="scan'208";a="96075480"
+Message-ID: <545AEA37.601@voxpopuli.im>
+Date: Thu, 06 Nov 2014 04:25:43 +0100
+From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
+References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de> <545829CA.7040900@voxpopuli.im> <20141105125028.GA30087@linutronix.de>
+In-Reply-To: <20141105125028.GA30087@linutronix.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-zA3967wS7pRnXbLNFIcQ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 11/05/2014 01:50 PM, Sebastian Andrzej Siewior wrote:
+> [...]
+>> If the trace events from both LTTng and perf represent the same thing
+>> (and I assume they should, since they come from the same tracepoints,
+>> right?), then we could just add a wrapper on the viewer side to
+>> decide which event/field names to use, depending on the trace type.
+>>
+>> Right now, we only define LTTng event and field names:
+>> http://git.eclipse.org/c/tracecompass/org.eclipse.tracecompass.git/tree/org.eclipse.tracecompass.lttng2.kernel.core/src/org/eclipse/tracecompass/internal/lttng2/kernel/core/LttngStrings.java
+> Okay. So I found this file for linuxtools now let me try tracecompass.
+> The basic renaming should do the job. Then I have to figure out how to
+> compile this thingy…
 
-If i2o_dma_alloc() fails then we don't free any DMA mappings already
-allocated.  i2o_cfg_passthru() does not have this bug.
+"mvn clean install". It is the Maven equivalent of "./configure && make" ;)
 
-Compile-tested only.
+Or if you want to build a standalone application (RCP):
+mvn clean install -Pbuild-rcp -Dmaven.test.skip=true
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/message/i2o/i2o_config.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+see the README file in the git tree for details.
 
-diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_con=
-fig.c
-index 04bd3b6..274235d 100644
---- a/drivers/message/i2o/i2o_config.c
-+++ b/drivers/message/i2o/i2o_config.c
-@@ -630,7 +630,7 @@ static int i2o_cfg_passthru32(struct file *file, unsign=
-ed cmnd,
- 				       "%s:Bad SG element %d - not simple (%x)\n",
- 				       c->name, i, sg[i].flag_count);
- 				rcode =3D -EINVAL;
--				goto cleanup;
-+				goto sg_list_cleanup;
- 			}
- 			sg_size =3D sg[i].flag_count & 0xffffff;
- 			p =3D &(sg_list[sg_index]);
+>
+> There is this one thing where you go for "tid" while perf says "pid". I
+> guess I could figure that out once I have the rename done.
+> We don't have lttng_statedump_process_state, this look lttng specific. I
+> would have to look if there is a replacement event in perf.
+
+Yes, the state dump is something specific to LTTng. It allows us to know 
+about processes that exist on the system, even if they are sleeping for 
+the whole duration of the trace (and thus, would not show up in the 
+trace at all).
+
+But even if these events are not present, we can still know about active 
+processes when they do shed_switch's for example.
+
+> I have no idea what we could do about the "unknown" events, say someone
+> enbales skb tracing. But this is probably something for once we are
+> done with the basic integration.
+>
+>> But if you could for example tell me the perf equivalents of all the
+>> strings in that file, I could hack together such wrapper. With that,
+>> in theory, perf traces should behave exactly the same as LTTng traces
+>> in the viewer!
+> Oooh, that would be awesome. So I installed maven but didn't get much
+> further. Let me gather this for you.
+
+Awesome, thanks!
+
+I am travelling this week, so I'm a bit busy, but I will try to 
+prototype a "wrapper" for the kernel analysis, and adding support for 
+the perf events, whenever I have a chance. I'll keep you posted.
+
+>
+> So first the renaming:
+> diff --git a/LttngStrings.java b/LttngStrings.java
+> --- a/LttngStrings.java
+> +++ b/LttngStrings.java
+> @@ -27,17 +27,17 @@ public interface LttngStrings {
+>   
+>       /* Event names */
+>       static final String EXIT_SYSCALL = "exit_syscall";
+> -    static final String IRQ_HANDLER_ENTRY = "irq_handler_entry";
+> -    static final String IRQ_HANDLER_EXIT = "irq_handler_exit";
+> -    static final String SOFTIRQ_ENTRY = "softirq_entry";
+> -    static final String SOFTIRQ_EXIT = "softirq_exit";
+> -    static final String SOFTIRQ_RAISE = "softirq_raise";
+> -    static final String SCHED_SWITCH = "sched_switch";
+> -    static final String SCHED_WAKEUP = "sched_wakeup";
+> -    static final String SCHED_WAKEUP_NEW = "sched_wakeup_new";
+> -    static final String SCHED_PROCESS_FORK = "sched_process_fork";
+> -    static final String SCHED_PROCESS_EXIT = "sched_process_exit";
+> -    static final String SCHED_PROCESS_FREE = "sched_process_free";
+> +    static final String IRQ_HANDLER_ENTRY = "irq:irq_handler_entry";
+> +    static final String IRQ_HANDLER_EXIT = "irq:irq_handler_exit";
+> +    static final String SOFTIRQ_ENTRY = "irq:softirq_entry";
+> +    static final String SOFTIRQ_EXIT = "irq:softirq_exit";
+> +    static final String SOFTIRQ_RAISE = "irq:softirq_raise";
+> +    static final String SCHED_SWITCH = "sched:sched_switch";
+> +    static final String SCHED_WAKEUP = "sched:sched_wakeup";
+> +    static final String SCHED_WAKEUP_NEW = "sched:sched_wakeup_new";
+> +    static final String SCHED_PROCESS_FORK = "sched:sched_process_fork";
+> +    static final String SCHED_PROCESS_EXIT = "sched:sched_process_exit";
+> +    static final String SCHED_PROCESS_FREE = "sched:sched_process_free";
+>       static final String STATEDUMP_PROCESS_STATE = "lttng_statedump_process_state";
+>   
+>       /* System call names */
+>
+> I have no idea how exit_syscall is different from irq_handler_exit and I
+> think we have to skip for now on STATEDUMP_PROCESS_STATE.
+>
+> For the syscalls:
+>
+> - static final String SYSCALL_PREFIX = "sys_";
+>    It is bassicaly:
+>      syscalls:sys_enter_
+>      syscalls:sys_exit_
+>    depending what you are looking for.
+>
+> - static final String COMPAT_SYSCALL_PREFIX = "compat_sys_";
+>    I haven't found this. Could it be that we don't record the compat_sys
+>    at all?
+
+IIRC, compat_sys is for instance for 32-bit system calls on a 64-bit 
+kernel. Perhaps the "compat" system calls are recorded as standard 
+system call events with perf? We could test it once we get the base 
+things working.
+
+> - static final String SYS_CLONE = "sys_clone";
+>    here we have
+>      syscalls:sys_enter_clone
+>      syscalls:sys_exit_clone
+>    I guess the enter is what you are looking for.
+>
+> For the fields, this is one event with alle the members we have. Please
+> note that lttng saves the members with the _ prefix and I haven't seen
+> that prefix in that .java file.
+
+As Mathieu explained in his reply, in LTTng-CTF they have a _ before 
+field names. In our parser, we take out the first character if it is an 
+underscore. So it should still work with underscore-less fields.
 
 
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
-
---=-zA3967wS7pRnXbLNFIcQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVFrqOOe/yOyVhhEJAQqUuQ/+MZ9RnBkiR8gutLi8xX8gLKIIgHSYw/KU
-FvI4zQIS/O2EaKzn3FJpkah+FWL49+6MGoil0LVMysqv3hlbzknZ0kt0nEKf8Luc
-844AW9YgPu/yalLFckKOf2n96R34WdXJNebdf89oxrvj9vSRX2F1YlBK7SWqidwp
-aH3m0u88GSyy3m7NOp51o8DyOX09Cmi3BLE60eF9o0+gMH7DiDC02uhhT69RrddL
-e/7HcoLzxUkrORQ1KSFL/QcVdKhl4HYo4Zt3H0CukvIiybCEENXI+K8PBS0dHfJV
-nvUMTZbboUIeguiM+AnPzrrmCIYofFtFlt8Nn2kXo/xcxFUPGzNO+ytJ5Ptf+/AE
-Y0kkIXoBJARrI9ssfNHTdtWT9w1YNkefIXZdK06sEf4AIUxNha17K5FRVIqnGU/t
-yYw9xs+upGj9nViXFAz80KFA9W5iUUNDZCiwBAHFcGQhxdJTbdcyCmlo8DSXZVyc
-YrC1WvQtUCUZG3QK5axrafmJazfo7+RxsyklXaw0XQe2sFNSqI72KAraQXt16ZfV
-S33wyo5vD4fXUuU1YwVCOESnq7ULpgk2oBuBDftPjB3CbGgYfvYnfPmBzclQbTzj
-PGBdSVCAjnVg2pju9N0jfTIfKKB84dp/8VM7WY+AatYR2yVREsbH/l2WMnq0KMOu
-CAKOkJ0lVmI=
-=vp0p
------END PGP SIGNATURE-----
-
---=-zA3967wS7pRnXbLNFIcQ--
+Cheers,
+Alexandre
