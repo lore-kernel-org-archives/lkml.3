@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaKFWi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:38:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58483 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaKFWiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:38:20 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jason Baron <jbaron@akamai.com>, Borislav Petkov <bp@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 123/162] i3200_edac: Report CE events properly
-Date: Thu,  6 Nov 2014 14:36:27 -0800
-Message-Id: <1415313426-9622-124-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1754028AbaKFXV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:21:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751739AbaKFWi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 17:38:27 -0500
+Date: Thu, 6 Nov 2014 16:50:56 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>,
+        David Rientjes <rientjes@google.com>, Eric Paris <eparis@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Jesse Gross <jesse@nicira.com>, Jonathan Corbet <corbet@lwn.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pravin Shelar <pshelar@nicira.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH] lib/flex_array: make build optional
+Message-ID: <20141106215056.GK26472@redhat.com>
+References: <1415309241-12971-1-git-send-email-aris@redhat.com>
+ <545BE927.9060208@sr71.net>
+ <545BEBD6.4030803@sr71.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545BEBD6.4030803@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Nov 06, 2014 at 01:44:54PM -0800, Dave Hansen wrote:
+> On 11/06/2014 01:33 PM, Dave Hansen wrote:
+> > On 11/06/2014 01:27 PM, Aristeu Rozanski wrote:
+> >> +config FLEX_ARRAY
+> >> +	bool "Flexible array"
+> >> +	default n
+> >> +	help
+> >> +	  This option enables an implementation of flexible arrays which
+> >> +	  allows creating arrays of fixed size elements with an arbritrary
+> >> +	  size without requiring the single allocation of a contiguous area.
+> >> +
+> >> +	  See Documentation/flexible-arrays.txt
+> > 
+> > Is there any reason to expose this to the user via Kconfig?
+> > 
+> > No sane person would even turn it on if they don't need it.
+> 
+> IOW, I think you should just make it:
+> 
+> config FLEX_ARRAY
+> 	def_bool n
 
-------------------
+Joe Pershes complained on a similar patch on making it default to 'n'.
+Will rework the patches this way.
 
-From: Jason Baron <jbaron@akamai.com>
-
-commit 8a3f075d6c9b3612b4a5fb2af8db82b38b20caf0 upstream.
-
-Fix CE event being reported as HW_EVENT_ERR_UNCORRECTED.
-
-Signed-off-by: Jason Baron <jbaron@akamai.com>
-Link: http://lkml.kernel.org/r/d02465b4f30314b390c12c061502eda5e9d29c52.1413405053.git.jbaron@akamai.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/edac/i3200_edac.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index be10a74..7d5b369 100644
---- a/drivers/edac/i3200_edac.c
-+++ b/drivers/edac/i3200_edac.c
-@@ -242,11 +242,11 @@ static void i3200_process_error_info(struct mem_ctl_info *mci,
- 					     -1, -1,
- 					     "i3000 UE", "");
- 		} else if (log & I3200_ECCERRLOG_CE) {
--			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
-+			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1,
- 					     0, 0, eccerrlog_syndrome(log),
- 					     eccerrlog_row(channel, log),
- 					     -1, -1,
--					     "i3000 UE", "");
-+					     "i3000 CE", "");
- 		}
- 	}
- }
 -- 
-1.9.1
+Aristeu
 
