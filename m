@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaKFWrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:47:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59159 "EHLO
+	id S1753519AbaKFWru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:47:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59154 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322AbaKFWoZ (ORCPT
+	with ESMTP id S1752028AbaKFWoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 17:44:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 074/162] ext4: check s_chksum_driver when looking for bg csum presence
-Date: Thu,  6 Nov 2014 14:35:38 -0800
-Message-Id: <1415313426-9622-75-git-send-email-kamal@canonical.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 026/162] sctp: handle association restarts when the socket is closed.
+Date: Thu,  6 Nov 2014 14:34:50 -0800
+Message-Id: <1415313426-9622-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,65 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-commit 813d32f91333e4c33d5a19b67167c4bae42dae75 upstream.
+[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
 
-Convert the ext4_has_group_desc_csum predicate to look for a checksum
-driver instead of the metadata_csum flag and change the bg checksum
-calculation function to look for GDT_CSUM before taking the crc16
-path.
+Currently association restarts do not take into consideration the
+state of the socket.  When a restart happens, the current assocation
+simply transitions into established state.  This creates a condition
+where a remote system, through a the restart procedure, may create a
+local association that is no way reachable by user.  The conditions
+to trigger this are as follows:
+  1) Remote does not acknoledge some data causing data to remain
+     outstanding.
+  2) Local application calls close() on the socket.  Since data
+     is still outstanding, the association is placed in SHUTDOWN_PENDING
+     state.  However, the socket is closed.
+  3) The remote tries to create a new association, triggering a restart
+     on the local system.  The association moves from SHUTDOWN_PENDING
+     to ESTABLISHED.  At this point, it is no longer reachable by
+     any socket on the local system.
 
-Without this patch, if we mount with ^uninit_bg,^metadata_csum and
-later metadata_csum gets turned on by accident, the block group
-checksum functions will incorrectly assume that checksumming is
-enabled (metadata_csum) but that crc16 should be used
-(!s_chksum_driver).  This is totally wrong, so fix the predicate
-and the checksum formula selection.
+This patch addresses the above situation by moving the newly ESTABLISHED
+association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
+the COOKIE-ACK chunk.  This way, the restarted associate immidiately
+enters the shutdown procedure and forces the termination of the
+unreachable association.
 
-(Granted, if the metadata_csum feature bit gets enabled on a live FS
-then something underhanded is going on, but we could at least avoid
-writing garbage into the on-disk fields.)
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Reported-by: David Laight <David.Laight@aculab.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/ext4.h  | 4 ++--
- fs/ext4/super.c | 4 ++++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ include/net/sctp/command.h |  2 +-
+ net/sctp/sm_statefuns.c    | 19 ++++++++++++++++---
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 5b250fe..bfb7fed 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2337,8 +2337,8 @@ extern int ext4_register_li_request(struct super_block *sb,
- static inline int ext4_has_group_desc_csum(struct super_block *sb)
- {
- 	return EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM |
--					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
-+					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM) ||
-+	       (EXT4_SB(sb)->s_chksum_driver != NULL);
- }
+diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
+index 832f219..c3f0cd9 100644
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -116,7 +116,7 @@ typedef enum {
+  * analysis of the state functions, but in reality just taken from
+  * thin air in the hopes othat we don't trigger a kernel panic.
+  */
+-#define SCTP_MAX_NUM_COMMANDS 14
++#define SCTP_MAX_NUM_COMMANDS 20
  
- static inline int ext4_has_metadata_csum(struct super_block *sb)
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 6686ce4..608db58 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2019,6 +2019,10 @@ static __le16 ext4_group_desc_csum(struct ext4_sb_info *sbi, __u32 block_group,
- 	}
+ typedef union {
+ 	__s32 i32;
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index cd0d5a2..4b549a3 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -1776,9 +1776,22 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
+ 	/* Update the content of current association. */
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+-			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+-	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
++	    (sctp_sstate(asoc->base.sk, CLOSING) ||
++	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
++		/* if were currently in SHUTDOWN_PENDING, but the socket
++		 * has been closed by user, don't transition to ESTABLISHED.
++		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
++		 */
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
++						     SCTP_ST_CHUNK(0), NULL,
++						     commands);
++	} else {
++		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
++				SCTP_STATE(SCTP_STATE_ESTABLISHED));
++		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
++	}
+ 	return SCTP_DISPOSITION_CONSUME;
  
- 	/* old crc16 code */
-+	if (!(sbi->s_es->s_feature_ro_compat &
-+	      cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
-+		return 0;
-+
- 	offset = offsetof(struct ext4_group_desc, bg_checksum);
- 
- 	crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
+ nomem_ev:
 -- 
 1.9.1
 
