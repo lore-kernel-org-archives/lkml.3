@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaKFIw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:52:57 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:61374 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbaKFIw4 (ORCPT
+	id S1752023AbaKFIzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:55:08 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48037 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751195AbaKFIzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:52:56 -0500
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: tc6393xb: prepare/unprepare clocks
-Date: Thu,  6 Nov 2014 11:52:38 +0300
-Message-Id: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 2.1.1
+	Thu, 6 Nov 2014 03:55:04 -0500
+Date: Thu, 6 Nov 2014 09:54:24 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and
+ resets
+Message-ID: <20141106085424.GF2989@lukather>
+References: <1415074039-16590-1-git-send-email-wens@csie.org>
+ <1415074039-16590-2-git-send-email-wens@csie.org>
+ <20141104165733.GI26729@lukather>
+ <CAGb2v65VojZVEijdjXYGkMud7dMFzMzagfN=_4S3msZygu3YPQ@mail.gmail.com>
+ <20141105100912.GD27686@lukather>
+ <CAGb2v64RT4PKTji2KfDTFfc8b_kiTk0Vh49nEE9ZJukum7h2_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZYOWEO2dMm2Af3e3"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v64RT4PKTji2KfDTFfc8b_kiTk0Vh49nEE9ZJukum7h2_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change clk_enable/disable() calls to clk_prepare_enable() and
-clk_disable_unrepapre().
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
----
- drivers/mfd/tc6393xb.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+--ZYOWEO2dMm2Af3e3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-index 48579e5..abcb4eb 100644
---- a/drivers/mfd/tc6393xb.c
-+++ b/drivers/mfd/tc6393xb.c
-@@ -665,7 +665,7 @@ static int tc6393xb_probe(struct platform_device *dev)
- 		goto err_ioremap;
- 	}
- 
--	ret = clk_enable(tc6393xb->clk);
-+	ret = clk_prepare_enable(tc6393xb->clk);
- 	if (ret)
- 		goto err_clk_enable;
- 
-@@ -728,7 +728,7 @@ err_gpio_add:
- 		temp = gpiochip_remove(&tc6393xb->gpio);
- 	tcpd->disable(dev);
- err_enable:
--	clk_disable(tc6393xb->clk);
-+	clk_disable_unprepare(tc6393xb->clk);
- err_clk_enable:
- 	iounmap(tc6393xb->scr);
- err_ioremap:
-@@ -764,7 +764,7 @@ static int tc6393xb_remove(struct platform_device *dev)
- 	}
- 
- 	ret = tcpd->disable(dev);
--	clk_disable(tc6393xb->clk);
-+	clk_disable_unprepare(tc6393xb->clk);
- 	iounmap(tc6393xb->scr);
- 	release_resource(&tc6393xb->rscr);
- 	clk_put(tc6393xb->clk);
-@@ -792,7 +792,7 @@ static int tc6393xb_suspend(struct platform_device *dev, pm_message_t state)
- 			ioread8(tc6393xb->scr + SCR_GPI_BCR(i));
- 	}
- 	ret = tcpd->suspend(dev);
--	clk_disable(tc6393xb->clk);
-+	clk_disable_unprepare(tc6393xb->clk);
- 
- 	return ret;
- }
-@@ -804,7 +804,7 @@ static int tc6393xb_resume(struct platform_device *dev)
- 	int ret;
- 	int i;
- 
--	clk_enable(tc6393xb->clk);
-+	clk_prepare_enable(tc6393xb->clk);
- 
- 	ret = tcpd->resume(dev);
- 	if (ret)
--- 
-2.1.1
+On Thu, Nov 06, 2014 at 10:09:27AM +0800, Chen-Yu Tsai wrote:
+> >> >> +static void __init sun9i_a80_usb_mod_setup(struct device_node *nod=
+e)
+> >> >> +{
+> >> >> +     /* AHB1 gate must be enabled to access registers */
+> >> >> +     struct clk *ahb =3D of_clk_get(node, 0);
+> >> >> +
+> >> >> +     WARN_ON(IS_ERR(ahb));
+> >> >> +     clk_prepare_enable(ahb);
+> >> >
+> >> > Hmmmm. That look off.
+> >> >
+> >> > Why do you need the clock to be enabled all the time? Isn't the CCF
+> >> > already taking care of enabling the parent clock whenever it needs to
+> >> > access any register?
+> >>
+> >> There are also resets in the same block. That and I couldn't get it
+> >> working without enabling the clock beforehand.
+> >
+> > Ah, right.
+> >
+> > What happens if you just enable and disable the clocks in the
+> > reset_assert and reset_deassert right before and after accessing the
+> > registers?
+>=20
+> That doesn't work either. I forgot to mention that most of the clock
+> gates have the peripheral pll as their parent, not the ahb clock gate.
 
+Why it doesn't work? The clock needs more time to stabilize? The reset
+line is set back in reset if the clocks are disabled?
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--ZYOWEO2dMm2Af3e3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUWzdAAAoJEBx+YmzsjxAgzE8P/juU0z931GWcdgnK09+MJRiK
+mZtJYMJb1Y4JmFljsZJapGrYlvrs021AXBy1PDYsd5xjbAlFkt7wpG5Wm6++QVBL
+j/HEIv98r8aqXgXxE+08QgMfAdEs2NViuro6nUN82fb3xAXw1l61qXTHAk3KyxmE
+tk8wAwDNl88DDDbMEtIqotLzFJ+J0aD2xwKsxLaI/2DlVPCpriRk1bfhx8nee+Bd
+UN3DU2lSkUryOdL9BTvchMHdC3v56ef3TyCcvu1nEB8UwZKwK1x85fmahx6kFr46
+epRVrmNLkwm2sJLe3Z878oliTvt0XeqL0wIpLoQzs/rsq09To6PglUSgiePhcRI9
+rjonvP6x2zIPzwIrrK/9itTHySyMFWtc8/iy70TXXdz2AUWfo6r6W0TwXKc6M2RE
+MS3g9t9ogbOXjs2l9NNuUWcC23CFKfOU9hgccyo3FgBwNRoGEJu8IBpnSrRTSch2
+8HKbL4hxUMlqUrpD3W7hM9Pf379Sh74WMNIGeynOzxpXEvnt7fWpaUk2ZsPM9X4s
+ULUKIl0eHqavdnMsWvMnNs47AHtjyjay0OTJXQRmooOGqZonJ+LL0QutZCiXEnxk
+EjYV4oYqb92sLEvXQcDpIysLl+cSjEJja2aAbkqlC0rULXHWenxS7RSH6RK0Ya9k
+omHj8N5asm/65+/ISemC
+=Xd3r
+-----END PGP SIGNATURE-----
+
+--ZYOWEO2dMm2Af3e3--
