@@ -1,139 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268AbaKFCu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:50:28 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53839 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751020AbaKFCu0 (ORCPT
+	id S1751303AbaKFCx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:53:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39192 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaKFCx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:50:26 -0500
-Message-ID: <545AE1EE.30902@hurleysoftware.com>
-Date: Wed, 05 Nov 2014 21:50:22 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 21:53:26 -0500
+Date: Wed, 5 Nov 2014 18:53:26 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Peter Hurley <peter@hurleysoftware.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH -next 05/10] tty: Document defunct ASYNC_* bits in uapi
+ header
+Message-ID: <20141106025326.GA21796@kroah.com>
+References: <1413492867-20679-1-git-send-email-peter@hurleysoftware.com>
+ <1413492867-20679-6-git-send-email-peter@hurleysoftware.com>
+ <5440D781.1080308@suse.cz>
+ <54410F19.3040607@hurleysoftware.com>
+ <54411A30.6070401@suse.cz>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH -next v2 10/26] tty: Don't take tty_mutex for tty count
- changes
-References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com> <1415207589-15967-1-git-send-email-peter@hurleysoftware.com> <1415207589-15967-11-git-send-email-peter@hurleysoftware.com> <20141106023310.GA5035@kroah.com> <545ADF52.9030401@hurleysoftware.com>
-In-Reply-To: <545ADF52.9030401@hurleysoftware.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54411A30.6070401@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 09:39 PM, Peter Hurley wrote:
-> On 11/05/2014 09:33 PM, Greg Kroah-Hartman wrote:
->> On Wed, Nov 05, 2014 at 12:12:53PM -0500, Peter Hurley wrote:
->>> Holding tty_mutex is no longer required to serialize changes to
->>> the tty_count or to prevent concurrent opens of closing ttys;
->>> tty_lock() is sufficient.
->>>
->>> Reviewed-by: Alan Cox <alan@linux.intel.com>
->>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->>> ---
->>>  drivers/tty/tty_io.c | 6 ------
->>>  1 file changed, 6 deletions(-)
->>>
->>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
->>> index ea8c6cae8d12..e59de81c39a9 100644
->>> --- a/drivers/tty/tty_io.c
->>> +++ b/drivers/tty/tty_io.c
->>> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>>  	 * each iteration we avoid any problems.
->>>  	 */
->>>  	while (1) {
->>> -		/* Guard against races with tty->count changes elsewhere and
->>> -		   opens on /dev/tty */
->>> -
->>> -		mutex_lock(&tty_mutex);
->>>  		tty_lock_pair(tty, o_tty);
->>>  		tty_closing = tty->count <= 1;
->>>  		o_tty_closing = o_tty &&
->>> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
->>>  				__func__, tty_name(tty, buf));
->>>  		tty_unlock_pair(tty, o_tty);
->>> -		mutex_unlock(&tty_mutex);
->>>  		schedule();
->>>  	}
->>>  
->>
->> The code in my tree in this section of tty_release() looks a bit
->> different, so I had to hand-apply this patch.
+On Fri, Oct 17, 2014 at 03:31:28PM +0200, Jiri Slaby wrote:
+> On 10/17/2014, 02:44 PM, Peter Hurley wrote:
+> > Hi Jiri,
+> > 
+> > On 10/17/2014 04:46 AM, Jiri Slaby wrote:
+> >> On 10/16/2014, 10:54 PM, Peter Hurley wrote:
+> >>> Note the serial_struct flags for which the kernel ignores and performs
+> >>> no action. The flags cannot be removed since they form part of the
+> >>> userspace interface via the TIOCSSERIAL/TIOCGSERIAL ioctls.
+> >>
+> >> Hello,
+> >>
+> >> would it make sense to mark them deprecated somehow? At build time
+> > 
+> > A build warning when the macro is expanded would be best, but my
+> > c-preprocessor-fu is terrible, so I have no idea how to make that work.
 > 
-> Although there's nothing wrong with your version, I'm wondering why this
-> didn't apply cleanly.
+> We can define a deprecated type like:
 > 
-> While I go look at your tree, can you check that these patches are
-> sitting on top of the earlier two patches you applied to your tty-linus
-> branch; specifically 'tty: Fix high cpu load if tty is unreleasable' and
-> 'tty: Prevent "read/write wait queue active!" log flooding'?
-
-Yep, that's the problem: your 'tty-testing' branch doesn't have the 3 patches
-from me that you put in your 'tty-linus' branch earlier this evening. Those are:
-
-serial: Fix divide-by-zero fault in uart_get_divisor()
-tty: Fix high cpu load if tty is unreleasable
-tty: Prevent "read/write wait queue active!" log flooding
-
-How can I help fix this?
-
-Regards,
-Peter Hurley
-
-
->> I've included the version
->> I used below, please verify I didn't mess it up.
->>
->> thanks,
->>
->> greg k-h
->>
->>
->>
->> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
->> index ea8c6cae8d12..e59de81c39a9 100644
->> --- a/drivers/tty/tty_io.c
->> +++ b/drivers/tty/tty_io.c
->> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>  	 * each iteration we avoid any problems.
->>  	 */
->>  	while (1) {
->> -		/* Guard against races with tty->count changes elsewhere and
->> -		   opens on /dev/tty */
->> -
->> -		mutex_lock(&tty_mutex);
->>  		tty_lock_pair(tty, o_tty);
->>  		tty_closing = tty->count <= 1;
->>  		o_tty_closing = o_tty &&
->> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
->>  				__func__, tty_name(tty, buf));
->>  		tty_unlock_pair(tty, o_tty);
->> -		mutex_unlock(&tty_mutex);
->>  		schedule();
->>  	}
->>  
->> @@ -1891,7 +1886,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>  		read_unlock(&tasklist_lock);
->>  	}
->>  
->> -	mutex_unlock(&tty_mutex);
->>  	tty_unlock_pair(tty, o_tty);
->>  	/* At this point, the tty->count == 0 should ensure a dead tty
->>  	   cannot be re-opened by a racing opener */
->>
+> typedef __u32 __attribute__((deprecated)) depr_tty_t
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-serial" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> and then do define:
 > 
+> #define ASYNCB_FLAG_1 (depr_tty_t)1
+> #define ASYNCB_FLAG_2 (depr_tty_t)2
+> 
+> Etc.
+> 
+> However, I do not know if it is desirable AND whether all compilers out
+> there used in userspace support that attribute.
+> 
+> >> or
+> >> at least warn in the serial core that "current->comm is using a
+> >> deprecated flag"_ratelimited()?
+> > 
+> > If we just print the message at TIOCSSERIAL if any of the deprecated
+> > bits are set, that would be ok. Probably the only issue would be that
+> > setserial could cause this message at will, so log flooding would be
+> > a concern.
+> 
+> That's why _ratelimited(). So something like the patch attached. But it
+> needs to be put to a separate function, out of the line.
+> 
+> /me currently builds a kernel to see who, if anybody, uses the flags on
+> a up-to-date system...
 
+What ever happened with this test?  Care to resend it as a "real" patch
+so we can annoy userspace?  :)
+
+thanks,
+
+greg k-h
