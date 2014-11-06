@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906AbaKFWmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:42:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58907 "EHLO
+	id S1753615AbaKFXBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:01:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58898 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631AbaKFWml (ORCPT
+	with ESMTP id S1752853AbaKFWmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:41 -0500
+	Thu, 6 Nov 2014 17:42:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 057/162] ext4: check EA value offset when loading
-Date: Thu,  6 Nov 2014 14:35:21 -0800
-Message-Id: <1415313426-9622-58-git-send-email-kamal@canonical.com>
+Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 098/162] KVM: x86: Improve thread safety in pit
+Date: Thu,  6 Nov 2014 14:36:02 -0800
+Message-Id: <1415313426-9622-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,102 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Andy Honig <ahonig@google.com>
 
-commit a0626e75954078cfacddb00a4545dde821170bc5 upstream.
+commit 2febc839133280d5a5e8e1179c94ea674489dae2 upstream.
 
-When loading extended attributes, check each entry's value offset to
-make sure it doesn't collide with the entries.
+There's a race condition in the PIT emulation code in KVM.  In
+__kvm_migrate_pit_timer the pit_timer object is accessed without
+synchronization.  If the race condition occurs at the wrong time this
+can crash the host kernel.
 
-Without this check it is easy to crash the kernel by mounting a
-malicious FS containing a file with an EA wherein e_value_offs = 0 and
-e_value_size > 0 and then deleting the EA, which corrupts the name
-list.
+This fixes CVE-2014-3611.
 
-(See the f_ea_value_crash test's FS image in e2fsprogs for an example.)
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/xattr.c | 32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ arch/x86/kvm/i8254.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 298e9c8..a20816e 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -189,14 +189,28 @@ ext4_listxattr(struct dentry *dentry, char *buffer, size_t size)
+diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
+index 518d864..298781d 100644
+--- a/arch/x86/kvm/i8254.c
++++ b/arch/x86/kvm/i8254.c
+@@ -262,8 +262,10 @@ void __kvm_migrate_pit_timer(struct kvm_vcpu *vcpu)
+ 		return;
+ 
+ 	timer = &pit->pit_state.timer;
++	mutex_lock(&pit->pit_state.lock);
+ 	if (hrtimer_cancel(timer))
+ 		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
++	mutex_unlock(&pit->pit_state.lock);
  }
  
- static int
--ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
-+ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end,
-+		       void *value_start)
- {
--	while (!IS_LAST_ENTRY(entry)) {
--		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(entry);
-+	struct ext4_xattr_entry *e = entry;
-+
-+	while (!IS_LAST_ENTRY(e)) {
-+		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(e);
- 		if ((void *)next >= end)
- 			return -EIO;
--		entry = next;
-+		e = next;
- 	}
-+
-+	while (!IS_LAST_ENTRY(entry)) {
-+		if (entry->e_value_size != 0 &&
-+		    (value_start + le16_to_cpu(entry->e_value_offs) <
-+		     (void *)e + sizeof(__u32) ||
-+		     value_start + le16_to_cpu(entry->e_value_offs) +
-+		    le32_to_cpu(entry->e_value_size) > end))
-+			return -EIO;
-+		entry = EXT4_XATTR_NEXT(entry);
-+	}
-+
- 	return 0;
- }
- 
-@@ -213,7 +227,8 @@ ext4_xattr_check_block(struct inode *inode, struct buffer_head *bh)
- 		return -EIO;
- 	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
- 		return -EIO;
--	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
-+	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size,
-+				       bh->b_data);
- 	if (!error)
- 		set_buffer_verified(bh);
- 	return error;
-@@ -329,7 +344,7 @@ ext4_xattr_ibody_get(struct inode *inode, int name_index, const char *name,
- 	header = IHDR(inode, raw_inode);
- 	entry = IFIRST(header);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(entry, end);
-+	error = ext4_xattr_check_names(entry, end, entry);
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_find_entry(&entry, name_index, name,
-@@ -457,7 +472,7 @@ ext4_xattr_ibody_list(struct dentry *dentry, char *buffer, size_t buffer_size)
- 	raw_inode = ext4_raw_inode(&iloc);
- 	header = IHDR(inode, raw_inode);
- 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	error = ext4_xattr_check_names(IFIRST(header), end);
-+	error = ext4_xattr_check_names(IFIRST(header), end, IFIRST(header));
- 	if (error)
- 		goto cleanup;
- 	error = ext4_xattr_list_entries(dentry, IFIRST(header),
-@@ -972,7 +987,8 @@ int ext4_xattr_ibody_find(struct inode *inode, struct ext4_xattr_info *i,
- 	is->s.here = is->s.first;
- 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
- 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
--		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
-+		error = ext4_xattr_check_names(IFIRST(header), is->s.end,
-+					       IFIRST(header));
- 		if (error)
- 			return error;
- 		/* Find the named attribute. */
+ static void destroy_pit_timer(struct kvm_pit *pit)
 -- 
 1.9.1
 
