@@ -1,400 +1,603 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaKFJzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:55:48 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:2097 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaKFJzn (ORCPT
+	id S1752120AbaKFJ4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:56:08 -0500
+Received: from par-mail.meas-spec.com ([198.190.228.178]:56057 "EHLO
+	PAR-MAIL.MEAS-SPEC.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaKFJz5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:55:43 -0500
-Message-ID: <545B456E.5050308@huawei.com>
-Date: Thu, 6 Nov 2014 17:54:54 +0800
-From: Shannon Zhao <zhaoshenglong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 6 Nov 2014 04:55:57 -0500
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 04:55:55 EST
+From: "Markezana, William" <William.Markezana@meas-spec.com>
+To: "jic23@kernel.org" <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] iio: (ms5637) Add Measurement Specialties MS5637 support
+Thread-Topic: [PATCH] iio: (ms5637) Add Measurement Specialties MS5637
+ support
+Thread-Index: Ac/5pcFY8cb1l4EdRwG6ywV+W9lTgw==
+Date: Thu, 6 Nov 2014 09:46:08 +0000
+Message-ID: <8B5E2C57A478A447A3ECC506FBF26C030E1E2E@TLSE-SVR-MAIL01.europe.msiusa.com>
+Accept-Language: fr-FR, en-US
+Content-Language: fr-FR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.73.26]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <peter.maydell@linaro.org>,
-        <john.liuli@huawei.com>, <joel.schopp@amd.com>, <remy.gauguey@cea.fr>,
-        <qemu-devel@nongnu.org>, <n.nikolaev@virtualopensystems.com>,
-        <virtualization@lists.linux-foundation.org>,
-        <peter.huangpeng@huawei.com>, <hangaohuai@huawei.com>
-Subject: Re: [RFC PATCH] virtio-mmio: support for multiple irqs
-References: <1415093712-15156-1-git-send-email-zhaoshenglong@huawei.com> <20141106093448.GA15417@redhat.com>
-In-Reply-To: <20141106093448.GA15417@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.16.142]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.545B457D.0039,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 2861ad683b822a2148dc389ccaad509c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/6 17:34, Michael S. Tsirkin wrote:
-> On Tue, Nov 04, 2014 at 05:35:12PM +0800, Shannon Zhao wrote:
->> As the current virtio-mmio only support single irq,
->> so some advanced features such as vhost-net with irqfd
->> are not supported. And the net performance is not
->> the best without vhost-net and irqfd supporting.
->>
->> This patch support virtio-mmio to request multiple
->> irqs like virtio-pci. With this patch and qemu assigning
->> multiple irqs for virtio-mmio device, it's ok to use
->> vhost-net with irqfd on arm/arm64.
->>
->> As arm doesn't support msi-x now, we use GSI for
->> multiple irq. In this patch we use "vm_try_to_find_vqs"
->> to check whether multiple irqs are supported like
->> virtio-pci.
->>
->> Is this the right direction? is there other ways to
->> make virtio-mmio support multiple irq? Hope for feedback.
->> Thanks.
->>
->> Signed-off-by: Shannon Zhao <zhaoshenglong@huawei.com>
-> 
-> 
-> So how does guest discover whether host device supports multiple IRQs?
+Signed-off-by: Ludovic <ludovic.tancerel@maplehightech.com>
+---
+ drivers/iio/pressure/Kconfig                      |   10 +
+ drivers/iio/pressure/Makefile                     |    1 +
+ drivers/iio/pressure/ms5637.c                     |  488 +++++++++++++++++++++
+ drivers/staging/iio/Documentation/pressure/ms5637 |   25 ++
+ 4 files changed, 524 insertions(+)
+ create mode 100644 drivers/iio/pressure/ms5637.c
+ create mode 100644 drivers/staging/iio/Documentation/pressure/ms5637
 
-Guest uses vm_try_to_find_vqs to check whether it can get multiple IRQs
-like virtio-pci uses vp_try_to_find_vqs. And within function
-vm_request_multiple_irqs, guest check whether the number of IRQs host
-device gives is equal to the number we want.
-
-	for (i = 0; i < nirqs; i++) {
-		irq = platform_get_irq(vm_dev->pdev, i);
-		if (irq == -ENXIO)
-			goto error;
-	}
-
-If we can't get the expected number of IRQs, return error and this try
-fails. Then guest will try two IRQS and single IRQ like virtio-pci.
-
-> Could you please document the new interface?
-> E.g. send a patch for virtio spec.
-
-Ok, I'll send it later. Thank you very much :)
-
-Shannon
-
-> I think this really should be controlled by hypervisor, per device.
-> I'm also tempted to make this a virtio 1.0 only feature.
-> 
-> 
-> 
->> ---
->>  drivers/virtio/virtio_mmio.c |  234 ++++++++++++++++++++++++++++++++++++------
->>  1 files changed, 203 insertions(+), 31 deletions(-)
->>
->> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
->> index c600ccf..2b7d935 100644
->> --- a/drivers/virtio/virtio_mmio.c
->> +++ b/drivers/virtio/virtio_mmio.c
->> @@ -122,6 +122,15 @@ struct virtio_mmio_device {
->>  	/* a list of queues so we can dispatch IRQs */
->>  	spinlock_t lock;
->>  	struct list_head virtqueues;
->> +
->> +	/* multiple irq support */
->> +	int single_irq_enabled;
->> +	/* Number of available irqs */
->> +	unsigned num_irqs;
->> +	/* Used number of irqs */
->> +	int used_irqs;
->> +	/* Name strings for interrupts. */
->> +	char (*vm_vq_names)[256];
->>  };
->>  
->>  struct virtio_mmio_vq_info {
->> @@ -229,33 +238,53 @@ static bool vm_notify(struct virtqueue *vq)
->>  	return true;
->>  }
->>  
->> +/* Handle a configuration change: Tell driver if it wants to know. */
->> +static irqreturn_t vm_config_changed(int irq, void *opaque)
->> +{
->> +	struct virtio_mmio_device *vm_dev = opaque;
->> +	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
->> +		struct virtio_driver, driver);
->> +
->> +	if (vdrv && vdrv->config_changed)
->> +		vdrv->config_changed(&vm_dev->vdev);
->> +	return IRQ_HANDLED;
->> +}
->> +
->>  /* Notify all virtqueues on an interrupt. */
->> -static irqreturn_t vm_interrupt(int irq, void *opaque)
->> +static irqreturn_t vm_vring_interrupt(int irq, void *opaque)
->>  {
->>  	struct virtio_mmio_device *vm_dev = opaque;
->>  	struct virtio_mmio_vq_info *info;
->> -	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
->> -			struct virtio_driver, driver);
->> -	unsigned long status;
->> +	irqreturn_t ret = IRQ_NONE;
->>  	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&vm_dev->lock, flags);
->> +	list_for_each_entry(info, &vm_dev->virtqueues, node) {
->> +		if (vring_interrupt(irq, info->vq) == IRQ_HANDLED)
->> +			ret = IRQ_HANDLED;
->> +	}
->> +	spin_unlock_irqrestore(&vm_dev->lock, flags);
->> +
->> +	return ret;
->> +}
->> +
->> +/* Notify all virtqueues and handle a configuration
->> + * change on an interrupt. */
->> +static irqreturn_t vm_interrupt(int irq, void *opaque)
->> +{
->> +	struct virtio_mmio_device *vm_dev = opaque;
->> +	unsigned long status;
->>  	irqreturn_t ret = IRQ_NONE;
->>  
->>  	/* Read and acknowledge interrupts */
->>  	status = readl(vm_dev->base + VIRTIO_MMIO_INTERRUPT_STATUS);
->>  	writel(status, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
->>  
->> -	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)
->> -			&& vdrv && vdrv->config_changed) {
->> -		vdrv->config_changed(&vm_dev->vdev);
->> -		ret = IRQ_HANDLED;
->> -	}
->> +	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG))
->> +		return vm_config_changed(irq, opaque);
->>  
->> -	if (likely(status & VIRTIO_MMIO_INT_VRING)) {
->> -		spin_lock_irqsave(&vm_dev->lock, flags);
->> -		list_for_each_entry(info, &vm_dev->virtqueues, node)
->> -			ret |= vring_interrupt(irq, info->vq);
->> -		spin_unlock_irqrestore(&vm_dev->lock, flags);
->> -	}
->> +	if (likely(status & VIRTIO_MMIO_INT_VRING))
->> +		return vm_vring_interrupt(irq, opaque);
->>  
->>  	return ret;
->>  }
->> @@ -284,18 +313,98 @@ static void vm_del_vq(struct virtqueue *vq)
->>  	kfree(info);
->>  }
->>  
->> -static void vm_del_vqs(struct virtio_device *vdev)
->> +static void vm_free_irqs(struct virtio_device *vdev)
->>  {
->> +	int i;
->>  	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
->> +
->> +	if (vm_dev->single_irq_enabled) {
->> +		free_irq(platform_get_irq(vm_dev->pdev, 0), vm_dev);
->> +		vm_dev->single_irq_enabled = 0;
->> +	}
->> +
->> +	for (i = 0; i < vm_dev->used_irqs; ++i)
->> +		free_irq(platform_get_irq(vm_dev->pdev, i), vm_dev);
->> +
->> +	vm_dev->num_irqs = 0;
->> +	vm_dev->used_irqs = 0;
->> +	kfree(vm_dev->vm_vq_names);
->> +	vm_dev->vm_vq_names = NULL;
->> +}
->> +
->> +static void vm_del_vqs(struct virtio_device *vdev)
->> +{
->>  	struct virtqueue *vq, *n;
->>  
->>  	list_for_each_entry_safe(vq, n, &vdev->vqs, list)
->>  		vm_del_vq(vq);
->>  
->> -	free_irq(platform_get_irq(vm_dev->pdev, 0), vm_dev);
->> +	vm_free_irqs(vdev);
->> +}
->> +
->> +static int vm_request_multiple_irqs(struct virtio_device *vdev, int nirqs,
->> +		bool per_vq_irq)
->> +{
->> +	int err = -ENOMEM;
->> +	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
->> +	unsigned i, v;
->> +	int irq = 0;
->> +
->> +	vm_dev->num_irqs = nirqs;
->> +	vm_dev->used_irqs = 0;
->> +
->> +	vm_dev->vm_vq_names = kmalloc_array(nirqs, sizeof(*vm_dev->vm_vq_names),
->> +				     GFP_KERNEL);
->> +	if (!vm_dev->vm_vq_names)
->> +		goto error;
->> +
->> +	for (i = 0; i < nirqs; i++) {
->> +		irq = platform_get_irq(vm_dev->pdev, i);
->> +		if (irq == -ENXIO)
->> +			goto error;
->> +	}
->> +
->> +	/* Set the irq used for configuration */
->> +	v = vm_dev->used_irqs;
->> +	snprintf(vm_dev->vm_vq_names[v], sizeof(*vm_dev->vm_vq_names),
->> +		 "%s-config", dev_name(&vdev->dev));
->> +	irq = platform_get_irq(vm_dev->pdev, v);
->> +	err = request_irq(irq, vm_config_changed, 0,
->> +		vm_dev->vm_vq_names[v], vm_dev);
->> +	++vm_dev->used_irqs;
->> +	if (err)
->> +		goto error;
->> +
->> +	if (!per_vq_irq) {
->> +		/* Shared irq for all VQs */
->> +		v = vm_dev->used_irqs;
->> +		snprintf(vm_dev->vm_vq_names[v], sizeof(*vm_dev->vm_vq_names),
->> +			 "%s-virtqueues", dev_name(&vdev->dev));
->> +		irq = platform_get_irq(vm_dev->pdev, v);
->> +		err = request_irq(irq, vm_vring_interrupt, 0,
->> +			vm_dev->vm_vq_names[v], vm_dev);
->> +		if (err)
->> +			goto error;
->> +		++vm_dev->used_irqs;
->> +	}
->> +	return 0;
->> +error:
->> +	vm_free_irqs(vdev);
->> +	return err;
->>  }
->>  
->> +static int vm_request_single_irq(struct virtio_device *vdev)
->> +{
->> +	int err;
->> +	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
->> +	int irq = platform_get_irq(vm_dev->pdev, 0);
->>  
->> +	err = request_irq(irq, vm_interrupt, IRQF_SHARED,
->> +		dev_name(&vdev->dev), vm_dev);
->> +	if (!err)
->> +		vm_dev->single_irq_enabled = 1;
->> +	return err;
->> +}
->>  
->>  static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
->>  				  void (*callback)(struct virtqueue *vq),
->> @@ -392,29 +501,92 @@ error_available:
->>  	return ERR_PTR(err);
->>  }
->>  
->> -static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
->> -		       struct virtqueue *vqs[],
->> -		       vq_callback_t *callbacks[],
->> -		       const char *names[])
->> +static int vm_try_to_find_vqs(struct virtio_device *vdev, unsigned nvqs,
->> +			      struct virtqueue *vqs[],
->> +			      vq_callback_t *callbacks[],
->> +			      const char *names[],
->> +			      bool use_multiple_irq,
->> +			      bool per_vq_irq)
->>  {
->>  	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
->> -	unsigned int irq = platform_get_irq(vm_dev->pdev, 0);
->> -	int i, err;
->> +	int i, err, nirqs, irq;
->> +
->> +	if (!use_multiple_irq) {
->> +		/* Old style: one normal interrupt for change and all vqs. */
->> +		err = vm_request_single_irq(vdev);
->> +		if (err)
->> +			goto error_request;
->> +	} else {
->> +		if (per_vq_irq) {
->> +			/* Best option: one for change interrupt, one per vq. */
->> +			nirqs = 1;
->> +			for (i = 0; i < nvqs; ++i)
->> +				if (callbacks[i])
->> +					++nirqs;
->> +		} else {
->> +			/* Second best: one for change, shared for all vqs. */
->> +			nirqs = 2;
->> +		}
->>  
->> -	err = request_irq(irq, vm_interrupt, IRQF_SHARED,
->> -			dev_name(&vdev->dev), vm_dev);
->> -	if (err)
->> -		return err;
->> +		err = vm_request_multiple_irqs(vdev, nirqs, per_vq_irq);
->> +		if (err)
->> +			goto error_request;
->> +	}
->>  
->> -	for (i = 0; i < nvqs; ++i) {
->> +	for (i = 0; i < nvqs; i++) {
->> +		if (!names[i]) {
->> +			vqs[i] = NULL;
->> +			continue;
->> +		}
->>  		vqs[i] = vm_setup_vq(vdev, i, callbacks[i], names[i]);
->>  		if (IS_ERR(vqs[i])) {
->> -			vm_del_vqs(vdev);
->> -			return PTR_ERR(vqs[i]);
->> +			err = PTR_ERR(vqs[i]);
->> +			goto error_find;
->> +		}
->> +		if (!per_vq_irq || !callbacks[i])
->> +			continue;
->> +		/* allocate per-vq irq if available and necessary */
->> +		snprintf(vm_dev->vm_vq_names[vm_dev->used_irqs],
->> +			sizeof(*vm_dev->vm_vq_names),
->> +			"%s-%s",
->> +			dev_name(&vm_dev->vdev.dev), names[i]);
->> +		irq = platform_get_irq(vm_dev->pdev, vm_dev->used_irqs);
->> +		err = request_irq(irq, vring_interrupt, 0,
->> +			vm_dev->vm_vq_names[vm_dev->used_irqs], vqs[i]);
->> +		if (err) {
->> +			vm_del_vq(vqs[i]);
->> +			goto error_find;
->>  		}
->> +		++vm_dev->used_irqs;
->>  	}
->> -
->>  	return 0;
->> +error_find:
->> +	vm_del_vqs(vdev);
->> +
->> +error_request:
->> +	return err;
->> +}
->> +
->> +static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
->> +		       struct virtqueue *vqs[],
->> +		       vq_callback_t *callbacks[],
->> +		       const char *names[])
->> +{
->> +	int err;
->> +
->> +	/* Try multiple irqs with one irq per queue. */
->> +	err = vm_try_to_find_vqs(vdev, nvqs, vqs, callbacks, names, true, true);
->> +	if (!err)
->> +		return 0;
->> +	/* Fallback: multiple irqs with one irq for config,
->> +	 * one shared for queues. */
->> +	err = vm_try_to_find_vqs(vdev, nvqs, vqs, callbacks, names,
->> +				 true, false);
->> +	if (!err)
->> +		return 0;
->> +	/* Finally fall back to regular single interrupts. */
->> +	return vm_try_to_find_vqs(vdev, nvqs, vqs, callbacks, names,
->> +				  false, false);
->>  }
->>  
->>  static const char *vm_bus_name(struct virtio_device *vdev)
->> -- 
->> 1.7.1
-> 
-> .
-> 
-
-
+diff --git a/drivers/iio/pressure/Kconfig b/drivers/iio/pressure/Kconfig
+index ffac8ac..4ba9bd5 100644
+--- a/drivers/iio/pressure/Kconfig
++++ b/drivers/iio/pressure/Kconfig
+@@ -41,6 +41,16 @@ config MPL3115
+           To compile this driver as a module, choose M here: the module
+           will be called mpl3115.
+ 
++config MS5637
++        tristate "MS5637 pressure & temperature sensor"
++        depends on I2C
++        help
++          If you say yes here you get support for the Measurement Specialties
++          MS5637 pressure and temperature sensor.
++
++          This driver can also be built as a module. If so, the module will
++          be called ms5637.
++
+ config IIO_ST_PRESS
+ 	tristate "STMicroelectronics pressure sensor Driver"
+ 	depends on (I2C || SPI_MASTER) && SYSFS
+diff --git a/drivers/iio/pressure/Makefile b/drivers/iio/pressure/Makefile
+index c53d250..50fe66e 100644
+--- a/drivers/iio/pressure/Makefile
++++ b/drivers/iio/pressure/Makefile
+@@ -6,6 +6,7 @@
+ obj-$(CONFIG_HID_SENSOR_PRESS)   += hid-sensor-press.o
+ obj-$(CONFIG_MPL115) += mpl115.o
+ obj-$(CONFIG_MPL3115) += mpl3115.o
++obj-$(CONFIG_MS5637) += ms5637.o
+ obj-$(CONFIG_IIO_ST_PRESS) += st_pressure.o
+ st_pressure-y := st_pressure_core.o
+ st_pressure-$(CONFIG_IIO_BUFFER) += st_pressure_buffer.o
+diff --git a/drivers/iio/pressure/ms5637.c b/drivers/iio/pressure/ms5637.c
+new file mode 100644
+index 0000000..ea74636
+--- /dev/null
++++ b/drivers/iio/pressure/ms5637.c
+@@ -0,0 +1,488 @@
++/*
++ * ms5637.c - Support for Measurement Specialties MS5637 temperature sensor
++ *
++ * Copyright (c) 2014 Measurement Specialties
++ *
++ * Licensed under the GPL-2.
++ *
++ * (7-bit I2C slave address 0x77)
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/stat.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/sysfs.h>
++#include <linux/jiffies.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++
++/* MS5637 Commands */
++#define MS5637_RESET				(0x1E)
++#define MS5637_TEMPERATURE_CONVERSION_START	(0x50)
++#define MS5637_PRESSURE_CONVERSION_START	(0x40)
++#define MS5637_ADC_READ				(0x00)
++#define MS5637_PROM_READ			(0xA0)
++#define MS5637_PROM_ELEMENTS_NB                 (7)
++
++#define ATTR_RESET				0
++#define ATTR_RESOLUTION				1
++
++static const u16 conversion_time[] = { 1000, 2000, 3000, 5000, 9000, 17000 };
++
++struct ms5637_dev {
++	struct i2c_client *client;
++	struct mutex lock; /* mutex protecting this data structure */
++	u16 calibration_coeffs[MS5637_PROM_ELEMENTS_NB];
++	bool got_calibration_words;
++	unsigned long last_update;
++	bool valid;
++	int temperature;
++	unsigned int pressure;
++	u8 resolution_index;
++};
++
++static int ms5637_get_calibration_coeffs(struct ms5637_dev *dev_data,
++					 unsigned char index, u16 *word)
++{
++	int ret = 0;
++
++	ret = i2c_smbus_read_word_swapped(dev_data->client,
++					  MS5637_PROM_READ + (index << 1));
++	if (ret < 0)
++		return ret;
++	*word = (u16) ret & 0xFFFF;
++	return 0;
++}
++
++static bool ms5637_crc_check(u16 *n_prom, u8 crc)
++{
++	u8 cnt, n_bit;
++	u16 n_rem, crc_read;
++
++	n_rem = 0x00;
++	crc_read = n_prom[0];
++	n_prom[MS5637_PROM_ELEMENTS_NB] = 0;
++	n_prom[0] = (0x0FFF & (n_prom[0]));	/* Clear the CRC byte */
++
++	for (cnt = 0; cnt < (MS5637_PROM_ELEMENTS_NB + 1) * 2; cnt++) {
++		if (cnt % 2 == 1)
++			n_rem ^= n_prom[cnt >> 1] & 0x00FF;
++		else
++			n_rem ^= n_prom[cnt >> 1] >> 8;
++
++		for (n_bit = 8; n_bit > 0; n_bit--) {
++			if (n_rem & 0x8000)
++				n_rem = (n_rem << 1) ^ 0x3000;
++			else
++				n_rem <<= 1;
++		}
++	}
++	n_rem >>= 12;
++	n_prom[0] = crc_read;
++	return (n_rem == crc);
++}
++
++static int ms5637_fill_calibration_coeffs(struct ms5637_dev *dev_data)
++{
++	int i, ret = 0;
++
++	for (i = 0; i < MS5637_PROM_ELEMENTS_NB; i++) {
++		ret = ms5637_get_calibration_coeffs(dev_data, i,
++				&dev_data->calibration_coeffs
++				[i]);
++
++		dev_dbg(&dev_data->client->dev, "Coeff %d : %d", i,
++			dev_data->calibration_coeffs[i]);
++
++		if (ret < 0) {
++			dev_err(&dev_data->client->dev,
++				"unable to get calibration coefficients at address %d\n",
++				i + 1);
++			return ret;
++		}
++	}
++
++	if (!ms5637_crc_check(dev_data->calibration_coeffs,
++			      (dev_data->
++			       calibration_coeffs[0] & 0xF000) >> 12)) {
++		dev_err(&dev_data->client->dev,
++			"Calibration coefficients crc check error\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++static int ms5637_read_adc_value(struct ms5637_dev *dev_data, u32 *adc_value)
++{
++	int ret = 0;
++	u8 buf[3];
++
++	ret =
++	    i2c_smbus_read_i2c_block_data(dev_data->client, MS5637_ADC_READ, 3,
++					  buf);
++	if (ret < 0)
++		return ret;
++	dev_dbg(&dev_data->client->dev, "ADC raw value : %x %x %x\n", buf[0],
++		buf[1], buf[2]);
++	*adc_value = (buf[0] << 16) + (buf[1] << 8) + buf[0];
++	return 0;
++}
++
++static int ms5637_conversion_and_read_adc(struct ms5637_dev *dev_data,
++					  u32 *t_adc, u32 *p_adc)
++{
++	int ret;
++
++	/* Trigger Temperature conversion */
++	ret = i2c_smbus_write_byte(dev_data->client,
++				   MS5637_TEMPERATURE_CONVERSION_START
++				   + dev_data->resolution_index * 2);
++	if (ret < 0)
++		return ret;
++	usleep_range(conversion_time[dev_data->resolution_index],
++		     conversion_time[dev_data->resolution_index]+3000);
++	/* Retrieve ADC value */
++	ret = ms5637_read_adc_value(dev_data, t_adc);
++
++	/* Trigger Pressure conversion */
++	ret = i2c_smbus_write_byte(dev_data->client,
++				   MS5637_PRESSURE_CONVERSION_START
++				   + dev_data->resolution_index * 2);
++	if (ret < 0)
++		return ret;
++	usleep_range(conversion_time[dev_data->resolution_index],
++		     conversion_time[dev_data->resolution_index]+3000);
++	/* Retrieve ADC value */
++	ret = ms5637_read_adc_value(dev_data, p_adc);
++
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static int ms5637_read_temperature_and_pressure(struct ms5637_dev *dev_data)
++{
++	int ret = 0;
++	u32 t_adc, p_adc;
++	s32 dt, temp;
++	s64 off, sens, t2, off2, sens2;
++
++	mutex_lock(&dev_data->lock);
++
++	if (time_after(jiffies, dev_data->last_update + HZ / 2) ||
++	    !dev_data->valid) {
++		if (!dev_data->got_calibration_words) {
++			ret = ms5637_fill_calibration_coeffs(dev_data);
++			if (ret < 0)
++				goto out;
++
++			dev_data->got_calibration_words = true;
++		}
++
++		ret = ms5637_conversion_and_read_adc(dev_data, &t_adc, &p_adc);
++
++		if (ret < 0) {
++			dev_data->got_calibration_words = false;
++			dev_err(&dev_data->client->dev,
++				"unable to make sensor adc conversion\n");
++			goto out;
++		}
++
++		dt = (s32) t_adc - (dev_data->calibration_coeffs[5] << 8);
++
++		/* Actual temperature = 2000 + dT * TEMPSENS */
++		temp =
++		    2000 + (((s64) dt * dev_data->calibration_coeffs[6]) >> 23);
++
++		/* Second order temperature compensation */
++		if (temp < 2000) {
++			s64 tmp = (s64) temp - 2000;
++
++			t2 = (3 * ((s64) dt * (s64) dt)) >> 33;
++			off2 = (61 * tmp * tmp) >> 4;
++			sens2 = (29 * tmp * tmp) >> 4;
++
++			if (temp < -1500) {
++				s64 tmp = (s64) temp + 1500;
++
++				off2 += 17 * tmp * tmp;
++				sens2 += 9 * tmp * tmp;
++			}
++		} else {
++			t2 = (5 * ((s64) dt * (s64) dt)) >> 38;
++			off2 = 0;
++			sens2 = 0;
++		}
++
++		/* OFF = OFF_T1 + TCO * dT */
++		off = (((s64) dev_data->calibration_coeffs[2]) << 17)
++		    +
++		    ((((s64) dev_data->calibration_coeffs[4]) * (s64) dt) >> 6);
++		off -= off2;
++
++		/* Sensitivity at actual temperature = SENS_T1 + TCS * dT */
++		sens = (((s64) dev_data->calibration_coeffs[1]) << 16)
++		    + (((s64) dev_data->calibration_coeffs[3] * dt) >> 7);
++		sens -= sens2;
++
++		/* Temperature compensated pressure = D1 * SENS - OFF */
++		dev_data->temperature = (temp - t2) * 10;
++		dev_data->pressure = (u32) (((((s64) p_adc * sens) >> 21)
++					     - off) >> 15) / 100;
++
++		dev_data->last_update = jiffies;
++		dev_data->valid = true;
++	}
++ out:
++	mutex_unlock(&dev_data->lock);
++
++	return ret >= 0 ? 0 : ret;
++}
++
++static int ms5637_read_raw(struct iio_dev *indio_dev,
++			   struct iio_chan_spec const *channel, int *val,
++			   int *val2, long mask)
++{
++	int ret;
++	struct ms5637_dev *dev_data = iio_priv(indio_dev);
++
++	switch (mask) {
++	case IIO_CHAN_INFO_PROCESSED:
++		switch (channel->type) {
++		case IIO_TEMP:	/* in 0.001 °C */
++			ret = ms5637_read_temperature_and_pressure(dev_data);
++			if (ret)
++				goto t_err;
++			*val = dev_data->temperature;
++			break;
++		case IIO_PRESSURE:	/* in mB */
++			ret = ms5637_read_temperature_and_pressure(dev_data);
++			if (ret)
++				goto p_err;
++			*val = dev_data->pressure;
++			break;
++		default:
++			return -EINVAL;
++		}
++		ret = IIO_VAL_INT;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return ret;
++ t_err:
++	dev_err(&indio_dev->dev, "Temperature read error\n");
++	return ret;
++ p_err:
++	dev_err(&indio_dev->dev, "Pressure read error\n");
++	return ret;
++}
++
++static const struct iio_chan_spec ms5637_channels[] = {
++	{
++	 .type = IIO_TEMP,
++	 .output = 1,
++	 .info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
++	 .scan_index = 0,
++	 },
++	{
++	 .type = IIO_PRESSURE,
++	 .output = 1,
++	 .info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
++	 .scan_index = 0,
++	 }
++};
++
++static ssize_t ms5637_read_attr(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
++	struct ms5637_dev *dev_data = iio_priv(indio_dev);
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
++	int ret = 0;
++
++	switch (this_attr->address) {
++	case ATTR_RESET:
++		ret = sprintf(buf, "0\n");
++		break;
++	case ATTR_RESOLUTION:
++		ret = sprintf(buf, "%d\n", dev_data->resolution_index + 8);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return ret;
++}
++
++static ssize_t ms5637_write_attr(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf, size_t len)
++{
++	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
++	struct ms5637_dev *dev_data = iio_priv(indio_dev);
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
++	u8 val;
++	int ret;
++
++	ret = kstrtou8(buf, 10, &val);
++	if (ret)
++		return ret;
++
++	mutex_lock(&dev_data->lock);
++	switch (this_attr->address) {
++	case ATTR_RESET:
++		if (val != 1)
++			goto einval;
++
++		ret = i2c_smbus_write_byte(dev_data->client, MS5637_RESET);
++		if (ret < 0)
++			goto out;
++		usleep_range(3000, 6000);
++
++		break;
++	case ATTR_RESOLUTION:
++		if ((val < 8) || (val > 13))
++			goto einval;
++		dev_data->resolution_index = val - 8;
++		break;
++	default:
++		goto einval;
++	}
++
++	dev_data->valid = false;
++	goto out;
++ einval:
++	ret = -EINVAL;
++ out:
++	mutex_unlock(&dev_data->lock);
++
++	return ret ? ret : len;
++}
++
++static IIO_DEVICE_ATTR(in_reset,
++		       S_IRUGO | S_IWUSR,
++		       ms5637_read_attr, ms5637_write_attr, ATTR_RESET);
++static IIO_DEVICE_ATTR(in_resolution,
++		       S_IRUGO | S_IWUSR,
++		       ms5637_read_attr, ms5637_write_attr, ATTR_RESOLUTION);
++static IIO_CONST_ATTR(resolution_available, "8 9 10 11 12 13");
++
++static struct attribute *ms5637_attributes[] = {
++	&iio_dev_attr_in_reset.dev_attr.attr,
++	&iio_dev_attr_in_resolution.dev_attr.attr,
++	&iio_const_attr_resolution_available.dev_attr.attr,
++	NULL,
++};
++
++static const struct attribute_group ms5637_attribute_group = {
++	.attrs = ms5637_attributes,
++};
++
++static const struct iio_info ms5637_info = {
++	.read_raw = ms5637_read_raw,
++	.attrs = &ms5637_attribute_group,
++	.driver_module = THIS_MODULE,
++};
++
++static int ms5637_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct ms5637_dev *dev_data;
++	struct iio_dev *indio_dev;
++	int ret;
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_READ_WORD_DATA)) {
++		dev_err(&client->dev,
++			"adapter does not support SMBus read word transactions\n");
++		return -ENODEV;
++	}
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_WRITE_BYTE)) {
++		dev_err(&client->dev,
++			"adapter does not support SMBus write byte transactions\n");
++		return -ENODEV;
++	}
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_READ_I2C_BLOCK)) {
++		dev_err(&client->dev,
++			"adapter does not support SMBus read block transactions\n");
++		return -ENODEV;
++	}
++
++	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*dev_data));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	dev_data = iio_priv(indio_dev);
++	dev_data->client = client;
++	mutex_init(&dev_data->lock);
++
++	indio_dev->info = &ms5637_info;
++	indio_dev->name = id->name;
++	indio_dev->dev.parent = &client->dev;
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->channels = ms5637_channels;
++	indio_dev->num_channels = ARRAY_SIZE(ms5637_channels);
++
++	i2c_set_clientdata(client, indio_dev);
++	ret = iio_device_register(indio_dev);
++	if (ret < 0)
++		return ret;
++
++	ret = i2c_smbus_write_byte(client, MS5637_RESET);
++	if (ret < 0)
++		return ret;
++	usleep_range(3000, 6000);
++
++	ret = ms5637_fill_calibration_coeffs(dev_data);
++	if (ret == 0)
++		dev_data->got_calibration_words = true;
++
++	if (ret < 0)
++		return ret;
++
++	dev_dbg(&client->dev, "Driver initialization done");
++	return 0;
++}
++
++static int ms5637_remove(struct i2c_client *client)
++{
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++
++	iio_device_unregister(indio_dev);
++
++	return 0;
++}
++
++static const struct i2c_device_id ms5637_id[] = {
++	{"ms5637", 0},
++	{}
++};
++
++static struct i2c_driver ms5637_driver = {
++	.probe = ms5637_probe,
++	.remove = ms5637_remove,
++	.id_table = ms5637_id,
++	.driver = {
++		   .name = "ms5637",
++		   .owner = THIS_MODULE,
++		   },
++};
++
++module_i2c_driver(ms5637_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Measurement Specialties MS5637 temperature driver");
++MODULE_AUTHOR("William Markezana <william.markezana@meas-spec.com>");
++MODULE_AUTHOR("Ludovic Tancerel <ludovic.tancerel@maplehightech.com>");
+diff --git a/drivers/staging/iio/Documentation/pressure/ms5637 b/drivers/staging/iio/Documentation/pressure/ms5637
+new file mode 100644
+index 0000000..d0d64f3
+--- /dev/null
++++ b/drivers/staging/iio/Documentation/pressure/ms5637
+@@ -0,0 +1,25 @@
++Kernel driver ms5637
++====================
++
++Supported chips:
++  * Measurement Specialties MS5637
++    Prefix: 'ms5637'
++    Addresses scanned: I2C 0x76
++    Datasheet: Available for download on meas-spec.com
++
++Authors:
++    William Markezana (Meas-Spec) <william.markezana@meas-spec.com>
++    Ludovic Tancerel <ludovic.tancerel@maplehightech.com>
++
++Description
++-----------
++
++The MS5637 is a single chip pressure & temperature sensor.
++The driver returns a milli-bar pressure value and a milli-degre celius value using the iio framework
++
++Via the iio sysfs interface, there are several attributes available.
++in_reset - Reset ms5637 device by writing a 1 in it.
++in_resolution - Set the number of bits for ADC resolution.
++out_pressure_input - Current pressure from ms5637 sensor (milli-bar)
++out_temp_input - Current temperature from htu21 sensor (milli-°C value)
++resolution_available - List of resolutions supported
 -- 
-Shannon
+1.7.9.5
 
