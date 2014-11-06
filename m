@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaKFWjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:39:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58574 "EHLO
+	id S1752121AbaKFWjs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:39:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58586 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaKFWjg (ORCPT
+	with ESMTP id S1752059AbaKFWjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:39:36 -0500
+	Thu, 6 Nov 2014 17:39:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 154/162] ext4: enable journal checksum when metadata checksum feature enabled
-Date: Thu,  6 Nov 2014 14:36:58 -0800
-Message-Id: <1415313426-9622-155-git-send-email-kamal@canonical.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 143/162] evm: check xattr value length and type in evm_inode_setxattr()
+Date: Thu,  6 Nov 2014 14:36:47 -0800
+Message-Id: <1415313426-9622-144-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,35 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-commit 98c1a7593fa355fda7f5a5940c8bf5326ca964ba upstream.
+commit 3b1deef6b1289a99505858a3b212c5b50adf0c2f upstream.
 
-If metadata checksumming is turned on for the FS, we need to tell the
-journal to use checksumming too.
+evm_inode_setxattr() can be called with no value. The function does not
+check the length so that following command can be used to produce the
+kernel oops: setfattr -n security.evm FOO. This patch fixes it.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Changes in v3:
+* there is no reason to return different error codes for EVM_XATTR_HMAC
+  and non EVM_XATTR_HMAC. Remove unnecessary test then.
+
+Changes in v2:
+* testing for validity of xattr type
+
+[ 1106.396921] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[ 1106.398192] IP: [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
+[ 1106.399244] PGD 29048067 PUD 290d7067 PMD 0
+[ 1106.399953] Oops: 0000 [#1] SMP
+[ 1106.400020] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
+[ 1106.400020] CPU: 0 PID: 3635 Comm: setxattr Not tainted 3.16.0-kds+ #2936
+[ 1106.400020] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[ 1106.400020] task: ffff8800291a0000 ti: ffff88002917c000 task.ti: ffff88002917c000
+[ 1106.400020] RIP: 0010:[<ffffffff812af7b8>]  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
+[ 1106.400020] RSP: 0018:ffff88002917fd50  EFLAGS: 00010246
+[ 1106.400020] RAX: 0000000000000000 RBX: ffff88002917fdf8 RCX: 0000000000000000
+[ 1106.400020] RDX: 0000000000000000 RSI: ffffffff818136d3 RDI: ffff88002917fdf8
+[ 1106.400020] RBP: ffff88002917fd68 R08: 0000000000000000 R09: 00000000003ec1df
+[ 1106.400020] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800438a0a00
+[ 1106.400020] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+[ 1106.400020] FS:  00007f7dfa7d7740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
+[ 1106.400020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1106.400020] CR2: 0000000000000000 CR3: 000000003763e000 CR4: 00000000000006f0
+[ 1106.400020] Stack:
+[ 1106.400020]  ffff8800438a0a00 ffff88002917fdf8 0000000000000000 ffff88002917fd98
+[ 1106.400020]  ffffffff812a1030 ffff8800438a0a00 ffff88002917fdf8 0000000000000000
+[ 1106.400020]  0000000000000000 ffff88002917fde0 ffffffff8116d08a ffff88002917fdc8
+[ 1106.400020] Call Trace:
+[ 1106.400020]  [<ffffffff812a1030>] security_inode_setxattr+0x5d/0x6a
+[ 1106.400020]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
+[ 1106.400020]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
+[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[ 1106.400020]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
+[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[ 1106.400020]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
+[ 1106.400020]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
+[ 1106.400020]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
+[ 1106.400020] Code: c3 0f 1f 44 00 00 55 48 89 e5 41 55 49 89 d5 41 54 49 89 fc 53 48 89 f3 48 c7 c6 d3 36 81 81 48 89 df e8 18 22 04 00 85 c0 75 07 <41> 80 7d 00 02 74 0d 48 89 de 4c 89 e7 e8 5a fe ff ff eb 03 83
+[ 1106.400020] RIP  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
+[ 1106.400020]  RSP <ffff88002917fd50>
+[ 1106.400020] CR2: 0000000000000000
+[ 1106.428061] ---[ end trace ae08331628ba3050 ]---
+
+Reported-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/super.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ security/integrity/evm/evm_main.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 608db58..9fb3e6c 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3486,6 +3486,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
- 	set_opt(sb, POSIX_ACL);
- #endif
-+	/* don't forget to enable journal_csum when metadata_csum is enabled. */
-+	if (ext4_has_metadata_csum(sb))
-+		set_opt(sb, JOURNAL_CHECKSUM);
-+
- 	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
- 		set_opt(sb, JOURNAL_DATA);
- 	else if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_ORDERED)
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 3c5cbb9..09036f4 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -296,9 +296,12 @@ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ {
+ 	const struct evm_ima_xattr_data *xattr_data = xattr_value;
+ 
+-	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
+-	    && (xattr_data->type == EVM_XATTR_HMAC))
+-		return -EPERM;
++	if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
++		if (!xattr_value_len)
++			return -EINVAL;
++		if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
++			return -EPERM;
++	}
+ 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
+ }
 -- 
 1.9.1
 
