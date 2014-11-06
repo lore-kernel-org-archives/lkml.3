@@ -1,51 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaKFMyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:54:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49566 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346AbaKFMyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:54:09 -0500
-Date: Thu, 6 Nov 2014 13:54:05 +0100
-From: Joerg Roedel <jroedel@suse.de>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Myron Stowe <mstowe@redhat.com>
-Subject: Re: [PATCH 2/2] iommu/vt-d: Only remove domain when device is removed
-Message-ID: <20141106125405.GI8354@suse.de>
-References: <1412074923-6342-1-git-send-email-joro@8bytes.org>
- <1412074923-6342-3-git-send-email-joro@8bytes.org>
- <1415117537.27420.428.camel@ul30vt.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415117537.27420.428.camel@ul30vt.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751728AbaKFMy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:54:57 -0500
+Received: from regular1.263xmail.com ([211.150.99.132]:52870 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaKFMyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:54:53 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <31e2398b9f2d6e5bcb0015f029864a60>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        jay.xu@rock-chips.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
+        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
+Subject: [PATCH V3 3/4] dw-hdmi: add support for multi byte register width access
+Date: Thu,  6 Nov 2014 19:25:18 +0800
+Message-Id: <1415273118-57045-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415273069-56995-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415273069-56995-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On rockchip rk3288, only word(32-bit) accesses are
+permitted for hdmi registers.  Byte width access (writeb,
+readb) generate an imprecise external abort.
 
-On Tue, Nov 04, 2014 at 09:12:17AM -0700, Alex Williamson wrote:
-> I haven't tested it, but I'm concerned whether this has introduced a
-> domain leak.  If we think about the case of unbinding a device from a
-> host driver and attaching it to a domain through the IOMMU API, I think
-> we used to count on this path to call domain_exit(), which made the
-> domain_context_mapped() in intel_iommu_attach_device() "unlikely".  With
-> this change, isn't the test in intel_iommu_attach_device() now neither
-> likely nor unlikely and we're only removing the dev_info from the domain
-> and not destroying the domain itself?  Thanks,
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+---
+ drivers/gpu/drm/bridge/dw_hdmi.c | 53 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 48 insertions(+), 5 deletions(-)
 
-As I see it, there is no leak. The DMA-API domains are kept in the
-device_domain_list and re-used when the device driver re-attaches. But
-your are right that the unlikely in intel_iommu_attach_device() isn't
-true anymore. We could probably remove it.
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index e561286..a34f928 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -126,19 +126,42 @@ struct dw_hdmi {
+ 
+ 	unsigned int sample_rate;
+ 	int ratio;
++	void (*write)(u8 val, void __iomem *addr);
++	u8 (*read)(void __iomem *addr);
++	int reg_shift;
+ };
+ 
++static void dw_hdmi_writel(u8 val, void __iomem *addr)
++{
++	writel(val, addr);
++}
++
++static u8 dw_hdmi_readl(void __iomem *addr)
++{
++	return readl(addr);
++}
++
++static void dw_hdmi_writeb(u8 val, void __iomem *addr)
++{
++	writeb(val, addr);
++}
++
++static u8 dw_hdmi_readb(void __iomem *addr)
++{
++	return readb(addr);
++}
++
+ static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
+ {
+-	writeb(val, hdmi->regs + offset);
++	hdmi->write(val, hdmi->regs + (offset << hdmi->reg_shift));
+ }
+ 
+ static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
+ {
+-	return readb(hdmi->regs + offset);
++	return hdmi->read(hdmi->regs + (offset << hdmi->reg_shift));
+ }
+ 
+-static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
++static void hdmi_modb(struct dw_hdmi *hdmi, u32 data, u32 mask, unsigned reg)
+ {
+ 	u8 val = hdmi_readb(hdmi, reg) & ~mask;
+ 
+@@ -146,8 +169,8 @@ static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
+ 	hdmi_writeb(hdmi, val, reg);
+ }
+ 
+-static void hdmi_mask_writeb(struct dw_hdmi *hdmi, u8 data, unsigned int reg,
+-		      u8 shift, u8 mask)
++static void hdmi_mask_writeb(struct dw_hdmi *hdmi, u32 data, unsigned int reg,
++		      u32 shift, u32 mask)
+ {
+ 	hdmi_modb(hdmi, data << shift, mask, reg);
+ }
+@@ -1500,6 +1523,26 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
+ 	struct device_node *ddc_node;
+ 	struct resource *iores;
+ 	int ret, irq;
++	u32 val;
++
++	if (!of_property_read_u32(np, "reg-io-width", &val)) {
++		switch (val) {
++		case 4:
++			hdmi->write = dw_hdmi_writel;
++			hdmi->read = dw_hdmi_readl;
++			hdmi->reg_shift = 2;
++			break;
++		default:
++			hdmi->write = dw_hdmi_writeb;
++			hdmi->read = dw_hdmi_readb;
++			hdmi->reg_shift = 0;
++			break;
++		}
++	} else {
++		hdmi->write = dw_hdmi_writeb;
++		hdmi->read = dw_hdmi_readb;
++		hdmi->reg_shift = 0;
++	}
+ 
+ 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
+ 	if (ddc_node) {
+-- 
+1.9.1
 
-
-	Joerg
 
