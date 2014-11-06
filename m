@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaKFWwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:52:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694AbaKFWws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:52:48 -0500
-Message-ID: <545BFB95.5030706@redhat.com>
-Date: Thu, 06 Nov 2014 17:52:05 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, isimatu.yasuaki@jp.fujitsu.com,
-        jbaron@akamai.com, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v8] kernel, add panic_on_warn
-References: <1415187736-16242-1-git-send-email-prarit@redhat.com> <alpine.DEB.2.10.1411051357050.31575@chino.kir.corp.google.com> <545B733C.6080903@redhat.com> <alpine.DEB.2.10.1411061352440.1526@chino.kir.corp.google.com> <20141106220731.GA13590@redhat.com>
-In-Reply-To: <20141106220731.GA13590@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752626AbaKFWxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:53:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59063 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209AbaKFWn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 17:43:57 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 067/162] ext4: don't orphan or truncate the boot loader inode
+Date: Thu,  6 Nov 2014 14:35:31 -0800
+Message-Id: <1415313426-9622-68-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-On 11/06/2014 05:07 PM, Vivek Goyal wrote:
-> On Thu, Nov 06, 2014 at 01:57:36PM -0800, David Rientjes wrote:
-> 
-> [..]
->> You see that doing
->>
->> 	if (panic_on_warn) {
->> 		panic_on_warn = 0;
->> 		panic(...);
->> 	}
->>
->> is racy, I hope.  If two threads WARN() at the same time, then there's 
->> nothing preventing a double panic() because WARN() itself is not 
->> serialized against anything.  So both the current comment and your 
->> suggested revision comment are bogus.
-> 
-> panic() is serialized on panic_lock. So I guess it is fine to hit WARN()
-> on multiple cpus. Do you see an issue there?
+From: Theodore Ts'o <tytso@mit.edu>
 
-Oops -- didn't see this until just now.
+commit e2bfb088fac03c0f621886a04cffc7faa2b49b1d upstream.
 
-Once again, Vivek beat me to the punch :) and much more succinctly than I will
-ever be able to do. :)
+The boot loader inode (inode #5) should never be visible in the
+directory hierarchy, but it's possible if the file system is corrupted
+that there will be a directory entry that points at inode #5.  In
+order to avoid accidentally trashing it, when such a directory inode
+is opened, the inode will be marked as a bad inode, so that it's not
+possible to modify (or read) the inode from userspace.
 
-P.
+Unfortunately, when we unlink this (invalid/illegal) directory entry,
+we will put the bad inode on the ophan list, and then when try to
+unlink the directory, we don't actually remove the bad inode from the
+orphan list before freeing in-memory inode structure.  This means the
+in-memory orphan list is corrupted, leading to a kernel oops.
 
-> 
-> Thanks
-> Vivek
-> 
+In addition, avoid truncating a bad inode in ext4_destroy_inode(),
+since truncating the boot loader inode is not a smart thing to do.
+
+Reported-by: Sami Liedes <sami.liedes@iki.fi>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[ kamal: backport to 3.13-stable (context) ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/ext4/inode.c | 7 +++----
+ fs/ext4/namei.c | 2 +-
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index fd6501e3..37d3b1a 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -221,16 +221,15 @@ void ext4_evict_inode(struct inode *inode)
+ 		goto no_delete;
+ 	}
+ 
+-	if (!is_bad_inode(inode))
+-		dquot_initialize(inode);
++	if (is_bad_inode(inode))
++		goto no_delete;
++	dquot_initialize(inode);
+ 
+ 	if (ext4_should_order_data(inode))
+ 		ext4_begin_ordered_truncate(inode, 0);
+ 	truncate_inode_pages(&inode->i_data, 0);
+ 
+ 	WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count));
+-	if (is_bad_inode(inode))
+-		goto no_delete;
+ 
+ 	/*
+ 	 * Protect us against freezing - iput() caller didn't have to have any
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 5a0408d..d4fa3ed 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2554,7 +2554,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+ 	struct ext4_iloc iloc;
+ 	int err = 0, rc;
+ 
+-	if (!EXT4_SB(sb)->s_journal)
++	if (!EXT4_SB(sb)->s_journal || is_bad_inode(inode))
+ 		return 0;
+ 
+ 	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
+-- 
+1.9.1
+
