@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaKFOYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:24:24 -0500
-Received: from h231.153.108.208.lnoca ([208.108.153.231]:20527 "EHLO
-	exchangemail.sel.k12.oh.us" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751480AbaKFOYW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:24:22 -0500
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 09:24:22 EST
-From: "Miller, Brande" <MillerBr@Sel.k12.oh.us>
-Subject: =?windows-1250?Q?Gratulujeme_v=FDhercom_(Asa_-_Cj_:._SP_/_229/0_1,7_/_5,2?=
- =?windows-1250?Q?_/_EU.?=
-Thread-Topic: =?windows-1250?Q?Gratulujeme_v=FDhercom_(Asa_-_Cj_:._SP_/_229/0_1,7_/_5,2?=
- =?windows-1250?Q?_/_EU.?=
-Thread-Index: Ac/5zJq+IsEgXsvRTLevxLHLIGGoVw==
-Date: Thu, 6 Nov 2014 14:18:58 +0000
-Message-ID: <C20D693F6BE4C048BDD6F8D123095A70291BF2F6@exchangemail.sel.k12.oh.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [188.76.209.232]
-Content-Type: text/plain; charset="windows-1250"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	id S1752430AbaKFOZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:25:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:2230 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752266AbaKFOYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:24:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
+   d="scan'208";a="618223217"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch Part2 v5 18/31] PCI/MSI: Remove unnecessary braces around single statements
+Date: Thu,  6 Nov 2014 22:20:31 +0800
+Message-Id: <1415283644-2559-19-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gratulujeme v˝hercom (Asa - Cj :. SP / 229/0 1,7 / 5,2 / EU.
+Per Documentation/CodingStyle, don't use braces around single statements.
 
-V·ö e-mail ID zÌskal Ä 450,000.00 Euro (450.000. Euro)
-Program öpanielskej medzin·rodnej charity "El Gordo". (9/11/13/24/40)
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/msi.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Pre viac inform·ciÌ kontaktujte postupov tvrdÌ;
-N¡ROK AGENCY MEGA STALLION
-P·n Juan Felipe.
-E-mail: stalonmega@aol.com
-Tel: 0034604.193.932 (hovorÌ anglicky a öpanielsky)
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 9fab30af0e75..fb2ccb536324 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -244,9 +244,8 @@ void default_restore_msi_irqs(struct pci_dev *dev)
+ {
+ 	struct msi_desc *entry;
+ 
+-	list_for_each_entry(entry, &dev->msi_list, list) {
++	list_for_each_entry(entry, &dev->msi_list, list)
+ 		default_restore_msi_irq(dev, entry->irq);
+-	}
+ }
+ 
+ void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
+@@ -451,9 +450,8 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+ 				PCI_MSIX_FLAGS_ENABLE | PCI_MSIX_FLAGS_MASKALL);
+ 
+ 	arch_restore_msi_irqs(dev);
+-	list_for_each_entry(entry, &dev->msi_list, list) {
++	list_for_each_entry(entry, &dev->msi_list, list)
+ 		msix_mask_irq(entry, entry->masked);
+-	}
+ 
+ 	msix_clear_and_set_ctrl(dev, PCI_MSIX_FLAGS_MASKALL, 0);
+ }
+@@ -497,9 +495,8 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
+ 	int count = 0;
+ 
+ 	/* Determine how many msi entries we have */
+-	list_for_each_entry(entry, &pdev->msi_list, list) {
++	list_for_each_entry(entry, &pdev->msi_list, list)
+ 		++num_msi;
+-	}
+ 	if (!num_msi)
+ 		return 0;
+ 
+-- 
+1.7.10.4
 
-Meno, adresa, vek, povolanie, telefÛnne ËÌslo
-
-Odpovedaù na tento email: stalonmega@aol.com
-Blahoûel·me.
-S pozdravom,
-***************************************************************************************************
-
-This message may contain confidential information, including, but not limited to, student personally identifiable information. Such information is intended only for use of the individual or entity named above. If you are not the intended recipient, you are hereby notified that any disclosure, copying, printing, distribution, or taking of any actions in reliance on the contents of the information contained herein is strictly prohibited. If you receive this email message in error, please immediately notify me by telephone or email to arrange for the return of the original document to me. Please also delete the message from your computer. Thank you.
