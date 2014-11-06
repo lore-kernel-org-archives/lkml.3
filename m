@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaKFCEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:04:41 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:42219 "EHLO
+	id S1751348AbaKFCEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:04:35 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:42222 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaKFCEe (ORCPT
+	with ESMTP id S1750905AbaKFCEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Nov 2014 21:04:34 -0500
 X-Original-SENDERIP: 10.177.222.235
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] ftracetest: Clear trace buffer after running kprobe testcases
-Date: Thu,  6 Nov 2014 11:04:29 +0900
-Message-Id: <1415239470-28705-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 3/3] ftracetest: Add basic event tracing test cases
+Date: Thu,  6 Nov 2014 11:04:30 +0900
+Message-Id: <1415239470-28705-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1415239470-28705-1-git-send-email-namhyung@kernel.org>
 References: <1415239470-28705-1-git-send-email-namhyung@kernel.org>
@@ -25,75 +25,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kprobe testcases create, use and delete dynamic events during the
-test but didn't clear the trace buffer so it'll leave the result after
-it finishes.
+This patch adds basic event tracing tests like enable/disable with
+top-level, subsystem-level and individual event files.
 
   # ./ftracetest
-  ...
+  === Ftrace unit tests ===
+  [1] Basic trace file check	[PASS]
+  [2] Basic trace clock test	[PASS]
+  [3] Basic event tracing check	[PASS]
+  [4] Basic test for tracers	[PASS]
+  [5] event tracing - enable/disable with top level files	[PASS]
+  [6] event tracing - enable/disable with subsystem level files	[PASS]
+  [7] event tracing - enable/disable with event level files	[PASS]
+  [8] ftrace - function graph filters	[PASS]
+  [9] ftrace - function profiler with function tracing	[PASS]
+  [10] ftrace - function graph filters with stack tracer	[PASS]
+  [11] Kretprobe dynamic event with arguments	[PASS]
+  [12] Kprobe dynamic event - busy event check	[PASS]
+  [13] Kprobe dynamic event with arguments	[PASS]
+  [14] Kprobe dynamic event - adding and removing	[PASS]
 
-  # cat trace
-  # tracer: nop
-  #
-  # entries-in-buffer/entries-written: 2/2   #P:12
-  #
-  #                              _-----=> irqs-off
-  #                             / _----=> need-resched
-  #                            | / _---=> hardirq/softirq
-  #                            || / _--=> preempt-depth
-  #                            ||| /     delay
-  #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-  #              | |       |   ||||       |         |
-        ftracetest-26474 [009] d..1 79417.143782: Unknown type 1099
-        ftracetest-26498 [009] d..1 79417.208034: Unknown type 1101
+  # of passed:  14
+  # of failed:  0
+  # of unresolved:  0
+  # of untested:  0
+  # of unsupported:  0
+  # of xfailed:  0
+  # of undefined(test bug):  0
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc | 1 +
- tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc     | 1 +
- tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc    | 1 +
- tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc | 1 +
- 4 files changed, 4 insertions(+)
+ .../selftests/ftrace/test.d/00basic/basic4.tc      |  5 ++
+ .../selftests/ftrace/test.d/event/event-enable.tc  | 53 ++++++++++++++++++++++
+ .../ftrace/test.d/event/subsystem-enable.tc        | 53 ++++++++++++++++++++++
+ .../ftrace/test.d/event/toplevel-enable.tc         | 47 +++++++++++++++++++
+ 4 files changed, 158 insertions(+)
+ create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic4.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/event/event-enable.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc
 
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-index 1b8b665ab2b3..a5a426211129 100644
---- a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-@@ -9,3 +9,4 @@ echo p:myevent do_fork > kprobe_events
- grep myevent kprobe_events
- test -d events/kprobes/myevent
- echo > kprobe_events
-+clear_trace
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-index b55c84003587..d8c7bb6581fe 100644
---- a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-@@ -11,3 +11,4 @@ echo 1 > events/kprobes/myevent/enable
- echo > kprobe_events && exit 1 # this must fail
- echo 0 > events/kprobes/myevent/enable
- echo > kprobe_events # this must succeed
-+clear_trace
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-index a603d3f8db7b..c45ee2761354 100644
---- a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-@@ -12,5 +12,6 @@ echo 1 > events/kprobes/testprobe/enable
- ( echo "forked")
- echo 0 > events/kprobes/testprobe/enable
- echo "-:testprobe" >> kprobe_events
-+clear_trace
- test -d events/kprobes/testprobe && exit 1 || exit 0
- 
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-index 283c29e7f7c4..31717985acc7 100644
---- a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-@@ -12,4 +12,5 @@ echo 1 > events/kprobes/testprobe2/enable
- ( echo "forked")
- echo 0 > events/kprobes/testprobe2/enable
- echo '-:testprobe2' >> kprobe_events
-+clear_trace
- test -d events/kprobes/testprobe2 && exit 1 || exit 0
+diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic4.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic4.tc
+new file mode 100644
+index 000000000000..fd9c49a13612
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/00basic/basic4.tc
+@@ -0,0 +1,5 @@
++#!/bin/sh
++# description: Basic event tracing check
++test -f available_events -a -f set_event -a -d events
++# check scheduler events are available
++grep -q sched available_events && exit 0 || exit -1
+\ No newline at end of file
+diff --git a/tools/testing/selftests/ftrace/test.d/event/event-enable.tc b/tools/testing/selftests/ftrace/test.d/event/event-enable.tc
+new file mode 100644
+index 000000000000..668616d9bb03
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/event/event-enable.tc
+@@ -0,0 +1,53 @@
++#!/bin/sh
++# description: event tracing - enable/disable with event level files
++
++do_reset() {
++    echo > set_event
++    clear_trace
++}
++
++fail() { #msg
++    do_reset
++    echo $1
++    exit -1
++}
++
++if [ ! -f set_event -o ! -d events/sched ]; then
++    echo "event tracing is not supported"
++    exit_unsupported
++fi
++
++reset_tracer
++do_reset
++
++echo 'sched:sched_switch' > set_event
++usleep 1
++
++count=`cat trace | grep sched_switch | wc -l`
++if [ $count -eq 0 ]; then
++    fail "sched_switch events are not recorded"
++fi
++
++do_reset
++
++echo 1 > events/sched/sched_switch/enable
++usleep 1
++
++count=`cat trace | grep sched_switch | wc -l`
++if [ $count -eq 0 ]; then
++    fail "sched_switch events are not recorded"
++fi
++
++do_reset
++
++echo 0 > events/sched/sched_switch/enable
++usleep 1
++
++count=`cat trace | grep sched_switch | wc -l`
++if [ $count -ne 0 ]; then
++    fail "sched_switch events should not be recorded"
++fi
++
++do_reset
++
++exit 0
+diff --git a/tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc b/tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc
+new file mode 100644
+index 000000000000..655c415b6e7f
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc
+@@ -0,0 +1,53 @@
++#!/bin/sh
++# description: event tracing - enable/disable with subsystem level files
++
++do_reset() {
++    echo > set_event
++    clear_trace
++}
++
++fail() { #msg
++    do_reset
++    echo $1
++    exit -1
++}
++
++if [ ! -f set_event -o ! -d events/sched ]; then
++    echo "event tracing is not supported"
++    exit_unsupported
++fi
++
++reset_tracer
++do_reset
++
++echo 'sched:*' > set_event
++usleep 1
++
++count=`cat trace | grep -v ^# | awk '{ print $5 }' | sort -u | wc -l`
++if [ $count -lt 3 ]; then
++    fail "at least fork, exec and exit events should be recorded"
++fi
++
++do_reset
++
++echo 1 > events/sched/enable
++usleep 1
++
++count=`cat trace | grep -v ^# | awk '{ print $5 }' | sort -u | wc -l`
++if [ $count -lt 3 ]; then
++    fail "at least fork, exec and exit events should be recorded"
++fi
++
++do_reset
++
++echo 0 > events/sched/enable
++usleep 1
++
++count=`cat trace | grep -v ^# | awk '{ print $5 }' | sort -u | wc -l`
++if [ $count -ne 0 ]; then
++    fail "any of scheduler events should not be recorded"
++fi
++
++do_reset
++
++exit 0
+diff --git a/tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc b/tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc
+new file mode 100644
+index 000000000000..480845774007
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc
+@@ -0,0 +1,47 @@
++#!/bin/sh
++# description: event tracing - enable/disable with top level files
++
++do_reset() {
++    echo > set_event
++    clear_trace
++}
++
++fail() { #msg
++    do_reset
++    echo $1
++    exit -1
++}
++
++if [ ! -f available_events -o ! -f set_event -o ! -d events ]; then
++    echo "event tracing is not supported"
++    exit_unsupported
++fi
++
++reset_tracer
++do_reset
++
++echo '*:*' > set_event
++count=`cat trace | grep -v ^# | wc -l`
++if [ $count -eq 0 ]; then
++    fail "none of events are recorded"
++fi
++
++do_reset
++
++echo 1 > events/enable
++count=`cat trace | grep -v ^# | wc -l`
++if [ $count -eq 0 ]; then
++    fail "none of events are recorded"
++fi
++
++do_reset
++
++echo 0 > events/enable
++count=`cat trace | grep -v ^# | wc -l`
++if [ $count -ne 0 ]; then
++    fail "any of events should not be recorded"
++fi
++
++do_reset
++
++exit 0
 -- 
 2.1.2
 
