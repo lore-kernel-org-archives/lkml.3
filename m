@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241AbaKFXRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:17:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58580 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaKFWji (ORCPT
+	id S1754261AbaKFXRv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:17:51 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:43432 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245AbaKFXRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:39:38 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 153/162] ext4: fix oops when loading block bitmap failed
-Date: Thu,  6 Nov 2014 14:36:57 -0800
-Message-Id: <1415313426-9622-154-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 6 Nov 2014 18:17:45 -0500
+Message-ID: <545C0191.7010804@collabora.co.uk>
+Date: Fri, 07 Nov 2014 00:17:37 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 1/3] regulator: max77802: Remove support for board
+ files
+References: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com> <1415180871-25293-2-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1415180871-25293-2-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+On 11/05/2014 10:47 AM, Krzysztof Kozlowski wrote:
+> The driver is used only on Exynos based boards with DTS support.
+> Simplify the driver and remove dead (unused) entries in platform_data
+> structure.
+> 
 
-------------------
+Tested on an Exynos5420 Peach Pit Chromebook that has a max77802 PMIC.
 
-From: Jan Kara <jack@suse.cz>
+Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-commit 599a9b77ab289d85c2d5c8607624efbe1f552b0f upstream.
-
-When we fail to load block bitmap in __ext4_new_inode() we will
-dereference NULL pointer in ext4_journal_get_write_access(). So check
-for error from ext4_read_block_bitmap().
-
-Coverity-id: 989065
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/ext4/ialloc.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 158ddf6..a8d1a64 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -864,6 +864,10 @@ got:
- 		struct buffer_head *block_bitmap_bh;
- 
- 		block_bitmap_bh = ext4_read_block_bitmap(sb, group);
-+		if (!block_bitmap_bh) {
-+			err = -EIO;
-+			goto out;
-+		}
- 		BUFFER_TRACE(block_bitmap_bh, "get block bitmap access");
- 		err = ext4_journal_get_write_access(handle, block_bitmap_bh);
- 		if (err) {
--- 
-1.9.1
+Best regards,
+Javier
 
