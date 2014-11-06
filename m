@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaKFOdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:33:01 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:43690 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaKFOc5 (ORCPT
+	id S1751584AbaKFOfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:35:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:50843 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750975AbaKFOfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:32:57 -0500
-Date: Thu, 6 Nov 2014 22:32:18 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, davem@davemloft.net, grant.likely@linaro.org,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, joe@perches.com,
-        mchehab@osg.samsung.com, crope@iki.fi, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto
- accelerator
-Message-ID: <20141106143217.GA3636@gondor.apana.org.au>
-References: <544A9FEA.6020304@gmail.com>
- <20141030171933.GR21251@lukather>
- <20141031072030.GA7563@gondor.apana.org.au>
- <20141031081323.GS21251@lukather>
- <20141031081803.GA8012@gondor.apana.org.au>
- <20141031095706.GA8054@lukather>
- <20141031100522.GA8655@gondor.apana.org.au>
- <20141103093446.GG11263@lukather>
- <20141103103528.GA30154@gondor.apana.org.au>
- <20141106142633.GK2989@lukather>
+	Thu, 6 Nov 2014 09:35:03 -0500
+Date: Thu, 6 Nov 2014 15:33:49 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v4 00/58] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141106143349.GL2989@lukather>
+References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BtmVPk+Smchi6n7w"
 Content-Disposition: inline
-In-Reply-To: <20141106142633.GK2989@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 03:26:33PM +0100, Maxime Ripard wrote:
-> 
-> But you still haven't explain why the driver, while it doesn't handle
-> the user space buffer at any time, should be worried that the data the
-> framework has given him are actually mapped.
 
-Encryption is used by IPsec and SKBs can be allocated in highmem.
-algif also exposes all ciphers to user-space memory which can also
-be in highmem.
+--BtmVPk+Smchi6n7w
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Hi Vinod,
+
+On Tue, Oct 28, 2014 at 10:25:15PM +0100, Maxime Ripard wrote:
+> Hi,
+>=20
+> As we discussed a couple of weeks ago, this is the third attempt at
+> creating a generic behaviour for slave capabilities retrieval so that
+> generic layers using dmaengine can actually rely on that.
+>=20
+> That has been done mostly through two steps: by moving out the
+> sub-commands of the device_control callback, so that the dmaengine
+> core can then infer from that wether a sub-command is implemented, and
+> then by moving the slave properties, such as the supported buswidth,
+> to the structure dma_device itself.
+>=20
+> Comments are as usual appreciated!
+
+How can we move forward on this?
+
+I didn't have any comments on this version, and gathered quite a lot
+of Acked-by already.
+
+Do you want me to rebase on top of your current next branch and send
+you a pull request?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--BtmVPk+Smchi6n7w
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUW4bNAAoJEBx+YmzsjxAg820QAJWUObNl8Up+DOUMuaqM0xBv
+VZ0vobYnDhGZGhtv+4fQQanA8X/f2Qb9lVUNC7s723KGuGrsAeALN8E9cPpH7Hwl
+rKIB2cA31DiBpbTMJhTQc9a13ert1pvi9RwbjchZK+Uxti2SIev+1LDIG/o+jN41
+uUPGqRXQt9+S3wkenoXJgQVJz8VRSYWhJLLiu5JvMlTOpBHi9u6xDIkmP15FPzLH
+uissfFG0hF37w+6FdjEerhiUmq3r+DCPaOnU2yMIw7d09Y+Ck2dMdWsWBgvaZH9V
+wsgS3fQ0HLMRx+9kir6Kfdz1S+KUN9+CSB1IJyXPwI16o7qRuth2F4XLKDVoe0uS
+iTy/bXpzwCEzt42M+Mp3ZfDRs2jq7Ul5bqKs9aFvenDG2bzcaUeX/VdAuJxs4unt
+QnAKO8pXUKOFCOXpS0CnIEW10qS4SVI70h1Pau+3YhdYymVKz4o34JnkH9wd+Ond
+0Hp7jWlgdbUeXbSLNlow+E4PK4U09RXx11EsY9MCgFAR/qxLj00JNXml1/cFyVUF
+Y9/1hc3B4lj8TftOQWFhYeB64jZy0vnyK+YcZVrsb4KeJfjsoHakoi2u/2IHKPZA
++Nk3WmkY8LG/9CcqeMwNO/c2US/4NoR/Mj82vV49UtpghiuM5uoaQfbQXG/RtvOL
+vhy60nsBv+mND3nf4w+T
+=eyxW
+-----END PGP SIGNATURE-----
+
+--BtmVPk+Smchi6n7w--
