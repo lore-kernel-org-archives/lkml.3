@@ -1,162 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaKFLYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 06:24:09 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:42243 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaKFLYE (ORCPT
+	id S1751115AbaKFL1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 06:27:47 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:60893 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaKFL1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 06:24:04 -0500
-Date: Thu, 6 Nov 2014 12:24:00 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-ID: <20141106112359.GJ26297@ulmo>
-References: <20141106193618.461c3ae7@canb.auug.org.au>
+	Thu, 6 Nov 2014 06:27:44 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qo8f1a4rgWw9S/zY"
-Content-Disposition: inline
-In-Reply-To: <20141106193618.461c3ae7@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141106112244.GM1618@lahna.fi.intel.com>
+References: <1414755658-96293-1-git-send-email-mika.westerberg@linux.intel.com>
+	<545843B1.3020101@nvidia.com>
+	<2455157.3p7mHhT8im@vostro.rjw.lan>
+	<CAMuHMdXn9W2S7N+YGfjDxQozMtRZCVdTzzdDps6YfOv2FqVBmw@mail.gmail.com>
+	<20141106103033.GK1618@lahna.fi.intel.com>
+	<CAMuHMdWtcZcpW=r60s9auENZxChiLwr14R0p_soKr7C3yGYOMQ@mail.gmail.com>
+	<20141106105855.GL1618@lahna.fi.intel.com>
+	<CAMuHMdUroLo5SdXrTu+etiW+TwHAWV-Qn9UsVnud+BJ7q6nXjw@mail.gmail.com>
+	<20141106112244.GM1618@lahna.fi.intel.com>
+Date: Thu, 6 Nov 2014 12:27:42 +0100
+X-Google-Sender-Auth: VF6QbXaKLTj1OK2aeV9fqUvhaLA
+Message-ID: <CAMuHMdVA=L22R=gDJBHcgGbD5tsTOPpVZHaxeLsaB+mXhQswVg@mail.gmail.com>
+Subject: Re: [PATCH] leds: leds-gpio: Convert gpio_blink_set() to use GPIO descriptors
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 6, 2014 at 12:22 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Thu, Nov 06, 2014 at 12:12:04PM +0100, Geert Uytterhoeven wrote:
+>> On Thu, Nov 6, 2014 at 11:58 AM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>> > On Thu, Nov 06, 2014 at 11:32:19AM +0100, Geert Uytterhoeven wrote:
+>> >> On Thu, Nov 6, 2014 at 11:30 AM, Mika Westerberg
+>> >> <mika.westerberg@linux.intel.com> wrote:
+>> >> >> "leds: leds-gpio: Add support for GPIO descriptors" broke leds-gpio on
+>> >> >> non-DT platforms for me:
+>> >> >>
+>> >> >>     gpiod_direction_output: invalid GPIO
+>> >> >>     leds-gpio: probe of leds-gpio failed with error -22
+>> >> >>
+>> >> >> (desc is NULL in gpiod_direction_output()).
 
---Qo8f1a4rgWw9S/zY
-Content-Type: multipart/mixed; boundary="BOmey7/79ja+7F5w"
-Content-Disposition: inline
+>>     leds-gpio leds-gpio: GPIO 102, ret: 0
+>>     leds-gpio leds-gpio: GPIOD: c050e970
+>>
+>> So led_dat is non-NULL. But it's overwritten by NULL later:
+>>
+>>     led_dat->gpiod = template->gpiod;
+>
+> Ah, that's it. Nice catch!
+>
+>> Whitespace damaged fix below, to fold into the original.
+>> If you prefer a proper separate patch, let me know.
+>
+> It is up to Rafael. I think he wants to stabilize this branch so in that
+> case separate patch on top would work better.
 
+I've already sent a patch, as I have to publish the fix in my git tree anyway.
 
---BOmey7/79ja+7F5w
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Gr{oetje,eeting}s,
 
-On Thu, Nov 06, 2014 at 07:36:18PM +1100, Stephen Rothwell wrote:
-> Hi Andrew,
->=20
-> After merging the akpm tree, today's linux-next build (sparc defconfig)
-> failed like this:
->=20
-> mm/slab.c: In function 'slab_alloc':
-> mm/slab.c:3260:4: error: implicit declaration of function 'slab_free' [-W=
-error=3Dimplicit-function-declaration]
->     slab_free(cachep, objp);
->     ^
-> mm/slab.c: At top level:
-> mm/slab.c:3534:29: warning: conflicting types for 'slab_free'
->  static __always_inline void slab_free(struct kmem_cache *cachep, void *o=
-bjp)
->                              ^
-> mm/slab.c:3534:29: error: static declaration of 'slab_free' follows non-s=
-tatic declaration
-> mm/slab.c:3260:4: note: previous implicit declaration of 'slab_free' was =
-here
->     slab_free(cachep, objp);
->     ^
->=20
-> I am not sure what caused this, but it is something in the akpm-current
-> or akpm trees (possibly interacting with something else).
+                        Geert
 
-I fixed this using the attached patch.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Thierry
-
---BOmey7/79ja+7F5w
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: inline; filename="0001-mm-slab-Always-predeclare-slab_free.patch"
-Content-Transfer-Encoding: quoted-printable
-
-=46rom a9ec6cfacb892e044a5f76dce3b7fc9a3337d01a Mon Sep 17 00:00:00 2001
-=46rom: Thierry Reding <treding@nvidia.com>
-Date: Thu, 6 Nov 2014 11:59:23 +0100
-Subject: [PATCH] mm/slab: Always predeclare slab_free()
-
-Commit 5da1c3c725ab ("slab: recharge slab pages to the allocating memory
-cgroup") added a predeclaration of the new slab_free() helper so that it
-can be used in slab_alloc_node() and slab_alloc(). However the prototype
-is added in an #ifdef CONFIG_NUMA protected section of code, which works
-fine for slab_alloc_node() but fails for slab_alloc().
-
-Fixes the following build warnings and errors:
-
-	mm/slab.c: In function 'slab_alloc':
-	mm/slab.c:3260:4: error: implicit declaration of function 'slab_free' [-We=
-rror=3Dimplicit-function-declaration]
-	    slab_free(cachep, objp);
-	    ^
-	mm/slab.c: At top level:
-	mm/slab.c:3534:29: warning: conflicting types for 'slab_free'
-	 static __always_inline void slab_free(struct kmem_cache *cachep, void *ob=
-jp)
-				     ^
-	mm/slab.c:3534:29: error: static declaration of 'slab_free' follows non-st=
-atic declaration
-	mm/slab.c:3260:4: note: previous implicit declaration of 'slab_free' was h=
-ere
-	    slab_free(cachep, objp);
-	    ^
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- mm/slab.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 61b01c2ae1d9..00cd028404cb 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2961,6 +2961,8 @@ out:
- 	return objp;
- }
-=20
-+static __always_inline void slab_free(struct kmem_cache *cachep, void *obj=
-p);
-+
- #ifdef CONFIG_NUMA
- /*
-  * Try allocating on another node if PFA_SPREAD_SLAB is a mempolicy is set.
-@@ -3133,8 +3135,6 @@ done:
- 	return obj;
- }
-=20
--static __always_inline void slab_free(struct kmem_cache *cachep, void *obj=
-p);
--
- static __always_inline void *
- slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
- 		   unsigned long caller)
---=20
-2.1.3
-
-
---BOmey7/79ja+7F5w--
-
---Qo8f1a4rgWw9S/zY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUW1pPAAoJEN0jrNd/PrOh4yUP/3RJxro5l7lPp/gdJx/qFCRR
-hiN782iIOu/v0EIecz/gYuX7EGR1uClkWYMouKGXdiW4easjKdf6Zv2msY2FuRAi
-webFkxRAzx9Ap5knAagG9myXKCixzhTM+A9HbSkzYXwB4sMNgVOo0RgqZtmf1ab8
-xrlPEf3jDfqgxH5qcDkdcfwIPiq4rJJyh7ArXmfI7appQPaLfutkpWjKMCvpyQL0
-FzSzlUEMLMaMC6Uk5gZPrnyfXYR30iBbCznkqEKJZ5kRzkhU8VV69Z49Ax14aU5O
-pES1XCDazIjJXBGz2FS6hVG2vdCWAIFIPZboXb2JibLPVoN+Gg6I1Hq2KG8D7/50
-ssE4y4glxFJ7RRq7NLE5+NjM6wJmJ7nnhz4cX1O+ReckTA7pV8A4+t0acDP9Eaep
-wsWPvBU0zpdfF9D8T9mBRjPqFFlcU8Sn0cRxW/hmbnpHGAgR+7HMkGB8/a3qjYXo
-iww6WJvxISrkl1R8jykyRnTRqc3ZzQVzao5mDzk8pyzkk3bFVwJcb84WXw5ZA2hP
-2TuX9/xSbZ+bc5IGa/4zGL2XW34oasilF66LpmJGp7Gzww/9uhYvleZBsk4VCVCA
-wm0jTRKOD/cxYvcKshrmG35PNEK0JiIppwCSVmoV8LhEi540bCFb1O63tBV92SqW
-4cRyqXoA2FVcjfcWzsSY
-=v0+H
------END PGP SIGNATURE-----
-
---Qo8f1a4rgWw9S/zY--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
