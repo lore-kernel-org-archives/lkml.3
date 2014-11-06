@@ -1,37 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaKFUPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 15:15:21 -0500
-Received: from tex.lwn.net ([70.33.254.29]:50664 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088AbaKFUPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 15:15:20 -0500
-Date: Thu, 6 Nov 2014 15:15:18 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave.hansen@intel.com,
-        lcapitulino@redhat.com, andi@firstfloor.org
-Subject: Re: [PATCH/v2] Documentation: vm: Add 1GB large page support
- information
-Message-ID: <20141106151518.39c4d3ce@lwn.net>
-In-Reply-To: <1415287875-18820-1-git-send-email-standby24x7@gmail.com>
-References: <545AADCC.5030102@intel.com>
-	<1415287875-18820-1-git-send-email-standby24x7@gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1751513AbaKFUPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 15:15:31 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58328 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaKFUP3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 15:15:29 -0500
+Date: Thu, 06 Nov 2014 15:15:26 -0500 (EST)
+Message-Id: <20141106.151526.1810370548228119689.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 0/3] r8152: rtl_ops_init modify
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-84-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-84-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Nov 2014 12:15:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Nov 2014 00:31:15 +0900
-Masanari Iida <standby24x7@gmail.com> wrote:
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Thu, 6 Nov 2014 12:47:37 +0800
 
-> This patch adds 1GB large page support information in
-> Documentation/vm/hugetlbpage.txt
+> Initialize the ops through tp->version. This could skip checking
+> each VID/PID.
 
-Applied, thanks.
-
-jon
+Series applied, thank you.
