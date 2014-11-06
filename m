@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaKFQru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:47:50 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56613 "EHLO
+	id S1752408AbaKFQp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:45:27 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56478 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaKFQpb (ORCPT
+	with ESMTP id S1752332AbaKFQpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:45:31 -0500
+	Thu, 6 Nov 2014 11:45:15 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v5 44/48] x86: ce4100: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:43:28 -0800
-Message-Id: <1415292213-28652-45-git-send-email-linux@roeck-us.net>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Joshua Thompson <funaho@jurai.org>, linux-m68k@vger.kernel.org
+Subject: [PATCH v5 39/48] m68k: Register with kernel power-off handler
+Date: Thu,  6 Nov 2014 08:43:23 -0800
+Message-Id: <1415292213-28652-40-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.545BA5AA.0305,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.545BA59A.027E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 253
+X-CTCH-SenderID-TotalMessages: 212
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -53,10 +53,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Register with kernel power-off handler instead of setting pm_power_off
 directly.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joshua Thompson <funaho@jurai.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v5:
@@ -68,23 +67,38 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
+- Use defines to specify poweroff handler priorities
 
- arch/x86/platform/ce4100/ce4100.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/m68k/emu/natfeat.c | 3 ++-
+ arch/m68k/mac/config.c  | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index 701fd58..1816bc1 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -164,5 +164,6 @@ void __init x86_ce4100_early_setup(void)
- 	 */
- 	reboot_type = BOOT_KBD;
+diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+index 91e2ae7..38fec50 100644
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -91,5 +91,6 @@ void __init nf_init(void)
+ 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
+ 		version & 0xffff);
  
--	pm_power_off = ce4100_power_off;
-+	register_power_off_handler_simple(ce4100_power_off,
+-	pm_power_off = nf_poweroff;
++	register_power_off_handler_simple(nf_poweroff,
 +					  POWER_OFF_PRIORITY_DEFAULT);
  }
+diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
+index 677913ff..14fd981 100644
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -160,7 +160,8 @@ void __init config_mac(void)
+ 	mach_set_clock_mmss = mac_set_clock_mmss;
+ 	mach_reset = mac_reset;
+ 	mach_halt = mac_poweroff;
+-	pm_power_off = mac_poweroff;
++	register_power_off_handler_simple(mac_poweroff,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 	mach_max_dma_address = 0xffffffff;
+ #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
+ 	mach_beep = mac_mksound;
 -- 
 1.9.1
 
