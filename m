@@ -1,142 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaKFTJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 14:09:53 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33925 "EHLO comal.ext.ti.com"
+	id S1751348AbaKFTPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 14:15:07 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:6803 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955AbaKFTJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 14:09:50 -0500
-Date: Thu, 6 Nov 2014 13:07:44 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-CC: "balbi@ti.com" <balbi@ti.com>, Romain Perier <romain.perier@gmail.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "dkl@rock-chips.com" <dkl@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
-Message-ID: <20141106190744.GA19460@saruman>
-Reply-To: <balbi@ti.com>
-References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
- <CABgxDo+9aZJ8BP3h=3sUUbSBD5R_FQmWF9f8kbzDbZrVG01n1A@mail.gmail.com>
- <20141106174011.GI16896@saruman>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E9C67@US01WEMBX2.internal.synopsys.com>
+	id S1751133AbaKFTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 14:15:03 -0500
+X-IronPort-AV: E=Sophos;i="5.07,327,1413244800"; 
+   d="scan'208";a="190310907"
+Date: Thu, 6 Nov 2014 19:14:51 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Frediano Ziglio <freddy77@gmail.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Frediano Ziglio <frediano.ziglio@huawei.com>,
+        <xen-devel@lists.xenproject.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/arm: Return correct code error for
+ xen_swiotlb_map_page
+In-Reply-To: <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
+References: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com> <alpine.DEB.2.02.1411061730240.22875@kaball.uk.xensource.com> <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
-Content-Disposition: inline
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E9C67@US01WEMBX2.internal.synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/mixed;
+	boundary="1342847746-387728907-1415301291=:22875"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--1342847746-387728907-1415301291=:22875
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Hi,
-
-On Thu, Nov 06, 2014 at 06:35:53PM +0000, Paul Zimmerman wrote:
-> > From: Felipe Balbi [mailto:balbi@ti.com]
-> > Sent: Thursday, November 06, 2014 9:40 AM
-> >=20
-> > On Thu, Nov 06, 2014 at 06:21:42PM +0100, Romain Perier wrote:
-> > >
-> > > 2014-11-06 2:30 GMT+01:00 Kever Yang <kever.yang@rock-chips.com>:
-> > > >
-> > > > +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
-> > > > +{
-> > > > +       struct dwc2_hsotg *hsotg =3D dwc2_hcd_to_hsotg(hcd);
-> > > > +       u32 hprt0;
-> > > > +
-> > > > +       if (!((hsotg->op_state =3D=3D OTG_STATE_B_HOST) ||
-> > > > +               (hsotg->op_state =3D=3D OTG_STATE_A_HOST)))
-> > > > +               return 0;
-> > > > +
-> > > > +       if (hsotg->lx_state !=3D DWC2_L0)
-> > > > +               return 0;
-> > > > +
-> > > > +       hprt0 =3D dwc2_read_hprt0(hsotg);
-> > > > +       if (hprt0 & HPRT0_CONNSTS)
-> > > > +               dwc2_port_suspend(hsotg, 1);
-> > > > +
-> > > > +       return 0;
-> > > > +}
-> > > > +
-> > > > +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
-> > > > +{
-> > > > +       struct dwc2_hsotg *hsotg =3D dwc2_hcd_to_hsotg(hcd);
-> > > > +       u32 hprt0;
-> > > > +
-> > > > +       if (!((hsotg->op_state =3D=3D OTG_STATE_B_HOST) ||
-> > > > +               (hsotg->op_state =3D=3D OTG_STATE_A_HOST)))
-> > > > +               return 0;
-> > > > +
-> > > > +       if (hsotg->lx_state !=3D DWC2_L2)
-> > > > +               return 0;
-> > > > +
-> > > > +       hprt0 =3D dwc2_read_hprt0(hsotg);
-> > > > +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
-> > > > +               dwc2_port_resume(hsotg);
-> > > > +
-> > > > +       return 0;
-> > > > +}
-> > >
-> > > Could you also define these functions under #ifdef CONFIG_PM ?
-> >=20
-> > please don't. I'm actually considering ripping all ifdefs from all these
-> > drivers and also stop using SIMPLE_DEV_PM_OPS or any of its friends.
-> >=20
-> > There's really nobody today would would build a kernel with CONFIG_PM.
+On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> 2014-11-06 17:30 GMT+00:00 Stefano Stabellini <stefano.stabellini@eu.citr=
+ix.com>:
+>       On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+>       > On ARM error code is not 0 so avoid to return it as error.
+>       >
+>       > Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
 >=20
-> I'm sure Felipe meant *without* CONFIG_PM.
+>       Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>=20
+>=20
+>       Could you please fix the same error in lib/swiotlb.c too please?
+>=20
+>=20
+> Same patch or another ?
+>=20
 
-oops, that's correct.
+Another
 
-> Kever, in that case you should remove the #ifdef CONFIG_PM around the
-> .bus_suspend and .bus_resume assignments also, otherwise there will be
-> compiler warnings when built without CONFIG_PM. After that, you can
-> add my acked-by.
-
-tks
-
---=20
-balbi
-
---qDbXVdCdHGoSgWSk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUW8cAAAoJEIaOsuA1yqREJdkP/jKUpxJ8Gwwq19Hzg1G0ciGG
-cBa58F/j6rljSugOEtY5Q0UyrV9tQJ/MsxccHXJx9/sNhDud8FcWLmECLa0kIesd
-DBEmHrisLT1wdl5S0KJZKtyaS1Vo9BzPn115ayNYlWsaBKjig4uTDg9Guys09r31
-b15FeCstP6IEiX+6ueyhRxj/f2HpOb1h2sYHYcWXxYY78lU7hBjmg+lmhPXFlq6+
-g8cJgRm8/5I6Zt5NOtw9ncO872HQdV459Kd2aM9EnpbfMLHZkijh4HkilhAeNMRz
-eTP/aMHo42X/PhKMQLPYhFm25RR59g11BOvsWBQm1n0Nhtc0vJJYkyzmsQZdjYW4
-VspJxMC8nzjfHWaHcj8rh+rMznkdTN/o4/bEKN89NqI7hfoRCa53OQy/d+IPWhwq
-JHHO+yIBBk/iQ8n4GGSsufs7HgS9jXTYrNv0OT5sCsdsyVTutwvM7FQcbxa/tujD
-bSvyip6G9+JvVFm7lxVBIqYAcPOe9xqr+V9OLmIEOWzKEeUkFfJDJ5hRRd9T+96F
-vqGn7m8gr3eRlDjcQ0Pacwjq4V+fEe2lRVo1sSjgQBKBkoFBr1wZblFaO1/13edW
-XA3hwm+kFj7xbkhNXv/K6HF8kMs+xO2v8WdBmYDyEURG/mHpxxZvv2zr4ZtgfueF
-ZYZM+REOnUipsmg6PEvx
-=CB3v
------END PGP SIGNATURE-----
-
---qDbXVdCdHGoSgWSk--
+> =C2=A0
+>       >=C2=A0 drivers/xen/swiotlb-xen.c | 2 +-
+>       >=C2=A0 1 file changed, 1 insertion(+), 1 deletion(-)
+>       >
+>       > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.=
+c
+>       > index ebd8f21..3b8d628 100644
+>       > --- a/drivers/xen/swiotlb-xen.c
+>       > +++ b/drivers/xen/swiotlb-xen.c
+>       > @@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct device=
+ *dev, struct page *page,
+>       >=C2=A0 =C2=A0 =C2=A0 =C2=A0 */
+>       >=C2=A0 =C2=A0 =C2=A0 =C2=A0if (!dma_capable(dev, dev_addr, size)) =
+{
+>       >=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0swiotlb_tbl=
+_unmap_single(dev, map, size, dir);
+>       > -=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0dev_addr =3D 0;
+>       > +=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0dev_addr =3D DMA=
+_ERROR_CODE;
+>       >=C2=A0 =C2=A0 =C2=A0 =C2=A0}
+>       >=C2=A0 =C2=A0 =C2=A0 =C2=A0return dev_addr;
+>       >=C2=A0 }
+>       > --
+>       > 1.9.1
+>       >
+>       >
+>       > --
+>       > To unsubscribe from this list: send the line "unsubscribe linux-k=
+ernel" in
+>       > the body of a message to majordomo@vger.kernel.org
+>       > More majordomo info at=C2=A0 http://vger.kernel.org/majordomo-inf=
+o.html
+>       > Please read the FAQ at=C2=A0http://secure-web.cisco.com/1cvjROyUx=
+V6SnA0uBTMRubqrQWsaXGhps-FWjY3vly9AxaKKlt2DPY7GjL0FCHeP4rsbjKsc-P4zH2_7-kpc=
+xwEH-udGrGCCq
+>       kCLlH1-fLOo1X6Nlui6EwEVHUpB2r7gt-Gsgxbep9QWPnIdypDPNf8Hf5clxCMXYcvW=
+sOK5s3qg/http%3A%2F%2Fwww.tux.org%2Flkml%2F
+>       >
+>=20
+>       _______________________________________________
+>       Xen-devel mailing list
+>       Xen-devel@lists.xen.org
+>       http://lists.xen.org/xen-devel
+>=20
+>=20
+>=20
+>=20
+--1342847746-387728907-1415301291=:22875--
