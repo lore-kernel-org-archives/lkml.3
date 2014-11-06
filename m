@@ -1,175 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaKFRem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:34:42 -0500
-Received: from smtp105.biz.mail.bf1.yahoo.com ([98.139.221.43]:33912 "EHLO
-	smtp105.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752297AbaKFRek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:34:40 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: y4P4q50VM1k3A84SSRVWL.UJ3Il4VI1KVzJ_9WDmnwcEqmJ
- 7GnUZ2nF508.YuLd683UOYtltFh9Nm2zApA6COL90MbwKhSsnbTTz50Nte4w
- jYngyVrFub0oG9whinqjrweUMe3x204C8Sh_Yov63wfgOG441ng__c0akYXy
- DQr.ou9fZX92_s3Td0ULrC.bqxi6odQNN60IPPW1d_2G7G6LSlhncOOZmChE
- KBqJHUlHHl5HSxN_0khI6ujxNAd8Zna.avN5OVlA5mqw_Y86SUHRkCb9Qnzn
- WsQiIlPSSZjbfAnK9SfdajBsvJLH4NUZ2e573uJISOY123LmIZ3aEAFrVL8m
- aI9gnFNvxcFhBHAUGlpUlHpNvNeECvbQJTDjKBT2eqGdSJYtGbGH6iO.qxK.
- 7AO_78RijFtcARwI9.KmMYjPM43nL3yjpLPpBOZxIJ4OmXjC3RMVdgqQjNVK
- bxOv4icjSxDFIthnyxD_QnALwo_nqPUW87lqC.dp_LP1CbAUtcUtouFjYMxz
- seE_ZrJGXjrmyDfmy2q8zcLPO4LS93zW_jA--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <545BB147.4000100@schaufler-ca.com>
-Date: Thu, 06 Nov 2014 09:35:03 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752042AbaKFRfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:35:51 -0500
+Received: from [65.55.169.54] ([65.55.169.54]:41280 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751325AbaKFRfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:35:50 -0500
+Date: Thu, 6 Nov 2014 09:33:54 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
+CC: Michal Simek <michal.simek@xilinx.com>, Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, <stable@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: zynq: Enable PL clocks for Parallella
+References: <1415294531-8942-1-git-send-email-afaerber@suse.de>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>, linux-unionfs@vger.kernel.org,
-        selinux@tycho.nsa.gov
-CC: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 0/7] Security: Provide unioned file support
-References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141105154217.2555.578.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415294531-8942-1-git-send-email-afaerber@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21078.007
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <e78290abdb85497081f502e5886bf045@BL2FFO11FD057.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(24454002)(51704005)(189002)(377424004)(6806004)(64706001)(53416004)(110136001)(107046002)(47776003)(44976005)(21056001)(83506001)(20776003)(92566001)(86362001)(4396001)(54356999)(95666004)(104016003)(50466002)(106466001)(99396003)(85182001)(77096003)(23676002)(87936001)(77156002)(50986999)(102836001)(85202003)(76176999)(108616004)(74316001)(46102003)(120916001)(62966003)(31966008)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB065;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB065;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0387D64A71
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/5/2014 7:42 AM, David Howells wrote:
-> The attached patches provide security support for unioned files where the
-> security involves an object-label-based LSM (such as SELinux) rather than a
-> path-based LSM.
+Hi Andreas,
 
-I am going to have to look at this very carefully for the
-Smack implications. I cannot have a review done for several
-days. I do have some immediate comments below.
+On Thu, 2014-11-06 at 06:22PM +0100, Andreas Färber wrote:
+> The Parallella board comes with a U-Boot bootloader that loads one of
+> two predefined FPGA bitstreams before booting the kernel. Both define an
+> AXI interface to the on-board Epiphany processor.
+> 
+> Enable clocks FCLK0..FCLK3 for the Programmable Logic by default.
+> 
+> Otherwise accessing, e.g., the ESYSRESET register freezes the board,
+> as seen with the Epiphany SDK tools e-reset and e-hw-rev, using /dev/mem.
 
->
-> There are two problems that need addressing:
->
->  (1) The files that the user accesses through the overlayfs filesystem don't
->      really exist there.  Overlayfs passes the accesses directly through to
->      the underlying upper or lower file by means of having the dentry_open
->      inode op redirect where file->f_path and file->f_inode point.
->
->      This means that SELinux (or similar) will see the security label on one
->      lower layer or the other - and not the label on the overlay.  There are
->      three labels and all may be different.
->
->  (2) file->f_path *should* point at the overlay dentry and file->f_inode
->      should point at the lower layer inode.
->
-> I'm not addressing (2) in this series of patches, but will leave that to a
-> separate patch series.
->
->   
-> After some discussion with docker people, the agreed theory of operation will
-> be:
->
->  (1) The docker source (ie. the lower layer) will all be under a single label.
+Yeah, this is the problem. Bypassing the kernel banging on memory
+directly through /dev/mem does not leave any chance of enabling clocks on
+demand through the proper interfaces.
 
-What does this mean? Is the "lower layer" the "real" file, or something else?
-What is a "docker source"? What "single label" are you talking about, and
-where does it come from? What about LSMs that have multiple labels on a file?
+Though, this is a valid workaround for the immediate problem, longer
+term, you should consider adding some kind of proper kernel driver for
+this interface that would then use the clock framework to control the
+required clocks dynamically.
 
-
->  (2) The docker root (ie. the overlay/union layer) will all be under a single,
->      but different label set on the overlay mount (and each docker root may be
->      under its own label).
-
-No. Sorry, but this is the one notion that doesn't work. A layer should
-either be label transparent or restricted by some sort of range concept.
-Giving it a label just makes it necessary to grant everyone access to objects
-with that label.
-
->
->  (3) Inodes in the overlayfs upper layer will be given the overlay label.
-
-Could you explain your terminology? I have no idea what the "overlay label"
-might be. Is it the real one on the real filesystem? What about attributes
-other than the access label? Smack has execution labels and a transmute
-attribute as well as the access label.
-
-
->
->  (4) A security_copy_up() operation will be provided to set the label on the
->      upper inode when it is created.
->
->  (5) A security_copy_up_xattr() operation will be provided to vet (and maybe
->      modify) each xattr as it is copied up.
->
->  (6) An extra label slot will be placed in struct file_security_struct to hold
->      the overlay label.
-
-Are you assuming a single overlay layer? 
-
-
->
->  (7) security_file_open() will need to be given both the overlay and lower
->      dentries.
->
->      For overlayfs, the way this probably should be done is file->f_path should
->      be set to point to the overlay dentry (thus getting /proc right) and
->      file->f_inode to the lower file and make use of d_fallthru in the overlay
->      dentry in common with unionmount.
->
->  (8) When the lower file is accessed, both the lower and overlay labels should
->      be checked and audited.
->
->  (9) When the upper file is accessed, only the overlay label needs to be
->      checked and audited.
->
-> I need someone to examine the SELinux bits and have a look to see whether I
-> need to make further checks.
-
-The Smack code, too.
-
-Oh, and I have been lead to believe that upcoming AppArmor enhancements
-could be affected as well.
-
->
->
-> The patches can be found here also:
->
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=overlayfs
->
-> This is based on part of Al Viro's vfs/for-next branch.
->
-> David
-> ---
-> David Howells (7):
->       Security: Provide copy-up security hooks for unioned files
->       Overlayfs: Use copy-up security hooks
->       SELinux: Stub in copy-up handling
->       Security: Pass the union-layer file path into security_file_open()
->       SELinux: Handle opening of a unioned file
->       SELinux: The copy-up operation must have read permission on the lower file
->       SELinux: Check against union and lower labels for file ops on lower files
->
->
->  fs/ceph/file.c                    |    3 +
->  fs/ceph/super.h                   |    1 
->  fs/cifs/cifsfs.h                  |    1 
->  fs/cifs/dir.c                     |    3 +
->  fs/namei.c                        |   11 +++--
->  fs/nfs/dir.c                      |    6 ++
->  fs/nfs/nfs4_fs.h                  |    2 -
->  fs/open.c                         |   31 ++++++++-----
->  fs/overlayfs/copy_up.c            |   12 +++++
->  fs/overlayfs/inode.c              |    8 ++-
->  include/linux/fs.h                |   16 +++++--
->  include/linux/security.h          |   43 +++++++++++++++++-
->  security/capability.c             |   17 +++++++
->  security/security.c               |   19 +++++++-
->  security/selinux/hooks.c          |   89 +++++++++++++++++++++++++++++++++++--
->  security/selinux/include/objsec.h |    1 
->  16 files changed, 228 insertions(+), 35 deletions(-)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+	Sören
