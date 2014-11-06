@@ -1,71 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218AbaKFWQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:16:18 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47672 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaKFWQP (ORCPT
+	id S1751292AbaKFWUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:20:40 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55350 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaKFWUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:16:15 -0500
-Date: Thu, 6 Nov 2014 22:16:08 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jon Maloy <jon.maloy@ericsson.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bcrl@kvack.org" <bcrl@kvack.org>,
-        Masahide Nakamura <nakam@linux-ipv6.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
-Message-ID: <20141106221608.GA7996@ZenIV.linux.org.uk>
-References: <20141105035536.GO7996@ZenIV.linux.org.uk>
- <20141105.155054.2198151263164321219.davem@davemloft.net>
- <20141105210745.GT7996@ZenIV.linux.org.uk>
- <20141105.165719.835728206041332333.davem@davemloft.net>
- <20141106032533.GU7996@ZenIV.linux.org.uk>
- <20141106055023.GA28865@gondor.apana.org.au>
- <20141106064318.GW7996@ZenIV.linux.org.uk>
- <20141106064629.GA29321@gondor.apana.org.au>
- <20141106071109.GX7996@ZenIV.linux.org.uk>
- <A2BAEFC30C8FD34388F02C9B3121859D1C3087CA@eusaamb103.ericsson.se>
+	Thu, 6 Nov 2014 17:20:36 -0500
+Date: Thu, 6 Nov 2014 14:20:31 -0800
+From: josh@joshtriplett.org
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Aristeu Rozanski <arozansk@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fabian Frederick <fabf@skynet.be>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>, Thomas Graf <tgraf@suug.ch>,
+        Ying Xue <ying.xue@windriver.com>
+Subject: Re: [PATCH] lib/rhashtable: make build optional
+Message-ID: <20141106222031.GA7424@cloud>
+References: <1415309263-13063-1-git-send-email-aris@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A2BAEFC30C8FD34388F02C9B3121859D1C3087CA@eusaamb103.ericsson.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415309263-13063-1-git-send-email-aris@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 09:55:31AM +0000, Jon Maloy wrote:
-> > Point, but that might very well be a pattern to watch for - there's at least one
-> > more instance in TIPC (also not exploitable, according to TIPC folks) and such
+On Thu, Nov 06, 2014 at 04:27:43PM -0500, Aristeu Rozanski wrote:
+> From: Aristeu Rozanski <arozansk@redhat.com>
 > 
-> I don't recall this, and I can't see where it would be either. Can you please
-> point to where it is?
+> rhashtable currently is built unconditionally:
+> 	text    data     bss     dec     hex filename
+> 	9158    2008    5264   16430    402e lib/rhashtable.o
+> 	9158    2008    5264   16430    402e (TOTALS)
+> 
+> and it's used by netlink (which currently can't be optionally built if
+> CONFIG_NET is enabled) and netfilter_hash. This patch is useful for
+> situations in which memory footprint is a concern and networking is not
+> enabled.
+> 
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Fabian Frederick <fabf@skynet.be>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> Cc: Thomas Graf <tgraf@suug.ch>
+> Cc: Ying Xue <ying.xue@windriver.com>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
 
-The same dest_name_check() thing.  This
-        if (copy_from_user(&hdr, m->msg_iov[0].iov_base, sizeof(hdr)))
-                return -EFAULT;
-        if ((ntohs(hdr.tcm_type) & 0xC000) && (!capable(CAP_NET_ADMIN)))
-                return -EACCES;
-is easily bypassed.  Suppose you want to send a packet with these two
-bits in ->tcm_type not being 00, and you don't have CAP_NET_ADMIN.
-Not a problem - spawn two threads sharing memory, have one trying to
-call sendmsg() while another keeps flipping these two bits.  Sooner
-of later you'll get the timing right and have these bits observed as 00
-in dest_name_check() and 11 when it comes to memcpy_fromiovecend() actually
-copying the whole thing.  And considering that the interval between those
-two is much longer than the loop in the second thread would take on
-each iteration, I'd expect the odds around 25% per attempted sendmsg().
+I already have a patch for this in the tiny tree (tiny/no-rhashtable),
+using a non-user-visible Kconfig symbol.
 
-IOW, this test is either pointless and can be removed completely, or there's
-an exploitable race.  As far as I understand from your replies both back then
-and in another branch of this thread, it's the former and the proper fix is
-to remove at least that part of dest_name_check().  So this case is also
-not something exploitable, but it certainly matches the same pattern.
+Sorry that you ran into some projects that have already been completed.
+I'll try to keep the tinification projects list more up to date; I've
+been getting patches *very* rapidly, and just about the entire "small"
+project list is either done or in progress.
 
-My point was simply that this pattern is worth watching for - recurrent bug
-classes like that have a good chance to spawn an instance that will be
-exploitable.
+- Josh Triplett
+
+>  lib/Kconfig  | 6 ++++++
+>  lib/Makefile | 4 +++-
+>  net/Kconfig  | 1 +
+>  3 files changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/lib/Kconfig b/lib/Kconfig
+> index 108196c..d6b8879 100644
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -369,6 +369,12 @@ config ASSOCIATIVE_ARRAY
+>  
+>  	  for more information.
+>  
+> +config RHASH_TABLE
+> +	bool "Resizable hash table"
+> +	default y
+> +	help
+> +	  Resizable, scalable and concurrent hash table implementation.
+> +
+>  config HAS_IOMEM
+>  	boolean
+>  	depends on !NO_IOMEM
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 53fd120..43d29ff 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -26,7 +26,7 @@ obj-y += bcd.o div64.o sort.o parser.o debug_locks.o random32.o \
+>  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+>  	 gcd.o lcm.o list_sort.o uuid.o iovec.o clz_ctz.o \
+>  	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
+> -	 percpu-refcount.o percpu_ida.o hash.o rhashtable.o
+> +	 percpu-refcount.o percpu_ida.o hash.o
+>  obj-y += string_helpers.o
+>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+>  obj-y += kstrtox.o
+> @@ -155,6 +155,8 @@ obj-$(CONFIG_GENERIC_NET_UTILS) += net_utils.o
+>  
+>  obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
+>  
+> +obj-$(CONFIG_RHASH_TABLE) += rhashtable.o
+> +
+>  libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o \
+>  	       fdt_empty_tree.o
+>  $(foreach file, $(libfdt_files), \
+> diff --git a/net/Kconfig b/net/Kconfig
+> index 99815b5..d376630 100644
+> --- a/net/Kconfig
+> +++ b/net/Kconfig
+> @@ -7,6 +7,7 @@ menuconfig NET
+>  	select NLATTR
+>  	select GENERIC_NET_UTILS
+>  	select BPF
+> +	select RHASH_TABLE
+>  	---help---
+>  	  Unless you really know what you are doing, you should say Y here.
+>  	  The reason is that some programs need kernel networking support even
+> -- 
+> 1.8.3.1
+> 
