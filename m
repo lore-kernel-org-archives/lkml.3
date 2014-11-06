@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaKFVFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:05:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43059 "EHLO mail.kernel.org"
+	id S1751661AbaKFVFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:05:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43100 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbaKFVFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:05:01 -0500
+	id S1751623AbaKFVFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:05:09 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/18] perf tools: Enhance the thread stack to output call/return data
-Date: Thu,  6 Nov 2014 18:04:23 -0300
-Message-Id: <1415307879-912-3-git-send-email-acme@kernel.org>
+Subject: [PATCH 04/18] perf tools: Add branch_type and in_tx to Python export
+Date: Thu,  6 Nov 2014 18:04:25 -0300
+Message-Id: <1415307879-912-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415307879-912-1-git-send-email-acme@kernel.org>
 References: <1415307879-912-1-git-send-email-acme@kernel.org>
@@ -27,32 +27,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Enhance the thread stack to output detailed information about paired
-calls and returns.
-
-The enhanced processing consumes sample information via
-thread_stack__process() and outputs information about paired calls /
-returns via a call-back.
-
-While the call-back makes it possible for the facility to be used by
-arbitrary tools, a subsequent patch will provide the information to
-Python scripting via the db-export interface.
-
-An important part of the call/return information is the
-call path which provides a structure that defines a context
-sensitive call graph.
-
-Note that there are now two ways to use the thread stack.
-
-For simply providing a call stack (like you would get from the perf
-record -g option) the interface consists of thread_stack__event() and
-thread_stack__sample().
-
-Whereas the enhanced interface consists of call_return_processor__new()
-and thread_stack__process().
+Add branch_type and in_tx to Python db export and the
+export-to-postgresql.py script.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
@@ -60,777 +38,187 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1414678188-14946-5-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1414678188-14946-4-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/thread-stack.c | 585 ++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/thread-stack.h |  79 ++++++
- 2 files changed, 659 insertions(+), 5 deletions(-)
+ tools/perf/scripts/python/export-to-postgresql.py  | 32 ++++++++++++++++++----
+ .../util/scripting-engines/trace-event-python.c    | 30 +++++++++++++++++++-
+ 2 files changed, 55 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
-index 85b60d2e738f..9ed59a452d1f 100644
---- a/tools/perf/util/thread-stack.c
-+++ b/tools/perf/util/thread-stack.c
-@@ -13,23 +13,96 @@
-  *
-  */
+diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
+index d8f6df0093d6..bb79aecccf58 100644
+--- a/tools/perf/scripts/python/export-to-postgresql.py
++++ b/tools/perf/scripts/python/export-to-postgresql.py
+@@ -123,6 +123,10 @@ do_query(query, 'CREATE TABLE symbols ('
+ 		'sym_end	bigint,'
+ 		'binding	integer,'
+ 		'name		varchar(2048))')
++do_query(query, 'CREATE TABLE branch_types ('
++		'id		integer		NOT NULL,'
++		'name		varchar(80))')
++
+ if branches:
+ 	do_query(query, 'CREATE TABLE samples ('
+ 		'id		bigint		NOT NULL,'
+@@ -139,7 +143,9 @@ if branches:
+ 		'to_dso_id	bigint,'
+ 		'to_symbol_id	bigint,'
+ 		'to_sym_offset	bigint,'
+-		'to_ip		bigint)')
++		'to_ip		bigint,'
++		'branch_type	integer,'
++		'in_tx		boolean)')
+ else:
+ 	do_query(query, 'CREATE TABLE samples ('
+ 		'id		bigint		NOT NULL,'
+@@ -160,7 +166,9 @@ else:
+ 		'period		bigint,'
+ 		'weight		bigint,'
+ 		'transaction	bigint,'
+-		'data_src	bigint)')
++		'data_src	bigint,'
++		'branch_type	integer,'
++		'in_tx		boolean)')
  
-+#include <linux/rbtree.h>
-+#include <linux/list.h>
- #include "thread.h"
- #include "event.h"
-+#include "machine.h"
- #include "util.h"
- #include "debug.h"
-+#include "symbol.h"
-+#include "comm.h"
- #include "thread-stack.h"
+ do_query(query, 'CREATE VIEW samples_view AS '
+ 	'SELECT '
+@@ -178,7 +186,9 @@ do_query(query, 'CREATE VIEW samples_view AS '
+ 		'to_hex(to_ip) AS to_ip_hex,'
+ 		'(SELECT name FROM symbols WHERE id = to_symbol_id) AS to_symbol,'
+ 		'to_sym_offset,'
+-		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name'
++		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name,'
++		'(SELECT name FROM branch_types WHERE id = branch_type) AS branch_type_name,'
++		'in_tx'
+ 	' FROM samples')
  
--#define STACK_GROWTH 4096
-+#define CALL_PATH_BLOCK_SHIFT 8
-+#define CALL_PATH_BLOCK_SIZE (1 << CALL_PATH_BLOCK_SHIFT)
-+#define CALL_PATH_BLOCK_MASK (CALL_PATH_BLOCK_SIZE - 1)
  
-+struct call_path_block {
-+	struct call_path cp[CALL_PATH_BLOCK_SIZE];
-+	struct list_head node;
-+};
+@@ -234,6 +244,7 @@ comm_file		= open_output_file("comm_table.bin")
+ comm_thread_file	= open_output_file("comm_thread_table.bin")
+ dso_file		= open_output_file("dso_table.bin")
+ symbol_file		= open_output_file("symbol_table.bin")
++branch_type_file	= open_output_file("branch_type_table.bin")
+ sample_file		= open_output_file("sample_table.bin")
+ 
+ def trace_begin():
+@@ -257,6 +268,7 @@ def trace_end():
+ 	copy_output_file(comm_thread_file,	"comm_threads")
+ 	copy_output_file(dso_file,		"dsos")
+ 	copy_output_file(symbol_file,		"symbols")
++	copy_output_file(branch_type_file,	"branch_types")
+ 	copy_output_file(sample_file,		"samples")
+ 
+ 	print datetime.datetime.today(), "Removing intermediate files..."
+@@ -267,6 +279,7 @@ def trace_end():
+ 	remove_output_file(comm_thread_file)
+ 	remove_output_file(dso_file)
+ 	remove_output_file(symbol_file)
++	remove_output_file(branch_type_file)
+ 	remove_output_file(sample_file)
+ 	os.rmdir(output_dir_name)
+ 	print datetime.datetime.today(), "Adding primary keys"
+@@ -277,6 +290,7 @@ def trace_end():
+ 	do_query(query, 'ALTER TABLE comm_threads    ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE dsos            ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
++	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
+ 
+ 	print datetime.datetime.today(), "Adding foreign keys"
+@@ -352,9 +366,15 @@ def symbol_table(symbol_id, dso_id, sym_start, sym_end, binding, symbol_name, *x
+ 	value = struct.pack(fmt, 6, 8, symbol_id, 8, dso_id, 8, sym_start, 8, sym_end, 4, binding, n, symbol_name)
+ 	symbol_file.write(value)
+ 
+-def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, *x):
++def branch_type_table(branch_type, name, *x):
++	n = len(name)
++	fmt = "!hiii" + str(n) + "s"
++	value = struct.pack(fmt, 2, 4, branch_type, n, name)
++	branch_type_file.write(value)
 +
-+/**
-+ * struct call_path_root - root of all call paths.
-+ * @call_path: root call path
-+ * @blocks: list of blocks to store call paths
-+ * @next: next free space
-+ * @sz: number of spaces
-+ */
-+struct call_path_root {
-+	struct call_path call_path;
-+	struct list_head blocks;
-+	size_t next;
-+	size_t sz;
-+};
-+
-+/**
-+ * struct call_return_processor - provides a call-back to consume call-return
-+ *                                information.
-+ * @cpr: call path root
-+ * @process: call-back that accepts call/return information
-+ * @data: anonymous data for call-back
-+ */
-+struct call_return_processor {
-+	struct call_path_root *cpr;
-+	int (*process)(struct call_return *cr, void *data);
-+	void *data;
-+};
-+
-+#define STACK_GROWTH 2048
-+
-+/**
-+ * struct thread_stack_entry - thread stack entry.
-+ * @ret_addr: return address
-+ * @timestamp: timestamp (if known)
-+ * @ref: external reference (e.g. db_id of sample)
-+ * @branch_count: the branch count when the entry was created
-+ * @cp: call path
-+ * @no_call: a 'call' was not seen
-+ */
- struct thread_stack_entry {
- 	u64 ret_addr;
-+	u64 timestamp;
-+	u64 ref;
-+	u64 branch_count;
-+	struct call_path *cp;
-+	bool no_call;
++def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, branch_type, in_tx, *x):
+ 	if branches:
+-		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiq", 15, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip)
++		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiiiB", 17, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 4, branch_type, 1, in_tx)
+ 	else:
+-		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiq", 19, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src)
++		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
+ 	sample_file.write(value)
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 2fd7ee8f18c7..f3ca7798b3d0 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -66,6 +66,7 @@ struct tables {
+ 	PyObject		*comm_thread_handler;
+ 	PyObject		*dso_handler;
+ 	PyObject		*symbol_handler;
++	PyObject		*branch_type_handler;
+ 	PyObject		*sample_handler;
+ 	bool			db_export_mode;
  };
- 
-+/**
-+ * struct thread_stack - thread stack constructed from 'call' and 'return'
-+ *                       branch samples.
-+ * @stack: array that holds the stack
-+ * @cnt: number of entries in the stack
-+ * @sz: current maximum stack size
-+ * @trace_nr: current trace number
-+ * @branch_count: running branch count
-+ * @kernel_start: kernel start address
-+ * @last_time: last timestamp
-+ * @crp: call/return processor
-+ * @comm: current comm
-+ */
- struct thread_stack {
- 	struct thread_stack_entry *stack;
- 	size_t cnt;
- 	size_t sz;
- 	u64 trace_nr;
-+	u64 branch_count;
-+	u64 kernel_start;
-+	u64 last_time;
-+	struct call_return_processor *crp;
-+	struct comm *comm;
- };
- 
- static int thread_stack__grow(struct thread_stack *ts)
-@@ -50,7 +123,8 @@ static int thread_stack__grow(struct thread_stack *ts)
+@@ -664,13 +665,31 @@ static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
  	return 0;
  }
  
--static struct thread_stack *thread_stack__new(void)
-+static struct thread_stack *thread_stack__new(struct thread *thread,
-+					      struct call_return_processor *crp)
- {
- 	struct thread_stack *ts;
- 
-@@ -63,6 +137,12 @@ static struct thread_stack *thread_stack__new(void)
- 		return NULL;
- 	}
- 
-+	if (thread->mg && thread->mg->machine)
-+		ts->kernel_start = machine__kernel_start(thread->mg->machine);
-+	else
-+		ts->kernel_start = 1ULL << 63;
-+	ts->crp = crp;
-+
- 	return ts;
- }
- 
-@@ -104,6 +184,64 @@ static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
- 	}
- }
- 
-+static bool thread_stack__in_kernel(struct thread_stack *ts)
++static int python_export_branch_type(struct db_export *dbe, u32 branch_type,
++				     const char *name)
 +{
-+	if (!ts->cnt)
-+		return false;
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
 +
-+	return ts->stack[ts->cnt - 1].cp->in_kernel;
-+}
++	t = tuple_new(2);
 +
-+static int thread_stack__call_return(struct thread *thread,
-+				     struct thread_stack *ts, size_t idx,
-+				     u64 timestamp, u64 ref, bool no_return)
-+{
-+	struct call_return_processor *crp = ts->crp;
-+	struct thread_stack_entry *tse;
-+	struct call_return cr = {
-+		.thread = thread,
-+		.comm = ts->comm,
-+		.db_id = 0,
-+	};
++	tuple_set_s32(t, 0, branch_type);
++	tuple_set_string(t, 1, name);
 +
-+	tse = &ts->stack[idx];
-+	cr.cp = tse->cp;
-+	cr.call_time = tse->timestamp;
-+	cr.return_time = timestamp;
-+	cr.branch_count = ts->branch_count - tse->branch_count;
-+	cr.call_ref = tse->ref;
-+	cr.return_ref = ref;
-+	if (tse->no_call)
-+		cr.flags |= CALL_RETURN_NO_CALL;
-+	if (no_return)
-+		cr.flags |= CALL_RETURN_NO_RETURN;
++	call_object(tables->branch_type_handler, t, "branch_type_table");
 +
-+	return crp->process(&cr, crp->data);
-+}
-+
-+static int thread_stack__flush(struct thread *thread, struct thread_stack *ts)
-+{
-+	struct call_return_processor *crp = ts->crp;
-+	int err;
-+
-+	if (!crp) {
-+		ts->cnt = 0;
-+		return 0;
-+	}
-+
-+	while (ts->cnt) {
-+		err = thread_stack__call_return(thread, ts, --ts->cnt,
-+						ts->last_time, 0, true);
-+		if (err) {
-+			pr_err("Error flushing thread stack!\n");
-+			ts->cnt = 0;
-+			return err;
-+		}
-+	}
++	Py_DECREF(t);
 +
 +	return 0;
 +}
 +
- int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
- 			u64 to_ip, u16 insn_len, u64 trace_nr)
+ static int python_export_sample(struct db_export *dbe,
+ 				struct export_sample *es)
  {
-@@ -111,7 +249,7 @@ int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
- 		return -EINVAL;
+ 	struct tables *tables = container_of(dbe, struct tables, dbe);
+ 	PyObject *t;
  
- 	if (!thread->ts) {
--		thread->ts = thread_stack__new();
-+		thread->ts = thread_stack__new(thread, NULL);
- 		if (!thread->ts) {
- 			pr_warning("Out of memory: no thread stack\n");
- 			return -ENOMEM;
-@@ -122,13 +260,18 @@ int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
- 	/*
- 	 * When the trace is discontinuous, the trace_nr changes.  In that case
- 	 * the stack might be completely invalid.  Better to report nothing than
--	 * to report something misleading, so reset the stack count to zero.
-+	 * to report something misleading, so flush the stack.
- 	 */
- 	if (trace_nr != thread->ts->trace_nr) {
-+		if (thread->ts->trace_nr)
-+			thread_stack__flush(thread, thread->ts);
- 		thread->ts->trace_nr = trace_nr;
--		thread->ts->cnt = 0;
- 	}
+-	t = tuple_new(19);
++	t = tuple_new(21);
  
-+	/* Stop here if thread_stack__process() is in use */
-+	if (thread->ts->crp)
-+		return 0;
-+
- 	if (flags & PERF_IP_FLAG_CALL) {
- 		u64 ret_addr;
+ 	tuple_set_u64(t, 0, es->db_id);
+ 	tuple_set_u64(t, 1, es->evsel->db_id);
+@@ -691,6 +710,8 @@ static int python_export_sample(struct db_export *dbe,
+ 	tuple_set_u64(t, 16, es->sample->weight);
+ 	tuple_set_u64(t, 17, es->sample->transaction);
+ 	tuple_set_u64(t, 18, es->sample->data_src);
++	tuple_set_s32(t, 19, es->sample->flags & PERF_BRANCH_MASK);
++	tuple_set_s32(t, 20, !!(es->sample->flags & PERF_IP_FLAG_IN_TX));
  
-@@ -147,9 +290,22 @@ int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
- 	return 0;
+ 	call_object(tables->sample_handler, t, "sample_table");
+ 
+@@ -861,6 +882,7 @@ static void set_table_handlers(struct tables *tables)
+ 	SET_TABLE_HANDLER(comm_thread);
+ 	SET_TABLE_HANDLER(dso);
+ 	SET_TABLE_HANDLER(symbol);
++	SET_TABLE_HANDLER(branch_type);
+ 	SET_TABLE_HANDLER(sample);
  }
  
-+void thread_stack__set_trace_nr(struct thread *thread, u64 trace_nr)
-+{
-+	if (!thread || !thread->ts)
-+		return;
-+
-+	if (trace_nr != thread->ts->trace_nr) {
-+		if (thread->ts->trace_nr)
-+			thread_stack__flush(thread, thread->ts);
-+		thread->ts->trace_nr = trace_nr;
-+	}
-+}
-+
- void thread_stack__free(struct thread *thread)
- {
- 	if (thread->ts) {
-+		thread_stack__flush(thread, thread->ts);
- 		zfree(&thread->ts->stack);
- 		zfree(&thread->ts);
- 	}
-@@ -170,3 +326,422 @@ void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
- 	for (i = 1; i < chain->nr; i++)
- 		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
- }
-+
-+static void call_path__init(struct call_path *cp, struct call_path *parent,
-+			    struct symbol *sym, u64 ip, bool in_kernel)
-+{
-+	cp->parent = parent;
-+	cp->sym = sym;
-+	cp->ip = sym ? 0 : ip;
-+	cp->db_id = 0;
-+	cp->in_kernel = in_kernel;
-+	RB_CLEAR_NODE(&cp->rb_node);
-+	cp->children = RB_ROOT;
-+}
-+
-+static struct call_path_root *call_path_root__new(void)
-+{
-+	struct call_path_root *cpr;
-+
-+	cpr = zalloc(sizeof(struct call_path_root));
-+	if (!cpr)
-+		return NULL;
-+	call_path__init(&cpr->call_path, NULL, NULL, 0, false);
-+	INIT_LIST_HEAD(&cpr->blocks);
-+	return cpr;
-+}
-+
-+static void call_path_root__free(struct call_path_root *cpr)
-+{
-+	struct call_path_block *pos, *n;
-+
-+	list_for_each_entry_safe(pos, n, &cpr->blocks, node) {
-+		list_del(&pos->node);
-+		free(pos);
-+	}
-+	free(cpr);
-+}
-+
-+static struct call_path *call_path__new(struct call_path_root *cpr,
-+					struct call_path *parent,
-+					struct symbol *sym, u64 ip,
-+					bool in_kernel)
-+{
-+	struct call_path_block *cpb;
-+	struct call_path *cp;
-+	size_t n;
-+
-+	if (cpr->next < cpr->sz) {
-+		cpb = list_last_entry(&cpr->blocks, struct call_path_block,
-+				      node);
-+	} else {
-+		cpb = zalloc(sizeof(struct call_path_block));
-+		if (!cpb)
-+			return NULL;
-+		list_add_tail(&cpb->node, &cpr->blocks);
-+		cpr->sz += CALL_PATH_BLOCK_SIZE;
-+	}
-+
-+	n = cpr->next++ & CALL_PATH_BLOCK_MASK;
-+	cp = &cpb->cp[n];
-+
-+	call_path__init(cp, parent, sym, ip, in_kernel);
-+
-+	return cp;
-+}
-+
-+static struct call_path *call_path__findnew(struct call_path_root *cpr,
-+					    struct call_path *parent,
-+					    struct symbol *sym, u64 ip, u64 ks)
-+{
-+	struct rb_node **p;
-+	struct rb_node *node_parent = NULL;
-+	struct call_path *cp;
-+	bool in_kernel = ip >= ks;
-+
-+	if (sym)
-+		ip = 0;
-+
-+	if (!parent)
-+		return call_path__new(cpr, parent, sym, ip, in_kernel);
-+
-+	p = &parent->children.rb_node;
-+	while (*p != NULL) {
-+		node_parent = *p;
-+		cp = rb_entry(node_parent, struct call_path, rb_node);
-+
-+		if (cp->sym == sym && cp->ip == ip)
-+			return cp;
-+
-+		if (sym < cp->sym || (sym == cp->sym && ip < cp->ip))
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	cp = call_path__new(cpr, parent, sym, ip, in_kernel);
-+	if (!cp)
-+		return NULL;
-+
-+	rb_link_node(&cp->rb_node, node_parent, p);
-+	rb_insert_color(&cp->rb_node, &parent->children);
-+
-+	return cp;
-+}
-+
-+struct call_return_processor *
-+call_return_processor__new(int (*process)(struct call_return *cr, void *data),
-+			   void *data)
-+{
-+	struct call_return_processor *crp;
-+
-+	crp = zalloc(sizeof(struct call_return_processor));
-+	if (!crp)
-+		return NULL;
-+	crp->cpr = call_path_root__new();
-+	if (!crp->cpr)
-+		goto out_free;
-+	crp->process = process;
-+	crp->data = data;
-+	return crp;
-+
-+out_free:
-+	free(crp);
-+	return NULL;
-+}
-+
-+void call_return_processor__free(struct call_return_processor *crp)
-+{
-+	if (crp) {
-+		call_path_root__free(crp->cpr);
-+		free(crp);
-+	}
-+}
-+
-+static int thread_stack__push_cp(struct thread_stack *ts, u64 ret_addr,
-+				 u64 timestamp, u64 ref, struct call_path *cp,
-+				 bool no_call)
-+{
-+	struct thread_stack_entry *tse;
-+	int err;
-+
-+	if (ts->cnt == ts->sz) {
-+		err = thread_stack__grow(ts);
-+		if (err)
-+			return err;
-+	}
-+
-+	tse = &ts->stack[ts->cnt++];
-+	tse->ret_addr = ret_addr;
-+	tse->timestamp = timestamp;
-+	tse->ref = ref;
-+	tse->branch_count = ts->branch_count;
-+	tse->cp = cp;
-+	tse->no_call = no_call;
-+
-+	return 0;
-+}
-+
-+static int thread_stack__pop_cp(struct thread *thread, struct thread_stack *ts,
-+				u64 ret_addr, u64 timestamp, u64 ref,
-+				struct symbol *sym)
-+{
-+	int err;
-+
-+	if (!ts->cnt)
-+		return 1;
-+
-+	if (ts->cnt == 1) {
-+		struct thread_stack_entry *tse = &ts->stack[0];
-+
-+		if (tse->cp->sym == sym)
-+			return thread_stack__call_return(thread, ts, --ts->cnt,
-+							 timestamp, ref, false);
-+	}
-+
-+	if (ts->stack[ts->cnt - 1].ret_addr == ret_addr) {
-+		return thread_stack__call_return(thread, ts, --ts->cnt,
-+						 timestamp, ref, false);
-+	} else {
-+		size_t i = ts->cnt - 1;
-+
-+		while (i--) {
-+			if (ts->stack[i].ret_addr != ret_addr)
-+				continue;
-+			i += 1;
-+			while (ts->cnt > i) {
-+				err = thread_stack__call_return(thread, ts,
-+								--ts->cnt,
-+								timestamp, ref,
-+								true);
-+				if (err)
-+					return err;
-+			}
-+			return thread_stack__call_return(thread, ts, --ts->cnt,
-+							 timestamp, ref, false);
-+		}
-+	}
-+
-+	return 1;
-+}
-+
-+static int thread_stack__bottom(struct thread *thread, struct thread_stack *ts,
-+				struct perf_sample *sample,
-+				struct addr_location *from_al,
-+				struct addr_location *to_al, u64 ref)
-+{
-+	struct call_path_root *cpr = ts->crp->cpr;
-+	struct call_path *cp;
-+	struct symbol *sym;
-+	u64 ip;
-+
-+	if (sample->ip) {
-+		ip = sample->ip;
-+		sym = from_al->sym;
-+	} else if (sample->addr) {
-+		ip = sample->addr;
-+		sym = to_al->sym;
-+	} else {
-+		return 0;
-+	}
-+
-+	cp = call_path__findnew(cpr, &cpr->call_path, sym, ip,
-+				ts->kernel_start);
-+	if (!cp)
-+		return -ENOMEM;
-+
-+	return thread_stack__push_cp(thread->ts, ip, sample->time, ref, cp,
-+				     true);
-+}
-+
-+static int thread_stack__no_call_return(struct thread *thread,
-+					struct thread_stack *ts,
-+					struct perf_sample *sample,
-+					struct addr_location *from_al,
-+					struct addr_location *to_al, u64 ref)
-+{
-+	struct call_path_root *cpr = ts->crp->cpr;
-+	struct call_path *cp, *parent;
-+	u64 ks = ts->kernel_start;
-+	int err;
-+
-+	if (sample->ip >= ks && sample->addr < ks) {
-+		/* Return to userspace, so pop all kernel addresses */
-+		while (thread_stack__in_kernel(ts)) {
-+			err = thread_stack__call_return(thread, ts, --ts->cnt,
-+							sample->time, ref,
-+							true);
-+			if (err)
-+				return err;
-+		}
-+
-+		/* If the stack is empty, push the userspace address */
-+		if (!ts->cnt) {
-+			cp = call_path__findnew(cpr, &cpr->call_path,
-+						to_al->sym, sample->addr,
-+						ts->kernel_start);
-+			if (!cp)
-+				return -ENOMEM;
-+			return thread_stack__push_cp(ts, 0, sample->time, ref,
-+						     cp, true);
-+		}
-+	} else if (thread_stack__in_kernel(ts) && sample->ip < ks) {
-+		/* Return to userspace, so pop all kernel addresses */
-+		while (thread_stack__in_kernel(ts)) {
-+			err = thread_stack__call_return(thread, ts, --ts->cnt,
-+							sample->time, ref,
-+							true);
-+			if (err)
-+				return err;
-+		}
-+	}
-+
-+	if (ts->cnt)
-+		parent = ts->stack[ts->cnt - 1].cp;
-+	else
-+		parent = &cpr->call_path;
-+
-+	/* This 'return' had no 'call', so push and pop top of stack */
-+	cp = call_path__findnew(cpr, parent, from_al->sym, sample->ip,
-+				ts->kernel_start);
-+	if (!cp)
-+		return -ENOMEM;
-+
-+	err = thread_stack__push_cp(ts, sample->addr, sample->time, ref, cp,
-+				    true);
-+	if (err)
-+		return err;
-+
-+	return thread_stack__pop_cp(thread, ts, sample->addr, sample->time, ref,
-+				    to_al->sym);
-+}
-+
-+static int thread_stack__trace_begin(struct thread *thread,
-+				     struct thread_stack *ts, u64 timestamp,
-+				     u64 ref)
-+{
-+	struct thread_stack_entry *tse;
-+	int err;
-+
-+	if (!ts->cnt)
-+		return 0;
-+
-+	/* Pop trace end */
-+	tse = &ts->stack[ts->cnt - 1];
-+	if (tse->cp->sym == NULL && tse->cp->ip == 0) {
-+		err = thread_stack__call_return(thread, ts, --ts->cnt,
-+						timestamp, ref, false);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int thread_stack__trace_end(struct thread_stack *ts,
-+				   struct perf_sample *sample, u64 ref)
-+{
-+	struct call_path_root *cpr = ts->crp->cpr;
-+	struct call_path *cp;
-+	u64 ret_addr;
-+
-+	/* No point having 'trace end' on the bottom of the stack */
-+	if (!ts->cnt || (ts->cnt == 1 && ts->stack[0].ref == ref))
-+		return 0;
-+
-+	cp = call_path__findnew(cpr, ts->stack[ts->cnt - 1].cp, NULL, 0,
-+				ts->kernel_start);
-+	if (!cp)
-+		return -ENOMEM;
-+
-+	ret_addr = sample->ip + sample->insn_len;
-+
-+	return thread_stack__push_cp(ts, ret_addr, sample->time, ref, cp,
-+				     false);
-+}
-+
-+int thread_stack__process(struct thread *thread, struct comm *comm,
-+			  struct perf_sample *sample,
-+			  struct addr_location *from_al,
-+			  struct addr_location *to_al, u64 ref,
-+			  struct call_return_processor *crp)
-+{
-+	struct thread_stack *ts = thread->ts;
-+	int err = 0;
-+
-+	if (ts) {
-+		if (!ts->crp) {
-+			/* Supersede thread_stack__event() */
-+			thread_stack__free(thread);
-+			thread->ts = thread_stack__new(thread, crp);
-+			if (!thread->ts)
-+				return -ENOMEM;
-+			ts = thread->ts;
-+			ts->comm = comm;
-+		}
-+	} else {
-+		thread->ts = thread_stack__new(thread, crp);
-+		if (!thread->ts)
-+			return -ENOMEM;
-+		ts = thread->ts;
-+		ts->comm = comm;
-+	}
-+
-+	/* Flush stack on exec */
-+	if (ts->comm != comm && thread->pid_ == thread->tid) {
-+		err = thread_stack__flush(thread, ts);
-+		if (err)
-+			return err;
-+		ts->comm = comm;
-+	}
-+
-+	/* If the stack is empty, put the current symbol on the stack */
-+	if (!ts->cnt) {
-+		err = thread_stack__bottom(thread, ts, sample, from_al, to_al,
-+					   ref);
-+		if (err)
-+			return err;
-+	}
-+
-+	ts->branch_count += 1;
-+	ts->last_time = sample->time;
-+
-+	if (sample->flags & PERF_IP_FLAG_CALL) {
-+		struct call_path_root *cpr = ts->crp->cpr;
-+		struct call_path *cp;
-+		u64 ret_addr;
-+
-+		if (!sample->ip || !sample->addr)
-+			return 0;
-+
-+		ret_addr = sample->ip + sample->insn_len;
-+		if (ret_addr == sample->addr)
-+			return 0; /* Zero-length calls are excluded */
-+
-+		cp = call_path__findnew(cpr, ts->stack[ts->cnt - 1].cp,
-+					to_al->sym, sample->addr,
-+					ts->kernel_start);
-+		if (!cp)
-+			return -ENOMEM;
-+		err = thread_stack__push_cp(ts, ret_addr, sample->time, ref,
-+					    cp, false);
-+	} else if (sample->flags & PERF_IP_FLAG_RETURN) {
-+		if (!sample->ip || !sample->addr)
-+			return 0;
-+
-+		err = thread_stack__pop_cp(thread, ts, sample->addr,
-+					   sample->time, ref, from_al->sym);
-+		if (err) {
-+			if (err < 0)
-+				return err;
-+			err = thread_stack__no_call_return(thread, ts, sample,
-+							   from_al, to_al, ref);
-+		}
-+	} else if (sample->flags & PERF_IP_FLAG_TRACE_BEGIN) {
-+		err = thread_stack__trace_begin(thread, ts, sample->time, ref);
-+	} else if (sample->flags & PERF_IP_FLAG_TRACE_END) {
-+		err = thread_stack__trace_end(ts, sample, ref);
-+	}
-+
-+	return err;
-+}
-diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
-index 7c41579aec74..b843bbef8ba2 100644
---- a/tools/perf/util/thread-stack.h
-+++ b/tools/perf/util/thread-stack.h
-@@ -19,14 +19,93 @@
- #include <sys/types.h>
+@@ -910,6 +932,12 @@ static int python_start_script(const char *script, int argc, const char **argv)
  
- #include <linux/types.h>
-+#include <linux/rbtree.h>
+ 	set_table_handlers(tables);
  
- struct thread;
-+struct comm;
- struct ip_callchain;
-+struct symbol;
-+struct dso;
-+struct call_return_processor;
-+struct comm;
-+struct perf_sample;
-+struct addr_location;
++	if (tables->db_export_mode) {
++		err = db_export__branch_types(&tables->dbe);
++		if (err)
++			goto error;
++	}
 +
-+/*
-+ * Call/Return flags.
-+ *
-+ * CALL_RETURN_NO_CALL: 'return' but no matching 'call'
-+ * CALL_RETURN_NO_RETURN: 'call' but no matching 'return'
-+ */
-+enum {
-+	CALL_RETURN_NO_CALL	= 1 << 0,
-+	CALL_RETURN_NO_RETURN	= 1 << 1,
-+};
-+
-+/**
-+ * struct call_return - paired call/return information.
-+ * @thread: thread in which call/return occurred
-+ * @comm: comm in which call/return occurred
-+ * @cp: call path
-+ * @call_time: timestamp of call (if known)
-+ * @return_time: timestamp of return (if known)
-+ * @branch_count: number of branches seen between call and return
-+ * @call_ref: external reference to 'call' sample (e.g. db_id)
-+ * @return_ref:  external reference to 'return' sample (e.g. db_id)
-+ * @db_id: id used for db-export
-+ * @flags: Call/Return flags
-+ */
-+struct call_return {
-+	struct thread *thread;
-+	struct comm *comm;
-+	struct call_path *cp;
-+	u64 call_time;
-+	u64 return_time;
-+	u64 branch_count;
-+	u64 call_ref;
-+	u64 return_ref;
-+	u64 db_id;
-+	u32 flags;
-+};
-+
-+/**
-+ * struct call_path - node in list of calls leading to a function call.
-+ * @parent: call path to the parent function call
-+ * @sym: symbol of function called
-+ * @ip: only if sym is null, the ip of the function
-+ * @db_id: id used for db-export
-+ * @in_kernel: whether function is a in the kernel
-+ * @rb_node: node in parent's tree of called functions
-+ * @children: tree of call paths of functions called
-+ *
-+ * In combination with the call_return structure, the call_path structure
-+ * defines a context-sensitve call-graph.
-+ */
-+struct call_path {
-+	struct call_path *parent;
-+	struct symbol *sym;
-+	u64 ip;
-+	u64 db_id;
-+	bool in_kernel;
-+	struct rb_node rb_node;
-+	struct rb_root children;
-+};
- 
- int thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
- 			u64 to_ip, u16 insn_len, u64 trace_nr);
-+void thread_stack__set_trace_nr(struct thread *thread, u64 trace_nr);
- void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
- 			  size_t sz, u64 ip);
- void thread_stack__free(struct thread *thread);
- 
-+struct call_return_processor *
-+call_return_processor__new(int (*process)(struct call_return *cr, void *data),
-+			   void *data);
-+void call_return_processor__free(struct call_return_processor *crp);
-+int thread_stack__process(struct thread *thread, struct comm *comm,
-+			  struct perf_sample *sample,
-+			  struct addr_location *from_al,
-+			  struct addr_location *to_al, u64 ref,
-+			  struct call_return_processor *crp);
-+
- #endif
+ 	return err;
+ error:
+ 	Py_Finalize();
 -- 
 1.9.3
 
