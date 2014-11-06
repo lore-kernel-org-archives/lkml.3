@@ -1,129 +1,463 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaKFXsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:48:36 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:40846 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaKFXsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 18:48:33 -0500
-Date: Thu, 6 Nov 2014 19:48:15 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Subject: Re: [PATCH v3] thermal: Add QPNP PMIC temperature alarm driver
-Message-ID: <20141106234812.GB8176@developer>
-References: <1412178817-20371-1-git-send-email-iivanov@mm-sol.com>
- <20141027201602.GC6088@developer>
- <1414596776.32383.2.camel@mm-sol.com>
- <1414677345.12674.1.camel@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
-Content-Disposition: inline
-In-Reply-To: <1414677345.12674.1.camel@mm-sol.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1751986AbaKFXur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:50:47 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:58508 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998AbaKFXup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 18:50:45 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Dave Chinner <david@fromorbit.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [rfc patch] mm: vmscan: invoke slab shrinkers for each lruvec
+Date: Thu,  6 Nov 2014 18:50:28 -0500
+Message-Id: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The slab shrinkers currently rely on the reclaim code providing an
+ad-hoc concept of NUMA nodes that doesn't really exist: for all
+scanned zones and lruvecs, the nodes and available LRU pages are
+summed up, only to have the shrinkers then again walk that nodemask
+when scanning slab caches.  This duplication will only get worse and
+more expensive once the shrinkers become aware of cgroups.
 
---+g7M9IMkV8truYOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Instead, invoke the shrinkers for each lruvec scanned - which is
+either the zone level, or in case of cgroups, the subset of a zone's
+pages that is charged to the scanned memcg.  The number of eligible
+LRU pages is naturally available at that level - it is even more
+accurate than simply looking at the global state and the number of
+available swap pages, as get_scan_count() considers many other factors
+when deciding which LRU pages to consider.
 
-On Thu, Oct 30, 2014 at 03:55:45PM +0200, Ivan T. Ivanov wrote:
->=20
-> On Wed, 2014-10-29 at 17:32 +0200, Ivan T. Ivanov wrote:
-> >=20
-> +
-> > > > +       chip->tz_dev =3D thermal_zone_device_register(node->name, T=
-RIP_NUM, 0,
-> > > > +       chip, &qpnp_tz_ops, NULL,
-> > >=20
-> > > Have you considered using of-thermal instead of doing your own specif=
-ic thermal
-> > > zone registration? Having a glance look in this driver, most of the
-> > > operation are covered by of-thermal. Ahy concerns using of-thermal in
-> > > your case?
-> > >=20
-> >=20
-> > I just followed implementation found in "armada_thermal", "db8500-therm=
-al",
-> > "dove_thermal", "imx_thermal", "kirkwood_thermal"...
-> >=20
-> > Will look at of-thermal.
-> >=20
->=20
-> Hm, the 15 drivers, which register its own thermal zone, against 4, which=
-=20
+This invokes the shrinkers more often and with smaller page and scan
+counts, but the ratios remain the same, and the shrinkers themselves
+do not add significantly to the existing per-lruvec cost.
 
-Yes, and the reasoning is pretty simple: of-thermal is not imposed
-standard, and not all platform have decided to move to using it.
-However, DT is being used more and more frequently. So, given you
-already have DT support, considering using of-thermal is a good thing to do=
-=2E=20
+This integrates the slab shrinking nicely into the reclaim logic.  Not
+just conceptually, but it also allows kswapd, the direct reclaim code,
+and zone reclaim to get rid of their ad-hoc custom slab shrinking.
 
-Besides, you are with hands on your driver, might make sense to add its
-support while you are there.=20
+Lastly, this facilitates making the shrinkers cgroup-aware without a
+fantastic amount code and runtime work duplication, and consolidation
+will make hierarchy walk optimizations easier later on.
 
-> use of-thermal registration and one of them is OMAP, which have fallback
-> to its own zone registration :-). Anyway. I am afraid that if I use just
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ drivers/staging/android/ashmem.c |   1 -
+ fs/drop_caches.c                 |  15 ++--
+ include/linux/shrinker.h         |   2 -
+ mm/memory-failure.c              |   3 +-
+ mm/vmscan.c                      | 164 +++++++++++++--------------------------
+ 5 files changed, 63 insertions(+), 122 deletions(-)
 
-The fallback is because non-dt booting has not been dropped from OMAP,
-AFAIK.
+I put this together as a result of the discussion with Vladimir about
+memcg-aware slab shrinkers this morning.
 
-> thermal_zone_of_sensor_register(), driver will lost ability to switch off=
-=20
-> hardware controlled shutdown sequence, which make it useless IMHO.
+This might need some tuning, but it definitely looks like the right
+thing to do conceptually.  I'm currently playing with various slab-
+and memcg-heavy workloads (many numa nodes + many cgroups = many
+shrinker invocations) but so far the numbers look okay.
 
-Any special sequence or callback you want to consider to improve
-of-thermal support?
+It would be great if other people could weigh in, and possibly also
+expose it to their favorite filesystem and reclaim stress tests.
 
+Thanks
 
-For instance, getting a callback for mode change events would enable you
-to get a better support for hardware controlled shutdown sequence?
-
-
->=20
-> I don't see how driver can benefits from nice things provided by of-therm=
-al.
-> There is no colling device associated with PMIC chip, pooling delays are =
-of
-> no use, device uses interrupt, trip pints are predefined in hardware...
-
-I see. However, using it may make this driver even simpler, as you would
-simply describe it in DT and the notification you want would be taken
-care by the core part of the framework.
-
->=20
-> Please advice.
->=20
-> Regards,
-> Ivan
-
---+g7M9IMkV8truYOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUXAizAAoJEMLUO4d9pOJWTkwH/2XInDMeeJuIOK6CWM5WDUYV
-HCjuNs3AGlNys9Z/m8BAGcMkT+KiQqWN+utfN3ltWI4YlvEmonUEksk/HRc1nyON
-t6Q4UGdNf8O0e9DfuyNESCZUbaleVQEkjgdfOm6EPjna+moUJ0BAzlbAKwGb9JtI
-WMT28qn000QGxVw4aSHzJiftKIEN00txLym727vtmPGebd6ci0lHQQrZ3JCvbj5z
-HMogP7nV6u1ZnVAF7XXqf83WacqxBNBKTT1uYE8EE2PACC+CMFnBr1HH3p5uL+he
-d3GyN2pG1F9XoV6e96G3TPYzzo9c5O6wTiPMClUQsX5XE8N6A3oEf6e7MftRaQY=
-=Emhb
------END PGP SIGNATURE-----
-
---+g7M9IMkV8truYOl--
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index ad4f5790a76f..776fba626278 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -785,7 +785,6 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 				.nr_to_scan = LONG_MAX,
+ 			};
+ 			ret = ashmem_shrink_count(&ashmem_shrinker, &sc);
+-			nodes_setall(sc.nodes_to_scan);
+ 			ashmem_shrink_scan(&ashmem_shrinker, &sc);
+ 		}
+ 		break;
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 1de7294aad20..ca602bf7d97a 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -40,13 +40,18 @@ static void drop_pagecache_sb(struct super_block *sb, void *unused)
+ static void drop_slab(void)
+ {
+ 	int nr_objects;
+-	struct shrink_control shrink = {
+-		.gfp_mask = GFP_KERNEL,
+-	};
+ 
+-	nodes_setall(shrink.nodes_to_scan);
+ 	do {
+-		nr_objects = shrink_slab(&shrink, 1000, 1000);
++		int nid;
++
++		nr_objects = 0;
++		for_each_online_node(nid) {
++			struct shrink_control shrink = {
++				.gfp_mask = GFP_KERNEL,
++				.nid = nid,
++			};
++			nr_objects += shrink_slab(&shrink, 1000, 1000);
++		}
+ 	} while (nr_objects > 10);
+ }
+ 
+diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
+index 68c097077ef0..f4aee75f00b1 100644
+--- a/include/linux/shrinker.h
++++ b/include/linux/shrinker.h
+@@ -18,8 +18,6 @@ struct shrink_control {
+ 	 */
+ 	unsigned long nr_to_scan;
+ 
+-	/* shrink from these nodes */
+-	nodemask_t nodes_to_scan;
+ 	/* current node being shrunk (for NUMA aware shrinkers) */
+ 	int nid;
+ };
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index e619625489c2..93ee9739f7fd 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -248,9 +248,8 @@ void shake_page(struct page *p, int access)
+ 		do {
+ 			struct shrink_control shrink = {
+ 				.gfp_mask = GFP_KERNEL,
++				.nid = nid,
+ 			};
+-			node_set(nid, shrink.nodes_to_scan);
+-
+ 			nr = shrink_slab(&shrink, 1000, 1000);
+ 			if (page_count(p) == 1)
+ 				break;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a384339bf718..6a9ab5adf118 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -229,9 +229,10 @@ EXPORT_SYMBOL(unregister_shrinker);
+ 
+ #define SHRINK_BATCH 128
+ 
+-static unsigned long
+-shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+-		 unsigned long nr_pages_scanned, unsigned long lru_pages)
++static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
++				    struct shrinker *shrinker,
++				    unsigned long nr_pages_scanned,
++				    unsigned long lru_pages)
+ {
+ 	unsigned long freed = 0;
+ 	unsigned long long delta;
+@@ -239,10 +240,15 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 	long freeable;
+ 	long nr;
+ 	long new_nr;
+-	int nid = shrinkctl->nid;
++	int nid;
+ 	long batch_size = shrinker->batch ? shrinker->batch
+ 					  : SHRINK_BATCH;
+ 
++	if (shrinker->flags & SHRINKER_NUMA_AWARE)
++		nid = shrinkctl->nid;
++	else
++		nid = 0;
++
+ 	freeable = shrinker->count_objects(shrinker, shrinkctl);
+ 	if (freeable == 0)
+ 		return 0;
+@@ -380,19 +386,9 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+ 	}
+ 
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+-		if (!(shrinker->flags & SHRINKER_NUMA_AWARE)) {
+-			shrinkctl->nid = 0;
+-			freed += shrink_slab_node(shrinkctl, shrinker,
++		freed += do_shrink_slab(shrinkctl, shrinker,
+ 					nr_pages_scanned, lru_pages);
+-			continue;
+-		}
+-
+-		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+-			if (node_online(shrinkctl->nid))
+-				freed += shrink_slab_node(shrinkctl, shrinker,
+-						nr_pages_scanned, lru_pages);
+ 
+-		}
+ 	}
+ 	up_read(&shrinker_rwsem);
+ out:
+@@ -1876,7 +1872,8 @@ enum scan_balance {
+  * nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
+  */
+ static void get_scan_count(struct lruvec *lruvec, int swappiness,
+-			   struct scan_control *sc, unsigned long *nr)
++			   struct scan_control *sc, unsigned long *nr,
++			   unsigned long *lru_pages)
+ {
+ 	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
+ 	u64 fraction[2];
+@@ -2022,39 +2019,34 @@ out:
+ 	some_scanned = false;
+ 	/* Only use force_scan on second pass. */
+ 	for (pass = 0; !some_scanned && pass < 2; pass++) {
++		*lru_pages = 0;
+ 		for_each_evictable_lru(lru) {
+ 			int file = is_file_lru(lru);
+ 			unsigned long size;
+ 			unsigned long scan;
+ 
++			/* Scan one type exclusively */
++			if ((scan_balance == SCAN_FILE) != file) {
++				nr[lru] = 0;
++				continue;
++			}
++
+ 			size = get_lru_size(lruvec, lru);
+-			scan = size >> sc->priority;
++			*lru_pages += size;
+ 
++			scan = size >> sc->priority;
+ 			if (!scan && pass && force_scan)
+ 				scan = min(size, SWAP_CLUSTER_MAX);
+ 
+-			switch (scan_balance) {
+-			case SCAN_EQUAL:
+-				/* Scan lists relative to size */
+-				break;
+-			case SCAN_FRACT:
++			if (scan_balance == SCAN_FRACT) {
+ 				/*
+ 				 * Scan types proportional to swappiness and
+ 				 * their relative recent reclaim efficiency.
+ 				 */
+ 				scan = div64_u64(scan * fraction[file],
+-							denominator);
+-				break;
+-			case SCAN_FILE:
+-			case SCAN_ANON:
+-				/* Scan one type exclusively */
+-				if ((scan_balance == SCAN_FILE) != file)
+-					scan = 0;
+-				break;
+-			default:
+-				/* Look ma, no brain */
+-				BUG();
++						 denominator);
+ 			}
++
+ 			nr[lru] = scan;
+ 			/*
+ 			 * Skip the second pass and don't force_scan,
+@@ -2077,10 +2069,17 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
+ 	enum lru_list lru;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
++	unsigned long nr_scanned = sc->nr_scanned;
++	unsigned long lru_pages;
+ 	struct blk_plug plug;
+ 	bool scan_adjusted;
++	struct shrink_control shrink = {
++		.gfp_mask = sc->gfp_mask,
++		.nid = zone_to_nid(lruvec_zone(lruvec)),
++	};
++	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 
+-	get_scan_count(lruvec, swappiness, sc, nr);
++	get_scan_count(lruvec, swappiness, sc, nr, &lru_pages);
+ 
+ 	/* Record the original scan target for proportional adjustments later */
+ 	memcpy(targets, nr, sizeof(nr));
+@@ -2173,6 +2172,23 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
+ 	sc->nr_reclaimed += nr_reclaimed;
+ 
+ 	/*
++	 * Shrink slab caches in the same proportion that the eligible
++	 * LRU pages were scanned.
++	 *
++	 * XXX: Skip memcg limit reclaim, as the slab shrinkers are
++	 * not cgroup-aware yet and we can't know if the objects in
++	 * the global lists contribute to the memcg limit.
++	 */
++	if (global_reclaim(sc) && lru_pages) {
++		nr_scanned = sc->nr_scanned - nr_scanned;
++		shrink_slab(&shrink, nr_scanned, lru_pages);
++		if (reclaim_state) {
++			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
++			reclaim_state->reclaimed_slab = 0;
++		}
++	}
++
++	/*
+ 	 * Even if we did not try to evict anon pages at all, we want to
+ 	 * rebalance the anon lru active/inactive ratio.
+ 	 */
+@@ -2376,12 +2392,7 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+-	unsigned long lru_pages = 0;
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	gfp_t orig_mask;
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc->gfp_mask,
+-	};
+ 	enum zone_type requested_highidx = gfp_zone(sc->gfp_mask);
+ 	bool reclaimable = false;
+ 
+@@ -2394,8 +2405,6 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 	if (buffer_heads_over_limit)
+ 		sc->gfp_mask |= __GFP_HIGHMEM;
+ 
+-	nodes_clear(shrink.nodes_to_scan);
+-
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+ 		if (!populated_zone(zone))
+@@ -2409,9 +2418,6 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 						 GFP_KERNEL | __GFP_HARDWALL))
+ 				continue;
+ 
+-			lru_pages += zone_reclaimable_pages(zone);
+-			node_set(zone_to_nid(zone), shrink.nodes_to_scan);
+-
+ 			if (sc->priority != DEF_PRIORITY &&
+ 			    !zone_reclaimable(zone))
+ 				continue;	/* Let kswapd poll it */
+@@ -2459,20 +2465,6 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 	}
+ 
+ 	/*
+-	 * Don't shrink slabs when reclaiming memory from over limit cgroups
+-	 * but do shrink slab at least once when aborting reclaim for
+-	 * compaction to avoid unevenly scanning file/anon LRU pages over slab
+-	 * pages.
+-	 */
+-	if (global_reclaim(sc)) {
+-		shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+-		if (reclaim_state) {
+-			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+-			reclaim_state->reclaimed_slab = 0;
+-		}
+-	}
+-
+-	/*
+ 	 * Restore to original mask to avoid the impact on the caller if we
+ 	 * promoted it to __GFP_HIGHMEM.
+ 	 */
+@@ -2932,15 +2924,10 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ static bool kswapd_shrink_zone(struct zone *zone,
+ 			       int classzone_idx,
+ 			       struct scan_control *sc,
+-			       unsigned long lru_pages,
+ 			       unsigned long *nr_attempted)
+ {
+ 	int testorder = sc->order;
+ 	unsigned long balance_gap;
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc->gfp_mask,
+-	};
+ 	bool lowmem_pressure;
+ 
+ 	/* Reclaim above the high watermark. */
+@@ -2976,12 +2963,6 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 		return true;
+ 
+ 	shrink_zone(zone, sc);
+-	nodes_clear(shrink.nodes_to_scan);
+-	node_set(zone_to_nid(zone), shrink.nodes_to_scan);
+-
+-	reclaim_state->reclaimed_slab = 0;
+-	shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+-	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+ 
+ 	/* Account for the number of pages attempted to reclaim */
+ 	*nr_attempted += sc->nr_to_reclaim;
+@@ -3042,7 +3023,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	count_vm_event(PAGEOUTRUN);
+ 
+ 	do {
+-		unsigned long lru_pages = 0;
+ 		unsigned long nr_attempted = 0;
+ 		bool raise_priority = true;
+ 		bool pgdat_needs_compaction = (order > 0);
+@@ -3102,8 +3082,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			if (!populated_zone(zone))
+ 				continue;
+ 
+-			lru_pages += zone_reclaimable_pages(zone);
+-
+ 			/*
+ 			 * If any zone is currently balanced then kswapd will
+ 			 * not call compaction as it is expected that the
+@@ -3159,8 +3137,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			 * that that high watermark would be met at 100%
+ 			 * efficiency.
+ 			 */
+-			if (kswapd_shrink_zone(zone, end_zone, &sc,
+-					lru_pages, &nr_attempted))
++			if (kswapd_shrink_zone(zone, end_zone,
++					       &sc, &nr_attempted))
+ 				raise_priority = false;
+ 		}
+ 
+@@ -3612,10 +3590,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
+ 		.may_swap = 1,
+ 	};
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+-	unsigned long nr_slab_pages0, nr_slab_pages1;
+ 
+ 	cond_resched();
+ 	/*
+@@ -3638,40 +3612,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
+ 	}
+ 
+-	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+-	if (nr_slab_pages0 > zone->min_slab_pages) {
+-		/*
+-		 * shrink_slab() does not currently allow us to determine how
+-		 * many pages were freed in this zone. So we take the current
+-		 * number of slab pages and shake the slab until it is reduced
+-		 * by the same nr_pages that we used for reclaiming unmapped
+-		 * pages.
+-		 */
+-		nodes_clear(shrink.nodes_to_scan);
+-		node_set(zone_to_nid(zone), shrink.nodes_to_scan);
+-		for (;;) {
+-			unsigned long lru_pages = zone_reclaimable_pages(zone);
+-
+-			/* No reclaimable slab or very low memory pressure */
+-			if (!shrink_slab(&shrink, sc.nr_scanned, lru_pages))
+-				break;
+-
+-			/* Freed enough memory */
+-			nr_slab_pages1 = zone_page_state(zone,
+-							NR_SLAB_RECLAIMABLE);
+-			if (nr_slab_pages1 + nr_pages <= nr_slab_pages0)
+-				break;
+-		}
+-
+-		/*
+-		 * Update nr_reclaimed by the number of slab pages we
+-		 * reclaimed from this zone.
+-		 */
+-		nr_slab_pages1 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+-		if (nr_slab_pages1 < nr_slab_pages0)
+-			sc.nr_reclaimed += nr_slab_pages0 - nr_slab_pages1;
+-	}
+-
+ 	p->reclaim_state = NULL;
+ 	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
+ 	lockdep_clear_current_reclaim_state();
+-- 
+2.1.3
