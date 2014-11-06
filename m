@@ -1,58 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaKFPdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:33:47 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61361 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaKFPdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:33:44 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RESEND PATCH v3.18-rc3] kdb: Remove stack dump when entering kgdb due to NMI
-Date: Thu,  6 Nov 2014 15:33:31 +0000
-Message-Id: <1415288011-26322-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405518033-11671-1-git-send-email-daniel.thompson@linaro.org>
-References: <1405518033-11671-1-git-send-email-daniel.thompson@linaro.org>
+	id S1751412AbaKFPfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:35:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43338 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887AbaKFPfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:35:44 -0500
+Date: Thu, 6 Nov 2014 16:35:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: tony.luck@intel.com, ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] x86, mce, severity: extend the the mce_severity
+Message-ID: <20141106153539.GC4318@pd.tnic>
+References: <1415162873-1874-1-git-send-email-slaoub@gmail.com>
+ <1415162873-1874-2-git-send-email-slaoub@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1415162873-1874-2-git-send-email-slaoub@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issuing a stack dump feels ergonomically wrong when entering due to NMI.
+On Wed, Nov 05, 2014 at 12:47:52PM +0800, Chen Yucong wrote:
+> Until now, the mce_severity mechanism can only identify the severity
+> of UCNA error as MCE_KEEP_SEVERITY. Meanwhile, it is not able to filter
+> out DEFERRED error for ADM platform.
+> 
+> This patch aims to extend the mce_severity mechanism for handling
+> UCNA/DEFERRED error. In order to do this, the patch introduces a new
+> severity level - MCE_UCNA/DEFERRED_SEVERITY.
+> 
+> In addition, mce_severity is specific to machine check exception,
+> and it will check MCIP/EIPV/RIPV bits. In order to use mce_severity
+> mechanism in non-exception context, the patch also introduces a new
+> argument (is_excp) for mce_severity. `is_excp' is used to explicitly
+> specify the calling context of mce_severity.
+> 
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  arch/x86/include/asm/mce.h                |    4 ++++
+>  arch/x86/kernel/cpu/mcheck/mce-internal.h |    4 +++-
+>  arch/x86/kernel/cpu/mcheck/mce-severity.c |   21 ++++++++++++++++-----
+>  arch/x86/kernel/cpu/mcheck/mce.c          |   14 ++++++++------
+>  4 files changed, 31 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+> index 958b90f..40b35a5 100644
+> --- a/arch/x86/include/asm/mce.h
+> +++ b/arch/x86/include/asm/mce.h
+> @@ -34,6 +34,10 @@
+>  #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
+>  #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
+>  
+> +/* AMD-specific bits */
+> +#define MCI_STATUS_DEFERRED	(1ULL<<44)  /* declare an uncorrected error */
+> +#define MCI_STATUS_POISON	(1ULL<<43)  /* access poisonous data */
 
-Entering due to NMI is normally a reaction to a user request, either the
-NMI button on a server or a "magic knock" on a UART. Therefore the
-backtrace behaviour on entry due to NMI should be like SysRq-g (no stack
-dump) rather than like oops.
+In file included from drivers/edac/mce_amd.c:4:0:
+drivers/edac/mce_amd.h:35:0: warning: "MCI_STATUS_DEFERRED" redefined
+ #define MCI_STATUS_DEFERRED  BIT_64(44)
+ ^
+In file included from drivers/edac/mce_amd.h:6:0,
+                 from drivers/edac/mce_amd.c:4:
+./arch/x86/include/asm/mce.h:38:0: note: this is the location of the previous definition
+ #define MCI_STATUS_DEFERRED (1ULL<<44)  /* declare an uncorrected error */
+ ^
+In file included from drivers/edac/mce_amd.c:4:0:
+drivers/edac/mce_amd.h:36:0: warning: "MCI_STATUS_POISON" redefined
+ #define MCI_STATUS_POISON  BIT_64(43)
+ ^
+In file included from drivers/edac/mce_amd.h:6:0,
+                 from drivers/edac/mce_amd.c:4:
+./arch/x86/include/asm/mce.h:39:0: note: this is the location of the previous definition
+ #define MCI_STATUS_POISON (1ULL<<43)  /* access poisonous data */
+ ^
+...
 
-Note also that the stack dump does not offer any information that
-cannot be trivial retrieved using the 'bt' command.
+> +
+>  /*
+>   * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
+>   * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+> index 09edd0b..10b4690 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
+> +++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+> @@ -3,6 +3,8 @@
+>  
+>  enum severity_level {
+>  	MCE_NO_SEVERITY,
+> +	MCE_DEFERRED_SEVERITY,
+> +	MCE_UCNA_SEVERITY = MCE_DEFERRED_SEVERITY,
+>  	MCE_KEEP_SEVERITY,
+>  	MCE_SOME_SEVERITY,
+>  	MCE_AO_SEVERITY,
+> @@ -21,7 +23,7 @@ struct mce_bank {
+>  	char			attrname[ATTR_LEN];	/* attribute name */
+>  };
+>  
+> -int mce_severity(struct mce *a, int tolerant, char **msg);
+> +int mce_severity(struct mce *a, int tolerant, char **msg, bool is_excp);
+>  struct dentry *mce_get_debugfs_dir(void);
+>  
+>  extern struct mce_bank *mce_banks;
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> index c370e1c..d31618d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+> @@ -31,6 +31,7 @@
+>  
+>  enum context { IN_KERNEL = 1, IN_USER = 2 };
+>  enum ser { SER_REQUIRED = 1, NO_SER = 2 };
+> +enum exception { EXCP_CONTEXT = 1, NO_EXCP = 2 };
+>  
+>  static struct severity {
+>  	u64 mask;
+> @@ -40,6 +41,7 @@ static struct severity {
+>  	unsigned char mcgres;
+>  	unsigned char ser;
+>  	unsigned char context;
+> +	unsigned char excp;
+>  	unsigned char covered;
+>  	char *msg;
+>  } severities[] = {
+> @@ -48,6 +50,8 @@ static struct severity {
+>  #define  USER		.context = IN_USER
+>  #define  SER		.ser = SER_REQUIRED
+>  #define  NOSER		.ser = NO_SER
+> +#define  EXCP		.excp = EXCP_CONTEXT
+> +#define  ONEXCP	.excp = NO_EXCP
+>  #define  BITCLR(x)	.mask = x, .result = 0
+>  #define  BITSET(x)	.mask = x, .result = x
+>  #define  MCGMASK(x, y)	.mcgmask = x, .mcgres = y
+> @@ -71,16 +75,20 @@ static struct severity {
+>  	/* When MCIP is not set something is very confused */
+>  	MCESEV(
+>  		PANIC, "MCIP not set in MCA handler",
+> -		MCGMASK(MCG_STATUS_MCIP, 0)
+> +		EXCP, MCGMASK(MCG_STATUS_MCIP, 0)
+>  		),
+>  	/* Neither return not error IP -- no chance to recover -> PANIC */
+>  	MCESEV(
+>  		PANIC, "Neither restart nor error IP",
+> -		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
+> +		EXCP, MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
+>  		),
+>  	MCESEV(
+>  		PANIC, "In kernel and no restart IP",
+> -		KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
+> +		EXCP, KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
+> +		),
+> +	MCESEV(
+> +		DEFERRED, "Deferred error",
+> +		NOSER, MASK(MCI_STATUS_UC|MCI_STATUS_DEFERRED|MCI_STATUS_POISON, MCI_STATUS_DEFERRED)
+>  		),
+>  	MCESEV(
+>  		KEEP, "Corrected error",
+> @@ -89,7 +97,7 @@ static struct severity {
+>  
+>  	/* ignore OVER for UCNA */
+>  	MCESEV(
+> -		KEEP, "Uncorrected no action required",
+> +		UCNA, "Uncorrected no action required",
+>  		SER, MASK(MCI_UC_SAR, MCI_STATUS_UC)
+>  		),
+>  	MCESEV(
+> @@ -178,8 +186,9 @@ static int error_context(struct mce *m)
+>  	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
+>  }
+>  
+> -int mce_severity(struct mce *m, int tolerant, char **msg)
+> +int mce_severity(struct mce *m, int tolerant, char **msg, bool is_excp)
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/debug/kdb/kdb_main.c | 1 -
- 1 file changed, 1 deletion(-)
+You're adding a function argument which is carrying redundant info which
+is already present in *m...
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 379650b..f9ba423 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1207,7 +1207,6 @@ static int kdb_local(kdb_reason_t reason, int error, struct pt_regs *regs,
- 		kdb_printf("due to NonMaskable Interrupt @ "
- 			   kdb_machreg_fmt "\n",
- 			   instruction_pointer(regs));
--		kdb_dumpregs(regs);
- 		break;
- 	case KDB_REASON_SSTEP:
- 	case KDB_REASON_BREAK:
+>  {
+> +	enum exception excp = (is_excp ? EXCP_CONTEXT : NO_EXCP);
+
+... and so this should be:
+
+	excp = ((m->mcg_status & MCG_STATUS_MCIP) ? EXCP_CONTEXT : NO_EXCP);
+
+>  	enum context ctx = error_context(m);
+>  	struct severity *s;
+>  
+> @@ -194,6 +203,8 @@ int mce_severity(struct mce *m, int tolerant, char **msg)
+>  			continue;
+>  		if (s->context && ctx != s->context)
+>  			continue;
+> +		if (s->excp && excp != s->excp)
+> +			continue;
+>  		if (msg)
+>  			*msg = s->msg;
+>  		s->covered = 1;
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 61a9668ce..453e9bf 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -668,7 +668,8 @@ static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
+>  			if (quirk_no_way_out)
+>  				quirk_no_way_out(i, m, regs);
+>  		}
+> -		if (mce_severity(m, mca_cfg.tolerant, msg) >= MCE_PANIC_SEVERITY)
+> +		if (mce_severity(m, mca_cfg.tolerant, msg, true) >=
+> +		    MCE_PANIC_SEVERITY)
+>  			ret = 1;
+>  	}
+>  	return ret;
+> @@ -754,7 +755,7 @@ static void mce_reign(void)
+>  	for_each_possible_cpu(cpu) {
+>  		int severity = mce_severity(&per_cpu(mces_seen, cpu),
+>  					    mca_cfg.tolerant,
+> -					    &nmsg);
+> +					    &nmsg, true);
+>  		if (severity > global_worst) {
+>  			msg = nmsg;
+>  			global_worst = severity;
+> @@ -1095,13 +1096,14 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  		 */
+>  		add_taint(TAINT_MACHINE_CHECK, LOCKDEP_NOW_UNRELIABLE);
+>  
+> -		severity = mce_severity(&m, cfg->tolerant, NULL);
+> +		severity = mce_severity(&m, cfg->tolerant, NULL, true);
+>  
+>  		/*
+> -		 * When machine check was for corrected handler don't touch,
+> -		 * unless we're panicing.
+> +		 * When machine check was for corrected/deferred handler don't
+> +		 * touch, unless we're panicing.
+>  		 */
+> -		if (severity == MCE_KEEP_SEVERITY && !no_way_out)
+> +		if ((severity == MCE_KEEP_SEVERITY ||
+> +		     severity == MCE_UCNA_SEVERITY) && !no_way_out)
+>  			continue;
+>  		__set_bit(i, toclear);
+>  		if (severity == MCE_NO_SEVERITY) {
+> -- 
+> 1.7.10.4
+> 
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-1.9.3
-
