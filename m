@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaKFP4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:56:39 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:59801 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750955AbaKFP4h (ORCPT
+	id S1751458AbaKFP52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:57:28 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42628 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750963AbaKFP5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:56:37 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>
-Subject: [PATCH 1/1] tty: warn on deprecated serial flags
-Date: Thu,  6 Nov 2014 16:56:33 +0100
-Message-Id: <1415289393-30008-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.2
+	Thu, 6 Nov 2014 10:57:25 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: davem@davemloft.net
+Cc: jeffrey.t.kirsher@intel.com, m.stam@fugro.nl, emilgoode@gmail.com,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] asix: Do full reset during ax88772_bind
+Date: Thu,  6 Nov 2014 15:49:41 +0000
+Message-Id: <1415288981-3862-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When somebody calls TIOCSSERIAL ioctl with serial flags to set one of
-* ASYNC_SESSION_LOCKOUT
-* ASYNC_PGRP_LOCKOUT
-* ASYNC_CALLOUT_NOHUP
-* ASYNC_AUTOPROBE
-nothing happens. We actually ignore the flags for over a decade at
-least (I checked 2.6.0).
+commit 3cc81d85ee01 ("asix: Don't reset PHY on if_up for ASIX 88772")
+causes the ethernet on Arndale to no longer function. This appears to
+be because the Arndale ethernet requires a full reset before it will
+function correctly, however simply reverting the above patch causes
+problems with ethtool settings getting reset.
 
-So start yelling at users who use those flags, that they shouldn't.
+It seems the problem is that the ethernet is not properly reset during
+bind, and indeed the code in ax88772_bind that resets the device is a
+very small subset of the actual ax88772_reset function. This patch uses
+ax88772_reset in place of the existing reset code in ax88772_bind which
+removes some code duplication and fixes the ethernet on Arndale.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+It is still possible that the original patch causes some issues with
+suspend and resume but that seems like a separate issue and I haven't
+had a chance to test that yet.
+
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Riku Voipio <riku.voipio@linaro.org>
 ---
- drivers/tty/tty_io.c           | 21 +++++++++++++++++++++
- include/uapi/linux/tty_flags.h |  2 ++
- 2 files changed, 23 insertions(+)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 1107398a545c..95f330282046 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2728,6 +2728,24 @@ struct tty_struct *tty_pair_get_pty(struct tty_struct *tty)
- }
- EXPORT_SYMBOL(tty_pair_get_pty);
- 
-+static void tty_warn_deprecated_flags(struct serial_struct __user *ss)
-+{
-+	static DEFINE_RATELIMIT_STATE(depr_flags,
-+			DEFAULT_RATELIMIT_INTERVAL,
-+			DEFAULT_RATELIMIT_BURST);
-+	char comm[TASK_COMM_LEN];
-+	int flags;
-+
-+	if (get_user(flags, &ss->flags))
-+		return;
-+
-+	flags &= ASYNC_DEPRECATED;
-+
-+	if (flags && __ratelimit(&depr_flags))
-+		pr_warning("%s: '%s' is using deprecated serial flags (with no effect): %.8x\n",
-+				__func__, get_task_comm(comm, current), flags);
-+}
-+
- /*
-  * Split this up, as gcc can choke on it otherwise..
-  */
-@@ -2859,6 +2877,9 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 			break;
- 		}
- 		break;
-+	case TIOCSSERIAL:
-+		tty_warn_deprecated_flags(p);
-+		break;
+Hi,
+
+I wasn't 100% sure which branch to base this off so I based it on Dave
+Miller's net-next branch, which seemed logical.
+
+Thanks,
+Charles
+
+ drivers/net/usb/asix_devices.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
+index 2c05f6c..816d511 100644
+--- a/drivers/net/usb/asix_devices.c
++++ b/drivers/net/usb/asix_devices.c
+@@ -465,19 +465,7 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 		return ret;
  	}
- 	if (tty->ops->ioctl) {
- 		retval = (tty->ops->ioctl)(tty, cmd, arg);
-diff --git a/include/uapi/linux/tty_flags.h b/include/uapi/linux/tty_flags.h
-index eefcb483a2c0..879b91713e7c 100644
---- a/include/uapi/linux/tty_flags.h
-+++ b/include/uapi/linux/tty_flags.h
-@@ -59,6 +59,8 @@
- #define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
  
- #define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
-+#define ASYNC_DEPRECATED	(ASYNC_SESSION_LOCKOUT | ASYNC_PGRP_LOCKOUT | \
-+		ASYNC_CALLOUT_NOHUP | ASYNC_AUTOPROBE)
- #define ASYNC_USR_MASK		(ASYNC_SPD_MASK|ASYNC_CALLOUT_NOHUP| \
- 		ASYNC_LOW_LATENCY)
- #define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
+-	ret = asix_sw_reset(dev, AX_SWRESET_IPPD | AX_SWRESET_PRL);
+-	if (ret < 0)
+-		return ret;
+-
+-	msleep(150);
+-
+-	ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
+-	if (ret < 0)
+-		return ret;
+-
+-	msleep(150);
+-
+-	ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL : AX_SWRESET_PRTE);
++	ax88772_reset(dev);
+ 
+ 	/* Read PHYID register *AFTER* the PHY was reset properly */
+ 	phyid = asix_get_phyid(dev);
 -- 
-2.1.2
+1.7.2.5
 
