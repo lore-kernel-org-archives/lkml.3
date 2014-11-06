@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaKFWkB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:40:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58603 "EHLO
+	id S1752209AbaKFWkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:40:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58615 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaKFWj4 (ORCPT
+	with ESMTP id S1750828AbaKFWkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:39:56 -0500
+	Thu, 6 Nov 2014 17:40:04 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 150/162] mm, thp: fix collapsing of hugepages on madvise
-Date: Thu,  6 Nov 2014 14:36:54 -0800
-Message-Id: <1415313426-9622-151-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 144/162] drm/radeon/dpm: disable ulv support on SI
+Date: Thu,  6 Nov 2014 14:36:48 -0800
+Message-Id: <1415313426-9622-145-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -31,177 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6d50e60cd2edb5a57154db5a6f64eef5aa59b751 upstream.
+commit 6fa455935ab956248b165f150ec6ae9106210077 upstream.
 
-If an anonymous mapping is not allowed to fault thp memory and then
-madvise(MADV_HUGEPAGE) is used after fault, khugepaged will never
-collapse this memory into thp memory.
+Causes problems on some boards.
 
-This occurs because the madvise(2) handler for thp, hugepage_madvise(),
-clears VM_NOHUGEPAGE on the stack and it isn't stored in vma->vm_flags
-until the final action of madvise_behavior().  This causes the
-khugepaged_enter_vma_merge() to be a no-op in hugepage_madvise() when
-the vma had previously had VM_NOHUGEPAGE set.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=82889
 
-Fix this by passing the correct vma flags to the khugepaged mm slot
-handler.  There's no chance khugepaged can run on this vma until after
-madvise_behavior() returns since we hold mm->mmap_sem.
-
-It would be possible to clear VM_NOHUGEPAGE directly from vma->vm_flags
-in hugepage_advise(), but I didn't want to introduce special case
-behavior into madvise_behavior().  I think it's best to just let it
-always set vma->vm_flags itself.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Suleiman Souhlal <suleiman@google.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.13: no VM_BUG_ON_VMA ]
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/khugepaged.h | 17 ++++++++++-------
- mm/huge_memory.c           | 11 ++++++-----
- mm/mmap.c                  |  8 ++++----
- 3 files changed, 20 insertions(+), 16 deletions(-)
+ drivers/gpu/drm/radeon/si_dpm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/khugepaged.h b/include/linux/khugepaged.h
-index 6b394f0..eeb3079 100644
---- a/include/linux/khugepaged.h
-+++ b/include/linux/khugepaged.h
-@@ -6,7 +6,8 @@
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern int __khugepaged_enter(struct mm_struct *mm);
- extern void __khugepaged_exit(struct mm_struct *mm);
--extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma);
-+extern int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
-+				      unsigned long vm_flags);
- 
- #define khugepaged_enabled()					       \
- 	(transparent_hugepage_flags &				       \
-@@ -35,13 +36,13 @@ static inline void khugepaged_exit(struct mm_struct *mm)
- 		__khugepaged_exit(mm);
- }
- 
--static inline int khugepaged_enter(struct vm_area_struct *vma)
-+static inline int khugepaged_enter(struct vm_area_struct *vma,
-+				   unsigned long vm_flags)
- {
- 	if (!test_bit(MMF_VM_HUGEPAGE, &vma->vm_mm->flags))
- 		if ((khugepaged_always() ||
--		     (khugepaged_req_madv() &&
--		      vma->vm_flags & VM_HUGEPAGE)) &&
--		    !(vma->vm_flags & VM_NOHUGEPAGE))
-+		     (khugepaged_req_madv() && (vm_flags & VM_HUGEPAGE))) &&
-+		    !(vm_flags & VM_NOHUGEPAGE))
- 			if (__khugepaged_enter(vma->vm_mm))
- 				return -ENOMEM;
- 	return 0;
-@@ -54,11 +55,13 @@ static inline int khugepaged_fork(struct mm_struct *mm, struct mm_struct *oldmm)
- static inline void khugepaged_exit(struct mm_struct *mm)
- {
- }
--static inline int khugepaged_enter(struct vm_area_struct *vma)
-+static inline int khugepaged_enter(struct vm_area_struct *vma,
-+				   unsigned long vm_flags)
- {
- 	return 0;
- }
--static inline int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
-+static inline int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
-+					     unsigned long vm_flags)
- {
- 	return 0;
- }
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 310f27e..65aa131 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -788,7 +788,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_FALLBACK;
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return VM_FAULT_OOM;
--	if (unlikely(khugepaged_enter(vma)))
-+	if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
- 		return VM_FAULT_OOM;
- 	if (!(flags & FAULT_FLAG_WRITE) &&
- 			transparent_hugepage_use_zero_page()) {
-@@ -1993,7 +1993,7 @@ int hugepage_madvise(struct vm_area_struct *vma,
- 		 * register it here without waiting a page fault that
- 		 * may not happen any time soon.
- 		 */
--		if (unlikely(khugepaged_enter_vma_merge(vma)))
-+		if (unlikely(khugepaged_enter_vma_merge(vma, *vm_flags)))
- 			return -ENOMEM;
- 		break;
- 	case MADV_NOHUGEPAGE:
-@@ -2094,7 +2094,8 @@ int __khugepaged_enter(struct mm_struct *mm)
- 	return 0;
- }
- 
--int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
-+int khugepaged_enter_vma_merge(struct vm_area_struct *vma,
-+			       unsigned long vm_flags)
- {
- 	unsigned long hstart, hend;
- 	if (!vma->anon_vma)
-@@ -2106,11 +2107,11 @@ int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
- 	if (vma->vm_ops)
- 		/* khugepaged not yet working on file or special mappings */
- 		return 0;
--	VM_BUG_ON(vma->vm_flags & VM_NO_THP);
-+	VM_BUG_ON(vm_flags & VM_NO_THP);
- 	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
- 	hend = vma->vm_end & HPAGE_PMD_MASK;
- 	if (hstart < hend)
--		return khugepaged_enter(vma);
-+		return khugepaged_enter(vma, vm_flags);
- 	return 0;
- }
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 546db74..32dbf6d 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1046,7 +1046,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
- 				end, prev->vm_pgoff, NULL);
- 		if (err)
- 			return NULL;
--		khugepaged_enter_vma_merge(prev);
-+		khugepaged_enter_vma_merge(prev, vm_flags);
- 		return prev;
- 	}
- 
-@@ -1065,7 +1065,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
- 				next->vm_pgoff - pglen, NULL);
- 		if (err)
- 			return NULL;
--		khugepaged_enter_vma_merge(area);
-+		khugepaged_enter_vma_merge(area, vm_flags);
- 		return area;
- 	}
- 
-@@ -2155,7 +2155,7 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		}
- 	}
- 	vma_unlock_anon_vma(vma);
--	khugepaged_enter_vma_merge(vma);
-+	khugepaged_enter_vma_merge(vma, vma->vm_flags);
- 	validate_mm(vma->vm_mm);
- 	return error;
- }
-@@ -2224,7 +2224,7 @@ int expand_downwards(struct vm_area_struct *vma,
- 		}
- 	}
- 	vma_unlock_anon_vma(vma);
--	khugepaged_enter_vma_merge(vma);
-+	khugepaged_enter_vma_merge(vma, vma->vm_flags);
- 	validate_mm(vma->vm_mm);
- 	return error;
- }
+diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
+index 0d50df3..b044e19 100644
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -6224,7 +6224,7 @@ static void si_parse_pplib_clock_info(struct radeon_device *rdev,
+ 	if ((rps->class2 & ATOM_PPLIB_CLASSIFICATION2_ULV) &&
+ 	    index == 0) {
+ 		/* XXX disable for A0 tahiti */
+-		si_pi->ulv.supported = true;
++		si_pi->ulv.supported = false;
+ 		si_pi->ulv.pl = *pl;
+ 		si_pi->ulv.one_pcie_lane_in_ulv = false;
+ 		si_pi->ulv.volt_change_delay = SISLANDS_ULVVOLTAGECHANGEDELAY_DFLT;
 -- 
 1.9.1
 
