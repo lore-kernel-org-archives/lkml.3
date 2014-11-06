@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaKFMv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:51:58 -0500
-Received: from regular1.263xmail.com ([211.150.99.130]:33987 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaKFMvz (ORCPT
+	id S1751470AbaKFMwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:52:10 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:42736 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaKFMwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:51:55 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <c6e6a206f80f8990f1d01bd802a61f45>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        jay.xu@rock-chips.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: [PATCH V3 0/4] dw-hdmi: make imx hdmi publicly used by dw hdmi compatible platform
-Date: Thu,  6 Nov 2014 19:21:53 +0800
-Message-Id: <1415272913-56889-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415192101-6404-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415192101-6404-1-git-send-email-andy.yan@rock-chips.com>
+	Thu, 6 Nov 2014 07:52:07 -0500
+MIME-Version: 1.0
+Date: Thu, 6 Nov 2014 13:52:06 +0100
+Message-ID: <CAPDyKFqmCaabAxS=KF8=9ZfinBtVpkb8=SNhXhY5gPtv1xOrQw@mail.gmail.com>
+Subject: [GIT PULL] MMC fixes for v.3.18
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We found freescale imx6 and rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-use the interface compatible Designware HDMI IP, but they also have some
-lightly difference, such as phy pll configuration, register width(imx hdmi
-register is one byte, but rk3288 is 4 bytes width and can only access by word),
-4K support(imx6 doesn't support 4k, but rk3288 does).
+Hi Linus,
 
-To reuse the imx-hdmi driver, we do this patch set:
-patch (1): split out imx-soc code from imx-hdmi to dw_hdmi-imx.c
-patch (2): move imx-hdmi to bridge/, and rename to dw-hdmi to
-patch (3): add multi byte register access support
-make this driver indepent of drm-imx . And we will add rockchip
-platform specific code dw_hdmi-rockchip.c later, this is depend
-on drm-rockchip.
+Here is one mmc fix for 3.18.
 
-Changes in V3:
-- refactor multi byte register access, and split it
-  to one indepent patch
-- convert it to a drm_bridge driver
+MMC core:
+- Fix card detection regression.
+The MMC_CAP2_CD_ACTIVE_HIGH and MMC_CAP2_RO_ACTIVE_HIGH could under
+some circumstances be set incorrectly, causing the card detection to
+fail.
 
-Changes in V2:
-- use git format-patch -M to generate these patch
-- remove change-id
-- remove from
+Information also collected in the signed tag. Please pull this in!
+
+Kind regards
+Ulf Hansson
 
 
-Andy Yan (3):
-  imx-drm: imx-hdmi: split imx soc specific code from imx-hdmi
-  dw-hdmi: move imx-hdmi to bridge/dw-hdmi
-  dw-hdmi: add support for multi byte register width access
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-ykk (1):
-  dw-hdmi: convert dw-hdmi to drm_bridge mode
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
- drivers/gpu/drm/bridge/Kconfig                     |   5 +
- drivers/gpu/drm/bridge/Makefile                    |   1 +
- .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 619 +++++++++------------
- .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   5 +-
- drivers/staging/imx-drm/Kconfig                    |   1 +
- drivers/staging/imx-drm/Makefile                   |   2 +-
- drivers/staging/imx-drm/dw_hdmi-imx.c              | 263 +++++++++
- include/drm/bridge/dw_hdmi.h                       |  52 ++
- 8 files changed, 575 insertions(+), 373 deletions(-)
- rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (75%)
- rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
- create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
- create mode 100644 include/drm/bridge/dw_hdmi.h
+are available in the git repository at:
 
--- 
-1.9.1
+  git://git.linaro.org/people/ulf.hansson/mmc.git tags/mmc-v3.18-2
 
+for you to fetch changes up to a31b0c6c19bf28c54999c3cd8cc3a7c8ba565a45:
 
+  mmc: core: fix card detection regression (2014-11-05 09:28:48 +0100)
+
+----------------------------------------------------------------
+MMC core:
+ - Fix card detection regression.
+   The MMC_CAP2_CD_ACTIVE_HIGH and MMC_CAP2_RO_ACTIVE_HIGH could under
+   some circumstances be set incorrectly, causing the card detection to
+   fail.
+
+----------------------------------------------------------------
+Kristina Martsenko (1):
+      mmc: core: fix card detection regression
+
+ drivers/mmc/core/host.c | 21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
