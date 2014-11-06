@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaKFVFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:05:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43207 "EHLO mail.kernel.org"
+	id S1751779AbaKFVFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:05:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43156 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717AbaKFVFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:05:32 -0500
+	id S1751668AbaKFVFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:05:23 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/18] perf symbols: Preparation for compressed kernel module support
-Date: Thu,  6 Nov 2014 18:04:29 -0300
-Message-Id: <1415307879-912-9-git-send-email-acme@kernel.org>
+Subject: [PATCH 07/18] perf tools: Defer export of comms that were not 'set'
+Date: Thu,  6 Nov 2014 18:04:28 -0300
+Message-Id: <1415307879-912-8-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415307879-912-1-git-send-email-acme@kernel.org>
 References: <1415307879-912-1-git-send-email-acme@kernel.org>
@@ -25,305 +25,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-This patch adds basic support to handle compressed kernel module as some
-distro (such as Archlinux) carries on it now.  The actual work using
-compression library will be added later.
+Tracing for a workload begins before the comm event is seen, which
+results in the initial comm having a string of the form ":<pid>" (e.g.
+":12345").
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+In order to export the correct string, defer the export until the new
+script 'flush' callback.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1415063674-17206-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1414678188-14946-8-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c        | 75 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/dso.h        |  7 +++++
- tools/perf/util/machine.c    | 19 ++++++++++-
- tools/perf/util/symbol-elf.c | 35 ++++++++++++++++++++-
- tools/perf/util/symbol.c     |  8 ++++-
- 5 files changed, 141 insertions(+), 3 deletions(-)
+ tools/perf/util/db-export.c                        | 62 +++++++++++++++++++++-
+ tools/perf/util/db-export.h                        |  3 ++
+ .../util/scripting-engines/trace-event-python.c    |  4 +-
+ 3 files changed, 67 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 0247acfdfaca..36a607cf8f50 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -21,8 +21,10 @@ char dso__symtab_origin(const struct dso *dso)
- 		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP]	= 'm',
- 		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
- 		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE_COMP]		= 'M',
- 		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
- 	};
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index 017ecbb0ec05..c81dae399763 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -21,17 +21,74 @@
+ #include "comm.h"
+ #include "symbol.h"
+ #include "event.h"
++#include "util.h"
+ #include "thread-stack.h"
+ #include "db-export.h"
  
-@@ -112,11 +114,13 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 		break;
- 
- 	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
- 		path__join3(filename, size, symbol_conf.symfs,
- 			    root_dir, dso->long_name);
- 		break;
- 
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
- 		__symbol__join_symfs(filename, size, dso->long_name);
- 		break;
- 
-@@ -137,6 +141,77 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 	return ret;
- }
- 
-+static int decompress_dummy(const char *input __maybe_unused,
-+			    int output __maybe_unused)
-+{
-+	return -1;
-+}
-+
-+static const struct {
-+	const char *fmt;
-+	int (*decompress)(const char *input, int output);
-+} compressions[] = {
-+	{ "gz", decompress_dummy },
-+	{ NULL, },
++struct deferred_export {
++	struct list_head node;
++	struct comm *comm;
 +};
 +
-+bool is_supported_compression(const char *ext)
++static int db_export__deferred(struct db_export *dbe)
 +{
-+	unsigned i;
++	struct deferred_export *de;
++	int err;
 +
-+	for (i = 0; compressions[i].fmt; i++) {
-+		if (!strcmp(ext, compressions[i].fmt))
-+			return true;
++	while (!list_empty(&dbe->deferred)) {
++		de = list_entry(dbe->deferred.next, struct deferred_export,
++				node);
++		err = dbe->export_comm(dbe, de->comm);
++		list_del(&de->node);
++		free(de);
++		if (err)
++			return err;
 +	}
-+	return false;
++
++	return 0;
 +}
 +
-+bool is_kmodule_extension(const char *ext)
++static void db_export__free_deferred(struct db_export *dbe)
 +{
-+	if (strncmp(ext, "ko", 2))
-+		return false;
++	struct deferred_export *de;
 +
-+	if (ext[2] == '\0' || (ext[2] == '.' && is_supported_compression(ext+3)))
-+		return true;
-+
-+	return false;
-+}
-+
-+bool is_kernel_module(const char *pathname, bool *compressed)
-+{
-+	const char *ext = strrchr(pathname, '.');
-+
-+	if (ext == NULL)
-+		return false;
-+
-+	if (is_supported_compression(ext + 1)) {
-+		if (compressed)
-+			*compressed = true;
-+		ext -= 3;
-+	} else if (compressed)
-+		*compressed = false;
-+
-+	return is_kmodule_extension(ext + 1);
-+}
-+
-+bool decompress_to_file(const char *ext, const char *filename, int output_fd)
-+{
-+	unsigned i;
-+
-+	for (i = 0; compressions[i].fmt; i++) {
-+		if (!strcmp(ext, compressions[i].fmt))
-+			return !compressions[i].decompress(filename,
-+							   output_fd);
++	while (!list_empty(&dbe->deferred)) {
++		de = list_entry(dbe->deferred.next, struct deferred_export,
++				node);
++		list_del(&de->node);
++		free(de);
 +	}
-+	return false;
 +}
 +
-+bool dso__needs_decompress(struct dso *dso)
++static int db_export__defer_comm(struct db_export *dbe, struct comm *comm)
 +{
-+	return dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
++	struct deferred_export *de;
++
++	de = zalloc(sizeof(struct deferred_export));
++	if (!de)
++		return -ENOMEM;
++
++	de->comm = comm;
++	list_add_tail(&de->node, &dbe->deferred);
++
++	return 0;
 +}
 +
- /*
-  * Global list of open DSOs and the counter.
-  */
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index a316e4af321f..3782c82c6e44 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -22,7 +22,9 @@ enum dso_binary_type {
- 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
- 	DSO_BINARY_TYPE__KCORE,
- 	DSO_BINARY_TYPE__GUEST_KCORE,
- 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
-@@ -185,6 +187,11 @@ int dso__kernel_module_get_build_id(struct dso *dso, const char *root_dir);
- char dso__symtab_origin(const struct dso *dso);
- int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
- 				   char *root_dir, char *filename, size_t size);
-+bool is_supported_compression(const char *ext);
-+bool is_kmodule_extension(const char *ext);
-+bool is_kernel_module(const char *pathname, bool *compressed);
-+bool decompress_to_file(const char *ext, const char *filename, int output_fd);
-+bool dso__needs_decompress(struct dso *dso);
- 
- /*
-  * The dso__data_* external interface provides following functions:
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 51a630301afa..946c7d62cb6e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -464,6 +464,7 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ int db_export__init(struct db_export *dbe)
  {
- 	struct map *map;
- 	struct dso *dso = __dsos__findnew(&machine->kernel_dsos, filename);
-+	bool compressed;
- 
- 	if (dso == NULL)
- 		return NULL;
-@@ -476,6 +477,11 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- 		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
- 	else
- 		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
-+
-+	/* _KMODULE_COMP should be next to _KMODULE */
-+	if (is_kernel_module(filename, &compressed) && compressed)
-+		dso->symtab_type++;
-+
- 	map_groups__insert(&machine->kmaps, map);
- 	return map;
- }
-@@ -861,8 +867,14 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 			struct map *map;
- 			char *long_name;
- 
--			if (dot == NULL || strcmp(dot, ".ko"))
-+			if (dot == NULL)
- 				continue;
-+
-+			/* On some system, modules are compressed like .ko.gz */
-+			if (is_supported_compression(dot + 1) &&
-+			    is_kmodule_extension(dot - 2))
-+				dot -= 3;
-+
- 			snprintf(dso_name, sizeof(dso_name), "[%.*s]",
- 				 (int)(dot - dent->d_name), dent->d_name);
- 
-@@ -1044,6 +1056,11 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
- 			dot = strrchr(name, '.');
- 			if (dot == NULL)
- 				goto out_problem;
-+			/* On some system, modules are compressed like .ko.gz */
-+			if (is_supported_compression(dot + 1))
-+				dot -= 3;
-+			if (!is_kmodule_extension(dot + 1))
-+				goto out_problem;
- 			snprintf(short_module_name, sizeof(short_module_name),
- 					"[%.*s]", (int)(dot - name), name);
- 			strxfrchar(short_module_name, '-', '_');
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 1e23a5bfb044..efc7eb6b8f0f 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -546,6 +546,35 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
+ 	memset(dbe, 0, sizeof(struct db_export));
++	INIT_LIST_HEAD(&dbe->deferred);
  	return 0;
  }
  
-+static int decompress_kmodule(struct dso *dso, const char *name,
-+			      enum dso_binary_type type)
++int db_export__flush(struct db_export *dbe)
 +{
-+	int fd;
-+	const char *ext = strrchr(name, '.');
-+	char tmpbuf[] = "/tmp/perf-kmod-XXXXXX";
-+
-+	if ((type != DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP &&
-+	     type != DSO_BINARY_TYPE__GUEST_KMODULE_COMP) ||
-+	    type != dso->symtab_type)
-+		return -1;
-+
-+	if (!ext || !is_supported_compression(ext + 1))
-+		return -1;
-+
-+	fd = mkstemp(tmpbuf);
-+	if (fd < 0)
-+		return -1;
-+
-+	if (!decompress_to_file(ext + 1, name, fd)) {
-+		close(fd);
-+		fd = -1;
-+	}
-+
-+	unlink(tmpbuf);
-+
-+	return fd;
++	return db_export__deferred(dbe);
 +}
 +
- bool symsrc__possibly_runtime(struct symsrc *ss)
+ void db_export__exit(struct db_export *dbe)
  {
- 	return ss->dynsym || ss->opdsec;
-@@ -571,7 +600,11 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 	Elf *elf;
- 	int fd;
++	db_export__free_deferred(dbe);
+ 	call_return_processor__free(dbe->crp);
+ 	dbe->crp = NULL;
+ }
+@@ -115,7 +172,10 @@ int db_export__comm(struct db_export *dbe, struct comm *comm,
+ 	comm->db_id = ++dbe->comm_last_db_id;
  
--	fd = open(name, O_RDONLY);
-+	if (dso__needs_decompress(dso))
-+		fd = decompress_kmodule(dso, name, type);
-+	else
-+		fd = open(name, O_RDONLY);
-+
- 	if (fd < 0)
- 		return -1;
+ 	if (dbe->export_comm) {
+-		err = dbe->export_comm(dbe, comm);
++		if (main_thread->comm_set)
++			err = dbe->export_comm(dbe, comm);
++		else
++			err = db_export__defer_comm(dbe, comm);
+ 		if (err)
+ 			return err;
+ 	}
+diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
+index dd5ac2ae97d4..adbd22d66798 100644
+--- a/tools/perf/util/db-export.h
++++ b/tools/perf/util/db-export.h
+@@ -17,6 +17,7 @@
+ #define __PERF_DB_EXPORT_H
  
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 078331140d8c..c69915c9d5bc 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -51,7 +51,9 @@ static enum dso_binary_type binary_type_symtab[] = {
- 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
- 	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
- 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
- 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
- 	DSO_BINARY_TYPE__NOT_FOUND,
+ #include <linux/types.h>
++#include <linux/list.h>
+ 
+ struct perf_evsel;
+ struct machine;
+@@ -74,9 +75,11 @@ struct db_export {
+ 	u64 sample_last_db_id;
+ 	u64 call_path_last_db_id;
+ 	u64 call_return_last_db_id;
++	struct list_head deferred;
  };
-@@ -1300,7 +1302,9 @@ static bool dso__is_compatible_symtab_type(struct dso *dso, bool kmod,
- 		return dso->kernel == DSO_TYPE_GUEST_KERNEL;
  
- 	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
- 		/*
- 		 * kernel modules know their symtab type - it's set when
- 		 * creating a module dso in machine__new_module().
-@@ -1368,7 +1372,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		return -1;
+ int db_export__init(struct db_export *dbe);
++int db_export__flush(struct db_export *dbe);
+ void db_export__exit(struct db_export *dbe);
+ int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
+ int db_export__machine(struct db_export *dbe, struct machine *machine);
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cb1d9602f418..118bc62850a8 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -1030,7 +1030,9 @@ error:
  
- 	kmod = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
--		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
-+		dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
+ static int python_flush_script(void)
+ {
+-	return 0;
++	struct tables *tables = &tables_global;
++
++	return db_export__flush(&tables->dbe);
+ }
  
- 	/*
- 	 * Iterate over candidate debug images.
+ /*
 -- 
 1.9.3
 
