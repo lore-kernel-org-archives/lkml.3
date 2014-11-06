@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaKFXB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:01:59 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:62090 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396AbaKFXBt (ORCPT
+	id S1754002AbaKFXCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:02:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58887 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849AbaKFWmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 18:01:49 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: N900 modem support in 3.18-rc1
-Date: Fri, 7 Nov 2014 00:01:45 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Sebastian Reichel <sre@kernel.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-References: <20141104205117.GA17606@amd> <20141106180335.GA21513@earth.universe> <20141106225005.GA14002@amd>
-In-Reply-To: <20141106225005.GA14002@amd>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6350092.FCnsWLNFgr";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411070001.46481@pali>
+	Thu, 6 Nov 2014 17:42:35 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Eric Rannaud <e@nanocritical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 158/162] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
+Date: Thu,  6 Nov 2014 14:37:02 -0800
+Message-Id: <1415313426-9622-159-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6350092.FCnsWLNFgr
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
 
-On Thursday 06 November 2014 23:50:05 Pavel Machek wrote:
-> > > What is needed to get voice calls to work?
-> >=20
-> > There's still a kernel driver missing in mainline for
-> > exchanging voice data between the modem and the cpu (called
-> > cmt-speech).
-> >=20
-> > BTW the CMT driver should be removed from your kernel tree;
-> > its a deprecated variant of mainline's nokia-modem driver.
-> > Thus I guess the cmt-speech driver, which is available in
-> > your kernel tree, is not properly integrated into the
-> > changes I did during mainlining the other modem related
-> > drivers.
->=20
-> Aha, so CONFIG_CMT is the same thing as CONFIG_NOKIA_NODEM?
-> Ok, will disable that. Speech... if you'd have version I
-> could test, I'll happily do that.
->=20
-> Thanks,
-> 									Pavel
+------------------
 
-=46or voice calls you need:
-* kernel driver cmt-speech (or it has some new name)
-* cmt-speech userspace library (communication with kernel)
-* pulseaudio modules which are using that library
+From: Eric Rannaud <e@nanocritical.com>
 
-=46reemangordon (Ivaylo Dimitrov, CCed) should know more about it,=20
-specially about pulseaudio modules...
+commit 69a91c237ab0ebe4e9fdeaf6d0090c85275594ec upstream.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+The man page for open(2) indicates that when O_CREAT is specified, the
+'mode' argument applies only to future accesses to the file:
 
---nextPart6350092.FCnsWLNFgr
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+	Note that this mode applies only to future accesses of the newly
+	created file; the open() call that creates a read-only file
+	may well return a read/write file descriptor.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+The man page for open(2) implies that 'mode' is treated identically by
+O_CREAT and O_TMPFILE.
 
-iEYEABECAAYFAlRb/doACgkQi/DJPQPkQ1KT3gCfeVcP50c4JB3diziGMrDrNka0
-oiEAoIuH7eWygsYS2PjOwa0riQBFd+8x
-=tdIT
------END PGP SIGNATURE-----
+O_TMPFILE, however, behaves differently:
 
---nextPart6350092.FCnsWLNFgr--
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
+	assert(fd == -1);
+	assert(errno == EACCES);
+
+	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
+	assert(fd > 0);
+
+For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
+
+	if (*opened & FILE_CREATED) {
+		/* Don't check for write permission, don't truncate */
+		open_flag &= ~O_TRUNC;
+		will_truncate = false;
+		acc_mode = MAY_OPEN;
+		path_to_nameidata(path, nd);
+		goto finish_open_created;
+	}
+
+But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
+may_open().
+
+This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
+inode is created, may_open() is called with acc_mode = MAY_OPEN, in
+do_tmpfile().
+
+A different, but related glibc bug revealed the discrepancy:
+https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+
+The glibc lazily loads the 'mode' argument of open() and openat() using
+va_arg() only if O_CREAT is present in 'flags' (to support both the 2
+argument and the 3 argument forms of open; same idea for openat()).
+However, the glibc ignores the 'mode' argument if O_TMPFILE is in
+'flags'.
+
+On x86_64, for open(), it magically works anyway, as 'mode' is in
+RDX when entering open(), and is still in RDX on SYSCALL, which is where
+the kernel looks for the 3rd argument of a syscall.
+
+But openat() is not quite so lucky: 'mode' is in RCX when entering the
+glibc wrapper for openat(), while the kernel looks for the 4th argument
+of a syscall in R10. Indeed, the syscall calling convention differs from
+the regular calling convention in this respect on x86_64. So the kernel
+sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
+fails with EACCES.
+
+Signed-off-by: Eric Rannaud <e@nanocritical.com>
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/namei.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index eaabb52..ddb6721 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3128,7 +3128,8 @@ static int do_tmpfile(int dfd, struct filename *pathname,
+ 	if (error)
+ 		goto out2;
+ 	audit_inode(pathname, nd->path.dentry, 0);
+-	error = may_open(&nd->path, op->acc_mode, op->open_flag);
++	/* Don't check for other permissions, the inode was just created */
++	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
+ 	if (error)
+ 		goto out2;
+ 	file->f_path.mnt = nd->path.mnt;
+-- 
+1.9.1
+
