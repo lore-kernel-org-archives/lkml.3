@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaKFOSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:18:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52136 "EHLO mx2.suse.de"
+	id S1750963AbaKFOSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:18:52 -0500
+Received: from mga14.intel.com ([192.55.52.115]:19485 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413AbaKFOSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:18:25 -0500
-Date: Thu, 6 Nov 2014 15:18:22 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	id S1751301AbaKFOSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:18:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
+   d="scan'208";a="618221971"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 04/12 v3] tracing: Convert seq_buf_path() to be like
- seq_path()
-Message-ID: <20141106141820.GC2001@dhcp128.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
- <20141104160222.048795666@goodmis.org>
- <20141105144553.GE4570@pathway.suse.cz>
- <20141105151053.744b77f2@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105151053.744b77f2@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch Part2 v5 06/31] x86, irq: Save destination CPU ID in irq_cfg
+Date: Thu,  6 Nov 2014 22:20:19 +0800
+Message-Id: <1415283644-2559-7-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-11-05 15:10:53, Steven Rostedt wrote:
-> On Wed, 5 Nov 2014 15:45:53 +0100
-> Petr Mladek <pmladek@suse.cz> wrote:
-> 
-> 
-> > >   */
-> > > -int seq_buf_path(struct seq_buf *s, const struct path *path)
-> > > +int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc)
-> > >  {
-> > > -	unsigned int len = SEQ_BUF_LEFT(s);
-> > > -	unsigned char *p;
-> > > -
-> > > -	WARN_ON(s->size == 0);
-> > 
-> > I would keep this check.
-> 
-> Yeah, I could.
+Cache destination CPU APIC ID into struct irq_cfg when assigning vector
+for interrupt. Upper layer just needs to read the cached APIC ID instead
+of calling apic->cpu_mask_to_apicid_and(), it helps to hide APIC driver
+details from IOAPIC/HPET/MSI drivers..
 
-great :-)
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/hw_irq.h |    1 +
+ arch/x86/kernel/apic/vector.c |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
-> > 
-> > > -	p = d_path(path, s->buffer + s->len, len);
-> > > -	if (!IS_ERR(p)) {
-> > > -		p = mangle_path(s->buffer + s->len, p, "\n");
-> > > -		if (p) {
-> > > -			s->len = p - s->buffer;
-> > > -			return 0;
-> > > +	char *buf = s->buffer + s->len;
-> > > +	size_t size = SEQ_BUF_LEFT(s);
-> > 
-> > I would use the variable name "len" to make it consistent with
-> > the other fucntions in seq_buf.c.
-> 
-> Note, seq_path() is a different beast than the other seq_*() functions
-> (this will be keeping a return code). And the inconsistency is in
-> seq_file.c as well. I'm not saying we shouldn't keep it consistent. But
-> as this patch is to make seq_buf like seq_file, I'll keep the
-> inconsistencies the same too.
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 9662290e0b20..b988ddf7434b 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -116,6 +116,7 @@ struct irq_data;
+ struct irq_cfg {
+ 	cpumask_var_t		domain;
+ 	cpumask_var_t		old_domain;
++	unsigned int		dest_apicid;
+ 	u8			vector;
+ 	u8			move_in_progress : 1;
+ #ifdef CONFIG_IRQ_REMAP
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 6cedd7914581..c724ef6b218c 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -188,6 +188,12 @@ next:
+ 	}
+ 	free_cpumask_var(tmp_mask);
+ 
++	if (!err) {
++		/* cache destination APIC IDs into cfg->dest_apicid */
++		err = apic->cpu_mask_to_apicid_and(mask, cfg->domain,
++						   &cfg->dest_apicid);
++	}
++
+ 	return err;
+ }
+ 
+-- 
+1.7.10.4
 
-Ah, I have missed this.
-
-> We can always do a clean up later.
-
-Fair enough. The result of this patch set (safe printing of
-backtraces from all CPUs) is more important than this clean up.
-
-[...]
-
-> > 
-> > > -	return -1;
-> > > +	if (res > 0)
-> > > +		s->len += res;
-> > > +
-> > > +	return res;
-> > 
-> > It returns -1 on failure and the number of written characters on
-> > success. This is incompatible with the other seq_buf functions
-> > and with the comment above this function. Also it changes the
-> > return value from trace_seq_path().
-> > 
-> > I do not mind about the used scheme but I think that we should
-> > make it consistent.
-> > 
-> 
-> As seq_file has had this inconsistency for a long time, and this code
-> is to try to merge the code between trace_seq and seq_file, I'm going
-> to follow seq_file as that has been around much longer than trace_seq.
-
-I see. Well, we still need to fix trace_seq_path() or its callers.
-For example, seq_print_user_ip() checks trace_seq_path() return value
-and expects 0 on failure.
-
-Best Regards,
-Petr
