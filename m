@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaKFJTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:19:50 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:48223 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaKFJTq (ORCPT
+	id S1751598AbaKFJ0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:26:19 -0500
+Received: from [119.145.14.65] ([119.145.14.65]:18083 "EHLO
+	szxga02-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaKFJ0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:19:46 -0500
+	Thu, 6 Nov 2014 04:26:16 -0500
+Message-ID: <545B3E48.9020804@huawei.com>
+Date: Thu, 6 Nov 2014 17:24:24 +0800
+From: Li Liu <john.liuli@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20141106085424.GF2989@lukather>
-References: <1415074039-16590-1-git-send-email-wens@csie.org>
- <1415074039-16590-2-git-send-email-wens@csie.org> <20141104165733.GI26729@lukather>
- <CAGb2v65VojZVEijdjXYGkMud7dMFzMzagfN=_4S3msZygu3YPQ@mail.gmail.com>
- <20141105100912.GD27686@lukather> <CAGb2v64RT4PKTji2KfDTFfc8b_kiTk0Vh49nEE9ZJukum7h2_Q@mail.gmail.com>
- <20141106085424.GF2989@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Thu, 6 Nov 2014 17:19:24 +0800
-X-Google-Sender-Auth: 5Df9GTGgX_fA1jiaa71xk4kl5FA
-Message-ID: <CAGb2v66Riu43PEzR2vLbg9r_WvZDLvxWtwAc3z43FkF57O2ksg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and resets
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+To: Shannon Zhao <zhaoshenglong@huawei.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Peter Maydell <peter.maydell@linaro.org>
+CC: Joel Schopp <joel.schopp@amd.com>,
+        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, <remy.gauguey@cea.fr>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "lkml - Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
+        QEMU Developers <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "eric.auger@st.com" <eric.auger@st.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
+ vhost-net based on virtio-mmio
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>	<CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com> <544E2B18.8010702@huawei.com> <5459E343.6030907@linaro.org> <545AD5FC.1030600@huawei.com>
+In-Reply-To: <545AD5FC.1030600@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.142.143.9]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 4:54 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Thu, Nov 06, 2014 at 10:09:27AM +0800, Chen-Yu Tsai wrote:
->> >> >> +static void __init sun9i_a80_usb_mod_setup(struct device_node *node)
->> >> >> +{
->> >> >> +     /* AHB1 gate must be enabled to access registers */
->> >> >> +     struct clk *ahb = of_clk_get(node, 0);
->> >> >> +
->> >> >> +     WARN_ON(IS_ERR(ahb));
->> >> >> +     clk_prepare_enable(ahb);
->> >> >
->> >> > Hmmmm. That look off.
->> >> >
->> >> > Why do you need the clock to be enabled all the time? Isn't the CCF
->> >> > already taking care of enabling the parent clock whenever it needs to
->> >> > access any register?
->> >>
->> >> There are also resets in the same block. That and I couldn't get it
->> >> working without enabling the clock beforehand.
->> >
->> > Ah, right.
->> >
->> > What happens if you just enable and disable the clocks in the
->> > reset_assert and reset_deassert right before and after accessing the
->> > registers?
+
+
+On 2014/11/6 9:59, Shannon Zhao wrote:
+> 
+> 
+> On 2014/11/5 16:43, Eric Auger wrote:
+>> On 10/27/2014 12:23 PM, Li Liu wrote:
+>>>
+>>>
+>>> On 2014/10/27 17:37, Peter Maydell wrote:
+>>>> On 25 October 2014 09:24, john.liuli <john.liuli@huawei.com> wrote:
+>>>>> To get the interrupt reason to support such VIRTIO_NET_F_STATUS
+>>>>> features I add a new register offset VIRTIO_MMIO_ISRMEM which
+>>>>> will help to establish a shared memory region between qemu and
+>>>>> virtio-mmio device. Then the interrupt reason can be accessed by
+>>>>> guest driver through this region. At the same time, the virtio-mmio
+>>>>> dirver check this region to see irqfd is supported or not during
+>>>>> the irq handler registration, and different handler will be assigned.
+>>>>
+>>>> If you want to add a new register you should probably propose
+>>>> an update to the virtio spec. However, it seems to me it would
+>>>> be better to get generic PCI/PCIe working on the ARM virt
+>>>> board instead; then we can let virtio-mmio quietly fade away.
+>>>> This has been on the todo list for ages (and there have been
+>>>> RFC patches posted for plain PCI), it's just nobody's had time
+>>>> to work on it.
+>>>>
+>>>> thanks
+>>>> -- PMM
+>>>>
+>>>
+>>> So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
+>>> If so, let this patch go with the wind:). Thx.
 >>
->> That doesn't work either. I forgot to mention that most of the clock
->> gates have the peripheral pll as their parent, not the ahb clock gate.
->
-> Why it doesn't work? The clock needs more time to stabilize? The reset
-> line is set back in reset if the clocks are disabled?
+>> Hi,
+>>
+>> As a fix of current situation where ISR is only partially updated when
+>> vhost-irqfd handles standard IRQ and waiting for PCI emuluation,
+>> wouldn't it make sense to store ISR content on vhost driver side and
+>> introduce ioctls to read/write it. When using vhost BE, virtio QEMU
+>> device would use those ioctl to read/update the ISR content. On top of
+>> that we would update the ISR in vhost before triggering the irqfd. If I
+>> do not miss anything this would at least make things functional with irqfd.
+>>
+>> As a second step, we could try to introduce in-kernel emulation of
+>> ISR/ACK to fix the performance issue related to going to user-side each
+>> time ISR/ACK accesses are done.
+>>
+>> Do you think it is worth investigating this direction?
+>>
+> Hi,
+> 
+> About this problem I have a talk with Li Liu. As MST said, we could use
+> multiple GSI to support vhost-net with irqfd. And we have figured out a way
+> to solve this problem. The method is as same as virtio-pci which is to assign
+> multiple irqs for virtio-mmio. Also it can support multiqueue virtio-net on arm.
+> 
+> Would you have a look at this method? Thank you very much.
+> 
+> - virtio-mmio: support for multiple irqs
+> http://www.spinics.net/lists/kernel/msg1858860.html
+> 
+> Thanks,
+> Shannon
+> 
 
-Let me clarify, what you proposed will work for the resets.
+Yeah, I think multiple GSI is more compatible with MSI-X. And even virtio-mmio
+will fade away at last. It still make senses for ARM32 which can't support PCI/PCIe.
 
-However the clock gates won't work if we use the generic clk-gate driver.
-The problem is most of the gates don't have the ahb gate as their parent,
-but pll4 (peripheral pll). When we enable the clock, the ahb gate isn't
-its parent, and doesn't get enabled as a result. This is especially true
-for the usb phy clocks: all of them use pll4 as their parent.
+BTW, this patch is handed over to Shannon and please refer to new patch at
+http://www.spinics.net/lists/kernel/msg1858860.html.
 
-I think this is a better representation of the hardware, but without
-documents this is really just a guess.
+Li.
 
-As a whole, I think enabling the clock gate at the beginning is simpler.
+>> Thank you in advance
+>>
+>> Best Regards
+>>
+>> Eric
+>>
+>>
+>>>
+>>> Li.
+>>>> .
+>>>>
+> 
+> 
+> .
+> 
 
-ChenYu
