@@ -1,175 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489AbaKFKdu (ORCPT <rfc822;w@1wt.eu>);
+	id S1752512AbaKFKd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:33:58 -0500
+Received: from numascale.com ([213.162.240.84]:55131 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855AbaKFKdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 05:33:50 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:53794 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaKFKds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:33:48 -0500
-Date: Thu, 6 Nov 2014 10:33:37 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-Message-ID: <20141106103337.GA19702@e104818-lin.cambridge.arm.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
- <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com>
- <20141103105716.GC23162@arm.com>
- <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com>
- <20141105165646.GN32700@e104818-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1411051757140.22875@kaball.uk.xensource.com>
+Message-ID: <545B4E84.7050707@numascale.com>
+Date: Thu, 06 Nov 2014 18:33:40 +0800
+From: Daniel J Blueman <daniel@numascale.com>
+Organization: Numascale AS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411051757140.22875@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@alien8.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Steffen Persvold <sp@numascale.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] x86: Drop redundant memory-block sizing code
+References: <ojh5M-xh-17@gated-at.bofh.it> <1415249414-20888-1-git-send-email-daniel@numascale.com> <20141106094007.GA4849@pd.tnic>
+In-Reply-To: <20141106094007.GA4849@pd.tnic>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 06:15:38PM +0000, Stefano Stabellini wrote:
-> On Wed, 5 Nov 2014, Catalin Marinas wrote:
-> > On Mon, Nov 03, 2014 at 11:10:18AM +0000, Stefano Stabellini wrote:
-> > > On Mon, 3 Nov 2014, Will Deacon wrote:
-> > > > On Mon, Nov 03, 2014 at 10:46:03AM +0000, Stefano Stabellini wrote:
-> > > > > On Mon, 27 Oct 2014, Stefano Stabellini wrote:
-> > > > > > Introduce a boolean flag and an accessor function to check whether a
-> > > > > > device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
-> > > > > > 
-> > > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > > > > CC: will.deacon@arm.com
-> > > > > 
-> > > > > Will, Catalin,
-> > > > > are you OK with this patch?
-> > > > 
-> > > > It would be nicer if the dma_coherent flag didn't have to be duplicated by
-> > > > each architecture in dev_archdata. Is there any reason not to put it in the
-> > > > core code?
-> > > 
-> > > Yes, there is a reason for it: if I added a boolean dma_coherent flag in
-> > > struct device as Catalin initially suggested, what would be the default
-> > > for each architecture? Where would I set it for arch that don't use
-> > > device tree?
-> > 
-> > You don't need to. An architecture that has coherent DMA always doesn't
-> > need to do anything. One that has non-coherent DMA always only needs to
-> > select HAVE_DMA_NONCOHERENT. One that has a mix of both needs to find a
-> > way to set dev->dma_coherent. Since that's a new API you introduce, it
-> > doesn't break any existing architectures.
-> 
-> I am not sure that this is better than the current patch but I can see
-> that this approach is not too controversial, so I am happy to go with
-> whatever the maintainers prefer.
+On 11/06/2014 05:40 PM, Borislav Petkov wrote:
+> On Thu, Nov 06, 2014 at 12:50:14PM +0800, Daniel J Blueman wrote:
+>> Drop the unused code from selecting a fixed memory block size of 2GB
+>> on large-memory x86-64 systems.
+>>
+>> Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+>
+> This commit message is seriously lacking an explanation why? Why is it
+> unused, why is it ok on systems with mem < 64g, what is the problem it
+> solves, ...
+>
+> Just ask yourself this when you write commit messages: would anyone else
+> be able to understand what this commit was improving when anyone reads
+> that commit message months, maybe years from now.
 
-Functionally it is the same, but just less code duplication.
+Yes, true. I am incorrectly assuming that someone is looking at the 
+patch in-context, but perhaps better to write assuming the code isn't 
+seen (or at least understood).
 
-> > Note that if !is_device_dma_coherent(), it doesn't always mean that
-> > standard cache maintenance would be enough (but that's a Xen problem,
-> > not sure how to solve).
-> 
-> It is a thorny issue indeed.
-> Xen would need to know how to do non-standard cache maintenance
-> operations.
+How is this?
 
-Is EL2 hyp or EL1 dom0 doing such maintenance? If the latter, you could
-just use the currently registered dma ops.
+As the first check for 64GB or larger memory returns a 2GB memory block 
+size in that case, the following check for less than 64GB will always 
+evaluate true, leading to unreachable code.
 
-> Otherwise we would need to resurrect XENFEAT_grant_map_identity (that I
-> am reverting in this series) and be content with having CONFIG_XEN_DOM0
-> depend on CONFIG_ARM_LPAE.
+Remove the second and unnecessary condition and the code in the 
+remainder of the function, as it therefore can't be reached.
 
-So what does buy you? Is it just the hope that with LPAE you won't have
-weird system caches?
-
-> > diff --git a/arch/Kconfig b/arch/Kconfig
-> > index 05d7a8a458d5..8462b2e7491b 100644
-> > --- a/arch/Kconfig
-> > +++ b/arch/Kconfig
-> > @@ -203,6 +203,9 @@ config HAVE_DMA_ATTRS
-> >  config HAVE_DMA_CONTIGUOUS
-> >  	bool
-> >  
-> > +config HAVE_DMA_NONCOHERENT
-> > +	bool
-> > +
-> >  config GENERIC_SMP_IDLE_THREAD
-> >         bool
-> >  
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index 89c4b5ccc68d..fd7d5522764c 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -40,6 +40,7 @@ config ARM
-> >  	select HAVE_DMA_API_DEBUG
-> >  	select HAVE_DMA_ATTRS
-> >  	select HAVE_DMA_CONTIGUOUS if MMU
-> > +	select HAVE_DMA_NONCOHERENT if OF
-> >  	select HAVE_DYNAMIC_FTRACE if (!XIP_KERNEL)
-> >  	select HAVE_EFFICIENT_UNALIGNED_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && MMU
-> >  	select HAVE_FTRACE_MCOUNT_RECORD if (!XIP_KERNEL)
-> > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> > index 9532f8d5857e..eb7a5aa64e0e 100644
-> > --- a/arch/arm64/Kconfig
-> > +++ b/arch/arm64/Kconfig
-> > @@ -46,6 +46,7 @@ config ARM64
-> >  	select HAVE_DMA_API_DEBUG
-> >  	select HAVE_DMA_ATTRS
-> >  	select HAVE_DMA_CONTIGUOUS
-> > +	select HAVE_DMA_NONCOHERENT
-> >  	select HAVE_DYNAMIC_FTRACE
-> >  	select HAVE_EFFICIENT_UNALIGNED_ACCESS
-> >  	select HAVE_FTRACE_MCOUNT_RECORD
-> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > index 3b64d0bf5bba..7e827726b702 100644
-> > --- a/drivers/of/platform.c
-> > +++ b/drivers/of/platform.c
-> > @@ -183,6 +183,7 @@ static void of_dma_configure(struct device *dev)
-> >  	 * dma coherent operations.
-> >  	 */
-> >  	if (of_dma_is_coherent(dev->of_node)) {
-> > +		dev->dma_coherent = true;
-> >  		set_arch_dma_coherent_ops(dev);
-> >  		dev_dbg(dev, "device is dma coherent\n");
-> >  	}
-> 
-> I think that this would need to be #ifdef'ed as it is possible to have
-> OF support but no HAVE_DMA_NONCOHERENT (PPC?).
-
-The field is always there. But with !HAVE_DMA_NONCOHERENT,
-is_device_dma_coherent() would always return 1. You could avoid
-defining is_device_dma_coherent() entirely when !HAVE_DMA_NONCOHERENT,
-it wouldn't be worse than your patch in terms of an undefined function.
-
-> > diff --git a/include/linux/device.h b/include/linux/device.h
-> > index ce1f21608b16..e00ca876db01 100644
-> > --- a/include/linux/device.h
-> > +++ b/include/linux/device.h
-> > @@ -796,6 +796,7 @@ struct device {
-> >  
-> >  	bool			offline_disabled:1;
-> >  	bool			offline:1;
-> > +	bool			dma_coherent:1;
-> >  };
-> 
-> I guess we would have to #ifdef CONFIG_HAVE_DMA_NONCOHERENT the
-> dma_coherent flag, right? Otherwise architecures that do not select
-> CONFIG_HAVE_DMA_NONCOHERENT (x86 for example) would end up with a flag
-> in struct device that doesn't reflect the properties of the device (dma
-> coherent devices with dev->dma_coherent == 0).
-
-In my proposal you should not read this field directly but rather access
-it only via is_device_dma_coherent() (you can add a function for setting
-it as well).
-
+Thanks,
+   Daniel
 -- 
-Catalin
+Daniel J Blueman
+Principal Software Engineer, Numascale
