@@ -1,111 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaKFCki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:40:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39052 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaKFCkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:40:36 -0500
-Date: Wed, 5 Nov 2014 18:40:35 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH -next v2 11/26] tty: Don't release tty locks for wait
- queue sanity check
-Message-ID: <20141106024035.GA14424@kroah.com>
-References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
- <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
- <1415207589-15967-12-git-send-email-peter@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415207589-15967-12-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751412AbaKFClB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:41:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14811 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883AbaKFClA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 21:41:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,323,1413270000"; 
+   d="scan'208";a="632351302"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@arm.com>
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [RFC PATCH v3] sched/deadline: support dl task migration during cpu hotplug
+Date: Thu,  6 Nov 2014 10:40:49 +0800
+Message-Id: <1415241649-59561-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 12:12:54PM -0500, Peter Hurley wrote:
-> Releasing the tty locks while waiting for the tty wait queues to
-> be empty is no longer necessary nor desirable. Prior to
-> "tty: Don't take tty_mutex for tty count changes", dropping the
-> tty locks was necessary to reestablish the correct lock order between
-> tty_mutex and the tty locks. Dropping the global tty_mutex was necessary;
-> otherwise new ttys could not have been opened while waiting.
-> 
-> However, without needing the global tty_mutex held, the tty locks for
-> the releasing tty can now be held through the sleep. The sanity check
-> is for abnormal conditions caused by kernel bugs, not for recoverable
-> errors caused by misbehaving userspace; dropping the tty locks only
-> allows the tty state to get more sideways.
-> 
-> Reviewed-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/tty_io.c | 8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index e59de81c39a9..b008e2b38d54 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -1798,13 +1798,10 @@ int tty_release(struct inode *inode, struct file *filp)
->  	 * first, its count will be one, since the master side holds an open.
->  	 * Thus this test wouldn't be triggered at the time the slave closes,
->  	 * so we do it now.
-> -	 *
-> -	 * Note that it's possible for the tty to be opened again while we're
-> -	 * flushing out waiters.  By recalculating the closing flags before
-> -	 * each iteration we avoid any problems.
->  	 */
-> +	tty_lock_pair(tty, o_tty);
-> +
->  	while (1) {
-> -		tty_lock_pair(tty, o_tty);
->  		tty_closing = tty->count <= 1;
->  		o_tty_closing = o_tty &&
->  			(o_tty->count <= (pty_master ? 1 : 0));
-> @@ -1835,7 +1832,6 @@ int tty_release(struct inode *inode, struct file *filp)
->  
->  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
->  				__func__, tty_name(tty, buf));
-> -		tty_unlock_pair(tty, o_tty);
->  		schedule();
->  	}
->  
+I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+addition, task may/may not be running again if cpu is added back. The root cause
+which I found is that dl task will be throtted and removed from dl rq after
+comsuming all budget, which leads to stop task can't pick it up from dl rq and
+migrate to other cpus during hotplug.
 
-This patch had the same type of fuzz as the previous one, the version I
-used was:
+The method to reproduce:
+schedtool -E -t 50000:100000 -e ./test
+Actually test is just a simple for loop. Then observe which cpu the test
+task is on.
+echo 0 > /sys/devices/system/cpu/cpuN/online
 
+This patch fix it by push the task to another cpu in dl_task_timer() if
+rq is offline.
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index e59de81c39a9..b008e2b38d54 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1798,13 +1798,10 @@ int tty_release(struct inode *inode, struct file *filp)
- 	 * first, its count will be one, since the master side holds an open.
- 	 * Thus this test wouldn't be triggered at the time the slave closes,
- 	 * so we do it now.
--	 *
--	 * Note that it's possible for the tty to be opened again while we're
--	 * flushing out waiters.  By recalculating the closing flags before
--	 * each iteration we avoid any problems.
- 	 */
-+	tty_lock_pair(tty, o_tty);
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v2 -> v3:
+ * don't get_task_struct
+ * if cannot preempt any rq, fallback to pick any online cpus 
+ * use cpu_active_mask as original later_mask if cpu is offline
+v1 -> v2:
+ * push the task to another cpu in dl_task_timer() if rq is offline.
+
+ kernel/sched/deadline.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 48 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index f3d7776..b1660c8 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+ 	return hrtimer_active(&dl_se->dl_timer);
+ }
+ 
++static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+ /*
+  * This is the bandwidth enforcement timer callback. If here, we know
+  * a task is not on its dl_rq, since the fact that the timer was running
+@@ -538,6 +539,46 @@ again:
+ 	update_rq_clock(rq);
+ 	dl_se->dl_throttled = 0;
+ 	dl_se->dl_yielded = 0;
 +
- 	while (1) {
--		tty_lock_pair(tty, o_tty);
- 		tty_closing = tty->count <= 1;
- 		o_tty_closing = o_tty &&
- 			(o_tty->count <= (pty_master ? 1 : 0));
-@@ -1835,7 +1832,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 
- 		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
- 				__func__, tty_name(tty, buf));
--		tty_unlock_pair(tty, o_tty);
- 		schedule();
++	/*
++	 * So if we find that the rq the task was on is no longer
++	 * available, we need to select a new rq.
++	 */
++	if (!rq->online) {
++		struct rq *later_rq = NULL;
++
++		raw_spin_unlock(&rq->lock);
++
++		later_rq = find_lock_later_rq(p, rq);
++
++		if (!later_rq) {
++			int cpu;
++
++			/*
++			 * If cannot preempt any rq, fallback to pick any
++			 * online cpu.
++			 */
++			for_each_cpu(cpu, &p->cpus_allowed)
++				if (cpu_online(cpu))
++					later_rq = cpu_rq(cpu);
++			if (!later_rq) {
++				pr_warn("fail to find any online and task
++						will never come back to us\n");
++				goto out;
++			}
++		}
++
++		deactivate_task(rq, p, 0);
++		set_task_cpu(p, later_rq->cpu);
++		activate_task(later_rq, p, 0);
++
++		resched_curr(later_rq);
++
++		double_unlock_balance(rq, later_rq);
++
++		goto out;
++	}
++
+ 	if (task_on_rq_queued(p)) {
+ 		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+ 		if (dl_task(rq->curr))
+@@ -555,7 +596,7 @@ again:
  	}
+ unlock:
+ 	raw_spin_unlock(&rq->lock);
+-
++out:
+ 	return HRTIMER_NORESTART;
+ }
  
+@@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
+ 	 * We have to consider system topology and task affinity
+ 	 * first, then we can look for a suitable cpu.
+ 	 */
+-	cpumask_copy(later_mask, task_rq(task)->rd->span);
+-	cpumask_and(later_mask, later_mask, cpu_active_mask);
++	if (likely(task_rq(task)->online)) {
++		cpumask_copy(later_mask, task_rq(task)->rd->span);
++		cpumask_and(later_mask, later_mask, cpu_active_mask);
++	} else
++		/* for offline cpus we have a singleton rd */
++		cpumask_copy(later_mask, cpu_active_mask);
+ 	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+ 	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+ 			task, later_mask);
+-- 
+1.9.1
+
