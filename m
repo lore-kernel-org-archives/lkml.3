@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaKFKAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:00:47 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48560 "EHLO
+	id S1752408AbaKFJ6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:58:32 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48494 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752328AbaKFKAE (ORCPT
+	with ESMTP id S1752157AbaKFJ5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:00:04 -0500
-Date: Thu, 6 Nov 2014 10:59:05 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
+	Thu, 6 Nov 2014 04:57:23 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH v3 0/2] dmaengine: Add driver documentation
-Message-ID: <20141106095905.GI2989@lukather>
-References: <1414529750-14431-1-git-send-email-maxime.ripard@free-electrons.com>
- <20141106055713.GS1870@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tBhgiDt8dP1efIIJ"
-Content-Disposition: inline
-In-Reply-To: <20141106055713.GS1870@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 10/10] [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the kernel
+Date: Thu,  6 Nov 2014 10:57:08 +0100
+Message-Id: <1415267829-4177-11-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Place v4l2_mbus_pixelcode in a #ifndef __KERNEL__ section so that kernel
+users don't have access to these definitions.
 
---tBhgiDt8dP1efIIJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We have to keep this definition for user-space users even though they're
+encouraged to move to the new media_bus_format enum.
 
-On Thu, Nov 06, 2014 at 11:27:13AM +0530, Vinod Koul wrote:
-> On Tue, Oct 28, 2014 at 09:55:48PM +0100, Maxime Ripard wrote:
-> > Hi,
-> >=20
-> > This is the third attempt at documenting how to write a dmaengine
-> > driver.
->=20
-> Applied all, thanks.
->=20
-> Fixed minor typos in second one.
->=20
-> Also we need to move dmatest.txt to new folder and also update MAINTAINER=
-S,
-> so applied with these two patches as well
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ include/uapi/linux/media-bus-format.h | 5 +++++
+ include/uapi/linux/v4l2-mediabus.h    | 2 ++
+ 2 files changed, 7 insertions(+)
 
-Great news, thanks for the additional patches too.
+diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
+index 251a902..d7f9ea2 100644
+--- a/include/uapi/linux/media-bus-format.h
++++ b/include/uapi/linux/media-bus-format.h
+@@ -31,9 +31,14 @@
+  * new pixel codes.
+  */
+ 
++#ifdef __KERNEL__
++#define MEDIA_BUS_FMT_ENTRY(name, val)	MEDIA_BUS_FMT_ ## name = val
++#else
++/* Keep V4L2_MBUS_FMT for backwards compatibility */
+ #define MEDIA_BUS_FMT_ENTRY(name, val)	\
+ 	MEDIA_BUS_FMT_ ## name = val,	\
+ 	V4L2_MBUS_FMT_ ## name = val
++#endif
+ 
+ enum media_bus_format {
+ 	MEDIA_BUS_FMT_ENTRY(FIXED, 0x0001),
+diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
+index d30526c..8759002 100644
+--- a/include/uapi/linux/v4l2-mediabus.h
++++ b/include/uapi/linux/v4l2-mediabus.h
+@@ -15,7 +15,9 @@
+ #include <linux/videodev2.h>
+ #include <linux/media-bus-format.h>
+ 
++#ifndef __KERNEL__
+ #define v4l2_mbus_pixelcode media_bus_format
++#endif
+ 
+ /**
+  * struct v4l2_mbus_framefmt - frame format on the media bus
+-- 
+1.9.1
 
-Maxime
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---tBhgiDt8dP1efIIJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUW0ZoAAoJEBx+YmzsjxAgft8P/icc/ckgMFNUTSw8hKVz61Mc
-A9xOeQjGFPu7Nb6GmV/Ainstrgl2SFLSy8g7fNOuLSoFbc8erIHNnReB572sbJtL
-QkdyyPREq5ubB7rNji2Qomb4N3u7JojW7Bagh/ApDOu3oR0QnYf54KwWaJDihJJd
-2/QRUPC6pEssnOAw8OjTflSEYZ+qPF62Z3BM1Wtf8LGeHGdKbzZKyyWVeCLoLwer
-DyeS6z5kk79a8en4QIwCTJobPq3iTZDhCXtNyHh4fv2N97WKEMKrlzXaLmGZYCPN
-XeEfGVeXEHxVVcUC8leia/bjzTsiU5vBvAZrwEcHVJlGsdO2WLqNGnbc7qTZCR62
-fy7F5hhhFGOkKb8Sfk3uSnB5RCsCtRjEGkGK9qycyaw6jh4q4Xijf/plU4/y5Uph
-EkxjJBSS70hxJc1qEXY0/CbB8QOq14Mp3toxI6ok77SK28zxu7gFvS1AIHuEDFqt
-mzSL04LdErYvGHdh31yjP0FAUJYup8wigfVq3Wg5RhUv/yKIrWNeWv8m65rUwHGN
-JDH2fJ/r4f5wNU9C/efX36/uBgrGa13d0GKFk8ywd3/RkkwfD++vLUHbWaf7hnMP
-+4WlOw17tRmLH83afI3ESPzkx5yF6AiRXk4npWS7r0Bgk39bbgu67Z1lZG0RGP2u
-53qZXQRttK0DhQaukDiy
-=evap
------END PGP SIGNATURE-----
-
---tBhgiDt8dP1efIIJ--
