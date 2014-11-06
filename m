@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaKFNay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 08:30:54 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:44439 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaKFNav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 08:30:51 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: MIPS: lantiq: use devm_iounmap instead of iounmap
-Date: Thu,  6 Nov 2014 19:00:42 +0530
-Message-Id: <1415280642-3761-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751245AbaKFNd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 08:33:59 -0500
+Received: from 8bytes.org ([81.169.241.247]:49540 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaKFNd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 08:33:56 -0500
+Date: Thu, 6 Nov 2014 14:33:54 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] iommu/amd: Use delayed mmu release notifier
+Message-ID: <20141106133354.GP10744@8bytes.org>
+References: <54418D7F.3050304@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54418D7F.3050304@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-port->membase was allocated using devm_ioremap_nocache, so ideally
-we should unmap it using devm_iounmap. but it was using iounmap.
+On Sat, Oct 18, 2014 at 12:43:27AM +0300, Oded Gabbay wrote:
+> 3. Later, amdkfd's mmu notifier callback (kfd_process_notifier_release()) gets
+>    called and releases more things that are related to the process.
+>    In that function, amd_iommu_unbind_pasid() is explicitly called.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Can't you just register a delayed funtion in
+kfd_process_notifier_release() and call amd_iommu_unbind_pasid() from
+there? I really hate to make that part of the IOMMUv2 driver API,
+especially since it is going to be turned into a generic IOMMU-API
+extension.
 
-hi,
-just a small problem here.I could not build test this as I do not have a
-MIPS crosscompiler.I know i should not send without a minimum build test,
-but this change should not break the build (or maybe i am wrong)..
+And especially since all these hacks could be avoided if the KFD driver
+would just turn down everything on closing the file descriptor.
 
- drivers/tty/serial/lantiq.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/lantiq.c b/drivers/tty/serial/lantiq.c
-index 4675fe1..18c3844 100644
---- a/drivers/tty/serial/lantiq.c
-+++ b/drivers/tty/serial/lantiq.c
-@@ -497,8 +497,10 @@ lqasc_type(struct uart_port *port)
- static void
- lqasc_release_port(struct uart_port *port)
- {
-+	struct platform_device *pdev = to_platform_device(port->dev);
-+
- 	if (port->flags & UPF_IOREMAP) {
--		iounmap(port->membase);
-+		devm_iounmap(&pdev->dev, port->membase);
- 		port->membase = NULL;
- 	}
- }
--- 
-1.8.1.2
+	Joerg
 
