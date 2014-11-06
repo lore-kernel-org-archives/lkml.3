@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751115AbaKFL1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 06:27:47 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:60893 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaKFL1o (ORCPT
+	id S1751339AbaKFL2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 06:28:37 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61132 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaKFL2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 06:27:44 -0500
+	Thu, 6 Nov 2014 06:28:34 -0500
+Date: Thu, 6 Nov 2014 11:28:25 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x
+ Driver defines
+Message-ID: <20141106112825.GC26543@x1>
+References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org>
+ <545B1C53.9010406@ti.com>
+ <545B3FA4.8040109@st.com>
 MIME-Version: 1.0
-In-Reply-To: <20141106112244.GM1618@lahna.fi.intel.com>
-References: <1414755658-96293-1-git-send-email-mika.westerberg@linux.intel.com>
-	<545843B1.3020101@nvidia.com>
-	<2455157.3p7mHhT8im@vostro.rjw.lan>
-	<CAMuHMdXn9W2S7N+YGfjDxQozMtRZCVdTzzdDps6YfOv2FqVBmw@mail.gmail.com>
-	<20141106103033.GK1618@lahna.fi.intel.com>
-	<CAMuHMdWtcZcpW=r60s9auENZxChiLwr14R0p_soKr7C3yGYOMQ@mail.gmail.com>
-	<20141106105855.GL1618@lahna.fi.intel.com>
-	<CAMuHMdUroLo5SdXrTu+etiW+TwHAWV-Qn9UsVnud+BJ7q6nXjw@mail.gmail.com>
-	<20141106112244.GM1618@lahna.fi.intel.com>
-Date: Thu, 6 Nov 2014 12:27:42 +0100
-X-Google-Sender-Auth: VF6QbXaKLTj1OK2aeV9fqUvhaLA
-Message-ID: <CAMuHMdVA=L22R=gDJBHcgGbD5tsTOPpVZHaxeLsaB+mXhQswVg@mail.gmail.com>
-Subject: Re: [PATCH] leds: leds-gpio: Convert gpio_blink_set() to use GPIO descriptors
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <545B3FA4.8040109@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 12:22 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Thu, Nov 06, 2014 at 12:12:04PM +0100, Geert Uytterhoeven wrote:
->> On Thu, Nov 6, 2014 at 11:58 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > On Thu, Nov 06, 2014 at 11:32:19AM +0100, Geert Uytterhoeven wrote:
->> >> On Thu, Nov 6, 2014 at 11:30 AM, Mika Westerberg
->> >> <mika.westerberg@linux.intel.com> wrote:
->> >> >> "leds: leds-gpio: Add support for GPIO descriptors" broke leds-gpio on
->> >> >> non-DT platforms for me:
->> >> >>
->> >> >>     gpiod_direction_output: invalid GPIO
->> >> >>     leds-gpio: probe of leds-gpio failed with error -22
->> >> >>
->> >> >> (desc is NULL in gpiod_direction_output()).
+On Thu, 06 Nov 2014, Maxime Coquelin wrote:
 
->>     leds-gpio leds-gpio: GPIO 102, ret: 0
->>     leds-gpio leds-gpio: GPIOD: c050e970
->>
->> So led_dat is non-NULL. But it's overwritten by NULL later:
->>
->>     led_dat->gpiod = template->gpiod;
->
-> Ah, that's it. Nice catch!
->
->> Whitespace damaged fix below, to fold into the original.
->> If you prefer a proper separate patch, let me know.
->
-> It is up to Rafael. I think he wants to stabilize this branch so in that
-> case separate patch on top would work better.
+> Hi Kishon,
+> On 11/06/2014 07:59 AM, Kishon Vijay Abraham I wrote:
+> >Hi,
+> >
+> >On Tuesday 04 November 2014 04:21 PM, Gabriel FERNANDEZ wrote:
+> >>This provides the shared header file which will be reference from both
+> >>PHY driver and its associated Device Tree node(s).
+> >>
+> >>Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> >>---
+> >>  include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
+> >I don't see this being used in device tree file. Are you planning to add this
+> >after -rc1 is tagged. Or else I have to create a separate branch for this file
+> >which will be merged by both me and the dt maintainer. Let me know.
+> I think we don't need to create a branch we will merged by both of us.
+> 
+> What we can do that both of us apply this patch in our trees.
+> It will avoid dependencies on each others.
+> 
+> What do you think?
 
-I've already sent a patch, as I have to publish the fix in my git tree anyway.
+This makes no sense to me.  Can you find another way to explain this
+please?
 
-Gr{oetje,eeting}s,
+> >Thanks
+> >Kishon
+> >>  1 file changed, 18 insertions(+)
+> >>  create mode 100644 include/dt-bindings/phy/phy.h
+> >>
+> >>diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+> >>new file mode 100644
+> >>index 0000000..e8c6a3f
+> >>--- /dev/null
+> >>+++ b/include/dt-bindings/phy/phy.h
+> >>@@ -0,0 +1,18 @@
+> >>+/*
+> >>+ *
+> >>+ * This header provides constants for the phy framework
+> >>+ *
+> >>+ * Copyright (C) 2014 STMicroelectronics
+> >>+ * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+> >>+ * License terms:  GNU General Public License (GPL), version 2
+> >>+ */
+> >>+
+> >>+#ifndef _DT_BINDINGS_PHY
+> >>+#define _DT_BINDINGS_PHY
+> >>+
+> >>+#define PHY_TYPE_SATA		1
+> >>+#define PHY_TYPE_PCIE		2
+> >>+#define PHY_TYPE_USB2		3
+> >>+#define PHY_TYPE_USB3		4
+> >>+
+> >>+#endif /* _DT_BINDINGS_PHY */
+> >>
+> 
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
