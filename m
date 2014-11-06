@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaKFQoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:44:18 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56137 "EHLO
+	id S1752001AbaKFQo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:44:26 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56194 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaKFQoF (ORCPT
+	with ESMTP id S1751904AbaKFQoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:05 -0500
+	Thu, 6 Nov 2014 11:44:14 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v5 10/48] mfd: axp20x: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:42:54 -0800
-Message-Id: <1415292213-28652-11-git-send-email-linux@roeck-us.net>
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-omap@vger.kernel.org
+Subject: [PATCH v5 14/48] mfd: tps80031: Register with kernel power-off handler
+Date: Thu,  6 Nov 2014 08:42:58 -0800
+Message-Id: <1415292213-28652-15-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -23,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA555.00A9,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.545BA55E.0080,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 51
+X-CTCH-SenderID-TotalMessages: 85
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,11 +51,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with a low priority value of 64 to reflect that
-the original code only sets pm_power_off if it was not already set.
+directly. Register with low priority to reflect that the original code
+only sets pm_power_off if it was not already set.
 
-Cc: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: linux-omap@vger.kernel.org
 Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
@@ -69,76 +71,93 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify powroff handler priority
-- Use devm_register_power_off_handler
+- Use define to specify poweroff handler priority
 - Use dev_warn instead of dev_err
 
- drivers/mfd/axp20x.c       | 24 +++++++++++-------------
- include/linux/mfd/axp20x.h |  1 +
- 2 files changed, 12 insertions(+), 13 deletions(-)
+ drivers/mfd/tps80031.c       | 27 +++++++++++++++------------
+ include/linux/mfd/tps80031.h |  2 ++
+ 2 files changed, 17 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-index 6231adb..e2430e6 100644
---- a/drivers/mfd/axp20x.c
-+++ b/drivers/mfd/axp20x.c
-@@ -150,11 +150,13 @@ static struct mfd_cell axp20x_cells[] = {
- 	},
+diff --git a/drivers/mfd/tps80031.c b/drivers/mfd/tps80031.c
+index ed6c5b0..996fd7c 100644
+--- a/drivers/mfd/tps80031.c
++++ b/drivers/mfd/tps80031.c
+@@ -147,7 +147,6 @@ static const struct tps80031_pupd_data tps80031_pupds[] = {
+ 	[TPS80031_CTLI2C_SCL]		= PUPD_DATA(4, 0,	BIT(2)),
+ 	[TPS80031_CTLI2C_SDA]		= PUPD_DATA(4, 0,	BIT(3)),
  };
+-static struct tps80031 *tps80031_power_off_dev;
  
--static struct axp20x_dev *axp20x_pm_power_off;
--static void axp20x_power_off(void)
-+static void axp20x_power_off(struct power_off_handler_block *this)
-+
+ int tps80031_ext_power_req_config(struct device *dev,
+ 		unsigned long ext_ctrl_flag, int preq_bit,
+@@ -209,11 +208,14 @@ int tps80031_ext_power_req_config(struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(tps80031_ext_power_req_config);
+ 
+-static void tps80031_power_off(void)
++static void tps80031_power_off(struct power_off_handler_block *this)
  {
--	regmap_write(axp20x_pm_power_off->regmap, AXP20X_OFF_CTRL,
--		     AXP20X_OFF);
-+	struct axp20x_dev *axp20x = container_of(this, struct axp20x_dev,
+-	dev_info(tps80031_power_off_dev->dev, "switching off PMU\n");
+-	tps80031_write(tps80031_power_off_dev->dev, TPS80031_SLAVE_ID1,
+-				TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
++	struct tps80031 *tps80031 = container_of(this, struct tps80031,
 +						 power_off_hb);
 +
-+	regmap_write(axp20x->regmap, AXP20X_OFF_CTRL, AXP20X_OFF);
++	dev_info(tps80031->dev, "switching off PMU\n");
++	tps80031_write(tps80031->dev, TPS80031_SLAVE_ID1,
++		       TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
  }
  
- static int axp20x_i2c_probe(struct i2c_client *i2c,
-@@ -204,10 +206,11 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
- 		return ret;
+ static void tps80031_pupd_init(struct tps80031 *tps80031,
+@@ -501,9 +503,13 @@ static int tps80031_probe(struct i2c_client *client,
+ 		goto fail_mfd_add;
  	}
  
--	if (!pm_power_off) {
--		axp20x_pm_power_off = axp20x;
--		pm_power_off = axp20x_power_off;
--	}
-+	axp20x->power_off_hb.handler = axp20x_power_off;
-+	axp20x->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
-+	ret = devm_register_power_off_handler(&i2c->dev, &axp20x->power_off_hb);
-+	if (ret)
-+		dev_warn(&i2c->dev, "failed to register power-off handler\n");
+-	if (pdata->use_power_off && !pm_power_off) {
+-		tps80031_power_off_dev = tps80031;
+-		pm_power_off = tps80031_power_off;
++	if (pdata->use_power_off) {
++		tps80031->power_off_hb.handler = tps80031_power_off;
++		tps80031->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
++		ret = register_power_off_handler(&tps80031->power_off_hb);
++		if (ret)
++			dev_warn(&client->dev,
++				 "Failed to register power-off handler\n");
+ 	}
+ 	return 0;
  
- 	dev_info(&i2c->dev, "AXP20X driver loaded\n");
+@@ -523,10 +529,7 @@ static int tps80031_remove(struct i2c_client *client)
+ 	struct tps80031 *tps80031 = i2c_get_clientdata(client);
+ 	int i;
  
-@@ -218,11 +221,6 @@ static int axp20x_i2c_remove(struct i2c_client *i2c)
- {
- 	struct axp20x_dev *axp20x = i2c_get_clientdata(i2c);
- 
--	if (axp20x == axp20x_pm_power_off) {
--		axp20x_pm_power_off = NULL;
+-	if (tps80031_power_off_dev == tps80031) {
+-		tps80031_power_off_dev = NULL;
 -		pm_power_off = NULL;
 -	}
--
- 	mfd_remove_devices(axp20x->dev);
- 	regmap_del_irq_chip(axp20x->i2c_client->irq, axp20x->regmap_irqc);
++	unregister_power_off_handler(&tps80031->power_off_hb);
  
-diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
-index d0e31a2..8f330af 100644
---- a/include/linux/mfd/axp20x.h
-+++ b/include/linux/mfd/axp20x.h
-@@ -175,6 +175,7 @@ struct axp20x_dev {
- 	struct regmap			*regmap;
- 	struct regmap_irq_chip_data	*regmap_irqc;
- 	long				variant;
-+	struct power_off_handler_block	power_off_hb;
+ 	mfd_remove_devices(tps80031->dev);
+ 
+diff --git a/include/linux/mfd/tps80031.h b/include/linux/mfd/tps80031.h
+index 2c75c9c..5716077 100644
+--- a/include/linux/mfd/tps80031.h
++++ b/include/linux/mfd/tps80031.h
+@@ -24,6 +24,7 @@
+ #define __LINUX_MFD_TPS80031_H
+ 
+ #include <linux/device.h>
++#include <linux/pm.h>
+ #include <linux/regmap.h>
+ 
+ /* Pull-ups/Pull-downs */
+@@ -513,6 +514,7 @@ struct tps80031 {
+ 	struct i2c_client	*clients[TPS80031_NUM_SLAVES];
+ 	struct regmap		*regmap[TPS80031_NUM_SLAVES];
+ 	struct regmap_irq_chip_data *irq_data;
++	struct power_off_handler_block power_off_hb;
  };
  
- #endif /* __LINUX_MFD_AXP20X_H */
+ struct tps80031_pupd_init_data {
 -- 
 1.9.1
 
