@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaKFOTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:19:43 -0500
-Received: from mga14.intel.com ([192.55.52.115]:17808 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbaKFOTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:19:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="618222303"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [Patch Part2 v5 10/31] x86, uv: Use new irqdomain interfaces to allocate/free IRQ
-Date: Thu,  6 Nov 2014 22:20:23 +0800
-Message-Id: <1415283644-2559-11-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1751807AbaKFOTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:19:50 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:65168 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaKFOTo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:19:44 -0500
+From: Romain Perier <romain.perier@gmail.com>
+To: heiko@sntech.de
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
+        lgirdwood@gmail.com, broonie@kernel.org, johan@kernel.org,
+        mark.rutland@arm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com
+Subject: [PATCH v3 0/2] poweroff-source DT property renaming
+Date: Thu,  6 Nov 2014 14:23:01 +0000
+Message-Id: <1415283784-10885-1-git-send-email-romain.perier@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use new irqdomain interfaces to allocate/free IRQ, so we could
-kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
+The goal of this serie is to rename the property "poweroff-source" to
+"system-power-controller". After discussions, it makes more sense to rename back
+to the old established property name. This patches serie reverts
+commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/platform/uv/uv_irq.c |   27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+Changes since v2:
+  - of_is_system_power_controller is inline in of.h and only supports
+    backward compatibility with device drivers which used this helper
+    (which is tps65910)
+  - Quashed all changes into a single patch (except documentation)
+  - Add a separated commit to fix typos and mispellings in documentation
 
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 0ce673645432..474912d03f40 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -12,6 +12,7 @@
- #include <linux/rbtree.h>
- #include <linux/slab.h>
- #include <linux/irq.h>
-+#include <linux/irqdomain.h>
- 
- #include <asm/apic.h>
- #include <asm/uv/uv_irq.h>
-@@ -130,24 +131,14 @@ static int
- arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
- 		       unsigned long mmr_offset, int limit)
- {
--	const struct cpumask *eligible_cpu = cpumask_of(cpu);
- 	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long mmr_value;
- 	struct uv_IO_APIC_route_entry *entry;
--	int mmr_pnode, err;
--	unsigned int dest;
-+	int mmr_pnode;
- 
- 	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
- 			sizeof(unsigned long));
- 
--	err = assign_irq_vector(irq, cfg, eligible_cpu);
--	if (err != 0)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(eligible_cpu, eligible_cpu, &dest);
--	if (err != 0)
--		return err;
--
- 	if (limit == UV_AFFINITY_CPU)
- 		irq_set_status_flags(irq, IRQ_NO_BALANCING);
- 	else
-@@ -164,7 +155,7 @@ arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
- 	entry->polarity		= 0;
- 	entry->trigger		= 0;
- 	entry->mask		= 0;
--	entry->dest		= dest;
-+	entry->dest		= cfg->dest_apicid;
- 
- 	mmr_pnode = uv_blade_to_pnode(mmr_blade);
- 	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-@@ -238,9 +229,13 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
- 		 unsigned long mmr_offset, int limit)
- {
--	int ret, irq = irq_alloc_hwirq(uv_blade_to_memory_nid(mmr_blade));
-+	int ret, irq;
-+	struct irq_alloc_info info;
- 
--	if (!irq)
-+	init_irq_alloc_info(&info, cpumask_of(cpu));
-+	irq = irq_domain_alloc_irqs(NULL, 1, uv_blade_to_memory_nid(mmr_blade),
-+				    &info);
-+	if (irq <= 0)
- 		return -EBUSY;
- 
- 	ret = arch_enable_uv_irq(irq_name, irq, cpu, mmr_blade, mmr_offset,
-@@ -248,7 +243,7 @@ int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
- 	if (ret == irq)
- 		uv_set_irq_2_mmr_info(irq, mmr_offset, mmr_blade);
- 	else
--		irq_free_hwirq(irq);
-+		irq_domain_free_irqs(irq, 1);
- 
- 	return ret;
- }
-@@ -283,6 +278,6 @@ void uv_teardown_irq(unsigned int irq)
- 			n = n->rb_right;
- 	}
- 	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
--	irq_free_hwirq(irq);
-+	irq_domain_free_irqs(irq, 1);
- }
- EXPORT_SYMBOL_GPL(uv_teardown_irq);
+Changes since v1:
+
+  - The first patch defines "of_is_system_power_controller" which is compatible
+    with both "vendor,system-power-controller" and "system-power-controller"
+    properties. Also, It keeps the old helper function of_system_has_poweroff_source
+    for source compatibility until everything is renamed (in this way, bisections
+    are not broken and change is made "atomically" between each commit)
+
+    Note: the property "poweroff-source" itself is not used in dts files yet.
+    Before this patch tps65910 was broken due to missing backward compatibility
+    with "vendor,system-power-controller". As the old helper uses the new one,
+    it works again.
+
+  - act8865 and tps65910 are ported to the new helper function
+
+  - The last commit removes the olf helper which was only used for source compatibility
+
+Romain Perier (2):
+  of: Rename "poweroff-source" property to "system-power-controller"
+  dt-bindings: Update documentation for "system-power-controller" and
+    fix misspellings
+
+ .../devicetree/bindings/power/power-controller.txt     | 18 ++++++++++++++++++
+ Documentation/devicetree/bindings/power/poweroff.txt   | 18 ------------------
+ .../bindings/regulator/act8865-regulator.txt           |  4 ++--
+ drivers/mfd/tps65910.c                                 |  2 +-
+ drivers/regulator/act8865-regulator.c                  |  2 +-
+ include/linux/of.h                                     |  8 +++++---
+ 6 files changed, 27 insertions(+), 25 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/power-controller.txt
+ delete mode 100644 Documentation/devicetree/bindings/power/poweroff.txt
+
 -- 
-1.7.10.4
+1.9.1
 
