@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaKFBcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 20:32:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56479 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750970AbaKFBcu (ORCPT
+	id S1751391AbaKFBdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 20:33:42 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:23566 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaKFBdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 20:32:50 -0500
-Message-ID: <1415237557.3398.41.camel@decadent.org.uk>
-Subject: [PATCH] rtsx_usb_ms: Use msleep_interruptible() in polling loop
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Date: Thu, 06 Nov 2014 01:32:37 +0000
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Qz5YfK2anvlGSsg8QY9o"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 5 Nov 2014 20:33:40 -0500
+Message-ID: <545ACFC7.9090204@huawei.com>
+Date: Thu, 6 Nov 2014 09:32:55 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        "Matthias Brugger" <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Tony Luck" <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch Part2 v4 20/31] PCI/MSI: Kill redundant calling for irq_set_msi_desc()
+ for MSIx interrupts
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-21-git-send-email-jiang.liu@linux.intel.com> <20141105224504.GG6168@google.com>
+In-Reply-To: <20141105224504.GG6168@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014/11/6 6:45, Bjorn Helgaas wrote:
+> On Tue, Nov 04, 2014 at 08:01:54PM +0800, Jiang Liu wrote:
+>> It's arch_setup_msi_irq()/arch_setup_msi_irqs()'s responsibility to call
+>> irq_set_msi_desc() to associate IRQ descriptors and MSI descriptors,
+>> so kill the redundant call of irq_set_msi_desc() for MSIx interrupts
+>> in PCI MSI core.
+> 
+> "MSI-X" in English text, "msix" in code.
+> 
+> The default arch_setup_msi_irq() in drivers/pci/msi.c doesn't call
+> irq_set_msi_desc().  Does it happen somewhere inside chip->setup_irq()?
 
---=-Qz5YfK2anvlGSsg8QY9o
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes.
 
-rtsx_usb_ms creates a task that mostly sleeps, but tasks in
-uninterruptible sleep still contribute to the load average (for
-bug-compatibility with Unix).  A load average of ~1 on a system that
-should be idle is somewhat alarming.
+I also found this.
+http://www.spinics.net/lists/linux-pci/msg34256.html
 
-Change the sleep to be interruptible, but still ignore signals.
+> 
+> I don't know how to verify that there are calls in all the places needed.
+> That makes me wonder if the factoring is wrong -- maybe irq_set_msi_desc()
+> could be done in some common place.
 
-A better fix might be to replace this loop with a delayed work item.
+In my idea, place the irq_set_msi_desc() in common MSI core is ok, but currently almost
+all MSI arch code call irq_set_msi_desc() in arch code. So a lot of code need to change.
+And arch code setup MSI and MSI-X in the same way, so if MSI work happy without irq_set_msi_desc(entry->irq, entry)
+in common MSI code, MSI-X should be the same.
 
-References: https://bugs.debian.org/765717
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-Re-sent without the typo in linux-kernel address.
+> 
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  drivers/pci/msi.c |    1 -
+>>  1 file changed, 1 deletion(-)
+>>
+>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>> index afe974600c7d..da181c59394b 100644
+>> --- a/drivers/pci/msi.c
+>> +++ b/drivers/pci/msi.c
+>> @@ -685,7 +685,6 @@ static void msix_program_entries(struct pci_dev *dev,
+>>  						PCI_MSIX_ENTRY_VECTOR_CTRL;
+>>  
+>>  		entries[i].vector = entry->irq;
+>> -		irq_set_msi_desc(entry->irq, entry);
+>>  		entry->masked = readl(entry->mask_base + offset);
+>>  		msix_mask_irq(entry, 1);
+>>  		i++;
+>> -- 
+>> 1.7.10.4
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> .
+> 
 
-Ben.
 
- drivers/memstick/host/rtsx_usb_ms.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+-- 
+Thanks!
+Yijing
 
-diff --git a/drivers/memstick/host/rtsx_usb_ms.c b/drivers/memstick/host/rt=
-sx_usb_ms.c
-index a7282b7..7356780 100644
---- a/drivers/memstick/host/rtsx_usb_ms.c
-+++ b/drivers/memstick/host/rtsx_usb_ms.c
-@@ -706,7 +706,8 @@ poll_again:
- 		if (host->eject)
- 			break;
-=20
--		msleep(1000);
-+		if (msleep_interruptible(1000))
-+			flush_signals(current);
- 	}
-=20
- 	complete(&host->detect_ms_exit);
-
-
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
-
---=-Qz5YfK2anvlGSsg8QY9o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVFrPu+e/yOyVhhEJAQrduw//dLRp5mbnzx1r3t+Fq2CnsW3dyUXBfq+5
-87wVGKEVm83SV7DClh2X1ysb8BHTKNcXZxujNqH6bX7ZhIWTp9/ErKsKWMzLx9Ty
-n6u84lyouJs0BVlLgNCJz2PkBWeX/RWZynMiowBOHwcmXRig8iT5Vyh6ORCvX5bD
-Z+V5bvom5MoFBlYvuExQRdubwyb+BP/ROcwS3DYHhoWSCvAsA3xcMpUbTtHb8wx9
-ZK7HNhmQMvyE01fPCrVlQSf15E1/jPB6gaYEAo0SHjjYCgNZseX10oVQYGHndfr2
-Tiy3MxEu9GKAVeSZHc9Yuf2oxTCUEKSaiTTdRIAaLFBk7+fLNpHBTHApt34/nQNI
-lR5eiqnZ8rjqLRRLMKxPQHdWs5o2hYG9v/y/Fpb8lvBHGkTWKXuxKVC7BezsWODa
-VsKhbVJ+ofp2/3SEex91JYbOHfne/nKIZw7RSdiI8MzeXm51HDv15Cl9n4tK4DG5
-4XwUuqxIqECRevivYG98+J5WR8WYGLM2gOf2ryYS94DXM9AQPMXuVC6LcVK6gsHY
-AgPOsbIeRXpZCYD9clcCxLmK2FNuJI0gkqyQ7uSO+cHel6SD4PMHhHlORAEY+B/4
-wywUg+fw7L5tP2QskZjAzphy2vI7MmqXYearIUIP2QTEbmJCW2V6pFAIFwTOb3Jy
-FX7Q75qmiE0=
-=ElTO
------END PGP SIGNATURE-----
-
---=-Qz5YfK2anvlGSsg8QY9o--
