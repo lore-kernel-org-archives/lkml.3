@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaKFWog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:44:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59169 "EHLO
+	id S1753415AbaKFWoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59185 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353AbaKFWo3 (ORCPT
+	with ESMTP id S1753397AbaKFWok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:29 -0500
+	Thu, 6 Nov 2014 17:44:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 075/162] drm/radeon: fix speaker allocation setup
-Date: Thu,  6 Nov 2014 14:35:39 -0800
-Message-Id: <1415313426-9622-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 024/162] ip6_gre: fix flowi6_proto value in xmit path
+Date: Thu,  6 Nov 2014 14:34:48 -0800
+Message-Id: <1415313426-9622-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,56 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit 4910403836ded89803fab201d4b5caaa85de3a89 upstream.
+[ Upstream commit 3be07244b7337760a3269d56b2f4a63e72218648 ]
 
-If the sad_count is 0, set the hw to stereo and change
-the error message to a warn.  A lot of monitors don't
-set the speaker allocation block.
+In xmit path, we build a flowi6 which will be used for the output route lookup.
+We are sending a GRE packet, neither IPv4 nor IPv6 encapsulated packet, thus the
+protocol should be IPPROTO_GRE.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ kamal: backport to 3.13-stable: no dce3_1_afmt.c in 3.13. ]
+Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
+Reported-by: Matthieu Ternisien d'Ouville <matthieu.tdo@6wind.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/dce6_afmt.c      | 6 +++---
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ net/ipv6/ip6_gre.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
-index ff0001c..3483828 100644
---- a/drivers/gpu/drm/radeon/dce6_afmt.c
-+++ b/drivers/gpu/drm/radeon/dce6_afmt.c
-@@ -174,9 +174,9 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	}
+diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+index 01ee297..bbb5ccd 100644
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -790,7 +790,7 @@ static inline int ip6gre_xmit_ipv4(struct sk_buff *skb, struct net_device *dev)
+ 		encap_limit = t->parms.encap_limit;
  
- 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
--	if (sad_count <= 0) {
--		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
--		return;
-+	if (sad_count < 0) {
-+		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
-+		sad_count = 0;
- 	}
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPIP;
++	fl6.flowi6_proto = IPPROTO_GRE;
  
- 	/* program the speaker allocation */
-diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-index 0c6d5ce..738c1ec 100644
---- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-+++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-@@ -118,9 +118,9 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	}
+ 	dsfield = ipv4_get_dsfield(iph);
  
- 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
--	if (sad_count <= 0) {
--		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
--		return;
-+	if (sad_count < 0) {
-+		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
-+		sad_count = 0;
- 	}
+@@ -840,7 +840,7 @@ static inline int ip6gre_xmit_ipv6(struct sk_buff *skb, struct net_device *dev)
+ 		encap_limit = t->parms.encap_limit;
  
- 	/* program the speaker allocation */
+ 	memcpy(&fl6, &t->fl.u.ip6, sizeof(fl6));
+-	fl6.flowi6_proto = IPPROTO_IPV6;
++	fl6.flowi6_proto = IPPROTO_GRE;
+ 
+ 	dsfield = ipv6_get_dsfield(ipv6h);
+ 	if (t->parms.flags & IP6_TNL_F_USE_ORIG_TCLASS)
 -- 
 1.9.1
 
