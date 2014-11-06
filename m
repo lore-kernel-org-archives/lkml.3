@@ -1,107 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371AbaKFWLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:11:43 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60199 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750970AbaKFWLj (ORCPT
+	id S1751416AbaKFWNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:13:06 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:51008 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020AbaKFWND convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:11:39 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v5 34/48] acpi: Register power-off handler with kernel power-off handler
-Date: Thu, 06 Nov 2014 23:32:26 +0100
-Message-ID: <2274417.WekTW87bGm@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415292213-28652-35-git-send-email-linux@roeck-us.net>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net> <1415292213-28652-35-git-send-email-linux@roeck-us.net>
+	Thu, 6 Nov 2014 17:13:03 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Christian Riesch <christian.riesch@omicron.at>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in receive path
+References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
+	<20141106203832.GB30170@kroah.com>
+	<yw1xwq78jbr6.fsf@unicorn.mansr.com>
+	<20141106205644.GA31435@kroah.com>
+	<yw1xsihwjb67.fsf@unicorn.mansr.com>
+	<20141106211754.GA32000@kroah.com>
+	<yw1xoaskj9fw.fsf@unicorn.mansr.com> <20141106220249.GA952@kroah.com>
+Date: Thu, 06 Nov 2014 22:12:54 +0000
+In-Reply-To: <20141106220249.GA952@kroah.com> (Greg Kroah-Hartman's message of
+	"Thu, 6 Nov 2014 14:02:49 -0800")
+Message-ID: <yw1xk338j7vd.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 06, 2014 08:43:18 AM Guenter Roeck wrote:
-> Register with kernel power-off handler instead of setting pm_power_off
-> directly. Register with high priority to reflect that the driver explicitly
-> overrides existing power-off handlers.
-> 
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Len Brown <lenb@kernel.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-That's fine by me.
+> On Thu, Nov 06, 2014 at 09:38:59PM +0000, Måns Rullgård wrote:
+>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+>> 
+>> > On Thu, Nov 06, 2014 at 09:01:36PM +0000, Måns Rullgård wrote:
+>> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+>> >> 
+>> >> > On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
+>> >> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+>> >> >> 
+>> >> >> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
+>> >> >> >> The current implementation of put_tty_queue() causes a race condition
+>> >> >> >> when re-arranged by the compiler.
+>> >> >> >> 
+>> >> >> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
+>> >> >> >> 
+>> >> >> >> 	*read_buf_addr(ldata, ldata->read_head++) = c;
+>> >> >> >> 
+>> >> >> >> was re-arranged by the compiler to something like
+>> >> >> >> 
+>> >> >> >> 	x = ldata->read_head
+>> >> >> >> 	ldata->read_head++
+>> >> >> >> 	*read_buf_addr(ldata, x) = c;
+>> >> >> >> 
+>> >> >> >> which causes a race condition. Invalid data is read if data is read
+>> >> >> >> before it is actually written to the read buffer.
+>> >> >> >
+>> >> >> > Really?  A compiler can rearange things like that and expect things to
+>> >> >> > actually work?  How is that valid?
+>> >> >> 
+>> >> >> This is actually required by the C spec.  There is a sequence point
+>> >> >> before a function call, after the arguments have been evaluated.  Thus
+>> >> >> all side-effects, such as the post-increment, must be complete before
+>> >> >> the function is called, just like in the example.
+>> >> >> 
+>> >> >> There is no "re-arranging" here.  The code is simply wrong.
+>> >> >
+>> >> > Ah, ok, time to dig out the C spec...
+>> >> >
+>> >> > Anyway, because of this, no need for the wmb() calls, just rearrange the
+>> >> > logic and all should be good, right?  Christian, can you test that
+>> >> > instead?
+>> >> 
+>> >> Weakly ordered SMP systems probably need some kind of barrier.  I didn't
+>> >> look at it carefully.
+>> >
+>> > It shouldn't need a barier, as it is a sequence point with the function
+>> > call.  Well, it's an inline function, but that "shouldn't" matter here,
+>> > right?
+>> 
+>> Sequence points say nothing about the order in which stores become
+>> visible to other CPUs.  That's why there are barrier instructions.
+>
+> Yes, but "order" matters.
+>
+> If I write code that does:
+>
+> 100	x = ldata->read_head;
+> 101	&ldata->read_head[x & SOME_VALUE] = y;
+> 102	ldata->read_head++;
+>
+> the compiler can not reorder lines 102 and 101 just because it feels
+> like it, right?  Or is it time to go spend some reading of the C spec
+> again...
 
-Rafael
+The compiler can't.  The hardware can.  All the hardware promises is
+that at some unspecified time in the future, both memory locations will
+have the correct values.  Another CPU might see 'read_head' updated
+before it sees the corresponding data value.  A wmb() between the writes
+forces the CPU to complete preceding stores before it begins subsequent
+ones.
 
-
-> ---
-> v5:
-> - Rebase to v3.18-rc3
-> v4:
-> - Do not use notifiers but internal functions and data structures to manage
->   the list of power-off handlers. Drop unused parameters from callbacks, and
->   make the power-off function type void
-> v3:
-> - Replace poweroff in all newly introduced variables and in text
->   with power_off or power-off as appropriate
-> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> - Replace acpi: with ACPI: in log message
-> v2:
-> - Use define to specify poweroff handler priority
-> - Use pr_warn instead of pr_err
-> 
->  drivers/acpi/sleep.c | 11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index 05a31b5..a73cfad 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -16,6 +16,7 @@
->  #include <linux/device.h>
->  #include <linux/interrupt.h>
->  #include <linux/suspend.h>
-> +#include <linux/pm.h>
->  #include <linux/reboot.h>
->  #include <linux/acpi.h>
->  #include <linux/module.h>
-> @@ -827,7 +828,7 @@ static void acpi_power_off_prepare(void)
->  	acpi_disable_all_gpes();
->  }
->  
-> -static void acpi_power_off(void)
-> +static void acpi_power_off(struct power_off_handler_block *this)
->  {
->  	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
->  	printk(KERN_DEBUG "%s called\n", __func__);
-> @@ -835,6 +836,11 @@ static void acpi_power_off(void)
->  	acpi_enter_sleep_state(ACPI_STATE_S5);
->  }
->  
-> +static struct power_off_handler_block acpi_power_off_hb = {
-> +	.handler = acpi_power_off,
-> +	.priority = POWER_OFF_PRIORITY_HIGH,
-> +};
-> +
->  int __init acpi_sleep_init(void)
->  {
->  	char supported[ACPI_S_STATE_COUNT * 3 + 1];
-> @@ -851,7 +857,8 @@ int __init acpi_sleep_init(void)
->  	if (acpi_sleep_state_supported(ACPI_STATE_S5)) {
->  		sleep_states[ACPI_STATE_S5] = 1;
->  		pm_power_off_prepare = acpi_power_off_prepare;
-> -		pm_power_off = acpi_power_off;
-> +		if (register_power_off_handler(&acpi_power_off_hb))
-> +			pr_warn("ACPI: Failed to register power-off handler\n");
->  	}
->  
->  	supported[0] = 0;
-> 
+Documentation/memory-barriers.txt explains it all in detail.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Måns Rullgård
+mans@mansr.com
