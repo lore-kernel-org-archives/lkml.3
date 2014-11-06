@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaKFIhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:37:18 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64723 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaKFIhG (ORCPT
+	id S1752201AbaKFIhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:37:55 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:47927 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751328AbaKFIhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:37:06 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-c3-545b332f28a5
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v10 5/5] amba: Remove unused amba_pclk_enable/disable macros
-Date: Thu, 06 Nov 2014 09:36:50 +0100
-Message-id: <1415263010-7992-6-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xK7r6xtEhBp37+Sw2zljPajF96gVG
-	i9VT/7JavH5haPF082Mmi7NNb9gtlkyez2rROXEJu8WsKXuZLC7vmsNm8bn3CKPF7cu8FmuP
-	3GW3ePcywuLuqaNsFmdOX2K1mPD7ApvF8bXhFi/79rM4CHu0NPeweczumMnqsXjPSyaPTas6
-	2TzuXNvD5rHkzSFWjy1X21k8Zt/9wejRt2UVo8eK1d/ZPT5vkvPY+/k3SwBPFJdNSmpOZllq
-	kb5dAlfGsz2SBXfZK7p2/2dpYDzD1sXIySEhYCJx9dYjKFtM4sK99UA2F4eQwFJGiaf3f7ND
-	OH1MEssvbmMGqWITMJbYvHwJWJWIwHVmie7H/SwgCWaBRUwSTVMVQWxhAR+J1esngjWwCKhK
-	bL/1C8jm4OAVcJNY2iwFsU1O4uSxyawgNqeAu8SvJR+YQGwhoJL2r7PZJzDyLmBkWMUomlqa
-	XFCclJ5rqFecmFtcmpeul5yfu4kREgtfdjAuPmZ1iFGAg1GJh3cDZ3SIEGtiWXFl7iFGCQ5m
-	JRHeCD2gEG9KYmVValF+fFFpTmrxIUYmDk6pBka/Ty/ED8z7peefqd+y/WZIk80NV4OkSW0H
-	bm157x6WN3m9Ixeb28K6WUzBERt6TS4prJh+5s07n5WtU85mq19P3ctzvM/HfNL2KSt/yK+t
-	NuPbfDHav3NxyUKVTMO0h3ymjf4NS54t5ox+ZJjUw99aVFRoor7a+t3kNQvt5m+Y/CFpp2zr
-	xv1KLMUZiYZazEXFiQC/DlKdYwIAAA==
+	Thu, 6 Nov 2014 03:37:51 -0500
+Date: Thu, 6 Nov 2014 09:37:46 +0100
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Peter.Chen@freescale.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] usb: chipidea: setup ci_hdrc_platform_data in core
+ driver
+Message-ID: <20141106083746.GB8096@kwain>
+References: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
+ <20141030114341.GA7798@kwain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141030114341.GA7798@kwain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the amba_pclk_enable and amba_pclk_disable macros because they
-are not used by the drivers.
+Hi guys,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- include/linux/amba/bus.h | 6 ------
- 1 file changed, 6 deletions(-)
+On Thu, Oct 30, 2014 at 12:43:41PM +0100, Antoine Tenart wrote:
+> On Thu, Oct 30, 2014 at 12:36:41PM +0100, Antoine Tenart wrote:
+> > Hello,
+> > 
+> > This series introduce the ci_hdrc_get_platdata function to help setting up the
+> > ChipIdea internal ci_hdrc_platform_data structure. This helps avoiding
+> > duplicating code.
+> > 
+> > This series comes from a duscission on Berlin's USB pacthes where it was asked
+> > to move the PHY phandle handling in the ChipIdea core[1].
+> > 
+> > With the introduction of the ci_hdrc_get_platdata function, the old
+> > ci_get_platdata function is removed. Changes in ChipIdea drivers have also been
+> > made.
+> > 
+> > This series is needed for the Berlin USB support and has been tested with an
+> > updated version of the USB Berlin driver (not in mainline yet).
+> > 
+> > [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292383.html
+> > 
+> 
+> Of course, this is the cover letter so it should be [PATCH 0/6].
+> 
+> This series depends on the generic PHY framework support in USB and CI:
+> https://lkml.org/lkml/2014/10/28/807
 
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index c4bae79851fb..566adf0e0412 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -92,12 +92,6 @@ struct amba_device *amba_find_device(const char *, struct device *, unsigned int
- int amba_request_regions(struct amba_device *, const char *);
- void amba_release_regions(struct amba_device *);
- 
--#define amba_pclk_enable(d)	\
--	(IS_ERR((d)->pclk) ? 0 : clk_enable((d)->pclk))
--
--#define amba_pclk_disable(d)	\
--	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
--
- static inline int amba_pclk_prepare(struct amba_device *dev)
- {
- 	return clk_prepare(dev->pclk);
+Any news? I have another series depending on this one waiting in my
+queue.
+
+Antoine
+
 -- 
-1.9.1
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
