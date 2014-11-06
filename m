@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaKFD1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:27:22 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:32042 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaKFD1S (ORCPT
+	id S1751591AbaKFD1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:27:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39774 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKFD1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:27:18 -0500
-Message-ID: <545AEA64.9010308@huawei.com>
-Date: Thu, 6 Nov 2014 11:26:28 +0800
-From: Shannon Zhao <zhaoshenglong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 5 Nov 2014 22:27:21 -0500
+Date: Wed, 5 Nov 2014 19:27:20 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz, Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Howard Chen <ibanezchen@gmail.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: 8250_mtk: Fix quot calculation
+Message-ID: <20141106032720.GA10803@kroah.com>
+References: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
+ <20141009215228.GA23507@kroah.com>
+ <CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
 MIME-Version: 1.0
-To: Joel Schopp <joel.schopp@amd.com>,
-        =?windows-1252?Q?GAUGUEY_R=E9my_?= =?windows-1252?Q?228890?= 
-	<remy.gauguey@cea.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "n.nikolaev@virtualopensystems.com" 
-	<n.nikolaev@virtualopensystems.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-CC: "hangaohuai@huawei.com" <hangaohuai@huawei.com>,
-        "john.liuli@huawei.com" <john.liuli@huawei.com>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "peter.huangpeng@huawei.com" <peter.huangpeng@huawei.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [Qemu-devel] [RFC PATCH] virtio-mmio: support for multiple irqs
-References: <1415093712-15156-1-git-send-email-zhaoshenglong@huawei.com>	<5459D8E8.6060709@huawei.com>	<022C7612790E20489F80A6F0D54B849F3B26F4F3@EXDAG0-B1.intra.cea.fr> <5459EA0E.8020309@huawei.com> <545A41E1.10303@amd.com>
-In-Reply-To: <545A41E1.10303@amd.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.16.142]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/5 23:27, Joel Schopp wrote:
+On Fri, Oct 10, 2014 at 10:10:45AM +0200, Matthias Brugger wrote:
+> 2014-10-09 23:52 GMT+02:00 Greg KH <gregkh@linuxfoundation.org>:
+> > On Thu, Oct 09, 2014 at 06:23:31PM +0200, Matthias Brugger wrote:
+> >> The calculation of value quot for highspeed register set to three
+> >> was wrong. This patch fixes the calculation so that the serial port
+> >> for baudrates bigger then 576000 baud is working correctly.
+> >>
+> >> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> >> ---
+> >>  drivers/tty/serial/8250/8250_mtk.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
+> >> index 1c4b4bf..4376c48 100644
+> >> --- a/drivers/tty/serial/8250/8250_mtk.c
+> >> +++ b/drivers/tty/serial/8250/8250_mtk.c
+> >> @@ -81,7 +81,7 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
+> >>               /* Set to highest baudrate supported */
+> >>               if (baud >= 1152000)
+> >>                       baud = 921600;
+> >> -             quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
+> >> +             quot = (port->uartclk / (256 * baud)) + 1;
+> >>       }
+> >>
+> >>       /*
+> >
+> > Has this always been incorrect, or was it caused by a specific patch?
 > 
-> On 11/05/2014 03:12 AM, Shannon Zhao wrote:
->> Hi Rémy,
->>
->> On 2014/11/5 16:26, GAUGUEY Rémy 228890 wrote:
->>> Hi Shannon, 
->>>
->>>> Type of backend         bandwith(GBytes/sec)
->>>> virtio-net              0.66
->>>> vhost-net               1.49
->>>> vhost-net with irqfd    2.01
->>>>
->>>> Test cmd: ./iperf -c 192.168.0.2 -P 1 -i 10 -p 5001 -f G -t 60
->>> Impressive results !
->>> Could you please detail your setup ? which platform are you using and which GbE controller ?
->> Sorry for not telling the test scenario. This test scenario is from Host to Guest. It just
->> compare the performance of different backends. I did this test on ARM64 platform.
->>
->> The setup was based on:
->> 1)on host kvm-arm should support ioeventfd and irqfd
->> 	The irqfd patch is from Eric "ARM: KVM: add irqfd support".
->> 	http://www.spinics.net/lists/kvm-arm/msg11014.html
->>
->> 	The ioeventfd patch is reworked by me from Antonios.
->> 	http://www.spinics.net/lists/kvm-arm/msg08413.html
->>
->> 2)qemu should enable ioeventfd support for virtio-mmio
->> 	This patch is refer to Ying-Shiuan Pan and reworked for new qemu branch.
->> 	https://lists.gnu.org/archive/html/qemu-devel/2014-11/msg00594.html
->>
->> 3)qemu should enable multiple irqs for virtio-mmio
->> 	This patch isn't sent to qemu maillist as we want to check whether this is the right direction.
->> 	If you want to test, I'll send it to you.
-> I'm not a maintainer so my opinion isn't worth a lot here, but this
-> seems like the right direction to me.  I'd like to see the qemu patch
-> (do mention the dependency on the kernel patch) on the qemu-devel
-> mailing list.  I think these numbers also support some of the prereqs
-> listed above that have gone through several iterations getting queued up
-> for 3.19.
-> .
+> It has always been incorrect :o
 > 
-Hi,
+> > Should it go to the stable kernels?  If so, how far back?
+> 
+> No need to go to the stable kernels. The driver is only in linux-next.
 
-Thanks for your reply :)
-If this patch get accepted by maintainers, I'll send the qemu patch to qemu-devel mailing list.
+Well, it's in 3.18-rc1, so it should at least go into 3.18-final.  I'll
+queue it up for that.
 
-In addition, I think this is worth on arm32 platform as arm32 with GICv2 doesn't support MSI.
-So it can't use virtio-pci if I don't miss something. And it's also worth on arm64 platform
-as we can't make sure when the PCI and MSI are supported on arm. It give users an alternative
-choice for virtualization network.
+thanks,
 
-Rusty, MST, Peter Maydell, do you have any ideas about this? Waiting for your feedback :)
-
-Thanks
--- 
-Shannon
+greg k-h
