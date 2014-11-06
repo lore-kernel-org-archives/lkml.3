@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801AbaKFQnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:43:51 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56073 "EHLO
+	id S1751863AbaKFQoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:44:05 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56084 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaKFQns (ORCPT
+	with ESMTP id S1751762AbaKFQnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:43:48 -0500
+	Thu, 6 Nov 2014 11:43:51 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Ungerer <gerg@uclinux.org>, Joshua Thompson <funaho@jurai.org>,
-        linux-m68k@vger.kernel.org
-Subject: [PATCH v5 04/48] m68k: Replace mach_power_off with pm_power_off
-Date: Thu,  6 Nov 2014 08:42:48 -0800
-Message-Id: <1415292213-28652-5-git-send-email-linux@roeck-us.net>
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v5 05/48] mfd: as3722: Drop reference to pm_power_off from devicetree bindings
+Date: Thu,  6 Nov 2014 08:42:49 -0800
+Message-Id: <1415292213-28652-6-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +26,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA544.0122,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.545BA546.0247,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 14
+X-CTCH-SenderID-TotalMessages: 19
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -51,13 +52,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace mach_power_off with pm_power_off to simplify the subsequent
-move of pm_power_off to generic code.
+Devicetree bindings are supposed to be operating system independent
+and should thus not describe how a specific functionality is implemented
+in Linux.
 
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Joshua Thompson <funaho@jurai.org>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v5:
@@ -67,115 +70,25 @@ v4:
 v3:
 - No change
 v2:
-- have_kernel_poweroff -> have_kernel_power_off
+- No change
 
- arch/m68k/emu/natfeat.c         | 3 ++-
- arch/m68k/include/asm/machdep.h | 1 -
- arch/m68k/kernel/process.c      | 5 +++--
- arch/m68k/kernel/setup_mm.c     | 1 -
- arch/m68k/kernel/setup_no.c     | 1 -
- arch/m68k/mac/config.c          | 3 ++-
- 6 files changed, 7 insertions(+), 7 deletions(-)
+ Documentation/devicetree/bindings/mfd/as3722.txt | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
-index 71b78ec..91e2ae7 100644
---- a/arch/m68k/emu/natfeat.c
-+++ b/arch/m68k/emu/natfeat.c
-@@ -15,6 +15,7 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/pm.h>
- #include <linux/io.h>
- #include <asm/machdep.h>
- #include <asm/natfeat.h>
-@@ -90,5 +91,5 @@ void __init nf_init(void)
- 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
- 		version & 0xffff);
+diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
+index 4f64b2a..0b2a609 100644
+--- a/Documentation/devicetree/bindings/mfd/as3722.txt
++++ b/Documentation/devicetree/bindings/mfd/as3722.txt
+@@ -122,8 +122,7 @@ Following are properties of regulator subnode.
  
--	mach_power_off = nf_poweroff;
-+	pm_power_off = nf_poweroff;
- }
-diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
-index 953ca21..f9fac51 100644
---- a/arch/m68k/include/asm/machdep.h
-+++ b/arch/m68k/include/asm/machdep.h
-@@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
- extern int (*mach_set_clock_mmss)(unsigned long);
- extern void (*mach_reset)( void );
- extern void (*mach_halt)( void );
--extern void (*mach_power_off)( void );
- extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
- extern void (*mach_hd_setup)(char *, int *);
- extern long mach_max_dma_address;
-diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
-index c55ff71..afe3d6e 100644
---- a/arch/m68k/kernel/process.c
-+++ b/arch/m68k/kernel/process.c
-@@ -22,6 +22,7 @@
- #include <linux/unistd.h>
- #include <linux/ptrace.h>
- #include <linux/user.h>
-+#include <linux/pm.h>
- #include <linux/reboot.h>
- #include <linux/init_task.h>
- #include <linux/mqueue.h>
-@@ -77,8 +78,8 @@ void machine_halt(void)
- 
- void machine_power_off(void)
- {
--	if (mach_power_off)
--		mach_power_off();
-+	if (pm_power_off)
-+		pm_power_off();
- 	for (;;);
- }
- 
-diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-index 5b8ec4d..002fea6 100644
---- a/arch/m68k/kernel/setup_mm.c
-+++ b/arch/m68k/kernel/setup_mm.c
-@@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
- EXPORT_SYMBOL(mach_set_rtc_pll);
- void (*mach_reset)( void );
- void (*mach_halt)( void );
--void (*mach_power_off)( void );
- long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
- #ifdef CONFIG_HEARTBEAT
- void (*mach_heartbeat) (int);
-diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
-index 88c27d9..1520156 100644
---- a/arch/m68k/kernel/setup_no.c
-+++ b/arch/m68k/kernel/setup_no.c
-@@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
- /* machine dependent reboot functions */
- void (*mach_reset)(void);
- void (*mach_halt)(void);
--void (*mach_power_off)(void);
- 
- #ifdef CONFIG_M68000
- #if defined(CONFIG_M68328)
-diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
-index a471eab..677913ff 100644
---- a/arch/m68k/mac/config.c
-+++ b/arch/m68k/mac/config.c
-@@ -16,6 +16,7 @@
- #include <linux/tty.h>
- #include <linux/console.h>
- #include <linux/interrupt.h>
-+#include <linux/pm.h>
- /* keyb */
- #include <linux/random.h>
- #include <linux/delay.h>
-@@ -159,7 +160,7 @@ void __init config_mac(void)
- 	mach_set_clock_mmss = mac_set_clock_mmss;
- 	mach_reset = mac_reset;
- 	mach_halt = mac_poweroff;
--	mach_power_off = mac_poweroff;
-+	pm_power_off = mac_poweroff;
- 	mach_max_dma_address = 0xffffffff;
- #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
- 	mach_beep = mac_mksound;
+ Power-off:
+ =========
+-AS3722 supports the system power off by turning off all its rail. This
+-is provided through pm_power_off.
++AS3722 supports the system power off by turning off all its rails.
+ The device node should have the following properties to enable this
+ functionality
+ ams,system-power-controller: Boolean, to enable the power off functionality
 -- 
 1.9.1
 
