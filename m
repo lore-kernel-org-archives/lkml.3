@@ -1,160 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaKFDZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:25:56 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44711 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751311AbaKFDZw (ORCPT
+	id S1751448AbaKFD06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:26:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57029 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750905AbaKFD0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:25:52 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au8NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjDwEFHiMFCwsYAgIFFA0CAg8CKBUJBg0BBwEBiDQJDbZvlHYBAQEBAQUBAQEBAQEcgSyFCIg3gh0HgneBVAWWT4hDg0mCcoxTgW+DeTwvAQEBAYJHAQEB
-X-IPAS-Result: Au8NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2WGflQCgRwXAQF8hAIBAQEBAgEjDwEFHiMFCwsYAgIFFA0CAg8CKBUJBg0BBwEBiDQJDbZvlHYBAQEBAQUBAQEBAQEcgSyFCIg3gh0HgneBVAWWT4hDg0mCcoxTgW+DeTwvAQEBAYJHAQEB
-X-IronPort-AV: E=Sophos;i="5.04,797,1406606400"; 
-   d="scan'208";a="96075480"
-Message-ID: <545AEA37.601@voxpopuli.im>
-Date: Thu, 06 Nov 2014 04:25:43 +0100
-From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
-References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de> <545829CA.7040900@voxpopuli.im> <20141105125028.GA30087@linutronix.de>
-In-Reply-To: <20141105125028.GA30087@linutronix.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 5 Nov 2014 22:26:55 -0500
+Message-ID: <1415244407.3398.48.camel@decadent.org.uk>
+Subject: [PATCH 2/3] i2o: Define i2o_cfg_passthru() and i2o_cfg_passthru32()
+ consistently
+From: Ben Hutchings <ben@decadent.org.uk>
+To: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Nov 2014 03:26:47 +0000
+In-Reply-To: <1415244281.3398.46.camel@decadent.org.uk>
+References: <1415244281.3398.46.camel@decadent.org.uk>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-842rytcx2cX0Td7FPKZp"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 11/05/2014 01:50 PM, Sebastian Andrzej Siewior wrote:
-> [...]
->> If the trace events from both LTTng and perf represent the same thing
->> (and I assume they should, since they come from the same tracepoints,
->> right?), then we could just add a wrapper on the viewer side to
->> decide which event/field names to use, depending on the trace type.
->>
->> Right now, we only define LTTng event and field names:
->> http://git.eclipse.org/c/tracecompass/org.eclipse.tracecompass.git/tree/org.eclipse.tracecompass.lttng2.kernel.core/src/org/eclipse/tracecompass/internal/lttng2/kernel/core/LttngStrings.java
-> Okay. So I found this file for linuxtools now let me try tracecompass.
-> The basic renaming should do the job. Then I have to figure out how to
-> compile this thingy…
+--=-842rytcx2cX0Td7FPKZp
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-"mvn clean install". It is the Maven equivalent of "./configure && make" ;)
+These functions are dealing with the same message structure regardless
+of the native word size, though there are some apparently arbitrary
+differences between them.  i2o_cfg_passthru32() looks slightly more
+reasonable and has the necessary casts to make the compiler shut up
+about 32-bit virtual addresses, so turn it into a common function that
+is called in both compat and native cases.
 
-Or if you want to build a standalone application (RCP):
-mvn clean install -Pbuild-rcp -Dmaven.test.skip=true
+Make all the function definitions conditional on
+CONFIG_I2O_EXT_ADAPTEC.
 
-see the README file in the git tree for details.
+Differences between the two original functions:
+- i2o_cfg_passthru() used osm_warn() rather than osm_debug() to
+  log failure of i2o_find_iop()
+- i2o_cfg_passthru() did not log failure of get_user(size, ...)
+  or copy_from_user(msg, ...)
+- i2o_cfg_passthru() did not call i2o_dump_message()
+- i2o_cfg_passthru() return -EFAULT rather than -EINVAL if the
+  request size was out-of-range after the second reading
 
->
-> There is this one thing where you go for "tid" while perf says "pid". I
-> guess I could figure that out once I have the rename done.
-> We don't have lttng_statedump_process_state, this look lttng specific. I
-> would have to look if there is a replacement event in perf.
+Compile-tested only.
 
-Yes, the state dump is something specific to LTTng. It allows us to know 
-about processes that exist on the system, even if they are sleeping for 
-the whole duration of the trace (and thus, would not show up in the 
-trace at all).
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/message/i2o/i2o_config.c | 273 ++++++-----------------------------=
+----
+ 1 file changed, 39 insertions(+), 234 deletions(-)
 
-But even if these events are not present, we can still know about active 
-processes when they do shed_switch's for example.
+diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_con=
+fig.c
+index 274235d..f9a10a8 100644
+--- a/drivers/message/i2o/i2o_config.c
++++ b/drivers/message/i2o/i2o_config.c
+@@ -521,13 +521,10 @@ static int i2o_cfg_evt_get(unsigned long arg, struct =
+file *fp)
+ 	return 0;
+ }
+=20
+-#ifdef CONFIG_COMPAT
+-static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
+-			      unsigned long arg)
++#ifdef CONFIG_I2O_EXT_ADAPTEC
++static int __i2o_cfg_passthru(unsigned int iop, u32 __user *user_msg)
+ {
+-	struct i2o_cmd_passthru32 __user *cmd;
+ 	struct i2o_controller *c;
+-	u32 __user *user_msg;
+ 	u32 *reply =3D NULL;
+ 	u32 __user *user_reply =3D NULL;
+ 	u32 size =3D 0;
+@@ -540,14 +537,6 @@ static int i2o_cfg_passthru32(struct file *file, unsig=
+ned cmnd,
+ 	u32 sg_index =3D 0;
+ 	i2o_status_block *sb;
+ 	struct i2o_message *msg;
+-	unsigned int iop;
+-
+-	cmd =3D (struct i2o_cmd_passthru32 __user *)arg;
+-
+-	if (get_user(iop, &cmd->iop) || get_user(i, &cmd->msg))
+-		return -EFAULT;
+-
+-	user_msg =3D compat_ptr(i);
+=20
+ 	c =3D i2o_find_iop(iop);
+ 	if (!c) {
+@@ -710,7 +699,7 @@ static int i2o_cfg_passthru32(struct file *file, unsign=
+ed cmnd,
+ 				sg_size =3D sg[j].flag_count & 0xffffff;
+ 				// TODO 64bit fix
+ 				if (copy_to_user
+-				    ((void __user *)(u64) sg[j].addr_bus,
++				    ((void __user *)(unsigned long)sg[j].addr_bus,
+ 				     sg_list[j].virt, sg_size)) {
+ 					printk(KERN_WARNING
+ 					       "%s: Could not copy %p TO user %x\n",
+@@ -750,6 +739,40 @@ out:
+ 	return rcode;
+ }
+=20
++#ifdef CONFIG_COMPAT
++static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
++			      unsigned long arg)
++{
++	struct i2o_cmd_passthru32 __user *cmd;
++	unsigned int iop;
++	u32 i;
++
++	cmd =3D (struct i2o_cmd_passthru32 __user *)arg;
++
++	if (get_user(iop, &cmd->iop) || get_user(i, &cmd->msg))
++		return -EFAULT;
++
++	return __i2o_cfg_passthru(iop, compat_ptr(i));
++}
++#endif
++
++static int i2o_cfg_passthru(unsigned long arg)
++{
++	struct i2o_cmd_passthru __user *cmd;
++	unsigned int iop;
++	u32 __user *user_msg;
++
++	cmd =3D (struct i2o_cmd_passthru __user *)arg;
++
++	if (get_user(iop, &cmd->iop) || get_user(user_msg, &cmd->msg))
++		return -EFAULT;
++
++	return __i2o_cfg_passthru(iop, user_msg);
++}
++
++#endif /* CONFIG_I2O_EXT_ADAPTEC */
++
++#ifdef CONFIG_COMPAT
+ static long i2o_cfg_compat_ioctl(struct file *file, unsigned cmd,
+ 				 unsigned long arg)
+ {
+@@ -758,11 +781,13 @@ static long i2o_cfg_compat_ioctl(struct file *file, u=
+nsigned cmd,
+ 	case I2OGETIOPS:
+ 		ret =3D i2o_cfg_ioctl(file, cmd, arg);
+ 		break;
++#ifdef CONFIG_I2O_EXT_ADAPTEC
+ 	case I2OPASSTHRU32:
+ 		mutex_lock(&i2o_cfg_mutex);
+ 		ret =3D i2o_cfg_passthru32(file, cmd, arg);
+ 		mutex_unlock(&i2o_cfg_mutex);
+ 		break;
++#endif
+ 	default:
+ 		ret =3D -ENOIOCTLCMD;
+ 		break;
+@@ -772,226 +797,6 @@ static long i2o_cfg_compat_ioctl(struct file *file, u=
+nsigned cmd,
+=20
+ #endif
+=20
+-#ifdef CONFIG_I2O_EXT_ADAPTEC
+-static int i2o_cfg_passthru(unsigned long arg)
+-{
+-	struct i2o_cmd_passthru __user *cmd =3D
+-	    (struct i2o_cmd_passthru __user *)arg;
+-	struct i2o_controller *c;
+-	u32 __user *user_msg;
+-	u32 *reply =3D NULL;
+-	u32 __user *user_reply =3D NULL;
+-	u32 size =3D 0;
+-	u32 reply_size =3D 0;
+-	u32 rcode =3D 0;
+-	struct i2o_dma sg_list[SG_TABLESIZE];
+-	u32 sg_offset =3D 0;
+-	u32 sg_count =3D 0;
+-	int sg_index =3D 0;
+-	u32 i =3D 0;
+-	i2o_status_block *sb;
+-	struct i2o_message *msg;
+-	unsigned int iop;
+-
+-	if (get_user(iop, &cmd->iop) || get_user(user_msg, &cmd->msg))
+-		return -EFAULT;
+-
+-	c =3D i2o_find_iop(iop);
+-	if (!c) {
+-		osm_warn("controller %d not found\n", iop);
+-		return -ENXIO;
+-	}
+-
+-	sb =3D c->status_block.virt;
+-
+-	if (get_user(size, &user_msg[0]))
+-		return -EFAULT;
+-	size =3D size >> 16;
+-
+-	if (size > sb->inbound_frame_size) {
+-		osm_warn("size of message > inbound_frame_size");
+-		return -EFAULT;
+-	}
+-
+-	user_reply =3D &user_msg[size];
+-
+-	size <<=3D 2;		// Convert to bytes
+-
+-	msg =3D i2o_msg_get_wait(c, I2O_TIMEOUT_MESSAGE_GET);
+-	if (IS_ERR(msg))
+-		return PTR_ERR(msg);
+-
+-	rcode =3D -EFAULT;
+-	/* Copy in the user's I2O command */
+-	if (copy_from_user(msg, user_msg, size))
+-		goto out;
+-
+-	if (get_user(reply_size, &user_reply[0]) < 0)
+-		goto out;
+-
+-	reply_size >>=3D 16;
+-	reply_size <<=3D 2;
+-
+-	reply =3D kzalloc(reply_size, GFP_KERNEL);
+-	if (!reply) {
+-		printk(KERN_WARNING "%s: Could not allocate reply buffer\n",
+-		       c->name);
+-		rcode =3D -ENOMEM;
+-		goto out;
+-	}
+-
+-	sg_offset =3D (msg->u.head[0] >> 4) & 0x0f;
+-
+-	memset(sg_list, 0, sizeof(sg_list[0]) * SG_TABLESIZE);
+-	if (sg_offset) {
+-		struct sg_simple_element *sg;
+-		struct i2o_dma *p;
+-
+-		if (sg_offset * 4 >=3D size) {
+-			rcode =3D -EFAULT;
+-			goto cleanup;
+-		}
+-		// TODO 64bit fix
+-		sg =3D (struct sg_simple_element *)((&msg->u.head[0]) +
+-						  sg_offset);
+-		sg_count =3D
+-		    (size - sg_offset * 4) / sizeof(struct sg_simple_element);
+-		if (sg_count > SG_TABLESIZE) {
+-			printk(KERN_DEBUG "%s:IOCTL SG List too large (%u)\n",
+-			       c->name, sg_count);
+-			rcode =3D -EINVAL;
+-			goto cleanup;
+-		}
+-
+-		for (i =3D 0; i < sg_count; i++) {
+-			int sg_size;
+-
+-			if (!(sg[i].flag_count & 0x10000000
+-			      /*I2O_SGL_FLAGS_SIMPLE_ADDRESS_ELEMENT */ )) {
+-				printk(KERN_DEBUG
+-				       "%s:Bad SG element %d - not simple (%x)\n",
+-				       c->name, i, sg[i].flag_count);
+-				rcode =3D -EINVAL;
+-				goto sg_list_cleanup;
+-			}
+-			sg_size =3D sg[i].flag_count & 0xffffff;
+-			p =3D &(sg_list[sg_index]);
+-			if (i2o_dma_alloc(&c->pdev->dev, p, sg_size)) {
+-			/* Allocate memory for the transfer */
+-				printk(KERN_DEBUG
+-				       "%s: Could not allocate SG buffer - size =3D %d buffer number %=
+d of %d\n",
+-				       c->name, sg_size, i, sg_count);
+-				rcode =3D -ENOMEM;
+-				goto sg_list_cleanup;
+-			}
+-			sg_index++;
+-			/* Copy in the user's SG buffer if necessary */
+-			if (sg[i].
+-			    flag_count & 0x04000000 /*I2O_SGL_FLAGS_DIR */ ) {
+-				// TODO 64bit fix
+-				if (copy_from_user
+-				    (p->virt, (void __user *)sg[i].addr_bus,
+-				     sg_size)) {
+-					printk(KERN_DEBUG
+-					       "%s: Could not copy SG buf %d FROM user\n",
+-					       c->name, i);
+-					rcode =3D -EFAULT;
+-					goto sg_list_cleanup;
+-				}
+-			}
+-			sg[i].addr_bus =3D p->phys;
+-		}
+-	}
+-
+-	rcode =3D i2o_msg_post_wait(c, msg, 60);
+-	msg =3D NULL;
+-	if (rcode) {
+-		reply[4] =3D ((u32) rcode) << 24;
+-		goto sg_list_cleanup;
+-	}
+-
+-	if (sg_offset) {
+-		u32 rmsg[I2O_OUTBOUND_MSG_FRAME_SIZE];
+-		/* Copy back the Scatter Gather buffers back to user space */
+-		u32 j;
+-		// TODO 64bit fix
+-		struct sg_simple_element *sg;
+-		int sg_size;
+-
+-		// re-acquire the original message to handle correctly the sg copy opera=
+tion
+-		memset(&rmsg, 0, I2O_OUTBOUND_MSG_FRAME_SIZE * 4);
+-		// get user msg size in u32s
+-		if (get_user(size, &user_msg[0])) {
+-			rcode =3D -EFAULT;
+-			goto sg_list_cleanup;
+-		}
+-		size =3D size >> 16;
+-		size *=3D 4;
+-		if (size > sizeof(rmsg)) {
+-			rcode =3D -EFAULT;
+-			goto sg_list_cleanup;
+-		}
+-
+-		/* Copy in the user's I2O command */
+-		if (copy_from_user(rmsg, user_msg, size)) {
+-			rcode =3D -EFAULT;
+-			goto sg_list_cleanup;
+-		}
+-		sg_count =3D
+-		    (size - sg_offset * 4) / sizeof(struct sg_simple_element);
+-
+-		// TODO 64bit fix
+-		sg =3D (struct sg_simple_element *)(rmsg + sg_offset);
+-		for (j =3D 0; j < sg_count; j++) {
+-			/* Copy out the SG list to user's buffer if necessary */
+-			if (!
+-			    (sg[j].
+-			     flag_count & 0x4000000 /*I2O_SGL_FLAGS_DIR */ )) {
+-				sg_size =3D sg[j].flag_count & 0xffffff;
+-				// TODO 64bit fix
+-				if (copy_to_user
+-				    ((void __user *)sg[j].addr_bus, sg_list[j].virt,
+-				     sg_size)) {
+-					printk(KERN_WARNING
+-					       "%s: Could not copy %p TO user %x\n",
+-					       c->name, sg_list[j].virt,
+-					       sg[j].addr_bus);
+-					rcode =3D -EFAULT;
+-					goto sg_list_cleanup;
+-				}
+-			}
+-		}
+-	}
+-
+-sg_list_cleanup:
+-	/* Copy back the reply to user space */
+-	if (reply_size) {
+-		// we wrote our own values for context - now restore the user supplied o=
+nes
+-		if (copy_from_user(reply + 2, user_msg + 2, sizeof(u32) * 2)) {
+-			printk(KERN_WARNING
+-			       "%s: Could not copy message context FROM user\n",
+-			       c->name);
+-			rcode =3D -EFAULT;
+-		}
+-		if (copy_to_user(user_reply, reply, reply_size)) {
+-			printk(KERN_WARNING
+-			       "%s: Could not copy reply TO user\n", c->name);
+-			rcode =3D -EFAULT;
+-		}
+-	}
+-
+-	for (i =3D 0; i < sg_index; i++)
+-		i2o_dma_free(&c->pdev->dev, &sg_list[i]);
+-
+-cleanup:
+-	kfree(reply);
+-out:
+-	if (msg)
+-		i2o_msg_nop(c, msg);
+-	return rcode;
+-}
+-#endif
+-
+ /*
+  * IOCTL Handler
+  */
 
-> I have no idea what we could do about the "unknown" events, say someone
-> enbales skb tracing. But this is probably something for once we are
-> done with the basic integration.
->
->> But if you could for example tell me the perf equivalents of all the
->> strings in that file, I could hack together such wrapper. With that,
->> in theory, perf traces should behave exactly the same as LTTng traces
->> in the viewer!
-> Oooh, that would be awesome. So I installed maven but didn't get much
-> further. Let me gather this for you.
 
-Awesome, thanks!
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
 
-I am travelling this week, so I'm a bit busy, but I will try to 
-prototype a "wrapper" for the kernel analysis, and adding support for 
-the perf events, whenever I have a chance. I'll keep you posted.
+--=-842rytcx2cX0Td7FPKZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
->
-> So first the renaming:
-> diff --git a/LttngStrings.java b/LttngStrings.java
-> --- a/LttngStrings.java
-> +++ b/LttngStrings.java
-> @@ -27,17 +27,17 @@ public interface LttngStrings {
->   
->       /* Event names */
->       static final String EXIT_SYSCALL = "exit_syscall";
-> -    static final String IRQ_HANDLER_ENTRY = "irq_handler_entry";
-> -    static final String IRQ_HANDLER_EXIT = "irq_handler_exit";
-> -    static final String SOFTIRQ_ENTRY = "softirq_entry";
-> -    static final String SOFTIRQ_EXIT = "softirq_exit";
-> -    static final String SOFTIRQ_RAISE = "softirq_raise";
-> -    static final String SCHED_SWITCH = "sched_switch";
-> -    static final String SCHED_WAKEUP = "sched_wakeup";
-> -    static final String SCHED_WAKEUP_NEW = "sched_wakeup_new";
-> -    static final String SCHED_PROCESS_FORK = "sched_process_fork";
-> -    static final String SCHED_PROCESS_EXIT = "sched_process_exit";
-> -    static final String SCHED_PROCESS_FREE = "sched_process_free";
-> +    static final String IRQ_HANDLER_ENTRY = "irq:irq_handler_entry";
-> +    static final String IRQ_HANDLER_EXIT = "irq:irq_handler_exit";
-> +    static final String SOFTIRQ_ENTRY = "irq:softirq_entry";
-> +    static final String SOFTIRQ_EXIT = "irq:softirq_exit";
-> +    static final String SOFTIRQ_RAISE = "irq:softirq_raise";
-> +    static final String SCHED_SWITCH = "sched:sched_switch";
-> +    static final String SCHED_WAKEUP = "sched:sched_wakeup";
-> +    static final String SCHED_WAKEUP_NEW = "sched:sched_wakeup_new";
-> +    static final String SCHED_PROCESS_FORK = "sched:sched_process_fork";
-> +    static final String SCHED_PROCESS_EXIT = "sched:sched_process_exit";
-> +    static final String SCHED_PROCESS_FREE = "sched:sched_process_free";
->       static final String STATEDUMP_PROCESS_STATE = "lttng_statedump_process_state";
->   
->       /* System call names */
->
-> I have no idea how exit_syscall is different from irq_handler_exit and I
-> think we have to skip for now on STATEDUMP_PROCESS_STATE.
->
-> For the syscalls:
->
-> - static final String SYSCALL_PREFIX = "sys_";
->    It is bassicaly:
->      syscalls:sys_enter_
->      syscalls:sys_exit_
->    depending what you are looking for.
->
-> - static final String COMPAT_SYSCALL_PREFIX = "compat_sys_";
->    I haven't found this. Could it be that we don't record the compat_sys
->    at all?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-IIRC, compat_sys is for instance for 32-bit system calls on a 64-bit 
-kernel. Perhaps the "compat" system calls are recorded as standard 
-system call events with perf? We could test it once we get the base 
-things working.
+iQIVAwUAVFrqd+e/yOyVhhEJAQomxQ//X8sizlNfqGpWSdOGde1EaoVdWqmXV7VT
+3KAuVTIpe4BEukePd0gVfVGE+GLQgPLc8MtIhVzTonF3eQDPp1nTYmwaPAPzdEJ3
+9JrAWl56RYTVtmRe7MD2IM1EHvt988Neaf5G8R24I3jZGrhe95NXGIedxTrxRh/u
+eBq4f15DqDn76YePQNidZDeVAbP3jWHlie5jHdqLnhd4P+vVFbk4zkjrc+H9/3Dc
+WyxpbiUDgUJ9su2TxtZbYYnpJNXBTAQUasxHQRAtbGKnOtjrui3gBeK2NujcHj9c
+D8FRUmidg+TncnnhGevE6MfN1hvMI1KdaRr+ZOhSbfGQnSfYLVLFZyEsdAZ8b7eg
+mZiYRjRPSgkLJG+xsrWugS659mvQk39EbF7RAFLdWt+5CiLagPxPm8J2XKjT36QC
+wI6FG9rv6tkaaU5Ia7VEpUidrXh26VTLEGh5atGYkZsM/tIsMum1nGE2Ow7OxJVr
+aSaZ4c6gWAN+gNErduhbhpsBWXxalPJTI5OTJB+MTl/ANSjsIcOdYm1YeyPjAbJ/
+3XbIWh4hf2fKI91VB89SG1FWZ+AM1I/Ke2axKuRsss6EXQz13t52vde26fVB3TOW
+FQG7cO74EQxYz1Ahg9TIaHy1k/alg149ySASnX5ijX/aruwbeUcpNZyuOL7AtkfV
+uvS7dWNP2es=
+=2ojy
+-----END PGP SIGNATURE-----
 
-> - static final String SYS_CLONE = "sys_clone";
->    here we have
->      syscalls:sys_enter_clone
->      syscalls:sys_exit_clone
->    I guess the enter is what you are looking for.
->
-> For the fields, this is one event with alle the members we have. Please
-> note that lttng saves the members with the _ prefix and I haven't seen
-> that prefix in that .java file.
-
-As Mathieu explained in his reply, in LTTng-CTF they have a _ before 
-field names. In our parser, we take out the first character if it is an 
-underscore. So it should still work with underscore-less fields.
-
-
-Cheers,
-Alexandre
+--=-842rytcx2cX0Td7FPKZp--
