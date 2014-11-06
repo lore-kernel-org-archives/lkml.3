@@ -1,140 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490AbaKFD1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:27:17 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57031 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905AbaKFD1N (ORCPT
+	id S1751538AbaKFD1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:27:22 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:32042 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaKFD1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:27:13 -0500
-Message-ID: <1415244425.3398.49.camel@decadent.org.uk>
-Subject: [PATCH 3/3] i2o: Delete the '64bit fix' comments from
- __i2o_cfg_passthru()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 06 Nov 2014 03:27:05 +0000
-In-Reply-To: <1415244281.3398.46.camel@decadent.org.uk>
-References: <1415244281.3398.46.camel@decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-OZhqJgrbYR4l8RgCVTei"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 5 Nov 2014 22:27:18 -0500
+Message-ID: <545AEA64.9010308@huawei.com>
+Date: Thu, 6 Nov 2014 11:26:28 +0800
+From: Shannon Zhao <zhaoshenglong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Joel Schopp <joel.schopp@amd.com>,
+        =?windows-1252?Q?GAUGUEY_R=E9my_?= =?windows-1252?Q?228890?= 
+	<remy.gauguey@cea.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "mst@redhat.com" <mst@redhat.com>,
+        "n.nikolaev@virtualopensystems.com" 
+	<n.nikolaev@virtualopensystems.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+CC: "hangaohuai@huawei.com" <hangaohuai@huawei.com>,
+        "john.liuli@huawei.com" <john.liuli@huawei.com>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "peter.huangpeng@huawei.com" <peter.huangpeng@huawei.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [Qemu-devel] [RFC PATCH] virtio-mmio: support for multiple irqs
+References: <1415093712-15156-1-git-send-email-zhaoshenglong@huawei.com>	<5459D8E8.6060709@huawei.com>	<022C7612790E20489F80A6F0D54B849F3B26F4F3@EXDAG0-B1.intra.cea.fr> <5459EA0E.8020309@huawei.com> <545A41E1.10303@amd.com>
+In-Reply-To: <545A41E1.10303@amd.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.16.142]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014/11/5 23:27, Joel Schopp wrote:
+> 
+> On 11/05/2014 03:12 AM, Shannon Zhao wrote:
+>> Hi Rémy,
+>>
+>> On 2014/11/5 16:26, GAUGUEY Rémy 228890 wrote:
+>>> Hi Shannon, 
+>>>
+>>>> Type of backend         bandwith(GBytes/sec)
+>>>> virtio-net              0.66
+>>>> vhost-net               1.49
+>>>> vhost-net with irqfd    2.01
+>>>>
+>>>> Test cmd: ./iperf -c 192.168.0.2 -P 1 -i 10 -p 5001 -f G -t 60
+>>> Impressive results !
+>>> Could you please detail your setup ? which platform are you using and which GbE controller ?
+>> Sorry for not telling the test scenario. This test scenario is from Host to Guest. It just
+>> compare the performance of different backends. I did this test on ARM64 platform.
+>>
+>> The setup was based on:
+>> 1)on host kvm-arm should support ioeventfd and irqfd
+>> 	The irqfd patch is from Eric "ARM: KVM: add irqfd support".
+>> 	http://www.spinics.net/lists/kvm-arm/msg11014.html
+>>
+>> 	The ioeventfd patch is reworked by me from Antonios.
+>> 	http://www.spinics.net/lists/kvm-arm/msg08413.html
+>>
+>> 2)qemu should enable ioeventfd support for virtio-mmio
+>> 	This patch is refer to Ying-Shiuan Pan and reworked for new qemu branch.
+>> 	https://lists.gnu.org/archive/html/qemu-devel/2014-11/msg00594.html
+>>
+>> 3)qemu should enable multiple irqs for virtio-mmio
+>> 	This patch isn't sent to qemu maillist as we want to check whether this is the right direction.
+>> 	If you want to test, I'll send it to you.
+> I'm not a maintainer so my opinion isn't worth a lot here, but this
+> seems like the right direction to me.  I'd like to see the qemu patch
+> (do mention the dependency on the kernel patch) on the qemu-devel
+> mailing list.  I think these numbers also support some of the prereqs
+> listed above that have gone through several iterations getting queued up
+> for 3.19.
+> .
+> 
+Hi,
 
---=-OZhqJgrbYR4l8RgCVTei
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for your reply :)
+If this patch get accepted by maintainers, I'll send the qemu patch to qemu-devel mailing list.
 
-We can't fix an API that is broken by definition.
+In addition, I think this is worth on arm32 platform as arm32 with GICv2 doesn't support MSI.
+So it can't use virtio-pci if I don't miss something. And it's also worth on arm64 platform
+as we can't make sure when the PCI and MSI are supported on arm. It give users an alternative
+choice for virtualization network.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/message/i2o/i2o_config.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+Rusty, MST, Peter Maydell, do you have any ideas about this? Waiting for your feedback :)
 
-diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_con=
-fig.c
-index f9a10a8..7529fa1 100644
---- a/drivers/message/i2o/i2o_config.c
-+++ b/drivers/message/i2o/i2o_config.c
-@@ -522,6 +522,11 @@ static int i2o_cfg_evt_get(unsigned long arg, struct f=
-ile *fp)
- }
-=20
- #ifdef CONFIG_I2O_EXT_ADAPTEC
-+
-+/*
-+ * Note: The ioctl is defined to use struct sg_single_element, which
-+ * limits it to 32-bit user virtual addresses even on 64-bit systems.
-+ */
- static int __i2o_cfg_passthru(unsigned int iop, u32 __user *user_msg)
- {
- 	struct i2o_controller *c;
-@@ -597,7 +602,6 @@ static int __i2o_cfg_passthru(unsigned int iop, u32 __u=
-ser *user_msg)
- 			rcode =3D -EFAULT;
- 			goto cleanup;
- 		}
--		// TODO 64bit fix
- 		sg =3D (struct sg_simple_element *)((&msg->u.head[0]) +
- 						  sg_offset);
- 		sg_count =3D
-@@ -635,7 +639,6 @@ static int __i2o_cfg_passthru(unsigned int iop, u32 __u=
-ser *user_msg)
- 			/* Copy in the user's SG buffer if necessary */
- 			if (sg[i].
- 			    flag_count & 0x04000000 /*I2O_SGL_FLAGS_DIR */ ) {
--				// TODO 64bit fix
- 				if (copy_from_user
- 				    (p->virt,
- 				     (void __user *)(unsigned long)sg[i].
-@@ -647,7 +650,6 @@ static int __i2o_cfg_passthru(unsigned int iop, u32 __u=
-ser *user_msg)
- 					goto sg_list_cleanup;
- 				}
- 			}
--			//TODO 64bit fix
- 			sg[i].addr_bus =3D (u32) p->phys;
- 		}
- 	}
-@@ -663,7 +665,6 @@ static int __i2o_cfg_passthru(unsigned int iop, u32 __u=
-ser *user_msg)
- 		u32 rmsg[I2O_OUTBOUND_MSG_FRAME_SIZE];
- 		/* Copy back the Scatter Gather buffers back to user space */
- 		u32 j;
--		// TODO 64bit fix
- 		struct sg_simple_element *sg;
- 		int sg_size;
-=20
-@@ -689,7 +690,6 @@ static int __i2o_cfg_passthru(unsigned int iop, u32 __u=
-ser *user_msg)
- 		sg_count =3D
- 		    (size - sg_offset * 4) / sizeof(struct sg_simple_element);
-=20
--		// TODO 64bit fix
- 		sg =3D (struct sg_simple_element *)(rmsg + sg_offset);
- 		for (j =3D 0; j < sg_count; j++) {
- 			/* Copy out the SG list to user's buffer if necessary */
-@@ -697,7 +697,6 @@ static int __i2o_cfg_passthru(unsigned int iop, u32 __u=
-ser *user_msg)
- 			    (sg[j].
- 			     flag_count & 0x4000000 /*I2O_SGL_FLAGS_DIR */ )) {
- 				sg_size =3D sg[j].flag_count & 0xffffff;
--				// TODO 64bit fix
- 				if (copy_to_user
- 				    ((void __user *)(unsigned long)sg[j].addr_bus,
- 				     sg_list[j].virt, sg_size)) {
-
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
-
---=-OZhqJgrbYR4l8RgCVTei
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVFrqiue/yOyVhhEJAQpEWxAAlc1gdjkURXIZP3Eidl0KlusGEvhWlaYy
-q/5cYeDp2hALTtzyvPHhQnwrvK+XsWO8LoGZOhi53gzVCZsa+4oCypWFPh1cSPvl
-BcO+EElt+qvgGM6gUVqDJE9ozwSjARXkPCA0hphqMMoBVQD4CCJYXwt84lnZB1IY
-BLuxE+iJGes3CtKNvC/1Tztlw7ow0UQh/BlsLmLelKlR11jiC4UNCUnbZEC072jQ
-YXTBnalOra6ydDLdPfduaqSPqx8jDjjyvOvO+Nnn2amoEdDtNi92JT5v4pMglW2n
-FH6A2XrWe4KUR2JukV/g3X47fss0Nvtrc3kglvMxy1Brje6MW77501xjbOK4V+hn
-G6Yy3PCXzZ/JoKCAX2K67jwzJLAkOTKVpLjz35WpeHIEyvQGttbk2sNJ5KRzq7hT
-LSs3OzKNu5lO4pBd8dSe/Z/JiilV8OvZ94aBPhxquaZhlWBQdWQ/eJorYjUp8P7V
-YqM4YZIt7lpv+cwZuSv09Nun6r/ZC5Tp+e0PLYgAmVx0veksp6iNzWvl9o999kZl
-EyGH3aVnCKDuo5XIN7BCcBDJubenZC1fawShHQbZFaX2LmNa/T+GzloIyIfnlxgk
-bd0Ali7hhPnoMBr30Nmj8TLcnKY+y25GOW4+cyXaJQaBGoEfmajysAh6aHrHivew
-f60ZLnrA2qE=
-=BnEm
------END PGP SIGNATURE-----
-
---=-OZhqJgrbYR4l8RgCVTei--
+Thanks
+-- 
+Shannon
