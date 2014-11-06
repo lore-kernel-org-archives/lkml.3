@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371AbaKFRO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:14:28 -0500
-Received: from icebox.esperi.org.uk ([81.187.191.129]:60759 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaKFRO1 (ORCPT
+	id S1751991AbaKFRPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:15:04 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:52318 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaKFRPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:14:27 -0500
-From: Nix <nix@esperi.org.uk>
-To: Johan Hovold <johan@kernel.org>
-Cc: Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <20141014083432.GB7958@localhost>
-	<871tq04fiy.fsf@spindle.srvr.nix> <20141022101458.GK2113@localhost>
-	<87y4s8yv38.fsf@spindle.srvr.nix> <20141024111442.GA19377@localhost>
-	<87d298i3y9.fsf@spindle.srvr.nix> <20141105115643.GR31358@localhost>
-	<87vbmtbrx2.fsf@spindle.srvr.nix> <20141105181454.GW31358@localhost>
-	<877fz8bfs6.fsf@spindle.srvr.nix> <20141106170456.GC26196@localhost>
-Emacs: Lovecraft was an optimist.
-Date: Thu, 06 Nov 2014 17:14:11 +0000
-In-Reply-To: <20141106170456.GC26196@localhost> (Johan Hovold's message of
-	"Thu, 6 Nov 2014 18:04:56 +0100")
-Message-ID: <87bnok8d5o.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Thu, 6 Nov 2014 12:15:00 -0500
+Date: Thu, 6 Nov 2014 09:14:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] input: touchscreen: of: Register multitouch axes
+Message-ID: <20141106171455.GA34214@dtor-ws>
+References: <1415200070-19346-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1415200070-19346-3-git-send-email-maxime.ripard@free-electrons.com>
+ <20141105175635.GA22754@dtor-ws>
+ <20141106160621.GM2989@lukather>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=7 Fuz1=7 Fuz2=7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106160621.GM2989@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 Nov 2014, Johan Hovold said:
+On Thu, Nov 06, 2014 at 05:06:21PM +0100, Maxime Ripard wrote:
+> Hi,
+> 
+> On Wed, Nov 05, 2014 at 09:56:35AM -0800, Dmitry Torokhov wrote:
+> > On Wed, Nov 05, 2014 at 04:07:49PM +0100, Maxime Ripard wrote:
+> > > So far, the DT parsing code was only setting up the regular input axes,
+> > > completely ignoring their multitouch counter parts.
+> > > 
+> > > Fill them with the same parameters than the regular axes.
+> > > 
+> > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > > ---
+> > >  drivers/input/touchscreen/of_touchscreen.c | 12 +++++++++---
+> > >  1 file changed, 9 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/drivers/input/touchscreen/of_touchscreen.c b/drivers/input/touchscreen/of_touchscreen.c
+> > > index 74d6b0eb50ac..cf2a753edd96 100644
+> > > --- a/drivers/input/touchscreen/of_touchscreen.c
+> > > +++ b/drivers/input/touchscreen/of_touchscreen.c
+> > > @@ -42,17 +42,23 @@ void touchscreen_parse_of_params(struct input_dev *dev)
+> > >  
+> > >  	maximum = of_get_optional_u32(np, "touchscreen-size-x");
+> > >  	fuzz = of_get_optional_u32(np, "touchscreen-fuzz-x");
+> > > -	if (maximum || fuzz)
+> > > +	if (maximum || fuzz) {
+> > >  		input_set_abs_params(dev, ABS_X, 0, maximum, fuzz, 0);
+> > > +		input_set_abs_params(dev, ABS_MT_POSITION_X, 0, maximum, fuzz, 0);
+> > 
+> > Not all devices are multitouch so you shoudl not be setting multitouch
+> > bits unconditionally.
+> 
+> Hmmm, right.
+> 
+> > In I think we should rely on driver to set capability bits properly and
+> > then here test them and apply the readings. Probably also issue a
+> > warning if we see max/fuzz setting but neither ABS_<N>/ABS_MT_<N>
+> > capabilities.
+> 
+> What I was aiming at was to avoid DT parsing duplication for the
+> !multitouch and multitouch axis. I don't think there's a way to copy
+> the parameters.
+> 
+> The mt_init_slots might be a solution, but it does the copy the other
+> way around: from the multitouch to the !multitouch axis, and without
+> enabling it, which renders using both input_mt_init_slots and the
+> of_touchscreen code together impossible.
+> 
+> Is there a way to just enable an axis without calling
+> input_set_abs_params? Is __set_bit enough?
 
-> On Thu, Nov 06, 2014 at 01:49:13PM +0000, Nix wrote:
->> On 5 Nov 2014, Johan Hovold told this:
->> > On Wed, Nov 05, 2014 at 03:14:49PM +0000, Nix wrote:
->
->> > Could you try two more things (too make sure line control is really the
->> > culprit):
->> >
->> > 1. If you clear HUPCL in ekeyd so that the lines are never lowered, does
->> > that fix the stability issue?
->> 
->> Definitely not. I got a hang after the first reboot out of an afflicted
->> kernel, when using a HUPCLless ekeyd. Weird. (I guess they're lowered on
->> reboot anyway?)
->
-> It's actually only the timings related to the control-lines being raised
-> on open that has changed, so this would seem consistent with that.
+Hmm, not anymore I'm afraid as you still need absinfo being allocated,
+but there is input_set_capability() that is basically a fancy
+__set_bit(). If you set ABS_* with it that would mean that the device
+has unspecified min/max/fuzz.
 
-Urgh. No wonder it was intermittent.
+And then, in DT parsing code, I'd do:
 
-> Thanks for tracking this down. That bisect cannot have been fun given
-> the low failure rate (sometimes only one in ten reboots?).
+	...read max and fuzz for an axis...
+	if (max || fuzz) {
+		if (!test_bit(ABS_N, dev->absbit) &&
+		    !test_bit(ABS_MT_N, dev->absbit)) {
+			dev_warn("... have parameters but axis not set up...");
+		} else {
+			if (test_bit(ABS_N...)
+				input_set_abs_params(dev, ABS_N...);
+			if (test_bit(ABS_MT_N...)
+				input_set_abs_params(dev, ABS_MT_N...);
+	}
 
-It often failed quite fast, but yes, the negative case was hard to
-prove: I had to rewind twice. I counted reboots because I'm a flaming
-aspie pedant. 173 reboots that took... thank goodness it replicated on
-the machine of mine that's fastest to reboot!
+Thanks.
 
 -- 
-NULL && (void)
+Dmitry
