@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaKFX2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:28:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58418 "EHLO
+	id S1754054AbaKFX2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:28:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58421 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaKFWh3 (ORCPT
+	with ESMTP id S1751295AbaKFWh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 17:37:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guillaume Nault <g.nault@alphalink.fr>,
+Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 011/162] l2tp: fix race while getting PMTU on PPP pseudo-wire
-Date: Thu,  6 Nov 2014 14:34:35 -0800
-Message-Id: <1415313426-9622-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 008/162] packet: handle too big packets for PACKET_V3
+Date: Thu,  6 Nov 2014 14:34:32 -0800
+Message-Id: <1415313426-9622-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,79 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit eed4d839b0cdf9d84b0a9bc63de90fd5e1e886fb ]
+[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
 
-Use dst_entry held by sk_dst_get() to retrieve tunnel's PMTU.
+af_packet can currently overwrite kernel memory by out of bound
+accesses, because it assumed a [new] block can always hold one frame.
 
-The dst_mtu(__sk_dst_get(tunnel->sock)) call was racy. __sk_dst_get()
-could return NULL if tunnel->sock->sk_dst_cache was reset just before the
-call, thus making dst_mtu() dereference a NULL pointer:
+This is not generally the case, even if most existing tools do it right.
 
-[ 1937.661598] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-[ 1937.664005] IP: [<ffffffffa049db88>] pppol2tp_connect+0x33d/0x41e [l2tp_ppp]
-[ 1937.664005] PGD daf0c067 PUD d9f93067 PMD 0
-[ 1937.664005] Oops: 0000 [#1] SMP
-[ 1937.664005] Modules linked in: l2tp_ppp l2tp_netlink l2tp_core ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables udp_tunnel pppoe pppox ppp_generic slhc deflate ctr twofish_generic twofish_x86_64_3way xts lrw gf128mul glue_helper twofish_x86_64 twofish_common blowfish_generic blowfish_x86_64 blowfish_common des_generic cbc xcbc rmd160 sha512_generic hmac crypto_null af_key xfrm_algo 8021q garp bridge stp llc tun atmtcp clip atm ext3 mbcache jbd iTCO_wdt coretemp kvm_intel iTCO_vendor_support kvm pcspkr evdev ehci_pci lpc_ich mfd_core i5400_edac edac_core i5k_amb shpchp button processor thermal_sys xfs crc32c_generic libcrc32c dm_mod usbhid sg hid sr_mod sd_mod cdrom crc_t10dif crct10dif_common ata_generic ahci ata_piix tg3 libahci libata uhci_hcd ptp ehci_hcd pps_core usbcore scsi_mod libphy usb_common [last unloaded: l2tp_core]
-[ 1937.664005] CPU: 0 PID: 10022 Comm: l2tpstress Tainted: G           O   3.17.0-rc1 #1
-[ 1937.664005] Hardware name: HP ProLiant DL160 G5, BIOS O12 08/22/2008
-[ 1937.664005] task: ffff8800d8fda790 ti: ffff8800c43c4000 task.ti: ffff8800c43c4000
-[ 1937.664005] RIP: 0010:[<ffffffffa049db88>]  [<ffffffffa049db88>] pppol2tp_connect+0x33d/0x41e [l2tp_ppp]
-[ 1937.664005] RSP: 0018:ffff8800c43c7de8  EFLAGS: 00010282
-[ 1937.664005] RAX: ffff8800da8a7240 RBX: ffff8800d8c64600 RCX: 000001c325a137b5
-[ 1937.664005] RDX: 8c6318c6318c6320 RSI: 000000000000010c RDI: 0000000000000000
-[ 1937.664005] RBP: ffff8800c43c7ea8 R08: 0000000000000000 R09: 0000000000000000
-[ 1937.664005] R10: ffffffffa048e2c0 R11: ffff8800d8c64600 R12: ffff8800ca7a5000
-[ 1937.664005] R13: ffff8800c439bf40 R14: 000000000000000c R15: 0000000000000009
-[ 1937.664005] FS:  00007fd7f610f700(0000) GS:ffff88011a600000(0000) knlGS:0000000000000000
-[ 1937.664005] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1937.664005] CR2: 0000000000000020 CR3: 00000000d9d75000 CR4: 00000000000027e0
-[ 1937.664005] Stack:
-[ 1937.664005]  ffffffffa049da80 ffff8800d8fda790 000000000000005b ffff880000000009
-[ 1937.664005]  ffff8800daf3f200 0000000000000003 ffff8800c43c7e48 ffffffff81109b57
-[ 1937.664005]  ffffffff81109b0e ffffffff8114c566 0000000000000000 0000000000000000
-[ 1937.664005] Call Trace:
-[ 1937.664005]  [<ffffffffa049da80>] ? pppol2tp_connect+0x235/0x41e [l2tp_ppp]
-[ 1937.664005]  [<ffffffff81109b57>] ? might_fault+0x9e/0xa5
-[ 1937.664005]  [<ffffffff81109b0e>] ? might_fault+0x55/0xa5
-[ 1937.664005]  [<ffffffff8114c566>] ? rcu_read_unlock+0x1c/0x26
-[ 1937.664005]  [<ffffffff81309196>] SYSC_connect+0x87/0xb1
-[ 1937.664005]  [<ffffffff813e56f7>] ? sysret_check+0x1b/0x56
-[ 1937.664005]  [<ffffffff8107590d>] ? trace_hardirqs_on_caller+0x145/0x1a1
-[ 1937.664005]  [<ffffffff81213dee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[ 1937.664005]  [<ffffffff8114c262>] ? spin_lock+0x9/0xb
-[ 1937.664005]  [<ffffffff813092b4>] SyS_connect+0x9/0xb
-[ 1937.664005]  [<ffffffff813e56d2>] system_call_fastpath+0x16/0x1b
-[ 1937.664005] Code: 10 2a 84 81 e8 65 76 bd e0 65 ff 0c 25 10 bb 00 00 4d 85 ed 74 37 48 8b 85 60 ff ff ff 48 8b 80 88 01 00 00 48 8b b8 10 02 00 00 <48> 8b 47 20 ff 50 20 85 c0 74 0f 83 e8 28 89 83 10 01 00 00 89
-[ 1937.664005] RIP  [<ffffffffa049db88>] pppol2tp_connect+0x33d/0x41e [l2tp_ppp]
-[ 1937.664005]  RSP <ffff8800c43c7de8>
-[ 1937.664005] CR2: 0000000000000020
-[ 1939.559375] ---[ end trace 82d44500f28f8708 ]---
+This patch clamps too long frames as API permits, and issue a one time
+error on syslog.
 
-Fixes: f34c4a35d879 ("l2tp: take PMTU from tunnel UDP socket")
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-Acked-by: Eric Dumazet <edumazet@google.com>
+[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
+
+In this example, packet header tp_snaplen was set to 3966,
+and tp_len was set to 5042 (skb->len)
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/l2tp/l2tp_ppp.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/packet/af_packet.c | 17 +++++++++++++++++
+ net/packet/internal.h  |  1 +
+ 2 files changed, 18 insertions(+)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index cfa1406..e6c6d81 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -756,7 +756,8 @@ static int pppol2tp_connect(struct socket *sock, struct sockaddr *uservaddr,
- 	/* If PMTU discovery was enabled, use the MTU that was discovered */
- 	dst = sk_dst_get(tunnel->sock);
- 	if (dst != NULL) {
--		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
-+		u32 pmtu = dst_mtu(dst);
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 88cfbc1..a846125 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -565,6 +565,7 @@ static void init_prb_bdqc(struct packet_sock *po,
+ 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
+ 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
+ 
++	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
+ 	prb_init_ft_ops(p1, req_u);
+ 	prb_setup_retire_blk_timer(po, tx_ring);
+ 	prb_open_block(p1, pbd);
+@@ -1814,6 +1815,18 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
+ 			if ((int)snaplen < 0)
+ 				snaplen = 0;
+ 		}
++	} else if (unlikely(macoff + snaplen >
++			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
++		u32 nval;
 +
- 		if (pmtu != 0)
- 			session->mtu = session->mru = pmtu -
- 				PPPOL2TP_HEADER_OVERHEAD;
++		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
++		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
++			    snaplen, nval, macoff);
++		snaplen = nval;
++		if (unlikely((int)snaplen < 0)) {
++			snaplen = 0;
++			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
++		}
+ 	}
+ 	spin_lock(&sk->sk_receive_queue.lock);
+ 	h.raw = packet_current_rx_frame(po, skb,
+@@ -3610,6 +3623,10 @@ static int packet_set_ring(struct sock *sk, union tpacket_req_u *req_u,
+ 			goto out;
+ 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
+ 			goto out;
++		if (po->tp_version >= TPACKET_V3 &&
++		    (int)(req->tp_block_size -
++			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
++			goto out;
+ 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
+ 					po->tp_reserve))
+ 			goto out;
+diff --git a/net/packet/internal.h b/net/packet/internal.h
+index 1035fa2..ca086c0 100644
+--- a/net/packet/internal.h
++++ b/net/packet/internal.h
+@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
+ 	char		*pkblk_start;
+ 	char		*pkblk_end;
+ 	int		kblk_size;
++	unsigned int	max_frame_len;
+ 	unsigned int	knum_blocks;
+ 	uint64_t	knxt_seq_num;
+ 	char		*prev;
 -- 
 1.9.1
 
