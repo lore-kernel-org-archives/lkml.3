@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaKFFro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 00:47:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39698 "EHLO mx2.suse.de"
+	id S1751433AbaKFFrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 00:47:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39690 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbaKFFrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751121AbaKFFrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 00:47:40 -0500
 From: Juergen Gross <jgross@suse.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
@@ -12,70 +12,46 @@ To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
         mingo@redhat.com, hpa@zytor.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V2 4/5] x86: Introduce function to get pmd entry pointer
-Date: Thu,  6 Nov 2014 06:47:32 +0100
-Message-Id: <1415252853-7106-5-git-send-email-jgross@suse.com>
+Subject: [PATCH V2 0/5] xen: Switch to virtual mapped linear p2m list
+Date: Thu,  6 Nov 2014 06:47:28 +0100
+Message-Id: <1415252853-7106-1-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1415252853-7106-1-git-send-email-jgross@suse.com>
-References: <1415252853-7106-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces lookup_pmd_address() to get the address of the pmd entry
-related to a virtual address in the current address space. This
-function is needed for support of a virtual mapped sparse p2m list
-in xen pv domains.
+Paravirtualized kernels running on Xen use a three level tree for
+translation of guest specific physical addresses to machine global
+addresses. This p2m tree is used for construction of page table
+entries, so the p2m tree walk is performance critical.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/include/asm/pgtable_types.h |  1 +
- arch/x86/mm/pageattr.c               | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
+By using a linear virtual mapped p2m list accesses to p2m elements
+can be sped up while even simplifying code. To achieve this goal
+some p2m related initializations have to be performed later in the
+boot process, as the final p2m list can be set up only after basic
+memory management functions are available.
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 0778964..d83f5e7 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -396,6 +396,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
- extern pte_t *lookup_address(unsigned long address, unsigned int *level);
- extern pte_t *lookup_address_in_pgd(pgd_t *pgd, unsigned long address,
- 				    unsigned int *level);
-+extern pmd_t *lookup_pmd_address(unsigned long address);
- extern phys_addr_t slow_virt_to_phys(void *__address);
- extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
- 				   unsigned numpages, unsigned long page_flags);
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 36de293..1298108 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -384,6 +384,26 @@ static pte_t *_lookup_address_cpa(struct cpa_data *cpa, unsigned long address,
- }
- 
- /*
-+ * Lookup the PMD entry for a virtual address. Return a pointer to the entry
-+ * or NULL if not present.
-+ */
-+pmd_t *lookup_pmd_address(unsigned long address)
-+{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+
-+	pgd = pgd_offset_k(address);
-+	if (pgd_none(*pgd))
-+		return NULL;
-+
-+	pud = pud_offset(pgd, address);
-+	if (pud_none(*pud) || pud_large(*pud) || !pud_present(*pud))
-+		return NULL;
-+
-+	return pmd_offset(pud, address);
-+}
-+
-+/*
-  * This is necessary because __pa() does not work on some
-  * kinds of memory, like vmalloc() or the alloc_remap()
-  * areas on 32-bit NUMA systems.  The percpu areas can
+Changes in V2:
+- splitted patch 2 in 4 smaller ones as requested by David Vrabel
+- added highmem check when remapping kernel memory as requested by
+  David Vrabel
+
+Juergen Gross (5):
+  Xen: Delay remapping memory of pv-domain
+  xen: Delay m2p_override initialization
+  xen: Delay invalidating extra memory
+  x86: Introduce function to get pmd entry pointer
+  Xen: switch to linear virtual mapped sparse p2m list
+
+ arch/x86/include/asm/pgtable_types.h |    1 +
+ arch/x86/include/asm/xen/page.h      |   37 +-
+ arch/x86/mm/pageattr.c               |   20 +
+ arch/x86/xen/mmu.c                   |   38 +-
+ arch/x86/xen/p2m.c                   | 1149 +++++++++++++---------------------
+ arch/x86/xen/setup.c                 |  460 +++++++-------
+ arch/x86/xen/xen-ops.h               |    6 +-
+ 7 files changed, 760 insertions(+), 951 deletions(-)
+
 -- 
 2.1.2
 
