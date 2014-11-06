@@ -1,135 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaKFPMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:12:39 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:55781 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaKFPMg (ORCPT
+	id S1751976AbaKFPMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:12:23 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:33317 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaKFPMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:12:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <545B172C.4060105@nvidia.com>
-References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
- <1414599796-30597-5-git-send-email-tomeu.vizoso@collabora.com> <545B172C.4060105@nvidia.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 6 Nov 2014 09:12:13 -0600
-Message-ID: <CAL_JsqKYSF3JVrXH_dkqRXQrgUU3igzvoK1C2k1Caz-4UuHX6Q@mail.gmail.com>
-Subject: Re: [PATCH v3 04/13] of: document new emc-timings subnode in nvidia,tegra124-car
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Nov 2014 10:12:12 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-17-545b8fc9d9d6
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-api@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH RESEND v3 1/4] devicetree: power/mfd: max77693: Document new
+ bindings for charger
+Date: Thu, 06 Nov 2014 16:11:57 +0100
+Message-id: <1415286720-6358-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1415286720-6358-1-git-send-email-k.kozlowski@samsung.com>
+References: <1415286720-6358-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xK7on+6NDDNY947LYOGM9q8WkJ++Z
+	LeYfOcdqMXHlZGaL1y8MLc42vWG3uP/1KKPF5u8dbBabHl9jtbi8aw6bxefeI4wWM87vY7JY
+	e+Quu8XpblaL07tLLFbt+sPoIOCxc9Zddo/NK7Q8Nq3qZPO4c20Pm8e8k4Eem5fUe/RtWcXo
+	8XmTXABHFJdNSmpOZllqkb5dAlfG5jO3mAq6xSo2fZvF1MD4QbCLkZNDQsBEYuOOM+wQtpjE
+	hXvr2boYuTiEBJYySlw6Oo8RwuljkriyvJEVpIpNwFhi8/IlYFUiAnuYJD69WMEK4jALbGeS
+	+PNtApDDwSEskCzxb3c+SAOLgKrE7GnrmUFsXgE3iW+TJjJCrJOTOHlsMlg5p4C7RPe3SpCw
+	EFDJ86/zGCcw8i5gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERLCX3YwLj5mdYhRgINR
+	iYd3A2d0iBBrYllxZe4hRgkOZiUR3uoeoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGFuZTb/mk
+	FIQNu/wO/3yctGxhEp9J+9muRaLWIXmTeWdpp6/5baSt+eOis5jiIS9fUXYB5u1MujdbXlw+
+	oKr2uMpRqmLVlrtLhaXuHvuyb+n+47FCG/ZuOPa9/srCHOc/SdNeTtE5ctzg4aWtZ2PD5ipd
+	eHr7/6njC5Vur1nxpOIlq6RAx3keTiWW4oxEQy3mouJEAH15GKU/AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 12:37 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
->>
->> The EMC clock needs some extra information for changing its rate.
->>
->> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->> ---
->>   .../bindings/clock/nvidia,tegra124-car.txt         | 46
->> +++++++++++++++++++++-
->>   1 file changed, 44 insertions(+), 2 deletions(-)
->>
->> diff --git
->> a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->> b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->> index ded5d62..42e0588 100644
->> --- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->> @@ -19,12 +19,35 @@ Required properties :
->>     In clock consumers, this cell represents the bit number in the CAR's
->>     array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
->>
->> +The node should contain a "emc-timings" subnode for each supported RAM
->> type (see
->> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address
->> being its
->> +RAM_CODE.
->> +
->> +Required properties for "emc-timings" nodes :
->> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
->> +  is used for.
->> +
->> +Each "emc-timings" node should contain a "timing" subnode for every
->> supported
->> +EMC clock rate. The "timing" subnodes should have the clock rate in Hz as
->> their
->> +unit address.
->
->
-> This seems to be a quite liberal use of unit addresses (same in the next
-> patch) - is this allowed by DT?
+Document new device tree bindings for Maxim 77693 charger driver.
 
-No, unit address should match a reg property.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/max77693.txt | 45 ++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
->> +
->> +Required properties for "timing" nodes :
->> +- clock-frequency : Should contain the memory clock rate to which this
->> timing
->> +relates.
->> +- nvidia,parent-clock-frequency : Should contain the rate at which the
->> current
->> +parent of the EMC clock should be running at this timing.
->> +- clocks : Must contain an entry for each entry in clock-names.
->> +  See ../clocks/clock-bindings.txt for details.
->> +- clock-names : Must include the following entries:
->> +  - emc-parent : the clock that should be the parent of the EMC clock at
->> this
->> +timing.
->> +
->>   Example SoC include file:
->>
->>   / {
->> -       tegra_car: clock {
->> +       tegra_car: clock@0,60006000 {
+diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
+index 01e9f30fe678..38e64405e98d 100644
+--- a/Documentation/devicetree/bindings/mfd/max77693.txt
++++ b/Documentation/devicetree/bindings/mfd/max77693.txt
+@@ -41,6 +41,41 @@ Optional properties:
+ 	 To get more informations, please refer to documentaion.
+ 	[*] refer Documentation/devicetree/bindings/pwm/pwm.txt
+ 
++- charger : Node configuring the charger driver.
++  If present, required properties:
++  - compatible : Must be "maxim,max77693-charger".
++
++  Optional properties (if not set, defaults will be used):
++  - maxim,constant-microvolt : Battery constant voltage in uV. The charger
++    will operate in fast charge constant current mode till battery voltage
++    reaches this level. Then the charger will switch to fast charge constant
++    voltage mode. Also vsys (system voltage) will be set to this value when
++    DC power is supplied but charger is not enabled.
++    Valid values: 3650000 - 4400000, step by 25000 (rounded down)
++    Default: 4200000
++
++  - maxim,min-system-microvolt : Minimal system voltage in uV.
++    Valid values: 3000000 - 3700000, step by 100000 (rounded down)
++    Default: 3600000
++
++  - maxim,thermal-regulation-celsius : Temperature in Celsius for entering
++    high temperature charging mode. If die temperature exceeds this value
++    the charging current will be reduced by 105 mA/Celsius.
++    Valid values: 70, 85, 100, 115
++    Default: 100
++
++  - maxim,battery-overcurrent-microamp : Overcurrent protection threshold
++    in uA (current from battery to system).
++    Valid values: 2000000 - 3500000, step by 250000 (rounded down)
++    Default: 3500000
++
++  - maxim,charge-input-threshold-microvolt : Threshold voltage in uV for
++    triggering input voltage regulation loop. If input voltage decreases
++    below this value, the input current will be reduced to reach the
++    threshold voltage.
++    Valid values: 4300000, 4700000, 4800000, 4900000
++    Default: 4300000
++
+ Example:
+ 	max77693@66 {
+ 		compatible = "maxim,max77693";
+@@ -73,4 +108,14 @@ Example:
+ 			pwms = <&pwm 0 40000 0>;
+ 			pwm-names = "haptic";
+ 		};
++
++		charger {
++			compatible = "maxim,max77693-charger";
++
++			maxim,constant-microvolt = <4200000>;
++			maxim,min-system-microvolt = <3600000>;
++			maxim,thermal-regulation-celsius = <75>;
++			maxim,battery-overcurrent-microamp = <3000000>;
++			maxim,charge-input-threshold-microvolt = <4300000>;
++		};
+ 	};
+-- 
+1.9.1
 
-The comma here is wrong. Commas should be used when you have something
-like PCI bus:dev:func for addressing.
-
->>                 compatible = "nvidia,tegra124-car";
->> -               reg = <0x60006000 0x1000>;
->> +               reg = <0x0 0x60006000 0x0 0x1000>;
-
-The number of cell's is really irrelevant to the example.
-
->>                 #clock-cells = <1>;
->>                 #reset-cells = <1>;
->>         };
->> @@ -60,4 +83,23 @@ Example board file:
->>         &tegra_car {
->>                 clocks = <&clk_32k> <&osc>;
->>         };
->> +
->> +       clock@0,60006000 {
->> +               emc-timings@3 {
->> +                       nvidia,ram-code = <3>;
->> +
->> +                       timing@12750000 {
->> +                               clock-frequency = <12750000>;
->> +                               nvidia,parent-clock-frequency =
->> <408000000>;
->> +                               clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
->> +                               clock-names = "emc-parent";
-
-Why do you need both clocks and hardcoded values? clock-frequency is
-the desired freq you want to set TEGRA124_CLK_PLL_P to?
-
-The clocks property really belongs as part of the memory controller
-node or a memory device node.
-
-Rob
