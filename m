@@ -1,34 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaKFT7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 14:59:37 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58170 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaKFT7e (ORCPT
+	id S1751435AbaKFUCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 15:02:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:17212 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751051AbaKFUCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 14:59:34 -0500
-Date: Thu, 06 Nov 2014 14:59:31 -0500 (EST)
-Message-Id: <20141106.145931.1669596452321333069.davem@davemloft.net>
-To: ryomnktml@gmail.com
-Cc: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/9p: remove a comment about pref member which
- doesn't exist
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1415198758-18680-1-git-send-email-ryomnktml@gmail.com>
-References: <1415198758-18680-1-git-send-email-ryomnktml@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 6 Nov 2014 15:02:21 -0500
+Date: Thu, 6 Nov 2014 15:02:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+Message-ID: <20141106150204.38c600cf@gandalf.local.home>
+In-Reply-To: <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+	<1415284748-14648-3-git-send-email-sjenning@redhat.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Nov 2014 11:59:34 -0800 (PST)
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ryo Munakata <ryomnktml@gmail.com>
-Date: Wed,  5 Nov 2014 23:45:58 +0900
+On Thu,  6 Nov 2014 08:39:08 -0600
+Seth Jennings <sjenning@redhat.com> wrote:
 
-> Signed-off-by: Ryo Munakata <ryomnktml@gmail.com>
+> --- /dev/null
+> +++ b/kernel/livepatch/Kconfig
+> @@ -0,0 +1,11 @@
+> +config LIVE_PATCHING
+> +	tristate "Live Kernel Patching"
+> +	depends on DYNAMIC_FTRACE_WITH_REGS && MODULES && SYSFS && KALLSYMS_ALL
+> +	default m
 
-Applied, thanks.
+Nuke this default. This should be default 'n', which is what kconfig
+defaults to when none is mentioned.
+
+-- Steve
+
+> +	help
+> +	  Say Y here if you want to support live kernel patching.
+> +	  This setting has no runtime impact until a live-patch
+> +	  kernel module that uses the live-patch interface provided
+> +	  by this option is loaded, resulting in calls to patched
+> +	  functions being redirected to the new function code contained
+> +	  in the live-patch module.
