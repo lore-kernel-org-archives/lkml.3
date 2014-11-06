@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaKFXDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:03:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58869 "EHLO
+	id S1754030AbaKFXDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:03:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58868 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822AbaKFWm2 (ORCPT
+	with ESMTP id S1751303AbaKFWm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 17:42:28 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Petr Matousek <pmatouse@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 101/162] kvm: vmx: handle invvpid vm exit gracefully
-Date: Thu,  6 Nov 2014 14:36:05 -0800
-Message-Id: <1415313426-9622-102-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 160/162] x86_64, entry: Fix out of bounds read on sysenter
+Date: Thu,  6 Nov 2014 14:37:04 -0800
+Message-Id: <1415313426-9622-161-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,81 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Matousek <pmatouse@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit a642fc305053cc1c6e47e4f4df327895747ab485 upstream.
+commit 653bc77af60911ead1f423e588f54fc2547c4957 upstream.
 
-On systems with invvpid instruction support (corresponding bit in
-IA32_VMX_EPT_VPID_CAP MSR is set) guest invocation of invvpid
-causes vm exit, which is currently not handled and results in
-propagation of unknown exit to userspace.
+Rusty noticed a Really Bad Bug (tm) in my NT fix.  The entry code
+reads out of bounds, causing the NT fix to be unreliable.  But, and
+this is much, much worse, if your stack is somehow just below the
+top of the direct map (or a hole), you read out of bounds and crash.
 
-Fix this by installing an invvpid vm exit handler.
+Excerpt from the crash:
 
-This is CVE-2014-3646.
+[    1.129513] RSP: 0018:ffff88001da4bf88  EFLAGS: 00010296
 
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+  2b:*    f7 84 24 90 00 00 00     testl  $0x4000,0x90(%rsp)
+
+That read is deterministically above the top of the stack.  I
+thought I even single-stepped through this code when I wrote it to
+check the offset, but I clearly screwed it up.
+
+Fixes: 8c7aa698baca ("x86_64, entry: Filter RFLAGS.NT on entry from userspace")
+Reported-by: Rusty Russell <rusty@ozlabs.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/uapi/asm/vmx.h | 2 ++
- arch/x86/kvm/vmx.c              | 9 ++++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/ia32/ia32entry.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/uapi/asm/vmx.h b/arch/x86/include/uapi/asm/vmx.h
-index 0e79420..990a2fe 100644
---- a/arch/x86/include/uapi/asm/vmx.h
-+++ b/arch/x86/include/uapi/asm/vmx.h
-@@ -67,6 +67,7 @@
- #define EXIT_REASON_EPT_MISCONFIG       49
- #define EXIT_REASON_INVEPT              50
- #define EXIT_REASON_PREEMPTION_TIMER    52
-+#define EXIT_REASON_INVVPID             53
- #define EXIT_REASON_WBINVD              54
- #define EXIT_REASON_XSETBV              55
- #define EXIT_REASON_APIC_WRITE          56
-@@ -114,6 +115,7 @@
- 	{ EXIT_REASON_EOI_INDUCED,           "EOI_INDUCED" }, \
- 	{ EXIT_REASON_INVALID_STATE,         "INVALID_STATE" }, \
- 	{ EXIT_REASON_INVD,                  "INVD" }, \
-+	{ EXIT_REASON_INVVPID,               "INVVPID" }, \
- 	{ EXIT_REASON_INVPCID,               "INVPCID" }
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 711de08..92a2e93 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -157,7 +157,7 @@ ENTRY(ia32_sysenter_target)
+ 	 * ourselves.  To save a few cycles, we can check whether
+ 	 * NT was set instead of doing an unconditional popfq.
+ 	 */
+-	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
++	testl $X86_EFLAGS_NT,EFLAGS-ARGOFFSET(%rsp)
+ 	jnz sysenter_fix_flags
+ sysenter_flags_fixed:
  
- #endif /* _UAPIVMX_H */
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 4dd0201..6e4b08b 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6410,6 +6410,12 @@ static int handle_invept(struct kvm_vcpu *vcpu)
- 	return 1;
- }
- 
-+static int handle_invvpid(struct kvm_vcpu *vcpu)
-+{
-+	kvm_queue_exception(vcpu, UD_VECTOR);
-+	return 1;
-+}
-+
- /*
-  * The exit handlers return 1 if the exit was handled fully and guest execution
-  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-@@ -6455,6 +6461,7 @@ static int (*const kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
- 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
- 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
- 	[EXIT_REASON_INVEPT]                  = handle_invept,
-+	[EXIT_REASON_INVVPID]                 = handle_invvpid,
- };
- 
- static const int kvm_vmx_max_exit_handlers =
-@@ -6684,7 +6691,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
- 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
- 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
- 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
--	case EXIT_REASON_INVEPT:
-+	case EXIT_REASON_INVEPT: case EXIT_REASON_INVVPID:
- 		/*
- 		 * VMX instructions trap unconditionally. This allows L1 to
- 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
 -- 
 1.9.1
 
