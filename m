@@ -1,147 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaKFMy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:54:57 -0500
-Received: from regular1.263xmail.com ([211.150.99.132]:52870 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaKFMyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:54:53 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <31e2398b9f2d6e5bcb0015f029864a60>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        jay.xu@rock-chips.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: [PATCH V3 3/4] dw-hdmi: add support for multi byte register width access
-Date: Thu,  6 Nov 2014 19:25:18 +0800
-Message-Id: <1415273118-57045-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415273069-56995-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415273069-56995-1-git-send-email-andy.yan@rock-chips.com>
+	id S1751780AbaKFM4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:56:09 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51680 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348AbaKFM4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:56:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,325,1413270000"; 
+   d="scan'208";a="603421732"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: "Fleming, Matt" <matt.fleming@intel.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: RE: [PATCH v2 3/3] efi: Capsule update with user helper interface
+Thread-Topic: [PATCH v2 3/3] efi: Capsule update with user helper interface
+Thread-Index: AQHP9+iuHUs9oVBcgkKjHBOxgX5ANZxPaE0AgACL8cD//4fqAIAAgjoAgAAK9YCAAAv/gIAAD3kAgANofuA=
+Date: Thu, 6 Nov 2014 12:53:54 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B80F3A9@PGSMSX102.gar.corp.intel.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-4-git-send-email-hock.leong.kweh@intel.com>
+ <20141104043247.GA23418@kroah.com>
+ <CALCETrXjJju+cMWJfB6W5kSD=Ox5y+Hj_AfmbbbOTOh8CV8eaQ@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80EAE4@PGSMSX102.gar.corp.intel.com>
+ <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
+ <1415110688.26277.36.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CALCETrW1UaOCcb-32SOUhi_Zh5vLzV+VwyffThVvso23z04SHA@mail.gmail.com>
+ <20141104154017.GA28113@kroah.com>
+ <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
+In-Reply-To: <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA6CuDY6003026
 
-On rockchip rk3288, only word(32-bit) accesses are
-permitted for hdmi registers.  Byte width access (writeb,
-readb) generate an imprecise external abort.
+> -----Original Message-----
+> From: Andy Lutomirski [mailto:luto@amacapital.net]
+> Sent: Wednesday, November 05, 2014 12:36 AM
+> 
+> Am I missing something here?  The current proposal is missing the
+> success/failure part, unless you count the loaded count (in a different sysfs
+> directory) as a useful interface for that.
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
----
- drivers/gpu/drm/bridge/dw_hdmi.c | 53 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 48 insertions(+), 5 deletions(-)
+Here is my sample shell script which allow me to do multi capsule binaries upload
+and obtain error message if error occur:
 
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index e561286..a34f928 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -126,19 +126,42 @@ struct dw_hdmi {
- 
- 	unsigned int sample_rate;
- 	int ratio;
-+	void (*write)(u8 val, void __iomem *addr);
-+	u8 (*read)(void __iomem *addr);
-+	int reg_shift;
- };
- 
-+static void dw_hdmi_writel(u8 val, void __iomem *addr)
-+{
-+	writel(val, addr);
-+}
-+
-+static u8 dw_hdmi_readl(void __iomem *addr)
-+{
-+	return readl(addr);
-+}
-+
-+static void dw_hdmi_writeb(u8 val, void __iomem *addr)
-+{
-+	writeb(val, addr);
-+}
-+
-+static u8 dw_hdmi_readb(void __iomem *addr)
-+{
-+	return readb(addr);
-+}
-+
- static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
- {
--	writeb(val, hdmi->regs + offset);
-+	hdmi->write(val, hdmi->regs + (offset << hdmi->reg_shift));
- }
- 
- static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
- {
--	return readb(hdmi->regs + offset);
-+	return hdmi->read(hdmi->regs + (offset << hdmi->reg_shift));
- }
- 
--static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
-+static void hdmi_modb(struct dw_hdmi *hdmi, u32 data, u32 mask, unsigned reg)
- {
- 	u8 val = hdmi_readb(hdmi, reg) & ~mask;
- 
-@@ -146,8 +169,8 @@ static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
- 	hdmi_writeb(hdmi, val, reg);
- }
- 
--static void hdmi_mask_writeb(struct dw_hdmi *hdmi, u8 data, unsigned int reg,
--		      u8 shift, u8 mask)
-+static void hdmi_mask_writeb(struct dw_hdmi *hdmi, u32 data, unsigned int reg,
-+		      u32 shift, u32 mask)
- {
- 	hdmi_modb(hdmi, data << shift, mask, reg);
- }
-@@ -1500,6 +1523,26 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	struct device_node *ddc_node;
- 	struct resource *iores;
- 	int ret, irq;
-+	u32 val;
-+
-+	if (!of_property_read_u32(np, "reg-io-width", &val)) {
-+		switch (val) {
-+		case 4:
-+			hdmi->write = dw_hdmi_writel;
-+			hdmi->read = dw_hdmi_readl;
-+			hdmi->reg_shift = 2;
-+			break;
-+		default:
-+			hdmi->write = dw_hdmi_writeb;
-+			hdmi->read = dw_hdmi_readb;
-+			hdmi->reg_shift = 0;
-+			break;
-+		}
-+	} else {
-+		hdmi->write = dw_hdmi_writeb;
-+		hdmi->read = dw_hdmi_readb;
-+		hdmi->reg_shift = 0;
-+	}
- 
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
--- 
-1.9.1
+#!/bin/sh
+
+old=$(cat /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+
+for arg in "$@"
+do
+	if [ -f $arg ]
+	then
+		echo 1 > /sys/class/firmware/efi-capsule-file/loading
+		cat $arg > /sys/class/firmware/efi-capsule-file/data
+		echo 0 > /sys/class/firmware/efi-capsule-file/loading
+
+		oldtime=$(date +%S)
+		oldtime=$(((time + 2) % 60))
+		until [ -f /sys/class/firmware/efi-capsule-file/loading ]
+		do
+			newtime=$(date +%S)
+			if [ $newtime -eq $oldtime ]
+			then
+				break
+			fi
+		done
+
+		old=$((old + 1))
+		new=$(cat /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+		if [ ! $new -eq $old ]
+		then
+			echo "Capsule binary $arg upload failed"
+			dmesg | tail | grep -v platform | grep -e efi
+			exit 1
+		fi
+	else
+		echo "File $arg not found !!"
+	fi
+done
+exit 0
 
 
+Regards,
+Wilson
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
