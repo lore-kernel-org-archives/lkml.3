@@ -1,94 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaKFCk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:40:28 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37673 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaKFCkX (ORCPT
+	id S1751358AbaKFCki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:40:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39052 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaKFCkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:40:23 -0500
-Message-ID: <545ADF8F.70809@linaro.org>
-Date: Thu, 06 Nov 2014 11:40:15 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 5 Nov 2014 21:40:36 -0500
+Date: Wed, 5 Nov 2014 18:40:35 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH -next v2 11/26] tty: Don't release tty locks for wait
+ queue sanity check
+Message-ID: <20141106024035.GA14424@kroah.com>
+References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
+ <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
+ <1415207589-15967-12-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, Kees Cook <keescook@chromium.org>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
-References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org> <1412243176-16192-2-git-send-email-takahiro.akashi@linaro.org> <20141008141306.GQ26140@arm.com> <CAGXu5jJkP_fg1Ck+rj1nn7tK=ckuMk5ObvgCOJLNhb3cHb3D-Q@mail.gmail.com> <20141009092358.GB3141@arm.com>
-In-Reply-To: <20141009092358.GB3141@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415207589-15967-12-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will, Kees
+On Wed, Nov 05, 2014 at 12:12:54PM -0500, Peter Hurley wrote:
+> Releasing the tty locks while waiting for the tty wait queues to
+> be empty is no longer necessary nor desirable. Prior to
+> "tty: Don't take tty_mutex for tty count changes", dropping the
+> tty locks was necessary to reestablish the correct lock order between
+> tty_mutex and the tty locks. Dropping the global tty_mutex was necessary;
+> otherwise new ttys could not have been opened while waiting.
+> 
+> However, without needing the global tty_mutex held, the tty locks for
+> the releasing tty can now be held through the sleep. The sanity check
+> is for abnormal conditions caused by kernel bugs, not for recoverable
+> errors caused by misbehaving userspace; dropping the tty locks only
+> allows the tty state to get more sideways.
+> 
+> Reviewed-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/tty_io.c | 8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index e59de81c39a9..b008e2b38d54 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -1798,13 +1798,10 @@ int tty_release(struct inode *inode, struct file *filp)
+>  	 * first, its count will be one, since the master side holds an open.
+>  	 * Thus this test wouldn't be triggered at the time the slave closes,
+>  	 * so we do it now.
+> -	 *
+> -	 * Note that it's possible for the tty to be opened again while we're
+> -	 * flushing out waiters.  By recalculating the closing flags before
+> -	 * each iteration we avoid any problems.
+>  	 */
+> +	tty_lock_pair(tty, o_tty);
+> +
+>  	while (1) {
+> -		tty_lock_pair(tty, o_tty);
+>  		tty_closing = tty->count <= 1;
+>  		o_tty_closing = o_tty &&
+>  			(o_tty->count <= (pty_master ? 1 : 0));
+> @@ -1835,7 +1832,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>  
+>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
+>  				__func__, tty_name(tty, buf));
+> -		tty_unlock_pair(tty, o_tty);
+>  		schedule();
+>  	}
+>  
 
-#Sorry for this late ping,
+This patch had the same type of fuzz as the previous one, the version I
+used was:
 
-On 10/09/2014 06:23 PM, Will Deacon wrote:
-> On Wed, Oct 08, 2014 at 04:30:18PM +0100, Kees Cook wrote:
->> On Wed, Oct 8, 2014 at 9:13 AM, Will Deacon <will.deacon@arm.com> wrote:
->>> On Thu, Oct 02, 2014 at 10:46:11AM +0100, AKASHI Takahiro wrote:
->>>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->>>> index fe63ac5..2842f9f 100644
->>>> --- a/arch/arm64/kernel/ptrace.c
->>>> +++ b/arch/arm64/kernel/ptrace.c
->>>> @@ -1082,7 +1082,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
->>>>   long arch_ptrace(struct task_struct *child, long request,
->>>>                 unsigned long addr, unsigned long data)
->>>>   {
->>>> -     return ptrace_request(child, request, addr, data);
->>>> +     int ret;
->>>> +
->>>> +     switch (request) {
->>>> +             case PTRACE_SET_SYSCALL:
->>>> +                     task_pt_regs(child)->syscallno = data;
->>>> +                     ret = 0;
->>>> +                     break;
->>>> +             default:
->>>> +                     ret = ptrace_request(child, request, addr, data);
->>>> +                     break;
->>>> +     }
->>>> +
->>>> +     return ret;
->>>>   }
->>>
->>> I still don't understand why this needs to be in arch-specific code. Can't
->>> we implement this in generic code and get architectures to implement
->>> something like syscall_set_nr if they want the generic interface?
->>
->> Personally, I'd rather see this land as-is in the arm64 tree, and then
->> later optimize PTRACE_SET_SYSCALL out of arm/ and arm64/, especially
->> since only these architectures implement this at the moment.
->
-> Why? It should be really straightforward to do this in core code from the
-> get-go and experience shows that, if we don't do it now, it will never
-> happen.
 
-How should I deal with this issue? I would be able to go either way.
-
-Other than that, I will submit v8 patch series with a few very minor updates:
-- use compat_uint_t in struct compat_siginfo
-- use a new call interface of secure_computing(void)
-- modify and clarify comments in syscall_trace_enter()
-
-Thanks,
--Takahiro AKASHI
-
->> This is my plan for the asm-generic seccomp.h too -- I'd rather avoid
->> touching other architectures in this series, as it's easier to review
->> this way. Then we can optimize the code in a separate series, which
->> will have those changes isolated, etc.
->
-> But this doesn't need to touch any other architectures...
->
-> Will
->
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index e59de81c39a9..b008e2b38d54 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1798,13 +1798,10 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	 * first, its count will be one, since the master side holds an open.
+ 	 * Thus this test wouldn't be triggered at the time the slave closes,
+ 	 * so we do it now.
+-	 *
+-	 * Note that it's possible for the tty to be opened again while we're
+-	 * flushing out waiters.  By recalculating the closing flags before
+-	 * each iteration we avoid any problems.
+ 	 */
++	tty_lock_pair(tty, o_tty);
++
+ 	while (1) {
+-		tty_lock_pair(tty, o_tty);
+ 		tty_closing = tty->count <= 1;
+ 		o_tty_closing = o_tty &&
+ 			(o_tty->count <= (pty_master ? 1 : 0));
+@@ -1835,7 +1832,6 @@ int tty_release(struct inode *inode, struct file *filp)
+ 
+ 		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
+ 				__func__, tty_name(tty, buf));
+-		tty_unlock_pair(tty, o_tty);
+ 		schedule();
+ 	}
+ 
