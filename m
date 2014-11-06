@@ -1,117 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaKFKDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:03:12 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:42456 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaKFKDG (ORCPT
+	id S1752261AbaKFKCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:02:34 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48443 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751779AbaKFJ5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:03:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415263010-7992-4-git-send-email-k.kozlowski@samsung.com>
-References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
-	<1415263010-7992-4-git-send-email-k.kozlowski@samsung.com>
-Date: Thu, 6 Nov 2014 11:03:05 +0100
-Message-ID: <CAPDyKFrrtEAHUEU_aws327Za6cz3rCG_VHhqY5b8ZseKK2UXgA@mail.gmail.com>
-Subject: Re: [PATCH v10 3/5] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
+	Thu, 6 Nov 2014 04:57:15 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 03/10] [media] Make use of the new media_bus_format definitions
+Date: Thu,  6 Nov 2014 10:57:01 +0100
+Message-Id: <1415267829-4177-4-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 November 2014 09:36, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> The AMBA bus driver defines runtime Power Management functions which
-> disable and unprepare AMBA bus clock. This is problematic for runtime PM
-> because unpreparing a clock might sleep so it is not interrupt safe.
->
-> However some drivers may want to implement runtime PM functions in
-> interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-> bus driver should only disable/enable the clock in runtime suspend and
-> resume callbacks.
->
-> Detect the device driver behavior during runtime suspend. During runtime
-> resume deal with clocks according to stored value.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Replace references to the v4l2_mbus_pixelcode enum with the new
+media_bus_format enum in all common headers.
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+---
+ include/media/v4l2-mediabus.h    | 2 +-
+ include/media/v4l2-subdev.h      | 2 +-
+ include/uapi/linux/v4l2-subdev.h | 6 +++---
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-> ---
->  drivers/amba/bus.c       | 17 +++++++++++++----
->  include/linux/amba/bus.h |  1 +
->  2 files changed, 14 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-> index 47bbdc1b5be3..356f906c6966 100644
-> --- a/drivers/amba/bus.c
-> +++ b/drivers/amba/bus.c
-> @@ -95,8 +95,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
->         struct amba_device *pcdev = to_amba_device(dev);
->         int ret = pm_generic_runtime_suspend(dev);
->
-> -       if (ret == 0 && dev->driver)
-> -               clk_disable_unprepare(pcdev->pclk);
-> +       if (ret == 0 && dev->driver) {
-> +               pcdev->irq_safe = dev->power.irq_safe;
-> +
-> +               if (pcdev->irq_safe)
-> +                       clk_disable(pcdev->pclk);
-> +               else
-> +                       clk_disable_unprepare(pcdev->pclk);
-> +       }
->
->         return ret;
->  }
-> @@ -107,7 +113,10 @@ static int amba_pm_runtime_resume(struct device *dev)
->         int ret;
->
->         if (dev->driver) {
-> -               ret = clk_prepare_enable(pcdev->pclk);
-> +               if (pcdev->irq_safe)
-> +                       ret = clk_enable(pcdev->pclk);
-> +               else
-> +                       ret = clk_prepare_enable(pcdev->pclk);
->                 /* Failure is probably fatal to the system, but... */
->                 if (ret)
->                         return ret;
-> @@ -115,7 +124,7 @@ static int amba_pm_runtime_resume(struct device *dev)
->
->         return pm_generic_runtime_resume(dev);
->  }
-> -#endif
-> +#endif /* CONFIG_PM */
->
->  static const struct dev_pm_ops amba_pm = {
->         .suspend        = pm_generic_suspend,
-> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> index ac02f9bd63dc..c4bae79851fb 100644
-> --- a/include/linux/amba/bus.h
-> +++ b/include/linux/amba/bus.h
-> @@ -32,6 +32,7 @@ struct amba_device {
->         struct clk              *pclk;
->         unsigned int            periphid;
->         unsigned int            irq[AMBA_NR_IRQS];
-> +       unsigned int            irq_safe:1;
->  };
->
->  struct amba_driver {
-> --
-> 1.9.1
->
+diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+index 395c4a9..4915621 100644
+--- a/include/media/v4l2-mediabus.h
++++ b/include/media/v4l2-mediabus.h
+@@ -98,7 +98,7 @@ static inline void v4l2_fill_pix_format(struct v4l2_pix_format *pix_fmt,
+ 
+ static inline void v4l2_fill_mbus_format(struct v4l2_mbus_framefmt *mbus_fmt,
+ 			   const struct v4l2_pix_format *pix_fmt,
+-			   enum v4l2_mbus_pixelcode code)
++			   enum media_bus_format code)
+ {
+ 	mbus_fmt->width = pix_fmt->width;
+ 	mbus_fmt->height = pix_fmt->height;
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index d746572..9af5932 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -341,7 +341,7 @@ struct v4l2_subdev_video_ops {
+ 	int (*query_dv_timings)(struct v4l2_subdev *sd,
+ 			struct v4l2_dv_timings *timings);
+ 	int (*enum_mbus_fmt)(struct v4l2_subdev *sd, unsigned int index,
+-			     enum v4l2_mbus_pixelcode *code);
++			     enum media_bus_format *code);
+ 	int (*enum_mbus_fsizes)(struct v4l2_subdev *sd,
+ 			     struct v4l2_frmsizeenum *fsize);
+ 	int (*g_mbus_fmt)(struct v4l2_subdev *sd,
+diff --git a/include/uapi/linux/v4l2-subdev.h b/include/uapi/linux/v4l2-subdev.h
+index a619cdd..7f44f04 100644
+--- a/include/uapi/linux/v4l2-subdev.h
++++ b/include/uapi/linux/v4l2-subdev.h
+@@ -68,7 +68,7 @@ struct v4l2_subdev_crop {
+  * struct v4l2_subdev_mbus_code_enum - Media bus format enumeration
+  * @pad: pad number, as reported by the media API
+  * @index: format index during enumeration
+- * @code: format code (from enum v4l2_mbus_pixelcode)
++ * @code: format code (from enum media_bus_format)
+  */
+ struct v4l2_subdev_mbus_code_enum {
+ 	__u32 pad;
+@@ -81,7 +81,7 @@ struct v4l2_subdev_mbus_code_enum {
+  * struct v4l2_subdev_frame_size_enum - Media bus format enumeration
+  * @pad: pad number, as reported by the media API
+  * @index: format index during enumeration
+- * @code: format code (from enum v4l2_mbus_pixelcode)
++ * @code: format code (from enum media_bus_format)
+  */
+ struct v4l2_subdev_frame_size_enum {
+ 	__u32 index;
+@@ -109,7 +109,7 @@ struct v4l2_subdev_frame_interval {
+  * struct v4l2_subdev_frame_interval_enum - Frame interval enumeration
+  * @pad: pad number, as reported by the media API
+  * @index: frame interval index during enumeration
+- * @code: format code (from enum v4l2_mbus_pixelcode)
++ * @code: format code (from enum media_bus_format)
+  * @width: frame width in pixels
+  * @height: frame height in pixels
+  * @interval: frame interval in seconds
+-- 
+1.9.1
+
