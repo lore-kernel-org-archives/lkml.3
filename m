@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaKFXP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:15:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58625 "EHLO
+	id S1754235AbaKFXQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:16:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58596 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224AbaKFWkN (ORCPT
+	with ESMTP id S1752126AbaKFWjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:40:13 -0500
+	Thu, 6 Nov 2014 17:39:52 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Pham <jackp@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 136/162] usb: dwc3: gadget: Properly initialize LINK TRB
-Date: Thu,  6 Nov 2014 14:36:40 -0800
-Message-Id: <1415313426-9622-137-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 142/162] ima: check xattr value length and type in the ima_inode_setxattr()
+Date: Thu,  6 Nov 2014 14:36:46 -0800
+Message-Id: <1415313426-9622-143-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,44 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
+commit a48fda9de94500a3152a56b723d0a64ae236547c upstream.
 
-On ISOC endpoints the last trb_pool entry used as a
-LINK TRB is not getting zeroed out correctly due to
-memset being called incorrectly and in the wrong place.
-If pool allocated from DMA was not zero-initialized
-to begin with this will result in the size and ctrl
-values being random garbage. Call memset correctly after
-assignment of the trb_link pointer.
+ima_inode_setxattr() can be called with no value. Function does not
+check the length so that following command can be used to produce
+kernel oops: setfattr -n security.ima FOO. This patch fixes it.
 
-Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Changes in v3:
+* for stable reverted "allow setting hash only in fix or log mode"
+  It will be a separate patch.
+
+Changes in v2:
+* testing validity of xattr type
+* allow setting hash only in fix or log mode (Mimi)
+
+[  261.562522] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  261.564109] IP: [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109] PGD 3112f067 PUD 42965067 PMD 0
+[  261.564109] Oops: 0000 [#1] SMP
+[  261.564109] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
+[  261.564109] CPU: 0 PID: 3299 Comm: setxattr Not tainted 3.16.0-kds+ #2924
+[  261.564109] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  261.564109] task: ffff8800428c2430 ti: ffff880042be0000 task.ti: ffff880042be0000
+[  261.564109] RIP: 0010:[<ffffffff812af272>]  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109] RSP: 0018:ffff880042be3d50  EFLAGS: 00010246
+[  261.564109] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000015
+[  261.564109] RDX: 0000001500000000 RSI: 0000000000000000 RDI: ffff8800375cc600
+[  261.564109] RBP: ffff880042be3d68 R08: 0000000000000000 R09: 00000000004d6256
+[  261.564109] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002149ba00
+[  261.564109] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+[  261.564109] FS:  00007f6c1e219740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
+[  261.564109] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  261.564109] CR2: 0000000000000000 CR3: 000000003b35a000 CR4: 00000000000006f0
+[  261.564109] Stack:
+[  261.564109]  ffff88002149ba00 ffff880042be3df8 0000000000000000 ffff880042be3d98
+[  261.564109]  ffffffff812a101b ffff88002149ba00 ffff880042be3df8 0000000000000000
+[  261.564109]  0000000000000000 ffff880042be3de0 ffffffff8116d08a ffff880042be3dc8
+[  261.564109] Call Trace:
+[  261.564109]  [<ffffffff812a101b>] security_inode_setxattr+0x48/0x6a
+[  261.564109]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
+[  261.564109]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
+[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[  261.564109]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
+[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[  261.564109]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
+[  261.564109]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
+[  261.564109]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
+[  261.564109] Code: 48 89 f7 48 c7 c6 58 36 81 81 53 31 db e8 73 27 04 00 85 c0 75 28 bf 15 00 00 00 e8 8a a5 d9 ff 84 c0 75 05 83 cb ff eb 15 31 f6 <41> 80 7d 00 03 49 8b 7c 24 68 40 0f 94 c6 e8 e1 f9 ff ff 89 d8
+[  261.564109] RIP  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109]  RSP <ffff880042be3d50>
+[  261.564109] CR2: 0000000000000000
+[  261.599998] ---[ end trace 39a89a3fc267e652 ]---
+
+Reported-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+[ kamal: backport to 3.13-stable: xvalue def ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/dwc3/gadget.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ security/integrity/ima/ima_appraise.c | 3 +++
+ security/integrity/integrity.h        | 1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 27b9c8a..20e4d2e 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -532,12 +532,11 @@ static int __dwc3_gadget_ep_enable(struct dwc3_ep *dep,
- 		if (!usb_endpoint_xfer_isoc(desc))
- 			return 0;
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 734e946..c7190b7 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -359,11 +359,14 @@ static void ima_reset_appraise_flags(struct inode *inode)
+ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 		       const void *xattr_value, size_t xattr_value_len)
+ {
++        const struct evm_ima_xattr_data *xvalue = xattr_value;
+ 	int result;
  
--		memset(&trb_link, 0, sizeof(trb_link));
--
- 		/* Link TRB for ISOC. The HWO bit is never reset */
- 		trb_st_hw = &dep->trb_pool[0];
+ 	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
+ 				   xattr_value_len);
+ 	if (result == 1) {
++		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
++			return -EINVAL;
+ 		ima_reset_appraise_flags(dentry->d_inode);
+ 		result = 0;
+ 	}
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 33c0a70..8f2fbdc 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -56,6 +56,7 @@ enum evm_ima_xattr_type {
+ 	EVM_XATTR_HMAC,
+ 	EVM_IMA_XATTR_DIGSIG,
+ 	IMA_XATTR_DIGEST_NG,
++	IMA_XATTR_LAST
+ };
  
- 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
-+		memset(trb_link, 0, sizeof(*trb_link));
- 
- 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
- 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+ struct evm_ima_xattr_data {
 -- 
 1.9.1
 
