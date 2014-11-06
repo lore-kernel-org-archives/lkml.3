@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaKFSC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:02:56 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:50438 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaKFSCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:02:55 -0500
+	id S1751446AbaKFSDp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:03:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:36243 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046AbaKFSDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 13:03:42 -0500
+Date: Thu, 6 Nov 2014 19:03:36 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg
+Subject: Re: N900 modem support in 3.18-rc1
+Message-ID: <20141106180335.GA21513@earth.universe>
+References: <20141104205117.GA17606@amd>
+ <201411052137.31452@pali>
+ <20141105203918.GA29199@amd>
+ <201411052206.05379@pali>
+ <20141105220359.GA32052@amd>
+ <20141105234555.GA7097@earth.universe>
+ <20141106124711.GA26944@amd>
 MIME-Version: 1.0
-In-Reply-To: <20141106170818.GA30177@roeck-us.net>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-	<20141106170818.GA30177@roeck-us.net>
-Date: Thu, 6 Nov 2014 10:02:54 -0800
-X-Google-Sender-Auth: jv5mcFQ9hVvpB5nsysjfuik_Zjc
-Message-ID: <CA+55aFxMu_MTfXd-EFG=QJ6aCWpb+OX5tyM-XWZC=WHJ=pFiTA@mail.gmail.com>
-Subject: Re: [PATCH v5 00/48] kernel: Add support for power-off handler call chain
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <20141106124711.GA26944@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 9:08 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>
->> Merge plan is to send the entire series directly to Linus during the next commit
->> window, except for the last patch. The last patch would then be part of another
->> pull request after -rc1, which would include any changes necessary due to newly
->> merged power-off handling code.
->
-> I should have added that I plan to have the series (except for the last patch)
-> added to -next shortly.
->
-> Linus,
->
-> are you ok with this plan ?
 
-Do people actually agree that the code makes sense at all?
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Because quite frankly, every time somebody adds this kind of "register
-callback" stuff, the end result tends to end up being an unmitigated
-disaster. People care about ordering etc, and there seems to be no
-sane support for that. Then people do random ugly hacks for their
-insane platforms. You already did that by having the "priority" thing,
-but that just makes me think that people will pick random priorities.
-TYou seem to even *encourage* that random behavior by spreading out
-the "named" priorities, so that people can randomly say "I'm one
-higher than LOW".
+Hi,
 
-What kind of games are the actual new users already doing wrt this? I
-have a bad feeling about it all.
+On Thu, Nov 06, 2014 at 01:47:11PM +0100, Pavel Machek wrote:
+> > On Wed, Nov 05, 2014 at 11:03:59PM +0100, Pavel Machek wrote:
+> > > > Maybe you need to enable modem?
+> > > >=20
+> > > > This is n900 init sequence from script: nokia-n900-configs.sh
+> > >=20
+> > > From the dts, it looks like this should somehow work without this.
+> >=20
+> > Right :) The n900-modem driver will take care of this if the "pm"
+> > parameter is set to 1 (which should be the default).
+>=20
+> I actually had pm=3D0 on the command line, but I removed it now, and no
+> change: [...]
+>=20
+> Let me try with explicit =3D1. .. aha, that helps. Thanks!
 
-                        Linus
+mh seems I actually missed to make 1 the default value. I will
+prepare a patch for that.
+
+I assume, that the example ofono commands work for you now?
+
+> Do you have an example client that can talk to ofonod?
+
+I have not yet played with userland stuff. You could try
+telepathy-ring, which integrates the ofono into the telepathy
+framework.
+
+> What is needed to get voice calls to work?
+
+There's still a kernel driver missing in mainline for exchanging
+voice data between the modem and the cpu (called cmt-speech).
+
+BTW the CMT driver should be removed from your kernel tree; its a
+deprecated variant of mainline's nokia-modem driver. Thus I guess
+the cmt-speech driver, which is available in your kernel tree, is
+not properly integrated into the changes I did during mainlining
+the other modem related drivers.
+
+-- Sebastian
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUW7f3AAoJENju1/PIO/qa4S4P/1oT1u/Q9qiCjz//20hvwJZb
+sj9ry5QeqffQTTeT+bM7VippN2reG6uJloCrFIZ32j4xzS30fEmvY9jtQoM61fm7
+Z4OgC7lgzE/hnJAPQnn4ix/Bk7n50fF91l6wSBaiGZxRoEK03pEAcxRcBLchyvFC
+OF1Eofp90v7SsGSBWR6aLS3lBSQr48NlHrQBwFe0riklQunWdF8b9ccNHJIz29rO
+az/VwJHoIt3sDeu7WsOzU+YhPhVaL+rkuTltmKKOxXMu1wQ6kVQcygTb1rJFcuSe
+TKr5YmR3NSKt46yWQUAHdGf/gBgdVwrD9oRMF7BNhq3B+Vkn3qVgYaO3j5iSN799
+kg4g8nnkZqv4rJJg6Y8+EUoG7jlzm+F+04ppgByZYhXhh81e7cLH3+/2/2Mw9VY3
+sNfN65OHt4vWAmHUX9vUW1P2r7HvKMn1AI4oDRehTlZoGhYtT33N3f4mMDuqxcnU
+ljZhPV7aUNg9Feo3LGGEyxsPXzN6nxg6ohpY6hkDppO6HlPXTT716Osp5WXaVpR7
+EATNTPqbu3fee+fGZg3/A10/Z+6TGo+3v9Cadn/8aZmSke/MCpjKvYglBrBdTSwY
+TRl+S5YJ7BsXhLUlgHHXW4/asSUNVCvTEQMn9tseF4MEbpmUfJBhFBryd40RjCet
+nw2Y/qm0/MCok0jre+6F
+=Xz0L
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
