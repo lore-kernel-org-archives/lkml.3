@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaKFQoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:44:01 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56093 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaKFQnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:43:53 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v5 06/48] gpio-poweroff: Drop reference to pm_power_off from devicetree bindings
-Date: Thu,  6 Nov 2014 08:42:50 -0800
-Message-Id: <1415292213-28652-7-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA549.002B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 24
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752896AbaKFRD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:03:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57613 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517AbaKFRDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:03:50 -0500
+Message-ID: <545BA9EE.1040905@ti.com>
+Date: Thu, 6 Nov 2014 22:33:42 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: <balbi@ti.com>, Nishanth Menon <nm@ti.com>
+CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] Add DRA7xx CPSW Ethernet support in Device Tree
+References: <1413885661-4850-1-git-send-email-mugunthanvnm@ti.com> <54463063.80207@ti.com> <20141021172223.GA12943@kahuna> <20141103162722.GN27425@saruman>
+In-Reply-To: <20141103162722.GN27425@saruman>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm_power_off is an implementation detail. Replace it with a more generic
-description of the driver's functionality.
+Tony
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v5:
-- Rebase to v3.18-rc3
-v4:
-- No change
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-v2:
-- No change
+On Monday 03 November 2014 09:57 PM, Felipe Balbi wrote:
+> On Tue, Oct 21, 2014 at 12:22:23PM -0500, Nishanth Menon wrote:
+>> On 15:37-20141021, Mugunthan V N wrote:
+>>> Nishanth
+>>>
+>>> On Tuesday 21 October 2014 03:30 PM, Mugunthan V N wrote:
+>>>> Adding device tree entry for CPSW to make it work in Dual EMAC mode.
+>>>> These patches were tested with DRA7 hwmod patches on top of linux-next.
+>>>> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pushed
+>>>> my tree to [2].
+>>>>
+>>>> Did a boot test with CPSW and ping test with suspend/resume, the boot logs
+>>>> on DRA7xx EVM are posted at [3]
+>>>>
+>>>> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+>>>> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git v3.17/dra7-evm-cpsw-v3
+>>>> [3] http://pastebin.ubuntu.com/8613072/
+>>>>
+>>>> Changes from v2:
+>>>> * Changed pinctrl comments to hold mode0-name.mode-selected-name
+>>>> * Changes slave numbers in the pinctrl comments
+>>>> * Added cpsw and cpts clocks
+>>>>
+>>>
+>>> I have not added support for dra72x-evm as it has only slave no 2 pinned
+>>> out and having issues with bringing up the interface, need some more
+>>> time to submit the patch, in the mean time I have submitted dra7-evm
+>>> support only so that people can use dra7-evm on linux-next.
+>>
+>> Quickly tested as well:
+>> http://slexy.org/raw/s2vISJxYrR
+>>
+>> Please feel free to add:
+>> Tested-by: Nishanth Menon <nm@ti.com>
+>> Acked-by: Nishanth Menon <nm@ti.com>
+> 
+> I've used these patches with X15 (DRA7xx-based yet-to-be-released board)
+> with v3.18-rc2.
+> 
+> Tested-by: Felipe Balbi <balbi@ti.com>
+> 
 
- Documentation/devicetree/bindings/gpio/gpio-poweroff.txt | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Ping on this
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt b/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
-index d4eab92..78262de 100644
---- a/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
-@@ -2,12 +2,12 @@ Driver a GPIO line that can be used to turn the power off.
- 
- The driver supports both level triggered and edge triggered power off.
- At driver load time, the driver will request the given gpio line and
--install a pm_power_off handler. If the optional properties 'input' is
--not found, the GPIO line will be driven in the inactive
-+install a handler to power off the system. If the optional properties
-+'input' is not found, the GPIO line will be driven in the inactive
- state. Otherwise its configured as an input.
- 
--When the pm_power_off is called, the gpio is configured as an output,
--and drive active, so triggering a level triggered power off
-+When the the power-off handler is called, the gpio is configured as an
-+output, and drive active, so triggering a level triggered power off
- condition. This will also cause an inactive->active edge condition, so
- triggering positive edge triggered power off. After a delay of 100ms,
- the GPIO is set to inactive, thus causing an active->inactive edge,
-@@ -24,7 +24,7 @@ Required properties:
- 
- Optional properties:
- - input : Initially configure the GPIO line as an input. Only reconfigure
--  it to an output when the pm_power_off function is called. If this optional
-+  it to an output when the power-off handler is called. If this optional
-   property is not specified, the GPIO is initialized as an output in its
-   inactive state.
- 
--- 
-1.9.1
-
+Regards
+Mugunthan V N
