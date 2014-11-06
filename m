@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaKFQWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:22:33 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:37121 "HELO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751133AbaKFQWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:22:31 -0500
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 11:22:31 EST
+	id S1751436AbaKFQYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:24:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42771 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054AbaKFQYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:24:05 -0500
+Message-ID: <545BA09E.7040301@redhat.com>
+Date: Thu, 06 Nov 2014 17:23:58 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CA+mtBx87o1Lo2zpMyUGC_P+7+DmXnZyA2NF0-GYCEWiRh6VJQg@mail.gmail.com>
-References: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
- <20141105.163825.1433973842938441546.davem@davemloft.net> <20141106010501.GA18339@gmail.com>
- <20141105.211558.969082848816106943.davem@davemloft.net> <CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
- <CF9D1877D81D214CB0CA0669EFAE020C68CC79EF@CMEXMB1.ad.emulex.com> <CA+mtBx87o1Lo2zpMyUGC_P+7+DmXnZyA2NF0-GYCEWiRh6VJQg@mail.gmail.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Thu, 6 Nov 2014 08:15:46 -0800
-Message-ID: <CAEP_g=_59JW8a0DRT8XcCAbDCnY1mzX8-bNcuVUL+sa8WBAHow@mail.gmail.com>
-Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
-To: Tom Herbert <therbert@google.com>
-Cc: Sathya Perla <Sathya.Perla@emulex.com>, David Miller <davem@davemloft.net>,
-        Joe Stringer <joestringer@nicira.com>,
-        Or Gerlitz <gerlitz.or@gmail.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Amir Vadai <amirv@mellanox.com>,
-        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
-        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] kvm: x86: increase user memory slots to 509
+References: <1415289167-24661-1-git-send-email-imammedo@redhat.com>
+In-Reply-To: <1415289167-24661-1-git-send-email-imammedo@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 8:06 AM, Tom Herbert <therbert@google.com> wrote:
-> On Wed, Nov 5, 2014 at 10:16 PM, Sathya Perla <Sathya.Perla@emulex.com> wrote:
->>> -----Original Message-----
->>> From: Tom Herbert [mailto:therbert@google.com]
->>>
->>> On Wed, Nov 5, 2014 at 6:15 PM, David Miller <davem@davemloft.net>
->>> wrote:
->>> > From: Joe Stringer <joestringer@nicira.com>
->>> > Date: Wed, 5 Nov 2014 17:06:46 -0800
->>> >
->>> >> My impression was that the changes are more likely to be
->>> >> hardware-specific (like the i40e changes) rather than software-specific,
->>> >> like changes that might be integrated into the helper.
->>> >
->>> > I think there is more commonality amongst hardware capabilities,
->>> > and this is why I want the helper to play itself out.
->>> >
->>> >> That said, I can rework for one helper. The way I see it would be the
->>> >> same code as these patches, as "vxlan_gso_check(struct sk_buff *)" in
->>> >> drivers/net/vxlan.c which would be called from each driver. Is that what
->>> >> you had in mind?
->>> >
->>> > Yes.
->>>
->>> Note that this code is not VXLAN specific, it will also accept NVGRE
->>> and GRE/UDP with keyid and TEB. I imagine all these cases should be
->>> indistinguishable to the hardware so they probably just work (which
->>> would be cool!). It might be better to name and locate the helper
->>> function to reflect that.
->>
->> Tom, I'm confused as to how the value of (skb_inner_mac_header(skb) - skb_transport_header(skb))
->> would be the same for VxLAN and NVGRE encapsulated packets. Wouldn't this value be 16 for VxLAN
->> and 8 for NVGRE?
->>
-> The inner headers are reset in iptunnel_handle_offloads. This is
-> called in the xmit encapsulation functions (GRE, fou, VXLAN, etc.)
-> before adding in encapsulation headers (skb_push), so the
-> mac_inner_header will point to the encapsulation payload, i.e. the
-> encapsulated packet. This should not change after being set, although
-> inner network and inner transport can. The headers are only set on the
-> first encapsulation, so with nested tunnels the inner headers point to
-> the innermost encapsulated packet. Since VXLAN and NVGRE have same
-> size of encapsulation (8 UDP + 8 header),   skb_inner_mac_header(skb)
-> - skb_transport_header(skb) should always be 16.
 
-Tom, NVGRE is not encapsulated in UDP and it is not 16 bytes.
 
-http://tools.ietf.org/html/draft-sridharan-virtualization-nvgre-06
+On 06/11/2014 16:52, Igor Mammedov wrote:
+> With the 3 private slots, this gives us 512 slots total.
+> Motivation for this is in addition to assigned devices
+> support more memory hotplug slots, where 1 slot is
+> used by a hotplugged memory stick.
+> It will allow to support upto 256 hotplug memory
+> slots and leave 253 slots for assigned devices and
+> other devices that use them.
+> 
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+
+It would use more memory, and some loops are now becoming more
+expensive.  In general adding a memory slot to a VM is not cheap, and I
+question the wisdom of having 256 hotplug memory slots.  But the
+slowdown mostly would only happen if you actually _use_ those memory
+slots, so it is not a blocker for this patch.
+
+We probably should change the kmemdup + heap sort of
+__kvm_set_memory_region + update_memslots to copy the array and insert
+the new item at the right place, at the same time.  Using a heap sort is
+overkill and unnecessarily goes from O(n^2) to O(n^2 log n).  With a
+bigger constant in front as well.
+
+If you want to do it, I'd be grateful.  Otherwise I can look at it as
+time permits.
+
+Paolo
