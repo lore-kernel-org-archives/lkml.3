@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKFMmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:42:52 -0500
-Received: from 8bytes.org ([81.169.241.247]:49039 "EHLO theia.8bytes.org"
+	id S1751312AbaKFMoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:44:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43377 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbaKFMmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:42:50 -0500
-Date: Thu, 6 Nov 2014 13:42:48 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oded.Gabbay@amd.com, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH] iommu/amd: Use new invalidate_range mmu-notifier
-Message-ID: <20141106124248.GM10744@8bytes.org>
-References: <1415277608-23688-1-git-send-email-joro@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415277608-23688-1-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751069AbaKFMoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:44:21 -0500
+From: Fam Zheng <famz@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, stefanha@redhat.com,
+        pbonzini@redhat.com, lersek@redhat.com, famz@redhat.com
+Subject: [PATCH] aio: Skip timer for io_getevents if timeout=0
+Date: Thu,  6 Nov 2014 20:44:36 +0800
+Message-Id: <1415277876-7060-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Andrew,
+In this case, it is basically a polling. Let's not involve timer at all
+because that would hurt performance for application event loops.
 
-On Thu, Nov 06, 2014 at 01:40:08PM +0100, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
-> 
-> Make use of the new invalidate_range mmu_notifier call-back
-> and remove the old logic of assigning an empty page-table
-> between invalidate_range_start and invalidate_range_end.
-> 
-> Tested-by: Oded Gabbay <oded.gabbay@amd.com>
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/iommu/amd_iommu_v2.c | 61 +++++++-------------------------------------
->  1 file changed, 9 insertions(+), 52 deletions(-)
+In an arbitrary test I've done, io_getevents syscall elapsed time
+reduces from 50000+ nanoseconds to a few hundereds.
 
-This patch depends on the mmu_notifier_invalidate_range patches in your
-mm-tree. It converts the AMD IOMMUv2 driver to make use of it and is
-tested by AMD. Can you please carry this patch in the mm-tree too?
+Signed-off-by: Fam Zheng <famz@redhat.com>
+---
+ fs/aio.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Thanks,
-
-	Joerg
+diff --git a/fs/aio.c b/fs/aio.c
+index 84a7510..7c0b561 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1221,8 +1221,12 @@ static long read_events(struct kioctx *ctx, long min_nr, long nr,
+ 	 * the ringbuffer empty. So in practice we should be ok, but it's
+ 	 * something to be aware of when touching this code.
+ 	 */
+-	wait_event_interruptible_hrtimeout(ctx->wait,
+-			aio_read_events(ctx, min_nr, nr, event, &ret), until);
++	if (until.tv64 == 0)
++		aio_read_events(ctx, min_nr, nr, event, &ret);
++	else
++		wait_event_interruptible_hrtimeout(ctx->wait,
++				aio_read_events(ctx, min_nr, nr, event, &ret),
++				until);
+ 
+ 	if (!ret && signal_pending(current))
+ 		ret = -EINTR;
+-- 
+1.9.3
 
