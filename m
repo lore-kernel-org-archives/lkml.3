@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaKFWkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:40:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58645 "EHLO
+	id S1753582AbaKFXOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:14:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58662 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaKFWkY (ORCPT
+	with ESMTP id S1751544AbaKFWkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:40:24 -0500
+	Thu, 6 Nov 2014 17:40:32 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Brian Silverman <bsilver16384@gmail.com>, austin.linux@gmail.com,
+        darren@dvhart.com, peterz@infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 151/162] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
-Date: Thu,  6 Nov 2014 14:36:55 -0800
-Message-Id: <1415313426-9622-152-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 139/162] futex: Fix a race condition between REQUEUE_PI and task death
+Date: Thu,  6 Nov 2014 14:36:43 -0800
+Message-Id: <1415313426-9622-140-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -29,52 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Brian Silverman <bsilver16384@gmail.com>
 
-commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
+commit 30a6b8031fe14031ab27c1fa3483cb9780e7f63c upstream.
 
-If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
-a multiple of BITS_PER_LONG, they will try to shift a long value by
-BITS_PER_LONG bits which is undefined.  Change the functions to avoid
-the undefined shift.
+free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
+exit_pi_state_list takes the hb lock first, and most callers of
+free_pi_state do too. requeue_pi doesn't, which means free_pi_state
+can free the pi_state out from under exit_pi_state_list. For example:
 
-Coverity id: 1192175
-Coverity id: 1192174
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+task A                            |  task B
+exit_pi_state_list                |
+  pi_state =                      |
+      curr->pi_state_list->next   |
+                                  |  futex_requeue(requeue_pi=1)
+                                  |    // pi_state is the same as
+                                  |    // the one in task A
+                                  |    free_pi_state(pi_state)
+                                  |      list_del_init(&pi_state->list)
+                                  |      kfree(pi_state)
+  list_del_init(&pi_state->list)  |
+
+Move the free_pi_state calls in requeue_pi to before it drops the hb
+locks which it's already holding.
+
+[ tglx: Removed a pointless free_pi_state() call and the hb->lock held
+  	debugging. The latter comes via a seperate patch ]
+
+Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
+Cc: austin.linux@gmail.com
+Cc: darren@dvhart.com
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1414282837-23092-1-git-send-email-bsilver16384@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- lib/bitmap.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/futex.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 06f7e4f..e5c4ebe 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long *dst,
- 		lower = src[off + k];
- 		if (left && off + k == lim - 1)
- 			lower &= mask;
--		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
-+		dst[k] = lower >> rem;
-+		if (rem)
-+			dst[k] |= upper << (BITS_PER_LONG - rem);
- 		if (left && k == lim - 1)
- 			dst[k] &= mask;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 2b1583e..7947e4c 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -492,8 +492,14 @@ static struct futex_pi_state * alloc_pi_state(void)
+ 	return pi_state;
+ }
+ 
++/*
++ * Must be called with the hb lock held.
++ */
+ static void free_pi_state(struct futex_pi_state *pi_state)
+ {
++	if (!pi_state)
++		return;
++
+ 	if (!atomic_dec_and_test(&pi_state->refcount))
+ 		return;
+ 
+@@ -1407,15 +1413,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
  	}
-@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *dst,
- 		upper = src[k];
- 		if (left && k == lim - 1)
- 			upper &= (1UL << left) - 1;
--		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
-+		dst[k + off] = upper << rem;
-+		if (rem)
-+			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
- 		if (left && k + off == lim - 1)
- 			dst[k + off] &= (1UL << left) - 1;
+ 
+ retry:
+-	if (pi_state != NULL) {
+-		/*
+-		 * We will have to lookup the pi_state again, so free this one
+-		 * to keep the accounting correct.
+-		 */
+-		free_pi_state(pi_state);
+-		pi_state = NULL;
+-	}
+-
+ 	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+@@ -1503,6 +1500,8 @@ retry_private:
+ 		case 0:
+ 			break;
+ 		case -EFAULT:
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+@@ -1512,6 +1511,8 @@ retry_private:
+ 			goto out;
+ 		case -EAGAIN:
+ 			/* The owner was exiting, try again. */
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+@@ -1588,6 +1589,7 @@ retry_private:
  	}
+ 
+ out_unlock:
++	free_pi_state(pi_state);
+ 	double_unlock_hb(hb1, hb2);
+ 
+ 	/*
+@@ -1604,8 +1606,6 @@ out_put_keys:
+ out_put_key1:
+ 	put_futex_key(&key1);
+ out:
+-	if (pi_state != NULL)
+-		free_pi_state(pi_state);
+ 	return ret ? ret : task_count;
+ }
+ 
 -- 
 1.9.1
 
