@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaKFWhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:37:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58466 "EHLO
+	id S1751543AbaKFWhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:37:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58462 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaKFWhd (ORCPT
+	with ESMTP id S1751428AbaKFWhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:37:33 -0500
+	Thu, 6 Nov 2014 17:37:32 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        Vladislav Yasevich <vyasevic@redhat.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Pavel Emelyanov <xemul@parallels.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 017/162] tg3: Allow for recieve of full-size 8021AD frames
-Date: Thu,  6 Nov 2014 14:34:41 -0800
-Message-Id: <1415313426-9622-18-git-send-email-kamal@canonical.com>
+        Andrey Vagin <avagin@openvz.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 004/162] tcp: don't use timestamp from repaired skb-s to calculate RTT (v2)
+Date: Thu,  6 Nov 2014 14:34:28 -0800
+Message-Id: <1415313426-9622-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -30,44 +28,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-[ Upstream commit 7d3083ee36b51e425b6abd76778a2046906b0fd3 ]
+[ Upstream commit 9d186cac7ffb1831e9f34cb4a3a8b22abb9dd9d4 ]
 
-When receiving a vlan-tagged frame that still contains
-a vlan header, the length of the packet will be greater
-then MTU+ETH_HLEN since it will account of the extra
-vlan header.  TG3 checks this for the case for 802.1Q,
-but not for 802.1ad.  As a result, full sized 802.1ad
-frames get dropped by the card.
+We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+isn't good, because some congestion modules heavily depends on it.
 
-Add a check for 802.1ad protocol when receving full
-sized frames.
+This patch adds the TCPCB_REPAIRED flag, which is included in
+TCPCB_RETRANS.
 
-Suggested-by: Prashant Sreedharan <prashant@broadcom.com>
-CC: Prashant Sreedharan <prashant@broadcom.com>
-CC: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
+Thanks to Eric for the advice how to fix this issue.
+
+This patch fixes the warning:
+[  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
+[  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
+[  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
+[  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
+[  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
+[  879.569982] Call Trace:
+[  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
+[  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
+[  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
+[  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
+[  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
+[  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
+[  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
+[  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
+[  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
+[  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
+[  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
+[  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
+[  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
+[  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
+
+v2: moving setting of skb->when for repaired skb-s in tcp_write_xmit,
+    where it's set for other skb-s.
+
+Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
+Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/net/tcp.h     |  4 +++-
+ net/ipv4/tcp.c        | 14 +++++++-------
+ net/ipv4/tcp_output.c |  5 ++++-
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 072f401..1b84139 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6907,7 +6907,8 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
- 		skb->protocol = eth_type_trans(skb, tp->dev);
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 920fc2e..0a00e7c 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -720,8 +720,10 @@ struct tcp_skb_cb {
+ #define TCPCB_SACKED_RETRANS	0x02	/* SKB retransmitted		*/
+ #define TCPCB_LOST		0x04	/* SKB is lost			*/
+ #define TCPCB_TAGBITS		0x07	/* All tag bits			*/
++#define TCPCB_REPAIRED		0x10	/* SKB repaired (no skb_mstamp)	*/
+ #define TCPCB_EVER_RETRANS	0x80	/* Ever retransmitted frame	*/
+-#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
++#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
++				TCPCB_REPAIRED)
  
- 		if (len > (tp->dev->mtu + ETH_HLEN) &&
--		    skb->protocol != htons(ETH_P_8021Q)) {
-+		    skb->protocol != htons(ETH_P_8021Q) &&
-+		    skb->protocol != htons(ETH_P_8021AD)) {
- 			dev_kfree_skb(skb);
- 			goto drop_it_no_recycle;
- 		}
+ 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
+ 	/* 1 byte hole */
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index e7a02d8..e06e1df 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1132,13 +1132,6 @@ new_segment:
+ 					goto wait_for_memory;
+ 
+ 				/*
+-				 * All packets are restored as if they have
+-				 * already been sent.
+-				 */
+-				if (tp->repair)
+-					TCP_SKB_CB(skb)->when = tcp_time_stamp;
+-
+-				/*
+ 				 * Check whether we can use HW checksum.
+ 				 */
+ 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
+@@ -1147,6 +1140,13 @@ new_segment:
+ 				skb_entail(sk, skb);
+ 				copy = size_goal;
+ 				max = size_goal;
++
++				/* All packets are restored as if they have
++				 * already been sent. skb_mstamp isn't set to
++				 * avoid wrong rtt estimation.
++				 */
++				if (tp->repair)
++					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
+ 			}
+ 
+ 			/* Try to append data to the end of skb. */
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index e3688a4..fa5b391 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1856,8 +1856,11 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
+ 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
+ 		BUG_ON(!tso_segs);
+ 
+-		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
++		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE) {
++			/* "when" is used as a start point for the retransmit timer */
++			TCP_SKB_CB(skb)->when = tcp_time_stamp;
+ 			goto repair; /* Skip network transmission */
++		}
+ 
+ 		cwnd_quota = tcp_cwnd_test(tp, skb);
+ 		if (!cwnd_quota) {
 -- 
 1.9.1
 
