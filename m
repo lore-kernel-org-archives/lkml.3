@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaKFD1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:27:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39774 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKFD1V (ORCPT
+	id S1751156AbaKFDdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:33:11 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:60366 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaKFDdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:27:21 -0500
-Date: Wed, 5 Nov 2014 19:27:20 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jslaby@suse.cz, Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Howard Chen <ibanezchen@gmail.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: 8250_mtk: Fix quot calculation
-Message-ID: <20141106032720.GA10803@kroah.com>
-References: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
- <20141009215228.GA23507@kroah.com>
- <CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
+	Wed, 5 Nov 2014 22:33:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABuKBeL1v=E4ZSM2iq+zC2G=a1g4RT3DmJ16ra_RwQ_9ARZkZg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5448CE4A.6010207@samsung.com>
+References: <1414052177-19978-1-git-send-email-acourbot@nvidia.com> <5448CE4A.6010207@samsung.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 6 Nov 2014 12:32:46 +0900
+Message-ID: <CAAVeFu+wiczN3zP-phsCy=-59pxJQcoyzeQpen4PNbywjymtFg@mail.gmail.com>
+Subject: Re: [PATCH] drm/panel: ld9040: Update calls to gpiod_get*()
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 10:10:45AM +0200, Matthias Brugger wrote:
-> 2014-10-09 23:52 GMT+02:00 Greg KH <gregkh@linuxfoundation.org>:
-> > On Thu, Oct 09, 2014 at 06:23:31PM +0200, Matthias Brugger wrote:
-> >> The calculation of value quot for highspeed register set to three
-> >> was wrong. This patch fixes the calculation so that the serial port
-> >> for baudrates bigger then 576000 baud is working correctly.
-> >>
-> >> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-> >> ---
-> >>  drivers/tty/serial/8250/8250_mtk.c | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
-> >> index 1c4b4bf..4376c48 100644
-> >> --- a/drivers/tty/serial/8250/8250_mtk.c
-> >> +++ b/drivers/tty/serial/8250/8250_mtk.c
-> >> @@ -81,7 +81,7 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
-> >>               /* Set to highest baudrate supported */
-> >>               if (baud >= 1152000)
-> >>                       baud = 921600;
-> >> -             quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
-> >> +             quot = (port->uartclk / (256 * baud)) + 1;
-> >>       }
-> >>
-> >>       /*
-> >
-> > Has this always been incorrect, or was it caused by a specific patch?
-> 
-> It has always been incorrect :o
-> 
-> > Should it go to the stable kernels?  If so, how far back?
-> 
-> No need to go to the stable kernels. The driver is only in linux-next.
+On Thu, Oct 23, 2014 at 6:45 PM, Andrzej Hajda <a.hajda@samsung.com> wrote:
+> On 10/23/2014 10:16 AM, Alexandre Courbot wrote:
+>> Add the new flags argument to calls of (devm_)gpiod_get*() and
+>> remove any direction setting code afterwards.
+>>
+>> Currently both forms (with or without the flags argument)
+>> are valid thanks to transitional macros in
+>> <linux/gpio/consumer.h>. These macros will be removed once
+>> all consumers are updated and the flags argument will become
+>> compulsary.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+> It needs patch "gpio: Fix gpio direction flags not getting set" to work
+> correctly. It is not yet present in drm-next. Beside this:
+>
+> Acked-by: Andrzej Hajda <a.hajda@samsung.com>
 
-Well, it's in 3.18-rc1, so it should at least go into 3.18-final.  I'll
-queue it up for that.
-
-thanks,
-
-greg k-h
+The required patch is now merged, can we go on with this patch?
