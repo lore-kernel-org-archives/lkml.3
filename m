@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaKFPPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:15:19 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33317 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaKFPMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:12:16 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-59-545b8fcb912d
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-api@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH RESEND v3 4/4] Documentation: power: max77693-charger: Document
- exported sysfs entry
-Date: Thu, 06 Nov 2014 16:12:00 +0100
-Message-id: <1415286720-6358-5-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415286720-6358-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415286720-6358-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t/xK7qn+6NDDOZ2ClhsnLGe1WLSk/fM
-	FvOPnGO1mLhyMrPF6xeGFmeb3rBb3P96lNFi8/cONotNj6+xWlzeNYfN4nPvEUaLGef3MVms
-	PXKX3eJ0N6vF6d0lFqt2/WF0EPDYOesuu8fmFVoem1Z1snncubaHzWPeyUCPzUvqPfq2rGL0
-	+LxJLoAjissmJTUnsyy1SN8ugSuja8JD9oLlQhVL7h1gbWCcx9/FyMkhIWAi8fbEZCYIW0zi
-	wr31bF2MXBxCAksZJSbtu8UI4fQxSbQtXM8KUsUmYCyxefkSsCoRgT1MEp9erGAFcZgFtjNJ
-	/Pk2AaxKWCBN4u+uJYwgNouAqsTai4tYQGxeATeJ41sOMELsk5M4eWwyUD0HB6eAu0T3t0qQ
-	sBBQyfOv8xgnMPIuYGRYxSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESxF93MC49ZnWIUYCD
-	UYmHN4I9OkSINbGsuDL3EKMEB7OSCG91D1CINyWxsiq1KD++qDQntfgQIxMHp1QDY13+3qpV
-	jiqnKu7ue6D/se63Y/5iJz+GUypKCqcT0w692XV3LsO3llM72kWKFb9+vHFO8Y55mVSE9tT+
-	tGP5a9s9jfm271h6fIUtu5X53Wy3rOjznybYyBZXN2ev3LJ93vqHiSeqH0z8vHb7iuhVxnP5
-	1jvwtsf9mfjwW3lv88S+NbG8kbfurlNiKc5INNRiLipOBACfP9YLQAIAAA==
+	id S1752255AbaKFPPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:15:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37539 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546AbaKFPJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:09:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
+   d="scan'208";a="627701884"
+From: Kan Liang <kan.liang@intel.com>
+To: a.p.zijlstra@chello.nl, eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V8 07/14] perf, x86: allocate space for storing LBR stack
+Date: Thu,  6 Nov 2014 09:54:24 -0500
+Message-Id: <1415285671-16894-8-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
+References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the settings exported by max77693 charger driver through sysfs
-entries:
- - fast_charge_timer
- - top_off_threshold_current
- - top_off_timer
+From: Yan, Zheng <zheng.z.yan@intel.com>
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+When the LBR call stack is enabled, it is necessary to save/restore
+the LBR stack on context switch. We can use pmu specific data to
+store LBR stack when task is scheduled out. This patch adds code
+that allocates the pmu specific data.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Reviewed-by: Stephane Eranian <eranian@google.com>
 ---
- Documentation/ABI/testing/sysfs-class-power | 42 +++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c | 4 ++++
+ arch/x86/kernel/cpu/perf_event.h | 7 +++++++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-power b/Documentation/ABI/testing/sysfs-class-power
-index 909e7602c717..369d2a2d7d3e 100644
---- a/Documentation/ABI/testing/sysfs-class-power
-+++ b/Documentation/ABI/testing/sysfs-class-power
-@@ -32,3 +32,45 @@ Description:
- 		Valid values:
- 		- 5, 6 or 7 (hours),
- 		- 0: disabled.
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index e37adf0..1fd9492 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -428,6 +428,9 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 		}
+ 	}
+ 
++	if (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK)
++		event->attach_state |= PERF_ATTACH_TASK_DATA;
 +
-+What:		/sys/class/power_supply/max77693-charger/device/fast_charge_timer
-+Date:		January 2015
-+KernelVersion:	3.19.0
-+Contact:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+Description:
-+		This entry shows and sets the maximum time the max77693
-+		charger operates in fast-charge mode. When the timer expires
-+		the device will terminate fast-charge mode (charging current
-+		will drop to 0 A) and will trigger interrupt.
+ 	/*
+ 	 * Generate PMC IRQs:
+ 	 * (keep 'enabled' bit clear for now)
+@@ -1912,6 +1915,7 @@ static struct pmu pmu = {
+ 
+ 	.event_idx		= x86_pmu_event_idx,
+ 	.sched_task		= x86_pmu_sched_task,
++	.task_ctx_size          = sizeof(struct x86_perf_task_context),
+ };
+ 
+ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 13464e4..b4568e5 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -510,6 +510,13 @@ struct x86_pmu {
+ 	struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
+ };
+ 
++struct x86_perf_task_context {
++	u64 lbr_from[MAX_LBR_ENTRIES];
++	u64 lbr_to[MAX_LBR_ENTRIES];
++	int lbr_callstack_users;
++	int lbr_stack_state;
++};
 +
-+		Valid values:
-+		- 4 - 16 (hours), step by 2 (rounded down)
-+		- 0: disabled.
-+
-+What:		/sys/class/power_supply/max77693-charger/device/top_off_threshold_current
-+Date:		January 2015
-+KernelVersion:	3.19.0
-+Contact:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+Description:
-+		This entry shows and sets the charging current threshold for
-+		entering top-off charging mode. When charging current in fast
-+		charge mode drops below this value, the charger will trigger
-+		interrupt and start top-off charging mode.
-+
-+		Valid values:
-+		- 100000 - 200000 (microamps), step by 25000 (rounded down)
-+		- 200000 - 350000 (microamps), step by 50000 (rounded down)
-+		- 0: disabled.
-+
-+What:		/sys/class/power_supply/max77693-charger/device/top_off_timer
-+Date:		January 2015
-+KernelVersion:	3.19.0
-+Contact:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+Description:
-+		This entry shows and sets the maximum time the max77693
-+		charger operates in top-off charge mode. When the timer expires
-+		the device will terminate top-off charge mode (charging current
-+		will drop to 0 A) and will trigger interrupt.
-+
-+		Valid values:
-+		- 0 - 70 (minutes), step by 10 (rounded down)
+ enum {
+ 	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
+ 	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
 -- 
-1.9.1
+1.8.3.2
 
