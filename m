@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249AbaKFVcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:32:15 -0500
-Received: from smtprelay0045.hostedemail.com ([216.40.44.45]:59665 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750706AbaKFVcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:32:14 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3868:3870:3871:3872:4321:4559:4605:5007:6119:6261:7576:7903:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: berry88_4d2f2138c304a
-X-Filterd-Recvd-Size: 1635
-Message-ID: <1415309523.21965.2.camel@perches.com>
-Subject: Re: [PATCH] lib/halfmd4: make build optional
-From: Joe Perches <joe@perches.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Aristeu Rozanski <arozansk@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Josh Triplett <josh@joshtriplett.org>
-In-Reply-To: <1415309253-13019-1-git-send-email-aris@redhat.com>
-References: <1415309253-13019-1-git-send-email-aris@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 06 Nov 2014 13:32:03 -0800
-Mime-Version: 1.0
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1751219AbaKFViK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:38:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35645 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706AbaKFViI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:38:08 -0500
+Message-ID: <545BEA3B.40005@suse.cz>
+Date: Thu, 06 Nov 2014 22:38:03 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "P. Christeas" <xrg@linux.gr>
+CC: linux-mm@kvack.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
+References: <12996532.NCRhVKzS9J@xorhgos3.pefnos> <2357788.X5UHX7WJZF@xorhgos3.pefnos> <545A419C.3090900@suse.cz> <3583067.00bS4AInhm@xorhgos3.pefnos>
+In-Reply-To: <3583067.00bS4AInhm@xorhgos3.pefnos>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-06 at 16:27 -0500, Aristeu Rozanski wrote:
-> From: Aristeu Rozanski <arozansk@redhat.com>
+On 11/06/2014 08:23 PM, P. Christeas wrote:
+> On Wednesday 05 November 2014, Vlastimil Babka wrote:
+>> Can you please try the following patch?
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -1325,13 +1325,6 @@ unsigned long try_to_compact_pages(struct zonelist
+>> -			compaction_defer_reset(zone, order, false);
 > 
-> halfmd4 currently is built unconditionally:
-> 	text    data     bss     dec     hex filename
-> 	 801     176       8     985     3d9 lib/halfmd4.o
-> 	 801     176       8     985     3d9 (TOTALS)
-> 
-> and it's used by ext3 and ext4. This patch is useful for situations
-> in which memory footprint is a concern and those filesystems aren't
-> used.
-[]
-> diff --git a/lib/Kconfig b/lib/Kconfig
-[]
-> +config HALF_MD4
-> +	bool "Half MD4 transform"
-> +	default y
+> NACK :(
 
-why not default n ? (and in the other patch)
+Sigh.
+
+> I just got again into a state that some task was spinning out of control, and 
+> blocking the rest of the desktop.
+
+Well this is similar to reports [1] and [2] except [1] points to
+isolate_freepages_block() and your traces only go as deep as compact_zone. Which
+probably inlines isolate_migratepages* but I would expect it cannot inline
+isolate_freepages* due to invocation via pointer.
+
+> You will see me trying a few things, apparently the first OOM managed to 
+> unblock something, but a few seconds later the system "stepped" on some other 
+> blocking task.
+> 
+> See attached log, it may only give you some hint; the problem could well be in 
+> some other part of the kernel.
+
+Well I doubt that but I'd like to be surprised :)
+
+> In the meanwhile, I'm pulling linus/master ...
+
+Could you perhaps bisect the most suspicious part? It's not a lot of commits
+and you seem to be reproducing this quite easily?
+
+commit 447f05bb488bff4282088259b04f47f0f9f76760 should be good
+commit 6d7ce55940b6ecd463ca044ad241f0122d913293 should be bad
+
+If that's true, then bisection should find the cause rather quickly.
+
+Oh and did I ask in this thread for /proc/zoneinfo yet? :)
+
+Thanks.
+
+> kcrash.log
+> 
+
+[1]
+http://article.gmane.org/gmane.linux.kernel.mm/124451/match=isolate_freepages_block+very+high+intermittent+overhead
+
+[2] https://lkml.org/lkml/2014/11/4/904
 
