@@ -1,85 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaKFXZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:25:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58422 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaKFWh3 (ORCPT
+	id S1754576AbaKFXZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:25:30 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:52357 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaKFXZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:37:29 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 005/162] sit: Fix ipip6_tunnel_lookup device matching criteria
-Date: Thu,  6 Nov 2014 14:34:29 -0800
-Message-Id: <1415313426-9622-6-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 6 Nov 2014 18:25:25 -0500
+Date: Thu, 6 Nov 2014 17:24:54 -0600
+From: Jaime Arrocha <jarrocha27@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: liodot@gmail.com, charrer@alacritech.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: slicoss.c: checkpatch warnings
+Message-ID: <20141106232454.GA16568@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+Correction of warnings of lines with 80 plus character.
+Some warnings were left in favor of readability, others
+were created by breaking quoted strings.
+Memory barriers comments are obvious but remove warnings.
+Let me know if any corrections are needed.
 
-------------------
-
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-
-[ Upstream commit bc8fc7b8f825ef17a0fb9e68c18ce94fa66ab337 ]
-
-As of 4fddbf5d78 ("sit: strictly restrict incoming traffic to tunnel link device"),
-when looking up a tunnel, tunnel's underlying interface (t->parms.link)
-is verified to match incoming traffic's ingress device.
-
-However the comparison was incorrectly based on skb->dev->iflink.
-
-Instead, dev->ifindex should be used, which correctly represents the
-interface from which the IP stack hands the ipip6 packets.
-
-This allows setting up sit tunnels bound to vlan interfaces (otherwise
-incoming ipip6 traffic on the vlan interface was dropped due to
-ipip6_tunnel_lookup match failure).
-
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Jaime Arrocha <jarrocha27@gmail.com>
 ---
- net/ipv6/sit.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/slicoss/slicoss.c | 31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 8f59675..9568c1f 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -101,19 +101,19 @@ static struct ip_tunnel *ipip6_tunnel_lookup(struct net *net,
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r_l[h0 ^ h1]) {
- 		if (local == t->parms.iph.saddr &&
- 		    remote == t->parms.iph.daddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
+diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+index cff7cbe..e546dae 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -99,8 +99,8 @@
+ #include "slic.h"
+ 
+ static uint slic_first_init = 1;
+-static char *slic_banner = "Alacritech SLIC Technology(tm) Server "
+-		"and Storage Accelerator (Non-Accelerated)";
++char *slic_banner = "Alacritech SLIC Technology(tm) Server and "
++			"Storage Accelerator (Non-Accelerated)";
+ 
+ static char *slic_proc_version = "2.0.351  2006/07/14 12:26:00";
+ 
+@@ -139,7 +139,7 @@ static inline void slic_reg32_write(void __iomem *reg, u32 value, bool flush)
+ {
+ 	writel(value, reg);
+ 	if (flush)
+-		mb();
++		mb();	/* memory barrier for mapped registry */
+ }
+ 
+ static inline void slic_reg64_write(struct adapter *adapter, void __iomem *reg,
+@@ -154,7 +154,7 @@ static inline void slic_reg64_write(struct adapter *adapter, void __iomem *reg,
  	}
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_r[h0]) {
- 		if (remote == t->parms.iph.daddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
+ 	writel(value, reg);
+ 	if (flush)
+-		mb();
++		mb();	/* memory barrier for mapped registry */
+ 	spin_unlock_irqrestore(&adapter->bit64reglock.lock,
+ 				adapter->bit64reglock.flags);
+ }
+@@ -498,12 +498,14 @@ static int slic_card_download(struct adapter *adapter)
+ 			slic_reg32_write(&slic_regs->slic_wcs,
+ 					 baseaddress + codeaddr, FLUSH);
+ 			/* Write out instruction to low addr */
+-			slic_reg32_write(&slic_regs->slic_wcs, instruction, FLUSH);
++			slic_reg32_write(&slic_regs->slic_wcs,
++					 instruction, FLUSH);
+ 			instruction = *(u32 *)(fw->data + index);
+ 			index += 4;
+ 
+ 			/* Write out instruction to high addr */
+-			slic_reg32_write(&slic_regs->slic_wcs, instruction, FLUSH);
++			slic_reg32_write(&slic_regs->slic_wcs,
++					 instruction, FLUSH);
+ 			instruction = *(u32 *)(fw->data + index);
+ 			index += 4;
+ 		}
+@@ -1884,7 +1886,8 @@ static void slic_xmit_fail(struct adapter *adapter,
+ 			break;
+ 		case XMIT_FAIL_HOSTCMD_FAIL:
+ 			dev_err(&adapter->netdev->dev,
+-				"xmit_start skb[%p] type[%x] No host commands available\n", skb, skb->pkt_type);
++				"xmit_start skb[%p] type[%x] No host commands available\n",
++				skb, skb->pkt_type);
+ 			break;
+ 		}
  	}
- 	for_each_ip_tunnel_rcu(t, sitn->tunnels_l[h1]) {
- 		if (local == t->parms.iph.saddr &&
--		    (!dev || !t->parms.link || dev->iflink == t->parms.link) &&
-+		    (!dev || !t->parms.link || dev->ifindex == t->parms.link) &&
- 		    (t->dev->flags & IFF_UP))
- 			return t;
- 	}
+@@ -2096,11 +2099,10 @@ static void slic_interrupt_card_up(u32 isr, struct adapter *adapter,
+ 				}
+ 			} else if (isr & ISR_XDROP) {
+ 				dev_err(&dev->dev,
+-						"isr & ISR_ERR [%x] ISR_XDROP\n", isr);
++					"isr & ISR_ERR [%x] ISR_XDROP\n", isr);
+ 			} else {
+ 				dev_err(&dev->dev,
+-						"isr & ISR_ERR [%x]\n",
+-						isr);
++					"isr & ISR_ERR [%x]\n",	isr);
+ 			}
+ 		}
+ 
+@@ -2340,7 +2342,8 @@ static int slic_if_init(struct adapter *adapter)
+ 				 SLIC_GET_ADDR_LOW(&pshmem->isr), FLUSH);
+ #else
+ 		slic_reg32_write(&slic_regs->slic_addr_upper, 0, DONT_FLUSH);
+-		slic_reg32_write(&slic_regs->slic_isp, (u32)&pshmem->isr, FLUSH);
++		slic_reg32_write(&slic_regs->slic_isp,
++				 (u32)&pshmem->isr, FLUSH);
+ #endif
+ 		spin_unlock_irqrestore(&adapter->bit64reglock.lock,
+ 					adapter->bit64reglock.flags);
+@@ -2555,7 +2558,8 @@ static int slic_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+ 
+ 			if (copy_from_user(data, rq->ifr_data, 28)) {
+ 				PRINT_ERROR
+-				    ("slic: copy_from_user FAILED getting initial simba param\n");
++				    ("slic: copy_from_user FAILED getting"
++				     " initial simba param\n");
+ 				return -EFAULT;
+ 			}
+ 
+@@ -2570,7 +2574,8 @@ static int slic_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+ 				   (tracemon_request ==
+ 				    SLIC_DUMP_IN_PROGRESS)) {
+ 				PRINT_ERROR
+-				    ("ATK Diagnostic Trace Dump Requested but already in progress... ignore\n");
++				    ("ATK Diagnostic Trace Dump Requested"
++				     " but already in progress... ignore\n");
+ 			} else {
+ 				PRINT_ERROR
+ 				    ("ATK Diagnostic Trace Dump Requested\n");
 -- 
-1.9.1
+1.8.3.1
 
