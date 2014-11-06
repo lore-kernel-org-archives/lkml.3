@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaKFMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:24:29 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:48732 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaKFMXt (ORCPT
+	id S1751448AbaKFMXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:23:46 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:36440 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340AbaKFMXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:23:49 -0500
+	Thu, 6 Nov 2014 07:23:40 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         Kanaka Juvva <kanaka.d.juvva@intel.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/11] perf/x86/intel: Implement LRU monitoring ID allocation for CQM
-Date: Thu,  6 Nov 2014 12:23:19 +0000
-Message-Id: <1415276602-10337-9-git-send-email-matt@console-pimps.org>
+Subject: [PATCH v3 05/11] perf: Move cgroup init before PMU ->event_init()
+Date: Thu,  6 Nov 2014 12:23:16 +0000
+Message-Id: <1415276602-10337-6-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
 References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
@@ -29,165 +29,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-It's possible to run into issues with re-using unused monitoring IDs
-because there may be stale cachelines associated with that ID from a
-previous allocation. This can cause the LLC occupancy values to be
-inaccurate.
+The Intel QoS PMU needs to know whether an event is part of a cgroup
+during ->event_init(), because tasks in the same cgroup share a
+monitoring ID.
 
-To attempt to mitigate this problem we place the IDs on a least recently
-used list, essentially a FIFO. The basic idea is that the longer the
-time period between ID re-use the lower the probability that stale
-cachelines exist in the cache.
+Move the cgroup initialisation before calling into the PMU driver.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_cqm.c | 100 ++++++++++++++++++++++++++---
- 1 file changed, 92 insertions(+), 8 deletions(-)
+Changes in v3:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_cqm.c b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-index b16458ff274e..60e0043ca922 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_cqm.c
-@@ -25,7 +25,7 @@ struct intel_cqm_state {
- static DEFINE_PER_CPU(struct intel_cqm_state, cqm_state);
- 
- /*
-- * Protects cache_cgroups.
-+ * Protects cache_cgroups and cqm_rmid_lru.
-  */
- static DEFINE_MUTEX(cache_mutex);
- 
-@@ -64,36 +64,120 @@ static u64 __rmid_read(unsigned long rmid)
- 	return val;
- }
- 
--static unsigned long *cqm_rmid_bitmap;
-+struct cqm_rmid_entry {
-+	u64 rmid;
-+	struct list_head list;
-+};
-+
-+/*
-+ * A least recently used list of RMIDs.
-+ *
-+ * Oldest entry at the head, newest (most recently used) entry at the
-+ * tail. This list is never traversed, it's only used to keep track of
-+ * the lru order. That is, we only pick entries of the head or insert
-+ * them on the tail.
-+ *
-+ * All entries on the list are 'free', and their RMIDs are not currently
-+ * in use. To mark an RMID as in use, remove its entry from the lru
-+ * list.
-+ *
-+ * This list is protected by cache_mutex.
-+ */
-+static LIST_HEAD(cqm_rmid_lru);
-+
-+/*
-+ * We use a simple array of pointers so that we can lookup a struct
-+ * cqm_rmid_entry in O(1). This alleviates the callers of __get_rmid()
-+ * and __put_rmid() from having to worry about dealing with struct
-+ * cqm_rmid_entry - they just deal with rmids, i.e. integers.
-+ *
-+ * Once this array is initialized it is read-only. No locks are required
-+ * to access it.
-+ *
-+ * All entries for all RMIDs can be looked up in the this array at all
-+ * times.
-+ */
-+static struct cqm_rmid_entry **cqm_rmid_ptrs;
-+
-+static inline struct cqm_rmid_entry *__rmid_entry(int rmid)
-+{
-+	struct cqm_rmid_entry *entry;
-+
-+	entry = cqm_rmid_ptrs[rmid];
-+	WARN_ON(entry->rmid != rmid);
-+
-+	return entry;
-+}
- 
- /*
-  * Returns < 0 on fail.
-+ *
-+ * We expect to be called with cache_mutex held.
-  */
- static int __get_rmid(void)
+ - Only use 'int cgroup_fd' to pass cgroup file descriptor instead of
+   'bool cgroup, pid_t cgroup_fd'
+
+ kernel/events/core.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a2ea4a52dbbf..540d995322dd 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6884,7 +6884,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 		 struct perf_event *group_leader,
+ 		 struct perf_event *parent_event,
+ 		 perf_overflow_handler_t overflow_handler,
+-		 void *context)
++		 void *context, int cgroup_fd)
  {
--	return bitmap_find_free_region(cqm_rmid_bitmap, cqm_max_rmid, 0);
-+	struct cqm_rmid_entry *entry;
-+
-+	lockdep_assert_held(&cache_mutex);
-+
-+	if (list_empty(&cqm_rmid_lru))
-+		return -EAGAIN;
-+
-+	entry = list_first_entry(&cqm_rmid_lru, struct cqm_rmid_entry, list);
-+	list_del(&entry->list);
-+
-+	return entry->rmid;
- }
+ 	struct pmu *pmu;
+ 	struct perf_event *event;
+@@ -6977,6 +6977,12 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
+ 		goto err_ns;
  
- static void __put_rmid(int rmid)
- {
--	bitmap_release_region(cqm_rmid_bitmap, rmid, 0);
-+	struct cqm_rmid_entry *entry;
-+
-+	lockdep_assert_held(&cache_mutex);
-+
-+	entry = __rmid_entry(rmid);
-+
-+	list_add_tail(&entry->list, &cqm_rmid_lru);
- }
- 
- static int intel_cqm_setup_rmid_cache(void)
- {
--	cqm_rmid_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(cqm_max_rmid), GFP_KERNEL);
--	if (!cqm_rmid_bitmap)
-+	struct cqm_rmid_entry *entry;
-+	int r;
-+
-+	cqm_rmid_ptrs = kmalloc(sizeof(struct cqm_rmid_entry *) *
-+				(cqm_max_rmid + 1), GFP_KERNEL);
-+	if (!cqm_rmid_ptrs)
- 		return -ENOMEM;
- 
--	bitmap_zero(cqm_rmid_bitmap, cqm_max_rmid);
-+	for (r = 0; r <= cqm_max_rmid; r++) {
-+		struct cqm_rmid_entry *entry;
-+
-+		entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-+		if (!entry)
-+			goto fail;
-+
-+		INIT_LIST_HEAD(&entry->list);
-+		entry->rmid = r;
-+		cqm_rmid_ptrs[r] = entry;
-+
-+		list_add_tail(&entry->list, &cqm_rmid_lru);
++	if (cgroup_fd != -1) {
++		err = perf_cgroup_connect(cgroup_fd, event, attr, group_leader);
++		if (err)
++			goto err_ns;
 +	}
- 
- 	/*
- 	 * RMID 0 is special and is always allocated. It's used for all
- 	 * tasks that are not monitored.
- 	 */
--	bitmap_allocate_region(cqm_rmid_bitmap, 0, 0);
-+	entry = __rmid_entry(0);
-+	list_del(&entry->list);
- 
- 	return 0;
-+fail:
-+	while (r--)
-+		kfree(cqm_rmid_ptrs[r]);
 +
-+	kfree(cqm_rmid_ptrs);
-+	return -ENOMEM;
- }
+ 	pmu = perf_init_event(event);
+ 	if (!pmu)
+ 		goto err_ns;
+@@ -7000,6 +7006,8 @@ err_pmu:
+ 		event->destroy(event);
+ 	module_put(pmu->module);
+ err_ns:
++	if (is_cgroup_event(event))
++		perf_detach_cgroup(event);
+ 	if (event->ns)
+ 		put_pid_ns(event->ns);
+ 	kfree(event);
+@@ -7207,6 +7215,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	int move_group = 0;
+ 	int err;
+ 	int f_flags = O_RDWR;
++	int cgroup_fd = -1;
  
- /*
+ 	/* for future expandability... */
+ 	if (flags & ~PERF_FLAG_ALL)
+@@ -7272,21 +7281,16 @@ SYSCALL_DEFINE5(perf_event_open,
+ 
+ 	get_online_cpus();
+ 
++	if (flags & PERF_FLAG_PID_CGROUP)
++		cgroup_fd = pid;
++
+ 	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL,
+-				 NULL, NULL);
++				 NULL, NULL, cgroup_fd);
+ 	if (IS_ERR(event)) {
+ 		err = PTR_ERR(event);
+ 		goto err_cpus;
+ 	}
+ 
+-	if (flags & PERF_FLAG_PID_CGROUP) {
+-		err = perf_cgroup_connect(pid, event, &attr, group_leader);
+-		if (err) {
+-			__free_event(event);
+-			goto err_cpus;
+-		}
+-	}
+-
+ 	if (is_sampling_event(event)) {
+ 		if (event->pmu->capabilities & PERF_PMU_CAP_NO_INTERRUPT) {
+ 			err = -ENOTSUPP;
+@@ -7486,7 +7490,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 	 */
+ 
+ 	event = perf_event_alloc(attr, cpu, task, NULL, NULL,
+-				 overflow_handler, context);
++				 overflow_handler, context, -1);
+ 	if (IS_ERR(event)) {
+ 		err = PTR_ERR(event);
+ 		goto err;
+@@ -7812,7 +7816,7 @@ inherit_event(struct perf_event *parent_event,
+ 					   parent_event->cpu,
+ 					   child,
+ 					   group_leader, parent_event,
+-				           NULL, NULL);
++				           NULL, NULL, -1);
+ 	if (IS_ERR(child_event))
+ 		return child_event;
+ 
 -- 
 1.9.3
 
