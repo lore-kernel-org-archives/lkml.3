@@ -1,87 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545AbaKFQNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:13:32 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57423 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaKFQNa (ORCPT
+	id S1751642AbaKFQOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:14:40 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:40799 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaKFQOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:13:30 -0500
-Date: Thu, 6 Nov 2014 17:13:24 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] core: Add generic object registry implementation
-Message-ID: <20141106161321.GB14873@ulmo.nvidia.com>
-References: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
- <20141104163845.GA369@kroah.com>
- <20141105091351.GA12033@ulmo>
- <20141106021815.GA17253@kroah.com>
- <20141106102531.GI26297@ulmo>
+	Thu, 6 Nov 2014 11:14:32 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5I6of5zJg18YgZEa"
-Content-Disposition: inline
-In-Reply-To: <20141106102531.GI26297@ulmo>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <C2D0BFF1-14C7-47C0-A24D-0F54809EF5D0@cam.ac.uk>
+References: <cover.1415220890.git.milosz@adfin.com>
+	<5d53ede333de7cade713190e2b93e2dbadefa260.1415220890.git.milosz@adfin.com>
+	<C2D0BFF1-14C7-47C0-A24D-0F54809EF5D0@cam.ac.uk>
+Date: Thu, 6 Nov 2014 11:14:30 -0500
+Message-ID: <CANP1eJGeEOvLjy_pBKjjobYY1xja9Z4KfvmYfLK3KnswVZdaTA@mail.gmail.com>
+Subject: Re: [Linux-NTFS-Dev] [PATCH v5 6/7] fs: pass iocb to generic_write_sync
+From: Milosz Tanski <milosz@adfin.com>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-xfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        Linux API <linux-api@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, cluster-devel@redhat.com,
+        Mel Gorman <mgorman@suse.de>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-ext4@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, linux-btrfs@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 6, 2014 at 5:52 AM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+> Hi,
+>
+>> On 5 Nov 2014, at 23:14, Milosz Tanski <milosz@adfin.com> wrote:
+>>
+>> From: Christoph Hellwig <hch@lst.de>
+>>
+>> Clean up the generic_write_sync by just passing an iocb and a bytes
+>> written / negative errno argument.  In addition to simplifying the
+>> callers this also prepares for passing a per-operation O_DSYNC
+>> flag.  Two callers didn't quite fit that scheme:
+>>
+>> - dio_complete didn't both to update ki_pos as we don't need it
+>>   on a iocb that is about to be freed, so we had to add it. Additionally
+>>   it also synced out written data in the error case, which has been
+>>   changed to operate like the other callers.
+>> - gfs2 also used generic_write_sync to implement a crude version
+>>   of fallocate.  It has been switched to use an open coded variant
+>>   instead.
+>>
+>> Signed-off-by: Christoph Hellwig <hch@lst.de>
+>> ---
+>> fs/block_dev.c     |  8 +-------
+>> fs/btrfs/file.c    |  7 ++-----
+>> fs/cifs/file.c     |  8 +-------
+>> fs/direct-io.c     |  8 ++------
+>> fs/ext4/file.c     |  8 +-------
+>> fs/gfs2/file.c     |  9 +++++++--
+>> fs/ntfs/file.c     |  8 ++------
+>> fs/udf/file.c      | 11 ++---------
+>> fs/xfs/xfs_file.c  |  8 +-------
+>> include/linux/fs.h |  8 +-------
+>> mm/filemap.c       | 30 ++++++++++++++++++++----------
+>> 11 files changed, 40 insertions(+), 73 deletions(-)
+>>
+>> diff --git a/fs/block_dev.c b/fs/block_dev.c
+>> index cc9d411..c529b1c 100644
+>> --- a/fs/block_dev.c
+>> +++ b/fs/block_dev.c
+>> @@ -1568,18 +1568,12 @@ static long block_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+>>  */
+>> ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>> {
+>> -     struct file *file = iocb->ki_filp;
+>>       struct blk_plug plug;
+>>       ssize_t ret;
+>>
+>>       blk_start_plug(&plug);
+>>       ret = __generic_file_write_iter(iocb, from);
+>> -     if (ret > 0) {
+>> -             ssize_t err;
+>> -             err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+>> -             if (err < 0)
+>> -                     ret = err;
+>> -     }
+>> +     ret = generic_write_sync(iocb, ret);
+>>       blk_finish_plug(&plug);
+>>       return ret;
+>> }
+>> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+>> index a18ceab..4f4a6f7 100644
+>> --- a/fs/btrfs/file.c
+>> +++ b/fs/btrfs/file.c
+>> @@ -1820,11 +1820,8 @@ static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
+>>        */
+>>       BTRFS_I(inode)->last_trans = root->fs_info->generation + 1;
+>>       BTRFS_I(inode)->last_sub_trans = root->log_transid;
+>> -     if (num_written > 0) {
+>> -             err = generic_write_sync(file, pos, num_written);
+>> -             if (err < 0)
+>> -                     num_written = err;
+>> -     }
+>> +
+>> +     num_written = generic_write_sync(iocb, num_written);
+>>
+>>       if (sync)
+>>               atomic_dec(&BTRFS_I(inode)->sync_writers);
+>> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+>> index c485afa..32359de 100644
+>> --- a/fs/cifs/file.c
+>> +++ b/fs/cifs/file.c
+>> @@ -2706,13 +2706,7 @@ cifs_writev(struct kiocb *iocb, struct iov_iter *from)
+>>               rc = __generic_file_write_iter(iocb, from);
+>>               mutex_unlock(&inode->i_mutex);
+>>
+>> -             if (rc > 0) {
+>> -                     ssize_t err;
+>> -
+>> -                     err = generic_write_sync(file, iocb->ki_pos - rc, rc);
+>> -                     if (err < 0)
+>> -                             rc = err;
+>> -             }
+>> +             rc = generic_write_sync(iocb, rc);
+>>       } else {
+>>               mutex_unlock(&inode->i_mutex);
+>>       }
+>> diff --git a/fs/direct-io.c b/fs/direct-io.c
+>> index e181b6b..b72ac83 100644
+>> --- a/fs/direct-io.c
+>> +++ b/fs/direct-io.c
+>> @@ -257,12 +257,8 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret,
+>>       inode_dio_done(dio->inode);
+>>       if (is_async) {
+>>               if (dio->rw & WRITE) {
+>> -                     int err;
+>> -
+>> -                     err = generic_write_sync(dio->iocb->ki_filp, offset,
+>> -                                              transferred);
+>> -                     if (err < 0 && ret > 0)
+>> -                             ret = err;
+>> +                     dio->iocb->ki_pos = offset + transferred;
+>> +                     ret = generic_write_sync(dio->iocb, ret);
+>>               }
+>>
+>>               aio_complete(dio->iocb, ret, 0);
+>> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+>> index aca7b24..79b000c 100644
+>> --- a/fs/ext4/file.c
+>> +++ b/fs/ext4/file.c
+>> @@ -175,13 +175,7 @@ ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>>       ret = __generic_file_write_iter(iocb, from);
+>>       mutex_unlock(&inode->i_mutex);
+>>
+>> -     if (ret > 0) {
+>> -             ssize_t err;
+>> -
+>> -             err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+>> -             if (err < 0)
+>> -                     ret = err;
+>> -     }
+>> +     ret = generic_write_sync(iocb, ret);
+>>       if (o_direct)
+>>               blk_finish_plug(&plug);
+>>
+>> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+>> index 80dd44d..3fafeca 100644
+>> --- a/fs/gfs2/file.c
+>> +++ b/fs/gfs2/file.c
+>> @@ -895,8 +895,13 @@ retry:
+>>               gfs2_quota_unlock(ip);
+>>       }
+>>
+>> -     if (error == 0)
+>> -             error = generic_write_sync(file, pos, count);
+>> +     if (error)
+>> +             goto out_unlock;
+>> +
+>> +     if ((file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host)) {
+>> +             error = vfs_fsync_range(file, pos, pos + count - 1,
+>> +                            (file->f_flags & __O_SYNC) ? 0 : 1);
+>> +     }
+>>       goto out_unlock;
+>>
+>> out_trans_fail:
+>> diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+>> index 643faa4..4f3d664 100644
+>> --- a/fs/ntfs/file.c
+>> +++ b/fs/ntfs/file.c
+>> @@ -2127,12 +2127,8 @@ static ssize_t ntfs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>>       mutex_lock(&inode->i_mutex);
+>>       ret = ntfs_file_aio_write_nolock(iocb, iov, nr_segs, &iocb->ki_pos);
+>>       mutex_unlock(&inode->i_mutex);
+>> -     if (ret > 0) {
+>> -             int err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+>> -             if (err < 0)
+>> -                     ret = err;
+>> -     }
+>> -     return ret;
+>> +
+>> +     return generic_write_sync(iocb, ret);
+>> }
+>>
+>> /**
+>> diff --git a/fs/udf/file.c b/fs/udf/file.c
+>> index bb15771..1cdabd0 100644
+>> --- a/fs/udf/file.c
+>> +++ b/fs/udf/file.c
+>> @@ -155,16 +155,9 @@ static ssize_t udf_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>>       retval = __generic_file_write_iter(iocb, from);
+>>       mutex_unlock(&inode->i_mutex);
+>>
+>> -     if (retval > 0) {
+>> -             ssize_t err;
+>> -
+>> +     if (retval > 0)
+>>               mark_inode_dirty(inode);
+>> -             err = generic_write_sync(file, iocb->ki_pos - retval, retval);
+>> -             if (err < 0)
+>> -                     retval = err;
+>> -     }
+>> -
+>> -     return retval;
+>> +     return generic_write_sync(iocb, retval);
+>> }
+>>
+>> long udf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+>> index 0655915..a8cab66 100644
+>> --- a/fs/xfs/xfs_file.c
+>> +++ b/fs/xfs/xfs_file.c
+>> @@ -792,14 +792,8 @@ xfs_file_write_iter(
+>>               ret = xfs_file_buffered_aio_write(iocb, from);
+>>
+>>       if (ret > 0) {
+>> -             ssize_t err;
+>> -
+>>               XFS_STATS_ADD(xs_write_bytes, ret);
+>> -
+>> -             /* Handle various SYNC-type writes */
+>> -             err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+>> -             if (err < 0)
+>> -                     ret = err;
+>> +             ret = generic_write_sync(iocb, ret);
+>>       }
+>>       return ret;
+>> }
+>> diff --git a/include/linux/fs.h b/include/linux/fs.h
+>> index eaebd99..7d0e116 100644
+>> --- a/include/linux/fs.h
+>> +++ b/include/linux/fs.h
+>> @@ -2242,13 +2242,7 @@ extern int filemap_fdatawrite_range(struct address_space *mapping,
+>> extern int vfs_fsync_range(struct file *file, loff_t start, loff_t end,
+>>                          int datasync);
+>> extern int vfs_fsync(struct file *file, int datasync);
+>> -static inline int generic_write_sync(struct file *file, loff_t pos, loff_t count)
+>> -{
+>> -     if (!(file->f_flags & O_DSYNC) && !IS_SYNC(file->f_mapping->host))
+>> -             return 0;
+>> -     return vfs_fsync_range(file, pos, pos + count - 1,
+>> -                            (file->f_flags & __O_SYNC) ? 0 : 1);
+>> -}
+>> +extern int generic_write_sync(struct kiocb *iocb, loff_t count);
+>> extern void emergency_sync(void);
+>> extern void emergency_remount(void);
+>> #ifdef CONFIG_BLOCK
+>> diff --git a/mm/filemap.c b/mm/filemap.c
+>> index 09d3af3..6107058 100644
+>> --- a/mm/filemap.c
+>> +++ b/mm/filemap.c
+>> @@ -2664,6 +2664,24 @@ out:
+>> }
+>> EXPORT_SYMBOL(__generic_file_write_iter);
+>>
+>> +int generic_write_sync(struct kiocb *iocb, loff_t count)
+>> +{
+>> +     struct file *file = iocb->ki_filp;
+>> +
+>> +     if (count > 0 &&
+>> +         ((file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host))) {
+>> +             bool fdatasync = !(file->f_flags & __O_SYNC);
+>> +             ssize_t ret = 0;
+>
+> That "= 0" is pointless.  "ret" is overwritten unconditionally on the following line...
 
---5I6of5zJg18YgZEa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have fixed this change; it will be in the next patch series / pull
+request. The branch for the pull is at:
+https://bitbucket.org/adfin/linux-fs.git  read_call_6
 
-On Thu, Nov 06, 2014 at 11:25:32AM +0100, Thierry Reding wrote:
-> On Wed, Nov 05, 2014 at 06:18:15PM -0800, Greg Kroah-Hartman wrote:
-[...]
-> > Sure, document it better if you want, but I think something needs to be
-> > done differently if at all possible.
->=20
-> try_module_get() is the only way I know of that ensures that the code of
-> a module stays around. Everytime we give out a new reference to a record
-> we also need to increment the module reference count accordingly to make
-> sure the underlying code doesn't go away all of a sudden.
->=20
-> I guess that's not entirely accurate. The module reference count doesn't
-> have to be increment for every record reference, it only needs to track
-> each record. So the try_module_get() and module_put() could move into
-> registry_add() and registry_get(), respectively. But the ->owner field
-> would still be in the record structure.
+>
+> Other than that the NTFS bits are:
+>
+> Acked-by: Anton Altaparmakov <anton@tuxera.com>
+>
+> Best regards,
+>
+>         Anton
+>
+>> +
+>> +             ret = vfs_fsync_range(file, iocb->ki_pos - count,
+>> +                             iocb->ki_pos - 1, fdatasync);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +     }
+>> +     return count;
+>> +}
+>> +EXPORT_SYMBOL(generic_write_sync);
+>> +
+>> /**
+>>  * generic_file_write_iter - write data to a file
+>>  * @iocb:     IO state structure
+>> @@ -2675,22 +2693,14 @@ EXPORT_SYMBOL(__generic_file_write_iter);
+>>  */
+>> ssize_t generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>> {
+>> -     struct file *file = iocb->ki_filp;
+>> -     struct inode *inode = file->f_mapping->host;
+>> +     struct inode *inode = iocb->ki_filp->f_mapping->host;
+>>       ssize_t ret;
+>>
+>>       mutex_lock(&inode->i_mutex);
+>>       ret = __generic_file_write_iter(iocb, from);
+>>       mutex_unlock(&inode->i_mutex);
+>>
+>> -     if (ret > 0) {
+>> -             ssize_t err;
+>> -
+>> -             err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+>> -             if (err < 0)
+>> -                     ret = err;
+>> -     }
+>> -     return ret;
+>> +     return generic_write_sync(iocb, ret);
+>> }
+>> EXPORT_SYMBOL(generic_file_write_iter);
+>
+> --
+> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+> University of Cambridge Information Services, Roger Needham Building
+> 7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+>
 
-On further thought I don't think this will work either. Given that the
-record can be removed from the registry while somebody else still has a
-reference to it, the module owning the record must stay around as long
-as there's a reference to the record.
 
-Maybe the module reference count needs to be incremented when the record
-is initialized and decremented when the record is released.
 
-Thierry
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
 
---5I6of5zJg18YgZEa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUW54hAAoJEN0jrNd/PrOhOBMP/itWpUWFfunCxM47G+CqbOHL
-QHU+cl11FinQDha4RdZqriHguYCoo78FQA+g89GkimdQmgRSbmCtV51IFVrv0X2i
-aLVhZdVpCBocAyhqm5RtnoQwT/H1EEEytjEjoTKfMUY8Oj1b2QL/uyV2E57j4nKh
-C+WDvqXRnT82DJG/PwkhWvmFJaW1n4qRfGVDXHa0MZixaHUY009kklI8ijgY2sox
-opeXlojx2+xLMOQsUzxdRHroC5v2Uip2jnPZN26l5f92/bdsZoU/oAV8aUrDki3x
-vBQK+yGvxgD4heSxd1MWixlzfbdaWdpuNs2rM9o1wvaRhMdILVTnwbCn1fBqM+zQ
-XcGB4cYVkZ4trvLTxOMNgdxzUWhs89nqNmPEMAPgiahNNqdN/9DO9x7Wwe1zWPXZ
-ti61SqjsAUIaQZd7H3Ecb9L8zqimBlB4ZaxIA1m5QqiQrgj1hDKUAjwns33ISzsK
-4VU8chNXneZBD9tkCkq7J/dnm9NA+zkV9Q1/ob6garCClyu7+lBhpITMlFdaQAFP
-TSz+LJRj9eDbSol0/HZ1PpH0Cej2FbD3DL0fltflViaLuanqX/0Y17+li0S0I8IZ
-DFymEUQQHn0eiodVSC3wvClWTuGw6FbukPFXR6kMNXxYS1IHcRU1N1qyV875PUsw
-a2Aa0DVelF9mSeqTAMfp
-=sSSM
------END PGP SIGNATURE-----
-
---5I6of5zJg18YgZEa--
+p: 646-253-9055
+e: milosz@adfin.com
