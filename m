@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaKFW6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:58:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58973 "EHLO
+	id S1753951AbaKFW7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:59:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58965 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007AbaKFWnQ (ORCPT
+	with ESMTP id S1753002AbaKFWnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:16 -0500
+	Thu, 6 Nov 2014 17:43:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 092/162] intel_pstate: Don't lose sysfs settings during cpu offline
-Date: Thu,  6 Nov 2014 14:35:56 -0800
-Message-Id: <1415313426-9622-93-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 091/162] cpufreq: intel_pstate: Reflect current no_turbo state correctly
+Date: Thu,  6 Nov 2014 14:35:55 -0800
+Message-Id: <1415313426-9622-92-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,46 +29,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
 
-commit c034871712730a33e0267095f48b62eae958499c upstream.
+commit 4521e1a0ce173daa23dfef8312d09051e057ff8e upstream.
 
-The user may have custom settings don't destroy them during suspend.
+Some BIOSes modify the state of MSR_IA32_MISC_ENABLE_TURBO_DISABLE
+based on the current power source for the system battery AC vs
+battery. Reflect the correct current state and ability to modify the
+no_turbo sysfs file based on current state of
+MSR_IA32_MISC_ENABLE_TURBO_DISABLE.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=80651
-Reported-by: Tobias Jakobi <liquid.acid@gmx.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=83151
+Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
 Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/cpufreq/intel_pstate.c | 49 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 37 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 7d622cd..4469fed 100644
+index d21cd02..7d622cd 100644
 --- a/drivers/cpufreq/intel_pstate.c
 +++ b/drivers/cpufreq/intel_pstate.c
-@@ -711,7 +711,9 @@ static int intel_pstate_init_cpu(unsigned int cpunum)
- 	if (!id)
- 		return -ENODEV;
+@@ -143,6 +143,7 @@ struct perf_limits {
  
--	all_cpu_data[cpunum] = kzalloc(sizeof(struct cpudata), GFP_KERNEL);
-+	if (!all_cpu_data[cpunum])
-+		all_cpu_data[cpunum] = kzalloc(sizeof(struct cpudata),
-+					       GFP_KERNEL);
- 	if (!all_cpu_data[cpunum])
- 		return -ENOMEM;
- 
-@@ -799,8 +801,6 @@ static int intel_pstate_cpu_exit(struct cpufreq_policy *policy)
- 	int cpu = policy->cpu;
- 
- 	del_timer(&all_cpu_data[cpu]->timer);
--	kfree(all_cpu_data[cpu]);
--	all_cpu_data[cpu] = NULL;
- 	return 0;
+ static struct perf_limits limits = {
+ 	.no_turbo = 0,
++	.turbo_disabled = 0,
+ 	.max_perf_pct = 100,
+ 	.max_perf = int_tofp(1),
+ 	.min_perf_pct = 0,
+@@ -227,6 +228,18 @@ static inline void intel_pstate_reset_all_pid(void)
+ 	}
  }
  
++static inline void update_turbo_state(void)
++{
++	u64 misc_en;
++	struct cpudata *cpu;
++
++	cpu = all_cpu_data[0];
++	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
++	limits.turbo_disabled =
++		(misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
++		 cpu->pstate.max_pstate == cpu->pstate.turbo_pstate);
++}
++
+ /************************** debugfs begin ************************/
+ static int pid_param_set(void *data, u64 val)
+ {
+@@ -283,6 +296,20 @@ static void intel_pstate_debug_expose_params(void)
+ 		return sprintf(buf, "%u\n", limits.object);		\
+ 	}
+ 
++static ssize_t show_no_turbo(struct kobject *kobj,
++			     struct attribute *attr, char *buf)
++{
++	ssize_t ret;
++
++	update_turbo_state();
++	if (limits.turbo_disabled)
++		ret = sprintf(buf, "%u\n", limits.turbo_disabled);
++	else
++		ret = sprintf(buf, "%u\n", limits.no_turbo);
++
++	return ret;
++}
++
+ static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
+ 				const char *buf, size_t count)
+ {
+@@ -291,11 +318,14 @@ static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
+ 	ret = sscanf(buf, "%u", &input);
+ 	if (ret != 1)
+ 		return -EINVAL;
+-	limits.no_turbo = clamp_t(int, input, 0 , 1);
++
++	update_turbo_state();
+ 	if (limits.turbo_disabled) {
+ 		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
+-		limits.no_turbo = limits.turbo_disabled;
++		return -EPERM;
+ 	}
++	limits.no_turbo = clamp_t(int, input, 0, 1);
++
+ 	return count;
+ }
+ 
+@@ -328,7 +358,6 @@ static ssize_t store_min_perf_pct(struct kobject *a, struct attribute *b,
+ 	return count;
+ }
+ 
+-show_one(no_turbo, no_turbo);
+ show_one(max_perf_pct, max_perf_pct);
+ show_one(min_perf_pct, min_perf_pct);
+ 
+@@ -503,7 +532,8 @@ static void intel_pstate_get_min_max(struct cpudata *cpu, int *min, int *max)
+ 	int max_perf = cpu->pstate.turbo_pstate;
+ 	int max_perf_adj;
+ 	int min_perf;
+-	if (limits.no_turbo)
++
++	if (limits.no_turbo || limits.turbo_disabled)
+ 		max_perf = cpu->pstate.max_pstate;
+ 
+ 	max_perf_adj = fp_toint(mul_fp(int_tofp(max_perf), limits.max_perf));
+@@ -519,6 +549,8 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ {
+ 	int max_perf, min_perf;
+ 
++	update_turbo_state();
++
+ 	intel_pstate_get_min_max(cpu, &min_perf, &max_perf);
+ 
+ 	pstate = clamp_t(int, pstate, min_perf, max_perf);
+@@ -736,7 +768,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
+ 		limits.max_policy_pct = 100;
+ 		limits.max_perf_pct = 100;
+ 		limits.max_perf = int_tofp(1);
+-		limits.no_turbo = limits.turbo_disabled;
++		limits.no_turbo = 0;
+ 		return 0;
+ 	}
+ 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
+@@ -776,7 +808,6 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	struct cpudata *cpu;
+ 	int rc;
+-	u64 misc_en;
+ 
+ 	rc = intel_pstate_init_cpu(policy->cpu);
+ 	if (rc)
+@@ -784,12 +815,6 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+ 
+ 	cpu = all_cpu_data[policy->cpu];
+ 
+-	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
+-	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
+-		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
+-		limits.turbo_disabled = 1;
+-		limits.no_turbo = 1;
+-	}
+ 	if (limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
+ 		policy->policy = CPUFREQ_POLICY_PERFORMANCE;
+ 	else
 -- 
 1.9.1
 
