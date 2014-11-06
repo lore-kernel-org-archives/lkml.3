@@ -1,182 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKFKPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:15:30 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58724 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761AbaKFKPV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:15:21 -0500
-Message-ID: <545B4A32.7060104@hitachi.com>
-Date: Thu, 06 Nov 2014 19:15:14 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751541AbaKFKSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:18:53 -0500
+Received: from ozlabs.org ([103.22.144.67]:51996 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751021AbaKFKSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 05:18:50 -0500
+Date: Thu, 6 Nov 2014 21:18:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20141106211843.6c23a5dd@canb.auug.org.au>
+In-Reply-To: <1415264981.15424.3.camel@linux-t7sj.site>
+References: <20141106164444.2123e6d5@canb.auug.org.au>
+	<1415264981.15424.3.camel@linux-t7sj.site>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Brendan Gregg <brendan.gregg@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        namhyung@kernel.org, Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH perf/core 0/6] perf-probe: Bugfix and add new options
- for cache
-References: <20141031185128.27889.32747.stgit@localhost.localdomain> <20141031121301.GI1313@kernel.org> <545770E6.2010506@hitachi.com> <20141103161900.GA18464@kernel.org> <545857CF.3060709@hitachi.com> <20141104143814.GH18464@kernel.org> <5458FD56.8040304@hitachi.com> <20141105130429.GI18464@kernel.org>
-In-Reply-To: <20141105130429.GI18464@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/05 22:04), Arnaldo Carvalho de Melo wrote:
-> Em Wed, Nov 05, 2014 at 01:22:46AM +0900, Masami Hiramatsu escreveu:
->> (2014/11/04 23:38), Arnaldo Carvalho de Melo wrote:
->>> Em Tue, Nov 04, 2014 at 01:36:31PM +0900, Masami Hiramatsu escreveu:
->>>> (2014/11/04 1:19), Arnaldo Carvalho de Melo wrote:
->>>>> Em Mon, Nov 03, 2014 at 09:11:18PM +0900, Masami Hiramatsu escreveu:
->>>>>> (2014/10/31 21:13), Arnaldo Carvalho de Melo wrote:
->>>>>>> Em Fri, Oct 31, 2014 at 02:51:29PM -0400, Masami Hiramatsu escreveu:
->>>>>> Actually, kprobe event itself can reject command if the given address
->>>>>> is not in the kernel text nor instruction boundary (perhaps, uprobes
->>>>>> may have a problem...), so for the kernel level, it is safe.
->>>
->>>>> No, it is not necessarily safe.
->>>
->>>>> What if you specify function foo() that has address 0x1234 for kernel
->>>>> v3.16 and then run the cached probe on kernel v3.18 and on that kernel
->>>>> the function foo() maps to address 0x2345 and function bar() instead
->>>>> maps to address 0x1234? Oops.
-> 
->>>> In that case user just trace bar() instead of foo(). Of course it's
->>>> not correct, but shouldn't break the kernel (if the kernel is broken,
->>>> it is a bug of kprobes).
-> 
->>> I.e. no crashes, just misleading information :-\
->  
->> Right.
-> 
-> The kernel doesn't crashes, just the user, after scratching his head
-> trying to make sense of wrong information :-P
-> 
-> Digressing: is there some kprobe_tracer_fuzzer out there?
+--Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-No, but it's a good idea:) I just used to more systematic one
-(only for the function entry).
+Hi,
 
->>>>> The build-id was designed to uniquely identify a DSO, we need to use it.
-> 
->>>>> I think that at some point not using it should be left to a, in
->>>>> systemtap parlance, "guru" mode, with tooling warning profusely when
->>>>> build ids are not available and requiring even more forcing when it
->>>>> doesn't matches.
-> 
->>>> But it is not necessarily everyone uses perf probe to set up the probe
->>>> events(because it is a part of ftrace), as we can see in the Brendan's
->>>> scripts.
-> 
->>> Right, If I implied that some particular tool should be used, sorry
->>> about that, what I wanted to get accross was that the information that
->>> allows users or tools to make sure there is no mismatch between the
->>> cached probes and the target kernel is collected at cached probe
->>> creating time and available at target use time.
->  
->> Yes, and if user setting probes via perf, the perf must ensure that it
->> picks up the correct cache by using build-id. If someone wants to use
->> other tools, he/she must ensure it. We just give a information how to
->> check that :)
->  
->>>> I think, at least what we need is clarifying how can they ensure
->>>> build-id before setting the probe events. I'd like to give them options
->>>> with knowledge instead of forcing by tools.
-> 
->>> Right, so we need to have the build-id as part of the cache format,
->>> perhaps as the first line, starting with a comment (#), that way the
->>> user can use whatever way he has at its disposal to check that the
->>> running kernel build-id is the same as the one on that comment. Using
->>> that script you provided, that uses just things that are on the machine
->>> (od, /sys/kernel/notes).
->  
->> Ah, that's a good idea :)
->> So, with such build-id comment line, would you think we can have an
->> --output option? Or we'd better moving onto the .debug/ cache file?
-> 
-> Well, these are two separate things: The ./debug cache file is for
-> repeated use of the same probe on the same machine, say, across reboots
-> or in tools that script using perf probe to add some probe, then remove
-> the probes at exit, using it multiple times would provide a after
-> caching, as no ELF DWARF parsing would be involved after we cached it.
+On Thu, 06 Nov 2014 01:09:41 -0800 Davidlohr Bueso <dave@stgolabs.net> wrot=
+e:
+>
+> On Thu, 2014-11-06 at 16:44 +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the akpm-current tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> >=20
+> > mm/fremap.c: In function 'SYSC_remap_file_pages':
+> > mm/fremap.c:241:22: error: 'struct address_space' has no member named '=
+i_mmap_mutex'
+> >    mutex_lock(&mapping->i_mmap_mutex);
+> >                       ^
+> > mm/fremap.c:247:24: error: 'struct address_space' has no member named '=
+i_mmap_mutex'
+> >    mutex_unlock(&mapping->i_mmap_mutex);
+> >                         ^
+> >=20
+> > Caused by commit 1f8c97e79f66 ("mm: convert i_mmap_mutex to rwsem").
+> >=20
+> > I applied this patch for today (not sure if there is a better way):
+> >=20
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Thu, 6 Nov 2014 16:26:41 +1100
+> > Subject: [PATCH] mm: convert i_mmap_mutex to rwsem fix
+> >=20
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  mm/fremap.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >=20
+> > diff --git a/mm/fremap.c b/mm/fremap.c
+> > index 9129013732d7..2805d71cf476 100644
+> > --- a/mm/fremap.c
+> > +++ b/mm/fremap.c
+> > @@ -238,13 +238,13 @@ get_write_lock:
+> >  			}
+> >  			goto out_freed;
+> >  		}
+> > -		mutex_lock(&mapping->i_mmap_mutex);
+> > +		i_mmap_lock_write(mapping);
+>=20
+> That's the correct fix, thanks. However, I had particularly dropped that
+> modification because linux-next no longer even has mm/fremap.c so I'm
+> not sure what went wrong here...
 
-OK, but it would be the next step. At first, I'd like to add/use cache
-explicitly.
+Andrew's tree gets added in two sections and he put your patch in the
+first part but the patch that removes this file is in the second part,
+so all that really needs to happen is for the patches to be reordered.
 
-> As well for when using 'perf archive' to reuse the probe definitions
-> using 'perf probe' on the target machine, where no -debuginfo packages
-> (or binaries with DWARF) would be available.
-> 
-> I.e. both having the comment on the cache file with the build id and
-> having it stored in ~/.debug/ have values for different workloads or
-> different ways of doing the same thing.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-OK, I'lll add a build-id comment line then.
+--Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
->> What I'm thinking about this feature is to make a compact and reduced
->> function-entry level probe cache while building the kernel (as a part
->> of kbuild), so that we can deploy the stripped kernel and the cache
->> to remote machines.
-> 
-> Which is a cool feature as well! :-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks :)
+iQIcBAEBCAAGBQJUW0sIAAoJEMDTa8Ir7ZwVyEcP+wTkNEsOh5TDdXSKmXNA2iEU
+VbUYiZ+1tpcE/Z+G9L0wy9L8UvRJu3a9+V801XSYF7mGshuYISMjA9dnSc49ckC5
+Mr0oY2rHf9lHAKt0+SAnnp5TzL+OiWygFWY3B1hlMjlhWNu7D9feOtQVx6xB0gVn
+fTtHwoFv5XuhyUtnYYrmxMRkjh4ZfanBj7DBmCUkavspI1QAw/U+cI/l0eELNhUi
+RTGVVx5OankdgBkMEenlPha1dCSgHh1i+WgbxkAj9WFThN6qxZC0eORnZ6SJHv3r
+kUfDXAr5bQSA1kvCqV3fPHCOSCWL+jh9x0qk4tBoqo4r9ZiIzP070ysoMPeReowL
+2dokVwKjX3cIilwWqIh7lUBJQ0LE0qrfIR4J3ltbs0GZ+QkYI0t/0yMg/5dYPkeq
+WAp63VnCHYbKUuK9cTZ33kyV/NBb2svP1qfO6SPT9wAz+FJObNoG0EvNsK+B+uxy
+0gFX6J3xVEu30W15qH8Yjirv39umkGcxx4YWlfz4mSykis9UKNHDCojBTsXw29VJ
+Anqqo4I1zozvcsfT2I2Sbrr9soEc4syQY1syHrub3MiUTyA8wTcAEoSU2KLiV6mJ
+AZo/IfFuIPHDLIlMRDwi8fq7Y24z7ApgFpjwQkFc8NgjN3C1Wb3dwwfQhyNnzv2Z
+o94ua5GL+hzRgXHeWNjo
+=UQXK
+-----END PGP SIGNATURE-----
 
->  
->> [snip]
->>>> OK, I agree using .debug/.buildid/ to store caches.
->>>> Here is what I'm thinking,
->>>  
->>>>   # this makes caches for given pattern instead of adding probes.
->>>>   perf probe --cache '* $params'
->>>
->>>>   # the cache is stored in .debug/.buildid/<buildid>.probe
->>>>   # the cache entry can be queried by buildid and eventname
->>>
->>> To follow the existing standard this would instead go to:
->>>
->>>>   # the cache is stored in .debug/probes/path/to/dso/name/buildid
->>>>   # And can be found via its buildid link .debug/.buildid/bu/ildid -> ../../probes/path/to/dso/name/buildid
->>
->> Ah, I see. so you meant adding a top-level .debug/probes/ dir.
->> But in that case, shouldn't we change .debug/.buildid/bu/ildid to
->> .debug/probes/.buildid/bu/ildid ?
-> 
-> Humm, understood, perhaps we should have a subdir for probes, i.e.:
-> 
-> # And can be found via its buildid link .debug/.buildid/probes/bu/ildid -> ../../probes/path/to/dso/name/probes/buildid
-> 
-> So as not to clash in both cases with the ELF file.
-
-This looks good to me.
-
-> Which leads to a problem when we have both vmlinux and kallsyms, which,
-> right now, is not possible, i.e. if we add both a vmlinux and a kallsyms
-> file for a kernel, the one that comes last will have the
-> 
-> .debug/.buildid/bu/ildid
-> 
-> link, have to fix that so that we first look for the ELF file in the
-> cache, and if it fails, fallback to the kallsyms file, if available,
-> i.e. give preference to the richer option, and in some cases, like for
-> annotation, the only one that matters.
-
-OK, but this seems the problem for buildid-cache, not the probe-cache nor
-sdt-cache (since both should have same contents).
-
-Thank you,
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc--
