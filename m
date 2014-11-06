@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaKFQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:24:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054AbaKFQYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:24:05 -0500
-Message-ID: <545BA09E.7040301@redhat.com>
-Date: Thu, 06 Nov 2014 17:23:58 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] kvm: x86: increase user memory slots to 509
-References: <1415289167-24661-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1415289167-24661-1-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1751503AbaKFQYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:24:13 -0500
+Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:59120 "EHLO
+	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751133AbaKFQYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:24:10 -0500
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: <linux-kernel@vger.kernel.org>, Ian Abbott <abbotti@mev.co.uk>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] misc: genwqe: check for error from get_user_pages_fast()
+Date: Thu,  6 Nov 2014 16:23:39 +0000
+Message-Id: <1415291019-6178-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+`genwqe_user_vmap()` calls `get_user_pages_fast()` and if the return
+value is less than the number of pages requested, it frees the pages and
+returns an error (`-EFAULT`).  However, it fails to consider a negative
+error return value from `get_user_pages_fast()`.  In that case, the test
+`if (rc < m->nr_pages)` will be false (due to promotion of `rc` to a
+large `unsigned int`) and the code will continue on to call
+`genwqe_map_pages()` with an invalid list of page pointers.  Fix it by
+bailing out if `get_user_pages_fast()` returns a negative error value.
 
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: <stable@vger.kernel.org> # 3.14.x # 3.15.x # 3.16.x # 3.17.x
+---
+ drivers/misc/genwqe/card_utils.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-On 06/11/2014 16:52, Igor Mammedov wrote:
-> With the 3 private slots, this gives us 512 slots total.
-> Motivation for this is in addition to assigned devices
-> support more memory hotplug slots, where 1 slot is
-> used by a hotplugged memory stick.
-> It will allow to support upto 256 hotplug memory
-> slots and leave 253 slots for assigned devices and
-> other devices that use them.
-> 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+diff --git a/drivers/misc/genwqe/card_utils.c b/drivers/misc/genwqe/card_utils.c
+index 7cb3b7e..1ca94e6 100644
+--- a/drivers/misc/genwqe/card_utils.c
++++ b/drivers/misc/genwqe/card_utils.c
+@@ -590,6 +590,8 @@ int genwqe_user_vmap(struct genwqe_dev *cd, struct dma_mapping *m, void *uaddr,
+ 				 m->nr_pages,
+ 				 1,		/* write by caller */
+ 				 m->page_list);	/* ptrs to pages */
++	if (rc < 0)
++		goto fail_get_user_pages;
+ 
+ 	/* assumption: get_user_pages can be killed by signals. */
+ 	if (rc < m->nr_pages) {
+-- 
+2.1.1
 
-It would use more memory, and some loops are now becoming more
-expensive.  In general adding a memory slot to a VM is not cheap, and I
-question the wisdom of having 256 hotplug memory slots.  But the
-slowdown mostly would only happen if you actually _use_ those memory
-slots, so it is not a blocker for this patch.
-
-We probably should change the kmemdup + heap sort of
-__kvm_set_memory_region + update_memslots to copy the array and insert
-the new item at the right place, at the same time.  Using a heap sort is
-overkill and unnecessarily goes from O(n^2) to O(n^2 log n).  With a
-bigger constant in front as well.
-
-If you want to do it, I'd be grateful.  Otherwise I can look at it as
-time permits.
-
-Paolo
