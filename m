@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaKFH6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 02:58:47 -0500
-Received: from antispam.ahnlab.com ([210.121.169.55]:59179 "EHLO
-	antispam.ahnlab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaKFH6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 02:58:45 -0500
-X-Original-SENDERIP: 172.16.11.209
-X-Original-MAILFROM: suhyun.park@ahnlab.com
-From: =?ks_c_5601-1987?B?udq89sf2?= <suhyun.park@ahnlab.com>
-To: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: "bridge@lists.linux-foundation.org" 
-	<bridge@lists.linux-foundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] bridge: missing null bridge device check causing null
- pointer dereference (bugfix)
-Thread-Topic: [PATCH] bridge: missing null bridge device check causing null
- pointer dereference (bugfix)
-Thread-Index: AQHP+YqrhNePGBbJkEOg7Nz1l90pj5xSlqaAgACjdfA=
-Date: Thu, 6 Nov 2014 07:58:41 +0000
-Message-ID: <8D1F1238A24CE743B8F3CED0F137C69E408AA087@EXMB02.ahnbang.ahnlab.com>
-References: <1415255192-13584-1-git-send-email-suhyun.park@ahnlab.com>
- <545B1E27.3080302@lab.ntt.co.jp>
-In-Reply-To: <545B1E27.3080302@lab.ntt.co.jp>
-Accept-Language: ko-KR, en-US
-Content-Language: ko-KR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.20.32.26]
-Content-Type: text/plain; charset="ks_c_5601-1987"
+	id S1751589AbaKFIBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:01:23 -0500
+Received: from mail-bn1bon0148.outbound.protection.outlook.com ([157.56.111.148]:23785
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750980AbaKFIBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 03:01:20 -0500
+Message-ID: <545B2AC4.3090505@freescale.com>
+Date: Thu, 6 Nov 2014 10:01:08 +0200
+From: Cristian Stoica <cristian.stoica@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Kim Phillips <kim.phillips@freescale.com>, <herbert@gondor.apana.org.au>,
+        <davem@davemloft.net>, <horia.geanta@freescale.com>, <marex@denx.de>
+CC: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] crypto: caam: fix error reporting
+References: <20141104105731.ccb0eedea154b9bb6ed195b3@freescale.com>
+	<1415179284-19791-1-git-send-email-cristian.stoica@freescale.com>
+ <20141105104332.bdc904792193d714bd9d4951@freescale.com>
+In-Reply-To: <20141105104332.bdc904792193d714bd9d4951@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(52044002)(199003)(189002)(377454003)(51704005)(479174003)(81156004)(4396001)(105606002)(59896002)(95666004)(65806001)(46102003)(77156002)(21056001)(102836001)(31966008)(92566001)(62966003)(50466002)(106466001)(107046002)(92726001)(20776003)(65956001)(2201001)(47776003)(97736003)(87266999)(76176999)(36756003)(44976005)(68736004)(23756003)(54356999)(104016003)(19580395003)(84676001)(80316001)(64706001)(6806004)(83506001)(19580405001)(64126003)(120916001)(87936001)(15975445006)(69596002)(15202345003)(50986999)(33656002)(65816999)(99396003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB396;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB396;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0387D64A71
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=B18196@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sA67wqet000986
 
->-----Original Message-----
->From: Toshiaki Makita [mailto:makita.toshiaki@lab.ntt.co.jp]
->Sent: Thursday, November 06, 2014 4:07 PM
->To: ¹Ú¼öÇö; Stephen Hemminger; David S. Miller
->Cc: bridge@lists.linux-foundation.org; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: [PATCH] bridge: missing null bridge device check causing null
->pointer dereference (bugfix)
->
->On 2014/11/06 15:26, Su-Hyun Park wrote:
->> the bridge device can be null if the bridge is being deleted while
->> processing the packet, which causes the null pointer dereference in
->switch statement.
->
->How can this happen??
->It is guarded by rcu.
->netdev_rx_handler_unregister() ensures rx_handler_data is non NULL.
->
+Hi Kim, Herbert,
 
-The RCU protect rx_handler_data, not the bridge member port. It can be NULL according to below code.
 
-static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev) {
-	struct net_bridge_port *port = rcu_dereference(dev->rx_handler_data);
-	return br_port_exists(dev) ? port : NULL; 
-}
-
-The crash happens at the below switch statement in br_handle_frame, where p is NULL.
-
-	switch (p->state)
-
+On 11/05/2014 06:43 PM, Kim Phillips wrote:
+> On Wed, 5 Nov 2014 11:21:24 +0200
+> Cristian Stoica <cristian.stoica@freescale.com> wrote:
+> 
+>> The error code returned by hardware is four bits wide with an expected
+>> zero MSB. A hardware error condition where the error code can get between
+>> 0x8 and 0xf will trigger an out of bound array access on the error
+>> message table.
+>> This patch fixes the invalid array access following such an error and
+>> reports the condition.
 >>
->> crash dump snippet:
->>
->> <1>BUG: unable to handle kernel NULL pointer dereference at
->> 0000000000000021
->> <1>IP: [<ffffffff814179f6>] br_handle_frame+0xe6/0x270
->>
->> <0>Code: 4c 0f 44 f0 89 f8 66 33 15 32 52 24 00 66 33 05 29 52 24 00
->> 09 c2 89
->> f0 66 33 05 22 52 24 00 80 e4 f0 66 09 c2 0f 84 eb 00 00 00 <41> 0f b6
->> 46 21 3c 02 74 61 3c 03 74 1d 48 89 df e8 d5 bc f0 ff
+>> Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
 >> ---
->>  net/bridge/br_input.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c index
->> 6fd5522..7e899ca 100644
->> --- a/net/bridge/br_input.c
->> +++ b/net/bridge/br_input.c
->> @@ -176,6 +176,8 @@ rx_handler_result_t br_handle_frame(struct sk_buff
->**pskb)
->>  		return RX_HANDLER_CONSUMED;
->>
->>  	p = br_port_get_rcu(skb->dev);
->> +	if (!p)
->> +		goto drop;
->>
->>  	if (unlikely(is_link_local_ether_addr(dest))) {
->>  		u16 fwd_mask = p->br->group_fwd_mask_required;
->>
->
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> no v2 change info?  All I noticed is the additional string for
+> "queue manager interface", which, without its implementation fn,
+
+Yes. Thanks for review. That and the updated comment.
+
+> intoduces an inconsistency wrt NULL checking, so this comment:
+
+No. There is no inconsistency in the handling. Please be more specific.
+
+> 
+> http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg12105.html
+>
+> still applies.
+
+Which comment? You refer to a whole email. My rebutal still applies
+though and I think your version is inferior wrt handling the issue.
+
+Feel free to send a competing patch for review though.
+
+Herbert, consider that without a fix one way or another, there is a
+potential kernel attack vector through the error reporting function of
+the caam driver.
+
+
+Cristian S.
