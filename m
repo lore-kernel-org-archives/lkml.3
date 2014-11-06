@@ -1,224 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaKFPJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:09:40 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37493 "EHLO mga11.intel.com"
+	id S1751617AbaKFPJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:09:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37496 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426AbaKFPJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:09:36 -0500
+	id S1751478AbaKFPJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:09:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="627701758"
+   d="scan'208";a="627701841"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 00/14] perf, x86: Haswell LBR call stack support (kernel)
-Date: Thu,  6 Nov 2014 09:54:17 -0500
-Message-Id: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V8 05/14] perf, core: pmu specific data for perf task context
+Date: Thu,  6 Nov 2014 09:54:22 -0500
+Message-Id: <1415285671-16894-6-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
+References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the kernel patch. 
-For many profiling tasks we need the callgraph. For example we often
-need to see the caller of a lock or the caller of a memcpy or other
-library function to actually tune the program. Frame pointer unwinding
-is efficient and works well. But frame pointers are off by default on
-64bit code (and on modern 32bit gccs), so there are many binaries around
-that do not use frame pointers. Profiling unchanged production code is
-very useful in practice. On some CPUs frame pointer also has a high
-cost. Dwarf2 unwinding also does not always work and is extremely slow
-(upto 20% overhead).
+From: Yan, Zheng <zheng.z.yan@intel.com>
 
-Haswell has a new feature that utilizes the existing Last Branch Record
-facility to record call chains. When the feature is enabled, function
-call will be collected as normal, but as return instructions are
-executed the last captured branch record is popped from the on-chip LBR
-registers. The LBR call stack facility provides an alternative to get
-callgraph. It has some limitations too, but should work in most cases
-and is significantly faster than dwarf. Frame pointer unwinding is still
-the best default, but LBR call stack is a good alternative when nothing
-else works.
+Introduce a new flag PERF_ATTACH_TASK_DATA for perf event's attach
+stata. The flag is set by PMU's event_init() callback, it indicates
+that perf event needs PMU specific data.
 
-A new call chain recording option "lbr" is introduced into perf tool for
-LBR call stack. The user can use --call-graph lbr to get the call stack
-information from hardware.
+The PMU specific data are initialized to zeros. Later patches will
+use PMU specific data to save LBR stack.
 
-When profiling bc(1) on Fedora 19:
-echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph lbr bc -l < cmd
-If enabling LBR, perf report output looks like:
-    50.36%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-    33.66%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-                     bc_divide
-                     execute
-                     run_code
-                     yyparse
-                     main
-                     __libc_start_main
-                     _start
-     7.62%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                    |
-                    |--99.89%-- 0x2000186a8
-                     --0.11%-- [...]
-     6.83%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-                    |
-                    |--99.94%-- bc_add
-                    |          execute
-                    |          run_code
-                    |          yyparse
-                    |          main
-                    |          __libc_start_main
-                    |          _start
-                     --0.06%-- [...]
-     0.46%       bc  libc-2.17.so       [.] __memset_sse2
-                 |
-                 --- __memset_sse2
-                    |
-                    |--54.13%-- bc_new_num
-                    |          |
-                    |          |--51.00%-- bc_divide
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |          |--30.46%-- _bc_do_sub
-                    |          |          bc_add
-                    |          |          execute
-                    |          |          run_code
-                    |          |          yyparse
-                    |          |          main
-                    |          |          __libc_start_main
-                    |          |          _start
-                    |          |
-                    |           --18.55%-- _bc_do_add
-                    |                     bc_add
-                    |                     execute
-                    |                     run_code
-                    |                     yyparse
-                    |                     main
-                    |                     __libc_start_main
-                    |                     _start
-                    |
-                     --45.87%-- bc_divide
-                               execute
-                               run_code
-                               yyparse
-                               main
-                               __libc_start_main
-                               _start
-If using FP, perf report output looks like:
-echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
-    50.49%       bc  bc                 [.] bc_divide
-                 |
-                 --- bc_divide
-    33.57%       bc  bc                 [.] _one_mult
-                 |
-                 --- _one_mult
-     7.61%       bc  bc                 [.] _bc_do_add
-                 |
-                 --- _bc_do_add
-                     0x2000186a8
-     6.88%       bc  bc                 [.] _bc_do_sub
-                 |
-                 --- _bc_do_sub
-     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
-                 |
-                 --- __memcpy_ssse3_back
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ include/linux/perf_event.h |  6 ++++++
+ kernel/events/core.c       | 40 ++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 42 insertions(+), 4 deletions(-)
 
-The LBR call stack has following known limitations
- - Zero length calls are not filtered out by hardware
- - Exception handing such as setjmp/longjmp will have calls/returns not
-   match
- - Pushing different return address onto the stack will have calls/returns
-   not match
- - If callstack is deeper than the LBR, only the last entries are captured
-
-Changes since v1
- - split change into more patches
- - introduce context switch callback and use it to flush LBR
- - use the context switch callback to save/restore LBR
- - dynamic allocate memory area for storing LBR stack, always switch the
-   memory area during context switch
- - disable this feature by default
- - more description in change logs
-
-Changes since v2
- - don't use xchg to switch PMU specific data
- - remove nr_branch_stack from struct perf_event_context
- - simplify the save/restore LBR stack logical
- - remove unnecessary 'has_branch_stack -> needs_branch_stack'
-   conversion
- - more description in change logs
-
-Changes since v3
- - remove sysfs attribute file that disable this feature
-
-Changes since v4
- - re-organize code that save/resotre LBR stack
- - allocate pmu specific data when it's needed
- - update code comments
-
-Changes since v5
- - Expose LBR call stack data to user perf tool
- - Add option for perf report to support LBR call stack
- - Some minor changes according to comments
-
-Changes since v6
- - rebase on tip.git 05066a2a04
- - Modify perf test accordingly
-
-Changes since v7
- - LBR call stack as the 3rd callchain options
- - Only include kernel patch
-
-Yan, Zheng (13):
-  perf, x86: Reduce lbr_sel_map size
-  perf, core: introduce pmu context switch callback
-  perf, x86: use context switch callback to flush LBR stack
-  perf, x86: Basic Haswell LBR call stack support
-  perf, core: pmu specific data for perf task context
-  perf, core: always switch pmu specific data during context switch
-  perf, x86: allocate space for storing LBR stack
-  perf, x86: track number of events that use LBR callstack
-  perf, x86: Save/resotre LBR stack during context switch
-  perf, core: simplify need branch stack check
-  perf, x86: re-organize code that implicitly enables LBR/PEBS
-  perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack  
-      mode
-  perf, x86: Discard zero length call entries in LBR call stack
-
-Peter Zijlstra (Intel) (1):
-  perf, x86: expose LBR callstack to user space tool
-
- arch/x86/kernel/cpu/perf_event.c           |  71 +++----
- arch/x86/kernel/cpu/perf_event.h           |  20 +-
- arch/x86/kernel/cpu/perf_event_intel.c     |  36 +---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 307 ++++++++++++++++++++++-------
- include/linux/perf_event.h                 |  21 +-
- include/uapi/linux/perf_event.h            |  47 +++--
- kernel/events/core.c                       | 178 +++++++++--------
- 7 files changed, 451 insertions(+), 229 deletions(-)
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index ed51836..84ec3e6 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -269,6 +269,10 @@ struct pmu {
+ 	 */
+ 	void (*sched_task)		(struct perf_event_context *ctx,
+ 					bool sched_in);
++	/*
++	 * PMU specific data size
++	 */
++	size_t				task_ctx_size;
+ 
+ };
+ 
+@@ -305,6 +309,7 @@ struct swevent_hlist {
+ #define PERF_ATTACH_CONTEXT	0x01
+ #define PERF_ATTACH_GROUP	0x02
+ #define PERF_ATTACH_TASK	0x04
++#define PERF_ATTACH_TASK_DATA	0x08
+ 
+ struct perf_cgroup;
+ struct ring_buffer;
+@@ -514,6 +519,7 @@ struct perf_event_context {
+ 	u64				generation;
+ 	int				pin_count;
+ 	int				nr_cgroups;	 /* cgroup evts */
++	void				*task_ctx_data; /* pmu specific data */
+ 	struct rcu_head			rcu_head;
+ 
+ 	struct delayed_work		orphans_remove;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9212a2b..08d6671 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -895,6 +895,15 @@ static void get_ctx(struct perf_event_context *ctx)
+ 	WARN_ON(!atomic_inc_not_zero(&ctx->refcount));
+ }
+ 
++static void free_ctx(struct rcu_head *head)
++{
++	struct perf_event_context *ctx;
++
++	ctx = container_of(head, struct perf_event_context, rcu_head);
++	kfree(ctx->task_ctx_data);
++	kfree(ctx);
++}
++
+ static void put_ctx(struct perf_event_context *ctx)
+ {
+ 	if (atomic_dec_and_test(&ctx->refcount)) {
+@@ -902,7 +911,7 @@ static void put_ctx(struct perf_event_context *ctx)
+ 			put_ctx(ctx->parent_ctx);
+ 		if (ctx->task)
+ 			put_task_struct(ctx->task);
+-		kfree_rcu(ctx, rcu_head);
++		call_rcu(&ctx->rcu_head, free_ctx);
+ 	}
+ }
+ 
+@@ -3188,12 +3197,15 @@ errout:
+  * Returns a matching context with refcount and pincount.
+  */
+ static struct perf_event_context *
+-find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
++find_get_context(struct pmu *pmu, struct task_struct *task,
++		struct perf_event *event)
+ {
+ 	struct perf_event_context *ctx, *clone_ctx = NULL;
+ 	struct perf_cpu_context *cpuctx;
++	void *task_ctx_data = NULL;
+ 	unsigned long flags;
+ 	int ctxn, err;
++	int cpu = event->cpu;
+ 
+ 	if (!task) {
+ 		/* Must be root to operate on a CPU event: */
+@@ -3221,11 +3233,24 @@ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
+ 	if (ctxn < 0)
+ 		goto errout;
+ 
++	if (event->attach_state & PERF_ATTACH_TASK_DATA) {
++		task_ctx_data = kzalloc(pmu->task_ctx_size, GFP_KERNEL);
++		if (!task_ctx_data) {
++			err = -ENOMEM;
++			goto errout;
++		}
++	}
++
+ retry:
+ 	ctx = perf_lock_task_context(task, ctxn, &flags);
+ 	if (ctx) {
+ 		clone_ctx = unclone_ctx(ctx);
+ 		++ctx->pin_count;
++
++		if (task_ctx_data && !ctx->task_ctx_data) {
++			ctx->task_ctx_data = task_ctx_data;
++			task_ctx_data = NULL;
++		}
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
+ 
+ 		if (clone_ctx)
+@@ -3236,6 +3261,11 @@ retry:
+ 		if (!ctx)
+ 			goto errout;
+ 
++		if (task_ctx_data) {
++			ctx->task_ctx_data = task_ctx_data;
++			task_ctx_data = NULL;
++		}
++
+ 		err = 0;
+ 		mutex_lock(&task->perf_event_mutex);
+ 		/*
+@@ -3262,9 +3292,11 @@ retry:
+ 		}
+ 	}
+ 
++	kfree(task_ctx_data);
+ 	return ctx;
+ 
+ errout:
++	kfree(task_ctx_data);
+ 	return ERR_PTR(err);
+ }
+ 
+@@ -7331,7 +7363,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	/*
+ 	 * Get the target context (task or percpu):
+ 	 */
+-	ctx = find_get_context(pmu, task, event->cpu);
++	ctx = find_get_context(pmu, task, event);
+ 	if (IS_ERR(ctx)) {
+ 		err = PTR_ERR(ctx);
+ 		goto err_alloc;
+@@ -7500,7 +7532,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 
+ 	account_event(event);
+ 
+-	ctx = find_get_context(event->pmu, task, cpu);
++	ctx = find_get_context(event->pmu, task, event);
+ 	if (IS_ERR(ctx)) {
+ 		err = PTR_ERR(ctx);
+ 		goto err_free;
 -- 
 1.8.3.2
 
