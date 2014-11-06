@@ -1,288 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaKFFnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 00:43:08 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:39046 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaKFFnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 00:43:05 -0500
-Message-ID: <545B0A3B.40805@huawei.com>
-Date: Thu, 6 Nov 2014 13:42:19 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751298AbaKFFox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 00:44:53 -0500
+Received: from ozlabs.org ([103.22.144.67]:58347 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768AbaKFFov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 00:44:51 -0500
+Date: Thu, 6 Nov 2014 16:44:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dave@stgolabs.net>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20141106164444.2123e6d5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Bjorn Helgaas <bhelgaas@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "Matthias Brugger" <matthias.bgg@gmail.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
- hierarchy irqdomain
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com> <20141105230952.GH6168@google.com> <545AD5B3.60009@huawei.com> <545B01DC.5060107@linux.intel.com>
-In-Reply-To: <545B01DC.5060107@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/SQkIU+9a3=4JgIXNI2LX1AA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/6 13:06, Jiang Liu wrote:
-> On 2014/11/6 9:58, Yijing Wang wrote:
->>>>  
->>>> @@ -1098,3 +1099,128 @@ int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
->>>>  	return nvec;
->>>>  }
->>>>  EXPORT_SYMBOL(pci_enable_msix_range);
->>>> +
->>>> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
->>>
->>> Space, not tab.
->>>
->>>> +static inline irq_hw_number_t
->>>> +msi_get_hwirq(struct pci_dev *pdev, struct msi_desc *msidesc)
->>>
->>> The convention in this file is "struct pci_dev *dev".  And "struct msi_desc
->>> *desc" (or maybe "*entry").  Try to converge things, not diverge them.
->>>
->>>> +{
->>>> +	return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
->>>> +		PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
->>>> +		(pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
->>>
->>> Where does this bit layout come from?  Is this defined in the spec
->>> somewhere?  A reference would help.
->>
->> Currently, more and more Non-PCI device use MSI(or similar MSI mechanism), like DMAR fault irq
->> and HPET FSB irq. And we have to add additional code to support the MSI capability.
->> So I hope we can decouple MSI code and PCI code, then we can unify all MSI(or Message Based interrupt)
->> in one framework.
-> Hi Yijing,
-> 	I have a following patch to share more code among MSI/DMAR/HPET,
-> which is one step forward as you suggested. Will send out that patch set
-> soon.
+--Sig_/SQkIU+9a3=4JgIXNI2LX1AA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-That's Great! :)
+Hi Andrew,
 
-> Regards!
-> Gerry
-> 
->>
->> Thanks!
->> Yijing.
->>
->>>
->>>> +}
->>>> +
->>>> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
->>>> +			    unsigned int nr_irqs, void *arg)
->>>> +{
->>>> +	int i, ret;
->>>> +	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
->>>> +
->>>> +	if (irq_find_mapping(domain, hwirq) > 0)
->>>> +		return -EEXIST;
->>>> +
->>>> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
->>>> +	if (ret >= 0)
->>>
->>> 	if (ret < 0)
->>> 		return ret;
->>>
->>> and un-indent the mainline code below.  Then it's obvious that this is the
->>> normal case, not the error case.
->>>
->>>> +		for (i = 0; i < nr_irqs; i++) {
->>>> +			irq_domain_set_hwirq_and_chip(domain, virq + i,
->>>> +					hwirq + i, &msi_chip, (void *)(long)i);
->>>> +			__irq_set_handler(virq + i, handle_edge_irq, 0, "edge");
->>>> +		}
->>>> +
->>>> +	return ret;
->>>> +}
->>>> +
->>>> +static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
->>>> +			    unsigned int nr_irqs)
->>>> +{
->>>> +	int i;
->>>> +
->>>> +	for (i = 0; i < nr_irqs; i++) {
->>>> +		struct msi_desc *msidesc = irq_get_msi_desc(virq);
->>>> +
->>>> +		if (msidesc)
->>>> +			msidesc->irq = 0;
->>>> +	}
->>>> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
->>>> +}
->>>> +
->>>> +static int msi_domain_activate(struct irq_domain *domain,
->>>> +			       struct irq_data *irq_data)
->>>> +{
->>>> +	int ret = 0;
->>>> +	struct msi_msg msg;
->>>> +
->>>> +	/*
->>>> +	 * irq_data->chip_data is MSI/MSIx offset.
->>>
->>> "MSI-X", as you wrote on the next line.
->>>
->>>> +	 * MSI-X message is written per-IRQ, the offset is always 0.
->>>> +	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
->>>> +	 */
->>>> +	if (!irq_data->chip_data) {
->>>
->>> 	if (irq_data->chip_data)
->>> 		return 0;
->>>
->>> and un-indent the mainline code below, and drop the "ret = 0" init above.
->>>
->>>> +		ret = irq_chip_compose_msi_msg(irq_data, &msg);
->>>> +		if (ret == 0)
->>>
->>> 	if (ret)
->>> 		return ret;
->>>
->>>> +			write_msi_msg(irq_data->irq, &msg);
->>>> +	}
->>>> +
->>>> +	return ret;
->>> 	return 0;
->>>> +}
->>>> +
->>>> +static int msi_domain_deactivate(struct irq_domain *domain,
->>>> +				 struct irq_data *irq_data)
->>>> +{
->>>> +	struct msi_msg msg;
->>>> +
->>>> +	if (irq_data->chip_data) {
->>>> +		memset(&msg, 0, sizeof(msg));
->>>> +		write_msi_msg(irq_data->irq, &msg);
->>>> +	}
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +
->>>> +static struct irq_domain_ops msi_domain_ops = {
->>>> +	.alloc = msi_domain_alloc,
->>>> +	.free = msi_domain_free,
->>>> +	.activate = msi_domain_activate,
->>>> +	.deactivate = msi_domain_deactivate,
->>>> +};
->>>> +
->>>> +struct irq_domain *msi_create_irq_domain(struct irq_domain *parent)
->>>> +{
->>>> +	struct irq_domain *domain;
->>>> +
->>>> +	domain = irq_domain_add_tree(NULL, &msi_domain_ops, NULL);
->>>> +	if (domain)
->>>
->>> 	if (!domain)
->>> 		return NULL;
->>>
->>> and un-indent this:
->>>
->>>> +		domain->parent = parent;
->>>> +
->>>> +	return domain;
->>>> +}
->>>> +
->>>> +int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
->>>> +			      struct pci_dev *dev, void *arg)
->>>> +{
->>>> +	int i, virq;
->>>> +	struct msi_desc *msidesc;
->>>> +	int node = dev_to_node(&dev->dev);
->>>> +
->>>> +	list_for_each_entry(msidesc, &dev->msi_list, list) {
->>>> +		arch_msi_irq_domain_set_hwirq(arg, msi_get_hwirq(dev, msidesc));
->>>> +		virq = irq_domain_alloc_irqs(domain, msidesc->nvec_used,
->>>> +					     node, arg);
->>>> +		if (virq < 0) {
->>>> +			/* Special handling for pci_enable_msi_range(). */
->>>> +			return (type == PCI_CAP_ID_MSI &&
->>>> +				msidesc->nvec_used > 1) ?  1 : -ENOSPC;	
->>>
->>> I think "if" would be easier to read than this ternary expression.
->>>
->>>> +		}
->>>> +		for (i = 0; i < msidesc->nvec_used; i++)
->>>> +			irq_set_msi_desc_off(virq + i, i, msidesc);
->>>> +	}
->>>> +
->>>> +	list_for_each_entry(msidesc, &dev->msi_list, list)
->>>> +		if (msidesc->nvec_used == 1)
->>>> +			dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", virq);
->>>> +		else
->>>> +			dev_dbg(&dev->dev, "irq [%d-%d] for MSI/MSI-X\n",
->>>> +				virq, virq + msidesc->nvec_used - 1);
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
->>>> diff --git a/include/linux/msi.h b/include/linux/msi.h
->>>> index 44f4746d033b..05dcd425f82b 100644
->>>> --- a/include/linux/msi.h
->>>> +++ b/include/linux/msi.h
->>>> @@ -75,4 +75,15 @@ struct msi_chip {
->>>>  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
->>>>  };
->>>>  
->>>> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
->>>
->>> Use a space here, not a tab.
->>>
->>>> +extern struct irq_chip msi_chip;
->>>
->>> I don't think "msi_chip" is a good name.  "Chip" only hints that it's a
->>> semiconductor integrated circuit; it doesn't say anything about what it
->>> does.  I've suggested "msi_controller" elsewhere.
->>>
->>> Why does this need to be exported?  And why should there be only one in a
->>> system?
->>>
->>>> +extern struct irq_domain *msi_create_irq_domain(struct irq_domain *parent);
->>>> +extern int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
->>>> +				     struct pci_dev *dev, void *arg);
->>>> +
->>>> +extern irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg);
->>>> +extern void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq);
->>>
->>> Look at the rest of the file and notice that the existing code does not use
->>> "extern" on function declarations.
->>>
->>>> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
->>>
->>> Use a space here (not a tab), like the #endif just below.
->>>
->>>>  #endif /* LINUX_MSI_H */
->>>> -- 
->>>> 1.7.10.4
->>>>
->>>
->>> .
->>>
->>
->>
-> 
-> .
-> 
+After merging the akpm-current tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+mm/fremap.c: In function 'SYSC_remap_file_pages':
+mm/fremap.c:241:22: error: 'struct address_space' has no member named 'i_mm=
+ap_mutex'
+   mutex_lock(&mapping->i_mmap_mutex);
+                      ^
+mm/fremap.c:247:24: error: 'struct address_space' has no member named 'i_mm=
+ap_mutex'
+   mutex_unlock(&mapping->i_mmap_mutex);
+                        ^
 
--- 
-Thanks!
-Yijing
+Caused by commit 1f8c97e79f66 ("mm: convert i_mmap_mutex to rwsem").
 
+I applied this patch for today (not sure if there is a better way):
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 6 Nov 2014 16:26:41 +1100
+Subject: [PATCH] mm: convert i_mmap_mutex to rwsem fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ mm/fremap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/fremap.c b/mm/fremap.c
+index 9129013732d7..2805d71cf476 100644
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -238,13 +238,13 @@ get_write_lock:
+ 			}
+ 			goto out_freed;
+ 		}
+-		mutex_lock(&mapping->i_mmap_mutex);
++		i_mmap_lock_write(mapping);
+ 		flush_dcache_mmap_lock(mapping);
+ 		vma->vm_flags |=3D VM_NONLINEAR;
+ 		vma_interval_tree_remove(vma, &mapping->i_mmap);
+ 		vma_nonlinear_insert(vma, &mapping->i_mmap_nonlinear);
+ 		flush_dcache_mmap_unlock(mapping);
+-		mutex_unlock(&mapping->i_mmap_mutex);
++		i_mmap_unlock_write(mapping);
+ 	}
+=20
+ 	if (vma->vm_flags & VM_LOCKED) {
+--=20
+2.1.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/SQkIU+9a3=4JgIXNI2LX1AA
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUWwrQAAoJEMDTa8Ir7ZwVZdMP/1ounCfXn1ZPfxzdn0JFyuyL
+L5SvDu4ZdJ1sC5ITaxh1idluh/PdQ+yS3Woz/GsM08WIE8DYBkzPJZurZ7KQyO07
+9ReI2vzr/4iWuoIBcrzbq0ObgatbP4rt6unY/nzFv9ALx6S6ZJMfXKeMCLfb8P1N
+TEw4yl4Lx4d5ohaYH+pB5UeMkVYb2uc5l6D3drMkV7bsGsrGGSpCPLqgKXN4/Jhh
++8F+EwfcqiJ/OpxCThyqHek6/3voTD3krSTCXIWGGUj3Khpqu/iUh7hebJKzKg48
+XUXfhfn6CGHwvQ3mzXVPvUew7TCfXGs7+plDFUYaiUAmxA74f3jMv1ggG5vUinQn
+8WaciZMlK+qoJa9iYZQW+8RCttoBaqfOHyGy532rbUzaN9uqcqx2lu8arHpKD162
+PL2g0Xoc1QVrJP18Ly/aSHG8vMuxKIE+U1njztVN889T/mjSTsVr0Kgo5a9TfBgN
+eUppGLa5JbbHEMb40XwIkWd4fJfa663o2XH5g4rO1QdR30BD0b8MFESUKHwdIPd0
+7102ki0mBbnpx6mu8OYqkKvNrX1mzpKdd0ZX5aOg2SDmmALPT//FjdRNm6uMd9Ui
+vvmHT68DG0LlVI1O87a9X5KbkghJMbQ8lT6tgLacZWnImz7xkymuz9Tt44IZlepP
+/R6BLlhUP13rDTGFwFPr
+=pyd6
+-----END PGP SIGNATURE-----
+
+--Sig_/SQkIU+9a3=4JgIXNI2LX1AA--
