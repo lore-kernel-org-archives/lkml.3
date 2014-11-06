@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaKFXA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:00:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58924 "EHLO
+	id S1752906AbaKFWmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:42:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58907 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaKFWms (ORCPT
+	with ESMTP id S1751631AbaKFWml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:48 -0500
+	Thu, 6 Nov 2014 17:42:41 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Christie <michaelc@cs.wisc.edu>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 065/162] target: Fix APTPL metadata handling for dynamic MappedLUNs
-Date: Thu,  6 Nov 2014 14:35:29 -0800
-Message-Id: <1415313426-9622-66-git-send-email-kamal@canonical.com>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 057/162] ext4: check EA value offset when loading
+Date: Thu,  6 Nov 2014 14:35:21 -0800
+Message-Id: <1415313426-9622-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,101 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit e24805637d2d270d7975502e9024d473de86afdb upstream.
+commit a0626e75954078cfacddb00a4545dde821170bc5 upstream.
 
-This patch fixes a bug in handling of SPC-3 PR Activate Persistence
-across Target Power Loss (APTPL) logic where re-creation of state for
-MappedLUNs from dynamically generated NodeACLs did not occur during
-I_T Nexus establishment.
+When loading extended attributes, check each entry's value offset to
+make sure it doesn't collide with the entries.
 
-It adds the missing core_scsi3_check_aptpl_registration() call during
-core_tpg_check_initiator_node_acl() -> core_tpg_add_node_to_devs() in
-order to replay any pre-loaded APTPL metadata state associated with
-the newly connected SCSI Initiator Port.
+Without this check it is easy to crash the kernel by mounting a
+malicious FS containing a file with an EA wherein e_value_offs = 0 and
+e_value_size > 0 and then deleting the EA, which corrupts the name
+list.
 
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+(See the f_ea_value_crash test's FS image in e2fsprogs for an example.)
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/target_core_device.c | 3 ++-
- drivers/target/target_core_pr.c     | 6 +++---
- drivers/target/target_core_pr.h     | 2 +-
- drivers/target/target_core_tpg.c    | 8 ++++++++
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ fs/ext4/xattr.c | 32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 04e9288..27bee70 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1321,7 +1321,8 @@ int core_dev_add_initiator_node_lun_acl(
- 	 * Check to see if there are any existing persistent reservation APTPL
- 	 * pre-registrations that need to be enabled for this LUN ACL..
- 	 */
--	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, lacl);
-+	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, nacl,
-+					    lacl->mapped_lun);
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index 298e9c8..a20816e 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -189,14 +189,28 @@ ext4_listxattr(struct dentry *dentry, char *buffer, size_t size)
+ }
+ 
+ static int
+-ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
++ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end,
++		       void *value_start)
+ {
+-	while (!IS_LAST_ENTRY(entry)) {
+-		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(entry);
++	struct ext4_xattr_entry *e = entry;
++
++	while (!IS_LAST_ENTRY(e)) {
++		struct ext4_xattr_entry *next = EXT4_XATTR_NEXT(e);
+ 		if ((void *)next >= end)
+ 			return -EIO;
+-		entry = next;
++		e = next;
+ 	}
++
++	while (!IS_LAST_ENTRY(entry)) {
++		if (entry->e_value_size != 0 &&
++		    (value_start + le16_to_cpu(entry->e_value_offs) <
++		     (void *)e + sizeof(__u32) ||
++		     value_start + le16_to_cpu(entry->e_value_offs) +
++		    le32_to_cpu(entry->e_value_size) > end))
++			return -EIO;
++		entry = EXT4_XATTR_NEXT(entry);
++	}
++
  	return 0;
  }
  
-diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
-index 3013287..1205dbd 100644
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -944,10 +944,10 @@ int core_scsi3_check_aptpl_registration(
- 	struct se_device *dev,
- 	struct se_portal_group *tpg,
- 	struct se_lun *lun,
--	struct se_lun_acl *lun_acl)
-+	struct se_node_acl *nacl,
-+	u32 mapped_lun)
- {
--	struct se_node_acl *nacl = lun_acl->se_lun_nacl;
--	struct se_dev_entry *deve = nacl->device_list[lun_acl->mapped_lun];
-+	struct se_dev_entry *deve = nacl->device_list[mapped_lun];
- 
- 	if (dev->dev_reservation_flags & DRF_SPC2_RESERVATIONS)
- 		return 0;
-diff --git a/drivers/target/target_core_pr.h b/drivers/target/target_core_pr.h
-index ed75cdd..14a0a2e 100644
---- a/drivers/target/target_core_pr.h
-+++ b/drivers/target/target_core_pr.h
-@@ -55,7 +55,7 @@ extern int core_scsi3_alloc_aptpl_registration(
- 			unsigned char *, u16, u32, int, int, u8);
- extern int core_scsi3_check_aptpl_registration(struct se_device *,
- 			struct se_portal_group *, struct se_lun *,
--			struct se_lun_acl *);
-+			struct se_node_acl *, u32);
- extern void core_scsi3_free_pr_reg_from_nacl(struct se_device *,
- 					     struct se_node_acl *);
- extern void core_scsi3_free_all_registrations(struct se_device *);
-diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
-index 2a573de..6c4596a 100644
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -40,6 +40,7 @@
- #include <target/target_core_fabric.h>
- 
- #include "target_core_internal.h"
-+#include "target_core_pr.h"
- 
- extern struct se_device *g_lun0_dev;
- 
-@@ -166,6 +167,13 @@ void core_tpg_add_node_to_devs(
- 
- 		core_enable_device_list_for_node(lun, NULL, lun->unpacked_lun,
- 				lun_access, acl, tpg);
-+		/*
-+		 * Check to see if there are any existing persistent reservation
-+		 * APTPL pre-registrations that need to be enabled for this dynamic
-+		 * LUN ACL now..
-+		 */
-+		core_scsi3_check_aptpl_registration(dev, tpg, lun, acl,
-+						    lun->unpacked_lun);
- 		spin_lock(&tpg->tpg_lun_lock);
- 	}
- 	spin_unlock(&tpg->tpg_lun_lock);
+@@ -213,7 +227,8 @@ ext4_xattr_check_block(struct inode *inode, struct buffer_head *bh)
+ 		return -EIO;
+ 	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
+ 		return -EIO;
+-	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
++	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size,
++				       bh->b_data);
+ 	if (!error)
+ 		set_buffer_verified(bh);
+ 	return error;
+@@ -329,7 +344,7 @@ ext4_xattr_ibody_get(struct inode *inode, int name_index, const char *name,
+ 	header = IHDR(inode, raw_inode);
+ 	entry = IFIRST(header);
+ 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
+-	error = ext4_xattr_check_names(entry, end);
++	error = ext4_xattr_check_names(entry, end, entry);
+ 	if (error)
+ 		goto cleanup;
+ 	error = ext4_xattr_find_entry(&entry, name_index, name,
+@@ -457,7 +472,7 @@ ext4_xattr_ibody_list(struct dentry *dentry, char *buffer, size_t buffer_size)
+ 	raw_inode = ext4_raw_inode(&iloc);
+ 	header = IHDR(inode, raw_inode);
+ 	end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
+-	error = ext4_xattr_check_names(IFIRST(header), end);
++	error = ext4_xattr_check_names(IFIRST(header), end, IFIRST(header));
+ 	if (error)
+ 		goto cleanup;
+ 	error = ext4_xattr_list_entries(dentry, IFIRST(header),
+@@ -972,7 +987,8 @@ int ext4_xattr_ibody_find(struct inode *inode, struct ext4_xattr_info *i,
+ 	is->s.here = is->s.first;
+ 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
+ 	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
+-		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
++		error = ext4_xattr_check_names(IFIRST(header), is->s.end,
++					       IFIRST(header));
+ 		if (error)
+ 			return error;
+ 		/* Find the named attribute. */
 -- 
 1.9.1
 
