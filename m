@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaKFStx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:49:53 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:39794 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbaKFStw (ORCPT
+	id S1751585AbaKFSwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:52:02 -0500
+Received: from jablonecka.jablonka.cz ([91.219.244.36]:54867 "EHLO
+	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaKFSwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:49:52 -0500
-From: Dmitry Voytik <voytikd@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Dmitry Voytik <voytikd@gmail.com>
-Subject: [PATCH] ARM: imx: simplify clk_pllv3_prepare()
-Date: Thu,  6 Nov 2014 22:49:32 +0400
-Message-Id: <1415299772-21079-1-git-send-email-voytikd@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 6 Nov 2014 13:52:00 -0500
+Date: Thu, 6 Nov 2014 19:51:57 +0100
+From: Vojtech Pavlik <vojtech@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel Live Patching
+Message-ID: <20141106185157.GB29272@suse.cz>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <20141106184446.GA12779@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106184446.GA12779@infradead.org>
+X-Bounce-Cookie: It's a lemon tree, dear Watson!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ret variable is redundant. Call clk_pllv3_wait_lock() in the end
-return.
+On Thu, Nov 06, 2014 at 10:44:46AM -0800, Christoph Hellwig wrote:
 
-Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
----
- arch/arm/mach-imx/clk-pllv3.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+> On Thu, Nov 06, 2014 at 08:39:06AM -0600, Seth Jennings wrote:
+> > An example patch module can be found here:
+> > https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
+> 
+> Please include the generator for this patch in the kernel tree.
+> Providing interfaces for out of tree modules (or generators) is not
+> how the kernel internal APIs work.
 
-diff --git a/arch/arm/mach-imx/clk-pllv3.c b/arch/arm/mach-imx/clk-pllv3.c
-index 57de74d..0ad6e54 100644
---- a/arch/arm/mach-imx/clk-pllv3.c
-+++ b/arch/arm/mach-imx/clk-pllv3.c
-@@ -69,7 +69,6 @@ static int clk_pllv3_prepare(struct clk_hw *hw)
- {
- 	struct clk_pllv3 *pll = to_clk_pllv3(hw);
- 	u32 val;
--	int ret;
- 
- 	val = readl_relaxed(pll->base);
- 	if (pll->powerup_set)
-@@ -78,11 +77,7 @@ static int clk_pllv3_prepare(struct clk_hw *hw)
- 		val &= ~BM_PLL_POWER;
- 	writel_relaxed(val, pll->base);
- 
--	ret = clk_pllv3_wait_lock(pll);
--	if (ret)
--		return ret;
--
--	return 0;
-+	return clk_pllv3_wait_lock(pll);
- }
- 
- static void clk_pllv3_unprepare(struct clk_hw *hw)
+I don't think this specific example was generated. 
+
+I also don't think including the whole kpatch automation into the kernel
+tree is a viable development model for it. (Same would apply for kGraft
+automation.)
+
+So I believe including one or more human produced examples makes most sense.
+
 -- 
-1.9.1
-
+Vojtech Pavlik
+Director SUSE Labs
