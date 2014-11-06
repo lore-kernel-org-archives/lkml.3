@@ -1,48 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaKFPmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:42:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49359 "EHLO
+	id S1751523AbaKFPoR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:44:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaKFPmb (ORCPT
+	with ESMTP id S1750887AbaKFPoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:42:31 -0500
-Date: Thu, 6 Nov 2014 07:41:20 -0800
+	Thu, 6 Nov 2014 10:44:12 -0500
+Date: Thu, 6 Nov 2014 07:43:01 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
 Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
         devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:rtl8723au: core: Fix error reported by
+Subject: Re: [PATCH] staging:rtl8723au: core: Fix Warning reported by
  checkpatch.
-Message-ID: <20141106154120.GB19605@kroah.com>
+Message-ID: <20141106154301.GC19605@kroah.com>
 References: <wrfjy4rxzk5b.fsf@redhat.com>
- <1415254573-3451-1-git-send-email-sanjeev_sharma@mentor.com>
+ <1415255796-8471-1-git-send-email-sanjeev_sharma@mentor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415254573-3451-1-git-send-email-sanjeev_sharma@mentor.com>
+In-Reply-To: <1415255796-8471-1-git-send-email-sanjeev_sharma@mentor.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please specify the "error" in the subject in some way.
-
-On Thu, Nov 06, 2014 at 11:46:13AM +0530, Sanjeev Sharma wrote:
+On Thu, Nov 06, 2014 at 12:06:36PM +0530, Sanjeev Sharma wrote:
 > This is a patch to the rtw_cmd.c file that fixes following
-> error.
+> Warning by introducing temporary structure.
 > 
-> ERROR: spaces required around that '>' (ctx:WxV)
-> ERROR: that open brace { should be on the previous line
+> WARNING: line over 80 characters
 > 
 > Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
 > ---
->  drivers/staging/rtl8723au/core/rtw_cmd.c | 83 +++++++++++++++-----------------
->  1 file changed, 40 insertions(+), 43 deletions(-)
+>  drivers/staging/rtl8723au/core/rtw_cmd.c | 123 +++++++++++++++----------------
+>  1 file changed, 60 insertions(+), 63 deletions(-)
 
-This does two different things, please make it different patches.
+Same as the other patch, give us a hint as to the warning in the
+subject.
 
-And you sent 2 patches, with no hint as to which one comes before which.
-Please resend all of them, correctly numbered in a series, so that I
-have a chance to get the order correct when applying them.
+
+> 
+> diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+> index 4eaa502..6186575 100644
+> --- a/drivers/staging/rtl8723au/core/rtw_cmd.c
+> +++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
+> @@ -919,34 +919,34 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+>  	u8 bHigherBusyTxTraffic = false;
+>  	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
+>  	int BusyThreshold = 100;
+> +	struct rt_link_detect *ldi = &pmlmepriv->LinkDetectInfo;
+> +
+>  	/*  */
+>  	/*  Determine if our traffic is busy now */
+>  	/*  */
+>  	if (check_fwstate(pmlmepriv, _FW_LINKED)) {
+>  		if (rtl8723a_BT_coexist(padapter))
+>  			BusyThreshold = 50;
+> -		else if (pmlmepriv->LinkDetectInfo.bBusyTraffic)
+> +		else if (ldi->bBusyTraffic)
+>  			BusyThreshold = 75;
+>  		/*  if we raise bBusyTraffic in last watchdog, using
+>  		    lower threshold. */
+> -		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > BusyThreshold ||
+> -		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > BusyThreshold) {
+> +		if (ldi->NumRxOkInPeriod > BusyThreshold ||
+> +		    ldi->NumTxOkInPeriod > BusyThreshold) {
+>  			bBusyTraffic = true;
+>  
+> -			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
+> -			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
+> +			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
+>  				bRxBusyTraffic = true;
+>  			else
+>  				bTxBusyTraffic = true;
+>  		}
+>  
+>  		/*  Higher Tx/Rx data. */
+> -		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > 4000 ||
+> -		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > 4000) {
+> +		if (ldi->NumRxOkInPeriod > 4000 ||
+> +		    ldi->NumTxOkInPeriod > 4000) {
+>  			bHigherBusyTraffic = true;
+>  
+> -			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
+> -			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
+> +			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
+>  				bHigherBusyRxTraffic = true;
+>  			else
+>  				bHigherBusyTxTraffic = true;
+> @@ -955,9 +955,9 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+>  		if (!rtl8723a_BT_coexist(padapter) ||
+>  		    !rtl8723a_BT_using_antenna_1(padapter)) {
+>  		/*  check traffic for  powersaving. */
+> -			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
+> -			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
+> -			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
+> +			if (((ldi->NumRxUnicastOkInPeriod +
+> +			      ldi->NumTxOkInPeriod) > 8) ||
+> +			    ldi->NumRxUnicastOkInPeriod > 2)
+>  				bEnterPS = false;
+>  			else
+>  				bEnterPS = true;
+> @@ -971,15 +971,15 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+>  	} else
+>  		LPS_Leave23a(padapter);
+>  
+> -	pmlmepriv->LinkDetectInfo.NumRxOkInPeriod = 0;
+> -	pmlmepriv->LinkDetectInfo.NumTxOkInPeriod = 0;
+> -	pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod = 0;
+> -	pmlmepriv->LinkDetectInfo.bBusyTraffic = bBusyTraffic;
+> -	pmlmepriv->LinkDetectInfo.bTxBusyTraffic = bTxBusyTraffic;
+> -	pmlmepriv->LinkDetectInfo.bRxBusyTraffic = bRxBusyTraffic;
+> -	pmlmepriv->LinkDetectInfo.bHigherBusyTraffic = bHigherBusyTraffic;
+> -	pmlmepriv->LinkDetectInfo.bHigherBusyRxTraffic = bHigherBusyRxTraffic;
+> -	pmlmepriv->LinkDetectInfo.bHigherBusyTxTraffic = bHigherBusyTxTraffic;
+> +	ldi->NumRxOkInPeriod = 0;
+> +	ldi->NumTxOkInPeriod = 0;
+> +	ldi->NumRxUnicastOkInPeriod = 0;
+> +	ldi->bBusyTraffic = bBusyTraffic;
+> +	ldi->bTxBusyTraffic = bTxBusyTraffic;
+> +	ldi->bRxBusyTraffic = bRxBusyTraffic;
+> +	ldi->bHigherBusyTraffic = bHigherBusyTraffic;
+> +	ldi->bHigherBusyRxTraffic = bHigherBusyRxTraffic;
+> +	ldi->bHigherBusyTxTraffic = bHigherBusyTxTraffic;
+>  }
+>  
+>  static void dynamic_chk_wk_hdl(struct rtw_adapter *padapter, u8 *pbuf, int sz)
+> @@ -1017,46 +1017,44 @@ static void lps_ctrl_wk_hdl(struct rtw_adapter *padapter, u8 lps_ctrl_type)
+>  	    check_fwstate(pmlmepriv, WIFI_ADHOC_STATE))
+>  		return;
+>  
+> -	switch (lps_ctrl_type)
+> -	{
+> -		case LPS_CTRL_SCAN:
+> -			rtl8723a_BT_wifiscan_notify(padapter, true);
+> -			if (!rtl8723a_BT_using_antenna_1(padapter)) {
+> -				if (check_fwstate(pmlmepriv, _FW_LINKED))
+> -					LPS_Leave23a(padapter);
+> -			}
+> -			break;
+> -		case LPS_CTRL_JOINBSS:
+> -			LPS_Leave23a(padapter);
+> -			break;
+> -		case LPS_CTRL_CONNECT:
+> -			mstatus = 1;/* connect */
+> -			/*  Reset LPS Setting */
+> -			padapter->pwrctrlpriv.LpsIdleCount = 0;
+> -			rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
+> -			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
+> -			break;
+> -		case LPS_CTRL_DISCONNECT:
+> -			mstatus = 0;/* disconnect */
+> -			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
+> -			if (!rtl8723a_BT_using_antenna_1(padapter))
+> -				LPS_Leave23a(padapter);
+> -			rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
+> -			break;
+> -		case LPS_CTRL_SPECIAL_PACKET:
+> -			pwrpriv->DelayLPSLastTimeStamp = jiffies;
+> -			rtl8723a_BT_specialpacket_notify(padapter);
+> -			if (!rtl8723a_BT_using_antenna_1(padapter))
+> -				LPS_Leave23a(padapter);
+> -			break;
+> -		case LPS_CTRL_LEAVE:
+> -			rtl8723a_BT_lps_leave(padapter);
+> -			if (!rtl8723a_BT_using_antenna_1(padapter))
+> +	switch (lps_ctrl_type) {
+> +	case LPS_CTRL_SCAN:
+> +		rtl8723a_BT_wifiscan_notify(padapter, true);
+> +		if (!rtl8723a_BT_using_antenna_1(padapter)) {
+> +			if (check_fwstate(pmlmepriv, _FW_LINKED))
+>  				LPS_Leave23a(padapter);
+
+You are doing more than one thing here, something you did not specify in
+your changelog above, which isn't ok :(
+
+Please fix up and resend.
+
+thanks,
+
+greg k-h
