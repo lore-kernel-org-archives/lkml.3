@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaKFSqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:46:40 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:51275 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaKFSqj (ORCPT
+	id S1751590AbaKFSrC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:47:02 -0500
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:33987 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751232AbaKFSq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:46:39 -0500
-From: Dmitry Voytik <voytikd@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Dmitry Voytik <voytikd@gmail.com>
-Subject: [PATCH] ARM: imx6q: drop unnecessary semicolon
-Date: Thu,  6 Nov 2014 22:46:20 +0400
-Message-Id: <1415299580-20790-1-git-send-email-voytikd@gmail.com>
+	Thu, 6 Nov 2014 13:46:59 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwNAMrAW1RbsGyn/2dsb2JhbABbgw6BLbdbCwUBdJoTgSIXAQEBAQF9hF8jgRo3iEUBwBePQiyGOIpZHYQ1BZ4UgTKLS4IphzOBRwE2IIFbPC+BBiOBIgEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Fabian Frederick <fabf@skynet.be>,
+        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org
+Subject: [PATCH V2 linux-next] ipv4: add kernel parameter tcpmhash_entries
+Date: Thu,  6 Nov 2014 19:46:50 +0100
+Message-Id: <1415299611-5373-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop unnecessary semicolon after closing curly bracket.
+This patch also adds a reference to ip-sysctl.txt
+where TCP metrics setup is described
 
-Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- arch/arm/mach-imx/clk-imx6q.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+V2: Add a reference to ip-sysctl and update description.
+(suggested by Jonathan Corbet).
 
-diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
-index 1412daf..43f376f 100644
---- a/arch/arm/mach-imx/clk-imx6q.c
-+++ b/arch/arm/mach-imx/clk-imx6q.c
-@@ -145,7 +145,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
- 		post_div_table[2].div = 1;
- 		video_div_table[1].div = 1;
- 		video_div_table[2].div = 1;
--	};
-+	}
+ Documentation/kernel-parameters.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 3c5a178..e8b25d0 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3434,6 +3434,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			neutralize any effect of /proc/sys/kernel/sysrq.
+ 			Useful for debugging.
  
- 	clk[IMX6QDL_PLL1_BYPASS_SRC] = imx_clk_mux("pll1_bypass_src", base + 0x00, 14, 2, pll_bypass_src_sels, ARRAY_SIZE(pll_bypass_src_sels));
- 	clk[IMX6QDL_PLL2_BYPASS_SRC] = imx_clk_mux("pll2_bypass_src", base + 0x30, 14, 2, pll_bypass_src_sels, ARRAY_SIZE(pll_bypass_src_sels));
++	tcpmhash_entries= [KNL,NET]
++			Set the number of tcp_metrics_hash slots.
++			Default value is 8192 or 16384 depending on total
++			ram pages. This is used to specify the TCP metrics
++			cache size. See Documentation/networking/ip-sysctl.txt
++			"tcp_no_metrics_save" section for more details.
++
+ 	tdfx=		[HW,DRM]
+ 
+ 	test_suspend=	[SUSPEND][,N]
 -- 
 1.9.1
 
