@@ -1,270 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaKFEk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 23:40:57 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33728 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaKFEk4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 23:40:56 -0500
-Message-ID: <545AFBD1.9080704@hitachi.com>
-Date: Thu, 06 Nov 2014 13:40:49 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751392AbaKFEnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 23:43:39 -0500
+Received: from ozlabs.org ([103.22.144.67]:54171 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002AbaKFEni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 23:43:38 -0500
+Date: Thu, 6 Nov 2014 15:43:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tapasweni Pathak <tapaswenipathak@gmail.com>,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the y2038 tree with the staging tree
+Message-ID: <20141106154311.3907b565@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] ftracetest: Add basic event tracing test cases
-References: <1415239470-28705-1-git-send-email-namhyung@kernel.org> <1415239470-28705-3-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1415239470-28705-3-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/9QcPEsjF=6zU8wKNzpctXO="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/06 11:04), Namhyung Kim wrote:
-> This patch adds basic event tracing tests like enable/disable with
-> top-level, subsystem-level and individual event files.
-> 
->   # ./ftracetest
->   === Ftrace unit tests ===
->   [1] Basic trace file check	[PASS]
->   [2] Basic trace clock test	[PASS]
->   [3] Basic event tracing check	[PASS]
->   [4] Basic test for tracers	[PASS]
->   [5] event tracing - enable/disable with top level files	[PASS]
->   [6] event tracing - enable/disable with subsystem level files	[PASS]
->   [7] event tracing - enable/disable with event level files	[PASS]
->   [8] ftrace - function graph filters	[PASS]
->   [9] ftrace - function profiler with function tracing	[PASS]
->   [10] ftrace - function graph filters with stack tracer	[PASS]
->   [11] Kretprobe dynamic event with arguments	[PASS]
->   [12] Kprobe dynamic event - busy event check	[PASS]
->   [13] Kprobe dynamic event with arguments	[PASS]
->   [14] Kprobe dynamic event - adding and removing	[PASS]
-> 
->   # of passed:  14
->   # of failed:  0
->   # of unresolved:  0
->   # of untested:  0
->   # of unsupported:  0
->   # of xfailed:  0
->   # of undefined(test bug):  0
+--Sig_/9QcPEsjF=6zU8wKNzpctXO=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Nice :)
+Hi Arnd,
 
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Today's linux-next merge of the y2038 tree got a conflict in
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c between commit
+ecdd21c7b982 ("staging: ft1000: Whitespace neatening") from the staging
+tree and commit 4115d2b27a50 ("staging: ft1000: Replace timeval and
+time_t with time64_t") from the y2038 tree.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Thank you,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> ---
->  .../selftests/ftrace/test.d/00basic/basic4.tc      |  5 ++
->  .../selftests/ftrace/test.d/event/event-enable.tc  | 53 ++++++++++++++++++++++
->  .../ftrace/test.d/event/subsystem-enable.tc        | 53 ++++++++++++++++++++++
->  .../ftrace/test.d/event/toplevel-enable.tc         | 47 +++++++++++++++++++
->  4 files changed, 158 insertions(+)
->  create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic4.tc
->  create mode 100644 tools/testing/selftests/ftrace/test.d/event/event-enable.tc
->  create mode 100644 tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc
->  create mode 100644 tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc
-> 
-> diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic4.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic4.tc
-> new file mode 100644
-> index 000000000000..fd9c49a13612
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/test.d/00basic/basic4.tc
-> @@ -0,0 +1,5 @@
-> +#!/bin/sh
-> +# description: Basic event tracing check
-> +test -f available_events -a -f set_event -a -d events
-> +# check scheduler events are available
-> +grep -q sched available_events && exit 0 || exit -1
-> \ No newline at end of file
-> diff --git a/tools/testing/selftests/ftrace/test.d/event/event-enable.tc b/tools/testing/selftests/ftrace/test.d/event/event-enable.tc
-> new file mode 100644
-> index 000000000000..668616d9bb03
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/test.d/event/event-enable.tc
-> @@ -0,0 +1,53 @@
-> +#!/bin/sh
-> +# description: event tracing - enable/disable with event level files
-> +
-> +do_reset() {
-> +    echo > set_event
-> +    clear_trace
-> +}
-> +
-> +fail() { #msg
-> +    do_reset
-> +    echo $1
-> +    exit -1
-> +}
-> +
-> +if [ ! -f set_event -o ! -d events/sched ]; then
-> +    echo "event tracing is not supported"
-> +    exit_unsupported
-> +fi
-> +
-> +reset_tracer
-> +do_reset
-> +
-> +echo 'sched:sched_switch' > set_event
-> +usleep 1
-> +
-> +count=`cat trace | grep sched_switch | wc -l`
-> +if [ $count -eq 0 ]; then
-> +    fail "sched_switch events are not recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +echo 1 > events/sched/sched_switch/enable
-> +usleep 1
-> +
-> +count=`cat trace | grep sched_switch | wc -l`
-> +if [ $count -eq 0 ]; then
-> +    fail "sched_switch events are not recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +echo 0 > events/sched/sched_switch/enable
-> +usleep 1
-> +
-> +count=`cat trace | grep sched_switch | wc -l`
-> +if [ $count -ne 0 ]; then
-> +    fail "sched_switch events should not be recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +exit 0
-> diff --git a/tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc b/tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc
-> new file mode 100644
-> index 000000000000..655c415b6e7f
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/test.d/event/subsystem-enable.tc
-> @@ -0,0 +1,53 @@
-> +#!/bin/sh
-> +# description: event tracing - enable/disable with subsystem level files
-> +
-> +do_reset() {
-> +    echo > set_event
-> +    clear_trace
-> +}
-> +
-> +fail() { #msg
-> +    do_reset
-> +    echo $1
-> +    exit -1
-> +}
-> +
-> +if [ ! -f set_event -o ! -d events/sched ]; then
-> +    echo "event tracing is not supported"
-> +    exit_unsupported
-> +fi
-> +
-> +reset_tracer
-> +do_reset
-> +
-> +echo 'sched:*' > set_event
-> +usleep 1
-> +
-> +count=`cat trace | grep -v ^# | awk '{ print $5 }' | sort -u | wc -l`
-> +if [ $count -lt 3 ]; then
-> +    fail "at least fork, exec and exit events should be recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +echo 1 > events/sched/enable
-> +usleep 1
-> +
-> +count=`cat trace | grep -v ^# | awk '{ print $5 }' | sort -u | wc -l`
-> +if [ $count -lt 3 ]; then
-> +    fail "at least fork, exec and exit events should be recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +echo 0 > events/sched/enable
-> +usleep 1
-> +
-> +count=`cat trace | grep -v ^# | awk '{ print $5 }' | sort -u | wc -l`
-> +if [ $count -ne 0 ]; then
-> +    fail "any of scheduler events should not be recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +exit 0
-> diff --git a/tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc b/tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc
-> new file mode 100644
-> index 000000000000..480845774007
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/test.d/event/toplevel-enable.tc
-> @@ -0,0 +1,47 @@
-> +#!/bin/sh
-> +# description: event tracing - enable/disable with top level files
-> +
-> +do_reset() {
-> +    echo > set_event
-> +    clear_trace
-> +}
-> +
-> +fail() { #msg
-> +    do_reset
-> +    echo $1
-> +    exit -1
-> +}
-> +
-> +if [ ! -f available_events -o ! -f set_event -o ! -d events ]; then
-> +    echo "event tracing is not supported"
-> +    exit_unsupported
-> +fi
-> +
-> +reset_tracer
-> +do_reset
-> +
-> +echo '*:*' > set_event
-> +count=`cat trace | grep -v ^# | wc -l`
-> +if [ $count -eq 0 ]; then
-> +    fail "none of events are recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +echo 1 > events/enable
-> +count=`cat trace | grep -v ^# | wc -l`
-> +if [ $count -eq 0 ]; then
-> +    fail "none of events are recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +echo 0 > events/enable
-> +count=`cat trace | grep -v ^# | wc -l`
-> +if [ $count -ne 0 ]; then
-> +    fail "any of events should not be recorded"
-> +fi
-> +
-> +do_reset
-> +
-> +exit 0
-> 
+diff --cc drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 11dbe369e18b,9a9655cdc64d..000000000000
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@@ -1019,29 -1055,19 +1019,29 @@@ static void ft1000_proc_drvmsg(struct n
+  			info->CardReady =3D 1;
+  			break;
+  		case MEDIA_STATE:
+ -			pmediamsg =3D (struct media_msg *) & cmdbuffer[0];
+ +			pmediamsg =3D (struct media_msg *)&cmdbuffer[0];
+  			if (info->ProgConStat !=3D 0xFF) {
+ -			if (pmediamsg->state) {
+ -				DEBUG(1, "Media is up\n");
+ -				if (info->mediastate =3D=3D 0) {
+ -					netif_carrier_on(dev);
+ -					netif_wake_queue(dev);
+ -					info->mediastate =3D 1;
+ -					time =3D get_seconds();
+ -					info->ConTm =3D time;
+ +				if (pmediamsg->state) {
+ +					pr_debug("Media is up\n");
+ +					if (info->mediastate =3D=3D 0) {
+ +						netif_carrier_on(dev);
+ +						netif_wake_queue(dev);
+ +						info->mediastate =3D 1;
+- 						do_gettimeofday(&tv);
+- 						info->ConTm =3D tv.tv_sec;
+++						time =3D get_seconds();
+++						info->ConTm =3D time;
+ +					}
+ +				} else {
+ +					pr_debug("Media is down\n");
+ +					if (info->mediastate =3D=3D 1) {
+ +						info->mediastate =3D 0;
+ +						netif_carrier_off(dev);
+ +						netif_stop_queue(dev);
+ +						info->ConTm =3D 0;
+ +					}
+  				}
+ -			} else {
+ -				DEBUG(1, "Media is down\n");
+ +			}
+ +			else {
+ +				pr_debug("Media is down\n");
+  				if (info->mediastate =3D=3D 1) {
+  					info->mediastate =3D 0;
+  					netif_carrier_off(dev);
 
+--Sig_/9QcPEsjF=6zU8wKNzpctXO=
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUWvxlAAoJEMDTa8Ir7ZwVV2cP/iFE7QgZO+TJH0xRdoaCx7gm
+OAXggw/GIGP9XndrMPhcFDfIPhTq4+QpCYMOkZHak1rrCwNisI0W+MOlSn7DG8Pq
+MPQlZmOAgRt8zhE6POPPtRkl04sXC9Lrw+5YFJg807L1ICDB2qu+nuPtxOgA5/rp
++DQu1JXHMraz6egoQ8cubEW7Fpi7iK3Ykrj8Q3wWCEKX+F8238M++/nG7wUbD/72
+B0QGBDQqT2rntOcNx60lPYcxsjl8Ogxd1eoikO7bPV+fwgwIz3BBzxt4IMYHjuQm
+bfX9JPMDxngJ6J4acpAZyHxizXY6QPW1IudsI4EqXiQvlQWAdb8v+8jJP9blxAKg
+F4avi7sOzP54o/5PJy4/su4mp0ZEuXC3AyrDNE5f2kQ+SI+la1VKL0SwtJQvcrhg
+VE3ehw5/ATWsQwaMkn8apfpY5gi9WB0LeoC7KiAn3zJYIe4HFrUIrAi7SETjP19d
+xzVCMRmxuAV44pCo08pdpjVQLR6ueIHHLJbJMNFSHF7FlHmhxJTQ6itH/vcazRYy
+7F/Pv+hvB4vgq80vQneH4tVjsMg61R4Eglou+Fvl4oBHniqjfSHgphCmH1lITAvD
+WXQ6I5xZhBYkZT0wIx1+RJomYzbpsnlii2SQ6MIjp8/RC2Ec4tvg89IWakMvSERD
+3VsbxefQoZ5Gyb0lrbX8
+=59Uq
+-----END PGP SIGNATURE-----
 
+--Sig_/9QcPEsjF=6zU8wKNzpctXO=--
