@@ -1,124 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373AbaKFMjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:39:17 -0500
-Received: from smtp.eu1.fugro.com ([46.34.88.151]:49245 "EHLO
-	smtp.eu1.fugro.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160AbaKFMjM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:39:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq8EADdrW1QKCmUW/2dsb2JhbABbhDvSbAKBNQEBAQEBAXyEAgEBAQECATAKPwUHBAIBCA0EBAEBAQoGFwEGAR4nCQgBAQQBEgiIMM1fAQEBAQEBAQEBAQEBAQEBAQEBAQEBF41Cgx4xBwaDJ4EeBYUdA40DA5NMQYRejBCBRWuBBiOBIgEBAQ
-X-IPAS-Result: Aq8EADdrW1QKCmUW/2dsb2JhbABbhDvSbAKBNQEBAQEBAXyEAgEBAQECATAKPwUHBAIBCA0EBAEBAQoGFwEGAR4nCQgBAQQBEgiIMM1fAQEBAQEBAQEBAQEBAQEBAQEBAQEBF41Cgx4xBwaDJ4EeBYUdA40DA5NMQYRejBCBRWuBBiOBIgEBAQ
-X-IronPort-AV: E=Sophos;i="5.07,325,1413244800"; 
-   d="scan'208";a="43216691"
-X-IRP-Internal: 1
-X-IRP-FugroSender: 200661
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
-Date: Thu, 6 Nov 2014 13:39:07 +0100
-Message-ID: <C89EFD3CD56F64468D3D206D683A8D22039FFE16@ldam-msx2.fugro-nl.local>
-In-Reply-To: <20141106120416.GA20162@afflict.kos.to>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on arndale platform
-Thread-Index: Ac/5ucvdT4mmpuGZSca6FJo0mlFwKQAAFJlQ
-References: <20141104072236.GA559@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <C89EFD3CD56F64468D3D206D683A8D22039FFC5F@ldam-msx2.fugro-nl.local> <20141105150258.GR23178@opensource.wolfsonmicro.com> <20141106090651.GA19109@afflict.kos.to> <20141106100104.GS23178@opensource.wolfsonmicro.com> <20141106120416.GA20162@afflict.kos.to>
-From: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
-To: "Riku Voipio" <riku.voipio@iki.fi>,
-        "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>
-Cc: <freddy@asix.com.tw>, <davem@davemloft.net>, <linux-usb@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>
+	id S1751427AbaKFMkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:40:20 -0500
+Received: from 8bytes.org ([81.169.241.247]:49008 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115AbaKFMkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:40:17 -0500
+From: Joerg Roedel <joro@8bytes.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oded.Gabbay@amd.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH] iommu/amd: Use new invalidate_range mmu-notifier
+Date: Thu,  6 Nov 2014 13:40:08 +0100
+Message-Id: <1415277608-23688-1-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Riku and Charles,
+From: Joerg Roedel <jroedel@suse.de>
 
-I tried this with my original patch and the suggested patch applied,
-this seems to work for me too.
+Make use of the new invalidate_range mmu_notifier call-back
+and remove the old logic of assigning an empty page-table
+between invalidate_range_start and invalidate_range_end.
 
-One thing that bothers me, is the suspend / resume situation; usbnet.c
-seems to call the bind( ) on probe( ). Suspend / resume do not seem to
-call bind( ) directly.
+Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ drivers/iommu/amd_iommu_v2.c | 61 +++++++-------------------------------------
+ 1 file changed, 9 insertions(+), 52 deletions(-)
 
-As Riku pointed out, the original patch I reverted was because of
-suspend/resume issues. I wonder if this will still work? 
-
-Kind regards,
-
-Michel Stam
-
------Original Message-----
-From: Riku Voipio [mailto:riku.voipio@iki.fi] 
-Sent: Thursday, November 06, 2014 13:04 PM
-To: Charles Keepax
-Cc: Riku Voipio; Stam, Michel [FINT]; freddy@asix.com.tw;
-davem@davemloft.net; linux-usb@vger.kernel.org; netdev@vger.kernel.org;
-linux-kernel@vger.kernel.org; linux-samsung-soc@vger.kernel.org
-Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net
-on arndale platform
-
-On Thu, Nov 06, 2014 at 10:01:04AM +0000, Charles Keepax wrote:
-> On Thu, Nov 06, 2014 at 11:06:51AM +0200, Riku Voipio wrote:
-> > The asix on arndale comes semi-configured from u-boot, which I guess
-
-> > is not the state kernel expects it to come in. At least in my case 
-> > where I use tftp from u-boot to load my kernel.
-> > 
-> > So probably the full reset is needed here to make the asix chip come
-
-> > to a truly pristine state.
-> > 
-> > The commit that Michel partially reverted (by returning to use 
-> > ax88772_link_reset instead of ax88772_reset), indicates that a 
-> > strong reset is needed for suspend/resume as well:
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 90d734b..f724bdc 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -92,13 +92,6 @@ static spinlock_t state_lock;
  
-> Ok I think I have cracked this one. I am pretty sure you are right 
-> that the USB comes to us in a strange state and needs a full reset, 
-> but that only needs to happen once when the driver is bound in. So 
-> there is some code in ax88772_bind that appears to try to reset the 
-> device but does a lot less than ax88772_reset and I think that must be
+ static struct workqueue_struct *iommu_wq;
+ 
+-/*
+- * Empty page table - Used between
+- * mmu_notifier_invalidate_range_start and
+- * mmu_notifier_invalidate_range_end
+- */
+-static u64 *empty_page_table;
+-
+ static void free_pasid_states(struct device_state *dev_state);
+ 
+ static u16 device_id(struct pci_dev *pdev)
+@@ -418,46 +411,21 @@ static void mn_invalidate_page(struct mmu_notifier *mn,
+ 	__mn_flush_page(mn, address);
+ }
+ 
+-static void mn_invalidate_range_start(struct mmu_notifier *mn,
+-				      struct mm_struct *mm,
+-				      unsigned long start, unsigned long end)
+-{
+-	struct pasid_state *pasid_state;
+-	struct device_state *dev_state;
+-	unsigned long flags;
+-
+-	pasid_state = mn_to_state(mn);
+-	dev_state   = pasid_state->device_state;
+-
+-	spin_lock_irqsave(&pasid_state->lock, flags);
+-	if (pasid_state->mmu_notifier_count == 0) {
+-		amd_iommu_domain_set_gcr3(dev_state->domain,
+-					  pasid_state->pasid,
+-					  __pa(empty_page_table));
+-	}
+-	pasid_state->mmu_notifier_count += 1;
+-	spin_unlock_irqrestore(&pasid_state->lock, flags);
+-}
+-
+-static void mn_invalidate_range_end(struct mmu_notifier *mn,
+-				    struct mm_struct *mm,
+-				    unsigned long start, unsigned long end)
++static void mn_invalidate_range(struct mmu_notifier *mn,
++				struct mm_struct *mm,
++				unsigned long start, unsigned long end)
+ {
+ 	struct pasid_state *pasid_state;
+ 	struct device_state *dev_state;
+-	unsigned long flags;
+ 
+ 	pasid_state = mn_to_state(mn);
+ 	dev_state   = pasid_state->device_state;
+ 
+-	spin_lock_irqsave(&pasid_state->lock, flags);
+-	pasid_state->mmu_notifier_count -= 1;
+-	if (pasid_state->mmu_notifier_count == 0) {
+-		amd_iommu_domain_set_gcr3(dev_state->domain,
+-					  pasid_state->pasid,
+-					  __pa(pasid_state->mm->pgd));
+-	}
+-	spin_unlock_irqrestore(&pasid_state->lock, flags);
++	if ((start ^ (end - 1)) < PAGE_SIZE)
++		amd_iommu_flush_page(dev_state->domain, pasid_state->pasid,
++				     start);
++	else
++		amd_iommu_flush_tlb(dev_state->domain, pasid_state->pasid);
+ }
+ 
+ static void mn_release(struct mmu_notifier *mn, struct mm_struct *mm)
+@@ -482,8 +450,7 @@ static struct mmu_notifier_ops iommu_mn = {
+ 	.release		= mn_release,
+ 	.clear_flush_young      = mn_clear_flush_young,
+ 	.invalidate_page        = mn_invalidate_page,
+-	.invalidate_range_start = mn_invalidate_range_start,
+-	.invalidate_range_end   = mn_invalidate_range_end,
++	.invalidate_range       = mn_invalidate_range,
+ };
+ 
+ static void set_pri_tag_status(struct pasid_state *pasid_state,
+@@ -954,18 +921,10 @@ static int __init amd_iommu_v2_init(void)
+ 	if (iommu_wq == NULL)
+ 		goto out;
+ 
+-	ret = -ENOMEM;
+-	empty_page_table = (u64 *)get_zeroed_page(GFP_KERNEL);
+-	if (empty_page_table == NULL)
+-		goto out_destroy_wq;
+-
+ 	amd_iommu_register_ppr_notifier(&ppr_nb);
+ 
+ 	return 0;
+ 
+-out_destroy_wq:
+-	destroy_workqueue(iommu_wq);
+-
+ out:
+ 	return ret;
+ }
+@@ -999,8 +958,6 @@ static void __exit amd_iommu_v2_exit(void)
+ 	}
+ 
+ 	destroy_workqueue(iommu_wq);
+-
+-	free_page((unsigned long)empty_page_table);
+ }
+ 
+ module_init(amd_iommu_v2_init);
+-- 
+1.9.1
 
-> the problem. Applying the following on top of the patch we have been 
-> debating I think will make everything work for all of us:
-
-The patch below on top of 3.18-rc3 fixes arndale network for me.
-
-Tested-by: Riku Voipio <riku.voipio@linaro.org>
-
-> --- a/drivers/net/usb/asix_devices.c
-> +++ b/drivers/net/usb/asix_devices.c
-> @@ -465,19 +465,7 @@ static int ax88772_bind(struct usbnet *dev, 
-> struct usb_interface *in
->                 return ret;
->         }
-> 
-> -       ret = asix_sw_reset(dev, AX_SWRESET_IPPD | AX_SWRESET_PRL);
-> -       if (ret < 0)
-> -               return ret;
-> -
-> -       msleep(150);
-> -
-> -       ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
-> -       if (ret < 0)
-> -               return ret;
-> -
-> -       msleep(150);
-> -
-> -       ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL :
-AX_SWRESET_PRTE);
-> +       ax88772_reset(dev);
-> 
-> If you guys could test that and let me know how you get on I will send
-
-> in a proper patch if it looks good.
-> 
-> Thanks,
-> Charles
