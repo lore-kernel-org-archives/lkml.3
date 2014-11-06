@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaKFPKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:10:02 -0500
+	id S1751430AbaKFPKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:10:21 -0500
 Received: from mga11.intel.com ([192.55.52.93]:37579 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592AbaKFPJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:09:49 -0500
+	id S1751588AbaKFPJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:09:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="627702062"
+   d="scan'208";a="627702005"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 14/14] perf, x86: expose LBR callstack to user space tool
-Date: Thu,  6 Nov 2014 09:54:31 -0500
-Message-Id: <1415285671-16894-15-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V8 13/14] perf, x86: Discard zero length call entries in LBR call stack
+Date: Thu,  6 Nov 2014 09:54:30 -0500
+Message-Id: <1415285671-16894-14-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
 References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
@@ -24,114 +24,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra (Intel) <peterz@infradead.org>
+From: Yan, Zheng <zheng.z.yan@intel.com>
 
-With LBR call stack feature enable, there are three callchain options.
-Enable the 3rd callchain options LBR callstack to user space tool.
+"Zero length call" uses the attribute of the call instruction to push
+the immediate instruction pointer on to the stack and then pops off
+that address into a register. This is accomplished without any matching
+return instruction. It confuses the hardware and make the recorded call
+stack incorrect.
 
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+We can partially resolve this issue by: decode call instructions and
+discard any zero length call entry in the LBR stack.
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.h           |  8 --------
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  8 ++++----
- include/uapi/linux/perf_event.h            | 14 ++++++--------
- 3 files changed, 10 insertions(+), 20 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index b4568e5..8b90803 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -517,14 +517,6 @@ struct x86_perf_task_context {
- 	int lbr_stack_state;
- };
- 
--enum {
--	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
--	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
--
--	PERF_SAMPLE_BRANCH_CALL_STACK =
--				1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
--};
--
- #define x86_add_quirk(func_)						\
- do {									\
- 	static struct x86_pmu_quirk __quirk __initdata = {		\
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 7ed04f8..511c063 100644
+index 45a63a4..7ed04f8 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -537,7 +537,7 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
- 	u64 mask = 0, v;
- 	int i;
- 
--	for (i = 0; i < PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE; i++) {
-+	for (i = 0; i < PERF_SAMPLE_BRANCH_MAX_SHIFT; i++) {
- 		if (!(br_type & (1ULL << i)))
- 			continue;
- 
-@@ -808,7 +808,7 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- /*
-  * Map interface branch filters onto LBR filters
-  */
--static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
-+static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX_SHIFT] = {
- 	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
- 	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
- 	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
-@@ -827,7 +827,7 @@ static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
- 	[PERF_SAMPLE_BRANCH_COND_SHIFT]     = LBR_JCC,
+@@ -94,7 +94,8 @@ enum {
+ 	X86_BR_ABORT		= 1 << 12,/* transaction abort */
+ 	X86_BR_IN_TX		= 1 << 13,/* in transaction */
+ 	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
+-	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
++	X86_BR_ZERO_CALL	= 1 << 15,/* zero length call */
++	X86_BR_CALL_STACK	= 1 << 16,/* call stack */
  };
  
--static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
-+static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX_SHIFT] = {
- 	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
- 	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
- 	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
-@@ -839,7 +839,7 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
- 	[PERF_SAMPLE_BRANCH_COND_SHIFT]		= LBR_JCC,
- };
+ #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
+@@ -111,13 +112,15 @@ enum {
+ 	 X86_BR_JMP	 |\
+ 	 X86_BR_IRQ	 |\
+ 	 X86_BR_ABORT	 |\
+-	 X86_BR_IND_CALL)
++	 X86_BR_IND_CALL |\
++	 X86_BR_ZERO_CALL)
  
--static const int hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
-+static const int hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX_SHIFT] = {
- 	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
- 	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
- 	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index c610960..bc22a6b 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -164,6 +164,7 @@ enum perf_branch_sample_type_shift {
- 	PERF_SAMPLE_BRANCH_IN_TX_SHIFT		= 8, /* in transaction */
- 	PERF_SAMPLE_BRANCH_NO_TX_SHIFT		= 9, /* not in transaction */
- 	PERF_SAMPLE_BRANCH_COND_SHIFT		= 10, /* conditional branches */
-+	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT	= 11, /* call/ret stack*/
+ #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
  
- 	PERF_SAMPLE_BRANCH_MAX_SHIFT		/* non-ABI */
- };
-@@ -174,18 +175,15 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_HV		= 1U << PERF_SAMPLE_BRANCH_HV_SHIFT,
- 
- 	PERF_SAMPLE_BRANCH_ANY		= 1U << PERF_SAMPLE_BRANCH_ANY_SHIFT,
--	PERF_SAMPLE_BRANCH_ANY_CALL	=
--				1U << PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
--	PERF_SAMPLE_BRANCH_ANY_RETURN	=
--				1U << PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
--	PERF_SAMPLE_BRANCH_IND_CALL	=
--				1U << PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
--	PERF_SAMPLE_BRANCH_ABORT_TX	=
--				1U << PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
-+	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
-+	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
-+	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
-+	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
- 	PERF_SAMPLE_BRANCH_IN_TX	= 1U << PERF_SAMPLE_BRANCH_IN_TX_SHIFT,
- 	PERF_SAMPLE_BRANCH_NO_TX	= 1U << PERF_SAMPLE_BRANCH_NO_TX_SHIFT,
- 	PERF_SAMPLE_BRANCH_COND		= 1U << PERF_SAMPLE_BRANCH_COND_SHIFT,
- 
-+	PERF_SAMPLE_BRANCH_CALL_STACK	= 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
- 	PERF_SAMPLE_BRANCH_MAX		= 1U << PERF_SAMPLE_BRANCH_MAX_SHIFT,
- };
- 
+ #define X86_BR_ANY_CALL		 \
+ 	(X86_BR_CALL		|\
+ 	 X86_BR_IND_CALL	|\
++	 X86_BR_ZERO_CALL	|\
+ 	 X86_BR_SYSCALL		|\
+ 	 X86_BR_IRQ		|\
+ 	 X86_BR_INT)
+@@ -689,6 +692,12 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
+ 		ret = X86_BR_INT;
+ 		break;
+ 	case 0xe8: /* call near rel */
++		insn_get_immediate(&insn);
++		if (insn.immediate1.value == 0) {
++			/* zero length call */
++			ret = X86_BR_ZERO_CALL;
++			break;
++		}
+ 	case 0x9a: /* call far absolute */
+ 		ret = X86_BR_CALL;
+ 		break;
 -- 
 1.8.3.2
 
