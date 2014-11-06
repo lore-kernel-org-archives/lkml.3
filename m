@@ -1,41 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaKFO72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:59:28 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37673 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021AbaKFO70 (ORCPT
+	id S1751365AbaKFPB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:01:27 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:58103 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbaKFPBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:59:26 -0500
-Date: Thu, 6 Nov 2014 17:58:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, hverkuil@xs4all.nl,
-        ismael.luceno@corp.bluecherry.net, m.chehab@samsung.com
-Subject: Re: [PATCH 1/4] [media] solo6x10: free vb2 buffers on stop_streaming
-Message-ID: <20141106145849.GP6879@mwanda>
-References: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	Thu, 6 Nov 2014 10:01:25 -0500
+Date: Thu, 6 Nov 2014 10:01:21 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Message-ID: <20141106150121.GA25642@htj.dyndns.org>
+References: <20141105133100.GC4527@dhcp22.suse.cz>
+ <20141105134219.GD4527@dhcp22.suse.cz>
+ <20141105154436.GB14386@htj.dyndns.org>
+ <20141105160115.GA28226@dhcp22.suse.cz>
+ <20141105162929.GD14386@htj.dyndns.org>
+ <20141105163956.GD28226@dhcp22.suse.cz>
+ <20141105165428.GF14386@htj.dyndns.org>
+ <20141105174609.GE28226@dhcp22.suse.cz>
+ <20141105175527.GH14386@htj.dyndns.org>
+ <20141106124953.GD7202@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414598634-13446-1-git-send-email-andrey.krieger.utkin@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20141106124953.GD7202@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 08:03:51PM +0400, Andrey Utkin wrote:
-> This fixes warning from drivers/media/v4l2-core/videobuf2-core.c:2144
+On Thu, Nov 06, 2014 at 01:49:53PM +0100, Michal Hocko wrote:
+> On Wed 05-11-14 12:55:27, Tejun Heo wrote:
+> > On Wed, Nov 05, 2014 at 06:46:09PM +0100, Michal Hocko wrote:
+> > > Because out_of_memory can be called from mutliple paths. And
+> > > the only interesting one should be the page allocation path.
+> > > pagefault_out_of_memory is not interesting because it cannot happen for
+> > > the frozen task.
+> > 
+> > Hmmm.... wouldn't that be broken by definition tho?  So, if the oom
+> > killer is invoked from somewhere else than page allocation path, it
+> > would proceed ignoring the disabled setting and would race against PM
+> > freeze path all the same. 
 > 
+> Not really because try_to_freeze_tasks doesn't finish until _all_ tasks
+> are frozen and a task in the page fault path cannot be frozen, can it?
 
-On my kernel that line is:
+We used to have freezing points deep in file system code which may be
+reacheable from page fault.  Please take a step back and look at the
+paragraph above.  Doesn't it sound extremely contrived and brittle
+even if it's not outright broken?  What if somebody adds another oom
+killing site somewhere else?  How can this possibly be a solution that
+we intentionally implement?
 
-	q->start_streaming_called = 0;
+> I mean there shouldn't be any problem to not invoke OOM killer under
+> from the page fault path as well but that might lead to looping in the
+> page fault path without any progress until freezer enables OOM killer on
+> the failure path because the said task cannot be frozen.
+> 
+> Is this preferable?
 
-This changelog is useless.
+Why would PM freezing make OOM killing fail?  That doesn't make much
+sense.  Sure, it can block it for a finite duration for sync purposes
+but making OOM killing fail seems the wrong way around.  We're doing
+one thing for non-PM freezing and the other way around for PM
+freezing, which indicates one of the two directions is wrong.
 
-regards,
-dan carpenter
+Shouldn't it be that OOM killing happening while PM freezing is in
+progress cancels PM freezing rather than the other way around?  Find a
+point in PM suspend/hibernation operation where everything must be
+stable, disable OOM killing there and check whether OOM killing
+happened inbetween and if so back out.  It seems rather obvious to me
+that OOM killing has to have precedence over PM freezing.
 
+Sure, once the system reaches a point where the whole system must be
+in a stable state for snapshotting or whatever, disabling OOM killing
+is fine but at that point the system is in a very limited execution
+mode and sure won't be processing page faults from userland for
+example and we can actually disable OOM killing knowing that anything
+afterwards is ready to handle memory allocation failures.
+
+-- 
+tejun
