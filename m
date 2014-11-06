@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098AbaKFXGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:06:15 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:52719 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064AbaKFXFu (ORCPT
+	id S1754109AbaKFXGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:06:19 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60944 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaKFXFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 18:05:50 -0500
 From: Konrad Zapalowicz <bergo.torino@gmail.com>
@@ -13,112 +13,10146 @@ To: gregkh@linuxfoundation.org, jslaby@suse.cz, cascardo@linux.vnet.ibm.com,
 Cc: lidza.louina@gmail.com, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-serial@vger.kernel.org,
         Konrad Zapalowicz <bergo.torino@gmail.com>
-Subject: [PATCH v2 4/4] drivers: serial: jsm: Remove FSF address from the file documentation/header
-Date: Fri,  7 Nov 2014 00:05:35 +0100
-Message-Id: <1415315135-29716-5-git-send-email-bergo.torino@gmail.com>
+Subject: [PATCH v2 3/4] staging: dgnc: Remove driver in favor of serial/jsm driver
+Date: Fri,  7 Nov 2014 00:05:34 +0100
+Message-Id: <1415315135-29716-4-git-send-email-bergo.torino@gmail.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415315135-29716-4-git-send-email-bergo.torino@gmail.com>
+In-Reply-To: <1415315135-29716-3-git-send-email-bergo.torino@gmail.com>
 References: <20141106191808.GA32427@kroah.com>
  <1415315135-29716-1-git-send-email-bergo.torino@gmail.com>
  <1415315135-29716-2-git-send-email-bergo.torino@gmail.com>
  <1415315135-29716-3-git-send-email-bergo.torino@gmail.com>
- <1415315135-29716-4-git-send-email-bergo.torino@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit removes the address of Free Software Foundation from each
-of the mentioned file in order to suppress the checkpatch warning.
+This commit removes the staging/dgnc driver in favor of the serial/jsm
+driver.
+
+This is because the serial/jsm driver now supports all of the hardware
+that has been supported by the staging/dgnc plus it offers better
+overall quality.
+
+Given above the staging/dgnc is obsolete now.
 
 Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
 ---
- drivers/tty/serial/jsm/jsm.h        | 5 -----
- drivers/tty/serial/jsm/jsm_cls.c    | 5 -----
- drivers/tty/serial/jsm/jsm_driver.c | 5 -----
- drivers/tty/serial/jsm/jsm_neo.c    | 5 -----
- drivers/tty/serial/jsm/jsm_tty.c    | 5 -----
- 5 files changed, 25 deletions(-)
+ MAINTAINERS                         |    7 -
+ drivers/staging/Kconfig             |    2 -
+ drivers/staging/Makefile            |    1 -
+ drivers/staging/dgnc/Kconfig        |    6 -
+ drivers/staging/dgnc/Makefile       |    8 -
+ drivers/staging/dgnc/TODO           |   10 -
+ drivers/staging/dgnc/dgnc_cls.c     | 1389 ---------------
+ drivers/staging/dgnc/dgnc_cls.h     |   89 -
+ drivers/staging/dgnc/dgnc_driver.c  |  757 ---------
+ drivers/staging/dgnc/dgnc_driver.h  |  465 -----
+ drivers/staging/dgnc/dgnc_kcompat.h |   64 -
+ drivers/staging/dgnc/dgnc_mgmt.c    |  281 ---
+ drivers/staging/dgnc/dgnc_mgmt.h    |   31 -
+ drivers/staging/dgnc/dgnc_neo.c     | 1878 --------------------
+ drivers/staging/dgnc/dgnc_neo.h     |  157 --
+ drivers/staging/dgnc/dgnc_pci.h     |   75 -
+ drivers/staging/dgnc/dgnc_sysfs.c   |  750 --------
+ drivers/staging/dgnc/dgnc_sysfs.h   |   49 -
+ drivers/staging/dgnc/dgnc_tty.c     | 3201 -----------------------------------
+ drivers/staging/dgnc/dgnc_tty.h     |   42 -
+ drivers/staging/dgnc/dgnc_types.h   |   33 -
+ drivers/staging/dgnc/dgnc_utils.c   |   70 -
+ drivers/staging/dgnc/dgnc_utils.h   |    7 -
+ drivers/staging/dgnc/digi.h         |  415 -----
+ drivers/staging/dgnc/dpacompat.h    |  115 --
+ 25 files changed, 9902 deletions(-)
+ delete mode 100644 drivers/staging/dgnc/Kconfig
+ delete mode 100644 drivers/staging/dgnc/Makefile
+ delete mode 100644 drivers/staging/dgnc/TODO
+ delete mode 100644 drivers/staging/dgnc/dgnc_cls.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_cls.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_driver.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_driver.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_kcompat.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_mgmt.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_mgmt.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_neo.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_neo.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_pci.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_sysfs.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_sysfs.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_tty.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_tty.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_types.h
+ delete mode 100644 drivers/staging/dgnc/dgnc_utils.c
+ delete mode 100644 drivers/staging/dgnc/dgnc_utils.h
+ delete mode 100644 drivers/staging/dgnc/digi.h
+ delete mode 100644 drivers/staging/dgnc/dpacompat.h
 
-diff --git a/drivers/tty/serial/jsm/jsm.h b/drivers/tty/serial/jsm/jsm.h
-index 662523d..72ed5c1 100644
---- a/drivers/tty/serial/jsm/jsm.h
-+++ b/drivers/tty/serial/jsm/jsm.h
-@@ -13,11 +13,6 @@
-  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-  * PURPOSE.  See the GNU General Public License for more details.
-  *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 * Temple Place - Suite 330, Boston,
-- * MA  02111-1307, USA.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3c64271..021efc5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2992,13 +2992,6 @@ F:	include/linux/mfd/da9063/
+ F:	include/sound/da[79]*.h
+ F:	sound/soc/codecs/da[79]*.[ch]
+ 
+-DIGI NEO AND CLASSIC PCI PRODUCTS
+-M:	Lidza Louina <lidza.louina@gmail.com>
+-M:	Mark Hounschell <markh@compro.net>
+-L:	driverdev-devel@linuxdriverproject.org
+-S:	Maintained
+-F:	drivers/staging/dgnc/
+-
+ DIGI EPCA PCI PRODUCTS
+ M:	Lidza Louina <lidza.louina@gmail.com>
+ M:	Mark Hounschell <markh@compro.net>
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 4690ae9..fbe9452 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -98,8 +98,6 @@ source "drivers/staging/mt29f_spinand/Kconfig"
+ 
+ source "drivers/staging/lustre/Kconfig"
+ 
+-source "drivers/staging/dgnc/Kconfig"
+-
+ source "drivers/staging/dgap/Kconfig"
+ 
+ source "drivers/staging/gs_fpgaboot/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index c780a0e..c80bf16 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -40,7 +40,6 @@ obj-$(CONFIG_DRM_IMX)		+= imx-drm/
+ obj-$(CONFIG_FIREWIRE_SERIAL)	+= fwserial/
+ obj-$(CONFIG_GOLDFISH)		+= goldfish/
+ obj-$(CONFIG_LUSTRE_FS)		+= lustre/
+-obj-$(CONFIG_DGNC)			+= dgnc/
+ obj-$(CONFIG_DGAP)			+= dgap/
+ obj-$(CONFIG_MTD_SPINAND_MT29F)	+= mt29f_spinand/
+ obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
+diff --git a/drivers/staging/dgnc/Kconfig b/drivers/staging/dgnc/Kconfig
+deleted file mode 100644
+index 032c2a7..0000000
+--- a/drivers/staging/dgnc/Kconfig
++++ /dev/null
+@@ -1,6 +0,0 @@
+-config DGNC
+-       tristate "Digi Neo and Classic PCI Products"
+-       default n
+-       depends on TTY && PCI
+-       ---help---
+-       Driver for the Digi International Neo and Classic PCI based product line.
+diff --git a/drivers/staging/dgnc/Makefile b/drivers/staging/dgnc/Makefile
+deleted file mode 100644
+index b69f7b6..0000000
+--- a/drivers/staging/dgnc/Makefile
++++ /dev/null
+@@ -1,8 +0,0 @@
+-EXTRA_CFLAGS += -DDG_NAME=\"dgnc-1.3-16\" -DDG_PART=\"40002369_F\"
+-
+-obj-$(CONFIG_DGNC) += dgnc.o
+-
+-dgnc-objs :=   dgnc_cls.o dgnc_driver.o\
+-               dgnc_mgmt.o dgnc_neo.o\
+-               dgnc_tty.o dgnc_sysfs.o\
+-	       dgnc_utils.o
+diff --git a/drivers/staging/dgnc/TODO b/drivers/staging/dgnc/TODO
+deleted file mode 100644
+index 22adff1..0000000
+--- a/drivers/staging/dgnc/TODO
++++ /dev/null
+@@ -1,10 +0,0 @@
+-* checkpatch fixes
+-* remove unecessary comments
+-* remove unecessary error messages. Example kzalloc() has its 
+-  own error message. Adding an extra one is useless.
+-* use goto statements for error handling when appropriate
+-* there is a lot of unecessary code in the driver. It was 
+-  originally a standalone driver. Remove uneeded code.
+-
+-Please send patches to Greg Kroah-Hartman <greg@kroah.com> and 
+-Cc: Lidza Louina <lidza.louina@gmail.com>
+diff --git a/drivers/staging/dgnc/dgnc_cls.c b/drivers/staging/dgnc/dgnc_cls.c
+deleted file mode 100644
+index a17f4f6..0000000
+--- a/drivers/staging/dgnc/dgnc_cls.c
++++ /dev/null
+@@ -1,1389 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
 - *
-  * Contact Information:
-  * Scott H Kilau <Scott_Kilau@digi.com>
-  * Wendy Xiong   <wendyx@us.ibm.com>
-diff --git a/drivers/tty/serial/jsm/jsm_cls.c b/drivers/tty/serial/jsm/jsm_cls.c
-index b3a508d..4cb9275 100644
---- a/drivers/tty/serial/jsm/jsm_cls.c
-+++ b/drivers/tty/serial/jsm/jsm_cls.c
-@@ -12,11 +12,6 @@
-  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-  * PURPOSE.  See the GNU General Public License for more details.
-  *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
 - * You should have received a copy of the GNU General Public License
 - * along with this program; if not, write to the Free Software
 - * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 - *
 - *
-  *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
-  *
-  *	This is shared code between Digi's CVS archive and the
-diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
-index 0927ddf..efbd87a 100644
---- a/drivers/tty/serial/jsm/jsm_driver.c
-+++ b/drivers/tty/serial/jsm/jsm_driver.c
-@@ -13,11 +13,6 @@
-  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-  * PURPOSE.  See the GNU General Public License for more details.
-  *
+- *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
+- *
+- *	This is shared code between Digi's CVS archive and the
+- *	Linux Kernel sources.
+- *	Changing the source just for reformatting needlessly breaks
+- *	our CVS diff history.
+- *
+- *	Send any bug fixes/changes to:  Eng.Linux at digi dot com.
+- *	Thank you.
+- *
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/sched.h>	/* For jiffies, task states */
+-#include <linux/interrupt.h>	/* For tasklet and interrupt structs/defines */
+-#include <linux/delay.h>	/* For udelay */
+-#include <linux/io.h>		/* For read[bwl]/write[bwl] */
+-#include <linux/serial.h>	/* For struct async_serial */
+-#include <linux/serial_reg.h>	/* For the various UART offsets */
+-#include <linux/pci.h>
+-
+-#include "dgnc_driver.h"	/* Driver main header file */
+-#include "dgnc_cls.h"
+-#include "dgnc_tty.h"
+-
+-static inline void cls_parse_isr(struct dgnc_board *brd, uint port);
+-static inline void cls_clear_break(struct channel_t *ch, int force);
+-static inline void cls_set_cts_flow_control(struct channel_t *ch);
+-static inline void cls_set_rts_flow_control(struct channel_t *ch);
+-static inline void cls_set_ixon_flow_control(struct channel_t *ch);
+-static inline void cls_set_ixoff_flow_control(struct channel_t *ch);
+-static inline void cls_set_no_output_flow_control(struct channel_t *ch);
+-static inline void cls_set_no_input_flow_control(struct channel_t *ch);
+-static void cls_parse_modem(struct channel_t *ch, unsigned char signals);
+-static void cls_tasklet(unsigned long data);
+-static void cls_vpd(struct dgnc_board *brd);
+-static void cls_uart_init(struct channel_t *ch);
+-static void cls_uart_off(struct channel_t *ch);
+-static int cls_drain(struct tty_struct *tty, uint seconds);
+-static void cls_param(struct tty_struct *tty);
+-static void cls_assert_modem_signals(struct channel_t *ch);
+-static void cls_flush_uart_write(struct channel_t *ch);
+-static void cls_flush_uart_read(struct channel_t *ch);
+-static void cls_disable_receiver(struct channel_t *ch);
+-static void cls_enable_receiver(struct channel_t *ch);
+-static void cls_send_break(struct channel_t *ch, int msecs);
+-static void cls_send_start_character(struct channel_t *ch);
+-static void cls_send_stop_character(struct channel_t *ch);
+-static void cls_copy_data_from_uart_to_queue(struct channel_t *ch);
+-static void cls_copy_data_from_queue_to_uart(struct channel_t *ch);
+-static uint cls_get_uart_bytes_left(struct channel_t *ch);
+-static void cls_send_immediate_char(struct channel_t *ch, unsigned char);
+-static irqreturn_t cls_intr(int irq, void *voidbrd);
+-
+-struct board_ops dgnc_cls_ops = {
+-	.tasklet =			cls_tasklet,
+-	.intr =				cls_intr,
+-	.uart_init =			cls_uart_init,
+-	.uart_off =			cls_uart_off,
+-	.drain =			cls_drain,
+-	.param =			cls_param,
+-	.vpd =				cls_vpd,
+-	.assert_modem_signals =		cls_assert_modem_signals,
+-	.flush_uart_write =		cls_flush_uart_write,
+-	.flush_uart_read =		cls_flush_uart_read,
+-	.disable_receiver =		cls_disable_receiver,
+-	.enable_receiver =		cls_enable_receiver,
+-	.send_break =			cls_send_break,
+-	.send_start_character =		cls_send_start_character,
+-	.send_stop_character =		cls_send_stop_character,
+-	.copy_data_from_queue_to_uart = cls_copy_data_from_queue_to_uart,
+-	.get_uart_bytes_left =		cls_get_uart_bytes_left,
+-	.send_immediate_char =		cls_send_immediate_char
+-};
+-
+-
+-static inline void cls_set_cts_flow_control(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char ier = readb(&ch->ch_cls_uart->ier);
+-	unsigned char isr_fcr = 0;
+-
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn on CTS flow control, turn off IXON flow control */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_CTSDSR);
+-	isr_fcr &= ~(UART_EXAR654_EFR_IXON);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/*
+-	 * Enable interrupts for CTS flow, turn off interrupts for
+-	 * received XOFF chars
+-	 */
+-	ier |= (UART_EXAR654_IER_CTSDSR);
+-	ier &= ~(UART_EXAR654_IER_XOFF);
+-	writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	/* Set the usual FIFO values */
+-	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_56 |
+-		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
+-		&ch->ch_cls_uart->isr_fcr);
+-
+-	ch->ch_t_tlevel = 16;
+-
+-}
+-
+-
+-static inline void cls_set_ixon_flow_control(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char ier = readb(&ch->ch_cls_uart->ier);
+-	unsigned char isr_fcr = 0;
+-
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn on IXON flow control, turn off CTS flow control */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_IXON);
+-	isr_fcr &= ~(UART_EXAR654_EFR_CTSDSR);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Now set our current start/stop chars while in enhanced mode */
+-	writeb(ch->ch_startc, &ch->ch_cls_uart->mcr);
+-	writeb(0, &ch->ch_cls_uart->lsr);
+-	writeb(ch->ch_stopc, &ch->ch_cls_uart->msr);
+-	writeb(0, &ch->ch_cls_uart->spr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/*
+-	 * Disable interrupts for CTS flow, turn on interrupts for
+-	 * received XOFF chars
+-	 */
+-	ier &= ~(UART_EXAR654_IER_CTSDSR);
+-	ier |= (UART_EXAR654_IER_XOFF);
+-	writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	/* Set the usual FIFO values */
+-	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
+-		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
+-		&ch->ch_cls_uart->isr_fcr);
+-
+-}
+-
+-
+-static inline void cls_set_no_output_flow_control(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char ier = readb(&ch->ch_cls_uart->ier);
+-	unsigned char isr_fcr = 0;
+-
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn off IXON flow control, turn off CTS flow control */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB);
+-	isr_fcr &= ~(UART_EXAR654_EFR_CTSDSR | UART_EXAR654_EFR_IXON);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/*
+-	 * Disable interrupts for CTS flow, turn off interrupts for
+-	 * received XOFF chars
+-	 */
+-	ier &= ~(UART_EXAR654_IER_CTSDSR);
+-	ier &= ~(UART_EXAR654_IER_XOFF);
+-	writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	/* Set the usual FIFO values */
+-	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
+-		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
+-		&ch->ch_cls_uart->isr_fcr);
+-
+-	ch->ch_r_watermark = 0;
+-	ch->ch_t_tlevel = 16;
+-	ch->ch_r_tlevel = 16;
+-
+-}
+-
+-
+-static inline void cls_set_rts_flow_control(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char ier = readb(&ch->ch_cls_uart->ier);
+-	unsigned char isr_fcr = 0;
+-
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn on RTS flow control, turn off IXOFF flow control */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_RTSDTR);
+-	isr_fcr &= ~(UART_EXAR654_EFR_IXOFF);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/* Enable interrupts for RTS flow */
+-	ier |= (UART_EXAR654_IER_RTSDTR);
+-	writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	/* Set the usual FIFO values */
+-	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_56 |
+-		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
+-		&ch->ch_cls_uart->isr_fcr);
+-
+-
+-	ch->ch_r_watermark = 4;
+-	ch->ch_r_tlevel = 8;
+-
+-}
+-
+-
+-static inline void cls_set_ixoff_flow_control(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char ier = readb(&ch->ch_cls_uart->ier);
+-	unsigned char isr_fcr = 0;
+-
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn on IXOFF flow control, turn off RTS flow control */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_IXOFF);
+-	isr_fcr &= ~(UART_EXAR654_EFR_RTSDTR);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Now set our current start/stop chars while in enhanced mode */
+-	writeb(ch->ch_startc, &ch->ch_cls_uart->mcr);
+-	writeb(0, &ch->ch_cls_uart->lsr);
+-	writeb(ch->ch_stopc, &ch->ch_cls_uart->msr);
+-	writeb(0, &ch->ch_cls_uart->spr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/* Disable interrupts for RTS flow */
+-	ier &= ~(UART_EXAR654_IER_RTSDTR);
+-	writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	/* Set the usual FIFO values */
+-	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
+-		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
+-		&ch->ch_cls_uart->isr_fcr);
+-
+-}
+-
+-
+-static inline void cls_set_no_input_flow_control(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char ier = readb(&ch->ch_cls_uart->ier);
+-	unsigned char isr_fcr = 0;
+-
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn off IXOFF flow control, turn off RTS flow control */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB);
+-	isr_fcr &= ~(UART_EXAR654_EFR_RTSDTR | UART_EXAR654_EFR_IXOFF);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/* Disable interrupts for RTS flow */
+-	ier &= ~(UART_EXAR654_IER_RTSDTR);
+-	writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	/* Set the usual FIFO values */
+-	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
+-		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
+-		&ch->ch_cls_uart->isr_fcr);
+-
+-	ch->ch_t_tlevel = 16;
+-	ch->ch_r_tlevel = 16;
+-
+-}
+-
+-
+-/*
+- * cls_clear_break.
+- * Determines whether its time to shut off break condition.
+- *
+- * No locks are assumed to be held when calling this function.
+- * channel lock is held and released in this function.
+- */
+-static inline void cls_clear_break(struct channel_t *ch, int force)
+-{
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* Bail if we aren't currently sending a break. */
+-	if (!ch->ch_stop_sending_break) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/* Turn break off, and unset some variables */
+-	if (ch->ch_flags & CH_BREAK_SENDING) {
+-		if (time_after(jiffies, ch->ch_stop_sending_break) || force) {
+-			unsigned char temp = readb(&ch->ch_cls_uart->lcr);
+-
+-			writeb((temp & ~UART_LCR_SBC), &ch->ch_cls_uart->lcr);
+-			ch->ch_flags &= ~(CH_BREAK_SENDING);
+-			ch->ch_stop_sending_break = 0;
+-		}
+-	}
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/* Parse the ISR register for the specific port */
+-static inline void cls_parse_isr(struct dgnc_board *brd, uint port)
+-{
+-	struct channel_t *ch;
+-	unsigned char isr = 0;
+-	unsigned long flags;
+-
+-	/*
+-	 * No need to verify board pointer, it was already
+-	 * verified in the interrupt routine.
+-	 */
+-
+-	if (port > brd->nasync)
+-		return;
+-
+-	ch = brd->channels[port];
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	/* Here we try to figure out what caused the interrupt to happen */
+-	while (1) {
+-
+-		isr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-		/* Bail if no pending interrupt on port */
+-		if (isr & UART_IIR_NO_INT)
+-			break;
+-
+-		/* Receive Interrupt pending */
+-		if (isr & (UART_IIR_RDI | UART_IIR_RDI_TIMEOUT)) {
+-			/* Read data from uart -> queue */
+-			brd->intr_rx++;
+-			ch->ch_intr_rx++;
+-			cls_copy_data_from_uart_to_queue(ch);
+-			dgnc_check_queue_flow_control(ch);
+-		}
+-
+-		/* Transmit Hold register empty pending */
+-		if (isr & UART_IIR_THRI) {
+-			/* Transfer data (if any) from Write Queue -> UART. */
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-			ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-			brd->intr_tx++;
+-			ch->ch_intr_tx++;
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			cls_copy_data_from_queue_to_uart(ch);
+-		}
+-
+-		/* CTS/RTS change of state */
+-		if (isr & UART_IIR_CTSRTS) {
+-			brd->intr_modem++;
+-			ch->ch_intr_modem++;
+-			/*
+-			 * Don't need to do anything, the cls_parse_modem
+-			 * below will grab the updated modem signals.
+-			 */
+-		}
+-
+-		/* Parse any modem signal changes */
+-		cls_parse_modem(ch, readb(&ch->ch_cls_uart->msr));
+-	}
+-}
+-
+-
+-/*
+- * cls_param()
+- * Send any/all changes to the line to the UART.
+- */
+-static void cls_param(struct tty_struct *tty)
+-{
+-	unsigned char lcr = 0;
+-	unsigned char uart_lcr = 0;
+-	unsigned char ier = 0;
+-	unsigned char uart_ier = 0;
+-	uint baud = 9600;
+-	int quot = 0;
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t   *un;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = (struct un_t *) tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	/*
+-	 * If baud rate is zero, flush queues, and set mval to drop DTR.
+-	 */
+-	if ((ch->ch_c_cflag & (CBAUD)) == 0) {
+-		ch->ch_r_head = 0;
+-		ch->ch_r_tail = 0;
+-		ch->ch_e_head = 0;
+-		ch->ch_e_tail = 0;
+-		ch->ch_w_head = 0;
+-		ch->ch_w_tail = 0;
+-
+-		cls_flush_uart_write(ch);
+-		cls_flush_uart_read(ch);
+-
+-		/* The baudrate is B0 so all modem lines are to be dropped. */
+-		ch->ch_flags |= (CH_BAUD0);
+-		ch->ch_mostat &= ~(UART_MCR_RTS | UART_MCR_DTR);
+-		cls_assert_modem_signals(ch);
+-		ch->ch_old_baud = 0;
+-		return;
+-	} else if (ch->ch_custom_speed) {
+-
+-		baud = ch->ch_custom_speed;
+-		/* Handle transition from B0 */
+-		if (ch->ch_flags & CH_BAUD0) {
+-			ch->ch_flags &= ~(CH_BAUD0);
+-
+-			/*
+-			 * Bring back up RTS and DTR...
+-			 * Also handle RTS or DTR toggle if set.
+-			 */
+-			if (!(ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_RTS);
+-			if (!(ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_DTR);
+-		}
+-
+-	} else {
+-		int iindex = 0;
+-		int jindex = 0;
+-
+-		ulong bauds[4][16] = {
+-			{ /* slowbaud */
+-				0,      50,     75,     110,
+-				134,    150,    200,    300,
+-				600,    1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 },
+-			{ /* slowbaud & CBAUDEX */
+-				0,      57600,  115200, 230400,
+-				460800, 150,    200,    921600,
+-				600,    1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 },
+-			{ /* fastbaud */
+-				0,      57600,   76800, 115200,
+-				131657, 153600, 230400, 460800,
+-				921600, 1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 },
+-			{ /* fastbaud & CBAUDEX */
+-				0,      57600,  115200, 230400,
+-				460800, 150,    200,    921600,
+-				600,    1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 }
+-		};
+-
+-		/*
+-		 * Only use the TXPrint baud rate if the terminal
+-		 * unit is NOT open
+-		 */
+-		if (!(ch->ch_tun.un_flags & UN_ISOPEN) &&
+-					 (un->un_type == DGNC_PRINT))
+-			baud = C_BAUD(ch->ch_pun.un_tty) & 0xff;
+-		else
+-			baud = C_BAUD(ch->ch_tun.un_tty) & 0xff;
+-
+-		if (ch->ch_c_cflag & CBAUDEX)
+-			iindex = 1;
+-
+-		if (ch->ch_digi.digi_flags & DIGI_FAST)
+-			iindex += 2;
+-
+-		jindex = baud;
+-
+-		if ((iindex >= 0) && (iindex < 4) && (jindex >= 0) &&
+-								(jindex < 16)) {
+-			baud = bauds[iindex][jindex];
+-		} else {
+-			baud = 0;
+-		}
+-
+-		if (baud == 0)
+-			baud = 9600;
+-
+-		/* Handle transition from B0 */
+-		if (ch->ch_flags & CH_BAUD0) {
+-			ch->ch_flags &= ~(CH_BAUD0);
+-
+-			/*
+-			 * Bring back up RTS and DTR...
+-			 * Also handle RTS or DTR toggle if set.
+-			 */
+-			if (!(ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_RTS);
+-			if (!(ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_DTR);
+-		}
+-	}
+-
+-	if (ch->ch_c_cflag & PARENB)
+-		lcr |= UART_LCR_PARITY;
+-
+-	if (!(ch->ch_c_cflag & PARODD))
+-		lcr |= UART_LCR_EPAR;
+-
+-	/*
+-	 * Not all platforms support mark/space parity,
+-	 * so this will hide behind an ifdef.
+-	 */
+-#ifdef CMSPAR
+-	if (ch->ch_c_cflag & CMSPAR)
+-		lcr |= UART_LCR_SPAR;
+-#endif
+-
+-	if (ch->ch_c_cflag & CSTOPB)
+-		lcr |= UART_LCR_STOP;
+-
+-	switch (ch->ch_c_cflag & CSIZE) {
+-	case CS5:
+-		lcr |= UART_LCR_WLEN5;
+-		break;
+-	case CS6:
+-		lcr |= UART_LCR_WLEN6;
+-		break;
+-	case CS7:
+-		lcr |= UART_LCR_WLEN7;
+-		break;
+-	case CS8:
+-	default:
+-		lcr |= UART_LCR_WLEN8;
+-		break;
+-	}
+-
+-	uart_ier = readb(&ch->ch_cls_uart->ier);
+-	ier =  uart_ier;
+-	uart_lcr = readb(&ch->ch_cls_uart->lcr);
+-
+-	if (baud == 0)
+-		baud = 9600;
+-
+-	quot = ch->ch_bd->bd_dividend / baud;
+-
+-	if (quot != 0 && ch->ch_old_baud != baud) {
+-		ch->ch_old_baud = baud;
+-		writeb(UART_LCR_DLAB, &ch->ch_cls_uart->lcr);
+-		writeb((quot & 0xff), &ch->ch_cls_uart->txrx);
+-		writeb((quot >> 8), &ch->ch_cls_uart->ier);
+-		writeb(lcr, &ch->ch_cls_uart->lcr);
+-	}
+-
+-	if (uart_lcr != lcr)
+-		writeb(lcr, &ch->ch_cls_uart->lcr);
+-
+-	if (ch->ch_c_cflag & CREAD)
+-		ier |= (UART_IER_RDI | UART_IER_RLSI);
+-	else
+-		ier &= ~(UART_IER_RDI | UART_IER_RLSI);
+-
+-	/*
+-	 * Have the UART interrupt on modem signal changes ONLY when
+-	 * we are in hardware flow control mode, or CLOCAL/FORCEDCD is not set.
+-	 */
+-	if ((ch->ch_digi.digi_flags & CTSPACE) ||
+-		(ch->ch_digi.digi_flags & RTSPACE) ||
+-		(ch->ch_c_cflag & CRTSCTS) ||
+-		!(ch->ch_digi.digi_flags & DIGI_FORCEDCD) ||
+-		!(ch->ch_c_cflag & CLOCAL))
+-			ier |= UART_IER_MSI;
+-	else
+-			ier &= ~UART_IER_MSI;
+-
+-	ier |= UART_IER_THRI;
+-
+-	if (ier != uart_ier)
+-		writeb(ier, &ch->ch_cls_uart->ier);
+-
+-	if (ch->ch_digi.digi_flags & CTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-		cls_set_cts_flow_control(ch);
+-	} else if (ch->ch_c_iflag & IXON) {
+-		/*
+-		 * If start/stop is set to disable, then we should
+-		 * disable flow control
+-		 */
+-		if ((ch->ch_startc == _POSIX_VDISABLE) ||
+-					 (ch->ch_stopc == _POSIX_VDISABLE))
+-			cls_set_no_output_flow_control(ch);
+-		else
+-			cls_set_ixon_flow_control(ch);
+-	} else {
+-		cls_set_no_output_flow_control(ch);
+-	}
+-
+-	if (ch->ch_digi.digi_flags & RTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-		cls_set_rts_flow_control(ch);
+-	} else if (ch->ch_c_iflag & IXOFF) {
+-		/*
+-		 * If start/stop is set to disable, then we should disable
+-		 * flow control
+-		 */
+-		if ((ch->ch_startc == _POSIX_VDISABLE) ||
+-				(ch->ch_stopc == _POSIX_VDISABLE))
+-			cls_set_no_input_flow_control(ch);
+-		else
+-			cls_set_ixoff_flow_control(ch);
+-	} else {
+-		cls_set_no_input_flow_control(ch);
+-	}
+-
+-	cls_assert_modem_signals(ch);
+-
+-	/* Get current status of the modem signals now */
+-	cls_parse_modem(ch, readb(&ch->ch_cls_uart->msr));
+-}
+-
+-
+-/*
+- * Our board poller function.
+- */
+-static void cls_tasklet(unsigned long data)
+-{
+-	struct dgnc_board *bd = (struct dgnc_board *) data;
+-	struct channel_t *ch;
+-	unsigned long flags;
+-	int i;
+-	int state = 0;
+-	int ports = 0;
+-
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC) {
+-		APR(("poll_tasklet() - NULL or bad bd.\n"));
+-		return;
+-	}
+-
+-	/* Cache a couple board values */
+-	spin_lock_irqsave(&bd->bd_lock, flags);
+-	state = bd->state;
+-	ports = bd->nasync;
+-	spin_unlock_irqrestore(&bd->bd_lock, flags);
+-
+-	/*
+-	 * Do NOT allow the interrupt routine to read the intr registers
+-	 * Until we release this lock.
+-	 */
+-	spin_lock_irqsave(&bd->bd_intr_lock, flags);
+-
+-	/*
+-	 * If board is ready, parse deeper to see if there is anything to do.
+-	 */
+-	if ((state == BOARD_READY) && (ports > 0)) {
+-
+-		/* Loop on each port */
+-		for (i = 0; i < ports; i++) {
+-			ch = bd->channels[i];
+-			if (!ch)
+-				continue;
+-
+-			/*
+-			 * NOTE: Remember you CANNOT hold any channel
+-			 * locks when calling input.
+-			 * During input processing, its possible we
+-			 * will call ld, which might do callbacks back
+-			 * into us.
+-			 */
+-			dgnc_input(ch);
+-
+-			/*
+-			 * Channel lock is grabbed and then released
+-			 * inside this routine.
+-			 */
+-			cls_copy_data_from_queue_to_uart(ch);
+-			dgnc_wakeup_writes(ch);
+-
+-			/*
+-			 * Check carrier function.
+-			 */
+-			dgnc_carrier(ch);
+-
+-			/*
+-			 * The timing check of turning off the break is done
+-			 * inside clear_break()
+-			 */
+-			if (ch->ch_stop_sending_break)
+-				cls_clear_break(ch, 0);
+-		}
+-	}
+-
+-	spin_unlock_irqrestore(&bd->bd_intr_lock, flags);
+-
+-}
+-
+-
+-/*
+- * cls_intr()
+- *
+- * Classic specific interrupt handler.
+- */
+-static irqreturn_t cls_intr(int irq, void *voidbrd)
+-{
+-	struct dgnc_board *brd = (struct dgnc_board *) voidbrd;
+-	uint i = 0;
+-	unsigned char poll_reg;
+-	unsigned long flags;
+-
+-	if (!brd) {
+-		APR(("Received interrupt (%d) with null board associated\n",
+-									 irq));
+-		return IRQ_NONE;
+-	}
+-
+-	/*
+-	 * Check to make sure its for us.
+-	 */
+-	if (brd->magic != DGNC_BOARD_MAGIC) {
+-		APR(("Received interrupt (%d) with a board pointer that wasn't ours!\n",
+-			  irq));
+-		return IRQ_NONE;
+-	}
+-
+-	spin_lock_irqsave(&brd->bd_intr_lock, flags);
+-
+-	brd->intr_count++;
+-
+-	/*
+-	 * Check the board's global interrupt offset to see if we
+-	 * we actually do have an interrupt pending for us.
+-	 */
+-	poll_reg = readb(brd->re_map_membase + UART_CLASSIC_POLL_ADDR_OFFSET);
+-
+-	/* If 0, no interrupts pending */
+-	if (!poll_reg) {
+-		spin_unlock_irqrestore(&brd->bd_intr_lock, flags);
+-		return IRQ_NONE;
+-	}
+-
+-	/* Parse each port to find out what caused the interrupt */
+-	for (i = 0; i < brd->nasync; i++)
+-		cls_parse_isr(brd, i);
+-
+-	/*
+-	 * Schedule tasklet to more in-depth servicing at a better time.
+-	 */
+-	tasklet_schedule(&brd->helper_tasklet);
+-
+-	spin_unlock_irqrestore(&brd->bd_intr_lock, flags);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-
+-static void cls_disable_receiver(struct channel_t *ch)
+-{
+-	unsigned char tmp = readb(&ch->ch_cls_uart->ier);
+-
+-	tmp &= ~(UART_IER_RDI);
+-	writeb(tmp, &ch->ch_cls_uart->ier);
+-}
+-
+-
+-static void cls_enable_receiver(struct channel_t *ch)
+-{
+-	unsigned char tmp = readb(&ch->ch_cls_uart->ier);
+-
+-	tmp |= (UART_IER_RDI);
+-	writeb(tmp, &ch->ch_cls_uart->ier);
+-}
+-
+-
+-static void cls_copy_data_from_uart_to_queue(struct channel_t *ch)
+-{
+-	int qleft = 0;
+-	unsigned char linestatus = 0;
+-	unsigned char error_mask = 0;
+-	ushort head;
+-	ushort tail;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* cache head and tail of queue */
+-	head = ch->ch_r_head;
+-	tail = ch->ch_r_tail;
+-
+-	/* Store how much space we have left in the queue */
+-	qleft = (tail - head - 1);
+-	if (qleft < 0)
+-		qleft += RQUEUEMASK + 1;
+-
+-	/*
+-	 * Create a mask to determine whether we should
+-	 * insert the character (if any) into our queue.
+-	 */
+-	if (ch->ch_c_iflag & IGNBRK)
+-		error_mask |= UART_LSR_BI;
+-
+-	while (1) {
+-		linestatus = readb(&ch->ch_cls_uart->lsr);
+-
+-		if (!(linestatus & (UART_LSR_DR)))
+-			break;
+-
+-		/*
+-		 * Discard character if we are ignoring the error mask.
+-		*/
+-		if (linestatus & error_mask)  {
+-			unsigned char discard;
+-
+-			linestatus = 0;
+-			discard = readb(&ch->ch_cls_uart->txrx);
+-			continue;
+-		}
+-
+-		/*
+-		 * If our queue is full, we have no choice but to drop some
+-		 * data. The assumption is that HWFLOW or SWFLOW should have
+-		 * stopped things way way before we got to this point.
+-		 *
+-		 * I decided that I wanted to ditch the oldest data first,
+-		 * I hope thats okay with everyone? Yes? Good.
+-		 */
+-		while (qleft < 1) {
+-			tail = (tail + 1) & RQUEUEMASK;
+-			ch->ch_r_tail = tail;
+-			ch->ch_err_overrun++;
+-			qleft++;
+-		}
+-
+-		ch->ch_equeue[head] = linestatus & (UART_LSR_BI | UART_LSR_PE
+-								 | UART_LSR_FE);
+-		ch->ch_rqueue[head] = readb(&ch->ch_cls_uart->txrx);
+-		dgnc_sniff_nowait_nolock(ch, "UART READ",
+-						 ch->ch_rqueue + head, 1);
+-
+-		qleft--;
+-
+-		if (ch->ch_equeue[head] & UART_LSR_PE)
+-			ch->ch_err_parity++;
+-		if (ch->ch_equeue[head] & UART_LSR_BI)
+-			ch->ch_err_break++;
+-		if (ch->ch_equeue[head] & UART_LSR_FE)
+-			ch->ch_err_frame++;
+-
+-		/* Add to, and flip head if needed */
+-		head = (head + 1) & RQUEUEMASK;
+-		ch->ch_rxcount++;
+-	}
+-
+-	/*
+-	 * Write new final heads to channel structure.
+-	 */
+-	ch->ch_r_head = head & RQUEUEMASK;
+-	ch->ch_e_head = head & EQUEUEMASK;
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/*
+- * This function basically goes to sleep for secs, or until
+- * it gets signalled that the port has fully drained.
+- */
+-static int cls_drain(struct tty_struct *tty, uint seconds)
+-{
+-	unsigned long flags;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int rc = 0;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return -ENXIO;
+-
+-	un = (struct un_t *) tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return -ENXIO;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -ENXIO;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	un->un_flags |= UN_EMPTY;
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	/*
+-	 * NOTE: Do something with time passed in.
+-	 */
+-	rc = wait_event_interruptible(un->un_flags_wait,
+-					 ((un->un_flags & UN_EMPTY) == 0));
+-
+-	/* If ret is non-zero, user ctrl-c'ed us */
+-
+-	return rc;
+-}
+-
+-
+-/* Channel lock MUST be held before calling this function! */
+-static void cls_flush_uart_write(struct channel_t *ch)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_XMIT),
+-						&ch->ch_cls_uart->isr_fcr);
+-	udelay(10);
+-
+-	ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-}
+-
+-
+-/* Channel lock MUST be held before calling this function! */
+-static void cls_flush_uart_read(struct channel_t *ch)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	/*
+-	 * For complete POSIX compatibility, we should be purging the
+-	 * read FIFO in the UART here.
+-	 *
+-	 * However, clearing the read FIFO (UART_FCR_CLEAR_RCVR) also
+-	 * incorrectly flushes write data as well as just basically trashing the
+-	 * FIFO.
+-	 *
+-	 * Presumably, this is a bug in this UART.
+-	 */
+-
+-	udelay(10);
+-}
+-
+-
+-static void cls_copy_data_from_queue_to_uart(struct channel_t *ch)
+-{
+-	ushort head;
+-	ushort tail;
+-	int n;
+-	int qlen;
+-	uint len_written = 0;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* No data to write to the UART */
+-	if (ch->ch_w_tail == ch->ch_w_head) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/* If port is "stopped", don't send any data to the UART */
+-	if ((ch->ch_flags & CH_FORCED_STOP) ||
+-				 (ch->ch_flags & CH_BREAK_SENDING)) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	if (!(ch->ch_flags & (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM))) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	n = 32;
+-
+-	/* cache head and tail of queue */
+-	head = ch->ch_w_head & WQUEUEMASK;
+-	tail = ch->ch_w_tail & WQUEUEMASK;
+-	qlen = (head - tail) & WQUEUEMASK;
+-
+-	/* Find minimum of the FIFO space, versus queue length */
+-	n = min(n, qlen);
+-
+-	while (n > 0) {
+-
+-		/*
+-		 * If RTS Toggle mode is on, turn on RTS now if not already set,
+-		 * and make sure we get an event when the data transfer has
+-		 * completed.
+-		 */
+-		if (ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE) {
+-			if (!(ch->ch_mostat & UART_MCR_RTS)) {
+-				ch->ch_mostat |= (UART_MCR_RTS);
+-				cls_assert_modem_signals(ch);
+-			}
+-			ch->ch_tun.un_flags |= (UN_EMPTY);
+-		}
+-
+-		/*
+-		 * If DTR Toggle mode is on, turn on DTR now if not already set,
+-		 * and make sure we get an event when the data transfer has
+-		 * completed.
+-		 */
+-		if (ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE) {
+-			if (!(ch->ch_mostat & UART_MCR_DTR)) {
+-				ch->ch_mostat |= (UART_MCR_DTR);
+-				cls_assert_modem_signals(ch);
+-			}
+-			ch->ch_tun.un_flags |= (UN_EMPTY);
+-		}
+-		writeb(ch->ch_wqueue[ch->ch_w_tail], &ch->ch_cls_uart->txrx);
+-		dgnc_sniff_nowait_nolock(ch, "UART WRITE",
+-					    ch->ch_wqueue + ch->ch_w_tail, 1);
+-		ch->ch_w_tail++;
+-		ch->ch_w_tail &= WQUEUEMASK;
+-		ch->ch_txcount++;
+-		len_written++;
+-		n--;
+-	}
+-
+-	if (len_written > 0)
+-		ch->ch_flags &= ~(CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-static void cls_parse_modem(struct channel_t *ch, unsigned char signals)
+-{
+-	unsigned char msignals = signals;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	/*
+-	 * Do altpin switching. Altpin switches DCD and DSR.
+-	 * This prolly breaks DSRPACE, so we should be more clever here.
+-	 */
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	if (ch->ch_digi.digi_flags & DIGI_ALTPIN) {
+-		unsigned char mswap = signals;
+-
+-		if (mswap & UART_MSR_DDCD) {
+-			msignals &= ~UART_MSR_DDCD;
+-			msignals |= UART_MSR_DDSR;
+-		}
+-		if (mswap & UART_MSR_DDSR) {
+-			msignals &= ~UART_MSR_DDSR;
+-			msignals |= UART_MSR_DDCD;
+-		}
+-		if (mswap & UART_MSR_DCD) {
+-			msignals &= ~UART_MSR_DCD;
+-			msignals |= UART_MSR_DSR;
+-		}
+-		if (mswap & UART_MSR_DSR) {
+-			msignals &= ~UART_MSR_DSR;
+-			msignals |= UART_MSR_DCD;
+-		}
+-	}
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	/*
+-	 * Scrub off lower bits. They signify delta's, which I don't
+-	 * care about
+-	 */
+-	signals &= 0xf0;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	if (msignals & UART_MSR_DCD)
+-		ch->ch_mistat |= UART_MSR_DCD;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_DCD;
+-
+-	if (msignals & UART_MSR_DSR)
+-		ch->ch_mistat |= UART_MSR_DSR;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_DSR;
+-
+-	if (msignals & UART_MSR_RI)
+-		ch->ch_mistat |= UART_MSR_RI;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_RI;
+-
+-	if (msignals & UART_MSR_CTS)
+-		ch->ch_mistat |= UART_MSR_CTS;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_CTS;
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/* Make the UART raise any of the output signals we want up */
+-static void cls_assert_modem_signals(struct channel_t *ch)
+-{
+-	unsigned char out;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	out = ch->ch_mostat;
+-
+-	if (ch->ch_flags & CH_LOOPBACK)
+-		out |= UART_MCR_LOOP;
+-
+-	writeb(out, &ch->ch_cls_uart->mcr);
+-
+-	/* Give time for the UART to actually drop the signals */
+-	udelay(10);
+-}
+-
+-
+-static void cls_send_start_character(struct channel_t *ch)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	if (ch->ch_startc != _POSIX_VDISABLE) {
+-		ch->ch_xon_sends++;
+-		writeb(ch->ch_startc, &ch->ch_cls_uart->txrx);
+-	}
+-}
+-
+-
+-static void cls_send_stop_character(struct channel_t *ch)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	if (ch->ch_stopc != _POSIX_VDISABLE) {
+-		ch->ch_xoff_sends++;
+-		writeb(ch->ch_stopc, &ch->ch_cls_uart->txrx);
+-	}
+-}
+-
+-
+-/* Inits UART */
+-static void cls_uart_init(struct channel_t *ch)
+-{
+-	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
+-	unsigned char isr_fcr = 0;
+-
+-	writeb(0, &ch->ch_cls_uart->ier);
+-
+-	/*
+-	 * The Enhanced Register Set may only be accessed when
+-	 * the Line Control Register is set to 0xBFh.
+-	 */
+-	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
+-
+-	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
+-
+-	/* Turn on Enhanced/Extended controls */
+-	isr_fcr |= (UART_EXAR654_EFR_ECB);
+-
+-	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
+-
+-	/* Write old LCR value back out, which turns enhanced access off */
+-	writeb(lcrb, &ch->ch_cls_uart->lcr);
+-
+-	/* Clear out UART and FIFO */
+-	readb(&ch->ch_cls_uart->txrx);
+-
+-	writeb((UART_FCR_ENABLE_FIFO|UART_FCR_CLEAR_RCVR|UART_FCR_CLEAR_XMIT),
+-						 &ch->ch_cls_uart->isr_fcr);
+-	udelay(10);
+-
+-	ch->ch_flags |= (CH_FIFO_ENABLED | CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-
+-	readb(&ch->ch_cls_uart->lsr);
+-	readb(&ch->ch_cls_uart->msr);
+-}
+-
+-
+-/*
+- * Turns off UART.
+- */
+-static void cls_uart_off(struct channel_t *ch)
+-{
+-	writeb(0, &ch->ch_cls_uart->ier);
+-}
+-
+-
+-/*
+- * cls_get_uarts_bytes_left.
+- * Returns 0 is nothing left in the FIFO, returns 1 otherwise.
+- *
+- * The channel lock MUST be held by the calling function.
+- */
+-static uint cls_get_uart_bytes_left(struct channel_t *ch)
+-{
+-	unsigned char left = 0;
+-	unsigned char lsr = 0;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-
+-	lsr = readb(&ch->ch_cls_uart->lsr);
+-
+-	/* Determine whether the Transmitter is empty or not */
+-	if (!(lsr & UART_LSR_TEMT)) {
+-		if (ch->ch_flags & CH_TX_FIFO_EMPTY)
+-			tasklet_schedule(&ch->ch_bd->helper_tasklet);
+-		left = 1;
+-	} else {
+-		ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-		left = 0;
+-	}
+-
+-	return left;
+-}
+-
+-
+-/*
+- * cls_send_break.
+- * Starts sending a break thru the UART.
+- *
+- * The channel lock MUST be held by the calling function.
+- */
+-static void cls_send_break(struct channel_t *ch, int msecs)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	/*
+-	 * If we receive a time of 0, this means turn off the break.
+-	 */
+-	if (msecs == 0) {
+-		/* Turn break off, and unset some variables */
+-		if (ch->ch_flags & CH_BREAK_SENDING) {
+-			unsigned char temp = readb(&ch->ch_cls_uart->lcr);
+-
+-			writeb((temp & ~UART_LCR_SBC), &ch->ch_cls_uart->lcr);
+-			ch->ch_flags &= ~(CH_BREAK_SENDING);
+-			ch->ch_stop_sending_break = 0;
+-		}
+-		return;
+-	}
+-
+-	/*
+-	 * Set the time we should stop sending the break.
+-	 * If we are already sending a break, toss away the existing
+-	 * time to stop, and use this new value instead.
+-	 */
+-	ch->ch_stop_sending_break = jiffies + dgnc_jiffies_from_ms(msecs);
+-
+-	/* Tell the UART to start sending the break */
+-	if (!(ch->ch_flags & CH_BREAK_SENDING)) {
+-		unsigned char temp = readb(&ch->ch_cls_uart->lcr);
+-
+-		writeb((temp | UART_LCR_SBC), &ch->ch_cls_uart->lcr);
+-		ch->ch_flags |= (CH_BREAK_SENDING);
+-	}
+-}
+-
+-
+-/*
+- * cls_send_immediate_char.
+- * Sends a specific character as soon as possible to the UART,
+- * jumping over any bytes that might be in the write queue.
+- *
+- * The channel lock MUST be held by the calling function.
+- */
+-static void cls_send_immediate_char(struct channel_t *ch, unsigned char c)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	writeb(c, &ch->ch_cls_uart->txrx);
+-}
+-
+-static void cls_vpd(struct dgnc_board *brd)
+-{
+-	ulong           vpdbase;        /* Start of io base of the card */
+-	u8 __iomem           *re_map_vpdbase;/* Remapped memory of the card */
+-	int i = 0;
+-
+-
+-	vpdbase = pci_resource_start(brd->pdev, 3);
+-
+-	/* No VPD */
+-	if (!vpdbase)
+-		return;
+-
+-	re_map_vpdbase = ioremap(vpdbase, 0x400);
+-
+-	if (!re_map_vpdbase)
+-		return;
+-
+-	/* Store the VPD into our buffer */
+-	for (i = 0; i < 0x40; i++) {
+-		brd->vpd[i] = readb(re_map_vpdbase + i);
+-		pr_info("%x ", brd->vpd[i]);
+-	}
+-	pr_info("\n");
+-
+-	if (re_map_vpdbase)
+-		iounmap(re_map_vpdbase);
+-}
+-
+diff --git a/drivers/staging/dgnc/dgnc_cls.h b/drivers/staging/dgnc/dgnc_cls.h
+deleted file mode 100644
+index 465d79a..0000000
+--- a/drivers/staging/dgnc/dgnc_cls.h
++++ /dev/null
+@@ -1,89 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
 - * You should have received a copy of the GNU General Public License
 - * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 * Temple Place - Suite 330, Boston,
-- * MA  02111-1307, USA.
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 - *
-  * Contact Information:
-  * Scott H Kilau <Scott_Kilau@digi.com>
-  * Wendy Xiong   <wendyx@us.ibm.com>
-diff --git a/drivers/tty/serial/jsm/jsm_neo.c b/drivers/tty/serial/jsm/jsm_neo.c
-index dfaf488..dc2cd90 100644
---- a/drivers/tty/serial/jsm/jsm_neo.c
-+++ b/drivers/tty/serial/jsm/jsm_neo.c
-@@ -13,11 +13,6 @@
-  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-  * PURPOSE.  See the GNU General Public License for more details.
-  *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- *
+- */
+-
+-#ifndef __DGNC_CLS_H
+-#define __DGNC_CLS_H
+-
+-#include "dgnc_types.h"
+-
+-
+-/************************************************************************
+- * Per channel/port Classic UART structure				*
+- ************************************************************************
+- *		Base Structure Entries Usage Meanings to Host		*
+- *									*
+- *	W = read write		R = read only				*
+- *			U = Unused.					*
+- ************************************************************************/
+-
+-struct cls_uart_struct {
+-	u8 txrx;		/* WR  RHR/THR - Holding Reg */
+-	u8 ier;		/* WR  IER - Interrupt Enable Reg */
+-	u8 isr_fcr;		/* WR  ISR/FCR - Interrupt Status Reg/Fifo Control Reg */
+-	u8 lcr;		/* WR  LCR - Line Control Reg */
+-	u8 mcr;		/* WR  MCR - Modem Control Reg */
+-	u8 lsr;		/* WR  LSR - Line Status Reg */
+-	u8 msr;		/* WR  MSR - Modem Status Reg */
+-	u8 spr;		/* WR  SPR - Scratch Pad Reg */
+-};
+-
+-/* Where to read the interrupt register (8bits) */
+-#define	UART_CLASSIC_POLL_ADDR_OFFSET	0x40
+-
+-#define UART_EXAR654_ENHANCED_REGISTER_SET 0xBF
+-
+-#define UART_16654_FCR_TXTRIGGER_8	0x0
+-#define UART_16654_FCR_TXTRIGGER_16	0x10
+-#define UART_16654_FCR_TXTRIGGER_32	0x20
+-#define UART_16654_FCR_TXTRIGGER_56	0x30
+-
+-#define UART_16654_FCR_RXTRIGGER_8	0x0
+-#define UART_16654_FCR_RXTRIGGER_16	0x40
+-#define UART_16654_FCR_RXTRIGGER_56	0x80
+-#define UART_16654_FCR_RXTRIGGER_60     0xC0
+-
+-#define UART_IIR_CTSRTS			0x20	/* Received CTS/RTS change of state */
+-#define UART_IIR_RDI_TIMEOUT		0x0C    /* Receiver data TIMEOUT */
+-
+-/*
+- * These are the EXTENDED definitions for the Exar 654's Interrupt
+- * Enable Register.
+- */
+-#define UART_EXAR654_EFR_ECB      0x10    /* Enhanced control bit */
+-#define UART_EXAR654_EFR_IXON     0x2     /* Receiver compares Xon1/Xoff1 */
+-#define UART_EXAR654_EFR_IXOFF    0x8     /* Transmit Xon1/Xoff1 */
+-#define UART_EXAR654_EFR_RTSDTR   0x40    /* Auto RTS/DTR Flow Control Enable */
+-#define UART_EXAR654_EFR_CTSDSR   0x80    /* Auto CTS/DSR Flow COntrol Enable */
+-
+-#define UART_EXAR654_XOFF_DETECT  0x1     /* Indicates whether chip saw an incoming XOFF char  */
+-#define UART_EXAR654_XON_DETECT   0x2     /* Indicates whether chip saw an incoming XON char */
+-
+-#define UART_EXAR654_IER_XOFF     0x20    /* Xoff Interrupt Enable */
+-#define UART_EXAR654_IER_RTSDTR   0x40    /* Output Interrupt Enable */
+-#define UART_EXAR654_IER_CTSDSR   0x80    /* Input Interrupt Enable */
+-
+-/*
+- * Our Global Variables
+- */
+-extern struct board_ops dgnc_cls_ops;
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
+deleted file mode 100644
+index 2154665..0000000
+--- a/drivers/staging/dgnc/dgnc_driver.c
++++ /dev/null
+@@ -1,757 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
 - * You should have received a copy of the GNU General Public License
 - * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 * Temple Place - Suite 330, Boston,
-- * MA  02111-1307, USA.
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 - *
-  * Contact Information:
-  * Scott H Kilau <Scott_Kilau@digi.com>
-  * Wendy Xiong   <wendyx@us.ibm.com>
-diff --git a/drivers/tty/serial/jsm/jsm_tty.c b/drivers/tty/serial/jsm/jsm_tty.c
-index f9b1fbd..8a71960 100644
---- a/drivers/tty/serial/jsm/jsm_tty.c
-+++ b/drivers/tty/serial/jsm/jsm_tty.c
-@@ -13,11 +13,6 @@
-  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-  * PURPOSE.  See the GNU General Public License for more details.
-  *
+- *
+- *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
+- *
+- *	This is shared code between Digi's CVS archive and the
+- *	Linux Kernel sources.
+- *	Changing the source just for reformatting needlessly breaks
+- *	our CVS diff history.
+- *
+- *	Send any bug fixes/changes to:  Eng.Linux at digi dot com.
+- *	Thank you.
+- *
+- */
+-
+-
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/pci.h>
+-#include <linux/slab.h>
+-#include <linux/sched.h>
+-#include "dgnc_driver.h"
+-#include "dgnc_pci.h"
+-#include "dpacompat.h"
+-#include "dgnc_mgmt.h"
+-#include "dgnc_tty.h"
+-#include "dgnc_cls.h"
+-#include "dgnc_neo.h"
+-#include "dgnc_sysfs.h"
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Digi International, http://www.digi.com");
+-MODULE_DESCRIPTION("Driver for the Digi International Neo and Classic PCI based product line");
+-MODULE_SUPPORTED_DEVICE("dgnc");
+-
+-/*
+- * insmod command line overrideable parameters
+- *
+- * NOTE: we use a set of macros to create the variables, which allows
+- * us to specify the variable type, name, initial value, and description.
+- */
+-PARM_INT(debug,		0x00,		0644,	"Driver debugging level");
+-PARM_INT(rawreadok,	1,		0644,	"Bypass flip buffers on input");
+-PARM_INT(trcbuf_size,	0x100000,	0644,	"Debugging trace buffer size.");
+-
+-/**************************************************************************
+- *
+- * protos for this file
+- *
+- */
+-static int		dgnc_start(void);
+-static int		dgnc_finalize_board_init(struct dgnc_board *brd);
+-static void		dgnc_init_globals(void);
+-static int		dgnc_found_board(struct pci_dev *pdev, int id);
+-static void		dgnc_cleanup_board(struct dgnc_board *brd);
+-static void		dgnc_poll_handler(ulong dummy);
+-static int		dgnc_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+-static void		dgnc_do_remap(struct dgnc_board *brd);
+-
+-/*
+- * File operations permitted on Control/Management major.
+- */
+-static const struct file_operations dgnc_BoardFops = {
+-	.owner		=	THIS_MODULE,
+-	.unlocked_ioctl =	dgnc_mgmt_ioctl,
+-	.open		=	dgnc_mgmt_open,
+-	.release	=	dgnc_mgmt_close
+-};
+-
+-
+-/*
+- * Globals
+- */
+-uint			dgnc_NumBoards;
+-struct dgnc_board		*dgnc_Board[MAXBOARDS];
+-DEFINE_SPINLOCK(dgnc_global_lock);
+-uint			dgnc_Major;
+-int			dgnc_poll_tick = 20;	/* Poll interval - 20 ms */
+-
+-/*
+- * Static vars.
+- */
+-static struct class *dgnc_class;
+-
+-/*
+- * Poller stuff
+- */
+-static DEFINE_SPINLOCK(dgnc_poll_lock); /* Poll scheduling lock */
+-static ulong		dgnc_poll_time;				/* Time of next poll */
+-static uint		dgnc_poll_stop;				/* Used to tell poller to stop */
+-static struct timer_list dgnc_poll_timer;
+-
+-
+-static struct pci_device_id dgnc_pci_tbl[] = {
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	0 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
+-	{0,}						/* 0 terminated list. */
+-};
+-MODULE_DEVICE_TABLE(pci, dgnc_pci_tbl);
+-
+-struct board_id {
+-	unsigned char *name;
+-	uint maxports;
+-	unsigned int is_pci_express;
+-};
+-
+-static struct board_id dgnc_Ids[] = {
+-	{	PCI_DEVICE_CLASSIC_4_PCI_NAME,		4,	0	},
+-	{	PCI_DEVICE_CLASSIC_4_422_PCI_NAME,	4,	0	},
+-	{	PCI_DEVICE_CLASSIC_8_PCI_NAME,		8,	0	},
+-	{	PCI_DEVICE_CLASSIC_8_422_PCI_NAME,	8,	0	},
+-	{	PCI_DEVICE_NEO_4_PCI_NAME,		4,	0	},
+-	{	PCI_DEVICE_NEO_8_PCI_NAME,		8,	0	},
+-	{	PCI_DEVICE_NEO_2DB9_PCI_NAME,		2,	0	},
+-	{	PCI_DEVICE_NEO_2DB9PRI_PCI_NAME,	2,	0	},
+-	{	PCI_DEVICE_NEO_2RJ45_PCI_NAME,		2,	0	},
+-	{	PCI_DEVICE_NEO_2RJ45PRI_PCI_NAME,	2,	0	},
+-	{	PCI_DEVICE_NEO_1_422_PCI_NAME,		1,	0	},
+-	{	PCI_DEVICE_NEO_1_422_485_PCI_NAME,	1,	0	},
+-	{	PCI_DEVICE_NEO_2_422_485_PCI_NAME,	2,	0	},
+-	{	PCI_DEVICE_NEO_EXPRESS_8_PCI_NAME,	8,	1	},
+-	{	PCI_DEVICE_NEO_EXPRESS_4_PCI_NAME,	4,	1	},
+-	{	PCI_DEVICE_NEO_EXPRESS_4RJ45_PCI_NAME,	4,	1	},
+-	{	PCI_DEVICE_NEO_EXPRESS_8RJ45_PCI_NAME,	8,	1	},
+-	{	NULL,					0,	0	}
+-};
+-
+-static struct pci_driver dgnc_driver = {
+-	.name		= "dgnc",
+-	.probe		= dgnc_init_one,
+-	.id_table       = dgnc_pci_tbl,
+-};
+-
+-
+-char *dgnc_state_text[] = {
+-	"Board Failed",
+-	"Board Found",
+-	"Board READY",
+-};
+-
+-
+-/************************************************************************
+- *
+- * Driver load/unload functions
+- *
+- ************************************************************************/
+-
+-/*
+- * dgnc_cleanup_module()
+- *
+- * Module unload.  This is where it all ends.
+- */
+-static void dgnc_cleanup_module(void)
+-{
+-	int i;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&dgnc_poll_lock, flags);
+-	dgnc_poll_stop = 1;
+-	spin_unlock_irqrestore(&dgnc_poll_lock, flags);
+-
+-	/* Turn off poller right away. */
+-	del_timer_sync(&dgnc_poll_timer);
+-
+-	dgnc_remove_driver_sysfiles(&dgnc_driver);
+-
+-	device_destroy(dgnc_class, MKDEV(dgnc_Major, 0));
+-	class_destroy(dgnc_class);
+-	unregister_chrdev(dgnc_Major, "dgnc");
+-
+-	for (i = 0; i < dgnc_NumBoards; ++i) {
+-		dgnc_remove_ports_sysfiles(dgnc_Board[i]);
+-		dgnc_tty_uninit(dgnc_Board[i]);
+-		dgnc_cleanup_board(dgnc_Board[i]);
+-	}
+-
+-	dgnc_tty_post_uninit();
+-
+-	if (dgnc_NumBoards)
+-		pci_unregister_driver(&dgnc_driver);
+-}
+-
+-/*
+- * init_module()
+- *
+- * Module load.  This is where it all starts.
+- */
+-static int __init dgnc_init_module(void)
+-{
+-	int rc = 0;
+-
+-	APR(("%s, Digi International Part Number %s\n", DG_NAME, DG_PART));
+-
+-	/*
+-	 * Initialize global stuff
+-	 */
+-	rc = dgnc_start();
+-
+-	if (rc < 0)
+-		return rc;
+-
+-	/*
+-	 * Find and configure all the cards
+-	 */
+-	rc = pci_register_driver(&dgnc_driver);
+-
+-	/*
+-	 * If something went wrong in the scan, bail out of driver.
+-	 */
+-	if (rc < 0) {
+-		/* Only unregister the pci driver if it was actually registered. */
+-		if (dgnc_NumBoards)
+-			pci_unregister_driver(&dgnc_driver);
+-		else
+-			pr_warn("WARNING: dgnc driver load failed.  No Digi Neo or Classic boards found.\n");
+-
+-		dgnc_cleanup_module();
+-	} else {
+-		dgnc_create_driver_sysfiles(&dgnc_driver);
+-	}
+-
+-	return rc;
+-}
+-
+-module_init(dgnc_init_module);
+-module_exit(dgnc_cleanup_module);
+-
+-/*
+- * Start of driver.
+- */
+-static int dgnc_start(void)
+-{
+-	int rc = 0;
+-	unsigned long flags;
+-
+-	/* make sure that the globals are init'd before we do anything else */
+-	dgnc_init_globals();
+-
+-	APR(("For the tools package or updated drivers please visit http://www.digi.com\n"));
+-
+-	/*
+-	 * Register our base character device into the kernel.
+-	 * This allows the download daemon to connect to the downld device
+-	 * before any of the boards are init'ed.
+-	 *
+-	 * Register management/dpa devices
+-	 */
+-	rc = register_chrdev(0, "dgnc", &dgnc_BoardFops);
+-	if (rc <= 0) {
+-		APR(("Can't register dgnc driver device (%d)\n", rc));
+-		return -ENXIO;
+-	}
+-	dgnc_Major = rc;
+-
+-	dgnc_class = class_create(THIS_MODULE, "dgnc_mgmt");
+-	device_create(dgnc_class, NULL,
+-		MKDEV(dgnc_Major, 0),
+-		NULL, "dgnc_mgmt");
+-
+-	/*
+-	 * Init any global tty stuff.
+-	 */
+-	rc = dgnc_tty_preinit();
+-
+-	if (rc < 0) {
+-		APR(("tty preinit - not enough memory (%d)\n", rc));
+-		return rc;
+-	}
+-
+-	/* Start the poller */
+-	spin_lock_irqsave(&dgnc_poll_lock, flags);
+-	init_timer(&dgnc_poll_timer);
+-	dgnc_poll_timer.function = dgnc_poll_handler;
+-	dgnc_poll_timer.data = 0;
+-	dgnc_poll_time = jiffies + dgnc_jiffies_from_ms(dgnc_poll_tick);
+-	dgnc_poll_timer.expires = dgnc_poll_time;
+-	spin_unlock_irqrestore(&dgnc_poll_lock, flags);
+-
+-	add_timer(&dgnc_poll_timer);
+-
+-	return rc;
+-}
+-
+-/* returns count (>= 0), or negative on error */
+-static int dgnc_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+-{
+-	int rc;
+-
+-	/* wake up and enable device */
+-	rc = pci_enable_device(pdev);
+-
+-	if (rc < 0) {
+-		rc = -EIO;
+-	} else {
+-		rc = dgnc_found_board(pdev, ent->driver_data);
+-		if (rc == 0)
+-			dgnc_NumBoards++;
+-	}
+-	return rc;
+-}
+-
+-/*
+- * dgnc_cleanup_board()
+- *
+- * Free all the memory associated with a board
+- */
+-static void dgnc_cleanup_board(struct dgnc_board *brd)
+-{
+-	int i = 0;
+-
+-	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	switch (brd->device) {
+-	case PCI_DEVICE_CLASSIC_4_DID:
+-	case PCI_DEVICE_CLASSIC_8_DID:
+-	case PCI_DEVICE_CLASSIC_4_422_DID:
+-	case PCI_DEVICE_CLASSIC_8_422_DID:
+-
+-		/* Tell card not to interrupt anymore. */
+-		outb(0, brd->iobase + 0x4c);
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	if (brd->irq)
+-		free_irq(brd->irq, brd);
+-
+-	tasklet_kill(&brd->helper_tasklet);
+-
+-	if (brd->re_map_membase) {
+-		iounmap(brd->re_map_membase);
+-		brd->re_map_membase = NULL;
+-	}
+-
+-	if (brd->msgbuf_head) {
+-		unsigned long flags;
+-
+-		spin_lock_irqsave(&dgnc_global_lock, flags);
+-		brd->msgbuf = NULL;
+-		printk("%s", brd->msgbuf_head);
+-		kfree(brd->msgbuf_head);
+-		brd->msgbuf_head = NULL;
+-		spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-	}
+-
+-	/* Free all allocated channels structs */
+-	for (i = 0; i < MAXPORTS ; i++) {
+-		if (brd->channels[i]) {
+-			kfree(brd->channels[i]->ch_rqueue);
+-			kfree(brd->channels[i]->ch_equeue);
+-			kfree(brd->channels[i]->ch_wqueue);
+-			kfree(brd->channels[i]);
+-			brd->channels[i] = NULL;
+-		}
+-	}
+-
+-	kfree(brd->flipbuf);
+-
+-	dgnc_Board[brd->boardnum] = NULL;
+-
+-	kfree(brd);
+-}
+-
+-
+-/*
+- * dgnc_found_board()
+- *
+- * A board has been found, init it.
+- */
+-static int dgnc_found_board(struct pci_dev *pdev, int id)
+-{
+-	struct dgnc_board *brd;
+-	unsigned int pci_irq;
+-	int i = 0;
+-	int rc = 0;
+-	unsigned long flags;
+-
+-	/* get the board structure and prep it */
+-	dgnc_Board[dgnc_NumBoards] = kzalloc(sizeof(*brd), GFP_KERNEL);
+-	brd = dgnc_Board[dgnc_NumBoards];
+-
+-	if (!brd)
+-		return -ENOMEM;
+-
+-	/* make a temporary message buffer for the boot messages */
+-	brd->msgbuf_head = kzalloc(sizeof(u8) * 8192, GFP_KERNEL);
+-	brd->msgbuf = brd->msgbuf_head;
+-
+-	if (!brd->msgbuf) {
+-		kfree(brd);
+-		return -ENOMEM;
+-	}
+-
+-	/* store the info for the board we've found */
+-	brd->magic = DGNC_BOARD_MAGIC;
+-	brd->boardnum = dgnc_NumBoards;
+-	brd->vendor = dgnc_pci_tbl[id].vendor;
+-	brd->device = dgnc_pci_tbl[id].device;
+-	brd->pdev = pdev;
+-	brd->pci_bus = pdev->bus->number;
+-	brd->pci_slot = PCI_SLOT(pdev->devfn);
+-	brd->name = dgnc_Ids[id].name;
+-	brd->maxports = dgnc_Ids[id].maxports;
+-	if (dgnc_Ids[i].is_pci_express)
+-		brd->bd_flags |= BD_IS_PCI_EXPRESS;
+-	brd->dpastatus = BD_NOFEP;
+-	init_waitqueue_head(&brd->state_wait);
+-
+-	spin_lock_init(&brd->bd_lock);
+-	spin_lock_init(&brd->bd_intr_lock);
+-
+-	brd->state		= BOARD_FOUND;
+-
+-	for (i = 0; i < MAXPORTS; i++)
+-		brd->channels[i] = NULL;
+-
+-	/* store which card & revision we have */
+-	pci_read_config_word(pdev, PCI_SUBSYSTEM_VENDOR_ID, &brd->subvendor);
+-	pci_read_config_word(pdev, PCI_SUBSYSTEM_ID, &brd->subdevice);
+-	pci_read_config_byte(pdev, PCI_REVISION_ID, &brd->rev);
+-
+-	pci_irq = pdev->irq;
+-	brd->irq = pci_irq;
+-
+-
+-	switch (brd->device) {
+-
+-	case PCI_DEVICE_CLASSIC_4_DID:
+-	case PCI_DEVICE_CLASSIC_8_DID:
+-	case PCI_DEVICE_CLASSIC_4_422_DID:
+-	case PCI_DEVICE_CLASSIC_8_422_DID:
+-
+-		brd->dpatype = T_CLASSIC | T_PCIBUS;
+-
+-		/*
+-		 * For PCI ClassicBoards
+-		 * PCI Local Address (i.e. "resource" number) space
+-		 * 0	PLX Memory Mapped Config
+-		 * 1	PLX I/O Mapped Config
+-		 * 2	I/O Mapped UARTs and Status
+-		 * 3	Memory Mapped VPD
+-		 * 4	Memory Mapped UARTs and Status
+-		 */
+-
+-
+-		/* get the PCI Base Address Registers */
+-		brd->membase = pci_resource_start(pdev, 4);
+-
+-		if (!brd->membase) {
+-			APR(("card has no PCI IO resources, failing board.\n"));
+-			return -ENODEV;
+-		}
+-
+-		brd->membase_end = pci_resource_end(pdev, 4);
+-
+-		if (brd->membase & 1)
+-			brd->membase &= ~3;
+-		else
+-			brd->membase &= ~15;
+-
+-		brd->iobase	= pci_resource_start(pdev, 1);
+-		brd->iobase_end = pci_resource_end(pdev, 1);
+-		brd->iobase	= ((unsigned int) (brd->iobase)) & 0xFFFE;
+-
+-		/* Assign the board_ops struct */
+-		brd->bd_ops = &dgnc_cls_ops;
+-
+-		brd->bd_uart_offset = 0x8;
+-		brd->bd_dividend = 921600;
+-
+-		dgnc_do_remap(brd);
+-
+-		/* Get and store the board VPD, if it exists */
+-		brd->bd_ops->vpd(brd);
+-
+-		/*
+-		 * Enable Local Interrupt 1		  (0x1),
+-		 * Local Interrupt 1 Polarity Active high (0x2),
+-		 * Enable PCI interrupt			  (0x40)
+-		 */
+-		outb(0x43, brd->iobase + 0x4c);
+-
+-		break;
+-
+-
+-	case PCI_DEVICE_NEO_4_DID:
+-	case PCI_DEVICE_NEO_8_DID:
+-	case PCI_DEVICE_NEO_2DB9_DID:
+-	case PCI_DEVICE_NEO_2DB9PRI_DID:
+-	case PCI_DEVICE_NEO_2RJ45_DID:
+-	case PCI_DEVICE_NEO_2RJ45PRI_DID:
+-	case PCI_DEVICE_NEO_1_422_DID:
+-	case PCI_DEVICE_NEO_1_422_485_DID:
+-	case PCI_DEVICE_NEO_2_422_485_DID:
+-	case PCI_DEVICE_NEO_EXPRESS_8_DID:
+-	case PCI_DEVICE_NEO_EXPRESS_4_DID:
+-	case PCI_DEVICE_NEO_EXPRESS_4RJ45_DID:
+-	case PCI_DEVICE_NEO_EXPRESS_8RJ45_DID:
+-
+-		/*
+-		 * This chip is set up 100% when we get to it.
+-		 * No need to enable global interrupts or anything.
+-		 */
+-		if (brd->bd_flags & BD_IS_PCI_EXPRESS)
+-			brd->dpatype = T_NEO_EXPRESS | T_PCIBUS;
+-		else
+-			brd->dpatype = T_NEO | T_PCIBUS;
+-
+-		/* get the PCI Base Address Registers */
+-		brd->membase     = pci_resource_start(pdev, 0);
+-		brd->membase_end = pci_resource_end(pdev, 0);
+-
+-		if (brd->membase & 1)
+-			brd->membase &= ~3;
+-		else
+-			brd->membase &= ~15;
+-
+-		/* Assign the board_ops struct */
+-		brd->bd_ops = &dgnc_neo_ops;
+-
+-		brd->bd_uart_offset = 0x200;
+-		brd->bd_dividend = 921600;
+-
+-		dgnc_do_remap(brd);
+-
+-		if (brd->re_map_membase) {
+-
+-			/* After remap is complete, we need to read and store the dvid */
+-			brd->dvid = readb(brd->re_map_membase + 0x8D);
+-
+-			/* Get and store the board VPD, if it exists */
+-			brd->bd_ops->vpd(brd);
+-		}
+-		break;
+-
+-	default:
+-		APR(("Did not find any compatible Neo or Classic PCI boards in system.\n"));
+-		return -ENXIO;
+-
+-	}
+-
+-	/*
+-	 * Do tty device initialization.
+-	 */
+-
+-	rc = dgnc_tty_register(brd);
+-	if (rc < 0) {
+-		dgnc_tty_uninit(brd);
+-		APR(("Can't register tty devices (%d)\n", rc));
+-		brd->state = BOARD_FAILED;
+-		brd->dpastatus = BD_NOFEP;
+-		goto failed;
+-	}
+-
+-	rc = dgnc_finalize_board_init(brd);
+-	if (rc < 0) {
+-		APR(("Can't finalize board init (%d)\n", rc));
+-		brd->state = BOARD_FAILED;
+-		brd->dpastatus = BD_NOFEP;
+-
+-		goto failed;
+-	}
+-
+-	rc = dgnc_tty_init(brd);
+-	if (rc < 0) {
+-		dgnc_tty_uninit(brd);
+-		APR(("Can't init tty devices (%d)\n", rc));
+-		brd->state = BOARD_FAILED;
+-		brd->dpastatus = BD_NOFEP;
+-
+-		goto failed;
+-	}
+-
+-	brd->state = BOARD_READY;
+-	brd->dpastatus = BD_RUNNING;
+-
+-	dgnc_create_ports_sysfiles(brd);
+-
+-	/* init our poll helper tasklet */
+-	tasklet_init(&brd->helper_tasklet, brd->bd_ops->tasklet, (unsigned long) brd);
+-
+-	spin_lock_irqsave(&dgnc_global_lock, flags);
+-	brd->msgbuf = NULL;
+-	printk("%s", brd->msgbuf_head);
+-	kfree(brd->msgbuf_head);
+-	brd->msgbuf_head = NULL;
+-	spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-
+-	/*
+-	 * allocate flip buffer for board.
+-	 *
+-	 * Okay to malloc with GFP_KERNEL, we are not at interrupt
+-	 * context, and there are no locks held.
+-	 */
+-	brd->flipbuf = kzalloc(MYFLIPLEN, GFP_KERNEL);
+-
+-	wake_up_interruptible(&brd->state_wait);
+-
+-	return 0;
+-
+-failed:
+-
+-	return -ENXIO;
+-
+-}
+-
+-
+-static int dgnc_finalize_board_init(struct dgnc_board *brd)
+-{
+-	int rc = 0;
+-
+-	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
+-		return -ENODEV;
+-
+-	if (brd->irq) {
+-		rc = request_irq(brd->irq, brd->bd_ops->intr,
+-				 IRQF_SHARED, "DGNC", brd);
+-
+-		if (rc) {
+-			dev_err(&brd->pdev->dev,
+-				"Failed to hook IRQ %d\n", brd->irq);
+-			brd->state = BOARD_FAILED;
+-			brd->dpastatus = BD_NOFEP;
+-			rc = -ENODEV;
+-		}
+-	}
+-	return rc;
+-}
+-
+-/*
+- * Remap PCI memory.
+- */
+-static void dgnc_do_remap(struct dgnc_board *brd)
+-{
+-
+-	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	brd->re_map_membase = ioremap(brd->membase, 0x1000);
+-}
+-
+-
+-/*****************************************************************************
+-*
+-* Function:
+-*
+-*    dgnc_poll_handler
+-*
+-* Author:
+-*
+-*    Scott H Kilau
+-*
+-* Parameters:
+-*
+-*    dummy -- ignored
+-*
+-* Return Values:
+-*
+-*    none
+-*
+-* Description:
+-*
+-*    As each timer expires, it determines (a) whether the "transmit"
+-*    waiter needs to be woken up, and (b) whether the poller needs to
+-*    be rescheduled.
+-*
+-******************************************************************************/
+-
+-static void dgnc_poll_handler(ulong dummy)
+-{
+-	struct dgnc_board *brd;
+-	unsigned long flags;
+-	int i;
+-	unsigned long new_time;
+-
+-	/* Go thru each board, kicking off a tasklet for each if needed */
+-	for (i = 0; i < dgnc_NumBoards; i++) {
+-		brd = dgnc_Board[i];
+-
+-		spin_lock_irqsave(&brd->bd_lock, flags);
+-
+-		/* If board is in a failed state, don't bother scheduling a tasklet */
+-		if (brd->state == BOARD_FAILED) {
+-			spin_unlock_irqrestore(&brd->bd_lock, flags);
+-			continue;
+-		}
+-
+-		/* Schedule a poll helper task */
+-		tasklet_schedule(&brd->helper_tasklet);
+-
+-		spin_unlock_irqrestore(&brd->bd_lock, flags);
+-	}
+-
+-	/*
+-	 * Schedule ourself back at the nominal wakeup interval.
+-	 */
+-	spin_lock_irqsave(&dgnc_poll_lock, flags);
+-	dgnc_poll_time += dgnc_jiffies_from_ms(dgnc_poll_tick);
+-
+-	new_time = dgnc_poll_time - jiffies;
+-
+-	if ((ulong) new_time >= 2 * dgnc_poll_tick)
+-		dgnc_poll_time = jiffies +  dgnc_jiffies_from_ms(dgnc_poll_tick);
+-
+-	init_timer(&dgnc_poll_timer);
+-	dgnc_poll_timer.function = dgnc_poll_handler;
+-	dgnc_poll_timer.data = 0;
+-	dgnc_poll_timer.expires = dgnc_poll_time;
+-	spin_unlock_irqrestore(&dgnc_poll_lock, flags);
+-
+-	if (!dgnc_poll_stop)
+-		add_timer(&dgnc_poll_timer);
+-}
+-
+-/*
+- * dgnc_init_globals()
+- *
+- * This is where we initialize the globals from the static insmod
+- * configuration variables.  These are declared near the head of
+- * this file.
+- */
+-static void dgnc_init_globals(void)
+-{
+-	int i = 0;
+-
+-	dgnc_rawreadok		= rawreadok;
+-	dgnc_trcbuf_size	= trcbuf_size;
+-	dgnc_debug		= debug;
+-	dgnc_NumBoards		= 0;
+-
+-	for (i = 0; i < MAXBOARDS; i++)
+-		dgnc_Board[i] = NULL;
+-
+-	init_timer(&dgnc_poll_timer);
+-}
+-
+diff --git a/drivers/staging/dgnc/dgnc_driver.h b/drivers/staging/dgnc/dgnc_driver.h
+deleted file mode 100644
+index f901957c..0000000
+--- a/drivers/staging/dgnc/dgnc_driver.h
++++ /dev/null
+@@ -1,465 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *      Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
 - * You should have received a copy of the GNU General Public License
 - * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 * Temple Place - Suite 330, Boston,
-- * MA  02111-1307, USA.
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 - *
-  * Contact Information:
-  * Scott H Kilau <Scott_Kilau@digi.com>
-  * Ananda Venkatarman <mansarov@us.ibm.com>
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- *
+- *************************************************************************
+- *
+- * Driver includes
+- *
+- *************************************************************************/
+-
+-#ifndef __DGNC_DRIVER_H
+-#define __DGNC_DRIVER_H
+-
+-#include <linux/types.h>	/* To pick up the varions Linux types */
+-#include <linux/tty.h>	  /* To pick up the various tty structs/defines */
+-#include <linux/interrupt.h>	/* For irqreturn_t type */
+-
+-#include "dgnc_types.h"		/* Additional types needed by the Digi header files */
+-#include "digi.h"		/* Digi specific ioctl header */
+-#include "dgnc_kcompat.h"	/* Kernel 2.4/2.6 compat includes */
+-#include "dgnc_sysfs.h"		/* Support for SYSFS */
+-
+-/*************************************************************************
+- *
+- * Driver defines
+- *
+- *************************************************************************/
+-
+-/*
+- * Driver identification, error and debugging statments
+- *
+- * In theory, you can change all occurrences of "digi" in the next
+- * three lines, and the driver printk's will all automagically change.
+- *
+- * APR((fmt, args, ...));	Always prints message
+- */
+-#define	PROCSTR		"dgnc"			/* /proc entries	 */
+-#define	DEVSTR		"/dev/dg/dgnc"		/* /dev entries		 */
+-#define	DRVSTR		"dgnc"			/* Driver name string
+-						 * displayed by APR	 */
+-#define	APR(args)	do { printk(DRVSTR": "); printk args; \
+-			   } while (0)
+-#define	RAPR(args)	do { printk args; } while (0)
+-
+-#define TRC_TO_CONSOLE 1
+-
+-/*
+- * Debugging levels can be set using debug insmod variable
+- * They can also be compiled out completely.
+- */
+-
+-#define	DBG_INIT		(dgnc_debug & 0x01)
+-#define	DBG_BASIC		(dgnc_debug & 0x02)
+-#define	DBG_CORE		(dgnc_debug & 0x04)
+-
+-#define	DBG_OPEN		(dgnc_debug & 0x08)
+-#define	DBG_CLOSE		(dgnc_debug & 0x10)
+-#define	DBG_READ		(dgnc_debug & 0x20)
+-#define	DBG_WRITE		(dgnc_debug & 0x40)
+-
+-#define	DBG_IOCTL		(dgnc_debug & 0x80)
+-
+-#define	DBG_PROC		(dgnc_debug & 0x100)
+-#define	DBG_PARAM		(dgnc_debug & 0x200)
+-#define	DBG_PSCAN		(dgnc_debug & 0x400)
+-#define	DBG_EVENT		(dgnc_debug & 0x800)
+-
+-#define	DBG_DRAIN		(dgnc_debug & 0x1000)
+-#define	DBG_MSIGS		(dgnc_debug & 0x2000)
+-
+-#define	DBG_MGMT		(dgnc_debug & 0x4000)
+-#define	DBG_INTR		(dgnc_debug & 0x8000)
+-
+-#define	DBG_CARR		(dgnc_debug & 0x10000)
+-
+-/* Number of boards we support at once. */
+-#define	MAXBOARDS	20
+-#define	MAXPORTS	8
+-#define MAXTTYNAMELEN	200
+-
+-/* Our 3 magic numbers for our board, channel and unit structs */
+-#define DGNC_BOARD_MAGIC	0x5c6df104
+-#define DGNC_CHANNEL_MAGIC	0x6c6df104
+-#define DGNC_UNIT_MAGIC		0x7c6df104
+-
+-/* Serial port types */
+-#define DGNC_SERIAL		0
+-#define DGNC_PRINT		1
+-
+-#define	SERIAL_TYPE_NORMAL	1
+-
+-#define PORT_NUM(dev)	((dev) & 0x7f)
+-#define IS_PRINT(dev)	(((dev) & 0xff) >= 0x80)
+-
+-/* MAX number of stop characters we will send when our read queue is getting full */
+-#define MAX_STOPS_SENT 5
+-
+-/* 4 extra for alignment play space */
+-#define WRITEBUFLEN		((4096) + 4)
+-#define MYFLIPLEN		N_TTY_BUF_SIZE
+-
+-#define dgnc_jiffies_from_ms(a) (((a) * HZ) / 1000)
+-
+-/*
+- * Define a local default termios struct. All ports will be created
+- * with this termios initially.  This is the same structure that is defined
+- * as the default in tty_io.c with the same settings overriden as in serial.c
+- *
+- * In short, this should match the internal serial ports' defaults.
+- */
+-#define	DEFAULT_IFLAGS	(ICRNL | IXON)
+-#define	DEFAULT_OFLAGS	(OPOST | ONLCR)
+-#define	DEFAULT_CFLAGS	(B9600 | CS8 | CREAD | HUPCL | CLOCAL)
+-#define	DEFAULT_LFLAGS	(ISIG | ICANON | ECHO | ECHOE | ECHOK | \
+-			ECHOCTL | ECHOKE | IEXTEN)
+-
+-#ifndef _POSIX_VDISABLE
+-#define   _POSIX_VDISABLE '\0'
+-#endif
+-
+-#define SNIFF_MAX	65536		/* Sniff buffer size (2^n) */
+-#define SNIFF_MASK	(SNIFF_MAX - 1)	/* Sniff wrap mask */
+-
+-/*
+- * All the possible states the driver can be while being loaded.
+- */
+-enum {
+-	DRIVER_INITIALIZED = 0,
+-	DRIVER_READY
+-};
+-
+-/*
+- * All the possible states the board can be while booting up.
+- */
+-enum {
+-	BOARD_FAILED = 0,
+-	BOARD_FOUND,
+-	BOARD_READY
+-};
+-
+-
+-/*************************************************************************
+- *
+- * Structures and closely related defines.
+- *
+- *************************************************************************/
+-
+-struct dgnc_board;
+-struct channel_t;
+-
+-/************************************************************************
+- * Per board operations structure				       *
+- ************************************************************************/
+-struct board_ops {
+-	void (*tasklet)(unsigned long data);
+-	irqreturn_t (*intr)(int irq, void *voidbrd);
+-	void (*uart_init)(struct channel_t *ch);
+-	void (*uart_off)(struct channel_t *ch);
+-	int  (*drain)(struct tty_struct *tty, uint seconds);
+-	void (*param)(struct tty_struct *tty);
+-	void (*vpd)(struct dgnc_board *brd);
+-	void (*assert_modem_signals)(struct channel_t *ch);
+-	void (*flush_uart_write)(struct channel_t *ch);
+-	void (*flush_uart_read)(struct channel_t *ch);
+-	void (*disable_receiver)(struct channel_t *ch);
+-	void (*enable_receiver)(struct channel_t *ch);
+-	void (*send_break)(struct channel_t *ch, int);
+-	void (*send_start_character)(struct channel_t *ch);
+-	void (*send_stop_character)(struct channel_t *ch);
+-	void (*copy_data_from_queue_to_uart)(struct channel_t *ch);
+-	uint (*get_uart_bytes_left)(struct channel_t *ch);
+-	void (*send_immediate_char)(struct channel_t *ch, unsigned char);
+-};
+-
+-/************************************************************************
+- * Device flag definitions for bd_flags.
+- ************************************************************************/
+-#define BD_IS_PCI_EXPRESS     0x0001	  /* Is a PCI Express board */
+-
+-
+-/*
+- *	Per-board information
+- */
+-struct dgnc_board {
+-	int		magic;		/* Board Magic number.  */
+-	int		boardnum;	/* Board number: 0-32 */
+-
+-	int		type;		/* Type of board */
+-	char		*name;		/* Product Name */
+-	struct pci_dev	*pdev;		/* Pointer to the pci_dev struct */
+-	unsigned long	bd_flags;	/* Board flags */
+-	u16		vendor;		/* PCI vendor ID */
+-	u16		device;		/* PCI device ID */
+-	u16		subvendor;	/* PCI subsystem vendor ID */
+-	u16		subdevice;	/* PCI subsystem device ID */
+-	unsigned char	rev;		/* PCI revision ID */
+-	uint		pci_bus;	/* PCI bus value */
+-	uint		pci_slot;	/* PCI slot value */
+-	uint		maxports;	/* MAX ports this board can handle */
+-	unsigned char	dvid;		/* Board specific device id */
+-	unsigned char	vpd[128];	/* VPD of board, if found */
+-	unsigned char	serial_num[20];	/* Serial number of board, if found in VPD */
+-
+-	spinlock_t	bd_lock;	/* Used to protect board */
+-
+-	spinlock_t	bd_intr_lock;	/* Used to protect the poller tasklet and
+-					 * the interrupt routine from each other.
+-					 */
+-
+-	uint		state;		/* State of card. */
+-	wait_queue_head_t state_wait;	/* Place to sleep on for state change */
+-
+-	struct		tasklet_struct helper_tasklet; /* Poll helper tasklet */
+-
+-	uint		nasync;		/* Number of ports on card */
+-
+-	uint		irq;		/* Interrupt request number */
+-	ulong		intr_count;	/* Count of interrupts */
+-	ulong		intr_modem;	/* Count of interrupts */
+-	ulong		intr_tx;	/* Count of interrupts */
+-	ulong		intr_rx;	/* Count of interrupts */
+-
+-	ulong		membase;	/* Start of base memory of the card */
+-	ulong		membase_end;	/* End of base memory of the card */
+-
+-	u8 __iomem		*re_map_membase;/* Remapped memory of the card */
+-
+-	ulong		iobase;		/* Start of io base of the card */
+-	ulong		iobase_end;	/* End of io base of the card */
+-
+-	uint		bd_uart_offset;	/* Space between each UART */
+-
+-	struct channel_t *channels[MAXPORTS]; /* array of pointers to our channels. */
+-
+-	struct tty_driver	SerialDriver;
+-	char		SerialName[200];
+-	struct tty_driver	PrintDriver;
+-	char		PrintName[200];
+-
+-	uint		dgnc_Major_Serial_Registered;
+-	uint		dgnc_Major_TransparentPrint_Registered;
+-
+-	uint		dgnc_Serial_Major;
+-	uint		dgnc_TransparentPrint_Major;
+-
+-	uint		TtyRefCnt;
+-
+-	char		*flipbuf;	/* Our flip buffer, alloced if board is found */
+-
+-	u16		dpatype;	/* The board "type", as defined by DPA */
+-	u16		dpastatus;	/* The board "status", as defined by DPA */
+-
+-	/*
+-	 *	Mgmt data.
+-	 */
+-	char		*msgbuf_head;
+-	char		*msgbuf;
+-
+-	uint		bd_dividend;	/* Board/UARTs specific dividend */
+-
+-	struct board_ops *bd_ops;
+-
+-	/* /proc/<board> entries */
+-	struct proc_dir_entry *proc_entry_pointer;
+-	struct dgnc_proc_entry *dgnc_board_table;
+-
+-};
+-
+-
+-/************************************************************************
+- * Unit flag definitions for un_flags.
+- ************************************************************************/
+-#define UN_ISOPEN	0x0001		/* Device is open		*/
+-#define UN_CLOSING	0x0002		/* Line is being closed		*/
+-#define UN_IMM		0x0004		/* Service immediately		*/
+-#define UN_BUSY		0x0008		/* Some work this channel	*/
+-#define UN_BREAKI	0x0010		/* Input break received		*/
+-#define UN_PWAIT	0x0020		/* Printer waiting for terminal	*/
+-#define UN_TIME		0x0040		/* Waiting on time		*/
+-#define UN_EMPTY	0x0080		/* Waiting output queue empty	*/
+-#define UN_LOW		0x0100		/* Waiting output low water mark*/
+-#define UN_EXCL_OPEN	0x0200		/* Open for exclusive use	*/
+-#define UN_WOPEN	0x0400		/* Device waiting for open	*/
+-#define UN_WIOCTL	0x0800		/* Device waiting for open	*/
+-#define UN_HANGUP	0x8000		/* Carrier lost			*/
+-
+-struct device;
+-
+-/************************************************************************
+- * Structure for terminal or printer unit.
+- ************************************************************************/
+-struct un_t {
+-	int	magic;		/* Unit Magic Number.			*/
+-	struct	channel_t *un_ch;
+-	ulong	un_time;
+-	uint	un_type;
+-	uint	un_open_count;	/* Counter of opens to port		*/
+-	struct tty_struct *un_tty;/* Pointer to unit tty structure	*/
+-	uint	un_flags;	/* Unit flags				*/
+-	wait_queue_head_t un_flags_wait; /* Place to sleep to wait on unit */
+-	uint	un_dev;		/* Minor device number			*/
+-	struct device *un_sysfs;
+-};
+-
+-
+-/************************************************************************
+- * Device flag definitions for ch_flags.
+- ************************************************************************/
+-#define CH_PRON		0x0001		/* Printer on string		*/
+-#define CH_STOP		0x0002		/* Output is stopped		*/
+-#define CH_STOPI	0x0004		/* Input is stopped		*/
+-#define CH_CD		0x0008		/* Carrier is present		*/
+-#define CH_FCAR		0x0010		/* Carrier forced on		*/
+-#define CH_HANGUP       0x0020		/* Hangup received		*/
+-
+-#define CH_RECEIVER_OFF	0x0040		/* Receiver is off		*/
+-#define CH_OPENING	0x0080		/* Port in fragile open state	*/
+-#define CH_CLOSING	0x0100		/* Port in fragile close state	*/
+-#define CH_FIFO_ENABLED 0x0200		/* Port has FIFOs enabled	*/
+-#define CH_TX_FIFO_EMPTY 0x0400		/* TX Fifo is completely empty	*/
+-#define CH_TX_FIFO_LWM  0x0800		/* TX Fifo is below Low Water	*/
+-#define CH_BREAK_SENDING 0x1000		/* Break is being sent		*/
+-#define CH_LOOPBACK 0x2000		/* Channel is in lookback mode	*/
+-#define CH_FLIPBUF_IN_USE 0x4000	/* Channel's flipbuf is in use	*/
+-#define CH_BAUD0	0x08000		/* Used for checking B0 transitions */
+-#define CH_FORCED_STOP  0x20000		/* Output is forcibly stopped	*/
+-#define CH_FORCED_STOPI 0x40000		/* Input is forcibly stopped	*/
+-
+-/*
+- * Definitions for ch_sniff_flags
+- */
+-#define SNIFF_OPEN	0x1
+-#define SNIFF_WAIT_DATA	0x2
+-#define SNIFF_WAIT_SPACE 0x4
+-
+-
+-/* Our Read/Error/Write queue sizes */
+-#define RQUEUEMASK	0x1FFF		/* 8 K - 1 */
+-#define EQUEUEMASK	0x1FFF		/* 8 K - 1 */
+-#define WQUEUEMASK	0x0FFF		/* 4 K - 1 */
+-#define RQUEUESIZE	(RQUEUEMASK + 1)
+-#define EQUEUESIZE	RQUEUESIZE
+-#define WQUEUESIZE	(WQUEUEMASK + 1)
+-
+-
+-/************************************************************************
+- * Channel information structure.
+- ************************************************************************/
+-struct channel_t {
+-	int magic;			/* Channel Magic Number		*/
+-	struct dgnc_board	*ch_bd;		/* Board structure pointer      */
+-	struct digi_t	ch_digi;	/* Transparent Print structure  */
+-	struct un_t	ch_tun;		/* Terminal unit info	   */
+-	struct un_t	ch_pun;		/* Printer unit info	    */
+-
+-	spinlock_t	ch_lock;	/* provide for serialization */
+-	wait_queue_head_t ch_flags_wait;
+-
+-	uint		ch_portnum;	/* Port number, 0 offset.	*/
+-	uint		ch_open_count;	/* open count			*/
+-	uint		ch_flags;	/* Channel flags		*/
+-
+-	ulong		ch_close_delay;	/* How long we should drop RTS/DTR for */
+-
+-	ulong		ch_cpstime;	/* Time for CPS calculations    */
+-
+-	tcflag_t	ch_c_iflag;	/* channel iflags	       */
+-	tcflag_t	ch_c_cflag;	/* channel cflags	       */
+-	tcflag_t	ch_c_oflag;	/* channel oflags	       */
+-	tcflag_t	ch_c_lflag;	/* channel lflags	       */
+-	unsigned char	ch_stopc;	/* Stop character	       */
+-	unsigned char	ch_startc;	/* Start character	      */
+-
+-	uint		ch_old_baud;	/* Cache of the current baud */
+-	uint		ch_custom_speed;/* Custom baud, if set */
+-
+-	uint		ch_wopen;	/* Waiting for open process cnt */
+-
+-	unsigned char		ch_mostat;	/* FEP output modem status      */
+-	unsigned char		ch_mistat;	/* FEP input modem status       */
+-
+-	struct neo_uart_struct __iomem *ch_neo_uart;	/* Pointer to the "mapped" UART struct */
+-	struct cls_uart_struct __iomem *ch_cls_uart;	/* Pointer to the "mapped" UART struct */
+-
+-	unsigned char	ch_cached_lsr;	/* Cached value of the LSR register */
+-
+-	unsigned char	*ch_rqueue;	/* Our read queue buffer - malloc'ed */
+-	ushort		ch_r_head;	/* Head location of the read queue */
+-	ushort		ch_r_tail;	/* Tail location of the read queue */
+-
+-	unsigned char	*ch_equeue;	/* Our error queue buffer - malloc'ed */
+-	ushort		ch_e_head;	/* Head location of the error queue */
+-	ushort		ch_e_tail;	/* Tail location of the error queue */
+-
+-	unsigned char	*ch_wqueue;	/* Our write queue buffer - malloc'ed */
+-	ushort		ch_w_head;	/* Head location of the write queue */
+-	ushort		ch_w_tail;	/* Tail location of the write queue */
+-
+-	ulong		ch_rxcount;	/* total of data received so far */
+-	ulong		ch_txcount;	/* total of data transmitted so far */
+-
+-	unsigned char		ch_r_tlevel;	/* Receive Trigger level */
+-	unsigned char		ch_t_tlevel;	/* Transmit Trigger level */
+-
+-	unsigned char		ch_r_watermark;	/* Receive Watermark */
+-
+-	ulong		ch_stop_sending_break;	/* Time we should STOP sending a break */
+-
+-	uint		ch_stops_sent;	/* How many times I have sent a stop character
+-					 * to try to stop the other guy sending.
+-					 */
+-	ulong		ch_err_parity;	/* Count of parity errors on channel */
+-	ulong		ch_err_frame;	/* Count of framing errors on channel */
+-	ulong		ch_err_break;	/* Count of breaks on channel */
+-	ulong		ch_err_overrun; /* Count of overruns on channel */
+-
+-	ulong		ch_xon_sends;	/* Count of xons transmitted */
+-	ulong		ch_xoff_sends;	/* Count of xoffs transmitted */
+-
+-	ulong		ch_intr_modem;	/* Count of interrupts */
+-	ulong		ch_intr_tx;	/* Count of interrupts */
+-	ulong		ch_intr_rx;	/* Count of interrupts */
+-
+-
+-	/* /proc/<board>/<channel> entries */
+-	struct proc_dir_entry *proc_entry_pointer;
+-	struct dgnc_proc_entry *dgnc_channel_table;
+-
+-	uint ch_sniff_in;
+-	uint ch_sniff_out;
+-	char *ch_sniff_buf;		/* Sniff buffer for proc */
+-	ulong ch_sniff_flags;		/* Channel flags		*/
+-	wait_queue_head_t ch_sniff_wait;
+-};
+-
+-/*
+- * Our Global Variables.
+- */
+-extern uint		dgnc_Major;		/* Our driver/mgmt major	*/
+-extern int		dgnc_debug;		/* Debug variable		*/
+-extern int		dgnc_rawreadok;		/* Set if user wants rawreads	*/
+-extern int		dgnc_poll_tick;		/* Poll interval - 20 ms	*/
+-extern int		dgnc_trcbuf_size;	/* Size of the ringbuffer	*/
+-extern spinlock_t	dgnc_global_lock;	/* Driver global spinlock	*/
+-extern uint		dgnc_NumBoards;		/* Total number of boards	*/
+-extern struct dgnc_board	*dgnc_Board[MAXBOARDS];	/* Array of board structs	*/
+-extern char		*dgnc_state_text[];	/* Array of state text		*/
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_kcompat.h b/drivers/staging/dgnc/dgnc_kcompat.h
+deleted file mode 100644
+index eaec7e6..0000000
+--- a/drivers/staging/dgnc/dgnc_kcompat.h
++++ /dev/null
+@@ -1,64 +0,0 @@
+-/*
+- * Copyright 2004 Digi International (www.digi.com)
+- *      Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- *
+- *************************************************************************
+- *
+- * This file is intended to contain all the kernel "differences" between the
+- * various kernels that we support.
+- *
+- *************************************************************************/
+-
+-#ifndef __DGNC_KCOMPAT_H
+-#define __DGNC_KCOMPAT_H
+-
+-#if !defined(TTY_FLIPBUF_SIZE)
+-# define TTY_FLIPBUF_SIZE 512
+-#endif
+-
+-
+-/* Sparse stuff */
+-# ifndef __user
+-#  define __user
+-#  define __kernel
+-#  define __safe
+-#  define __force
+-#  define __chk_user_ptr(x) (void)0
+-# endif
+-
+-
+-#  define PARM_STR(VAR, INIT, PERM, DESC) \
+-		static char *VAR = INIT; \
+-		char *dgnc_##VAR; \
+-		module_param(VAR, charp, PERM); \
+-		MODULE_PARM_DESC(VAR, DESC);
+-
+-#  define PARM_INT(VAR, INIT, PERM, DESC) \
+-		static int VAR = INIT; \
+-		int dgnc_##VAR; \
+-		module_param(VAR, int, PERM); \
+-		MODULE_PARM_DESC(VAR, DESC);
+-
+-#  define PARM_ULONG(VAR, INIT, PERM, DESC) \
+-		static ulong VAR = INIT; \
+-		ulong dgnc_##VAR; \
+-		module_param(VAR, long, PERM); \
+-		MODULE_PARM_DESC(VAR, DESC);
+-
+-#endif /* ! __DGNC_KCOMPAT_H */
+diff --git a/drivers/staging/dgnc/dgnc_mgmt.c b/drivers/staging/dgnc/dgnc_mgmt.c
+deleted file mode 100644
+index 5544a8e..0000000
+--- a/drivers/staging/dgnc/dgnc_mgmt.c
++++ /dev/null
+@@ -1,281 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *
+- *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
+- *
+- *	This is shared code between Digi's CVS archive and the
+- *	Linux Kernel sources.
+- *	Changing the source just for reformatting needlessly breaks
+- *	our CVS diff history.
+- *
+- *	Send any bug fixes/changes to:  Eng.Linux at digi dot com.
+- *	Thank you.
+- *
+- */
+-
+-/************************************************************************
+- *
+- * This file implements the mgmt functionality for the
+- * Neo and ClassicBoard based product lines.
+- *
+- ************************************************************************
+- */
+-#include <linux/kernel.h>
+-#include <linux/ctype.h>
+-#include <linux/sched.h>	/* For jiffies, task states */
+-#include <linux/interrupt.h>	/* For tasklet and interrupt structs/defines */
+-#include <linux/serial_reg.h>
+-#include <linux/termios.h>
+-#include <linux/uaccess.h>	/* For copy_from_user/copy_to_user */
+-
+-#include "dgnc_driver.h"
+-#include "dgnc_pci.h"
+-#include "dgnc_kcompat.h"	/* Kernel 2.4/2.6 compat includes */
+-#include "dgnc_mgmt.h"
+-#include "dpacompat.h"
+-
+-
+-/* Our "in use" variables, to enforce 1 open only */
+-static int dgnc_mgmt_in_use[MAXMGMTDEVICES];
+-
+-
+-/*
+- * dgnc_mgmt_open()
+- *
+- * Open the mgmt/downld/dpa device
+- */
+-int dgnc_mgmt_open(struct inode *inode, struct file *file)
+-{
+-	unsigned long flags;
+-	unsigned int minor = iminor(inode);
+-
+-	spin_lock_irqsave(&dgnc_global_lock, flags);
+-
+-	/* mgmt device */
+-	if (minor < MAXMGMTDEVICES) {
+-		/* Only allow 1 open at a time on mgmt device */
+-		if (dgnc_mgmt_in_use[minor]) {
+-			spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-			return -EBUSY;
+-		}
+-		dgnc_mgmt_in_use[minor]++;
+-	} else {
+-		spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-		return -ENXIO;
+-	}
+-
+-	spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_mgmt_close()
+- *
+- * Open the mgmt/dpa device
+- */
+-int dgnc_mgmt_close(struct inode *inode, struct file *file)
+-{
+-	unsigned long flags;
+-	unsigned int minor = iminor(inode);
+-
+-	spin_lock_irqsave(&dgnc_global_lock, flags);
+-
+-	/* mgmt device */
+-	if (minor < MAXMGMTDEVICES) {
+-		if (dgnc_mgmt_in_use[minor])
+-			dgnc_mgmt_in_use[minor] = 0;
+-	}
+-	spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_mgmt_ioctl()
+- *
+- * ioctl the mgmt/dpa device
+- */
+-
+-long dgnc_mgmt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	unsigned long flags;
+-	void __user *uarg = (void __user *) arg;
+-
+-	switch (cmd) {
+-
+-	case DIGI_GETDD:
+-	{
+-		/*
+-		 * This returns the total number of boards
+-		 * in the system, as well as driver version
+-		 * and has space for a reserved entry
+-		 */
+-		struct digi_dinfo ddi;
+-
+-		spin_lock_irqsave(&dgnc_global_lock, flags);
+-
+-		ddi.dinfo_nboards = dgnc_NumBoards;
+-		sprintf(ddi.dinfo_version, "%s", DG_PART);
+-
+-		spin_unlock_irqrestore(&dgnc_global_lock, flags);
+-
+-		if (copy_to_user(uarg, &ddi, sizeof(ddi)))
+-			return -EFAULT;
+-
+-		break;
+-	}
+-
+-	case DIGI_GETBD:
+-	{
+-		int brd;
+-
+-		struct digi_info di;
+-
+-		if (copy_from_user(&brd, uarg, sizeof(int)))
+-			return -EFAULT;
+-
+-		if ((brd < 0) || (brd > dgnc_NumBoards) ||
+-		    (dgnc_NumBoards == 0))
+-			return -ENODEV;
+-
+-		memset(&di, 0, sizeof(di));
+-
+-		di.info_bdnum = brd;
+-
+-		spin_lock_irqsave(&dgnc_Board[brd]->bd_lock, flags);
+-
+-		di.info_bdtype = dgnc_Board[brd]->dpatype;
+-		di.info_bdstate = dgnc_Board[brd]->dpastatus;
+-		di.info_ioport = 0;
+-		di.info_physaddr = (ulong) dgnc_Board[brd]->membase;
+-		di.info_physsize = (ulong) dgnc_Board[brd]->membase - dgnc_Board[brd]->membase_end;
+-		if (dgnc_Board[brd]->state != BOARD_FAILED)
+-			di.info_nports = dgnc_Board[brd]->nasync;
+-		else
+-			di.info_nports = 0;
+-
+-		spin_unlock_irqrestore(&dgnc_Board[brd]->bd_lock, flags);
+-
+-		if (copy_to_user(uarg, &di, sizeof(di)))
+-			return -EFAULT;
+-
+-		break;
+-	}
+-
+-	case DIGI_GET_NI_INFO:
+-	{
+-		struct channel_t *ch;
+-		struct ni_info ni;
+-		unsigned char mstat = 0;
+-		uint board = 0;
+-		uint channel = 0;
+-
+-		if (copy_from_user(&ni, uarg, sizeof(ni)))
+-			return -EFAULT;
+-
+-		board = ni.board;
+-		channel = ni.channel;
+-
+-		/* Verify boundaries on board */
+-		if ((board > dgnc_NumBoards) || (dgnc_NumBoards == 0))
+-			return -ENODEV;
+-
+-		/* Verify boundaries on channel */
+-		if ((channel < 0) || (channel > dgnc_Board[board]->nasync))
+-			return -ENODEV;
+-
+-		ch = dgnc_Board[board]->channels[channel];
+-
+-		if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-			return -ENODEV;
+-
+-		memset(&ni, 0, sizeof(ni));
+-		ni.board = board;
+-		ni.channel = channel;
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		mstat = (ch->ch_mostat | ch->ch_mistat);
+-
+-		if (mstat & UART_MCR_DTR) {
+-			ni.mstat |= TIOCM_DTR;
+-			ni.dtr = TIOCM_DTR;
+-		}
+-		if (mstat & UART_MCR_RTS) {
+-			ni.mstat |= TIOCM_RTS;
+-			ni.rts = TIOCM_RTS;
+-		}
+-		if (mstat & UART_MSR_CTS) {
+-			ni.mstat |= TIOCM_CTS;
+-			ni.cts = TIOCM_CTS;
+-		}
+-		if (mstat & UART_MSR_RI) {
+-			ni.mstat |= TIOCM_RI;
+-			ni.ri = TIOCM_RI;
+-		}
+-		if (mstat & UART_MSR_DCD) {
+-			ni.mstat |= TIOCM_CD;
+-			ni.dcd = TIOCM_CD;
+-		}
+-		if (mstat & UART_MSR_DSR)
+-			ni.mstat |= TIOCM_DSR;
+-
+-		ni.iflag = ch->ch_c_iflag;
+-		ni.oflag = ch->ch_c_oflag;
+-		ni.cflag = ch->ch_c_cflag;
+-		ni.lflag = ch->ch_c_lflag;
+-
+-		if (ch->ch_digi.digi_flags & CTSPACE ||
+-		    ch->ch_c_cflag & CRTSCTS)
+-			ni.hflow = 1;
+-		else
+-			ni.hflow = 0;
+-
+-		if ((ch->ch_flags & CH_STOPI) ||
+-		    (ch->ch_flags & CH_FORCED_STOPI))
+-			ni.recv_stopped = 1;
+-		else
+-			ni.recv_stopped = 0;
+-
+-		if ((ch->ch_flags & CH_STOP) || (ch->ch_flags & CH_FORCED_STOP))
+-			ni.xmit_stopped = 1;
+-		else
+-			ni.xmit_stopped = 0;
+-
+-		ni.curtx = ch->ch_txcount;
+-		ni.currx = ch->ch_rxcount;
+-
+-		ni.baud = ch->ch_old_baud;
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		if (copy_to_user(uarg, &ni, sizeof(ni)))
+-			return -EFAULT;
+-
+-		break;
+-	}
+-
+-
+-	}
+-
+-	return 0;
+-}
+diff --git a/drivers/staging/dgnc/dgnc_mgmt.h b/drivers/staging/dgnc/dgnc_mgmt.h
+deleted file mode 100644
+index 567f687..0000000
+--- a/drivers/staging/dgnc/dgnc_mgmt.h
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-#ifndef __DGNC_MGMT_H
+-#define __DGNC_MGMT_H
+-
+-#define MAXMGMTDEVICES 8
+-
+-int dgnc_mgmt_open(struct inode *inode, struct file *file);
+-int dgnc_mgmt_close(struct inode *inode, struct file *file);
+-long dgnc_mgmt_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+-#endif
+-
+diff --git a/drivers/staging/dgnc/dgnc_neo.c b/drivers/staging/dgnc/dgnc_neo.c
+deleted file mode 100644
+index a5bd08f..0000000
+--- a/drivers/staging/dgnc/dgnc_neo.c
++++ /dev/null
+@@ -1,1878 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *
+- *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
+- *
+- *	This is shared code between Digi's CVS archive and the
+- *	Linux Kernel sources.
+- *	Changing the source just for reformatting needlessly breaks
+- *	our CVS diff history.
+- *
+- *	Send any bug fixes/changes to:  Eng.Linux at digi dot com.
+- *	Thank you.
+- *
+- */
+-
+-
+-#include <linux/kernel.h>
+-#include <linux/sched.h>	/* For jiffies, task states */
+-#include <linux/interrupt.h>    /* For tasklet and interrupt structs/defines */
+-#include <linux/delay.h>	/* For udelay */
+-#include <linux/io.h>		/* For read[bwl]/write[bwl] */
+-#include <linux/serial.h>	/* For struct async_serial */
+-#include <linux/serial_reg.h>	/* For the various UART offsets */
+-
+-#include "dgnc_driver.h"	/* Driver main header file */
+-#include "dgnc_neo.h"		/* Our header file */
+-#include "dgnc_tty.h"
+-
+-static inline void neo_parse_lsr(struct dgnc_board *brd, uint port);
+-static inline void neo_parse_isr(struct dgnc_board *brd, uint port);
+-static void neo_copy_data_from_uart_to_queue(struct channel_t *ch);
+-static inline void neo_clear_break(struct channel_t *ch, int force);
+-static inline void neo_set_cts_flow_control(struct channel_t *ch);
+-static inline void neo_set_rts_flow_control(struct channel_t *ch);
+-static inline void neo_set_ixon_flow_control(struct channel_t *ch);
+-static inline void neo_set_ixoff_flow_control(struct channel_t *ch);
+-static inline void neo_set_no_output_flow_control(struct channel_t *ch);
+-static inline void neo_set_no_input_flow_control(struct channel_t *ch);
+-static inline void neo_set_new_start_stop_chars(struct channel_t *ch);
+-static void neo_parse_modem(struct channel_t *ch, unsigned char signals);
+-static void neo_tasklet(unsigned long data);
+-static void neo_vpd(struct dgnc_board *brd);
+-static void neo_uart_init(struct channel_t *ch);
+-static void neo_uart_off(struct channel_t *ch);
+-static int neo_drain(struct tty_struct *tty, uint seconds);
+-static void neo_param(struct tty_struct *tty);
+-static void neo_assert_modem_signals(struct channel_t *ch);
+-static void neo_flush_uart_write(struct channel_t *ch);
+-static void neo_flush_uart_read(struct channel_t *ch);
+-static void neo_disable_receiver(struct channel_t *ch);
+-static void neo_enable_receiver(struct channel_t *ch);
+-static void neo_send_break(struct channel_t *ch, int msecs);
+-static void neo_send_start_character(struct channel_t *ch);
+-static void neo_send_stop_character(struct channel_t *ch);
+-static void neo_copy_data_from_queue_to_uart(struct channel_t *ch);
+-static uint neo_get_uart_bytes_left(struct channel_t *ch);
+-static void neo_send_immediate_char(struct channel_t *ch, unsigned char c);
+-static irqreturn_t neo_intr(int irq, void *voidbrd);
+-
+-
+-struct board_ops dgnc_neo_ops = {
+-	.tasklet =			neo_tasklet,
+-	.intr =				neo_intr,
+-	.uart_init =			neo_uart_init,
+-	.uart_off =			neo_uart_off,
+-	.drain =			neo_drain,
+-	.param =			neo_param,
+-	.vpd =				neo_vpd,
+-	.assert_modem_signals =		neo_assert_modem_signals,
+-	.flush_uart_write =		neo_flush_uart_write,
+-	.flush_uart_read =		neo_flush_uart_read,
+-	.disable_receiver =		neo_disable_receiver,
+-	.enable_receiver =		neo_enable_receiver,
+-	.send_break =			neo_send_break,
+-	.send_start_character =		neo_send_start_character,
+-	.send_stop_character =		neo_send_stop_character,
+-	.copy_data_from_queue_to_uart =	neo_copy_data_from_queue_to_uart,
+-	.get_uart_bytes_left =		neo_get_uart_bytes_left,
+-	.send_immediate_char =		neo_send_immediate_char
+-};
+-
+-static uint dgnc_offset_table[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+-
+-
+-/*
+- * This function allows calls to ensure that all outstanding
+- * PCI writes have been completed, by doing a PCI read against
+- * a non-destructive, read-only location on the Neo card.
+- *
+- * In this case, we are reading the DVID (Read-only Device Identification)
+- * value of the Neo card.
+- */
+-static inline void neo_pci_posting_flush(struct dgnc_board *bd)
+-{
+-	readb(bd->re_map_membase + 0x8D);
+-}
+-
+-static inline void neo_set_cts_flow_control(struct channel_t *ch)
+-{
+-	unsigned char ier = readb(&ch->ch_neo_uart->ier);
+-	unsigned char efr = readb(&ch->ch_neo_uart->efr);
+-
+-
+-	/* Turn on auto CTS flow control */
+-#if 1
+-	ier |= (UART_17158_IER_CTSDSR);
+-#else
+-	ier &= ~(UART_17158_IER_CTSDSR);
+-#endif
+-
+-	efr |= (UART_17158_EFR_ECB | UART_17158_EFR_CTSDSR);
+-
+-	/* Turn off auto Xon flow control */
+-	efr &= ~(UART_17158_EFR_IXON);
+-
+-	/* Why? Becuz Exar's spec says we have to zero it out before setting it */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on UART enhanced bits */
+-	writeb(efr, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on table D, with 8 char hi/low watermarks */
+-	writeb((UART_17158_FCTR_TRGD | UART_17158_FCTR_RTS_4DELAY), &ch->ch_neo_uart->fctr);
+-
+-	/* Feed the UART our trigger levels */
+-	writeb(8, &ch->ch_neo_uart->tfifo);
+-	ch->ch_t_tlevel = 8;
+-
+-	writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static inline void neo_set_rts_flow_control(struct channel_t *ch)
+-{
+-	unsigned char ier = readb(&ch->ch_neo_uart->ier);
+-	unsigned char efr = readb(&ch->ch_neo_uart->efr);
+-
+-	/* Turn on auto RTS flow control */
+-#if 1
+-	ier |= (UART_17158_IER_RTSDTR);
+-#else
+-	ier &= ~(UART_17158_IER_RTSDTR);
+-#endif
+-	efr |= (UART_17158_EFR_ECB | UART_17158_EFR_RTSDTR);
+-
+-	/* Turn off auto Xoff flow control */
+-	ier &= ~(UART_17158_IER_XOFF);
+-	efr &= ~(UART_17158_EFR_IXOFF);
+-
+-	/* Why? Becuz Exar's spec says we have to zero it out before setting it */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on UART enhanced bits */
+-	writeb(efr, &ch->ch_neo_uart->efr);
+-
+-	writeb((UART_17158_FCTR_TRGD | UART_17158_FCTR_RTS_4DELAY), &ch->ch_neo_uart->fctr);
+-	ch->ch_r_watermark = 4;
+-
+-	writeb(32, &ch->ch_neo_uart->rfifo);
+-	ch->ch_r_tlevel = 32;
+-
+-	writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	/*
+-	 * From the Neo UART spec sheet:
+-	 * The auto RTS/DTR function must be started by asserting
+-	 * RTS/DTR# output pin (MCR bit-0 or 1 to logic 1 after
+-	 * it is enabled.
+-	 */
+-	ch->ch_mostat |= (UART_MCR_RTS);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static inline void neo_set_ixon_flow_control(struct channel_t *ch)
+-{
+-	unsigned char ier = readb(&ch->ch_neo_uart->ier);
+-	unsigned char efr = readb(&ch->ch_neo_uart->efr);
+-
+-	/* Turn off auto CTS flow control */
+-	ier &= ~(UART_17158_IER_CTSDSR);
+-	efr &= ~(UART_17158_EFR_CTSDSR);
+-
+-	/* Turn on auto Xon flow control */
+-	efr |= (UART_17158_EFR_ECB | UART_17158_EFR_IXON);
+-
+-	/* Why? Becuz Exar's spec says we have to zero it out before setting it */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on UART enhanced bits */
+-	writeb(efr, &ch->ch_neo_uart->efr);
+-
+-	writeb((UART_17158_FCTR_TRGD | UART_17158_FCTR_RTS_8DELAY), &ch->ch_neo_uart->fctr);
+-	ch->ch_r_watermark = 4;
+-
+-	writeb(32, &ch->ch_neo_uart->rfifo);
+-	ch->ch_r_tlevel = 32;
+-
+-	/* Tell UART what start/stop chars it should be looking for */
+-	writeb(ch->ch_startc, &ch->ch_neo_uart->xonchar1);
+-	writeb(0, &ch->ch_neo_uart->xonchar2);
+-
+-	writeb(ch->ch_stopc, &ch->ch_neo_uart->xoffchar1);
+-	writeb(0, &ch->ch_neo_uart->xoffchar2);
+-
+-	writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static inline void neo_set_ixoff_flow_control(struct channel_t *ch)
+-{
+-	unsigned char ier = readb(&ch->ch_neo_uart->ier);
+-	unsigned char efr = readb(&ch->ch_neo_uart->efr);
+-
+-	/* Turn off auto RTS flow control */
+-	ier &= ~(UART_17158_IER_RTSDTR);
+-	efr &= ~(UART_17158_EFR_RTSDTR);
+-
+-	/* Turn on auto Xoff flow control */
+-	ier |= (UART_17158_IER_XOFF);
+-	efr |= (UART_17158_EFR_ECB | UART_17158_EFR_IXOFF);
+-
+-	/* Why? Becuz Exar's spec says we have to zero it out before setting it */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on UART enhanced bits */
+-	writeb(efr, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on table D, with 8 char hi/low watermarks */
+-	writeb((UART_17158_FCTR_TRGD | UART_17158_FCTR_RTS_8DELAY), &ch->ch_neo_uart->fctr);
+-
+-	writeb(8, &ch->ch_neo_uart->tfifo);
+-	ch->ch_t_tlevel = 8;
+-
+-	/* Tell UART what start/stop chars it should be looking for */
+-	writeb(ch->ch_startc, &ch->ch_neo_uart->xonchar1);
+-	writeb(0, &ch->ch_neo_uart->xonchar2);
+-
+-	writeb(ch->ch_stopc, &ch->ch_neo_uart->xoffchar1);
+-	writeb(0, &ch->ch_neo_uart->xoffchar2);
+-
+-	writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static inline void neo_set_no_input_flow_control(struct channel_t *ch)
+-{
+-	unsigned char ier = readb(&ch->ch_neo_uart->ier);
+-	unsigned char efr = readb(&ch->ch_neo_uart->efr);
+-
+-	/* Turn off auto RTS flow control */
+-	ier &= ~(UART_17158_IER_RTSDTR);
+-	efr &= ~(UART_17158_EFR_RTSDTR);
+-
+-	/* Turn off auto Xoff flow control */
+-	ier &= ~(UART_17158_IER_XOFF);
+-	if (ch->ch_c_iflag & IXON)
+-		efr &= ~(UART_17158_EFR_IXOFF);
+-	else
+-		efr &= ~(UART_17158_EFR_ECB | UART_17158_EFR_IXOFF);
+-
+-
+-	/* Why? Becuz Exar's spec says we have to zero it out before setting it */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on UART enhanced bits */
+-	writeb(efr, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on table D, with 8 char hi/low watermarks */
+-	writeb((UART_17158_FCTR_TRGD | UART_17158_FCTR_RTS_8DELAY), &ch->ch_neo_uart->fctr);
+-
+-	ch->ch_r_watermark = 0;
+-
+-	writeb(16, &ch->ch_neo_uart->tfifo);
+-	ch->ch_t_tlevel = 16;
+-
+-	writeb(16, &ch->ch_neo_uart->rfifo);
+-	ch->ch_r_tlevel = 16;
+-
+-	writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static inline void neo_set_no_output_flow_control(struct channel_t *ch)
+-{
+-	unsigned char ier = readb(&ch->ch_neo_uart->ier);
+-	unsigned char efr = readb(&ch->ch_neo_uart->efr);
+-
+-	/* Turn off auto CTS flow control */
+-	ier &= ~(UART_17158_IER_CTSDSR);
+-	efr &= ~(UART_17158_EFR_CTSDSR);
+-
+-	/* Turn off auto Xon flow control */
+-	if (ch->ch_c_iflag & IXOFF)
+-		efr &= ~(UART_17158_EFR_IXON);
+-	else
+-		efr &= ~(UART_17158_EFR_ECB | UART_17158_EFR_IXON);
+-
+-	/* Why? Becuz Exar's spec says we have to zero it out before setting it */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on UART enhanced bits */
+-	writeb(efr, &ch->ch_neo_uart->efr);
+-
+-	/* Turn on table D, with 8 char hi/low watermarks */
+-	writeb((UART_17158_FCTR_TRGD | UART_17158_FCTR_RTS_8DELAY), &ch->ch_neo_uart->fctr);
+-
+-	ch->ch_r_watermark = 0;
+-
+-	writeb(16, &ch->ch_neo_uart->tfifo);
+-	ch->ch_t_tlevel = 16;
+-
+-	writeb(16, &ch->ch_neo_uart->rfifo);
+-	ch->ch_r_tlevel = 16;
+-
+-	writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-/* change UARTs start/stop chars */
+-static inline void neo_set_new_start_stop_chars(struct channel_t *ch)
+-{
+-
+-	/* if hardware flow control is set, then skip this whole thing */
+-	if (ch->ch_digi.digi_flags & (CTSPACE | RTSPACE) || ch->ch_c_cflag & CRTSCTS)
+-		return;
+-
+-	/* Tell UART what start/stop chars it should be looking for */
+-	writeb(ch->ch_startc, &ch->ch_neo_uart->xonchar1);
+-	writeb(0, &ch->ch_neo_uart->xonchar2);
+-
+-	writeb(ch->ch_stopc, &ch->ch_neo_uart->xoffchar1);
+-	writeb(0, &ch->ch_neo_uart->xoffchar2);
+-
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-/*
+- * No locks are assumed to be held when calling this function.
+- */
+-static inline void neo_clear_break(struct channel_t *ch, int force)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* Bail if we aren't currently sending a break. */
+-	if (!ch->ch_stop_sending_break) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/* Turn break off, and unset some variables */
+-	if (ch->ch_flags & CH_BREAK_SENDING) {
+-		if (time_after_eq(jiffies, ch->ch_stop_sending_break)
+-		    || force) {
+-			unsigned char temp = readb(&ch->ch_neo_uart->lcr);
+-
+-			writeb((temp & ~UART_LCR_SBC), &ch->ch_neo_uart->lcr);
+-			neo_pci_posting_flush(ch->ch_bd);
+-			ch->ch_flags &= ~(CH_BREAK_SENDING);
+-			ch->ch_stop_sending_break = 0;
+-		}
+-	}
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/*
+- * Parse the ISR register.
+- */
+-static inline void neo_parse_isr(struct dgnc_board *brd, uint port)
+-{
+-	struct channel_t *ch;
+-	unsigned char isr;
+-	unsigned char cause;
+-	unsigned long flags;
+-
+-	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	if (port > brd->maxports)
+-		return;
+-
+-	ch = brd->channels[port];
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	/* Here we try to figure out what caused the interrupt to happen */
+-	while (1) {
+-
+-		isr = readb(&ch->ch_neo_uart->isr_fcr);
+-
+-		/* Bail if no pending interrupt */
+-		if (isr & UART_IIR_NO_INT)
+-			break;
+-
+-		/*
+-		 * Yank off the upper 2 bits, which just show that the FIFO's are enabled.
+-		 */
+-		isr &= ~(UART_17158_IIR_FIFO_ENABLED);
+-
+-		if (isr & (UART_17158_IIR_RDI_TIMEOUT | UART_IIR_RDI)) {
+-			/* Read data from uart -> queue */
+-			brd->intr_rx++;
+-			ch->ch_intr_rx++;
+-			neo_copy_data_from_uart_to_queue(ch);
+-
+-			/* Call our tty layer to enforce queue flow control if needed. */
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-			dgnc_check_queue_flow_control(ch);
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		}
+-
+-		if (isr & UART_IIR_THRI) {
+-			brd->intr_tx++;
+-			ch->ch_intr_tx++;
+-			/* Transfer data (if any) from Write Queue -> UART. */
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-			ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			neo_copy_data_from_queue_to_uart(ch);
+-		}
+-
+-		if (isr & UART_17158_IIR_XONXOFF) {
+-			cause = readb(&ch->ch_neo_uart->xoffchar1);
+-
+-			/*
+-			 * Since the UART detected either an XON or
+-			 * XOFF match, we need to figure out which
+-			 * one it was, so we can suspend or resume data flow.
+-			 */
+-			if (cause == UART_17158_XON_DETECT) {
+-				/* Is output stopped right now, if so, resume it */
+-				if (brd->channels[port]->ch_flags & CH_STOP) {
+-					spin_lock_irqsave(&ch->ch_lock,
+-							  flags);
+-					ch->ch_flags &= ~(CH_STOP);
+-					spin_unlock_irqrestore(&ch->ch_lock,
+-							       flags);
+-				}
+-			} else if (cause == UART_17158_XOFF_DETECT) {
+-				if (!(brd->channels[port]->ch_flags & CH_STOP)) {
+-					spin_lock_irqsave(&ch->ch_lock,
+-							  flags);
+-					ch->ch_flags |= CH_STOP;
+-					spin_unlock_irqrestore(&ch->ch_lock,
+-							       flags);
+-				}
+-			}
+-		}
+-
+-		if (isr & UART_17158_IIR_HWFLOW_STATE_CHANGE) {
+-			/*
+-			 * If we get here, this means the hardware is doing auto flow control.
+-			 * Check to see whether RTS/DTR or CTS/DSR caused this interrupt.
+-			 */
+-			brd->intr_modem++;
+-			ch->ch_intr_modem++;
+-			cause = readb(&ch->ch_neo_uart->mcr);
+-			/* Which pin is doing auto flow? RTS or DTR? */
+-			if ((cause & 0x4) == 0) {
+-				if (cause & UART_MCR_RTS) {
+-					spin_lock_irqsave(&ch->ch_lock,
+-							  flags);
+-					ch->ch_mostat |= UART_MCR_RTS;
+-					spin_unlock_irqrestore(&ch->ch_lock,
+-							       flags);
+-				} else {
+-					spin_lock_irqsave(&ch->ch_lock,
+-							  flags);
+-					ch->ch_mostat &= ~(UART_MCR_RTS);
+-					spin_unlock_irqrestore(&ch->ch_lock,
+-							       flags);
+-				}
+-			} else {
+-				if (cause & UART_MCR_DTR) {
+-					spin_lock_irqsave(&ch->ch_lock,
+-							  flags);
+-					ch->ch_mostat |= UART_MCR_DTR;
+-					spin_unlock_irqrestore(&ch->ch_lock,
+-							       flags);
+-				} else {
+-					spin_lock_irqsave(&ch->ch_lock,
+-							  flags);
+-					ch->ch_mostat &= ~(UART_MCR_DTR);
+-					spin_unlock_irqrestore(&ch->ch_lock,
+-							       flags);
+-				}
+-			}
+-		}
+-
+-		/* Parse any modem signal changes */
+-		neo_parse_modem(ch, readb(&ch->ch_neo_uart->msr));
+-	}
+-}
+-
+-
+-static inline void neo_parse_lsr(struct dgnc_board *brd, uint port)
+-{
+-	struct channel_t *ch;
+-	int linestatus;
+-	unsigned long flags;
+-
+-	if (!brd)
+-		return;
+-
+-	if (brd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	if (port > brd->maxports)
+-		return;
+-
+-	ch = brd->channels[port];
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	linestatus = readb(&ch->ch_neo_uart->lsr);
+-
+-	ch->ch_cached_lsr |= linestatus;
+-
+-	if (ch->ch_cached_lsr & UART_LSR_DR) {
+-		brd->intr_rx++;
+-		ch->ch_intr_rx++;
+-		/* Read data from uart -> queue */
+-		neo_copy_data_from_uart_to_queue(ch);
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-		dgnc_check_queue_flow_control(ch);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-	}
+-
+-	/*
+-	 * The next 3 tests should *NOT* happen, as the above test
+-	 * should encapsulate all 3... At least, thats what Exar says.
+-	 */
+-
+-	if (linestatus & UART_LSR_PE)
+-		ch->ch_err_parity++;
+-
+-	if (linestatus & UART_LSR_FE)
+-		ch->ch_err_frame++;
+-
+-	if (linestatus & UART_LSR_BI)
+-		ch->ch_err_break++;
+-
+-	if (linestatus & UART_LSR_OE) {
+-		/*
+-		 * Rx Oruns. Exar says that an orun will NOT corrupt
+-		 * the FIFO. It will just replace the holding register
+-		 * with this new data byte. So basically just ignore this.
+-		 * Probably we should eventually have an orun stat in our driver...
+-		 */
+-		ch->ch_err_overrun++;
+-	}
+-
+-	if (linestatus & UART_LSR_THRE) {
+-		brd->intr_tx++;
+-		ch->ch_intr_tx++;
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-		ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		/* Transfer data (if any) from Write Queue -> UART. */
+-		neo_copy_data_from_queue_to_uart(ch);
+-	} else if (linestatus & UART_17158_TX_AND_FIFO_CLR) {
+-		brd->intr_tx++;
+-		ch->ch_intr_tx++;
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-		ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		/* Transfer data (if any) from Write Queue -> UART. */
+-		neo_copy_data_from_queue_to_uart(ch);
+-	}
+-}
+-
+-
+-/*
+- * neo_param()
+- * Send any/all changes to the line to the UART.
+- */
+-static void neo_param(struct tty_struct *tty)
+-{
+-	unsigned char lcr = 0;
+-	unsigned char uart_lcr = 0;
+-	unsigned char ier = 0;
+-	unsigned char uart_ier = 0;
+-	uint baud = 9600;
+-	int quot = 0;
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t   *un;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = (struct un_t *) tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	/*
+-	 * If baud rate is zero, flush queues, and set mval to drop DTR.
+-	 */
+-	if ((ch->ch_c_cflag & (CBAUD)) == 0) {
+-		ch->ch_r_head = 0;
+-		ch->ch_r_tail = 0;
+-		ch->ch_e_head = 0;
+-		ch->ch_e_tail = 0;
+-		ch->ch_w_head = 0;
+-		ch->ch_w_tail = 0;
+-
+-		neo_flush_uart_write(ch);
+-		neo_flush_uart_read(ch);
+-
+-		/* The baudrate is B0 so all modem lines are to be dropped. */
+-		ch->ch_flags |= (CH_BAUD0);
+-		ch->ch_mostat &= ~(UART_MCR_RTS | UART_MCR_DTR);
+-		neo_assert_modem_signals(ch);
+-		ch->ch_old_baud = 0;
+-		return;
+-
+-	} else if (ch->ch_custom_speed) {
+-
+-		baud = ch->ch_custom_speed;
+-		/* Handle transition from B0 */
+-		if (ch->ch_flags & CH_BAUD0) {
+-			ch->ch_flags &= ~(CH_BAUD0);
+-
+-			/*
+-			 * Bring back up RTS and DTR...
+-			 * Also handle RTS or DTR toggle if set.
+-			 */
+-			if (!(ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_RTS);
+-			if (!(ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_DTR);
+-		}
+-	} else {
+-		int iindex = 0;
+-		int jindex = 0;
+-
+-		ulong bauds[4][16] = {
+-			{ /* slowbaud */
+-				0,      50,     75,     110,
+-				134,    150,    200,    300,
+-				600,    1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 },
+-			{ /* slowbaud & CBAUDEX */
+-				0,      57600,  115200, 230400,
+-				460800, 150,    200,    921600,
+-				600,    1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 },
+-			{ /* fastbaud */
+-				0,      57600,   76800, 115200,
+-				131657, 153600, 230400, 460800,
+-				921600, 1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 },
+-			{ /* fastbaud & CBAUDEX */
+-				0,      57600,  115200, 230400,
+-				460800, 150,    200,    921600,
+-				600,    1200,   1800,   2400,
+-				4800,   9600,   19200,  38400 }
+-		};
+-
+-		/* Only use the TXPrint baud rate if the terminal unit is NOT open */
+-		if (!(ch->ch_tun.un_flags & UN_ISOPEN) && (un->un_type == DGNC_PRINT))
+-			baud = C_BAUD(ch->ch_pun.un_tty) & 0xff;
+-		else
+-			baud = C_BAUD(ch->ch_tun.un_tty) & 0xff;
+-
+-		if (ch->ch_c_cflag & CBAUDEX)
+-			iindex = 1;
+-
+-		if (ch->ch_digi.digi_flags & DIGI_FAST)
+-			iindex += 2;
+-
+-		jindex = baud;
+-
+-		if ((iindex >= 0) && (iindex < 4) && (jindex >= 0) && (jindex < 16))
+-			baud = bauds[iindex][jindex];
+-		else
+-			baud = 0;
+-
+-		if (baud == 0)
+-			baud = 9600;
+-
+-		/* Handle transition from B0 */
+-		if (ch->ch_flags & CH_BAUD0) {
+-			ch->ch_flags &= ~(CH_BAUD0);
+-
+-			/*
+-			 * Bring back up RTS and DTR...
+-			 * Also handle RTS or DTR toggle if set.
+-			 */
+-			if (!(ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_RTS);
+-			if (!(ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE))
+-				ch->ch_mostat |= (UART_MCR_DTR);
+-		}
+-	}
+-
+-	if (ch->ch_c_cflag & PARENB)
+-		lcr |= UART_LCR_PARITY;
+-
+-	if (!(ch->ch_c_cflag & PARODD))
+-		lcr |= UART_LCR_EPAR;
+-
+-	/*
+-	 * Not all platforms support mark/space parity,
+-	 * so this will hide behind an ifdef.
+-	 */
+-#ifdef CMSPAR
+-	if (ch->ch_c_cflag & CMSPAR)
+-		lcr |= UART_LCR_SPAR;
+-#endif
+-
+-	if (ch->ch_c_cflag & CSTOPB)
+-		lcr |= UART_LCR_STOP;
+-
+-	switch (ch->ch_c_cflag & CSIZE) {
+-	case CS5:
+-		lcr |= UART_LCR_WLEN5;
+-		break;
+-	case CS6:
+-		lcr |= UART_LCR_WLEN6;
+-		break;
+-	case CS7:
+-		lcr |= UART_LCR_WLEN7;
+-		break;
+-	case CS8:
+-	default:
+-		lcr |= UART_LCR_WLEN8;
+-		break;
+-	}
+-
+-	uart_ier = readb(&ch->ch_neo_uart->ier);
+-	ier = uart_ier;
+-
+-	uart_lcr = readb(&ch->ch_neo_uart->lcr);
+-
+-	if (baud == 0)
+-		baud = 9600;
+-
+-	quot = ch->ch_bd->bd_dividend / baud;
+-
+-	if (quot != 0 && ch->ch_old_baud != baud) {
+-		ch->ch_old_baud = baud;
+-		writeb(UART_LCR_DLAB, &ch->ch_neo_uart->lcr);
+-		writeb((quot & 0xff), &ch->ch_neo_uart->txrx);
+-		writeb((quot >> 8), &ch->ch_neo_uart->ier);
+-		writeb(lcr, &ch->ch_neo_uart->lcr);
+-	}
+-
+-	if (uart_lcr != lcr)
+-		writeb(lcr, &ch->ch_neo_uart->lcr);
+-
+-	if (ch->ch_c_cflag & CREAD)
+-		ier |= (UART_IER_RDI | UART_IER_RLSI);
+-	else
+-		ier &= ~(UART_IER_RDI | UART_IER_RLSI);
+-
+-	/*
+-	 * Have the UART interrupt on modem signal changes ONLY when
+-	 * we are in hardware flow control mode, or CLOCAL/FORCEDCD is not set.
+-	 */
+-	if ((ch->ch_digi.digi_flags & CTSPACE) ||
+-	    (ch->ch_digi.digi_flags & RTSPACE) ||
+-	    (ch->ch_c_cflag & CRTSCTS) ||
+-	    !(ch->ch_digi.digi_flags & DIGI_FORCEDCD) ||
+-	    !(ch->ch_c_cflag & CLOCAL))
+-		ier |= UART_IER_MSI;
+-	else
+-		ier &= ~UART_IER_MSI;
+-
+-	ier |= UART_IER_THRI;
+-
+-	if (ier != uart_ier)
+-		writeb(ier, &ch->ch_neo_uart->ier);
+-
+-	/* Set new start/stop chars */
+-	neo_set_new_start_stop_chars(ch);
+-
+-	if (ch->ch_digi.digi_flags & CTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-		neo_set_cts_flow_control(ch);
+-	} else if (ch->ch_c_iflag & IXON) {
+-		/* If start/stop is set to disable, then we should disable flow control */
+-		if ((ch->ch_startc == _POSIX_VDISABLE) || (ch->ch_stopc == _POSIX_VDISABLE))
+-			neo_set_no_output_flow_control(ch);
+-		else
+-			neo_set_ixon_flow_control(ch);
+-	} else {
+-		neo_set_no_output_flow_control(ch);
+-	}
+-
+-	if (ch->ch_digi.digi_flags & RTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-		neo_set_rts_flow_control(ch);
+-	} else if (ch->ch_c_iflag & IXOFF) {
+-		/* If start/stop is set to disable, then we should disable flow control */
+-		if ((ch->ch_startc == _POSIX_VDISABLE) || (ch->ch_stopc == _POSIX_VDISABLE))
+-			neo_set_no_input_flow_control(ch);
+-		else
+-			neo_set_ixoff_flow_control(ch);
+-	} else {
+-		neo_set_no_input_flow_control(ch);
+-	}
+-
+-	/*
+-	 * Adjust the RX FIFO Trigger level if baud is less than 9600.
+-	 * Not exactly elegant, but this is needed because of the Exar chip's
+-	 * delay on firing off the RX FIFO interrupt on slower baud rates.
+-	 */
+-	if (baud < 9600) {
+-		writeb(1, &ch->ch_neo_uart->rfifo);
+-		ch->ch_r_tlevel = 1;
+-	}
+-
+-	neo_assert_modem_signals(ch);
+-
+-	/* Get current status of the modem signals now */
+-	neo_parse_modem(ch, readb(&ch->ch_neo_uart->msr));
+-}
+-
+-
+-/*
+- * Our board poller function.
+- */
+-static void neo_tasklet(unsigned long data)
+-{
+-	struct dgnc_board *bd = (struct dgnc_board *) data;
+-	struct channel_t *ch;
+-	unsigned long flags;
+-	int i;
+-	int state = 0;
+-	int ports = 0;
+-
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC) {
+-		APR(("poll_tasklet() - NULL or bad bd.\n"));
+-		return;
+-	}
+-
+-	/* Cache a couple board values */
+-	spin_lock_irqsave(&bd->bd_lock, flags);
+-	state = bd->state;
+-	ports = bd->nasync;
+-	spin_unlock_irqrestore(&bd->bd_lock, flags);
+-
+-	/*
+-	 * Do NOT allow the interrupt routine to read the intr registers
+-	 * Until we release this lock.
+-	 */
+-	spin_lock_irqsave(&bd->bd_intr_lock, flags);
+-
+-	/*
+-	 * If board is ready, parse deeper to see if there is anything to do.
+-	 */
+-	if ((state == BOARD_READY) && (ports > 0)) {
+-		/* Loop on each port */
+-		for (i = 0; i < ports; i++) {
+-			ch = bd->channels[i];
+-
+-			/* Just being careful... */
+-			if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-				continue;
+-
+-			/*
+-			 * NOTE: Remember you CANNOT hold any channel
+-			 * locks when calling the input routine.
+-			 *
+-			 * During input processing, its possible we
+-			 * will call the Linux ld, which might in turn,
+-			 * do a callback right back into us, resulting
+-			 * in us trying to grab the channel lock twice!
+-			 */
+-			dgnc_input(ch);
+-
+-			/*
+-			 * Channel lock is grabbed and then released
+-			 * inside both of these routines, but neither
+-			 * call anything else that could call back into us.
+-			 */
+-			neo_copy_data_from_queue_to_uart(ch);
+-			dgnc_wakeup_writes(ch);
+-
+-			/*
+-			 * Call carrier carrier function, in case something
+-			 * has changed.
+-			 */
+-			dgnc_carrier(ch);
+-
+-			/*
+-			 * Check to see if we need to turn off a sending break.
+-			 * The timing check is done inside clear_break()
+-			 */
+-			if (ch->ch_stop_sending_break)
+-				neo_clear_break(ch, 0);
+-		}
+-	}
+-
+-	/* Allow interrupt routine to access the interrupt register again */
+-	spin_unlock_irqrestore(&bd->bd_intr_lock, flags);
+-
+-}
+-
+-
+-/*
+- * dgnc_neo_intr()
+- *
+- * Neo specific interrupt handler.
+- */
+-static irqreturn_t neo_intr(int irq, void *voidbrd)
+-{
+-	struct dgnc_board *brd = (struct dgnc_board *) voidbrd;
+-	struct channel_t *ch;
+-	int port = 0;
+-	int type = 0;
+-	int current_port;
+-	u32 tmp;
+-	u32 uart_poll;
+-	unsigned long flags;
+-	unsigned long flags2;
+-
+-	if (!brd) {
+-		APR(("Received interrupt (%d) with null board associated\n", irq));
+-		return IRQ_NONE;
+-	}
+-
+-	/*
+-	 * Check to make sure its for us.
+-	 */
+-	if (brd->magic != DGNC_BOARD_MAGIC) {
+-		APR(("Received interrupt (%d) with a board pointer that wasn't ours!\n", irq));
+-		return IRQ_NONE;
+-	}
+-
+-	brd->intr_count++;
+-
+-	/* Lock out the slow poller from running on this board. */
+-	spin_lock_irqsave(&brd->bd_intr_lock, flags);
+-
+-	/*
+-	 * Read in "extended" IRQ information from the 32bit Neo register.
+-	 * Bits 0-7: What port triggered the interrupt.
+-	 * Bits 8-31: Each 3bits indicate what type of interrupt occurred.
+-	 */
+-	uart_poll = readl(brd->re_map_membase + UART_17158_POLL_ADDR_OFFSET);
+-
+-	/*
+-	 * If 0, no interrupts pending.
+-	 * This can happen if the IRQ is shared among a couple Neo/Classic boards.
+-	 */
+-	if (!uart_poll) {
+-		spin_unlock_irqrestore(&brd->bd_intr_lock, flags);
+-		return IRQ_NONE;
+-	}
+-
+-	/* At this point, we have at least SOMETHING to service, dig further... */
+-
+-	current_port = 0;
+-
+-	/* Loop on each port */
+-	while ((uart_poll & 0xff) != 0) {
+-
+-		tmp = uart_poll;
+-
+-		/* Check current port to see if it has interrupt pending */
+-		if ((tmp & dgnc_offset_table[current_port]) != 0) {
+-			port = current_port;
+-			type = tmp >> (8 + (port * 3));
+-			type &= 0x7;
+-		} else {
+-			current_port++;
+-			continue;
+-		}
+-
+-		/* Remove this port + type from uart_poll */
+-		uart_poll &= ~(dgnc_offset_table[port]);
+-
+-		if (!type) {
+-			/* If no type, just ignore it, and move onto next port */
+-			continue;
+-		}
+-
+-		/* Switch on type of interrupt we have */
+-		switch (type) {
+-
+-		case UART_17158_RXRDY_TIMEOUT:
+-			/*
+-			 * RXRDY Time-out is cleared by reading data in the
+-			 * RX FIFO until it falls below the trigger level.
+-			 */
+-
+-			/* Verify the port is in range. */
+-			if (port > brd->nasync)
+-				continue;
+-
+-			ch = brd->channels[port];
+-			neo_copy_data_from_uart_to_queue(ch);
+-
+-			/* Call our tty layer to enforce queue flow control if needed. */
+-			spin_lock_irqsave(&ch->ch_lock, flags2);
+-			dgnc_check_queue_flow_control(ch);
+-			spin_unlock_irqrestore(&ch->ch_lock, flags2);
+-
+-			continue;
+-
+-		case UART_17158_RX_LINE_STATUS:
+-			/*
+-			 * RXRDY and RX LINE Status (logic OR of LSR[4:1])
+-			 */
+-			neo_parse_lsr(brd, port);
+-			continue;
+-
+-		case UART_17158_TXRDY:
+-			/*
+-			 * TXRDY interrupt clears after reading ISR register for the UART channel.
+-			 */
+-
+-			/*
+-			 * Yes, this is odd...
+-			 * Why would I check EVERY possibility of type of
+-			 * interrupt, when we know its TXRDY???
+-			 * Becuz for some reason, even tho we got triggered for TXRDY,
+-			 * it seems to be occasionally wrong. Instead of TX, which
+-			 * it should be, I was getting things like RXDY too. Weird.
+-			 */
+-			neo_parse_isr(brd, port);
+-			continue;
+-
+-		case UART_17158_MSR:
+-			/*
+-			 * MSR or flow control was seen.
+-			 */
+-			neo_parse_isr(brd, port);
+-			continue;
+-
+-		default:
+-			/*
+-			 * The UART triggered us with a bogus interrupt type.
+-			 * It appears the Exar chip, when REALLY bogged down, will throw
+-			 * these once and awhile.
+-			 * Its harmless, just ignore it and move on.
+-			 */
+-			continue;
+-		}
+-	}
+-
+-	/*
+-	 * Schedule tasklet to more in-depth servicing at a better time.
+-	 */
+-	tasklet_schedule(&brd->helper_tasklet);
+-
+-	spin_unlock_irqrestore(&brd->bd_intr_lock, flags);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-
+-/*
+- * Neo specific way of turning off the receiver.
+- * Used as a way to enforce queue flow control when in
+- * hardware flow control mode.
+- */
+-static void neo_disable_receiver(struct channel_t *ch)
+-{
+-	unsigned char tmp = readb(&ch->ch_neo_uart->ier);
+-
+-	tmp &= ~(UART_IER_RDI);
+-	writeb(tmp, &ch->ch_neo_uart->ier);
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-/*
+- * Neo specific way of turning on the receiver.
+- * Used as a way to un-enforce queue flow control when in
+- * hardware flow control mode.
+- */
+-static void neo_enable_receiver(struct channel_t *ch)
+-{
+-	unsigned char tmp = readb(&ch->ch_neo_uart->ier);
+-
+-	tmp |= (UART_IER_RDI);
+-	writeb(tmp, &ch->ch_neo_uart->ier);
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static void neo_copy_data_from_uart_to_queue(struct channel_t *ch)
+-{
+-	int qleft = 0;
+-	unsigned char linestatus = 0;
+-	unsigned char error_mask = 0;
+-	int n = 0;
+-	int total = 0;
+-	ushort head;
+-	ushort tail;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* cache head and tail of queue */
+-	head = ch->ch_r_head & RQUEUEMASK;
+-	tail = ch->ch_r_tail & RQUEUEMASK;
+-
+-	/* Get our cached LSR */
+-	linestatus = ch->ch_cached_lsr;
+-	ch->ch_cached_lsr = 0;
+-
+-	/* Store how much space we have left in the queue */
+-	qleft = tail - head - 1;
+-	if (qleft < 0)
+-		qleft += RQUEUEMASK + 1;
+-
+-	/*
+-	 * If the UART is not in FIFO mode, force the FIFO copy to
+-	 * NOT be run, by setting total to 0.
+-	 *
+-	 * On the other hand, if the UART IS in FIFO mode, then ask
+-	 * the UART to give us an approximation of data it has RX'ed.
+-	 */
+-	if (!(ch->ch_flags & CH_FIFO_ENABLED))
+-		total = 0;
+-	else {
+-		total = readb(&ch->ch_neo_uart->rfifo);
+-
+-		/*
+-		 * EXAR chip bug - RX FIFO COUNT - Fudge factor.
+-		 *
+-		 * This resolves a problem/bug with the Exar chip that sometimes
+-		 * returns a bogus value in the rfifo register.
+-		 * The count can be any where from 0-3 bytes "off".
+-		 * Bizarre, but true.
+-		 */
+-		if ((ch->ch_bd->dvid & 0xf0) >= UART_XR17E158_DVID)
+-			total -= 1;
+-		else
+-			total -= 3;
+-	}
+-
+-
+-	/*
+-	 * Finally, bound the copy to make sure we don't overflow
+-	 * our own queue...
+-	 * The byte by byte copy loop below this loop this will
+-	 * deal with the queue overflow possibility.
+-	 */
+-	total = min(total, qleft);
+-
+-	while (total > 0) {
+-
+-		/*
+-		 * Grab the linestatus register, we need to check
+-		 * to see if there are any errors in the FIFO.
+-		 */
+-		linestatus = readb(&ch->ch_neo_uart->lsr);
+-
+-		/*
+-		 * Break out if there is a FIFO error somewhere.
+-		 * This will allow us to go byte by byte down below,
+-		 * finding the exact location of the error.
+-		 */
+-		if (linestatus & UART_17158_RX_FIFO_DATA_ERROR)
+-			break;
+-
+-		/* Make sure we don't go over the end of our queue */
+-		n = min(((uint) total), (RQUEUESIZE - (uint) head));
+-
+-		/*
+-		 * Cut down n even further if needed, this is to fix
+-		 * a problem with memcpy_fromio() with the Neo on the
+-		 * IBM pSeries platform.
+-		 * 15 bytes max appears to be the magic number.
+-		 */
+-		n = min((uint) n, (uint) 12);
+-
+-		/*
+-		 * Since we are grabbing the linestatus register, which
+-		 * will reset some bits after our read, we need to ensure
+-		 * we don't miss our TX FIFO emptys.
+-		 */
+-		if (linestatus & (UART_LSR_THRE | UART_17158_TX_AND_FIFO_CLR))
+-			ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-
+-		linestatus = 0;
+-
+-		/* Copy data from uart to the queue */
+-		memcpy_fromio(ch->ch_rqueue + head, &ch->ch_neo_uart->txrxburst, n);
+-		dgnc_sniff_nowait_nolock(ch, "UART READ", ch->ch_rqueue + head, n);
+-
+-		/*
+-		 * Since RX_FIFO_DATA_ERROR was 0, we are guarenteed
+-		 * that all the data currently in the FIFO is free of
+-		 * breaks and parity/frame/orun errors.
+-		 */
+-		memset(ch->ch_equeue + head, 0, n);
+-
+-		/* Add to and flip head if needed */
+-		head = (head + n) & RQUEUEMASK;
+-		total -= n;
+-		qleft -= n;
+-		ch->ch_rxcount += n;
+-	}
+-
+-	/*
+-	 * Create a mask to determine whether we should
+-	 * insert the character (if any) into our queue.
+-	 */
+-	if (ch->ch_c_iflag & IGNBRK)
+-		error_mask |= UART_LSR_BI;
+-
+-	/*
+-	 * Now cleanup any leftover bytes still in the UART.
+-	 * Also deal with any possible queue overflow here as well.
+-	 */
+-	while (1) {
+-
+-		/*
+-		 * Its possible we have a linestatus from the loop above
+-		 * this, so we "OR" on any extra bits.
+-		 */
+-		linestatus |= readb(&ch->ch_neo_uart->lsr);
+-
+-		/*
+-		 * If the chip tells us there is no more data pending to
+-		 * be read, we can then leave.
+-		 * But before we do, cache the linestatus, just in case.
+-		 */
+-		if (!(linestatus & UART_LSR_DR)) {
+-			ch->ch_cached_lsr = linestatus;
+-			break;
+-		}
+-
+-		/* No need to store this bit */
+-		linestatus &= ~UART_LSR_DR;
+-
+-		/*
+-		 * Since we are grabbing the linestatus register, which
+-		 * will reset some bits after our read, we need to ensure
+-		 * we don't miss our TX FIFO emptys.
+-		 */
+-		if (linestatus & (UART_LSR_THRE | UART_17158_TX_AND_FIFO_CLR)) {
+-			linestatus &= ~(UART_LSR_THRE | UART_17158_TX_AND_FIFO_CLR);
+-			ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-		}
+-
+-		/*
+-		 * Discard character if we are ignoring the error mask.
+-		 */
+-		if (linestatus & error_mask)  {
+-			unsigned char discard;
+-
+-			linestatus = 0;
+-			memcpy_fromio(&discard, &ch->ch_neo_uart->txrxburst, 1);
+-			continue;
+-		}
+-
+-		/*
+-		 * If our queue is full, we have no choice but to drop some data.
+-		 * The assumption is that HWFLOW or SWFLOW should have stopped
+-		 * things way way before we got to this point.
+-		 *
+-		 * I decided that I wanted to ditch the oldest data first,
+-		 * I hope thats okay with everyone? Yes? Good.
+-		 */
+-		while (qleft < 1) {
+-			tail = (tail + 1) & RQUEUEMASK;
+-			ch->ch_r_tail = tail;
+-			ch->ch_err_overrun++;
+-			qleft++;
+-		}
+-
+-		memcpy_fromio(ch->ch_rqueue + head, &ch->ch_neo_uart->txrxburst, 1);
+-		ch->ch_equeue[head] = (unsigned char) linestatus;
+-		dgnc_sniff_nowait_nolock(ch, "UART READ", ch->ch_rqueue + head, 1);
+-
+-		/* Ditch any remaining linestatus value. */
+-		linestatus = 0;
+-
+-		/* Add to and flip head if needed */
+-		head = (head + 1) & RQUEUEMASK;
+-
+-		qleft--;
+-		ch->ch_rxcount++;
+-	}
+-
+-	/*
+-	 * Write new final heads to channel structure.
+-	 */
+-	ch->ch_r_head = head & RQUEUEMASK;
+-	ch->ch_e_head = head & EQUEUEMASK;
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/*
+- * This function basically goes to sleep for secs, or until
+- * it gets signalled that the port has fully drained.
+- */
+-static int neo_drain(struct tty_struct *tty, uint seconds)
+-{
+-	unsigned long flags;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int rc = 0;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return -ENXIO;
+-
+-	un = (struct un_t *) tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return -ENXIO;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -ENXIO;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	un->un_flags |= UN_EMPTY;
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	/*
+-	 * Go to sleep waiting for the tty layer to wake me back up when
+-	 * the empty flag goes away.
+-	 *
+-	 * NOTE: TODO: Do something with time passed in.
+-	 */
+-	rc = wait_event_interruptible(un->un_flags_wait, ((un->un_flags & UN_EMPTY) == 0));
+-
+-	/* If ret is non-zero, user ctrl-c'ed us */
+-	return rc;
+-}
+-
+-
+-/*
+- * Flush the WRITE FIFO on the Neo.
+- *
+- * NOTE: Channel lock MUST be held before calling this function!
+- */
+-static void neo_flush_uart_write(struct channel_t *ch)
+-{
+-	unsigned char tmp = 0;
+-	int i = 0;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_XMIT), &ch->ch_neo_uart->isr_fcr);
+-	neo_pci_posting_flush(ch->ch_bd);
+-
+-	for (i = 0; i < 10; i++) {
+-
+-		/* Check to see if the UART feels it completely flushed the FIFO. */
+-		tmp = readb(&ch->ch_neo_uart->isr_fcr);
+-		if (tmp & 4)
+-			udelay(10);
+-		else
+-			break;
+-	}
+-
+-	ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-}
+-
+-
+-/*
+- * Flush the READ FIFO on the Neo.
+- *
+- * NOTE: Channel lock MUST be held before calling this function!
+- */
+-static void neo_flush_uart_read(struct channel_t *ch)
+-{
+-	unsigned char tmp = 0;
+-	int i = 0;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	writeb((UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR), &ch->ch_neo_uart->isr_fcr);
+-	neo_pci_posting_flush(ch->ch_bd);
+-
+-	for (i = 0; i < 10; i++) {
+-
+-		/* Check to see if the UART feels it completely flushed the FIFO. */
+-		tmp = readb(&ch->ch_neo_uart->isr_fcr);
+-		if (tmp & 2)
+-			udelay(10);
+-		else
+-			break;
+-	}
+-}
+-
+-
+-static void neo_copy_data_from_queue_to_uart(struct channel_t *ch)
+-{
+-	ushort head;
+-	ushort tail;
+-	int n;
+-	int s;
+-	int qlen;
+-	uint len_written = 0;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* No data to write to the UART */
+-	if (ch->ch_w_tail == ch->ch_w_head) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/* If port is "stopped", don't send any data to the UART */
+-	if ((ch->ch_flags & CH_FORCED_STOP) || (ch->ch_flags & CH_BREAK_SENDING)) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/*
+-	 * If FIFOs are disabled. Send data directly to txrx register
+-	 */
+-	if (!(ch->ch_flags & CH_FIFO_ENABLED)) {
+-		unsigned char lsrbits = readb(&ch->ch_neo_uart->lsr);
+-
+-		/* Cache the LSR bits for later parsing */
+-		ch->ch_cached_lsr |= lsrbits;
+-		if (ch->ch_cached_lsr & UART_LSR_THRE) {
+-			ch->ch_cached_lsr &= ~(UART_LSR_THRE);
+-
+-			/*
+-			 * If RTS Toggle mode is on, turn on RTS now if not already set,
+-			 * and make sure we get an event when the data transfer has completed.
+-			 */
+-			if (ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE) {
+-				if (!(ch->ch_mostat & UART_MCR_RTS)) {
+-					ch->ch_mostat |= (UART_MCR_RTS);
+-					neo_assert_modem_signals(ch);
+-				}
+-				ch->ch_tun.un_flags |= (UN_EMPTY);
+-			}
+-			/*
+-			 * If DTR Toggle mode is on, turn on DTR now if not already set,
+-			 * and make sure we get an event when the data transfer has completed.
+-			 */
+-			if (ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE) {
+-				if (!(ch->ch_mostat & UART_MCR_DTR)) {
+-					ch->ch_mostat |= (UART_MCR_DTR);
+-					neo_assert_modem_signals(ch);
+-				}
+-				ch->ch_tun.un_flags |= (UN_EMPTY);
+-			}
+-
+-			writeb(ch->ch_wqueue[ch->ch_w_tail], &ch->ch_neo_uart->txrx);
+-			ch->ch_w_tail++;
+-			ch->ch_w_tail &= WQUEUEMASK;
+-			ch->ch_txcount++;
+-		}
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/*
+-	 * We have to do it this way, because of the EXAR TXFIFO count bug.
+-	 */
+-	if ((ch->ch_bd->dvid & 0xf0) < UART_XR17E158_DVID) {
+-		if (!(ch->ch_flags & (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM))) {
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			return;
+-		}
+-
+-		len_written = 0;
+-
+-		n = readb(&ch->ch_neo_uart->tfifo);
+-
+-		if ((unsigned int) n > ch->ch_t_tlevel) {
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			return;
+-		}
+-
+-		n = UART_17158_TX_FIFOSIZE - ch->ch_t_tlevel;
+-	} else {
+-		n = UART_17158_TX_FIFOSIZE - readb(&ch->ch_neo_uart->tfifo);
+-	}
+-
+-	/* cache head and tail of queue */
+-	head = ch->ch_w_head & WQUEUEMASK;
+-	tail = ch->ch_w_tail & WQUEUEMASK;
+-	qlen = (head - tail) & WQUEUEMASK;
+-
+-	/* Find minimum of the FIFO space, versus queue length */
+-	n = min(n, qlen);
+-
+-	while (n > 0) {
+-
+-		s = ((head >= tail) ? head : WQUEUESIZE) - tail;
+-		s = min(s, n);
+-
+-		if (s <= 0)
+-			break;
+-
+-		/*
+-		 * If RTS Toggle mode is on, turn on RTS now if not already set,
+-		 * and make sure we get an event when the data transfer has completed.
+-		 */
+-		if (ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE) {
+-			if (!(ch->ch_mostat & UART_MCR_RTS)) {
+-				ch->ch_mostat |= (UART_MCR_RTS);
+-				neo_assert_modem_signals(ch);
+-			}
+-			ch->ch_tun.un_flags |= (UN_EMPTY);
+-		}
+-
+-		/*
+-		 * If DTR Toggle mode is on, turn on DTR now if not already set,
+-		 * and make sure we get an event when the data transfer has completed.
+-		 */
+-		if (ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE) {
+-			if (!(ch->ch_mostat & UART_MCR_DTR)) {
+-				ch->ch_mostat |= (UART_MCR_DTR);
+-				neo_assert_modem_signals(ch);
+-			}
+-			ch->ch_tun.un_flags |= (UN_EMPTY);
+-		}
+-
+-		memcpy_toio(&ch->ch_neo_uart->txrxburst, ch->ch_wqueue + tail, s);
+-		dgnc_sniff_nowait_nolock(ch, "UART WRITE", ch->ch_wqueue + tail, s);
+-
+-		/* Add and flip queue if needed */
+-		tail = (tail + s) & WQUEUEMASK;
+-		n -= s;
+-		ch->ch_txcount += s;
+-		len_written += s;
+-	}
+-
+-	/* Update the final tail */
+-	ch->ch_w_tail = tail & WQUEUEMASK;
+-
+-	if (len_written > 0) {
+-		neo_pci_posting_flush(ch->ch_bd);
+-		ch->ch_flags &= ~(CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-	}
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-static void neo_parse_modem(struct channel_t *ch, unsigned char signals)
+-{
+-	unsigned char msignals = signals;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	/*
+-	 * Do altpin switching. Altpin switches DCD and DSR.
+-	 * This prolly breaks DSRPACE, so we should be more clever here.
+-	 */
+-	if (ch->ch_digi.digi_flags & DIGI_ALTPIN) {
+-		unsigned char mswap = msignals;
+-
+-		if (mswap & UART_MSR_DDCD) {
+-			msignals &= ~UART_MSR_DDCD;
+-			msignals |= UART_MSR_DDSR;
+-		}
+-		if (mswap & UART_MSR_DDSR) {
+-			msignals &= ~UART_MSR_DDSR;
+-			msignals |= UART_MSR_DDCD;
+-		}
+-		if (mswap & UART_MSR_DCD) {
+-			msignals &= ~UART_MSR_DCD;
+-			msignals |= UART_MSR_DSR;
+-		}
+-		if (mswap & UART_MSR_DSR) {
+-			msignals &= ~UART_MSR_DSR;
+-			msignals |= UART_MSR_DCD;
+-		}
+-	}
+-
+-	/* Scrub off lower bits. They signify delta's, which I don't care about */
+-	msignals &= 0xf0;
+-
+-	if (msignals & UART_MSR_DCD)
+-		ch->ch_mistat |= UART_MSR_DCD;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_DCD;
+-
+-	if (msignals & UART_MSR_DSR)
+-		ch->ch_mistat |= UART_MSR_DSR;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_DSR;
+-
+-	if (msignals & UART_MSR_RI)
+-		ch->ch_mistat |= UART_MSR_RI;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_RI;
+-
+-	if (msignals & UART_MSR_CTS)
+-		ch->ch_mistat |= UART_MSR_CTS;
+-	else
+-		ch->ch_mistat &= ~UART_MSR_CTS;
+-}
+-
+-
+-/* Make the UART raise any of the output signals we want up */
+-static void neo_assert_modem_signals(struct channel_t *ch)
+-{
+-	unsigned char out;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	out = ch->ch_mostat;
+-
+-	if (ch->ch_flags & CH_LOOPBACK)
+-		out |= UART_MCR_LOOP;
+-
+-	writeb(out, &ch->ch_neo_uart->mcr);
+-	neo_pci_posting_flush(ch->ch_bd);
+-
+-	/* Give time for the UART to actually raise/drop the signals */
+-	udelay(10);
+-}
+-
+-
+-static void neo_send_start_character(struct channel_t *ch)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	if (ch->ch_startc != _POSIX_VDISABLE) {
+-		ch->ch_xon_sends++;
+-		writeb(ch->ch_startc, &ch->ch_neo_uart->txrx);
+-		neo_pci_posting_flush(ch->ch_bd);
+-		udelay(10);
+-	}
+-}
+-
+-
+-static void neo_send_stop_character(struct channel_t *ch)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	if (ch->ch_stopc != _POSIX_VDISABLE) {
+-		ch->ch_xoff_sends++;
+-		writeb(ch->ch_stopc, &ch->ch_neo_uart->txrx);
+-		neo_pci_posting_flush(ch->ch_bd);
+-		udelay(10);
+-	}
+-}
+-
+-
+-/*
+- * neo_uart_init
+- */
+-static void neo_uart_init(struct channel_t *ch)
+-{
+-
+-	writeb(0, &ch->ch_neo_uart->ier);
+-	writeb(0, &ch->ch_neo_uart->efr);
+-	writeb(UART_EFR_ECB, &ch->ch_neo_uart->efr);
+-
+-
+-	/* Clear out UART and FIFO */
+-	readb(&ch->ch_neo_uart->txrx);
+-	writeb((UART_FCR_ENABLE_FIFO|UART_FCR_CLEAR_RCVR|UART_FCR_CLEAR_XMIT), &ch->ch_neo_uart->isr_fcr);
+-	readb(&ch->ch_neo_uart->lsr);
+-	readb(&ch->ch_neo_uart->msr);
+-
+-	ch->ch_flags |= CH_FIFO_ENABLED;
+-
+-	/* Assert any signals we want up */
+-	writeb(ch->ch_mostat, &ch->ch_neo_uart->mcr);
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-/*
+- * Make the UART completely turn off.
+- */
+-static void neo_uart_off(struct channel_t *ch)
+-{
+-	/* Turn off UART enhanced bits */
+-	writeb(0, &ch->ch_neo_uart->efr);
+-
+-	/* Stop all interrupts from occurring. */
+-	writeb(0, &ch->ch_neo_uart->ier);
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static uint neo_get_uart_bytes_left(struct channel_t *ch)
+-{
+-	unsigned char left = 0;
+-	unsigned char lsr = readb(&ch->ch_neo_uart->lsr);
+-
+-	/* We must cache the LSR as some of the bits get reset once read... */
+-	ch->ch_cached_lsr |= lsr;
+-
+-	/* Determine whether the Transmitter is empty or not */
+-	if (!(lsr & UART_LSR_TEMT)) {
+-		if (ch->ch_flags & CH_TX_FIFO_EMPTY)
+-			tasklet_schedule(&ch->ch_bd->helper_tasklet);
+-		left = 1;
+-	} else {
+-		ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+-		left = 0;
+-	}
+-
+-	return left;
+-}
+-
+-
+-/* Channel lock MUST be held by the calling function! */
+-static void neo_send_break(struct channel_t *ch, int msecs)
+-{
+-	/*
+-	 * If we receive a time of 0, this means turn off the break.
+-	 */
+-	if (msecs == 0) {
+-		if (ch->ch_flags & CH_BREAK_SENDING) {
+-			unsigned char temp = readb(&ch->ch_neo_uart->lcr);
+-
+-			writeb((temp & ~UART_LCR_SBC), &ch->ch_neo_uart->lcr);
+-			neo_pci_posting_flush(ch->ch_bd);
+-			ch->ch_flags &= ~(CH_BREAK_SENDING);
+-			ch->ch_stop_sending_break = 0;
+-		}
+-		return;
+-	}
+-
+-	/*
+-	 * Set the time we should stop sending the break.
+-	 * If we are already sending a break, toss away the existing
+-	 * time to stop, and use this new value instead.
+-	 */
+-	ch->ch_stop_sending_break = jiffies + dgnc_jiffies_from_ms(msecs);
+-
+-	/* Tell the UART to start sending the break */
+-	if (!(ch->ch_flags & CH_BREAK_SENDING)) {
+-		unsigned char temp = readb(&ch->ch_neo_uart->lcr);
+-
+-		writeb((temp | UART_LCR_SBC), &ch->ch_neo_uart->lcr);
+-		neo_pci_posting_flush(ch->ch_bd);
+-		ch->ch_flags |= (CH_BREAK_SENDING);
+-	}
+-}
+-
+-
+-/*
+- * neo_send_immediate_char.
+- *
+- * Sends a specific character as soon as possible to the UART,
+- * jumping over any bytes that might be in the write queue.
+- *
+- * The channel lock MUST be held by the calling function.
+- */
+-static void neo_send_immediate_char(struct channel_t *ch, unsigned char c)
+-{
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	writeb(c, &ch->ch_neo_uart->txrx);
+-	neo_pci_posting_flush(ch->ch_bd);
+-}
+-
+-
+-static unsigned int neo_read_eeprom(unsigned char __iomem *base, unsigned int address)
+-{
+-	unsigned int enable;
+-	unsigned int bits;
+-	unsigned int databit;
+-	unsigned int val;
+-
+-	/* enable chip select */
+-	writeb(NEO_EECS, base + NEO_EEREG);
+-	/* READ */
+-	enable = (address | 0x180);
+-
+-	for (bits = 9; bits--; ) {
+-		databit = (enable & (1 << bits)) ? NEO_EEDI : 0;
+-		/* Set read address */
+-		writeb(databit | NEO_EECS, base + NEO_EEREG);
+-		writeb(databit | NEO_EECS | NEO_EECK, base + NEO_EEREG);
+-	}
+-
+-	val = 0;
+-
+-	for (bits = 17; bits--; ) {
+-		/* clock to EEPROM */
+-		writeb(NEO_EECS, base + NEO_EEREG);
+-		writeb(NEO_EECS | NEO_EECK, base + NEO_EEREG);
+-		val <<= 1;
+-		/* read EEPROM */
+-		if (readb(base + NEO_EEREG) & NEO_EEDO)
+-			val |= 1;
+-	}
+-
+-	/* clock falling edge */
+-	writeb(NEO_EECS, base + NEO_EEREG);
+-
+-	/* drop chip select */
+-	writeb(0x00, base + NEO_EEREG);
+-
+-	return val;
+-}
+-
+-
+-static void neo_vpd(struct dgnc_board *brd)
+-{
+-	unsigned int i = 0;
+-	unsigned int a;
+-
+-	if (!brd || brd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	if (!brd->re_map_membase)
+-		return;
+-
+-	/* Store the VPD into our buffer */
+-	for (i = 0; i < NEO_VPD_IMAGESIZE; i++) {
+-		a = neo_read_eeprom(brd->re_map_membase, i);
+-		brd->vpd[i*2] = a & 0xff;
+-		brd->vpd[(i*2)+1] = (a >> 8) & 0xff;
+-	}
+-
+-	if  (((brd->vpd[0x08] != 0x82)	   /* long resource name tag */
+-		&&  (brd->vpd[0x10] != 0x82))   /* long resource name tag (PCI-66 files)*/
+-		||  (brd->vpd[0x7F] != 0x78)) { /* small resource end tag */
+-
+-		memset(brd->vpd, '\0', NEO_VPD_IMAGESIZE);
+-	} else {
+-		/* Search for the serial number */
+-		for (i = 0; i < NEO_VPD_IMAGEBYTES - 3; i++)
+-			if (brd->vpd[i] == 'S' && brd->vpd[i + 1] == 'N')
+-				strncpy(brd->serial_num, &(brd->vpd[i + 3]), 9);
+-	}
+-}
+diff --git a/drivers/staging/dgnc/dgnc_neo.h b/drivers/staging/dgnc/dgnc_neo.h
+deleted file mode 100644
+index 1a4abb1..0000000
+--- a/drivers/staging/dgnc/dgnc_neo.h
++++ /dev/null
+@@ -1,157 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- *
+- */
+-
+-#ifndef __DGNC_NEO_H
+-#define __DGNC_NEO_H
+-
+-#include "dgnc_types.h"
+-#include "dgnc_driver.h"
+-
+-/************************************************************************
+- * Per channel/port NEO UART structure					*
+- ************************************************************************
+- *		Base Structure Entries Usage Meanings to Host		*
+- *									*
+- *	W = read write		R = read only				*
+- *			U = Unused.					*
+- ************************************************************************/
+-
+-struct neo_uart_struct {
+-	u8 txrx;		/* WR  RHR/THR - Holding Reg */
+-	u8 ier;		/* WR  IER - Interrupt Enable Reg */
+-	u8 isr_fcr;		/* WR  ISR/FCR - Interrupt Status Reg/Fifo Control Reg */
+-	u8 lcr;		/* WR  LCR - Line Control Reg */
+-	u8 mcr;		/* WR  MCR - Modem Control Reg */
+-	u8 lsr;		/* WR  LSR - Line Status Reg */
+-	u8 msr;		/* WR  MSR - Modem Status Reg */
+-	u8 spr;		/* WR  SPR - Scratch Pad Reg */
+-	u8 fctr;		/* WR  FCTR - Feature Control Reg */
+-	u8 efr;		/* WR  EFR - Enhanced Function Reg */
+-	u8 tfifo;		/* WR  TXCNT/TXTRG - Transmit FIFO Reg */
+-	u8 rfifo;		/* WR  RXCNT/RXTRG - Receive  FIFO Reg */
+-	u8 xoffchar1;	/* WR  XOFF 1 - XOff Character 1 Reg */
+-	u8 xoffchar2;	/* WR  XOFF 2 - XOff Character 2 Reg */
+-	u8 xonchar1;	/* WR  XON 1 - Xon Character 1 Reg */
+-	u8 xonchar2;	/* WR  XON 2 - XOn Character 2 Reg */
+-
+-	u8 reserved1[0x2ff - 0x200]; /* U   Reserved by Exar */
+-	u8 txrxburst[64];	/* RW  64 bytes of RX/TX FIFO Data */
+-	u8 reserved2[0x37f - 0x340]; /* U   Reserved by Exar */
+-	u8 rxburst_with_errors[64];	/* R  64 bytes of RX FIFO Data + LSR */
+-};
+-
+-/* Where to read the extended interrupt register (32bits instead of 8bits) */
+-#define	UART_17158_POLL_ADDR_OFFSET	0x80
+-
+-/* These are the current dvid's of the Neo boards */
+-#define UART_XR17C158_DVID 0x20
+-#define UART_XR17D158_DVID 0x20
+-#define UART_XR17E158_DVID 0x40
+-
+-#define NEO_EECK  0x10		/* Clock */
+-#define NEO_EECS  0x20		/* Chip Select */
+-#define NEO_EEDI  0x40		/* Data In  is an Output Pin */
+-#define NEO_EEDO  0x80		/* Data Out is an Input Pin */
+-#define NEO_EEREG 0x8E		/* offset to EEPROM control reg */
+-
+-
+-#define NEO_VPD_IMAGESIZE 0x40	/* size of image to read from EEPROM in words */
+-#define NEO_VPD_IMAGEBYTES (NEO_VPD_IMAGESIZE * 2)
+-
+-/*
+- * These are the redefinitions for the FCTR on the XR17C158, since
+- * Exar made them different than their earlier design. (XR16C854)
+- */
+-
+-/* These are only applicable when table D is selected */
+-#define UART_17158_FCTR_RTS_NODELAY	0x00
+-#define UART_17158_FCTR_RTS_4DELAY	0x01
+-#define UART_17158_FCTR_RTS_6DELAY	0x02
+-#define UART_17158_FCTR_RTS_8DELAY	0x03
+-#define UART_17158_FCTR_RTS_12DELAY	0x12
+-#define UART_17158_FCTR_RTS_16DELAY	0x05
+-#define UART_17158_FCTR_RTS_20DELAY	0x13
+-#define UART_17158_FCTR_RTS_24DELAY	0x06
+-#define UART_17158_FCTR_RTS_28DELAY	0x14
+-#define UART_17158_FCTR_RTS_32DELAY	0x07
+-#define UART_17158_FCTR_RTS_36DELAY	0x16
+-#define UART_17158_FCTR_RTS_40DELAY	0x08
+-#define UART_17158_FCTR_RTS_44DELAY	0x09
+-#define UART_17158_FCTR_RTS_48DELAY	0x10
+-#define UART_17158_FCTR_RTS_52DELAY	0x11
+-
+-#define UART_17158_FCTR_RTS_IRDA	0x10
+-#define UART_17158_FCTR_RS485		0x20
+-#define UART_17158_FCTR_TRGA		0x00
+-#define UART_17158_FCTR_TRGB		0x40
+-#define UART_17158_FCTR_TRGC		0x80
+-#define UART_17158_FCTR_TRGD		0xC0
+-
+-/* 17158 trigger table selects.. */
+-#define UART_17158_FCTR_BIT6		0x40
+-#define UART_17158_FCTR_BIT7		0x80
+-
+-/* 17158 TX/RX memmapped buffer offsets */
+-#define UART_17158_RX_FIFOSIZE		64
+-#define UART_17158_TX_FIFOSIZE		64
+-
+-/* 17158 Extended IIR's */
+-#define UART_17158_IIR_RDI_TIMEOUT	0x0C	/* Receiver data TIMEOUT */
+-#define UART_17158_IIR_XONXOFF		0x10	/* Received an XON/XOFF char */
+-#define UART_17158_IIR_HWFLOW_STATE_CHANGE 0x20	/* CTS/DSR or RTS/DTR state change */
+-#define UART_17158_IIR_FIFO_ENABLED	0xC0	/* 16550 FIFOs are Enabled */
+-
+-/*
+- * These are the extended interrupts that get sent
+- * back to us from the UART's 32bit interrupt register
+- */
+-#define UART_17158_RX_LINE_STATUS	0x1	/* RX Ready */
+-#define UART_17158_RXRDY_TIMEOUT	0x2	/* RX Ready Timeout */
+-#define UART_17158_TXRDY		0x3	/* TX Ready */
+-#define UART_17158_MSR			0x4	/* Modem State Change */
+-#define UART_17158_TX_AND_FIFO_CLR	0x40	/* Transmitter Holding Reg Empty */
+-#define UART_17158_RX_FIFO_DATA_ERROR	0x80	/* UART detected an RX FIFO Data error */
+-
+-/*
+- * These are the EXTENDED definitions for the 17C158's Interrupt
+- * Enable Register.
+- */
+-#define UART_17158_EFR_ECB	0x10	/* Enhanced control bit */
+-#define UART_17158_EFR_IXON	0x2	/* Receiver compares Xon1/Xoff1 */
+-#define UART_17158_EFR_IXOFF	0x8	/* Transmit Xon1/Xoff1 */
+-#define UART_17158_EFR_RTSDTR	0x40	/* Auto RTS/DTR Flow Control Enable */
+-#define UART_17158_EFR_CTSDSR	0x80	/* Auto CTS/DSR Flow COntrol Enable */
+-
+-#define UART_17158_XOFF_DETECT	0x1	/* Indicates whether chip saw an incoming XOFF char  */
+-#define UART_17158_XON_DETECT	0x2	/* Indicates whether chip saw an incoming XON char */
+-
+-#define UART_17158_IER_RSVD1	0x10	/* Reserved by Exar */
+-#define UART_17158_IER_XOFF	0x20	/* Xoff Interrupt Enable */
+-#define UART_17158_IER_RTSDTR	0x40	/* Output Interrupt Enable */
+-#define UART_17158_IER_CTSDSR	0x80	/* Input Interrupt Enable */
+-
+-/*
+- * Our Global Variables
+- */
+-extern struct board_ops dgnc_neo_ops;
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_pci.h b/drivers/staging/dgnc/dgnc_pci.h
+deleted file mode 100644
+index 5b6f76d..0000000
+--- a/drivers/staging/dgnc/dgnc_pci.h
++++ /dev/null
+@@ -1,75 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-#ifndef __DGNC_PCI_H
+-#define __DGNC_PCI_H
+-
+-#define PCIMAX 32			/* maximum number of PCI boards */
+-
+-#define DIGI_VID				0x114F
+-
+-#define PCI_DEVICE_CLASSIC_4_DID		0x0028
+-#define PCI_DEVICE_CLASSIC_8_DID		0x0029
+-#define PCI_DEVICE_CLASSIC_4_422_DID		0x00D0
+-#define PCI_DEVICE_CLASSIC_8_422_DID		0x00D1
+-#define PCI_DEVICE_NEO_4_DID			0x00B0
+-#define PCI_DEVICE_NEO_8_DID			0x00B1
+-#define PCI_DEVICE_NEO_2DB9_DID			0x00C8
+-#define PCI_DEVICE_NEO_2DB9PRI_DID		0x00C9
+-#define PCI_DEVICE_NEO_2RJ45_DID		0x00CA
+-#define PCI_DEVICE_NEO_2RJ45PRI_DID		0x00CB
+-#define PCI_DEVICE_NEO_1_422_DID		0x00CC
+-#define PCI_DEVICE_NEO_1_422_485_DID		0x00CD
+-#define PCI_DEVICE_NEO_2_422_485_DID		0x00CE
+-#define PCI_DEVICE_NEO_EXPRESS_8_DID		0x00F0
+-#define PCI_DEVICE_NEO_EXPRESS_4_DID		0x00F1
+-#define PCI_DEVICE_NEO_EXPRESS_4RJ45_DID	0x00F2
+-#define PCI_DEVICE_NEO_EXPRESS_8RJ45_DID	0x00F3
+-#define PCI_DEVICE_NEO_EXPRESS_4_IBM_DID	0x00F4
+-
+-#define PCI_DEVICE_CLASSIC_4_PCI_NAME		"ClassicBoard 4 PCI"
+-#define PCI_DEVICE_CLASSIC_8_PCI_NAME		"ClassicBoard 8 PCI"
+-#define PCI_DEVICE_CLASSIC_4_422_PCI_NAME	"ClassicBoard 4 422 PCI"
+-#define PCI_DEVICE_CLASSIC_8_422_PCI_NAME	"ClassicBoard 8 422 PCI"
+-#define PCI_DEVICE_NEO_4_PCI_NAME		"Neo 4 PCI"
+-#define PCI_DEVICE_NEO_8_PCI_NAME		"Neo 8 PCI"
+-#define PCI_DEVICE_NEO_2DB9_PCI_NAME		"Neo 2 - DB9 Universal PCI"
+-#define PCI_DEVICE_NEO_2DB9PRI_PCI_NAME		"Neo 2 - DB9 Universal PCI - Powered Ring Indicator"
+-#define PCI_DEVICE_NEO_2RJ45_PCI_NAME		"Neo 2 - RJ45 Universal PCI"
+-#define PCI_DEVICE_NEO_2RJ45PRI_PCI_NAME	"Neo 2 - RJ45 Universal PCI - Powered Ring Indicator"
+-#define PCI_DEVICE_NEO_1_422_PCI_NAME		"Neo 1 422 PCI"
+-#define PCI_DEVICE_NEO_1_422_485_PCI_NAME	"Neo 1 422/485 PCI"
+-#define PCI_DEVICE_NEO_2_422_485_PCI_NAME	"Neo 2 422/485 PCI"
+-
+-#define PCI_DEVICE_NEO_EXPRESS_8_PCI_NAME	"Neo 8 PCI Express"
+-#define PCI_DEVICE_NEO_EXPRESS_4_PCI_NAME	"Neo 4 PCI Express"
+-#define PCI_DEVICE_NEO_EXPRESS_4RJ45_PCI_NAME	"Neo 4 PCI Express RJ45"
+-#define PCI_DEVICE_NEO_EXPRESS_8RJ45_PCI_NAME	"Neo 8 PCI Express RJ45"
+-#define PCI_DEVICE_NEO_EXPRESS_4_IBM_PCI_NAME	"Neo 4 PCI Express IBM"
+-
+-
+-/* Size of Memory and I/O for PCI (4 K) */
+-#define PCI_RAM_SIZE				0x1000
+-
+-/* Size of Memory (2MB) */
+-#define PCI_MEM_SIZE				0x1000
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_sysfs.c b/drivers/staging/dgnc/dgnc_sysfs.c
+deleted file mode 100644
+index 6c3b387..0000000
+--- a/drivers/staging/dgnc/dgnc_sysfs.c
++++ /dev/null
+@@ -1,750 +0,0 @@
+-/*
+- * Copyright 2004 Digi International (www.digi.com)
+- *      Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *
+- *      NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
+- *
+- *      This is shared code between Digi's CVS archive and the
+- *      Linux Kernel sources.
+- *      Changing the source just for reformatting needlessly breaks
+- *      our CVS diff history.
+- *
+- *      Send any bug fixes/changes to:  Eng.Linux at digi dot com.
+- *      Thank you.
+- *
+- */
+-
+-
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/ctype.h>
+-#include <linux/string.h>
+-#include <linux/serial_reg.h>
+-#include <linux/device.h>
+-#include <linux/pci.h>
+-#include <linux/kdev_t.h>
+-
+-#include "dgnc_driver.h"
+-#include "dgnc_mgmt.h"
+-
+-
+-static ssize_t dgnc_driver_version_show(struct device_driver *ddp, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%s\n", DG_PART);
+-}
+-static DRIVER_ATTR(version, S_IRUSR, dgnc_driver_version_show, NULL);
+-
+-
+-static ssize_t dgnc_driver_boards_show(struct device_driver *ddp, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%d\n", dgnc_NumBoards);
+-}
+-static DRIVER_ATTR(boards, S_IRUSR, dgnc_driver_boards_show, NULL);
+-
+-
+-static ssize_t dgnc_driver_maxboards_show(struct device_driver *ddp, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%d\n", MAXBOARDS);
+-}
+-static DRIVER_ATTR(maxboards, S_IRUSR, dgnc_driver_maxboards_show, NULL);
+-
+-static ssize_t dgnc_driver_debug_show(struct device_driver *ddp, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "0x%x\n", dgnc_debug);
+-}
+-
+-static ssize_t dgnc_driver_debug_store(struct device_driver *ddp, const char *buf, size_t count)
+-{
+-	int ret;
+-
+-	ret = sscanf(buf, "0x%x\n", &dgnc_debug);
+-	if (ret != 1)
+-		return -EINVAL;
+-	return count;
+-}
+-static DRIVER_ATTR(debug, (S_IRUSR | S_IWUSR), dgnc_driver_debug_show, dgnc_driver_debug_store);
+-
+-
+-static ssize_t dgnc_driver_rawreadok_show(struct device_driver *ddp, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "0x%x\n", dgnc_rawreadok);
+-}
+-
+-static ssize_t dgnc_driver_rawreadok_store(struct device_driver *ddp, const char *buf, size_t count)
+-{
+-	int ret;
+-
+-	ret = sscanf(buf, "0x%x\n", &dgnc_rawreadok);
+-	if (ret != 1)
+-		return -EINVAL;
+-	return count;
+-}
+-static DRIVER_ATTR(rawreadok, (S_IRUSR | S_IWUSR), dgnc_driver_rawreadok_show, dgnc_driver_rawreadok_store);
+-
+-
+-static ssize_t dgnc_driver_pollrate_show(struct device_driver *ddp, char *buf)
+-{
+-	return snprintf(buf, PAGE_SIZE, "%dms\n", dgnc_poll_tick);
+-}
+-
+-static ssize_t dgnc_driver_pollrate_store(struct device_driver *ddp, const char *buf, size_t count)
+-{
+-	int ret;
+-
+-	ret = sscanf(buf, "%d\n", &dgnc_poll_tick);
+-	if (ret != 1)
+-		return -EINVAL;
+-	return count;
+-}
+-static DRIVER_ATTR(pollrate, (S_IRUSR | S_IWUSR), dgnc_driver_pollrate_show, dgnc_driver_pollrate_store);
+-
+-
+-void dgnc_create_driver_sysfiles(struct pci_driver *dgnc_driver)
+-{
+-	int rc = 0;
+-	struct device_driver *driverfs = &dgnc_driver->driver;
+-
+-	rc |= driver_create_file(driverfs, &driver_attr_version);
+-	rc |= driver_create_file(driverfs, &driver_attr_boards);
+-	rc |= driver_create_file(driverfs, &driver_attr_maxboards);
+-	rc |= driver_create_file(driverfs, &driver_attr_debug);
+-	rc |= driver_create_file(driverfs, &driver_attr_rawreadok);
+-	rc |= driver_create_file(driverfs, &driver_attr_pollrate);
+-	if (rc)
+-		printk(KERN_ERR "DGNC: sysfs driver_create_file failed!\n");
+-}
+-
+-
+-void dgnc_remove_driver_sysfiles(struct pci_driver *dgnc_driver)
+-{
+-	struct device_driver *driverfs = &dgnc_driver->driver;
+-
+-	driver_remove_file(driverfs, &driver_attr_version);
+-	driver_remove_file(driverfs, &driver_attr_boards);
+-	driver_remove_file(driverfs, &driver_attr_maxboards);
+-	driver_remove_file(driverfs, &driver_attr_debug);
+-	driver_remove_file(driverfs, &driver_attr_rawreadok);
+-	driver_remove_file(driverfs, &driver_attr_pollrate);
+-}
+-
+-
+-#define DGNC_VERIFY_BOARD(p, bd)				\
+-	do {							\
+-		if (!p)						\
+-			return 0;				\
+-								\
+-		bd = dev_get_drvdata(p);			\
+-		if (!bd || bd->magic != DGNC_BOARD_MAGIC)	\
+-			return 0;				\
+-		if (bd->state != BOARD_READY)			\
+-			return 0;				\
+-	} while (0)
+-
+-
+-
+-static ssize_t dgnc_vpd_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	count += sprintf(buf + count, "\n      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
+-	for (i = 0; i < 0x40 * 2; i++) {
+-		if (!(i % 16))
+-			count += sprintf(buf + count, "\n%04X ", i * 2);
+-		count += sprintf(buf + count, "%02X ", bd->vpd[i]);
+-	}
+-	count += sprintf(buf + count, "\n");
+-
+-	return count;
+-}
+-static DEVICE_ATTR(vpd, S_IRUSR, dgnc_vpd_show, NULL);
+-
+-static ssize_t dgnc_serial_number_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	if (bd->serial_num[0] == '\0')
+-		count += sprintf(buf + count, "<UNKNOWN>\n");
+-	else
+-		count += sprintf(buf + count, "%s\n", bd->serial_num);
+-
+-	return count;
+-}
+-static DEVICE_ATTR(serial_number, S_IRUSR, dgnc_serial_number_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_state_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count,
+-			"%d %s\n", bd->channels[i]->ch_portnum,
+-			bd->channels[i]->ch_open_count ? "Open" : "Closed");
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_state, S_IRUSR, dgnc_ports_state_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_baud_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count +=  snprintf(buf + count, PAGE_SIZE - count,
+-			"%d %d\n", bd->channels[i]->ch_portnum, bd->channels[i]->ch_old_baud);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_baud, S_IRUSR, dgnc_ports_baud_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_msignals_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		if (bd->channels[i]->ch_open_count) {
+-			count += snprintf(buf + count, PAGE_SIZE - count,
+-				"%d %s %s %s %s %s %s\n", bd->channels[i]->ch_portnum,
+-				(bd->channels[i]->ch_mostat & UART_MCR_RTS) ? "RTS" : "",
+-				(bd->channels[i]->ch_mistat & UART_MSR_CTS) ? "CTS" : "",
+-				(bd->channels[i]->ch_mostat & UART_MCR_DTR) ? "DTR" : "",
+-				(bd->channels[i]->ch_mistat & UART_MSR_DSR) ? "DSR" : "",
+-				(bd->channels[i]->ch_mistat & UART_MSR_DCD) ? "DCD" : "",
+-				(bd->channels[i]->ch_mistat & UART_MSR_RI)  ? "RI"  : "");
+-		} else {
+-			count += snprintf(buf + count, PAGE_SIZE - count,
+-				"%d\n", bd->channels[i]->ch_portnum);
+-		}
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_msignals, S_IRUSR, dgnc_ports_msignals_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_iflag_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %x\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_c_iflag);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_iflag, S_IRUSR, dgnc_ports_iflag_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_cflag_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %x\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_c_cflag);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_cflag, S_IRUSR, dgnc_ports_cflag_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_oflag_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %x\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_c_oflag);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_oflag, S_IRUSR, dgnc_ports_oflag_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_lflag_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %x\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_c_lflag);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_lflag, S_IRUSR, dgnc_ports_lflag_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_digi_flag_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %x\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_digi.digi_flags);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_digi_flag, S_IRUSR, dgnc_ports_digi_flag_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_rxcount_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %ld\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_rxcount);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_rxcount, S_IRUSR, dgnc_ports_rxcount_show, NULL);
+-
+-
+-static ssize_t dgnc_ports_txcount_show(struct device *p, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	int count = 0;
+-	int i = 0;
+-
+-	DGNC_VERIFY_BOARD(p, bd);
+-
+-	for (i = 0; i < bd->nasync; i++) {
+-		count += snprintf(buf + count, PAGE_SIZE - count, "%d %ld\n",
+-			bd->channels[i]->ch_portnum, bd->channels[i]->ch_txcount);
+-	}
+-	return count;
+-}
+-static DEVICE_ATTR(ports_txcount, S_IRUSR, dgnc_ports_txcount_show, NULL);
+-
+-
+-/* this function creates the sys files that will export each signal status
+- * to sysfs each value will be put in a separate filename
+- */
+-void dgnc_create_ports_sysfiles(struct dgnc_board *bd)
+-{
+-	int rc = 0;
+-
+-	dev_set_drvdata(&bd->pdev->dev, bd);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_state);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_baud);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_msignals);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_iflag);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_cflag);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_oflag);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_lflag);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_digi_flag);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_rxcount);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_ports_txcount);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_vpd);
+-	rc |= device_create_file(&(bd->pdev->dev), &dev_attr_serial_number);
+-	if (rc)
+-		printk(KERN_ERR "DGNC: sysfs device_create_file failed!\n");
+-}
+-
+-
+-/* removes all the sys files created for that port */
+-void dgnc_remove_ports_sysfiles(struct dgnc_board *bd)
+-{
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_state);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_baud);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_msignals);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_iflag);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_cflag);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_oflag);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_lflag);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_digi_flag);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_rxcount);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_ports_txcount);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_vpd);
+-	device_remove_file(&(bd->pdev->dev), &dev_attr_serial_number);
+-}
+-
+-
+-static ssize_t dgnc_tty_state_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%s", un->un_open_count ? "Open" : "Closed");
+-}
+-static DEVICE_ATTR(state, S_IRUSR, dgnc_tty_state_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_baud_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%d\n", ch->ch_old_baud);
+-}
+-static DEVICE_ATTR(baud, S_IRUSR, dgnc_tty_baud_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_msignals_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	if (ch->ch_open_count) {
+-		return snprintf(buf, PAGE_SIZE, "%s %s %s %s %s %s\n",
+-			(ch->ch_mostat & UART_MCR_RTS) ? "RTS" : "",
+-			(ch->ch_mistat & UART_MSR_CTS) ? "CTS" : "",
+-			(ch->ch_mostat & UART_MCR_DTR) ? "DTR" : "",
+-			(ch->ch_mistat & UART_MSR_DSR) ? "DSR" : "",
+-			(ch->ch_mistat & UART_MSR_DCD) ? "DCD" : "",
+-			(ch->ch_mistat & UART_MSR_RI)  ? "RI"  : "");
+-	}
+-	return 0;
+-}
+-static DEVICE_ATTR(msignals, S_IRUSR, dgnc_tty_msignals_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_iflag_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%x\n", ch->ch_c_iflag);
+-}
+-static DEVICE_ATTR(iflag, S_IRUSR, dgnc_tty_iflag_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_cflag_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%x\n", ch->ch_c_cflag);
+-}
+-static DEVICE_ATTR(cflag, S_IRUSR, dgnc_tty_cflag_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_oflag_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%x\n", ch->ch_c_oflag);
+-}
+-static DEVICE_ATTR(oflag, S_IRUSR, dgnc_tty_oflag_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_lflag_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%x\n", ch->ch_c_lflag);
+-}
+-static DEVICE_ATTR(lflag, S_IRUSR, dgnc_tty_lflag_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_digi_flag_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%x\n", ch->ch_digi.digi_flags);
+-}
+-static DEVICE_ATTR(digi_flag, S_IRUSR, dgnc_tty_digi_flag_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_rxcount_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%ld\n", ch->ch_rxcount);
+-}
+-static DEVICE_ATTR(rxcount, S_IRUSR, dgnc_tty_rxcount_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_txcount_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%ld\n", ch->ch_txcount);
+-}
+-static DEVICE_ATTR(txcount, S_IRUSR, dgnc_tty_txcount_show, NULL);
+-
+-
+-static ssize_t dgnc_tty_name_show(struct device *d, struct device_attribute *attr, char *buf)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!d)
+-		return 0;
+-	un = dev_get_drvdata(d);
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return 0;
+-	if (bd->state != BOARD_READY)
+-		return 0;
+-
+-	return snprintf(buf, PAGE_SIZE, "%sn%d%c\n",
+-		(un->un_type == DGNC_PRINT) ? "pr" : "tty",
+-		bd->boardnum + 1, 'a' + ch->ch_portnum);
+-}
+-static DEVICE_ATTR(custom_name, S_IRUSR, dgnc_tty_name_show, NULL);
+-
+-
+-static struct attribute *dgnc_sysfs_tty_entries[] = {
+-	&dev_attr_state.attr,
+-	&dev_attr_baud.attr,
+-	&dev_attr_msignals.attr,
+-	&dev_attr_iflag.attr,
+-	&dev_attr_cflag.attr,
+-	&dev_attr_oflag.attr,
+-	&dev_attr_lflag.attr,
+-	&dev_attr_digi_flag.attr,
+-	&dev_attr_rxcount.attr,
+-	&dev_attr_txcount.attr,
+-	&dev_attr_custom_name.attr,
+-	NULL
+-};
+-
+-
+-static struct attribute_group dgnc_tty_attribute_group = {
+-	.name = NULL,
+-	.attrs = dgnc_sysfs_tty_entries,
+-};
+-
+-
+-void dgnc_create_tty_sysfs(struct un_t *un, struct device *c)
+-{
+-	int ret;
+-
+-	ret = sysfs_create_group(&c->kobj, &dgnc_tty_attribute_group);
+-	if (ret) {
+-		dev_err(c, "dgnc: failed to create sysfs tty device attributes.\n");
+-		sysfs_remove_group(&c->kobj, &dgnc_tty_attribute_group);
+-		return;
+-	}
+-
+-	dev_set_drvdata(c, un);
+-
+-}
+-
+-
+-void dgnc_remove_tty_sysfs(struct device *c)
+-{
+-	sysfs_remove_group(&c->kobj, &dgnc_tty_attribute_group);
+-}
+-
+diff --git a/drivers/staging/dgnc/dgnc_sysfs.h b/drivers/staging/dgnc/dgnc_sysfs.h
+deleted file mode 100644
+index 68c0de5..0000000
+--- a/drivers/staging/dgnc/dgnc_sysfs.h
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-#ifndef __DGNC_SYSFS_H
+-#define __DGNC_SYSFS_H
+-
+-#include "dgnc_driver.h"
+-
+-#include <linux/device.h>
+-
+-struct dgnc_board;
+-struct channel_t;
+-struct un_t;
+-struct pci_driver;
+-struct class_device;
+-
+-extern void dgnc_create_ports_sysfiles(struct dgnc_board *bd);
+-extern void dgnc_remove_ports_sysfiles(struct dgnc_board *bd);
+-
+-extern void dgnc_create_driver_sysfiles(struct pci_driver *);
+-extern void dgnc_remove_driver_sysfiles(struct pci_driver *);
+-
+-extern int dgnc_tty_class_init(void);
+-extern int dgnc_tty_class_destroy(void);
+-
+-extern void dgnc_create_tty_sysfs(struct un_t *un, struct device *c);
+-extern void dgnc_remove_tty_sysfs(struct device *c);
+-
+-
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
+deleted file mode 100644
+index 03c1506..0000000
+--- a/drivers/staging/dgnc/dgnc_tty.c
++++ /dev/null
+@@ -1,3201 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *
+- *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
+- *
+- *	This is shared code between Digi's CVS archive and the
+- *	Linux Kernel sources.
+- *	Changing the source just for reformatting needlessly breaks
+- *	our CVS diff history.
+- *
+- *	Send any bug fixes/changes to:  Eng.Linux at digi dot com.
+- *	Thank you.
+- */
+-
+-/************************************************************************
+- *
+- * This file implements the tty driver functionality for the
+- * Neo and ClassicBoard PCI based product lines.
+- *
+- ************************************************************************
+- *
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/sched.h>	/* For jiffies, task states */
+-#include <linux/interrupt.h>	/* For tasklet and interrupt structs/defines */
+-#include <linux/module.h>
+-#include <linux/ctype.h>
+-#include <linux/tty.h>
+-#include <linux/tty_flip.h>
+-#include <linux/serial_reg.h>
+-#include <linux/slab.h>
+-#include <linux/delay.h>	/* For udelay */
+-#include <linux/uaccess.h>	/* For copy_from_user/copy_to_user */
+-#include <linux/pci.h>
+-
+-#include "dgnc_driver.h"
+-#include "dgnc_tty.h"
+-#include "dgnc_types.h"
+-#include "dgnc_neo.h"
+-#include "dgnc_cls.h"
+-#include "dpacompat.h"
+-#include "dgnc_sysfs.h"
+-#include "dgnc_utils.h"
+-
+-#define init_MUTEX(sem)	 sema_init(sem, 1)
+-#define DECLARE_MUTEX(name)     \
+-	struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)
+-
+-/*
+- * internal variables
+- */
+-static struct dgnc_board	*dgnc_BoardsByMajor[256];
+-static unsigned char		*dgnc_TmpWriteBuf;
+-static DECLARE_MUTEX(dgnc_TmpWriteSem);
+-
+-/*
+- * Default transparent print information.
+- */
+-static struct digi_t dgnc_digi_init = {
+-	.digi_flags =	DIGI_COOK,	/* Flags			*/
+-	.digi_maxcps =	100,		/* Max CPS			*/
+-	.digi_maxchar =	50,		/* Max chars in print queue	*/
+-	.digi_bufsize =	100,		/* Printer buffer size		*/
+-	.digi_onlen =	4,		/* size of printer on string	*/
+-	.digi_offlen =	4,		/* size of printer off string	*/
+-	.digi_onstr =	"\033[5i",	/* ANSI printer on string ]	*/
+-	.digi_offstr =	"\033[4i",	/* ANSI printer off string ]	*/
+-	.digi_term =	"ansi"		/* default terminal type	*/
+-};
+-
+-
+-/*
+- * Define a local default termios struct. All ports will be created
+- * with this termios initially.
+- *
+- * This defines a raw port at 9600 baud, 8 data bits, no parity,
+- * 1 stop bit.
+- */
+-static struct ktermios DgncDefaultTermios = {
+-	.c_iflag =	(DEFAULT_IFLAGS),	/* iflags */
+-	.c_oflag =	(DEFAULT_OFLAGS),	/* oflags */
+-	.c_cflag =	(DEFAULT_CFLAGS),	/* cflags */
+-	.c_lflag =	(DEFAULT_LFLAGS),	/* lflags */
+-	.c_cc =		INIT_C_CC,
+-	.c_line =	0,
+-};
+-
+-
+-/* Our function prototypes */
+-static int dgnc_tty_open(struct tty_struct *tty, struct file *file);
+-static void dgnc_tty_close(struct tty_struct *tty, struct file *file);
+-static int dgnc_block_til_ready(struct tty_struct *tty, struct file *file, struct channel_t *ch);
+-static int dgnc_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg);
+-static int dgnc_tty_digigeta(struct tty_struct *tty, struct digi_t __user *retinfo);
+-static int dgnc_tty_digiseta(struct tty_struct *tty, struct digi_t __user *new_info);
+-static int dgnc_tty_write_room(struct tty_struct *tty);
+-static int dgnc_tty_put_char(struct tty_struct *tty, unsigned char c);
+-static int dgnc_tty_chars_in_buffer(struct tty_struct *tty);
+-static void dgnc_tty_start(struct tty_struct *tty);
+-static void dgnc_tty_stop(struct tty_struct *tty);
+-static void dgnc_tty_throttle(struct tty_struct *tty);
+-static void dgnc_tty_unthrottle(struct tty_struct *tty);
+-static void dgnc_tty_flush_chars(struct tty_struct *tty);
+-static void dgnc_tty_flush_buffer(struct tty_struct *tty);
+-static void dgnc_tty_hangup(struct tty_struct *tty);
+-static int dgnc_set_modem_info(struct tty_struct *tty, unsigned int command, unsigned int __user *value);
+-static int dgnc_get_modem_info(struct channel_t *ch, unsigned int __user *value);
+-static int dgnc_tty_tiocmget(struct tty_struct *tty);
+-static int dgnc_tty_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear);
+-static int dgnc_tty_send_break(struct tty_struct *tty, int msec);
+-static void dgnc_tty_wait_until_sent(struct tty_struct *tty, int timeout);
+-static int dgnc_tty_write(struct tty_struct *tty, const unsigned char *buf, int count);
+-static void dgnc_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios);
+-static void dgnc_tty_send_xchar(struct tty_struct *tty, char ch);
+-
+-
+-static const struct tty_operations dgnc_tty_ops = {
+-	.open = dgnc_tty_open,
+-	.close = dgnc_tty_close,
+-	.write = dgnc_tty_write,
+-	.write_room = dgnc_tty_write_room,
+-	.flush_buffer = dgnc_tty_flush_buffer,
+-	.chars_in_buffer = dgnc_tty_chars_in_buffer,
+-	.flush_chars = dgnc_tty_flush_chars,
+-	.ioctl = dgnc_tty_ioctl,
+-	.set_termios = dgnc_tty_set_termios,
+-	.stop = dgnc_tty_stop,
+-	.start = dgnc_tty_start,
+-	.throttle = dgnc_tty_throttle,
+-	.unthrottle = dgnc_tty_unthrottle,
+-	.hangup = dgnc_tty_hangup,
+-	.put_char = dgnc_tty_put_char,
+-	.tiocmget = dgnc_tty_tiocmget,
+-	.tiocmset = dgnc_tty_tiocmset,
+-	.break_ctl = dgnc_tty_send_break,
+-	.wait_until_sent = dgnc_tty_wait_until_sent,
+-	.send_xchar = dgnc_tty_send_xchar
+-};
+-
+-/************************************************************************
+- *
+- * TTY Initialization/Cleanup Functions
+- *
+- ************************************************************************/
+-
+-/*
+- * dgnc_tty_preinit()
+- *
+- * Initialize any global tty related data before we download any boards.
+- */
+-int dgnc_tty_preinit(void)
+-{
+-	/*
+-	 * Allocate a buffer for doing the copy from user space to
+-	 * kernel space in dgnc_write().  We only use one buffer and
+-	 * control access to it with a semaphore.  If we are paging, we
+-	 * are already in trouble so one buffer won't hurt much anyway.
+-	 *
+-	 * We are okay to sleep in the malloc, as this routine
+-	 * is only called during module load, (not in interrupt context),
+-	 * and with no locks held.
+-	 */
+-	dgnc_TmpWriteBuf = kmalloc(WRITEBUFLEN, GFP_KERNEL);
+-
+-	if (!dgnc_TmpWriteBuf)
+-		return -ENOMEM;
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_tty_register()
+- *
+- * Init the tty subsystem for this board.
+- */
+-int dgnc_tty_register(struct dgnc_board *brd)
+-{
+-	int rc = 0;
+-
+-	brd->SerialDriver.magic = TTY_DRIVER_MAGIC;
+-
+-	snprintf(brd->SerialName, MAXTTYNAMELEN, "tty_dgnc_%d_", brd->boardnum);
+-
+-	brd->SerialDriver.name = brd->SerialName;
+-	brd->SerialDriver.name_base = 0;
+-	brd->SerialDriver.major = 0;
+-	brd->SerialDriver.minor_start = 0;
+-	brd->SerialDriver.num = brd->maxports;
+-	brd->SerialDriver.type = TTY_DRIVER_TYPE_SERIAL;
+-	brd->SerialDriver.subtype = SERIAL_TYPE_NORMAL;
+-	brd->SerialDriver.init_termios = DgncDefaultTermios;
+-	brd->SerialDriver.driver_name = DRVSTR;
+-	brd->SerialDriver.flags = (TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV | TTY_DRIVER_HARDWARE_BREAK);
+-
+-	/*
+-	 * The kernel wants space to store pointers to
+-	 * tty_struct's and termios's.
+-	 */
+-	brd->SerialDriver.ttys = kcalloc(brd->maxports, sizeof(*brd->SerialDriver.ttys), GFP_KERNEL);
+-	if (!brd->SerialDriver.ttys)
+-		return -ENOMEM;
+-
+-	kref_init(&brd->SerialDriver.kref);
+-	brd->SerialDriver.termios = kcalloc(brd->maxports, sizeof(*brd->SerialDriver.termios), GFP_KERNEL);
+-	if (!brd->SerialDriver.termios)
+-		return -ENOMEM;
+-
+-	/*
+-	 * Entry points for driver.  Called by the kernel from
+-	 * tty_io.c and n_tty.c.
+-	 */
+-	tty_set_operations(&brd->SerialDriver, &dgnc_tty_ops);
+-
+-	if (!brd->dgnc_Major_Serial_Registered) {
+-		/* Register tty devices */
+-		rc = tty_register_driver(&brd->SerialDriver);
+-		if (rc < 0) {
+-			APR(("Can't register tty device (%d)\n", rc));
+-			return rc;
+-		}
+-		brd->dgnc_Major_Serial_Registered = TRUE;
+-	}
+-
+-	/*
+-	 * If we're doing transparent print, we have to do all of the above
+-	 * again, separately so we don't get the LD confused about what major
+-	 * we are when we get into the dgnc_tty_open() routine.
+-	 */
+-	brd->PrintDriver.magic = TTY_DRIVER_MAGIC;
+-	snprintf(brd->PrintName, MAXTTYNAMELEN, "pr_dgnc_%d_", brd->boardnum);
+-
+-	brd->PrintDriver.name = brd->PrintName;
+-	brd->PrintDriver.name_base = 0;
+-	brd->PrintDriver.major = brd->SerialDriver.major;
+-	brd->PrintDriver.minor_start = 0x80;
+-	brd->PrintDriver.num = brd->maxports;
+-	brd->PrintDriver.type = TTY_DRIVER_TYPE_SERIAL;
+-	brd->PrintDriver.subtype = SERIAL_TYPE_NORMAL;
+-	brd->PrintDriver.init_termios = DgncDefaultTermios;
+-	brd->PrintDriver.driver_name = DRVSTR;
+-	brd->PrintDriver.flags = (TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV | TTY_DRIVER_HARDWARE_BREAK);
+-
+-	/*
+-	 * The kernel wants space to store pointers to
+-	 * tty_struct's and termios's.  Must be separated from
+-	 * the Serial Driver so we don't get confused
+-	 */
+-	brd->PrintDriver.ttys = kcalloc(brd->maxports, sizeof(*brd->PrintDriver.ttys), GFP_KERNEL);
+-	if (!brd->PrintDriver.ttys)
+-		return -ENOMEM;
+-	kref_init(&brd->PrintDriver.kref);
+-	brd->PrintDriver.termios = kcalloc(brd->maxports, sizeof(*brd->PrintDriver.termios), GFP_KERNEL);
+-	if (!brd->PrintDriver.termios)
+-		return -ENOMEM;
+-
+-	/*
+-	 * Entry points for driver.  Called by the kernel from
+-	 * tty_io.c and n_tty.c.
+-	 */
+-	tty_set_operations(&brd->PrintDriver, &dgnc_tty_ops);
+-
+-	if (!brd->dgnc_Major_TransparentPrint_Registered) {
+-		/* Register Transparent Print devices */
+-		rc = tty_register_driver(&brd->PrintDriver);
+-		if (rc < 0) {
+-			APR(("Can't register Transparent Print device (%d)\n", rc));
+-			return rc;
+-		}
+-		brd->dgnc_Major_TransparentPrint_Registered = TRUE;
+-	}
+-
+-	dgnc_BoardsByMajor[brd->SerialDriver.major] = brd;
+-	brd->dgnc_Serial_Major = brd->SerialDriver.major;
+-	brd->dgnc_TransparentPrint_Major = brd->PrintDriver.major;
+-
+-	return rc;
+-}
+-
+-
+-/*
+- * dgnc_tty_init()
+- *
+- * Init the tty subsystem.  Called once per board after board has been
+- * downloaded and init'ed.
+- */
+-int dgnc_tty_init(struct dgnc_board *brd)
+-{
+-	int i;
+-	void __iomem *vaddr;
+-	struct channel_t *ch;
+-
+-	if (!brd)
+-		return -ENXIO;
+-
+-	/*
+-	 * Initialize board structure elements.
+-	 */
+-
+-	vaddr = brd->re_map_membase;
+-
+-	brd->nasync = brd->maxports;
+-
+-	/*
+-	 * Allocate channel memory that might not have been allocated
+-	 * when the driver was first loaded.
+-	 */
+-	for (i = 0; i < brd->nasync; i++) {
+-		if (!brd->channels[i]) {
+-
+-			/*
+-			 * Okay to malloc with GFP_KERNEL, we are not at
+-			 * interrupt context, and there are no locks held.
+-			 */
+-			brd->channels[i] = kzalloc(sizeof(*brd->channels[i]), GFP_KERNEL);
+-		}
+-	}
+-
+-	ch = brd->channels[0];
+-	vaddr = brd->re_map_membase;
+-
+-	/* Set up channel variables */
+-	for (i = 0; i < brd->nasync; i++, ch = brd->channels[i]) {
+-
+-		if (!brd->channels[i])
+-			continue;
+-
+-		spin_lock_init(&ch->ch_lock);
+-
+-		/* Store all our magic numbers */
+-		ch->magic = DGNC_CHANNEL_MAGIC;
+-		ch->ch_tun.magic = DGNC_UNIT_MAGIC;
+-		ch->ch_tun.un_ch = ch;
+-		ch->ch_tun.un_type = DGNC_SERIAL;
+-		ch->ch_tun.un_dev = i;
+-
+-		ch->ch_pun.magic = DGNC_UNIT_MAGIC;
+-		ch->ch_pun.un_ch = ch;
+-		ch->ch_pun.un_type = DGNC_PRINT;
+-		ch->ch_pun.un_dev = i + 128;
+-
+-		if (brd->bd_uart_offset == 0x200)
+-			ch->ch_neo_uart = vaddr + (brd->bd_uart_offset * i);
+-		else
+-			ch->ch_cls_uart = vaddr + (brd->bd_uart_offset * i);
+-
+-		ch->ch_bd = brd;
+-		ch->ch_portnum = i;
+-		ch->ch_digi = dgnc_digi_init;
+-
+-		/* .25 second delay */
+-		ch->ch_close_delay = 250;
+-
+-		init_waitqueue_head(&ch->ch_flags_wait);
+-		init_waitqueue_head(&ch->ch_tun.un_flags_wait);
+-		init_waitqueue_head(&ch->ch_pun.un_flags_wait);
+-		init_waitqueue_head(&ch->ch_sniff_wait);
+-
+-		{
+-			struct device *classp;
+-
+-			classp = tty_register_device(&brd->SerialDriver, i,
+-				&(ch->ch_bd->pdev->dev));
+-			ch->ch_tun.un_sysfs = classp;
+-			dgnc_create_tty_sysfs(&ch->ch_tun, classp);
+-
+-			classp = tty_register_device(&brd->PrintDriver, i,
+-				&(ch->ch_bd->pdev->dev));
+-			ch->ch_pun.un_sysfs = classp;
+-			dgnc_create_tty_sysfs(&ch->ch_pun, classp);
+-		}
+-
+-	}
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_tty_post_uninit()
+- *
+- * UnInitialize any global tty related data.
+- */
+-void dgnc_tty_post_uninit(void)
+-{
+-	kfree(dgnc_TmpWriteBuf);
+-	dgnc_TmpWriteBuf = NULL;
+-}
+-
+-
+-/*
+- * dgnc_tty_uninit()
+- *
+- * Uninitialize the TTY portion of this driver.  Free all memory and
+- * resources.
+- */
+-void dgnc_tty_uninit(struct dgnc_board *brd)
+-{
+-	int i = 0;
+-
+-	if (brd->dgnc_Major_Serial_Registered) {
+-		dgnc_BoardsByMajor[brd->SerialDriver.major] = NULL;
+-		brd->dgnc_Serial_Major = 0;
+-		for (i = 0; i < brd->nasync; i++) {
+-			dgnc_remove_tty_sysfs(brd->channels[i]->ch_tun.un_sysfs);
+-			tty_unregister_device(&brd->SerialDriver, i);
+-		}
+-		tty_unregister_driver(&brd->SerialDriver);
+-		brd->dgnc_Major_Serial_Registered = FALSE;
+-	}
+-
+-	if (brd->dgnc_Major_TransparentPrint_Registered) {
+-		dgnc_BoardsByMajor[brd->PrintDriver.major] = NULL;
+-		brd->dgnc_TransparentPrint_Major = 0;
+-		for (i = 0; i < brd->nasync; i++) {
+-			dgnc_remove_tty_sysfs(brd->channels[i]->ch_pun.un_sysfs);
+-			tty_unregister_device(&brd->PrintDriver, i);
+-		}
+-		tty_unregister_driver(&brd->PrintDriver);
+-		brd->dgnc_Major_TransparentPrint_Registered = FALSE;
+-	}
+-
+-	kfree(brd->SerialDriver.ttys);
+-	brd->SerialDriver.ttys = NULL;
+-	kfree(brd->PrintDriver.ttys);
+-	brd->PrintDriver.ttys = NULL;
+-}
+-
+-
+-#define TMPBUFLEN (1024)
+-
+-/*
+- * dgnc_sniff - Dump data out to the "sniff" buffer if the
+- * proc sniff file is opened...
+- */
+-void dgnc_sniff_nowait_nolock(struct channel_t *ch, unsigned char *text, unsigned char *buf, int len)
+-{
+-	struct timeval tv;
+-	int n;
+-	int r;
+-	int nbuf;
+-	int i;
+-	int tmpbuflen;
+-	char *tmpbuf;
+-	char *p;
+-	int too_much_data;
+-
+-	tmpbuf = kzalloc(TMPBUFLEN, GFP_ATOMIC);
+-	if (!tmpbuf)
+-		return;
+-	p = tmpbuf;
+-
+-	/* Leave if sniff not open */
+-	if (!(ch->ch_sniff_flags & SNIFF_OPEN))
+-		goto exit;
+-
+-	do_gettimeofday(&tv);
+-
+-	/* Create our header for data dump */
+-	p += sprintf(p, "<%ld %ld><%s><", tv.tv_sec, tv.tv_usec, text);
+-	tmpbuflen = p - tmpbuf;
+-
+-	do {
+-		too_much_data = 0;
+-
+-		for (i = 0; i < len && tmpbuflen < (TMPBUFLEN - 4); i++) {
+-			p += sprintf(p, "%02x ", *buf);
+-			buf++;
+-			tmpbuflen = p - tmpbuf;
+-		}
+-
+-		if (tmpbuflen < (TMPBUFLEN - 4)) {
+-			if (i > 0)
+-				p += sprintf(p - 1, "%s\n", ">");
+-			else
+-				p += sprintf(p, "%s\n", ">");
+-		} else {
+-			too_much_data = 1;
+-			len -= i;
+-		}
+-
+-		nbuf = strlen(tmpbuf);
+-		p = tmpbuf;
+-
+-		/*
+-		 *  Loop while data remains.
+-		 */
+-		while (nbuf > 0 && ch->ch_sniff_buf) {
+-			/*
+-			 *  Determine the amount of available space left in the
+-			 *  buffer.  If there's none, wait until some appears.
+-			 */
+-			n = (ch->ch_sniff_out - ch->ch_sniff_in - 1) & SNIFF_MASK;
+-
+-			/*
+-			 * If there is no space left to write to in our sniff buffer,
+-			 * we have no choice but to drop the data.
+-			 * We *cannot* sleep here waiting for space, because this
+-			 * function was probably called by the interrupt/timer routines!
+-			 */
+-			if (n == 0)
+-				goto exit;
+-
+-			/*
+-			 * Copy as much data as will fit.
+-			 */
+-
+-			if (n > nbuf)
+-				n = nbuf;
+-
+-			r = SNIFF_MAX - ch->ch_sniff_in;
+-
+-			if (r <= n) {
+-				memcpy(ch->ch_sniff_buf + ch->ch_sniff_in, p, r);
+-
+-				n -= r;
+-				ch->ch_sniff_in = 0;
+-				p += r;
+-				nbuf -= r;
+-			}
+-
+-			memcpy(ch->ch_sniff_buf + ch->ch_sniff_in, p, n);
+-
+-			ch->ch_sniff_in += n;
+-			p += n;
+-			nbuf -= n;
+-
+-			/*
+-			 *  Wakeup any thread waiting for data
+-			 */
+-			if (ch->ch_sniff_flags & SNIFF_WAIT_DATA) {
+-				ch->ch_sniff_flags &= ~SNIFF_WAIT_DATA;
+-				wake_up_interruptible(&ch->ch_sniff_wait);
+-			}
+-		}
+-
+-		/*
+-		 * If the user sent us too much data to push into our tmpbuf,
+-		 * we need to keep looping around on all the data.
+-		 */
+-		if (too_much_data) {
+-			p = tmpbuf;
+-			tmpbuflen = 0;
+-		}
+-
+-	} while (too_much_data);
+-
+-exit:
+-	kfree(tmpbuf);
+-}
+-
+-
+-/*=======================================================================
+- *
+- *	dgnc_wmove - Write data to transmit queue.
+- *
+- *		ch	- Pointer to channel structure.
+- *		buf	- Poiter to characters to be moved.
+- *		n	- Number of characters to move.
+- *
+- *=======================================================================*/
+-static void dgnc_wmove(struct channel_t *ch, char *buf, uint n)
+-{
+-	int	remain;
+-	uint	head;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	head = ch->ch_w_head & WQUEUEMASK;
+-
+-	/*
+-	 * If the write wraps over the top of the circular buffer,
+-	 * move the portion up to the wrap point, and reset the
+-	 * pointers to the bottom.
+-	 */
+-	remain = WQUEUESIZE - head;
+-
+-	if (n >= remain) {
+-		n -= remain;
+-		memcpy(ch->ch_wqueue + head, buf, remain);
+-		head = 0;
+-		buf += remain;
+-	}
+-
+-	if (n > 0) {
+-		/*
+-		 * Move rest of data.
+-		 */
+-		remain = n;
+-		memcpy(ch->ch_wqueue + head, buf, remain);
+-		head += remain;
+-	}
+-
+-	head &= WQUEUEMASK;
+-	ch->ch_w_head = head;
+-}
+-
+-
+-
+-
+-/*=======================================================================
+- *
+- *      dgnc_input - Process received data.
+- *
+- *	      ch      - Pointer to channel structure.
+- *
+- *=======================================================================*/
+-void dgnc_input(struct channel_t *ch)
+-{
+-	struct dgnc_board *bd;
+-	struct tty_struct *tp;
+-	struct tty_ldisc *ld;
+-	uint	rmask;
+-	ushort	head;
+-	ushort	tail;
+-	int	data_len;
+-	unsigned long flags;
+-	int flip_len;
+-	int len = 0;
+-	int n = 0;
+-	int s = 0;
+-	int i = 0;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	tp = ch->ch_tun.un_tty;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/*
+-	 *      Figure the number of characters in the buffer.
+-	 *      Exit immediately if none.
+-	 */
+-	rmask = RQUEUEMASK;
+-	head = ch->ch_r_head & rmask;
+-	tail = ch->ch_r_tail & rmask;
+-	data_len = (head - tail) & rmask;
+-
+-	if (data_len == 0) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/*
+-	 * If the device is not open, or CREAD is off,
+-	 * flush input data and return immediately.
+-	 */
+-	if (!tp || (tp->magic != TTY_MAGIC) || !(ch->ch_tun.un_flags & UN_ISOPEN) ||
+-	    !(tp->termios.c_cflag & CREAD) || (ch->ch_tun.un_flags & UN_CLOSING)) {
+-
+-		ch->ch_r_head = tail;
+-
+-		/* Force queue flow control to be released, if needed */
+-		dgnc_check_queue_flow_control(ch);
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/*
+-	 * If we are throttled, simply don't read any data.
+-	 */
+-	if (ch->ch_flags & CH_FORCED_STOPI) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	flip_len = TTY_FLIPBUF_SIZE;
+-
+-	/* Chop down the length, if needed */
+-	len = min(data_len, flip_len);
+-	len = min(len, (N_TTY_BUF_SIZE - 1));
+-
+-	ld = tty_ldisc_ref(tp);
+-
+-#ifdef TTY_DONT_FLIP
+-	/*
+-	 * If the DONT_FLIP flag is on, don't flush our buffer, and act
+-	 * like the ld doesn't have any space to put the data right now.
+-	 */
+-	if (test_bit(TTY_DONT_FLIP, &tp->flags))
+-		len = 0;
+-#endif
+-
+-	/*
+-	 * If we were unable to get a reference to the ld,
+-	 * don't flush our buffer, and act like the ld doesn't
+-	 * have any space to put the data right now.
+-	 */
+-	if (!ld) {
+-		len = 0;
+-	} else {
+-		/*
+-		 * If ld doesn't have a pointer to a receive_buf function,
+-		 * flush the data, then act like the ld doesn't have any
+-		 * space to put the data right now.
+-		 */
+-		if (!ld->ops->receive_buf) {
+-			ch->ch_r_head = ch->ch_r_tail;
+-			len = 0;
+-		}
+-	}
+-
+-	if (len <= 0) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		if (ld)
+-			tty_ldisc_deref(ld);
+-		return;
+-	}
+-
+-	/*
+-	 * The tty layer in the kernel has changed in 2.6.16+.
+-	 *
+-	 * The flip buffers in the tty structure are no longer exposed,
+-	 * and probably will be going away eventually.
+-	 *
+-	 * If we are completely raw, we don't need to go through a lot
+-	 * of the tty layers that exist.
+-	 * In this case, we take the shortest and fastest route we
+-	 * can to relay the data to the user.
+-	 *
+-	 * On the other hand, if we are not raw, we need to go through
+-	 * the new 2.6.16+ tty layer, which has its API more well defined.
+-	 */
+-	len = tty_buffer_request_room(tp->port, len);
+-	n = len;
+-
+-	/*
+-	 * n now contains the most amount of data we can copy,
+-	 * bounded either by how much the Linux tty layer can handle,
+-	 * or the amount of data the card actually has pending...
+-	 */
+-	while (n) {
+-		s = ((head >= tail) ? head : RQUEUESIZE) - tail;
+-		s = min(s, n);
+-
+-		if (s <= 0)
+-			break;
+-
+-		/*
+-		 * If conditions are such that ld needs to see all
+-		 * UART errors, we will have to walk each character
+-		 * and error byte and send them to the buffer one at
+-		 * a time.
+-		 */
+-		if (I_PARMRK(tp) || I_BRKINT(tp) || I_INPCK(tp)) {
+-			for (i = 0; i < s; i++) {
+-				if (*(ch->ch_equeue + tail + i) & UART_LSR_BI)
+-					tty_insert_flip_char(tp->port, *(ch->ch_rqueue + tail + i), TTY_BREAK);
+-				else if (*(ch->ch_equeue + tail + i) & UART_LSR_PE)
+-					tty_insert_flip_char(tp->port, *(ch->ch_rqueue + tail + i), TTY_PARITY);
+-				else if (*(ch->ch_equeue + tail + i) & UART_LSR_FE)
+-					tty_insert_flip_char(tp->port, *(ch->ch_rqueue + tail + i), TTY_FRAME);
+-				else
+-					tty_insert_flip_char(tp->port, *(ch->ch_rqueue + tail + i), TTY_NORMAL);
+-			}
+-		} else {
+-			tty_insert_flip_string(tp->port, ch->ch_rqueue + tail, s);
+-		}
+-
+-		dgnc_sniff_nowait_nolock(ch, "USER READ", ch->ch_rqueue + tail, s);
+-
+-		tail += s;
+-		n -= s;
+-		/* Flip queue if needed */
+-		tail &= rmask;
+-	}
+-
+-	ch->ch_r_tail = tail & rmask;
+-	ch->ch_e_tail = tail & rmask;
+-	dgnc_check_queue_flow_control(ch);
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	/* Tell the tty layer its okay to "eat" the data now */
+-	tty_flip_buffer_push(tp->port);
+-
+-	if (ld)
+-		tty_ldisc_deref(ld);
+-}
+-
+-
+-/************************************************************************
+- * Determines when CARRIER changes state and takes appropriate
+- * action.
+- ************************************************************************/
+-void dgnc_carrier(struct channel_t *ch)
+-{
+-	struct dgnc_board *bd;
+-
+-	int virt_carrier = 0;
+-	int phys_carrier = 0;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	if (ch->ch_mistat & UART_MSR_DCD)
+-		phys_carrier = 1;
+-
+-	if (ch->ch_digi.digi_flags & DIGI_FORCEDCD)
+-		virt_carrier = 1;
+-
+-	if (ch->ch_c_cflag & CLOCAL)
+-		virt_carrier = 1;
+-
+-	/*
+-	 * Test for a VIRTUAL carrier transition to HIGH.
+-	 */
+-	if (((ch->ch_flags & CH_FCAR) == 0) && (virt_carrier == 1)) {
+-
+-		/*
+-		 * When carrier rises, wake any threads waiting
+-		 * for carrier in the open routine.
+-		 */
+-
+-		if (waitqueue_active(&(ch->ch_flags_wait)))
+-			wake_up_interruptible(&ch->ch_flags_wait);
+-	}
+-
+-	/*
+-	 * Test for a PHYSICAL carrier transition to HIGH.
+-	 */
+-	if (((ch->ch_flags & CH_CD) == 0) && (phys_carrier == 1)) {
+-
+-		/*
+-		 * When carrier rises, wake any threads waiting
+-		 * for carrier in the open routine.
+-		 */
+-
+-		if (waitqueue_active(&(ch->ch_flags_wait)))
+-			wake_up_interruptible(&ch->ch_flags_wait);
+-	}
+-
+-	/*
+-	 *  Test for a PHYSICAL transition to low, so long as we aren't
+-	 *  currently ignoring physical transitions (which is what "virtual
+-	 *  carrier" indicates).
+-	 *
+-	 *  The transition of the virtual carrier to low really doesn't
+-	 *  matter... it really only means "ignore carrier state", not
+-	 *  "make pretend that carrier is there".
+-	 */
+-	if ((virt_carrier == 0) && ((ch->ch_flags & CH_CD) != 0) &&
+-	    (phys_carrier == 0)) {
+-
+-		/*
+-		 *   When carrier drops:
+-		 *
+-		 *   Drop carrier on all open units.
+-		 *
+-		 *   Flush queues, waking up any task waiting in the
+-		 *   line discipline.
+-		 *
+-		 *   Send a hangup to the control terminal.
+-		 *
+-		 *   Enable all select calls.
+-		 */
+-		if (waitqueue_active(&(ch->ch_flags_wait)))
+-			wake_up_interruptible(&ch->ch_flags_wait);
+-
+-		if (ch->ch_tun.un_open_count > 0)
+-			tty_hangup(ch->ch_tun.un_tty);
+-
+-		if (ch->ch_pun.un_open_count > 0)
+-			tty_hangup(ch->ch_pun.un_tty);
+-	}
+-
+-	/*
+-	 *  Make sure that our cached values reflect the current reality.
+-	 */
+-	if (virt_carrier == 1)
+-		ch->ch_flags |= CH_FCAR;
+-	else
+-		ch->ch_flags &= ~CH_FCAR;
+-
+-	if (phys_carrier == 1)
+-		ch->ch_flags |= CH_CD;
+-	else
+-		ch->ch_flags &= ~CH_CD;
+-}
+-
+-/*
+- *  Assign the custom baud rate to the channel structure
+- */
+-static void dgnc_set_custom_speed(struct channel_t *ch, uint newrate)
+-{
+-	int testdiv;
+-	int testrate_high;
+-	int testrate_low;
+-	int deltahigh;
+-	int deltalow;
+-
+-	if (newrate <= 0) {
+-		ch->ch_custom_speed = 0;
+-		return;
+-	}
+-
+-	/*
+-	 *  Since the divisor is stored in a 16-bit integer, we make sure
+-	 *  we don't allow any rates smaller than a 16-bit integer would allow.
+-	 *  And of course, rates above the dividend won't fly.
+-	 */
+-	if (newrate && newrate < ((ch->ch_bd->bd_dividend / 0xFFFF) + 1))
+-		newrate = ((ch->ch_bd->bd_dividend / 0xFFFF) + 1);
+-
+-	if (newrate && newrate > ch->ch_bd->bd_dividend)
+-		newrate = ch->ch_bd->bd_dividend;
+-
+-	if (newrate > 0) {
+-		testdiv = ch->ch_bd->bd_dividend / newrate;
+-
+-		/*
+-		 *  If we try to figure out what rate the board would use
+-		 *  with the test divisor, it will be either equal or higher
+-		 *  than the requested baud rate.  If we then determine the
+-		 *  rate with a divisor one higher, we will get the next lower
+-		 *  supported rate below the requested.
+-		 */
+-		testrate_high = ch->ch_bd->bd_dividend / testdiv;
+-		testrate_low  = ch->ch_bd->bd_dividend / (testdiv + 1);
+-
+-		/*
+-		 *  If the rate for the requested divisor is correct, just
+-		 *  use it and be done.
+-		 */
+-		if (testrate_high != newrate) {
+-			/*
+-			 *  Otherwise, pick the rate that is closer (i.e. whichever rate
+-			 *  has a smaller delta).
+-			 */
+-			deltahigh = testrate_high - newrate;
+-			deltalow = newrate - testrate_low;
+-
+-			if (deltahigh < deltalow)
+-				newrate = testrate_high;
+-			else
+-				newrate = testrate_low;
+-		}
+-	}
+-
+-	ch->ch_custom_speed = newrate;
+-}
+-
+-
+-void dgnc_check_queue_flow_control(struct channel_t *ch)
+-{
+-	int qleft = 0;
+-
+-	/* Store how much space we have left in the queue */
+-	qleft = ch->ch_r_tail - ch->ch_r_head - 1;
+-	if (qleft < 0)
+-		qleft += RQUEUEMASK + 1;
+-
+-	/*
+-	 * Check to see if we should enforce flow control on our queue because
+-	 * the ld (or user) isn't reading data out of our queue fast enuf.
+-	 *
+-	 * NOTE: This is done based on what the current flow control of the
+-	 * port is set for.
+-	 *
+-	 * 1) HWFLOW (RTS) - Turn off the UART's Receive interrupt.
+-	 *	This will cause the UART's FIFO to back up, and force
+-	 *	the RTS signal to be dropped.
+-	 * 2) SWFLOW (IXOFF) - Keep trying to send a stop character to
+-	 *	the other side, in hopes it will stop sending data to us.
+-	 * 3) NONE - Nothing we can do.  We will simply drop any extra data
+-	 *	that gets sent into us when the queue fills up.
+-	 */
+-	if (qleft < 256) {
+-		/* HWFLOW */
+-		if (ch->ch_digi.digi_flags & CTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-			if (!(ch->ch_flags & CH_RECEIVER_OFF)) {
+-				ch->ch_bd->bd_ops->disable_receiver(ch);
+-				ch->ch_flags |= (CH_RECEIVER_OFF);
+-			}
+-		}
+-		/* SWFLOW */
+-		else if (ch->ch_c_iflag & IXOFF) {
+-			if (ch->ch_stops_sent <= MAX_STOPS_SENT) {
+-				ch->ch_bd->bd_ops->send_stop_character(ch);
+-				ch->ch_stops_sent++;
+-			}
+-		}
+-		/* No FLOW */
+-		else {
+-			/* Empty... Can't do anything about the impending overflow... */
+-		}
+-	}
+-
+-	/*
+-	 * Check to see if we should unenforce flow control because
+-	 * ld (or user) finally read enuf data out of our queue.
+-	 *
+-	 * NOTE: This is done based on what the current flow control of the
+-	 * port is set for.
+-	 *
+-	 * 1) HWFLOW (RTS) - Turn back on the UART's Receive interrupt.
+-	 *	This will cause the UART's FIFO to raise RTS back up,
+-	 *	which will allow the other side to start sending data again.
+-	 * 2) SWFLOW (IXOFF) - Send a start character to
+-	 *	the other side, so it will start sending data to us again.
+-	 * 3) NONE - Do nothing. Since we didn't do anything to turn off the
+-	 *	other side, we don't need to do anything now.
+-	 */
+-	if (qleft > (RQUEUESIZE / 2)) {
+-		/* HWFLOW */
+-		if (ch->ch_digi.digi_flags & RTSPACE || ch->ch_c_cflag & CRTSCTS) {
+-			if (ch->ch_flags & CH_RECEIVER_OFF) {
+-				ch->ch_bd->bd_ops->enable_receiver(ch);
+-				ch->ch_flags &= ~(CH_RECEIVER_OFF);
+-			}
+-		}
+-		/* SWFLOW */
+-		else if (ch->ch_c_iflag & IXOFF && ch->ch_stops_sent) {
+-			ch->ch_stops_sent = 0;
+-			ch->ch_bd->bd_ops->send_start_character(ch);
+-		}
+-		/* No FLOW */
+-		else {
+-			/* Nothing needed. */
+-		}
+-	}
+-}
+-
+-
+-void dgnc_wakeup_writes(struct channel_t *ch)
+-{
+-	int qlen = 0;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/*
+-	 * If channel now has space, wake up anyone waiting on the condition.
+-	 */
+-	qlen = ch->ch_w_head - ch->ch_w_tail;
+-	if (qlen < 0)
+-		qlen += WQUEUESIZE;
+-
+-	if (qlen >= (WQUEUESIZE - 256)) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	if (ch->ch_tun.un_flags & UN_ISOPEN) {
+-		if ((ch->ch_tun.un_tty->flags & (1 << TTY_DO_WRITE_WAKEUP)) &&
+-			ch->ch_tun.un_tty->ldisc->ops->write_wakeup) {
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			(ch->ch_tun.un_tty->ldisc->ops->write_wakeup)(ch->ch_tun.un_tty);
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-		}
+-
+-		wake_up_interruptible(&ch->ch_tun.un_tty->write_wait);
+-
+-		/*
+-		 * If unit is set to wait until empty, check to make sure
+-		 * the queue AND FIFO are both empty.
+-		 */
+-		if (ch->ch_tun.un_flags & UN_EMPTY) {
+-			if ((qlen == 0) && (ch->ch_bd->bd_ops->get_uart_bytes_left(ch) == 0)) {
+-				ch->ch_tun.un_flags &= ~(UN_EMPTY);
+-
+-				/*
+-				 * If RTS Toggle mode is on, whenever
+-				 * the queue and UART is empty, keep RTS low.
+-				 */
+-				if (ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE) {
+-					ch->ch_mostat &= ~(UART_MCR_RTS);
+-					ch->ch_bd->bd_ops->assert_modem_signals(ch);
+-				}
+-
+-				/*
+-				 * If DTR Toggle mode is on, whenever
+-				 * the queue and UART is empty, keep DTR low.
+-				 */
+-				if (ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE) {
+-					ch->ch_mostat &= ~(UART_MCR_DTR);
+-					ch->ch_bd->bd_ops->assert_modem_signals(ch);
+-				}
+-			}
+-		}
+-
+-		wake_up_interruptible(&ch->ch_tun.un_flags_wait);
+-	}
+-
+-	if (ch->ch_pun.un_flags & UN_ISOPEN) {
+-		if ((ch->ch_pun.un_tty->flags & (1 << TTY_DO_WRITE_WAKEUP)) &&
+-			ch->ch_pun.un_tty->ldisc->ops->write_wakeup) {
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			(ch->ch_pun.un_tty->ldisc->ops->write_wakeup)(ch->ch_pun.un_tty);
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-		}
+-
+-		wake_up_interruptible(&ch->ch_pun.un_tty->write_wait);
+-
+-		/*
+-		 * If unit is set to wait until empty, check to make sure
+-		 * the queue AND FIFO are both empty.
+-		 */
+-		if (ch->ch_pun.un_flags & UN_EMPTY) {
+-			if ((qlen == 0) && (ch->ch_bd->bd_ops->get_uart_bytes_left(ch) == 0))
+-				ch->ch_pun.un_flags &= ~(UN_EMPTY);
+-		}
+-
+-		wake_up_interruptible(&ch->ch_pun.un_flags_wait);
+-	}
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-
+-/************************************************************************
+- *
+- * TTY Entry points and helper functions
+- *
+- ************************************************************************/
+-
+-/*
+- * dgnc_tty_open()
+- *
+- */
+-static int dgnc_tty_open(struct tty_struct *tty, struct file *file)
+-{
+-	struct dgnc_board	*brd;
+-	struct channel_t *ch;
+-	struct un_t	*un;
+-	uint		major = 0;
+-	uint		minor = 0;
+-	int		rc = 0;
+-	unsigned long flags;
+-
+-	rc = 0;
+-
+-	major = MAJOR(tty_devnum(tty));
+-	minor = MINOR(tty_devnum(tty));
+-
+-	if (major > 255)
+-		return -ENXIO;
+-
+-	/* Get board pointer from our array of majors we have allocated */
+-	brd = dgnc_BoardsByMajor[major];
+-	if (!brd)
+-		return -ENXIO;
+-
+-	/*
+-	 * If board is not yet up to a state of READY, go to
+-	 * sleep waiting for it to happen or they cancel the open.
+-	 */
+-	rc = wait_event_interruptible(brd->state_wait,
+-		(brd->state & BOARD_READY));
+-
+-	if (rc)
+-		return rc;
+-
+-	spin_lock_irqsave(&brd->bd_lock, flags);
+-
+-	/* If opened device is greater than our number of ports, bail. */
+-	if (PORT_NUM(minor) > brd->nasync) {
+-		spin_unlock_irqrestore(&brd->bd_lock, flags);
+-		return -ENXIO;
+-	}
+-
+-	ch = brd->channels[PORT_NUM(minor)];
+-	if (!ch) {
+-		spin_unlock_irqrestore(&brd->bd_lock, flags);
+-		return -ENXIO;
+-	}
+-
+-	/* Drop board lock */
+-	spin_unlock_irqrestore(&brd->bd_lock, flags);
+-
+-	/* Grab channel lock */
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* Figure out our type */
+-	if (!IS_PRINT(minor)) {
+-		un = &brd->channels[PORT_NUM(minor)]->ch_tun;
+-		un->un_type = DGNC_SERIAL;
+-	} else if (IS_PRINT(minor)) {
+-		un = &brd->channels[PORT_NUM(minor)]->ch_pun;
+-		un->un_type = DGNC_PRINT;
+-	} else {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return -ENXIO;
+-	}
+-
+-	/*
+-	 * If the port is still in a previous open, and in a state
+-	 * where we simply cannot safely keep going, wait until the
+-	 * state clears.
+-	 */
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	rc = wait_event_interruptible(ch->ch_flags_wait, ((ch->ch_flags & CH_OPENING) == 0));
+-
+-	/* If ret is non-zero, user ctrl-c'ed us */
+-	if (rc)
+-		return -EINTR;
+-
+-	/*
+-	 * If either unit is in the middle of the fragile part of close,
+-	 * we just cannot touch the channel safely.
+-	 * Go to sleep, knowing that when the channel can be
+-	 * touched safely, the close routine will signal the
+-	 * ch_flags_wait to wake us back up.
+-	 */
+-	rc = wait_event_interruptible(ch->ch_flags_wait,
+-		(((ch->ch_tun.un_flags | ch->ch_pun.un_flags) & UN_CLOSING) == 0));
+-
+-	/* If ret is non-zero, user ctrl-c'ed us */
+-	if (rc)
+-		return -EINTR;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-
+-	/* Store our unit into driver_data, so we always have it available. */
+-	tty->driver_data = un;
+-
+-
+-	/*
+-	 * Initialize tty's
+-	 */
+-	if (!(un->un_flags & UN_ISOPEN)) {
+-		/* Store important variables. */
+-		un->un_tty     = tty;
+-
+-		/* Maybe do something here to the TTY struct as well? */
+-	}
+-
+-
+-	/*
+-	 * Allocate channel buffers for read/write/error.
+-	 * Set flag, so we don't get trounced on.
+-	 */
+-	ch->ch_flags |= (CH_OPENING);
+-
+-	/* Drop locks, as malloc with GFP_KERNEL can sleep */
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	if (!ch->ch_rqueue)
+-		ch->ch_rqueue = kzalloc(RQUEUESIZE, GFP_KERNEL);
+-	if (!ch->ch_equeue)
+-		ch->ch_equeue = kzalloc(EQUEUESIZE, GFP_KERNEL);
+-	if (!ch->ch_wqueue)
+-		ch->ch_wqueue = kzalloc(WQUEUESIZE, GFP_KERNEL);
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_flags &= ~(CH_OPENING);
+-	wake_up_interruptible(&ch->ch_flags_wait);
+-
+-	/*
+-	 * Initialize if neither terminal or printer is open.
+-	 */
+-	if (!((ch->ch_tun.un_flags | ch->ch_pun.un_flags) & UN_ISOPEN)) {
+-
+-		/*
+-		 * Flush input queues.
+-		 */
+-		ch->ch_r_head = 0;
+-		ch->ch_r_tail = 0;
+-		ch->ch_e_head = 0;
+-		ch->ch_e_tail = 0;
+-		ch->ch_w_head = 0;
+-		ch->ch_w_tail = 0;
+-
+-		brd->bd_ops->flush_uart_write(ch);
+-		brd->bd_ops->flush_uart_read(ch);
+-
+-		ch->ch_flags = 0;
+-		ch->ch_cached_lsr = 0;
+-		ch->ch_stop_sending_break = 0;
+-		ch->ch_stops_sent = 0;
+-
+-		ch->ch_c_cflag   = tty->termios.c_cflag;
+-		ch->ch_c_iflag   = tty->termios.c_iflag;
+-		ch->ch_c_oflag   = tty->termios.c_oflag;
+-		ch->ch_c_lflag   = tty->termios.c_lflag;
+-		ch->ch_startc = tty->termios.c_cc[VSTART];
+-		ch->ch_stopc  = tty->termios.c_cc[VSTOP];
+-
+-		/*
+-		 * Bring up RTS and DTR...
+-		 * Also handle RTS or DTR toggle if set.
+-		 */
+-		if (!(ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE))
+-			ch->ch_mostat |= (UART_MCR_RTS);
+-		if (!(ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE))
+-			ch->ch_mostat |= (UART_MCR_DTR);
+-
+-		/* Tell UART to init itself */
+-		brd->bd_ops->uart_init(ch);
+-	}
+-
+-	/*
+-	 * Run param in case we changed anything
+-	 */
+-	brd->bd_ops->param(tty);
+-
+-	dgnc_carrier(ch);
+-
+-	/*
+-	 * follow protocol for opening port
+-	 */
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	rc = dgnc_block_til_ready(tty, file, ch);
+-
+-	/* No going back now, increment our unit and channel counters */
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	ch->ch_open_count++;
+-	un->un_open_count++;
+-	un->un_flags |= (UN_ISOPEN);
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	return rc;
+-}
+-
+-
+-/*
+- * dgnc_block_til_ready()
+- *
+- * Wait for DCD, if needed.
+- */
+-static int dgnc_block_til_ready(struct tty_struct *tty, struct file *file, struct channel_t *ch)
+-{
+-	int retval = 0;
+-	struct un_t *un = NULL;
+-	unsigned long flags;
+-	uint	old_flags = 0;
+-	int	sleep_on_un_flags = 0;
+-
+-	if (!tty || tty->magic != TTY_MAGIC || !file || !ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -ENXIO;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return -ENXIO;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_wopen++;
+-
+-	/* Loop forever */
+-	while (1) {
+-
+-		sleep_on_un_flags = 0;
+-
+-		/*
+-		 * If board has failed somehow during our sleep, bail with error.
+-		 */
+-		if (ch->ch_bd->state == BOARD_FAILED) {
+-			retval = -ENXIO;
+-			break;
+-		}
+-
+-		/* If tty was hung up, break out of loop and set error. */
+-		if (tty_hung_up_p(file)) {
+-			retval = -EAGAIN;
+-			break;
+-		}
+-
+-		/*
+-		 * If either unit is in the middle of the fragile part of close,
+-		 * we just cannot touch the channel safely.
+-		 * Go back to sleep, knowing that when the channel can be
+-		 * touched safely, the close routine will signal the
+-		 * ch_wait_flags to wake us back up.
+-		 */
+-		if (!((ch->ch_tun.un_flags | ch->ch_pun.un_flags) & UN_CLOSING)) {
+-
+-			/*
+-			 * Our conditions to leave cleanly and happily:
+-			 * 1) NONBLOCKING on the tty is set.
+-			 * 2) CLOCAL is set.
+-			 * 3) DCD (fake or real) is active.
+-			 */
+-
+-			if (file->f_flags & O_NONBLOCK)
+-				break;
+-
+-			if (tty->flags & (1 << TTY_IO_ERROR)) {
+-				retval = -EIO;
+-				break;
+-			}
+-
+-			if (ch->ch_flags & CH_CD)
+-				break;
+-
+-			if (ch->ch_flags & CH_FCAR)
+-				break;
+-		} else {
+-			sleep_on_un_flags = 1;
+-		}
+-
+-		/*
+-		 * If there is a signal pending, the user probably
+-		 * interrupted (ctrl-c) us.
+-		 * Leave loop with error set.
+-		 */
+-		if (signal_pending(current)) {
+-			retval = -ERESTARTSYS;
+-			break;
+-		}
+-
+-		/*
+-		 * Store the flags before we let go of channel lock
+-		 */
+-		if (sleep_on_un_flags)
+-			old_flags = ch->ch_tun.un_flags | ch->ch_pun.un_flags;
+-		else
+-			old_flags = ch->ch_flags;
+-
+-		/*
+-		 * Let go of channel lock before calling schedule.
+-		 * Our poller will get any FEP events and wake us up when DCD
+-		 * eventually goes active.
+-		 */
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		/*
+-		 * Wait for something in the flags to change from the current value.
+-		 */
+-		if (sleep_on_un_flags)
+-			retval = wait_event_interruptible(un->un_flags_wait,
+-				(old_flags != (ch->ch_tun.un_flags | ch->ch_pun.un_flags)));
+-		else
+-			retval = wait_event_interruptible(ch->ch_flags_wait,
+-				(old_flags != ch->ch_flags));
+-
+-		/*
+-		 * We got woken up for some reason.
+-		 * Before looping around, grab our channel lock.
+-		 */
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-	}
+-
+-	ch->ch_wopen--;
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	if (retval)
+-		return retval;
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_tty_hangup()
+- *
+- * Hangup the port.  Like a close, but don't wait for output to drain.
+- */
+-static void dgnc_tty_hangup(struct tty_struct *tty)
+-{
+-	struct un_t	*un;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	/* flush the transmit queues */
+-	dgnc_tty_flush_buffer(tty);
+-
+-}
+-
+-
+-/*
+- * dgnc_tty_close()
+- *
+- */
+-static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
+-{
+-	struct ktermios *ts;
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-	int rc = 0;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	ts = &tty->termios;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/*
+-	 * Determine if this is the last close or not - and if we agree about
+-	 * which type of close it is with the Line Discipline
+-	 */
+-	if ((tty->count == 1) && (un->un_open_count != 1)) {
+-		/*
+-		 * Uh, oh.  tty->count is 1, which means that the tty
+-		 * structure will be freed.  un_open_count should always
+-		 * be one in these conditions.  If it's greater than
+-		 * one, we've got real problems, since it means the
+-		 * serial port won't be shutdown.
+-		 */
+-		APR(("tty->count is 1, un open count is %d\n", un->un_open_count));
+-		un->un_open_count = 1;
+-	}
+-
+-	if (un->un_open_count)
+-		un->un_open_count--;
+-	else
+-		APR(("bad serial port open count of %d\n", un->un_open_count));
+-
+-	ch->ch_open_count--;
+-
+-	if (ch->ch_open_count && un->un_open_count) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return;
+-	}
+-
+-	/* OK, its the last close on the unit */
+-	un->un_flags |= UN_CLOSING;
+-
+-	tty->closing = 1;
+-
+-
+-	/*
+-	 * Only officially close channel if count is 0 and
+-	 * DIGI_PRINTER bit is not set.
+-	 */
+-	if ((ch->ch_open_count == 0) && !(ch->ch_digi.digi_flags & DIGI_PRINTER)) {
+-
+-		ch->ch_flags &= ~(CH_STOPI | CH_FORCED_STOPI);
+-
+-		/*
+-		 * turn off print device when closing print device.
+-		 */
+-		if ((un->un_type == DGNC_PRINT) && (ch->ch_flags & CH_PRON)) {
+-			dgnc_wmove(ch, ch->ch_digi.digi_offstr,
+-				(int) ch->ch_digi.digi_offlen);
+-			ch->ch_flags &= ~CH_PRON;
+-		}
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		/* wait for output to drain */
+-		/* This will also return if we take an interrupt */
+-
+-		rc = bd->bd_ops->drain(tty, 0);
+-
+-		dgnc_tty_flush_buffer(tty);
+-		tty_ldisc_flush(tty);
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		tty->closing = 0;
+-
+-		/*
+-		 * If we have HUPCL set, lower DTR and RTS
+-		 */
+-		if (ch->ch_c_cflag & HUPCL) {
+-
+-			/* Drop RTS/DTR */
+-			ch->ch_mostat &= ~(UART_MCR_DTR | UART_MCR_RTS);
+-			bd->bd_ops->assert_modem_signals(ch);
+-
+-			/*
+-			 * Go to sleep to ensure RTS/DTR
+-			 * have been dropped for modems to see it.
+-			 */
+-			if (ch->ch_close_delay) {
+-				spin_unlock_irqrestore(&ch->ch_lock,
+-						       flags);
+-				dgnc_ms_sleep(ch->ch_close_delay);
+-				spin_lock_irqsave(&ch->ch_lock, flags);
+-			}
+-		}
+-
+-		ch->ch_old_baud = 0;
+-
+-		/* Turn off UART interrupts for this port */
+-		ch->ch_bd->bd_ops->uart_off(ch);
+-	} else {
+-		/*
+-		 * turn off print device when closing print device.
+-		 */
+-		if ((un->un_type == DGNC_PRINT) && (ch->ch_flags & CH_PRON)) {
+-			dgnc_wmove(ch, ch->ch_digi.digi_offstr,
+-				(int) ch->ch_digi.digi_offlen);
+-			ch->ch_flags &= ~CH_PRON;
+-		}
+-	}
+-
+-	un->un_tty = NULL;
+-	un->un_flags &= ~(UN_ISOPEN | UN_CLOSING);
+-
+-	wake_up_interruptible(&ch->ch_flags_wait);
+-	wake_up_interruptible(&un->un_flags_wait);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/*
+- * dgnc_tty_chars_in_buffer()
+- *
+- * Return number of characters that have not been transmitted yet.
+- *
+- * This routine is used by the line discipline to determine if there
+- * is data waiting to be transmitted/drained/flushed or not.
+- */
+-static int dgnc_tty_chars_in_buffer(struct tty_struct *tty)
+-{
+-	struct channel_t *ch = NULL;
+-	struct un_t *un = NULL;
+-	ushort thead;
+-	ushort ttail;
+-	uint tmask;
+-	uint chars = 0;
+-	unsigned long flags;
+-
+-	if (tty == NULL)
+-		return 0;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	tmask = WQUEUEMASK;
+-	thead = ch->ch_w_head & tmask;
+-	ttail = ch->ch_w_tail & tmask;
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	if (ttail == thead) {
+-		chars = 0;
+-	} else {
+-		if (thead >= ttail)
+-			chars = thead - ttail;
+-		else
+-			chars = thead - ttail + WQUEUESIZE;
+-	}
+-
+-	return chars;
+-}
+-
+-
+-/*
+- * dgnc_maxcps_room
+- *
+- * Reduces bytes_available to the max number of characters
+- * that can be sent currently given the maxcps value, and
+- * returns the new bytes_available.  This only affects printer
+- * output.
+- */
+-static int dgnc_maxcps_room(struct tty_struct *tty, int bytes_available)
+-{
+-	struct channel_t *ch = NULL;
+-	struct un_t *un = NULL;
+-
+-	if (!tty)
+-		return bytes_available;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return bytes_available;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return bytes_available;
+-
+-	/*
+-	 * If its not the Transparent print device, return
+-	 * the full data amount.
+-	 */
+-	if (un->un_type != DGNC_PRINT)
+-		return bytes_available;
+-
+-	if (ch->ch_digi.digi_maxcps > 0 && ch->ch_digi.digi_bufsize > 0) {
+-		int cps_limit = 0;
+-		unsigned long current_time = jiffies;
+-		unsigned long buffer_time = current_time +
+-			(HZ * ch->ch_digi.digi_bufsize) / ch->ch_digi.digi_maxcps;
+-
+-		if (ch->ch_cpstime < current_time) {
+-			/* buffer is empty */
+-			ch->ch_cpstime = current_time;	    /* reset ch_cpstime */
+-			cps_limit = ch->ch_digi.digi_bufsize;
+-		} else if (ch->ch_cpstime < buffer_time) {
+-			/* still room in the buffer */
+-			cps_limit = ((buffer_time - ch->ch_cpstime) * ch->ch_digi.digi_maxcps) / HZ;
+-		} else {
+-			/* no room in the buffer */
+-			cps_limit = 0;
+-		}
+-
+-		bytes_available = min(cps_limit, bytes_available);
+-	}
+-
+-	return bytes_available;
+-}
+-
+-
+-/*
+- * dgnc_tty_write_room()
+- *
+- * Return space available in Tx buffer
+- */
+-static int dgnc_tty_write_room(struct tty_struct *tty)
+-{
+-	struct channel_t *ch = NULL;
+-	struct un_t *un = NULL;
+-	ushort head;
+-	ushort tail;
+-	ushort tmask;
+-	int ret = 0;
+-	unsigned long flags;
+-
+-	if (tty == NULL || dgnc_TmpWriteBuf == NULL)
+-		return 0;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	tmask = WQUEUEMASK;
+-	head = (ch->ch_w_head) & tmask;
+-	tail = (ch->ch_w_tail) & tmask;
+-
+-	ret = tail - head - 1;
+-	if (ret < 0)
+-		ret += WQUEUESIZE;
+-
+-	/* Limit printer to maxcps */
+-	ret = dgnc_maxcps_room(tty, ret);
+-
+-	/*
+-	 * If we are printer device, leave space for
+-	 * possibly both the on and off strings.
+-	 */
+-	if (un->un_type == DGNC_PRINT) {
+-		if (!(ch->ch_flags & CH_PRON))
+-			ret -= ch->ch_digi.digi_onlen;
+-		ret -= ch->ch_digi.digi_offlen;
+-	} else {
+-		if (ch->ch_flags & CH_PRON)
+-			ret -= ch->ch_digi.digi_offlen;
+-	}
+-
+-	if (ret < 0)
+-		ret = 0;
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	return ret;
+-}
+-
+-
+-/*
+- * dgnc_tty_put_char()
+- *
+- * Put a character into ch->ch_buf
+- *
+- *      - used by the line discipline for OPOST processing
+- */
+-static int dgnc_tty_put_char(struct tty_struct *tty, unsigned char c)
+-{
+-	/*
+-	 * Simply call tty_write.
+-	 */
+-	dgnc_tty_write(tty, &c, 1);
+-	return 1;
+-}
+-
+-
+-/*
+- * dgnc_tty_write()
+- *
+- * Take data from the user or kernel and send it out to the FEP.
+- * In here exists all the Transparent Print magic as well.
+- */
+-static int dgnc_tty_write(struct tty_struct *tty,
+-		const unsigned char *buf, int count)
+-{
+-	struct channel_t *ch = NULL;
+-	struct un_t *un = NULL;
+-	int bufcount = 0, n = 0;
+-	int orig_count = 0;
+-	unsigned long flags;
+-	ushort head;
+-	ushort tail;
+-	ushort tmask;
+-	uint remain;
+-	int from_user = 0;
+-
+-	if (tty == NULL || dgnc_TmpWriteBuf == NULL)
+-		return 0;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return 0;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return 0;
+-
+-	if (!count)
+-		return 0;
+-
+-	/*
+-	 * Store original amount of characters passed in.
+-	 * This helps to figure out if we should ask the FEP
+-	 * to send us an event when it has more space available.
+-	 */
+-	orig_count = count;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* Get our space available for the channel from the board */
+-	tmask = WQUEUEMASK;
+-	head = (ch->ch_w_head) & tmask;
+-	tail = (ch->ch_w_tail) & tmask;
+-
+-	bufcount = tail - head - 1;
+-	if (bufcount < 0)
+-		bufcount += WQUEUESIZE;
+-
+-	/*
+-	 * Limit printer output to maxcps overall, with bursts allowed
+-	 * up to bufsize characters.
+-	 */
+-	bufcount = dgnc_maxcps_room(tty, bufcount);
+-
+-	/*
+-	 * Take minimum of what the user wants to send, and the
+-	 * space available in the FEP buffer.
+-	 */
+-	count = min(count, bufcount);
+-
+-	/*
+-	 * Bail if no space left.
+-	 */
+-	if (count <= 0) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return 0;
+-	}
+-
+-	/*
+-	 * Output the printer ON string, if we are in terminal mode, but
+-	 * need to be in printer mode.
+-	 */
+-	if ((un->un_type == DGNC_PRINT) && !(ch->ch_flags & CH_PRON)) {
+-		dgnc_wmove(ch, ch->ch_digi.digi_onstr,
+-		    (int) ch->ch_digi.digi_onlen);
+-		head = (ch->ch_w_head) & tmask;
+-		ch->ch_flags |= CH_PRON;
+-	}
+-
+-	/*
+-	 * On the other hand, output the printer OFF string, if we are
+-	 * currently in printer mode, but need to output to the terminal.
+-	 */
+-	if ((un->un_type != DGNC_PRINT) && (ch->ch_flags & CH_PRON)) {
+-		dgnc_wmove(ch, ch->ch_digi.digi_offstr,
+-			(int) ch->ch_digi.digi_offlen);
+-		head = (ch->ch_w_head) & tmask;
+-		ch->ch_flags &= ~CH_PRON;
+-	}
+-
+-	/*
+-	 * If there is nothing left to copy, or I can't handle any more data, leave.
+-	 */
+-	if (count <= 0) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return 0;
+-	}
+-
+-	if (from_user) {
+-
+-		count = min(count, WRITEBUFLEN);
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		/*
+-		 * If data is coming from user space, copy it into a temporary
+-		 * buffer so we don't get swapped out while doing the copy to
+-		 * the board.
+-		 */
+-		/* we're allowed to block if it's from_user */
+-		if (down_interruptible(&dgnc_TmpWriteSem))
+-			return -EINTR;
+-
+-		/*
+-		 * copy_from_user() returns the number
+-		 * of bytes that could *NOT* be copied.
+-		 */
+-		count -= copy_from_user(dgnc_TmpWriteBuf, (const unsigned char __user *) buf, count);
+-
+-		if (!count) {
+-			up(&dgnc_TmpWriteSem);
+-			return -EFAULT;
+-		}
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		buf = dgnc_TmpWriteBuf;
+-
+-	}
+-
+-	n = count;
+-
+-	/*
+-	 * If the write wraps over the top of the circular buffer,
+-	 * move the portion up to the wrap point, and reset the
+-	 * pointers to the bottom.
+-	 */
+-	remain = WQUEUESIZE - head;
+-
+-	if (n >= remain) {
+-		n -= remain;
+-		memcpy(ch->ch_wqueue + head, buf, remain);
+-		dgnc_sniff_nowait_nolock(ch, "USER WRITE", ch->ch_wqueue + head, remain);
+-		head = 0;
+-		buf += remain;
+-	}
+-
+-	if (n > 0) {
+-		/*
+-		 * Move rest of data.
+-		 */
+-		remain = n;
+-		memcpy(ch->ch_wqueue + head, buf, remain);
+-		dgnc_sniff_nowait_nolock(ch, "USER WRITE", ch->ch_wqueue + head, remain);
+-		head += remain;
+-	}
+-
+-	if (count) {
+-		head &= tmask;
+-		ch->ch_w_head = head;
+-	}
+-
+-	/* Update printer buffer empty time. */
+-	if ((un->un_type == DGNC_PRINT) && (ch->ch_digi.digi_maxcps > 0)
+-	    && (ch->ch_digi.digi_bufsize > 0)) {
+-		ch->ch_cpstime += (HZ * count) / ch->ch_digi.digi_maxcps;
+-	}
+-
+-	if (from_user) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		up(&dgnc_TmpWriteSem);
+-	} else {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-	}
+-
+-	if (count) {
+-		/*
+-		 * Channel lock is grabbed and then released
+-		 * inside this routine.
+-		 */
+-		ch->ch_bd->bd_ops->copy_data_from_queue_to_uart(ch);
+-	}
+-
+-	return count;
+-}
+-
+-
+-/*
+- * Return modem signals to ld.
+- */
+-
+-static int dgnc_tty_tiocmget(struct tty_struct *tty)
+-{
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int result = -EIO;
+-	unsigned char mstat = 0;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return result;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return result;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return result;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	mstat = (ch->ch_mostat | ch->ch_mistat);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	result = 0;
+-
+-	if (mstat & UART_MCR_DTR)
+-		result |= TIOCM_DTR;
+-	if (mstat & UART_MCR_RTS)
+-		result |= TIOCM_RTS;
+-	if (mstat & UART_MSR_CTS)
+-		result |= TIOCM_CTS;
+-	if (mstat & UART_MSR_DSR)
+-		result |= TIOCM_DSR;
+-	if (mstat & UART_MSR_RI)
+-		result |= TIOCM_RI;
+-	if (mstat & UART_MSR_DCD)
+-		result |= TIOCM_CD;
+-
+-	return result;
+-}
+-
+-
+-/*
+- * dgnc_tty_tiocmset()
+- *
+- * Set modem signals, called by ld.
+- */
+-
+-static int dgnc_tty_tiocmset(struct tty_struct *tty,
+-		unsigned int set, unsigned int clear)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int ret = -EIO;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return ret;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return ret;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return ret;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return ret;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	if (set & TIOCM_RTS)
+-		ch->ch_mostat |= UART_MCR_RTS;
+-
+-	if (set & TIOCM_DTR)
+-		ch->ch_mostat |= UART_MCR_DTR;
+-
+-	if (clear & TIOCM_RTS)
+-		ch->ch_mostat &= ~(UART_MCR_RTS);
+-
+-	if (clear & TIOCM_DTR)
+-		ch->ch_mostat &= ~(UART_MCR_DTR);
+-
+-	ch->ch_bd->bd_ops->assert_modem_signals(ch);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_tty_send_break()
+- *
+- * Send a Break, called by ld.
+- */
+-static int dgnc_tty_send_break(struct tty_struct *tty, int msec)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int ret = -EIO;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return ret;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return ret;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return ret;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return ret;
+-
+-	switch (msec) {
+-	case -1:
+-		msec = 0xFFFF;
+-		break;
+-	case 0:
+-		msec = 0;
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_bd->bd_ops->send_break(ch, msec);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	return 0;
+-
+-}
+-
+-
+-/*
+- * dgnc_tty_wait_until_sent()
+- *
+- * wait until data has been transmitted, called by ld.
+- */
+-static void dgnc_tty_wait_until_sent(struct tty_struct *tty, int timeout)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int rc;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	rc = bd->bd_ops->drain(tty, 0);
+-}
+-
+-
+-/*
+- * dgnc_send_xchar()
+- *
+- * send a high priority character, called by ld.
+- */
+-static void dgnc_tty_send_xchar(struct tty_struct *tty, char c)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	dev_dbg(tty->dev, "dgnc_tty_send_xchar start\n");
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	bd->bd_ops->send_immediate_char(ch, c);
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	dev_dbg(tty->dev, "dgnc_tty_send_xchar finish\n");
+-}
+-
+-
+-
+-
+-/*
+- * Return modem signals to ld.
+- */
+-static inline int dgnc_get_mstat(struct channel_t *ch)
+-{
+-	unsigned char mstat;
+-	int result = -EIO;
+-	unsigned long flags;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -ENXIO;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	mstat = (ch->ch_mostat | ch->ch_mistat);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	result = 0;
+-
+-	if (mstat & UART_MCR_DTR)
+-		result |= TIOCM_DTR;
+-	if (mstat & UART_MCR_RTS)
+-		result |= TIOCM_RTS;
+-	if (mstat & UART_MSR_CTS)
+-		result |= TIOCM_CTS;
+-	if (mstat & UART_MSR_DSR)
+-		result |= TIOCM_DSR;
+-	if (mstat & UART_MSR_RI)
+-		result |= TIOCM_RI;
+-	if (mstat & UART_MSR_DCD)
+-		result |= TIOCM_CD;
+-
+-	return result;
+-}
+-
+-
+-
+-/*
+- * Return modem signals to ld.
+- */
+-static int dgnc_get_modem_info(struct channel_t *ch, unsigned int  __user *value)
+-{
+-	int result;
+-
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -ENXIO;
+-
+-	result = dgnc_get_mstat(ch);
+-
+-	if (result < 0)
+-		return -ENXIO;
+-
+-	return put_user(result, value);
+-}
+-
+-
+-/*
+- * dgnc_set_modem_info()
+- *
+- * Set modem signals, called by ld.
+- */
+-static int dgnc_set_modem_info(struct tty_struct *tty, unsigned int command, unsigned int __user *value)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int ret = -ENXIO;
+-	unsigned int arg = 0;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return ret;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return ret;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return ret;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return ret;
+-
+-	ret = 0;
+-
+-	ret = get_user(arg, value);
+-	if (ret)
+-		return ret;
+-
+-	switch (command) {
+-	case TIOCMBIS:
+-		if (arg & TIOCM_RTS)
+-			ch->ch_mostat |= UART_MCR_RTS;
+-
+-		if (arg & TIOCM_DTR)
+-			ch->ch_mostat |= UART_MCR_DTR;
+-
+-		break;
+-
+-	case TIOCMBIC:
+-		if (arg & TIOCM_RTS)
+-			ch->ch_mostat &= ~(UART_MCR_RTS);
+-
+-		if (arg & TIOCM_DTR)
+-			ch->ch_mostat &= ~(UART_MCR_DTR);
+-
+-		break;
+-
+-	case TIOCMSET:
+-
+-		if (arg & TIOCM_RTS)
+-			ch->ch_mostat |= UART_MCR_RTS;
+-		else
+-			ch->ch_mostat &= ~(UART_MCR_RTS);
+-
+-		if (arg & TIOCM_DTR)
+-			ch->ch_mostat |= UART_MCR_DTR;
+-		else
+-			ch->ch_mostat &= ~(UART_MCR_DTR);
+-
+-		break;
+-
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_bd->bd_ops->assert_modem_signals(ch);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_tty_digigeta()
+- *
+- * Ioctl to get the information for ditty.
+- *
+- *
+- *
+- */
+-static int dgnc_tty_digigeta(struct tty_struct *tty, struct digi_t __user *retinfo)
+-{
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	struct digi_t tmp;
+-	unsigned long flags;
+-
+-	if (!retinfo)
+-		return -EFAULT;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return -EFAULT;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return -EFAULT;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -EFAULT;
+-
+-	memset(&tmp, 0, sizeof(tmp));
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-	memcpy(&tmp, &ch->ch_digi, sizeof(tmp));
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	if (copy_to_user(retinfo, &tmp, sizeof(*retinfo)))
+-		return -EFAULT;
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_tty_digiseta()
+- *
+- * Ioctl to set the information for ditty.
+- *
+- *
+- *
+- */
+-static int dgnc_tty_digiseta(struct tty_struct *tty, struct digi_t __user *new_info)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	struct digi_t new_digi;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return -EFAULT;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return -EFAULT;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -EFAULT;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return -EFAULT;
+-
+-	if (copy_from_user(&new_digi, new_info, sizeof(new_digi)))
+-		return -EFAULT;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/*
+-	 * Handle transistions to and from RTS Toggle.
+-	 */
+-	if (!(ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE) && (new_digi.digi_flags & DIGI_RTS_TOGGLE))
+-		ch->ch_mostat &= ~(UART_MCR_RTS);
+-	if ((ch->ch_digi.digi_flags & DIGI_RTS_TOGGLE) && !(new_digi.digi_flags & DIGI_RTS_TOGGLE))
+-		ch->ch_mostat |= (UART_MCR_RTS);
+-
+-	/*
+-	 * Handle transistions to and from DTR Toggle.
+-	 */
+-	if (!(ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE) && (new_digi.digi_flags & DIGI_DTR_TOGGLE))
+-		ch->ch_mostat &= ~(UART_MCR_DTR);
+-	if ((ch->ch_digi.digi_flags & DIGI_DTR_TOGGLE) && !(new_digi.digi_flags & DIGI_DTR_TOGGLE))
+-		ch->ch_mostat |= (UART_MCR_DTR);
+-
+-	memcpy(&ch->ch_digi, &new_digi, sizeof(new_digi));
+-
+-	if (ch->ch_digi.digi_maxcps < 1)
+-		ch->ch_digi.digi_maxcps = 1;
+-
+-	if (ch->ch_digi.digi_maxcps > 10000)
+-		ch->ch_digi.digi_maxcps = 10000;
+-
+-	if (ch->ch_digi.digi_bufsize < 10)
+-		ch->ch_digi.digi_bufsize = 10;
+-
+-	if (ch->ch_digi.digi_maxchar < 1)
+-		ch->ch_digi.digi_maxchar = 1;
+-
+-	if (ch->ch_digi.digi_maxchar > ch->ch_digi.digi_bufsize)
+-		ch->ch_digi.digi_maxchar = ch->ch_digi.digi_bufsize;
+-
+-	if (ch->ch_digi.digi_onlen > DIGI_PLEN)
+-		ch->ch_digi.digi_onlen = DIGI_PLEN;
+-
+-	if (ch->ch_digi.digi_offlen > DIGI_PLEN)
+-		ch->ch_digi.digi_offlen = DIGI_PLEN;
+-
+-	ch->ch_bd->bd_ops->param(tty);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-	return 0;
+-}
+-
+-
+-/*
+- * dgnc_set_termios()
+- */
+-static void dgnc_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_c_cflag   = tty->termios.c_cflag;
+-	ch->ch_c_iflag   = tty->termios.c_iflag;
+-	ch->ch_c_oflag   = tty->termios.c_oflag;
+-	ch->ch_c_lflag   = tty->termios.c_lflag;
+-	ch->ch_startc = tty->termios.c_cc[VSTART];
+-	ch->ch_stopc  = tty->termios.c_cc[VSTOP];
+-
+-	ch->ch_bd->bd_ops->param(tty);
+-	dgnc_carrier(ch);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-static void dgnc_tty_throttle(struct tty_struct *tty)
+-{
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_flags |= (CH_FORCED_STOPI);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-static void dgnc_tty_unthrottle(struct tty_struct *tty)
+-{
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_flags &= ~(CH_FORCED_STOPI);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-static void dgnc_tty_start(struct tty_struct *tty)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_flags &= ~(CH_FORCED_STOP);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-static void dgnc_tty_stop(struct tty_struct *tty)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_flags |= (CH_FORCED_STOP);
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-/*
+- * dgnc_tty_flush_chars()
+- *
+- * Flush the cook buffer
+- *
+- * Note to self, and any other poor souls who venture here:
+- *
+- * flush in this case DOES NOT mean dispose of the data.
+- * instead, it means "stop buffering and send it if you
+- * haven't already."  Just guess how I figured that out...   SRW 2-Jun-98
+- *
+- * It is also always called in interrupt context - JAR 8-Sept-99
+- */
+-static void dgnc_tty_flush_chars(struct tty_struct *tty)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	/* Do something maybe here */
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-
+-/*
+- * dgnc_tty_flush_buffer()
+- *
+- * Flush Tx buffer (make in == out)
+- */
+-static void dgnc_tty_flush_buffer(struct tty_struct *tty)
+-{
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	unsigned long flags;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	ch->ch_flags &= ~CH_STOP;
+-
+-	/* Flush our write queue */
+-	ch->ch_w_head = ch->ch_w_tail;
+-
+-	/* Flush UARTs transmit FIFO */
+-	ch->ch_bd->bd_ops->flush_uart_write(ch);
+-
+-	if (ch->ch_tun.un_flags & (UN_LOW|UN_EMPTY)) {
+-		ch->ch_tun.un_flags &= ~(UN_LOW|UN_EMPTY);
+-		wake_up_interruptible(&ch->ch_tun.un_flags_wait);
+-	}
+-	if (ch->ch_pun.un_flags & (UN_LOW|UN_EMPTY)) {
+-		ch->ch_pun.un_flags &= ~(UN_LOW|UN_EMPTY);
+-		wake_up_interruptible(&ch->ch_pun.un_flags_wait);
+-	}
+-
+-	spin_unlock_irqrestore(&ch->ch_lock, flags);
+-}
+-
+-
+-
+-/*****************************************************************************
+- *
+- * The IOCTL function and all of its helpers
+- *
+- *****************************************************************************/
+-
+-/*
+- * dgnc_tty_ioctl()
+- *
+- * The usual assortment of ioctl's
+- */
+-static int dgnc_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+-		unsigned long arg)
+-{
+-	struct dgnc_board *bd;
+-	struct channel_t *ch;
+-	struct un_t *un;
+-	int rc;
+-	unsigned long flags;
+-	void __user *uarg = (void __user *) arg;
+-
+-	if (!tty || tty->magic != TTY_MAGIC)
+-		return -ENODEV;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGNC_UNIT_MAGIC)
+-		return -ENODEV;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGNC_CHANNEL_MAGIC)
+-		return -ENODEV;
+-
+-	bd = ch->ch_bd;
+-	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
+-		return -ENODEV;
+-
+-	spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-	if (un->un_open_count <= 0) {
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return -EIO;
+-	}
+-
+-	switch (cmd) {
+-
+-	/* Here are all the standard ioctl's that we MUST implement */
+-
+-	case TCSBRK:
+-		/*
+-		 * TCSBRK is SVID version: non-zero arg --> no break
+-		 * this behaviour is exploited by tcdrain().
+-		 *
+-		 * According to POSIX.1 spec (7.2.2.1.2) breaks should be
+-		 * between 0.25 and 0.5 seconds so we'll ask for something
+-		 * in the middle: 0.375 seconds.
+-		 */
+-		rc = tty_check_change(tty);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		if (rc)
+-			return rc;
+-
+-		rc = ch->ch_bd->bd_ops->drain(tty, 0);
+-
+-		if (rc)
+-			return -EINTR;
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		if (((cmd == TCSBRK) && (!arg)) || (cmd == TCSBRKP))
+-			ch->ch_bd->bd_ops->send_break(ch, 250);
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		return 0;
+-
+-
+-	case TCSBRKP:
+-		/* support for POSIX tcsendbreak()
+-		 * According to POSIX.1 spec (7.2.2.1.2) breaks should be
+-		 * between 0.25 and 0.5 seconds so we'll ask for something
+-		 * in the middle: 0.375 seconds.
+-		 */
+-		rc = tty_check_change(tty);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		if (rc)
+-			return rc;
+-
+-		rc = ch->ch_bd->bd_ops->drain(tty, 0);
+-		if (rc)
+-			return -EINTR;
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		ch->ch_bd->bd_ops->send_break(ch, 250);
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		return 0;
+-
+-	case TIOCSBRK:
+-		rc = tty_check_change(tty);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		if (rc)
+-			return rc;
+-
+-		rc = ch->ch_bd->bd_ops->drain(tty, 0);
+-		if (rc)
+-			return -EINTR;
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		ch->ch_bd->bd_ops->send_break(ch, 250);
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		return 0;
+-
+-	case TIOCCBRK:
+-		/* Do Nothing */
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return 0;
+-
+-	case TIOCGSOFTCAR:
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		rc = put_user(C_CLOCAL(tty) ? 1 : 0, (unsigned long __user *) arg);
+-		return rc;
+-
+-	case TIOCSSOFTCAR:
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = get_user(arg, (unsigned long __user *) arg);
+-		if (rc)
+-			return rc;
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-		tty->termios.c_cflag = ((tty->termios.c_cflag & ~CLOCAL) | (arg ? CLOCAL : 0));
+-		ch->ch_bd->bd_ops->param(tty);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		return 0;
+-
+-	case TIOCMGET:
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return dgnc_get_modem_info(ch, uarg);
+-
+-	case TIOCMBIS:
+-	case TIOCMBIC:
+-	case TIOCMSET:
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return dgnc_set_modem_info(tty, cmd, uarg);
+-
+-		/*
+-		 * Here are any additional ioctl's that we want to implement
+-		 */
+-
+-	case TCFLSH:
+-		/*
+-		 * The linux tty driver doesn't have a flush
+-		 * input routine for the driver, assuming all backed
+-		 * up data is in the line disc. buffers.  However,
+-		 * we all know that's not the case.  Here, we
+-		 * act on the ioctl, but then lie and say we didn't
+-		 * so the line discipline will process the flush
+-		 * also.
+-		 */
+-		rc = tty_check_change(tty);
+-		if (rc) {
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			return rc;
+-		}
+-
+-		if ((arg == TCIFLUSH) || (arg == TCIOFLUSH)) {
+-			ch->ch_r_head = ch->ch_r_tail;
+-			ch->ch_bd->bd_ops->flush_uart_read(ch);
+-			/* Force queue flow control to be released, if needed */
+-			dgnc_check_queue_flow_control(ch);
+-		}
+-
+-		if ((arg == TCOFLUSH) || (arg == TCIOFLUSH)) {
+-			if (!(un->un_type == DGNC_PRINT)) {
+-				ch->ch_w_head = ch->ch_w_tail;
+-				ch->ch_bd->bd_ops->flush_uart_write(ch);
+-
+-				if (ch->ch_tun.un_flags & (UN_LOW|UN_EMPTY)) {
+-					ch->ch_tun.un_flags &= ~(UN_LOW|UN_EMPTY);
+-					wake_up_interruptible(&ch->ch_tun.un_flags_wait);
+-				}
+-
+-				if (ch->ch_pun.un_flags & (UN_LOW|UN_EMPTY)) {
+-					ch->ch_pun.un_flags &= ~(UN_LOW|UN_EMPTY);
+-					wake_up_interruptible(&ch->ch_pun.un_flags_wait);
+-				}
+-
+-			}
+-		}
+-
+-		/* pretend we didn't recognize this IOCTL */
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return -ENOIOCTLCMD;
+-	case TCSETSF:
+-	case TCSETSW:
+-		/*
+-		 * The linux tty driver doesn't have a flush
+-		 * input routine for the driver, assuming all backed
+-		 * up data is in the line disc. buffers.  However,
+-		 * we all know that's not the case.  Here, we
+-		 * act on the ioctl, but then lie and say we didn't
+-		 * so the line discipline will process the flush
+-		 * also.
+-		 */
+-		if (cmd == TCSETSF) {
+-			/* flush rx */
+-			ch->ch_flags &= ~CH_STOP;
+-			ch->ch_r_head = ch->ch_r_tail;
+-			ch->ch_bd->bd_ops->flush_uart_read(ch);
+-			/* Force queue flow control to be released, if needed */
+-			dgnc_check_queue_flow_control(ch);
+-		}
+-
+-		/* now wait for all the output to drain */
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = ch->ch_bd->bd_ops->drain(tty, 0);
+-		if (rc)
+-			return -EINTR;
+-
+-		/* pretend we didn't recognize this */
+-		return -ENOIOCTLCMD;
+-
+-	case TCSETAW:
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = ch->ch_bd->bd_ops->drain(tty, 0);
+-		if (rc)
+-			return -EINTR;
+-
+-		/* pretend we didn't recognize this */
+-		return -ENOIOCTLCMD;
+-
+-	case TCXONC:
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		/* Make the ld do it */
+-		return -ENOIOCTLCMD;
+-
+-	case DIGI_GETA:
+-		/* get information for ditty */
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return dgnc_tty_digigeta(tty, uarg);
+-
+-	case DIGI_SETAW:
+-	case DIGI_SETAF:
+-
+-		/* set information for ditty */
+-		if (cmd == (DIGI_SETAW)) {
+-
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			rc = ch->ch_bd->bd_ops->drain(tty, 0);
+-
+-			if (rc)
+-				return -EINTR;
+-
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-		} else {
+-			tty_ldisc_flush(tty);
+-		}
+-		/* fall thru */
+-
+-	case DIGI_SETA:
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return dgnc_tty_digiseta(tty, uarg);
+-
+-	case DIGI_LOOPBACK:
+-		{
+-			uint loopback = 0;
+-			/* Let go of locks when accessing user space, could sleep */
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			rc = get_user(loopback, (unsigned int __user *) arg);
+-			if (rc)
+-				return rc;
+-			spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-			/* Enable/disable internal loopback for this port */
+-			if (loopback)
+-				ch->ch_flags |= CH_LOOPBACK;
+-			else
+-				ch->ch_flags &= ~(CH_LOOPBACK);
+-
+-			ch->ch_bd->bd_ops->param(tty);
+-			spin_unlock_irqrestore(&ch->ch_lock, flags);
+-			return 0;
+-		}
+-
+-	case DIGI_GETCUSTOMBAUD:
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = put_user(ch->ch_custom_speed, (unsigned int __user *) arg);
+-		return rc;
+-
+-	case DIGI_SETCUSTOMBAUD:
+-	{
+-		int new_rate;
+-		/* Let go of locks when accessing user space, could sleep */
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = get_user(new_rate, (int __user *) arg);
+-		if (rc)
+-			return rc;
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-		dgnc_set_custom_speed(ch, new_rate);
+-		ch->ch_bd->bd_ops->param(tty);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return 0;
+-	}
+-
+-	/*
+-	 * This ioctl allows insertion of a character into the front
+-	 * of any pending data to be transmitted.
+-	 *
+-	 * This ioctl is to satify the "Send Character Immediate"
+-	 * call that the RealPort protocol spec requires.
+-	 */
+-	case DIGI_REALPORT_SENDIMMEDIATE:
+-	{
+-		unsigned char c;
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = get_user(c, (unsigned char __user *) arg);
+-		if (rc)
+-			return rc;
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-		ch->ch_bd->bd_ops->send_immediate_char(ch, c);
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		return 0;
+-	}
+-
+-	/*
+-	 * This ioctl returns all the current counts for the port.
+-	 *
+-	 * This ioctl is to satify the "Line Error Counters"
+-	 * call that the RealPort protocol spec requires.
+-	 */
+-	case DIGI_REALPORT_GETCOUNTERS:
+-	{
+-		struct digi_getcounter buf;
+-
+-		buf.norun = ch->ch_err_overrun;
+-		buf.noflow = 0;  	/* The driver doesn't keep this stat */
+-		buf.nframe = ch->ch_err_frame;
+-		buf.nparity = ch->ch_err_parity;
+-		buf.nbreak = ch->ch_err_break;
+-		buf.rbytes = ch->ch_rxcount;
+-		buf.tbytes = ch->ch_txcount;
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		if (copy_to_user(uarg, &buf, sizeof(buf)))
+-			return -EFAULT;
+-
+-		return 0;
+-	}
+-
+-	/*
+-	 * This ioctl returns all current events.
+-	 *
+-	 * This ioctl is to satify the "Event Reporting"
+-	 * call that the RealPort protocol spec requires.
+-	 */
+-	case DIGI_REALPORT_GETEVENTS:
+-	{
+-		unsigned int events = 0;
+-
+-		/* NOTE: MORE EVENTS NEEDS TO BE ADDED HERE */
+-		if (ch->ch_flags & CH_BREAK_SENDING)
+-			events |= EV_TXB;
+-		if ((ch->ch_flags & CH_STOP) || (ch->ch_flags & CH_FORCED_STOP))
+-			events |= (EV_OPU | EV_OPS);
+-
+-		if ((ch->ch_flags & CH_STOPI) || (ch->ch_flags & CH_FORCED_STOPI))
+-			events |= (EV_IPU | EV_IPS);
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-		rc = put_user(events, (unsigned int __user *) arg);
+-		return rc;
+-	}
+-
+-	/*
+-	 * This ioctl returns TOUT and TIN counters based
+-	 * upon the values passed in by the RealPort Server.
+-	 * It also passes back whether the UART Transmitter is
+-	 * empty as well.
+-	 */
+-	case DIGI_REALPORT_GETBUFFERS:
+-	{
+-		struct digi_getbuffer buf;
+-		int tdist;
+-		int count;
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		/*
+-		 * Get data from user first.
+-		 */
+-		if (copy_from_user(&buf, uarg, sizeof(buf)))
+-			return -EFAULT;
+-
+-		spin_lock_irqsave(&ch->ch_lock, flags);
+-
+-		/*
+-		 * Figure out how much data is in our RX and TX queues.
+-		 */
+-		buf.rxbuf = (ch->ch_r_head - ch->ch_r_tail) & RQUEUEMASK;
+-		buf.txbuf = (ch->ch_w_head - ch->ch_w_tail) & WQUEUEMASK;
+-
+-		/*
+-		 * Is the UART empty? Add that value to whats in our TX queue.
+-		 */
+-		count = buf.txbuf + ch->ch_bd->bd_ops->get_uart_bytes_left(ch);
+-
+-		/*
+-		 * Figure out how much data the RealPort Server believes should
+-		 * be in our TX queue.
+-		 */
+-		tdist = (buf.tIn - buf.tOut) & 0xffff;
+-
+-		/*
+-		 * If we have more data than the RealPort Server believes we
+-		 * should have, reduce our count to its amount.
+-		 *
+-		 * This count difference CAN happen because the Linux LD can
+-		 * insert more characters into our queue for OPOST processing
+-		 * that the RealPort Server doesn't know about.
+-		 */
+-		if (buf.txbuf > tdist)
+-			buf.txbuf = tdist;
+-
+-		/*
+-		 * Report whether our queue and UART TX are completely empty.
+-		 */
+-		if (count)
+-			buf.txdone = 0;
+-		else
+-			buf.txdone = 1;
+-
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		if (copy_to_user(uarg, &buf, sizeof(buf)))
+-			return -EFAULT;
+-
+-		return 0;
+-	}
+-	default:
+-		spin_unlock_irqrestore(&ch->ch_lock, flags);
+-
+-		return -ENOIOCTLCMD;
+-	}
+-}
+diff --git a/drivers/staging/dgnc/dgnc_tty.h b/drivers/staging/dgnc/dgnc_tty.h
+deleted file mode 100644
+index 58eef25..0000000
+--- a/drivers/staging/dgnc/dgnc_tty.h
++++ /dev/null
+@@ -1,42 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-#ifndef __DGNC_TTY_H
+-#define __DGNC_TTY_H
+-
+-#include "dgnc_driver.h"
+-
+-int	dgnc_tty_register(struct dgnc_board *brd);
+-
+-int	dgnc_tty_preinit(void);
+-int     dgnc_tty_init(struct dgnc_board *);
+-
+-void	dgnc_tty_post_uninit(void);
+-void	dgnc_tty_uninit(struct dgnc_board *);
+-
+-void	dgnc_input(struct channel_t *ch);
+-void	dgnc_carrier(struct channel_t *ch);
+-void	dgnc_wakeup_writes(struct channel_t *ch);
+-void	dgnc_check_queue_flow_control(struct channel_t *ch);
+-
+-void	dgnc_sniff_nowait_nolock(struct channel_t *ch, unsigned char *text, unsigned char *buf, int nbuf);
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_types.h b/drivers/staging/dgnc/dgnc_types.h
+deleted file mode 100644
+index 3aafced..0000000
+--- a/drivers/staging/dgnc/dgnc_types.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-#ifndef __DGNC_TYPES_H
+-#define __DGNC_TYPES_H
+-
+-#ifndef TRUE
+-# define TRUE 1
+-#endif
+-
+-#ifndef FALSE
+-# define FALSE 0
+-#endif
+-
+-#endif
+diff --git a/drivers/staging/dgnc/dgnc_utils.c b/drivers/staging/dgnc/dgnc_utils.c
+deleted file mode 100644
+index 61efc13..0000000
+--- a/drivers/staging/dgnc/dgnc_utils.c
++++ /dev/null
+@@ -1,70 +0,0 @@
+-#include <linux/tty.h>
+-#include <linux/sched.h>
+-#include "dgnc_utils.h"
+-#include "digi.h"
+-
+-/*
+- * dgnc_ms_sleep()
+- *
+- * Put the driver to sleep for x ms's
+- *
+- * Returns 0 if timed out, !0 (showing signal) if interrupted by a signal.
+- */
+-int dgnc_ms_sleep(ulong ms)
+-{
+-	current->state = TASK_INTERRUPTIBLE;
+-	schedule_timeout((ms * HZ) / 1000);
+-	return signal_pending(current);
+-}
+-
+-/*
+- *      dgnc_ioctl_name() : Returns a text version of each ioctl value.
+- */
+-char *dgnc_ioctl_name(int cmd)
+-{
+-	switch (cmd) {
+-
+-	case TCGETA:		return "TCGETA";
+-	case TCGETS:		return "TCGETS";
+-	case TCSETA:		return "TCSETA";
+-	case TCSETS:		return "TCSETS";
+-	case TCSETAW:		return "TCSETAW";
+-	case TCSETSW:		return "TCSETSW";
+-	case TCSETAF:		return "TCSETAF";
+-	case TCSETSF:		return "TCSETSF";
+-	case TCSBRK:		return "TCSBRK";
+-	case TCXONC:		return "TCXONC";
+-	case TCFLSH:		return "TCFLSH";
+-	case TIOCGSID:		return "TIOCGSID";
+-
+-	case TIOCGETD:		return "TIOCGETD";
+-	case TIOCSETD:		return "TIOCSETD";
+-	case TIOCGWINSZ:	return "TIOCGWINSZ";
+-	case TIOCSWINSZ:	return "TIOCSWINSZ";
+-
+-	case TIOCMGET:		return "TIOCMGET";
+-	case TIOCMSET:		return "TIOCMSET";
+-	case TIOCMBIS:		return "TIOCMBIS";
+-	case TIOCMBIC:		return "TIOCMBIC";
+-
+-	/* from digi.h */
+-	case DIGI_SETA:		return "DIGI_SETA";
+-	case DIGI_SETAW:	return "DIGI_SETAW";
+-	case DIGI_SETAF:	return "DIGI_SETAF";
+-	case DIGI_SETFLOW:	return "DIGI_SETFLOW";
+-	case DIGI_SETAFLOW:	return "DIGI_SETAFLOW";
+-	case DIGI_GETFLOW:	return "DIGI_GETFLOW";
+-	case DIGI_GETAFLOW:	return "DIGI_GETAFLOW";
+-	case DIGI_GETA:		return "DIGI_GETA";
+-	case DIGI_GEDELAY:	return "DIGI_GEDELAY";
+-	case DIGI_SEDELAY:	return "DIGI_SEDELAY";
+-	case DIGI_GETCUSTOMBAUD: return "DIGI_GETCUSTOMBAUD";
+-	case DIGI_SETCUSTOMBAUD: return "DIGI_SETCUSTOMBAUD";
+-	case TIOCMODG:		return "TIOCMODG";
+-	case TIOCMODS:		return "TIOCMODS";
+-	case TIOCSDTR:		return "TIOCSDTR";
+-	case TIOCCDTR:		return "TIOCCDTR";
+-
+-	default:		return "unknown";
+-	}
+-}
+diff --git a/drivers/staging/dgnc/dgnc_utils.h b/drivers/staging/dgnc/dgnc_utils.h
+deleted file mode 100644
+index cebf601..0000000
+--- a/drivers/staging/dgnc/dgnc_utils.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef __DGNC_UTILS_H
+-#define __DGNC_UTILS_H
+-
+-int dgnc_ms_sleep(ulong ms);
+-char *dgnc_ioctl_name(int cmd);
+-
+-#endif
+diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
+deleted file mode 100644
+index 3181a35..0000000
+--- a/drivers/staging/dgnc/digi.h
++++ /dev/null
+@@ -1,415 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *	Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *	NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-#ifndef __DIGI_H
+-#define __DIGI_H
+-
+-/************************************************************************
+- ***	Definitions for Digi ditty(1) command.
+- ************************************************************************/
+-
+-
+-/*
+- * Copyright (c) 1988-96 Digi International Inc., All Rights Reserved.
+- */
+-
+-/************************************************************************
+- * This module provides application access to special Digi
+- * serial line enhancements which are not standard UNIX(tm) features.
+- ************************************************************************/
+-
+-#if !defined(TIOCMODG)
+-
+-#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
+-#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
+-
+-#ifndef TIOCM_LE
+-#define		TIOCM_LE	0x01		/* line enable		*/
+-#define		TIOCM_DTR	0x02		/* data terminal ready	*/
+-#define		TIOCM_RTS	0x04		/* request to send	*/
+-#define		TIOCM_ST	0x08		/* secondary transmit	*/
+-#define		TIOCM_SR	0x10		/* secondary receive	*/
+-#define		TIOCM_CTS	0x20		/* clear to send	*/
+-#define		TIOCM_CAR	0x40		/* carrier detect	*/
+-#define		TIOCM_RNG	0x80		/* ring	indicator	*/
+-#define		TIOCM_DSR	0x100		/* data set ready	*/
+-#define		TIOCM_RI	TIOCM_RNG	/* ring (alternate)	*/
+-#define		TIOCM_CD	TIOCM_CAR	/* carrier detect (alt)	*/
+-#endif
+-
+-#endif
+-
+-#if !defined(TIOCMSET)
+-#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
+-#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
+-#endif
+-
+-#if !defined(TIOCMBIC)
+-#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
+-#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
+-#endif
+-
+-
+-#if !defined(TIOCSDTR)
+-#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
+-#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
+-#endif
+-
+-/************************************************************************
+- * Ioctl command arguments for DIGI parameters.
+- ************************************************************************/
+-#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
+-
+-#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
+-#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
+-#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
+-
+-#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
+-						/* Adapter Memory	*/
+-
+-#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
+-						/* control characters	 */
+-#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
+-						/* control characters	 */
+-#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
+-						/* flow control chars	 */
+-#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
+-						/* flow control chars	 */
+-
+-#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
+-#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
+-
+-struct	digiflow_t {
+-	unsigned char	startc;				/* flow cntl start char	*/
+-	unsigned char	stopc;				/* flow cntl stop char	*/
+-};
+-
+-
+-#ifdef	FLOW_2200
+-#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
+-#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
+-#define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
+-#define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
+-#define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
+-#define	F2200_XON	0xf8
+-#define	P2200_XON	0xf9
+-#define	F2200_XOFF	0xfa
+-#define	P2200_XOFF	0xfb
+-
+-#define	FXOFF_MASK	0x03			/* 2200 flow status mask    */
+-#define	RCVD_FXOFF	0x01			/* 2x36 Terminal XOFF rcvd  */
+-#define	RCVD_PXOFF	0x02			/* 2x36 Printer XOFF rcvd   */
+-#endif
+-
+-/************************************************************************
+- * Values for digi_flags
+- ************************************************************************/
+-#define DIGI_IXON	0x0001		/* Handle IXON in the FEP	*/
+-#define DIGI_FAST	0x0002		/* Fast baud rates		*/
+-#define RTSPACE		0x0004		/* RTS input flow control	*/
+-#define CTSPACE		0x0008		/* CTS output flow control	*/
+-#define DSRPACE		0x0010		/* DSR output flow control	*/
+-#define DCDPACE		0x0020		/* DCD output flow control	*/
+-#define DTRPACE		0x0040		/* DTR input flow control	*/
+-#define DIGI_COOK	0x0080		/* Cooked processing done in FEP */
+-#define DIGI_FORCEDCD	0x0100		/* Force carrier		*/
+-#define	DIGI_ALTPIN	0x0200		/* Alternate RJ-45 pin config	*/
+-#define	DIGI_AIXON	0x0400		/* Aux flow control in fep	*/
+-#define	DIGI_PRINTER	0x0800		/* Hold port open for flow cntrl*/
+-#define DIGI_PP_INPUT	0x1000		/* Change parallel port to input*/
+-#define DIGI_DTR_TOGGLE	0x2000		/* Support DTR Toggle           */
+-#define DIGI_422	0x4000		/* for 422/232 selectable panel */
+-#define DIGI_RTS_TOGGLE	0x8000		/* Support RTS Toggle		*/
+-
+-/************************************************************************
+- * These options are not supported on the comxi.
+- ************************************************************************/
+-#define	DIGI_COMXI	(DIGI_FAST|DIGI_COOK|DSRPACE|DCDPACE|DTRPACE)
+-
+-#define DIGI_PLEN	28		/* String length		*/
+-#define	DIGI_TSIZ	10		/* Terminal string len		*/
+-
+-/************************************************************************
+- * Structure used with ioctl commands for DIGI parameters.
+- ************************************************************************/
+-struct digi_t {
+-	unsigned short	digi_flags;		/* Flags (see above)	*/
+-	unsigned short	digi_maxcps;		/* Max printer CPS	*/
+-	unsigned short	digi_maxchar;		/* Max chars in print queue */
+-	unsigned short	digi_bufsize;		/* Buffer size		*/
+-	unsigned char	digi_onlen;		/* Length of ON string	*/
+-	unsigned char	digi_offlen;		/* Length of OFF string	*/
+-	char		digi_onstr[DIGI_PLEN];	/* Printer on string	*/
+-	char		digi_offstr[DIGI_PLEN];	/* Printer off string	*/
+-	char		digi_term[DIGI_TSIZ];	/* terminal string	*/
+-};
+-
+-/************************************************************************
+- * KME definitions and structures.
+- ************************************************************************/
+-#define	RW_IDLE		0	/* Operation complete			*/
+-#define	RW_READ		1	/* Read Concentrator Memory		*/
+-#define	RW_WRITE	2	/* Write Concentrator Memory		*/
+-
+-struct rw_t {
+-	unsigned char	rw_req;		/* Request type			*/
+-	unsigned char	rw_board;	/* Host Adapter board number	*/
+-	unsigned char	rw_conc;	/* Concentrator number		*/
+-	unsigned char	rw_reserved;	/* Reserved for expansion	*/
+-	unsigned int	rw_addr;	/* Address in concentrator	*/
+-	unsigned short	rw_size;	/* Read/write request length	*/
+-	unsigned char	rw_data[128];	/* Data to read/write		*/
+-};
+-
+-/***********************************************************************
+- * Shrink Buffer and Board Information definitions and structures.
+-
+- ************************************************************************/
+-			/* Board type return codes */
+-#define	PCXI_TYPE 1     /* Board type at the designated port is a PC/Xi */
+-#define PCXM_TYPE 2     /* Board type at the designated port is a PC/Xm */
+-#define	PCXE_TYPE 3     /* Board type at the designated port is a PC/Xe */
+-#define	MCXI_TYPE 4     /* Board type at the designated port is a MC/Xi */
+-#define COMXI_TYPE 5     /* Board type at the designated port is a COM/Xi */
+-
+-			 /* Non-Zero Result codes. */
+-#define RESULT_NOBDFND 1 /* A Digi product at that port is not config installed */
+-#define RESULT_NODESCT 2 /* A memory descriptor was not obtainable */
+-#define RESULT_NOOSSIG 3 /* FEP/OS signature was not detected on the board */
+-#define RESULT_TOOSML  4 /* Too small an area to shrink.  */
+-#define RESULT_NOCHAN  5 /* Channel structure for the board was not found */
+-
+-struct shrink_buf_struct {
+-	unsigned int	shrink_buf_vaddr;	/* Virtual address of board */
+-	unsigned int	shrink_buf_phys;	/* Physical address of board */
+-	unsigned int	shrink_buf_bseg;	/* Amount of board memory */
+-	unsigned int	shrink_buf_hseg;	/* '186 Beginning of Dual-Port */
+-
+-	unsigned int	shrink_buf_lseg;	/* '186 Beginning of freed memory */
+-	unsigned int	shrink_buf_mseg;	/* Linear address from start of
+-						   dual-port were freed memory
+-						   begins, host viewpoint. */
+-
+-	unsigned int	shrink_buf_bdparam;	/* Parameter for xxmemon and
+-						   xxmemoff */
+-
+-	unsigned int	shrink_buf_reserva;	/* Reserved */
+-	unsigned int	shrink_buf_reservb;	/* Reserved */
+-	unsigned int	shrink_buf_reservc;	/* Reserved */
+-	unsigned int	shrink_buf_reservd;	/* Reserved */
+-
+-	unsigned char	shrink_buf_result;	/* Reason for call failing
+-						   Zero is Good return */
+-	unsigned char	shrink_buf_init;	/* Non-Zero if it caused an
+-						   xxinit call. */
+-
+-	unsigned char	shrink_buf_anports;	/* Number of async ports  */
+-	unsigned char	shrink_buf_snports;	/* Number of sync  ports */
+-	unsigned char	shrink_buf_type;	/* Board type 1 = PC/Xi,
+-							      2 = PC/Xm,
+-							      3 = PC/Xe
+-							      4 = MC/Xi
+-							      5 = COMX/i */
+-	unsigned char	shrink_buf_card;	/* Card number */
+-
+-};
+-
+-/************************************************************************
+- * Structure to get driver status information
+- ************************************************************************/
+-struct digi_dinfo {
+-	unsigned int	dinfo_nboards;		/* # boards configured	*/
+-	char		dinfo_reserved[12];	/* for future expansion */
+-	char		dinfo_version[16];	/* driver version       */
+-};
+-
+-#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
+-
+-/************************************************************************
+- * Structure used with ioctl commands for per-board information
+- *
+- * physsize and memsize differ when board has "windowed" memory
+- ************************************************************************/
+-struct digi_info {
+-	unsigned int	info_bdnum;		/* Board number (0 based)  */
+-	unsigned int	info_ioport;		/* io port address         */
+-	unsigned int	info_physaddr;		/* memory address          */
+-	unsigned int	info_physsize;		/* Size of host mem window */
+-	unsigned int	info_memsize;		/* Amount of dual-port mem */
+-						/* on board                */
+-	unsigned short	info_bdtype;		/* Board type              */
+-	unsigned short	info_nports;		/* number of ports         */
+-	char		info_bdstate;		/* board state             */
+-	char		info_reserved[7];	/* for future expansion    */
+-};
+-
+-#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
+-
+-struct digi_stat {
+-	unsigned int	info_chan;		/* Channel number (0 based)  */
+-	unsigned int	info_brd;		/* Board number (0 based)  */
+-	unsigned int	info_cflag;		/* cflag for channel       */
+-	unsigned int	info_iflag;		/* iflag for channel       */
+-	unsigned int	info_oflag;		/* oflag for channel       */
+-	unsigned int	info_mstat;		/* mstat for channel       */
+-	unsigned int	info_tx_data;		/* tx_data for channel       */
+-	unsigned int	info_rx_data;		/* rx_data for channel       */
+-	unsigned int	info_hflow;		/* hflow for channel       */
+-	unsigned int	info_reserved[8];	/* for future expansion    */
+-};
+-
+-#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
+-/************************************************************************
+- *
+- * Structure used with ioctl commands for per-channel information
+- *
+- ************************************************************************/
+-struct digi_ch {
+-	unsigned int	info_bdnum;		/* Board number (0 based)  */
+-	unsigned int	info_channel;		/* Channel index number    */
+-	unsigned int	info_ch_cflag;		/* Channel cflag	   */
+-	unsigned int	info_ch_iflag;		/* Channel iflag	   */
+-	unsigned int	info_ch_oflag;		/* Channel oflag	   */
+-	unsigned int	info_chsize;		/* Channel structure size  */
+-	unsigned int	info_sleep_stat;	/* sleep status		   */
+-	dev_t		info_dev;		/* device number	   */
+-	unsigned char	info_initstate;		/* Channel init state	   */
+-	unsigned char	info_running;		/* Channel running state   */
+-	int		reserved[8];		/* reserved for future use */
+-};
+-
+-/*
+-* This structure is used with the DIGI_FEPCMD ioctl to
+-* tell the driver which port to send the command for.
+-*/
+-struct digi_cmd {
+-	int	cmd;
+-	int	word;
+-	int	ncmds;
+-	int	chan; /* channel index (zero based) */
+-	int	bdid; /* board index (zero based) */
+-};
+-
+-
+-struct digi_getbuffer /* Struct for holding buffer use counts */
+-{
+-	unsigned long tIn;
+-	unsigned long tOut;
+-	unsigned long rxbuf;
+-	unsigned long txbuf;
+-	unsigned long txdone;
+-};
+-
+-struct digi_getcounter {
+-	unsigned long norun;		/* number of UART overrun errors */
+-	unsigned long noflow;		/* number of buffer overflow errors */
+-	unsigned long nframe;		/* number of framing errors */
+-	unsigned long nparity;		/* number of parity errors */
+-	unsigned long nbreak;		/* number of breaks received */
+-	unsigned long rbytes;		/* number of received bytes */
+-	unsigned long tbytes;		/* number of bytes transmitted fully */
+-};
+-
+-/*
+-*  info_sleep_stat defines
+-*/
+-#define INFO_RUNWAIT	0x0001
+-#define INFO_WOPEN	0x0002
+-#define INFO_TTIOW	0x0004
+-#define INFO_CH_RWAIT	0x0008
+-#define INFO_CH_WEMPTY	0x0010
+-#define INFO_CH_WLOW	0x0020
+-#define INFO_XXBUF_BUSY 0x0040
+-
+-#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
+-
+-/* Board type definitions */
+-
+-#define	SUBTYPE		0007
+-#define	T_PCXI		0000
+-#define T_PCXM		0001
+-#define T_PCXE		0002
+-#define T_PCXR		0003
+-#define T_SP		0004
+-#define T_SP_PLUS	0005
+-#	define T_HERC	0000
+-#	define T_HOU	0001
+-#	define T_LON	0002
+-#	define T_CHA	0003
+-#define FAMILY		0070
+-#define T_COMXI		0000
+-#define T_PCXX		0010
+-#define T_CX		0020
+-#define T_EPC		0030
+-#define	T_PCLITE	0040
+-#define	T_SPXX		0050
+-#define	T_AVXX		0060
+-#define T_DXB		0070
+-#define T_A2K_4_8	0070
+-#define BUSTYPE		0700
+-#define T_ISABUS	0000
+-#define T_MCBUS		0100
+-#define	T_EISABUS	0200
+-#define	T_PCIBUS	0400
+-
+-/* Board State Definitions */
+-
+-#define	BD_RUNNING	0x0
+-#define	BD_REASON	0x7f
+-#define	BD_NOTFOUND	0x1
+-#define	BD_NOIOPORT	0x2
+-#define	BD_NOMEM	0x3
+-#define	BD_NOBIOS	0x4
+-#define	BD_NOFEP	0x5
+-#define	BD_FAILED	0x6
+-#define BD_ALLOCATED	0x7
+-#define BD_TRIBOOT	0x8
+-#define	BD_BADKME	0x80
+-
+-#define DIGI_SPOLL            ('d'<<8) | 254  /* change poller rate   */
+-
+-#define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
+-#define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
+-
+-#define DIGI_REALPORT_GETBUFFERS ('e'<<8) | 108
+-#define DIGI_REALPORT_SENDIMMEDIATE ('e'<<8) | 109
+-#define DIGI_REALPORT_GETCOUNTERS ('e'<<8) | 110
+-#define DIGI_REALPORT_GETEVENTS ('e'<<8) | 111
+-
+-#define EV_OPU		0x0001		/* !<Output paused by client */
+-#define EV_OPS		0x0002		/* !<Output paused by reqular sw flowctrl */
+-#define EV_OPX		0x0004		/* !<Output paused by extra sw flowctrl */
+-#define EV_OPH		0x0008		/* !<Output paused by hw flowctrl */
+-#define EV_OPT		0x0800		/* !<Output paused for RTS Toggle predelay */
+-
+-#define EV_IPU		0x0010		/* !<Input paused unconditionally by user */
+-#define EV_IPS		0x0020		/* !<Input paused by high/low water marks */
+-#define EV_IPA		0x0400		/* !<Input paused by pattern alarm module */
+-
+-#define EV_TXB		0x0040		/* !<Transmit break pending */
+-#define EV_TXI		0x0080		/* !<Transmit immediate pending */
+-#define EV_TXF		0x0100		/* !<Transmit flowctrl char pending */
+-#define EV_RXB		0x0200		/* !<Break received */
+-
+-#define EV_OPALL	0x080f		/* !<Output pause flags */
+-#define EV_IPALL	0x0430		/* !<Input pause flags */
+-
+-#endif /* DIGI_H */
+diff --git a/drivers/staging/dgnc/dpacompat.h b/drivers/staging/dgnc/dpacompat.h
+deleted file mode 100644
+index b2d2dc0..0000000
+--- a/drivers/staging/dgnc/dpacompat.h
++++ /dev/null
+@@ -1,115 +0,0 @@
+-/*
+- * Copyright 2003 Digi International (www.digi.com)
+- *      Scott H Kilau <Scott_Kilau at digi dot com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- *
+- *      NOTE: THIS IS A SHARED HEADER. DO NOT CHANGE CODING STYLE!!!
+- */
+-
+-
+-/*
+- * This structure holds data needed for the intelligent <--> nonintelligent
+- * DPA translation
+- */
+-struct ni_info {
+-	int board;
+-	int channel;
+-	int dtr;
+-	int rts;
+-	int cts;
+-	int dsr;
+-	int ri;
+-	int dcd;
+-	int curtx;
+-	int currx;
+-	unsigned short iflag;
+-	unsigned short oflag;
+-	unsigned short cflag;
+-	unsigned short lflag;
+-
+-	unsigned int mstat;
+-	unsigned char hflow;
+-
+-	unsigned char xmit_stopped;
+-	unsigned char recv_stopped;
+-
+-	unsigned int baud;
+-};
+-
+-#define RW_READ		1
+-#define RW_WRITE        2
+-#define DIGI_KME        ('e'<<8) | 98           /* Read/Write Host */
+-
+-#define SUBTYPE         0007
+-#define T_PCXI          0000
+-#define T_PCXEM         0001
+-#define T_PCXE          0002
+-#define T_PCXR          0003
+-#define T_SP            0004
+-#define T_SP_PLUS       0005
+-
+-#define T_HERC   0000
+-#define T_HOU    0001
+-#define T_LON    0002
+-#define T_CHA    0003
+-
+-#define T_NEO	 0000
+-#define T_NEO_EXPRESS  0001
+-#define T_CLASSIC 0002
+-
+-#define FAMILY          0070
+-#define T_COMXI         0000
+-#define	T_NI		0000
+-#define T_PCXX          0010
+-#define T_CX            0020
+-#define T_EPC           0030
+-#define T_PCLITE        0040
+-#define T_SPXX          0050
+-#define T_AVXX          0060
+-#define T_DXB           0070
+-#define T_A2K_4_8       0070
+-
+-#define BUSTYPE         0700
+-#define T_ISABUS        0000
+-#define T_MCBUS         0100
+-#define T_EISABUS       0200
+-#define T_PCIBUS        0400
+-
+-/* Board State Definitions */
+-
+-#define BD_RUNNING      0x0
+-#define BD_REASON       0x7f
+-#define BD_NOTFOUND     0x1
+-#define BD_NOIOPORT     0x2
+-#define BD_NOMEM        0x3
+-#define BD_NOBIOS       0x4
+-#define BD_NOFEP        0x5
+-#define BD_FAILED       0x6
+-#define BD_ALLOCATED    0x7
+-#define BD_TRIBOOT      0x8
+-#define BD_BADKME       0x80
+-
+-#define DIGI_AIXON      0x0400          /* Aux flow control in fep */
+-
+-/* Ioctls needed for dpa operation */
+-
+-#define DIGI_GETDD      ('d'<<8) | 248          /* get driver info      */
+-#define DIGI_GETBD      ('d'<<8) | 249          /* get board info       */
+-#define DIGI_GET_NI_INFO ('d'<<8) | 250		/* nonintelligent state snfo */
+-
+-/* Other special ioctls */
+-#define DIGI_TIMERIRQ ('d'<<8) | 251		/* Enable/disable RS_TIMER use */
+-#define DIGI_LOOPBACK ('d'<<8) | 252		/* Enable/disable UART internal loopback */
 -- 
 1.9.1
 
