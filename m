@@ -1,124 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaKFOSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:18:16 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39273 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaKFOR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:17:57 -0500
-Message-ID: <545B830F.2020002@roeck-us.net>
-Date: Thu, 06 Nov 2014 06:17:51 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Michael Thalmeier <michael.thalmeier@hale.at>, jdelvare@suse.de
-CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (lm75) put chip into shutdown mode on shutdown
-References: <1415282432-3256-1-git-send-email-michael.thalmeier@hale.at>
-In-Reply-To: <1415282432-3256-1-git-send-email-michael.thalmeier@hale.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.545B8313.02F2,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1751451AbaKFOSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:18:24 -0500
+Received: from mga14.intel.com ([192.55.52.115]:49106 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413AbaKFOSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:18:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
+   d="scan'208";a="618221680"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch Part2 v5 04/31] genirq: Introduce irq_chip.irq_compose_msi_msg() to support stacked irqchip
+Date: Thu,  6 Nov 2014 22:20:17 +0800
+Message-Id: <1415283644-2559-5-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 06:00 AM, Michael Thalmeier wrote:
-> In addition to going into shutdown mode on suspend also go into shutdown mode
-> on system shutdown. This way we can save a few mA when the main CPU is powered
-> off and the lm75 is still powered but not used any more.
->
-You can do this in a more comprehensive way using SIMPLE_DEV_PM_OPS.
+Add callback irq_compose_msi_msg to struct irq_chip, which will be used
+to support stacked irqchip.
 
-Guenter
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ include/linux/irq.h |    5 +++++
+ kernel/irq/chip.c   |   17 +++++++++++++++++
+ 2 files changed, 22 insertions(+)
 
-> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
-> ---
->   drivers/hwmon/lm75.c | 19 +++++++++++++++++--
->   1 file changed, 17 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-> index 7ec5ccd..d860af9 100644
-> --- a/drivers/hwmon/lm75.c
-> +++ b/drivers/hwmon/lm75.c
-> @@ -433,10 +433,10 @@ static int lm75_detect(struct i2c_client *new_client,
->   }
->
->   #ifdef CONFIG_PM
-> -static int lm75_suspend(struct device *dev)
-> +
-> +static int _lm75_shutdown(struct i2c_client *client)
->   {
->   	int status;
-> -	struct i2c_client *client = to_i2c_client(dev);
->   	status = lm75_read_value(client, LM75_REG_CONF);
->   	if (status < 0) {
->   		dev_dbg(&client->dev, "Can't read config? %d\n", status);
-> @@ -447,6 +447,18 @@ static int lm75_suspend(struct device *dev)
->   	return 0;
->   }
->
-> +static void lm75_shutdown(struct i2c_client *client)
-> +{
-> +	_lm75_shutdown(client);
-> +}
-> +
-> +static int lm75_suspend(struct device *dev)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +
-> +	return _lm75_shutdown(client);
-> +}
-> +
->   static int lm75_resume(struct device *dev)
->   {
->   	int status;
-> @@ -466,8 +478,10 @@ static const struct dev_pm_ops lm75_dev_pm_ops = {
->   	.resume		= lm75_resume,
->   };
->   #define LM75_DEV_PM_OPS (&lm75_dev_pm_ops)
-> +#define LM75_SHUTDOWN_OP lm75_shutdown
->   #else
->   #define LM75_DEV_PM_OPS NULL
-> +#define LM75_SHUTDOWN_OP NULL
->   #endif /* CONFIG_PM */
->
->   static struct i2c_driver lm75_driver = {
-> @@ -478,6 +492,7 @@ static struct i2c_driver lm75_driver = {
->   	},
->   	.probe		= lm75_probe,
->   	.remove		= lm75_remove,
-> +	.shutdown	= LM75_SHUTDOWN_OP,
->   	.id_table	= lm75_ids,
->   	.detect		= lm75_detect,
->   	.address_list	= normal_i2c,
->
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 0adcbbbf2e87..536b7fc6c8f4 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -29,6 +29,7 @@ struct seq_file;
+ struct module;
+ struct irq_desc;
+ struct irq_data;
++struct msi_msg;
+ typedef	void (*irq_flow_handler_t)(unsigned int irq,
+ 					    struct irq_desc *desc);
+ typedef	void (*irq_preflow_handler_t)(struct irq_data *data);
+@@ -320,6 +321,7 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
+  *				any other callback related to this irq
+  * @irq_release_resources:	optional to release resources acquired with
+  *				irq_request_resources
++ * @irq_compose_msi_msg:	optional to compose message content for MSI
+  * @flags:		chip specific flags
+  */
+ struct irq_chip {
+@@ -356,6 +358,8 @@ struct irq_chip {
+ 	int		(*irq_request_resources)(struct irq_data *data);
+ 	void		(*irq_release_resources)(struct irq_data *data);
+ 
++	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
++
+ 	unsigned long	flags;
+ };
+ 
+@@ -443,6 +447,7 @@ extern void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_bad_irq(unsigned int irq, struct irq_desc *desc);
+ extern void handle_nested_irq(unsigned int irq);
+ 
++extern int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg);
+ #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+ extern void irq_chip_ack_parent(struct irq_data *data);
+ extern int irq_chip_retrigger_hierarchy(struct irq_data *data);
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 12f3e72449eb..8f362db17a8a 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -867,3 +867,20 @@ int irq_chip_retrigger_hierarchy(struct irq_data *data)
+ 	return -ENOSYS;
+ }
+ #endif
++
++int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
++{
++	struct irq_data *pos = NULL;
++
++#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
++	for (; data; data = data->parent_data)
++#endif
++		if (data->chip && data->chip->irq_compose_msi_msg)
++			pos = data;
++	if (!pos)
++		return -ENOSYS;
++
++	pos->chip->irq_compose_msi_msg(pos, msg);
++
++	return 0;
++}
+-- 
+1.7.10.4
 
