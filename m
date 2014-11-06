@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaKFHLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 02:11:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45491 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaKFHLM (ORCPT
+	id S1751661AbaKFHMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 02:12:00 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:58705 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097AbaKFHL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 02:11:12 -0500
-Date: Thu, 6 Nov 2014 07:11:09 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org,
-        Masahide Nakamura <nakam@linux-ipv6.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
-Message-ID: <20141106071109.GX7996@ZenIV.linux.org.uk>
-References: <20141105035536.GO7996@ZenIV.linux.org.uk>
- <20141105.155054.2198151263164321219.davem@davemloft.net>
- <20141105210745.GT7996@ZenIV.linux.org.uk>
- <20141105.165719.835728206041332333.davem@davemloft.net>
- <20141106032533.GU7996@ZenIV.linux.org.uk>
- <20141106055023.GA28865@gondor.apana.org.au>
- <20141106064318.GW7996@ZenIV.linux.org.uk>
- <20141106064629.GA29321@gondor.apana.org.au>
+	Thu, 6 Nov 2014 02:11:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106064629.GA29321@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141105215713.GC6168@google.com>
+References: <1414621570-20777-1-git-send-email-yinghai@kernel.org>
+	<20141030170913.GA6982@google.com>
+	<20141105202252.GB6168@google.com>
+	<1808324.GlBOqbYcPz@vostro.rjw.lan>
+	<20141105215713.GC6168@google.com>
+Date: Wed, 5 Nov 2014 23:11:57 -0800
+X-Google-Sender-Auth: 0c2Q1lEJ9W9XSyYo1CXyEEYUQAU
+Message-ID: <CAE9FiQVdd5dfAebJVD=CR+s=HeHXKVJ2sN0WD6RbE-WpS7+sZg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: fix sriov enabling with virtual bus
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Chao Zhou <chao.zhou@intel.com>, Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 02:46:29PM +0800, Herbert Xu wrote:
-> On Thu, Nov 06, 2014 at 06:43:18AM +0000, Al Viro wrote:
-> > On Thu, Nov 06, 2014 at 01:50:23PM +0800, Herbert Xu wrote:
-> > > +	/* We only need the first two bytes. */
-> > > +	err = memcpy_fromiovecend((void *)&icmph, msg->msg_iov, 0, 2);
-> > > +	if (err)
-> > > +		return err;
-> > > +
-> > > +	fl4->fl4_icmp_type = icmph.type;
-> > > +	fl4->fl4_icmp_code = icmph.code;
-> > 
-> > That's more readable, but that exposes another problem in there - we read
-> > the same piece of userland data twice, with no promise whatsoever that we'll
-> > get the same value both times...
-> 
-> Sure, but you have to be root anyway to write to raw sockets.
+On Wed, Nov 5, 2014 at 1:57 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> It's relatively common to start with a pci_dev and look for an ACPI handle
+> that corresponds to that device or the closest enclosing scope, so maybe
+> there should be a way to do that directly.
+>
+> For pci_get_hp_params(), I think the current code is actually slightly
+> buggy because we don't look for _HPP/_HPX on the device itself; we only
+> look at the bridges upstream from it.
+>
+> What I had in mind was something like the following (untested and not for
+> application).
 
-Point, but that might very well be a pattern to watch for - there's at least
-one more instance in TIPC (also not exploitable, according to TIPC folks)
-and such bugs are easily repeated...
 
-BTW, I've picked the tun and macvtap related bits from another part of old
-queue; see vfs.git#untested-macvtap - it's on top of #iov_iter-net and it's
-really completely untested.  Back then I was mostly interested in killing
-as many ->aio_write() instances as I could, so it's only the "send" side of
-things.
+
+> + * Search for an ACPI handle.  The PCI device itself may have one, or an
+> + * upstream device (either a PCI-to-PCI bridge or a PCI host bridge) may
+> + * have one.
+> + */
+> +acpi_handle pci_find_acpi_handle(struct pci_dev *pdev)
+> +{
+> +       struct device *dev;
+> +       acpi_handle handle;
+> +       struct pci_bus *bus;
+> +
+> +       dev = &pdev->dev;
+> +       handle = ACPI_HANDLE(dev);
+> +       while (!handle) {
+> +               pdev = pci_physfn(pdev);
+
+I'm a little worried about to apply hpx value for PFs to VFs.
+
+> +               bus = pdev->bus;
+> +               if (pci_is_root_bus(bus))
+> +                       dev = bus->bridge;
+> +               else {
+> +                       pdev = bus->self;
+> +                       dev = &pdev->dev;
+> +               }
+> +               handle = ACPI_HANDLE(dev);
+> +       }
+> +       return handle;
+> +}
+
+
+Also found another problem,
+pci_device_add==>pci_configure_device==>program_hpp_type2() path.
+and program_hpp_type2() will check dev->subordinate().
+
+but at the time child bridge is not scanned yet.
+
+Maybe we should move pci_configure_device later ?
+
+Yinghai Lu
