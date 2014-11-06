@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaKFPB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:01:27 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58103 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021AbaKFPBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751408AbaKFPBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:01:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46338 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaKFPBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 10:01:25 -0500
-Date: Thu, 6 Nov 2014 10:01:21 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+Date: Thu, 6 Nov 2014 16:01:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
-Message-ID: <20141106150121.GA25642@htj.dyndns.org>
-References: <20141105133100.GC4527@dhcp22.suse.cz>
- <20141105134219.GD4527@dhcp22.suse.cz>
- <20141105154436.GB14386@htj.dyndns.org>
- <20141105160115.GA28226@dhcp22.suse.cz>
- <20141105162929.GD14386@htj.dyndns.org>
- <20141105163956.GD28226@dhcp22.suse.cz>
- <20141105165428.GF14386@htj.dyndns.org>
- <20141105174609.GE28226@dhcp22.suse.cz>
- <20141105175527.GH14386@htj.dyndns.org>
- <20141106124953.GD7202@dhcp22.suse.cz>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [for-next][PATCH 1/4] ftrace/x86: Add dynamic allocated
+ trampoline for ftrace_ops
+Message-ID: <20141106150122.GB4318@pd.tnic>
+References: <20141027182702.778680710@goodmis.org>
+ <20141027182948.284867581@goodmis.org>
+ <20141105102801.GA5245@pd.tnic>
+ <20141106085715.2ba0771e@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141106124953.GD7202@dhcp22.suse.cz>
+In-Reply-To: <20141106085715.2ba0771e@gandalf.local.home>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 01:49:53PM +0100, Michal Hocko wrote:
-> On Wed 05-11-14 12:55:27, Tejun Heo wrote:
-> > On Wed, Nov 05, 2014 at 06:46:09PM +0100, Michal Hocko wrote:
-> > > Because out_of_memory can be called from mutliple paths. And
-> > > the only interesting one should be the page allocation path.
-> > > pagefault_out_of_memory is not interesting because it cannot happen for
-> > > the frozen task.
+On Thu, Nov 06, 2014 at 08:57:15AM -0500, Steven Rostedt wrote:
+> > > +/* Trampolines can only be created if modules are supported */
 > > 
-> > Hmmm.... wouldn't that be broken by definition tho?  So, if the oom
-> > killer is invoked from somewhere else than page allocation path, it
-> > would proceed ignoring the disabled setting and would race against PM
-> > freeze path all the same. 
+> > Just for my own understanding: why? You're not loading additional .ko's
+> > right?
 > 
-> Not really because try_to_freeze_tasks doesn't finish until _all_ tasks
-> are frozen and a task in the page fault path cannot be frozen, can it?
-
-We used to have freezing points deep in file system code which may be
-reacheable from page fault.  Please take a step back and look at the
-paragraph above.  Doesn't it sound extremely contrived and brittle
-even if it's not outright broken?  What if somebody adds another oom
-killing site somewhere else?  How can this possibly be a solution that
-we intentionally implement?
-
-> I mean there shouldn't be any problem to not invoke OOM killer under
-> from the page fault path as well but that might lead to looping in the
-> page fault path without any progress until freezer enables OOM killer on
-> the failure path because the said task cannot be frozen.
+> It goes back to the EXEC issue. The module allocation goes through
+> leaps and bounds to get memory allocated for EXEC correct. I wasn't
+> about to duplicate that.
 > 
-> Is this preferable?
+> Ideally, there should be a generic way to allocate memory that will be
+> used for executing code, but right now we depend on module code.
 
-Why would PM freezing make OOM killing fail?  That doesn't make much
-sense.  Sure, it can block it for a finite duration for sync purposes
-but making OOM killing fail seems the wrong way around.  We're doing
-one thing for non-PM freezing and the other way around for PM
-freezing, which indicates one of the two directions is wrong.
-
-Shouldn't it be that OOM killing happening while PM freezing is in
-progress cancels PM freezing rather than the other way around?  Find a
-point in PM suspend/hibernation operation where everything must be
-stable, disable OOM killing there and check whether OOM killing
-happened inbetween and if so back out.  It seems rather obvious to me
-that OOM killing has to have precedence over PM freezing.
-
-Sure, once the system reaches a point where the whole system must be
-in a stable state for snapshotting or whatever, disabling OOM killing
-is fine but at that point the system is in a very limited execution
-mode and sure won't be processing page faults from userland for
-example and we can actually disable OOM killing knowing that anything
-afterwards is ready to handle memory allocation failures.
+Yah, that could be a nice addition (in a separate patch, ontop, as you
+say) to explain the dependency on CONFIG_MODULES, which is not trivially
+apparent.
 
 -- 
-tejun
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
