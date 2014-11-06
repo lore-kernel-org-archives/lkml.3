@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaKFWkf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:40:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58649 "EHLO
+	id S1752406AbaKFWlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:41:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58671 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaKFWk0 (ORCPT
+	with ESMTP id S1752038AbaKFWk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:40:26 -0500
+	Thu, 6 Nov 2014 17:40:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 141/162] ALSA: pcm: Zero-clear reserved fields of PCM status ioctl in compat mode
-Date: Thu,  6 Nov 2014 14:36:45 -0800
-Message-Id: <1415313426-9622-142-git-send-email-kamal@canonical.com>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 137/162] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
+Date: Thu,  6 Nov 2014 14:36:41 -0800
+Message-Id: <1415313426-9622-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -26,35 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 317168d0c766defd14b3d0e9c2c4a9a258b803ee upstream.
+commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
 
-In compat mode, we copy each field of snd_pcm_status struct but don't
-touch the reserved fields, and this leaves uninitialized values
-there.  Meanwhile the native ioctl does zero-clear the whole
-structure, so we should follow the same rule in compat mode, too.
+These models need i8042.notimeout, otherwise the touchpad will not work.
 
-Reported-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/pcm_compat.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/input/serio/i8042-x86ia64io.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/sound/core/pcm_compat.c b/sound/core/pcm_compat.c
-index af49721..c4ac3c1 100644
---- a/sound/core/pcm_compat.c
-+++ b/sound/core/pcm_compat.c
-@@ -206,6 +206,8 @@ static int snd_pcm_status_user_compat(struct snd_pcm_substream *substream,
- 	if (err < 0)
- 		return err;
- 
-+	if (clear_user(src, sizeof(*src)))
-+		return -EFAULT;
- 	if (put_user(status.state, &src->state) ||
- 	    compat_put_timespec(&status.trigger_tstamp, &src->trigger_tstamp) ||
- 	    compat_put_timespec(&status.tstamp, &src->tstamp) ||
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 40ff494..ce715b1 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -615,6 +615,22 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
+ 		},
+ 	},
+ 	{
++		/* Fujitsu A544 laptop */
++		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
++		},
++	},
++	{
++		/* Fujitsu AH544 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
++		},
++	},
++	{
+ 		/* Fujitsu U574 laptop */
+ 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
+ 		.matches = {
 -- 
 1.9.1
 
