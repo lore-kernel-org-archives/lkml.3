@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaKFXH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:07:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58797 "EHLO
+	id S1754120AbaKFXIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:08:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58786 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684AbaKFWlx (ORCPT
+	with ESMTP id S1752666AbaKFWlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:41:53 -0500
+	Thu, 6 Nov 2014 17:41:47 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 045/162] sparc64: Switch to 4-level page tables.
-Date: Thu,  6 Nov 2014 14:35:09 -0800
-Message-Id: <1415313426-9622-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 047/162] sparc64: Adjust KTSB assembler to support larger physical addresses.
+Date: Thu,  6 Nov 2014 14:35:11 -0800
+Message-Id: <1415313426-9622-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -29,331 +29,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit ac55c768143aa34cc3789c4820cbb0809a76fd9c ]
+[ Upstream commit 8c82dc0e883821c098c8b0b130ffebabf9aab5df ]
 
-This has become necessary with chips that support more than 43-bits
-of physical addressing.
+As currently coded the KTSB accesses in the kernel only support up to
+47 bits of physical addressing.
 
-Based almost entirely upon a patch by Bob Picco.
+Adjust the instruction and patching sequence in order to support
+arbitrary 64 bits addresses.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/include/asm/page_64.h    |  6 ++++++
- arch/sparc/include/asm/pgalloc_64.h | 28 +++++++++++++++++++++++++++-
- arch/sparc/include/asm/pgtable_64.h | 37 ++++++++++++++++++++++++++++++++-----
- arch/sparc/include/asm/tsb.h        | 10 ++++++++++
- arch/sparc/kernel/smp_64.c          |  7 +++++++
- arch/sparc/mm/init_64.c             | 31 +++++++++++++++++++++++++++----
- 6 files changed, 109 insertions(+), 10 deletions(-)
+ arch/sparc/include/asm/tsb.h | 30 ++++++++++++------------------
+ arch/sparc/mm/init_64.c      | 28 +++++++++++++++++++++++++---
+ 2 files changed, 37 insertions(+), 21 deletions(-)
 
-diff --git a/arch/sparc/include/asm/page_64.h b/arch/sparc/include/asm/page_64.h
-index aac53fc..3747c4f 100644
---- a/arch/sparc/include/asm/page_64.h
-+++ b/arch/sparc/include/asm/page_64.h
-@@ -57,18 +57,21 @@ extern void copy_user_page(void *to, void *from, unsigned long vaddr, struct pag
- typedef struct { unsigned long pte; } pte_t;
- typedef struct { unsigned long iopte; } iopte_t;
- typedef struct { unsigned long pmd; } pmd_t;
-+typedef struct { unsigned long pud; } pud_t;
- typedef struct { unsigned long pgd; } pgd_t;
- typedef struct { unsigned long pgprot; } pgprot_t;
- 
- #define pte_val(x)	((x).pte)
- #define iopte_val(x)	((x).iopte)
- #define pmd_val(x)      ((x).pmd)
-+#define pud_val(x)      ((x).pud)
- #define pgd_val(x)	((x).pgd)
- #define pgprot_val(x)	((x).pgprot)
- 
- #define __pte(x)	((pte_t) { (x) } )
- #define __iopte(x)	((iopte_t) { (x) } )
- #define __pmd(x)        ((pmd_t) { (x) } )
-+#define __pud(x)        ((pud_t) { (x) } )
- #define __pgd(x)	((pgd_t) { (x) } )
- #define __pgprot(x)	((pgprot_t) { (x) } )
- 
-@@ -77,18 +80,21 @@ typedef struct { unsigned long pgprot; } pgprot_t;
- typedef unsigned long pte_t;
- typedef unsigned long iopte_t;
- typedef unsigned long pmd_t;
-+typedef unsigned long pud_t;
- typedef unsigned long pgd_t;
- typedef unsigned long pgprot_t;
- 
- #define pte_val(x)	(x)
- #define iopte_val(x)	(x)
- #define pmd_val(x)      (x)
-+#define pud_val(x)      (x)
- #define pgd_val(x)	(x)
- #define pgprot_val(x)	(x)
- 
- #define __pte(x)	(x)
- #define __iopte(x)	(x)
- #define __pmd(x)        (x)
-+#define __pud(x)        (x)
- #define __pgd(x)	(x)
- #define __pgprot(x)	(x)
- 
-diff --git a/arch/sparc/include/asm/pgalloc_64.h b/arch/sparc/include/asm/pgalloc_64.h
-index bcfe063..2c8d41f 100644
---- a/arch/sparc/include/asm/pgalloc_64.h
-+++ b/arch/sparc/include/asm/pgalloc_64.h
-@@ -15,6 +15,13 @@
- 
- extern struct kmem_cache *pgtable_cache;
- 
-+static inline void __pgd_populate(pgd_t *pgd, pud_t *pud)
-+{
-+	pgd_set(pgd, pud);
-+}
-+
-+#define pgd_populate(MM, PGD, PUD)	__pgd_populate(PGD, PUD)
-+
- static inline pgd_t *pgd_alloc(struct mm_struct *mm)
- {
- 	return kmem_cache_alloc(pgtable_cache, GFP_KERNEL);
-@@ -25,7 +32,23 @@ static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
- 	kmem_cache_free(pgtable_cache, pgd);
- }
- 
--#define pud_populate(MM, PUD, PMD)	pud_set(PUD, PMD)
-+static inline void __pud_populate(pud_t *pud, pmd_t *pmd)
-+{
-+	pud_set(pud, pmd);
-+}
-+
-+#define pud_populate(MM, PUD, PMD)	__pud_populate(PUD, PMD)
-+
-+static inline pud_t *pud_alloc_one(struct mm_struct *mm, unsigned long addr)
-+{
-+	return kmem_cache_alloc(pgtable_cache,
-+				GFP_KERNEL|__GFP_REPEAT);
-+}
-+
-+static inline void pud_free(struct mm_struct *mm, pud_t *pud)
-+{
-+	kmem_cache_free(pgtable_cache, pud);
-+}
- 
- static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
- {
-@@ -91,4 +114,7 @@ static inline void __pte_free_tlb(struct mmu_gather *tlb, pte_t *pte,
- #define __pmd_free_tlb(tlb, pmd, addr)		      \
- 	pgtable_free_tlb(tlb, pmd, false)
- 
-+#define __pud_free_tlb(tlb, pud, addr)		      \
-+	pgtable_free_tlb(tlb, pud, false)
-+
- #endif /* _SPARC64_PGALLOC_H */
-diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
-index 1a49ffd..5c91201 100644
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -20,8 +20,6 @@
- #include <asm/page.h>
- #include <asm/processor.h>
- 
--#include <asm-generic/pgtable-nopud.h>
--
- /* The kernel image occupies 0x4000000 to 0x6000000 (4MB --> 96MB).
-  * The page copy blockops can use 0x6000000 to 0x8000000.
-  * The 8K TSB is mapped in the 0x8000000 to 0x8400000 range.
-@@ -55,13 +53,21 @@
- #define PMD_MASK	(~(PMD_SIZE-1))
- #define PMD_BITS	(PAGE_SHIFT - 3)
- 
--/* PGDIR_SHIFT determines what a third-level page table entry can map */
--#define PGDIR_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-3) + PMD_BITS)
-+/* PUD_SHIFT determines the size of the area a third-level page
-+ * table can map
-+ */
-+#define PUD_SHIFT	(PMD_SHIFT + PMD_BITS)
-+#define PUD_SIZE	(_AC(1,UL) << PUD_SHIFT)
-+#define PUD_MASK	(~(PUD_SIZE-1))
-+#define PUD_BITS	(PAGE_SHIFT - 3)
-+
-+/* PGDIR_SHIFT determines what a fourth-level page table entry can map */
-+#define PGDIR_SHIFT	(PUD_SHIFT + PUD_BITS)
- #define PGDIR_SIZE	(_AC(1,UL) << PGDIR_SHIFT)
- #define PGDIR_MASK	(~(PGDIR_SIZE-1))
- #define PGDIR_BITS	(PAGE_SHIFT - 3)
- 
--#if (PGDIR_SHIFT + PGDIR_BITS) != 43
-+#if (PGDIR_SHIFT + PGDIR_BITS) != 53
- #error Page table parameters do not cover virtual address space properly.
- #endif
- 
-@@ -93,6 +99,7 @@ static inline bool kern_addr_valid(unsigned long addr)
- /* Entries per page directory level. */
- #define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-3))
- #define PTRS_PER_PMD	(1UL << PMD_BITS)
-+#define PTRS_PER_PUD	(1UL << PUD_BITS)
- #define PTRS_PER_PGD	(1UL << PGDIR_BITS)
- 
- /* Kernel has a separate 44bit address space. */
-@@ -101,6 +108,9 @@ static inline bool kern_addr_valid(unsigned long addr)
- #define pmd_ERROR(e)							\
- 	pr_err("%s:%d: bad pmd %p(%016lx) seen at (%pS)\n",		\
- 	       __FILE__, __LINE__, &(e), pmd_val(e), __builtin_return_address(0))
-+#define pud_ERROR(e)							\
-+	pr_err("%s:%d: bad pud %p(%016lx) seen at (%pS)\n",		\
-+	       __FILE__, __LINE__, &(e), pud_val(e), __builtin_return_address(0))
- #define pgd_ERROR(e)							\
- 	pr_err("%s:%d: bad pgd %p(%016lx) seen at (%pS)\n",		\
- 	       __FILE__, __LINE__, &(e), pgd_val(e), __builtin_return_address(0))
-@@ -779,6 +789,11 @@ static inline int pmd_present(pmd_t pmd)
- #define pud_bad(pud)			((pud_val(pud) & ~PAGE_MASK) || \
- 					 !__kern_addr_valid(pud_val(pud)))
- 
-+#define pgd_none(pgd)			(!pgd_val(pgd))
-+
-+#define pgd_bad(pgd)			((pgd_val(pgd) & ~PAGE_MASK) || \
-+					 !__kern_addr_valid(pgd_val(pgd)))
-+
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 		       pmd_t *pmdp, pmd_t pmd);
-@@ -815,10 +830,17 @@ static inline unsigned long __pmd_page(pmd_t pmd)
- #define pmd_clear(pmdp)			(pmd_val(*(pmdp)) = 0UL)
- #define pud_present(pud)		(pud_val(pud) != 0U)
- #define pud_clear(pudp)			(pud_val(*(pudp)) = 0UL)
-+#define pgd_page_vaddr(pgd)		\
-+	((unsigned long) __va(pgd_val(pgd)))
-+#define pgd_present(pgd)		(pgd_val(pgd) != 0U)
-+#define pgd_clear(pgdp)			(pgd_val(*(pgd)) = 0UL)
- 
- /* Same in both SUN4V and SUN4U.  */
- #define pte_none(pte) 			(!pte_val(pte))
- 
-+#define pgd_set(pgdp, pudp)	\
-+	(pgd_val(*(pgdp)) = (__pa((unsigned long) (pudp))))
-+
- /* to find an entry in a page-table-directory. */
- #define pgd_index(address)	(((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
- #define pgd_offset(mm, address)	((mm)->pgd + pgd_index(address))
-@@ -826,6 +848,11 @@ static inline unsigned long __pmd_page(pmd_t pmd)
- /* to find an entry in a kernel page-table-directory */
- #define pgd_offset_k(address) pgd_offset(&init_mm, address)
- 
-+/* Find an entry in the third-level page table.. */
-+#define pud_index(address)	(((address) >> PUD_SHIFT) & (PTRS_PER_PUD - 1))
-+#define pud_offset(pgdp, address)	\
-+	((pud_t *) pgd_page_vaddr(*(pgdp)) + pud_index(address))
-+
- /* Find an entry in the second-level page table.. */
- #define pmd_offset(pudp, address)	\
- 	((pmd_t *) pud_page_vaddr(*(pudp)) + \
 diff --git a/arch/sparc/include/asm/tsb.h b/arch/sparc/include/asm/tsb.h
-index 90916f9..2e268b6 100644
+index 2e268b6..a2f5419 100644
 --- a/arch/sparc/include/asm/tsb.h
 +++ b/arch/sparc/include/asm/tsb.h
-@@ -145,6 +145,11 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	andn		REG2, 0x7, REG2; \
- 	ldx		[REG1 + REG2], REG1; \
- 	brz,pn		REG1, FAIL_LABEL; \
-+	 sllx		VADDR, 64 - (PUD_SHIFT + PUD_BITS), REG2; \
-+	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
-+	andn		REG2, 0x7, REG2; \
-+	ldxa		[REG1 + REG2] ASI_PHYS_USE_EC, REG1; \
-+	brz,pn		REG1, FAIL_LABEL; \
- 	 sllx		VADDR, 64 - (PMD_SHIFT + PMD_BITS), REG2; \
- 	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
- 	andn		REG2, 0x7, REG2; \
-@@ -198,6 +203,11 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	andn		REG2, 0x7, REG2; \
- 	ldxa		[PHYS_PGD + REG2] ASI_PHYS_USE_EC, REG1; \
- 	brz,pn		REG1, FAIL_LABEL; \
-+	 sllx		VADDR, 64 - (PUD_SHIFT + PUD_BITS), REG2; \
-+	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
-+	andn		REG2, 0x7, REG2; \
-+	ldxa		[REG1 + REG2] ASI_PHYS_USE_EC, REG1; \
-+	brz,pn		REG1, FAIL_LABEL; \
- 	 sllx		VADDR, 64 - (PMD_SHIFT + PMD_BITS), REG2; \
- 	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
- 	andn		REG2, 0x7, REG2; \
-diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-index 8311f3d..50c3dd03 100644
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -1479,6 +1479,13 @@ static void __init pcpu_populate_pte(unsigned long addr)
- 	pud_t *pud;
- 	pmd_t *pmd;
+@@ -256,8 +256,6 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
+ 	(KERNEL_TSB_SIZE_BYTES / 16)
+ #define KERNEL_TSB4M_NENTRIES	4096
  
-+	if (pgd_none(*pgd)) {
-+		pud_t *new;
-+
-+		new = __alloc_bootmem(PAGE_SIZE, PAGE_SIZE, PAGE_SIZE);
-+		pgd_populate(&init_mm, pgd, new);
-+	}
-+
- 	pud = pud_offset(pgd, addr);
- 	if (pud_none(*pud)) {
- 		pmd_t *new;
+-#define KTSB_PHYS_SHIFT		15
+-
+ 	/* Do a kernel TSB lookup at tl>0 on VADDR+TAG, branch to OK_LABEL
+ 	 * on TSB hit.  REG1, REG2, REG3, and REG4 are used as temporaries
+ 	 * and the found TTE will be left in REG1.  REG3 and REG4 must
+@@ -266,17 +264,15 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
+ 	 * VADDR and TAG will be preserved and not clobbered by this macro.
+ 	 */
+ #define KERN_TSB_LOOKUP_TL1(VADDR, TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
+-661:	sethi		%hi(swapper_tsb), REG1;			\
+-	or		REG1, %lo(swapper_tsb), REG1; \
++661:	sethi		%uhi(swapper_tsb), REG1; \
++	sethi		%hi(swapper_tsb), REG2; \
++	or		REG1, %ulo(swapper_tsb), REG1; \
++	or		REG2, %lo(swapper_tsb), REG2; \
+ 	.section	.swapper_tsb_phys_patch, "ax"; \
+ 	.word		661b; \
+ 	.previous; \
+-661:	nop; \
+-	.section	.tsb_ldquad_phys_patch, "ax"; \
+-	.word		661b; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	.previous; \
++	sllx		REG1, 32, REG1; \
++	or		REG1, REG2, REG1; \
+ 	srlx		VADDR, PAGE_SHIFT, REG2; \
+ 	and		REG2, (KERNEL_TSB_NENTRIES - 1), REG2; \
+ 	sllx		REG2, 4, REG2; \
+@@ -291,17 +287,15 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
+ 	 * we can make use of that for the index computation.
+ 	 */
+ #define KERN_TSB4M_LOOKUP_TL1(TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
+-661:	sethi		%hi(swapper_4m_tsb), REG1;	     \
+-	or		REG1, %lo(swapper_4m_tsb), REG1; \
++661:	sethi		%uhi(swapper_4m_tsb), REG1; \
++	sethi		%hi(swapper_4m_tsb), REG2; \
++	or		REG1, %ulo(swapper_4m_tsb), REG1; \
++	or		REG2, %lo(swapper_4m_tsb), REG2; \
+ 	.section	.swapper_4m_tsb_phys_patch, "ax"; \
+ 	.word		661b; \
+ 	.previous; \
+-661:	nop; \
+-	.section	.tsb_ldquad_phys_patch, "ax"; \
+-	.word		661b; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	.previous; \
++	sllx		REG1, 32, REG1; \
++	or		REG1, REG2, REG1; \
+ 	and		TAG, (KERNEL_TSB4M_NENTRIES - 1), REG2; \
+ 	sllx		REG2, 4, REG2; \
+ 	add		REG1, REG2, REG2; \
 diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 1a9cc81..7b03310 100644
+index 44eb215..f743f05 100644
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -1383,6 +1383,13 @@ static unsigned long __ref kernel_map_range(unsigned long pstart,
- 		pmd_t *pmd;
- 		pte_t *pte;
+@@ -1726,19 +1726,41 @@ static void __init tsb_phys_patch(void)
+ static struct hv_tsb_descr ktsb_descr[NUM_KTSB_DESCR];
+ extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
  
-+		if (pgd_none(*pgd)) {
-+			pud_t *new;
-+
-+			new = __alloc_bootmem(PAGE_SIZE, PAGE_SIZE, PAGE_SIZE);
-+			alloc_bytes += PAGE_SIZE;
-+			pgd_populate(&init_mm, pgd, new);
-+		}
- 		pud = pud_offset(pgd, vstart);
- 		if (pud_none(*pud)) {
- 			pmd_t *new;
-@@ -1849,7 +1856,12 @@ static void __init sun4v_linear_pte_xor_finalize(void)
- /* paging_init() sets up the page tables */
- 
- static unsigned long last_valid_pfn;
--pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+
-+/* These must be page aligned in order to not trigger the
-+ * alignment tests of pgd_bad() and pud_bad().
++/* The swapper TSBs are loaded with a base sequence of:
++ *
++ *	sethi	%uhi(SYMBOL), REG1
++ *	sethi	%hi(SYMBOL), REG2
++ *	or	REG1, %ulo(SYMBOL), REG1
++ *	or	REG2, %lo(SYMBOL), REG2
++ *	sllx	REG1, 32, REG1
++ *	or	REG1, REG2, REG1
++ *
++ * When we use physical addressing for the TSB accesses, we patch the
++ * first four instructions in the above sequence.
 + */
-+pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
-+static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
- 
- static void sun4u_pgprot_init(void);
- static void sun4v_pgprot_init(void);
-@@ -1858,6 +1870,8 @@ void __init paging_init(void)
- {
- 	unsigned long end_pfn, shift, phys_base;
- 	unsigned long real_end, i;
-+	pud_t *pud;
-+	pmd_t *pmd;
- 	int node;
- 
- 	setup_page_offset();
-@@ -1954,9 +1968,18 @@ void __init paging_init(void)
- 	
- 	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
- 
--	/* Now can init the kernel/bad page tables. */
--	pud_set(pud_offset(&swapper_pg_dir[0], 0),
--		swapper_low_pmd_dir + (shift / sizeof(pgd_t)));
-+	/* The kernel page tables we publish into what the rest of the
-+	 * world sees must be adjusted so that they see the PAGE_OFFSET
-+	 * address of these in-kerenel data structures.  However right
-+	 * here we must access them from the kernel image side, because
-+	 * the trap tables haven't been taken over and therefore we cannot
-+	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
-+	 */
-+	pud = swapper_pud_dir + (shift / sizeof(pud_t));
-+	pgd_set(&swapper_pg_dir[0], pud);
 +
-+	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
-+	pud_set(&swapper_pud_dir[0], pmd);
- 	
- 	inherit_prom_mappings();
- 	
+ static void patch_one_ktsb_phys(unsigned int *start, unsigned int *end, unsigned long pa)
+ {
+-	pa >>= KTSB_PHYS_SHIFT;
++	unsigned long high_bits, low_bits;
++
++	high_bits = (pa >> 32) & 0xffffffff;
++	low_bits = (pa >> 0) & 0xffffffff;
+ 
+ 	while (start < end) {
+ 		unsigned int *ia = (unsigned int *)(unsigned long)*start;
+ 
+-		ia[0] = (ia[0] & ~0x3fffff) | (pa >> 10);
++		ia[0] = (ia[0] & ~0x3fffff) | (high_bits >> 10);
+ 		__asm__ __volatile__("flush	%0" : : "r" (ia));
+ 
+-		ia[1] = (ia[1] & ~0x3ff) | (pa & 0x3ff);
++		ia[1] = (ia[1] & ~0x3fffff) | (low_bits >> 10);
+ 		__asm__ __volatile__("flush	%0" : : "r" (ia + 1));
+ 
++		ia[2] = (ia[2] & ~0x1fff) | (high_bits & 0x3ff);
++		__asm__ __volatile__("flush	%0" : : "r" (ia + 2));
++
++		ia[3] = (ia[3] & ~0x1fff) | (low_bits & 0x3ff);
++		__asm__ __volatile__("flush	%0" : : "r" (ia + 3));
++
+ 		start++;
+ 	}
+ }
 -- 
 1.9.1
 
