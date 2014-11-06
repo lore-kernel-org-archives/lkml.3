@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303AbaKFWCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:02:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55343 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaKFWCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:02:50 -0500
-Date: Thu, 6 Nov 2014 14:02:49 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Christian Riesch <christian.riesch@omicron.at>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in
- receive path
-Message-ID: <20141106220249.GA952@kroah.com>
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
- <20141106203832.GB30170@kroah.com>
- <yw1xwq78jbr6.fsf@unicorn.mansr.com>
- <20141106205644.GA31435@kroah.com>
- <yw1xsihwjb67.fsf@unicorn.mansr.com>
- <20141106211754.GA32000@kroah.com>
- <yw1xoaskj9fw.fsf@unicorn.mansr.com>
+	id S1751246AbaKFWIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:08:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58627 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963AbaKFWIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 17:08:15 -0500
+Date: Thu, 6 Nov 2014 17:07:31 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, isimatu.yasuaki@jp.fujitsu.com,
+        jbaron@akamai.com, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v8] kernel, add panic_on_warn
+Message-ID: <20141106220731.GA13590@redhat.com>
+References: <1415187736-16242-1-git-send-email-prarit@redhat.com>
+ <alpine.DEB.2.10.1411051357050.31575@chino.kir.corp.google.com>
+ <545B733C.6080903@redhat.com>
+ <alpine.DEB.2.10.1411061352440.1526@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <yw1xoaskj9fw.fsf@unicorn.mansr.com>
+In-Reply-To: <alpine.DEB.2.10.1411061352440.1526@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 09:38:59PM +0000, Måns Rullgård wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+On Thu, Nov 06, 2014 at 01:57:36PM -0800, David Rientjes wrote:
+
+[..]
+> You see that doing
 > 
-> > On Thu, Nov 06, 2014 at 09:01:36PM +0000, Måns Rullgård wrote:
-> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> >> 
-> >> > On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
-> >> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> >> >> 
-> >> >> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
-> >> >> >> The current implementation of put_tty_queue() causes a race condition
-> >> >> >> when re-arranged by the compiler.
-> >> >> >> 
-> >> >> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
-> >> >> >> 
-> >> >> >> 	*read_buf_addr(ldata, ldata->read_head++) = c;
-> >> >> >> 
-> >> >> >> was re-arranged by the compiler to something like
-> >> >> >> 
-> >> >> >> 	x = ldata->read_head
-> >> >> >> 	ldata->read_head++
-> >> >> >> 	*read_buf_addr(ldata, x) = c;
-> >> >> >> 
-> >> >> >> which causes a race condition. Invalid data is read if data is read
-> >> >> >> before it is actually written to the read buffer.
-> >> >> >
-> >> >> > Really?  A compiler can rearange things like that and expect things to
-> >> >> > actually work?  How is that valid?
-> >> >> 
-> >> >> This is actually required by the C spec.  There is a sequence point
-> >> >> before a function call, after the arguments have been evaluated.  Thus
-> >> >> all side-effects, such as the post-increment, must be complete before
-> >> >> the function is called, just like in the example.
-> >> >> 
-> >> >> There is no "re-arranging" here.  The code is simply wrong.
-> >> >
-> >> > Ah, ok, time to dig out the C spec...
-> >> >
-> >> > Anyway, because of this, no need for the wmb() calls, just rearrange the
-> >> > logic and all should be good, right?  Christian, can you test that
-> >> > instead?
-> >> 
-> >> Weakly ordered SMP systems probably need some kind of barrier.  I didn't
-> >> look at it carefully.
-> >
-> > It shouldn't need a barier, as it is a sequence point with the function
-> > call.  Well, it's an inline function, but that "shouldn't" matter here,
-> > right?
+> 	if (panic_on_warn) {
+> 		panic_on_warn = 0;
+> 		panic(...);
+> 	}
 > 
-> Sequence points say nothing about the order in which stores become
-> visible to other CPUs.  That's why there are barrier instructions.
+> is racy, I hope.  If two threads WARN() at the same time, then there's 
+> nothing preventing a double panic() because WARN() itself is not 
+> serialized against anything.  So both the current comment and your 
+> suggested revision comment are bogus.
 
-Yes, but "order" matters.
+panic() is serialized on panic_lock. So I guess it is fine to hit WARN()
+on multiple cpus. Do you see an issue there?
 
-If I write code that does:
-
-100	x = ldata->read_head;
-101	&ldata->read_head[x & SOME_VALUE] = y;
-102	ldata->read_head++;
-
-the compiler can not reorder lines 102 and 101 just because it feels
-like it, right?  Or is it time to go spend some reading of the C spec
-again...
-
-thanks,
-
-greg k-h
+Thanks
+Vivek
