@@ -1,41 +1,29 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaLAE4W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 23:56:22 -0500
-Received: from smtp.agip.gov.ar ([190.220.13.106]:62022 "EHLO smtp.agip.gov.ar"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228AbaLAE4V convert rfc822-to-8bit (ORCPT
+	id S1751830AbaKFJCf (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 6 Nov 2014 04:02:35 -0500
+Received: from eros.ensp.fiocruz.br ([157.86.160.52]:35674 "EHLO
+	eros.ensp.fiocruz.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaKFJCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 23:56:21 -0500
-X-Greylist: delayed 3042 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Nov 2014 23:56:19 EST
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 6 Nov 2014 04:02:32 -0500
+X-Greylist: delayed 640 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 04:02:30 EST
+Date: Thu, 6 Nov 2014 06:49:48 -0200 (BRST)
+From: "mohdafattah1964001@hotmail.com" <carlosbizarro@ensp.fiocruz.br>
+Reply-To: Mr Mohd Fattah <mohdafattah1964001@hotmail.com>
+Message-ID: <956203227.19000080.1415263788377.JavaMail.zimbra@ensp.fiocruz.br>
+Subject: Hello
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Dear user
-To: Recipients <info@agip.gov.ar>
-From: "ADMIN" <info@agip.gov.ar>
-Date: Mon, 01 Dec 2014 04:37:01 +0100
-Reply-To: webmail_team@foxmail.com
-X-Antivirus: avast! (VPS 141130-1, 11/30/2014), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20141201033717.E10351646049@mail.agip.gov.ar>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [23.226.77.100]
+X-Mailer: Zimbra 8.0.7_GA_6021 (zclient/8.0.7_GA_6021)
+Thread-Topic: Hello
+Thread-Index: rTsoQqNIvayn9eggprTvx2Ji6/qWZA==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
 
-   Your email has exceeded 2GB created by the webmaster, who is currently
-running at 2.30GB, which is not possible to send or receive new message
-within the next 24 hours, until you make sure you email account.
 
-Please enter your details below to verify your account:
-
-(1) E-mail:
-(2) Name:
-(3) Password:
-(4) Confirm Password:
-
-Thank you
-The system administrator
+Did you receive my email?
