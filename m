@@ -1,60 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaKFReZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:34:25 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46025 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaKFReV (ORCPT
+	id S1752528AbaKFRem (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:34:42 -0500
+Received: from smtp105.biz.mail.bf1.yahoo.com ([98.139.221.43]:33912 "EHLO
+	smtp105.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752297AbaKFRek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:34:21 -0500
-To: Chris Friesen <chris.friesen@windriver.com>
-Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
-Date: Thu, 06 Nov 2014 12:34:14 -0500
-In-Reply-To: <545BAD05.3050800@windriver.com> (Chris Friesen's message of
-	"Thu, 6 Nov 2014 11:16:53 -0600")
-Message-ID: <yq1k338b5d5.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 6 Nov 2014 12:34:40 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: y4P4q50VM1k3A84SSRVWL.UJ3Il4VI1KVzJ_9WDmnwcEqmJ
+ 7GnUZ2nF508.YuLd683UOYtltFh9Nm2zApA6COL90MbwKhSsnbTTz50Nte4w
+ jYngyVrFub0oG9whinqjrweUMe3x204C8Sh_Yov63wfgOG441ng__c0akYXy
+ DQr.ou9fZX92_s3Td0ULrC.bqxi6odQNN60IPPW1d_2G7G6LSlhncOOZmChE
+ KBqJHUlHHl5HSxN_0khI6ujxNAd8Zna.avN5OVlA5mqw_Y86SUHRkCb9Qnzn
+ WsQiIlPSSZjbfAnK9SfdajBsvJLH4NUZ2e573uJISOY123LmIZ3aEAFrVL8m
+ aI9gnFNvxcFhBHAUGlpUlHpNvNeECvbQJTDjKBT2eqGdSJYtGbGH6iO.qxK.
+ 7AO_78RijFtcARwI9.KmMYjPM43nL3yjpLPpBOZxIJ4OmXjC3RMVdgqQjNVK
+ bxOv4icjSxDFIthnyxD_QnALwo_nqPUW87lqC.dp_LP1CbAUtcUtouFjYMxz
+ seE_ZrJGXjrmyDfmy2q8zcLPO4LS93zW_jA--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <545BB147.4000100@schaufler-ca.com>
+Date: Thu, 06 Nov 2014 09:35:03 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: David Howells <dhowells@redhat.com>, linux-unionfs@vger.kernel.org,
+        selinux@tycho.nsa.gov
+CC: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 0/7] Security: Provide unioned file support
+References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20141105154217.2555.578.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+On 11/5/2014 7:42 AM, David Howells wrote:
+> The attached patches provide security support for unioned files where the
+> security involves an object-label-based LSM (such as SELinux) rather than a
+> path-based LSM.
 
-Chris> Perhaps the ST900MM0026 should be blacklisted as well?
+I am going to have to look at this very carefully for the
+Smack implications. I cannot have a review done for several
+days. I do have some immediate comments below.
 
-Sure. I'll widen the net a bit for that Seagate model.
+>
+> There are two problems that need addressing:
+>
+>  (1) The files that the user accesses through the overlayfs filesystem don't
+>      really exist there.  Overlayfs passes the accesses directly through to
+>      the underlying upper or lower file by means of having the dentry_open
+>      inode op redirect where file->f_path and file->f_inode point.
+>
+>      This means that SELinux (or similar) will see the security label on one
+>      lower layer or the other - and not the label on the overlay.  There are
+>      three labels and all may be different.
+>
+>  (2) file->f_path *should* point at the overlay dentry and file->f_inode
+>      should point at the lower layer inode.
+>
+> I'm not addressing (2) in this series of patches, but will leave that to a
+> separate patch series.
+>
+>   
+> After some discussion with docker people, the agreed theory of operation will
+> be:
+>
+>  (1) The docker source (ie. the lower layer) will all be under a single label.
 
-commit 17f1ee2d16a6878269c4429306f6e678b7e61505
-Author: Martin K. Petersen <martin.petersen@oracle.com>
-Date:   Thu Nov 6 12:31:43 2014 -0500
+What does this mean? Is the "lower layer" the "real" file, or something else?
+What is a "docker source"? What "single label" are you talking about, and
+where does it come from? What about LSMs that have multiple labels on a file?
 
-    SCSI: Blacklist ST900MM0026
-    
-    Looks like this entire series of drives reports the wrong values in the
-    block limits VPD. Widen the blacklist.
-    
-    Reported-by: Chris Friesen <chris.friesen@windriver.com>
-    Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
 
-diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-index 49014a143c6a..9116531b415a 100644
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -229,7 +229,7 @@ static struct {
- 	{"SanDisk", "ImageMate CF-SD1", NULL, BLIST_FORCELUN},
- 	{"SEAGATE", "ST34555N", "0930", BLIST_NOTQ},	/* Chokes on tagged INQUIRY */
- 	{"SEAGATE", "ST3390N", "9546", BLIST_NOTQ},
--	{"SEAGATE", "ST900MM0006", NULL, BLIST_SKIP_VPD_PAGES},
-+	{"SEAGATE", "ST900MM", NULL, BLIST_SKIP_VPD_PAGES},
- 	{"SGI", "RAID3", "*", BLIST_SPARSELUN},
- 	{"SGI", "RAID5", "*", BLIST_SPARSELUN},
- 	{"SGI", "TP9100", "*", BLIST_REPORTLUN2},
+>  (2) The docker root (ie. the overlay/union layer) will all be under a single,
+>      but different label set on the overlay mount (and each docker root may be
+>      under its own label).
+
+No. Sorry, but this is the one notion that doesn't work. A layer should
+either be label transparent or restricted by some sort of range concept.
+Giving it a label just makes it necessary to grant everyone access to objects
+with that label.
+
+>
+>  (3) Inodes in the overlayfs upper layer will be given the overlay label.
+
+Could you explain your terminology? I have no idea what the "overlay label"
+might be. Is it the real one on the real filesystem? What about attributes
+other than the access label? Smack has execution labels and a transmute
+attribute as well as the access label.
+
+
+>
+>  (4) A security_copy_up() operation will be provided to set the label on the
+>      upper inode when it is created.
+>
+>  (5) A security_copy_up_xattr() operation will be provided to vet (and maybe
+>      modify) each xattr as it is copied up.
+>
+>  (6) An extra label slot will be placed in struct file_security_struct to hold
+>      the overlay label.
+
+Are you assuming a single overlay layer? 
+
+
+>
+>  (7) security_file_open() will need to be given both the overlay and lower
+>      dentries.
+>
+>      For overlayfs, the way this probably should be done is file->f_path should
+>      be set to point to the overlay dentry (thus getting /proc right) and
+>      file->f_inode to the lower file and make use of d_fallthru in the overlay
+>      dentry in common with unionmount.
+>
+>  (8) When the lower file is accessed, both the lower and overlay labels should
+>      be checked and audited.
+>
+>  (9) When the upper file is accessed, only the overlay label needs to be
+>      checked and audited.
+>
+> I need someone to examine the SELinux bits and have a look to see whether I
+> need to make further checks.
+
+The Smack code, too.
+
+Oh, and I have been lead to believe that upcoming AppArmor enhancements
+could be affected as well.
+
+>
+>
+> The patches can be found here also:
+>
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=overlayfs
+>
+> This is based on part of Al Viro's vfs/for-next branch.
+>
+> David
+> ---
+> David Howells (7):
+>       Security: Provide copy-up security hooks for unioned files
+>       Overlayfs: Use copy-up security hooks
+>       SELinux: Stub in copy-up handling
+>       Security: Pass the union-layer file path into security_file_open()
+>       SELinux: Handle opening of a unioned file
+>       SELinux: The copy-up operation must have read permission on the lower file
+>       SELinux: Check against union and lower labels for file ops on lower files
+>
+>
+>  fs/ceph/file.c                    |    3 +
+>  fs/ceph/super.h                   |    1 
+>  fs/cifs/cifsfs.h                  |    1 
+>  fs/cifs/dir.c                     |    3 +
+>  fs/namei.c                        |   11 +++--
+>  fs/nfs/dir.c                      |    6 ++
+>  fs/nfs/nfs4_fs.h                  |    2 -
+>  fs/open.c                         |   31 ++++++++-----
+>  fs/overlayfs/copy_up.c            |   12 +++++
+>  fs/overlayfs/inode.c              |    8 ++-
+>  include/linux/fs.h                |   16 +++++--
+>  include/linux/security.h          |   43 +++++++++++++++++-
+>  security/capability.c             |   17 +++++++
+>  security/security.c               |   19 +++++++-
+>  security/selinux/hooks.c          |   89 +++++++++++++++++++++++++++++++++++--
+>  security/selinux/include/objsec.h |    1 
+>  16 files changed, 228 insertions(+), 35 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
