@@ -1,116 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaKFQeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:34:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57104 "EHLO mx2.suse.de"
+	id S1751391AbaKFQig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:38:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55548 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762AbaKFQef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:34:35 -0500
-Date: Thu, 6 Nov 2014 17:34:30 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Len Brown <len.brown@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf, amd, ibs: Update IBS MSRs and feature definitions
-Message-ID: <20141106163430.GB4737@pd.tnic>
-References: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	id S1750998AbaKFQid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:38:33 -0500
+Message-ID: <545BA3E6.90105@ti.com>
+Date: Thu, 6 Nov 2014 11:37:58 -0500
+From: Tom Rini <trini@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <balbi@ti.com>, Nishanth Menon <nm@ti.com>
+CC: <devicetree@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        <beagleboard@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        <gerald@granddesignsgroup.com>, <fcooper@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: dts: Add am57xx-beagle-x15
+References: <1415290702-11353-1-git-send-email-nm@ti.com> <20141106163207.GF16896@saruman>
+In-Reply-To: <20141106163207.GF16896@saruman>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 10:26:22AM -0600, Aravind Gopalakrishnan wrote:
-> New Fam15h models carry extra feature bits and extend
-> the MSR register space for IBS ops. Adding them here.
-> 
-> While at it, add functionality to read IbsBrTarget and
-> OpData4 depending on their availability if user wants a
-> PERF_SAMPLE_RAW.
-> 
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Jan Kiszka <jan.kiszka@siemens.com>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> ---
->  arch/x86/include/asm/perf_event.h        |  3 +++
->  arch/x86/include/uapi/asm/msr-index.h    |  2 ++
->  arch/x86/kernel/cpu/perf_event_amd_ibs.c | 15 +++++++++++++++
->  3 files changed, 20 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 8dfc9fd..dc0f6ed 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -177,6 +177,9 @@ struct x86_pmu_capability {
->  #define IBS_CAPS_BRNTRGT		(1U<<5)
->  #define IBS_CAPS_OPCNTEXT		(1U<<6)
->  #define IBS_CAPS_RIPINVALIDCHK		(1U<<7)
-> +#define IBS_CAPS_OPBRNFUSE		(1U<<8)
-> +#define IBS_CAPS_FETCHCTLEXTD		(1U<<9)
-> +#define IBS_CAPS_OPDATA4		(1U<<10)
->  
->  #define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
->  					 | IBS_CAPS_FETCHSAM	\
-> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-> index e21331c..ba7b609 100644
-> --- a/arch/x86/include/uapi/asm/msr-index.h
-> +++ b/arch/x86/include/uapi/asm/msr-index.h
-> @@ -206,6 +206,8 @@
->  #define MSR_AMD64_IBSOP_REG_MASK	((1UL<<MSR_AMD64_IBSOP_REG_COUNT)-1)
->  #define MSR_AMD64_IBSCTL		0xc001103a
->  #define MSR_AMD64_IBSBRTARGET		0xc001103b
-> +#define MSR_AMD64_IBS_FETCH_EXTD_CTL	0xc001103c
-> +#define MSR_AMD64_IBSOPDATA4		0xc001103d
->  #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
->  
->  /* Fam 16h MSRs */
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-> index cbb1be3e..a61f5c6 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-> @@ -565,6 +565,21 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
->  				       perf_ibs->offset_max,
->  				       offset + 1);
->  	} while (offset < offset_max);
-> +	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
-> +		/*
-> +		 * Read IbsBrTarget and IbsOpData4 separately
-> +		 * depending on their availability.
-> +		 * Can't add to offset_max as they are staggered
-> +		 */
-> +		if (ibs_caps & IBS_CAPS_BRNTRGT) {
-> +			rdmsrl(MSR_AMD64_IBSBRTARGET, *buf++);
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Are those MSRs present on everything that supports IBS and if not, you
-probably should do rdmsr_safe() here instead and handle the error case.
-Or do something with f/m/s checking or so...
-
-> +			size++;
-> +		}
-> +		if (ibs_caps & IBS_CAPS_OPDATA4) {
-> +			rdmsrl(MSR_AMD64_IBSOPDATA4, *buf++);
-> +			size++;
-> +		}
-> +	}
->  	ibs_data.size = sizeof(u64) * size;
->  
->  	regs = *iregs;
-> -- 
-> 1.9.1
+On 11/06/2014 11:32 AM, Felipe Balbi wrote:
+> On Thu, Nov 06, 2014 at 10:18:22AM -0600, Nishanth Menon wrote:
+>> BeagleBoard-X15 is the next generation Open Source Hardware 
+>> BeagleBoard based on TI's AM5728 SoC featuring dual core 1.5GHZ
+>> A15 processor. The platform features 2GB DDR3L (w/dual 32bit
+>> busses), eSATA, 3 USB3.0 ports, integrated HDMI (1920x108@60),
+>> separate LCD port, video In port, 4GB eMMC, uSD, Analog audio
+>> in/out, dual 1G Ethernet.
+>> 
+>> For more information, refer to: BeagleBoard-X15 Wiki: 
+>> http://www.elinux.org/Beagleboard:BeagleBoard-X15
+>> 
+>> AM5728 is part of the Sitara product family whose additional
+>> details will be available:
+>> http://www.ti.com/lsds/ti/arm/overview.page
+>> 
+>> Technical Reference Manual for AM5728 is public domain at: 
+>> http://www.ti.com/lit/spruhz6
+>> 
+>> Just add basic support for the moment, the following updates are
+>> needed: i)	Ethernet - depends on SoC dts fixes ii)	USB Client
+>> (USB2) - depends on GPIO extcon ii)	HDMI - additional driver
+>> fixes pending iii)	Audio - additional driver fixes pending
+>> 
+>> Signed-off-by: Felipe Balbi <balbi@ti.com> Signed-off-by:
+>> Nishanth Menon <nm@ti.com> ---
+>> 
+>> Tested with omap2plus_defconfig modified as:
+>> http://slexy.org/view/s2DRTzUwjj boot log:
+>> http://slexy.org/raw/s25Grf1uoo based on 3.18-rc1 tag.
+>> 
+>> Support for u-boot has been posted as well: (series ending 
+>> http://patchwork.ozlabs.org/patch/407552/ )
+>> 
+>> Side note: this patch generates a few unrelated checkpatch
+>> warning for compatible which probably is part of appropriate
+>> driver documentation fixes (functionality is already present).
+>> 
+>> arch/arm/boot/dts/Makefile              |    1 + 
+>> arch/arm/boot/dts/am57xx-beagle-x15.dts |  405
+>> +++++++++++++++++++++++++++++++ 2 files changed, 406
+>> insertions(+) create mode 100644
+>> arch/arm/boot/dts/am57xx-beagle-x15.dts
+>> 
+>> diff --git a/arch/arm/boot/dts/Makefile
+>> b/arch/arm/boot/dts/Makefile index 38c89ca..eee1e4f 100644 ---
+>> a/arch/arm/boot/dts/Makefile +++ b/arch/arm/boot/dts/Makefile @@
+>> -347,6 +347,7 @@ dtb-$(CONFIG_SOC_OMAP5) += omap5-cm-t54.dtb \ 
+>> omap5-sbc-t54.dtb \ omap5-uevm.dtb dtb-$(CONFIG_SOC_DRA7XX) +=
+>> dra7-evm.dtb \ +	am57xx-beagle-x15.dtb \ dra72-evm.dtb 
+>> dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-d2-network.dtb \ 
+>> orion5x-lacie-ethernet-disk-mini-v2.dtb \ diff --git
+>> a/arch/arm/boot/dts/am57xx-beagle-x15.dts
+>> b/arch/arm/boot/dts/am57xx-beagle-x15.dts new file mode 100644 
+>> index 0000000..1f1875b --- /dev/null +++
+>> b/arch/arm/boot/dts/am57xx-beagle-x15.dts @@ -0,0 +1,405 @@ +/* +
+>> * Copyright (C) 2014 Texas Instruments Incorporated -
+>> http://www.ti.com/ + * + * This program is free software; you can
+>> redistribute it and/or modify + * it under the terms of the GNU
+>> General Public License version 2 as + * published by the Free
+>> Software Foundation. + */ +/dts-v1/; + +#include "dra74x.dtsi" 
+>> +#include <dt-bindings/clk/ti-dra7-atl.h> +#include
+>> <dt-bindings/gpio/gpio.h> +#include
+>> <dt-bindings/interrupt-controller/irq.h> + +/ { +	model = "TI
+>> AM5728 BeagleBoard-X15"; +	compatible = "ti,am572x-beagle-x15",
+>> "ti,am5728", "ti,dra742", "ti,dra74", "ti,dra7"; + +	aliases { +
+>> rtc0 = &mcp_rtc; +		rtc1 = &tps659038_rtc; +	}; + +	memory { +
+>> device_type = "memory"; +		reg = <0x80000000 0x40000000>; /* 1GB
+>> to start. Target 2GB */
 > 
+> 1GiB ? Why would you put this here btw ? u-boot fills this one up.
 
--- 
-Regards/Gruss,
-    Boris.
+Yes, it should either be the full and correct value or 0x0 (like a
+number of PowerPC platforms do) so it's clear something else gives us
+the right value here.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+- -- 
+Tom
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUW6PmAAoJENk4IS6UOR1WV2kQAI7JY0DFR+XsWMAZ2shiGcF6
++ZotxE4m030EQgfi8FnKe+i5u5pvHhJFqazRGX2cpYvj5X0fOnO730cyGLvunuQA
+npVDTcu/4RASxOUtEAW88u/wxUqL1BvYTHlcFTOnaeYJbgvt/C+QIO/wK+izAPso
+2ckS23d43DCAW2aVRo2Eq/L3CehjZz3dpQSzTyjWdYbQ0gROE4IWQ5J2qnSFYzhO
+VO5CQb4gqP0iAVk96Z6RJWtQxaYGfNta9QDCaEkZ6OOo4z+MHvdfk5a5HiJzfzlr
+VkRUaRql4UmvFFwUFoeYcsde1Mno8Ka3jXq94soNvnq0LiIYPjdLBI/7ca9exdbV
+CnY3TxtZOfYqRsGiSF1mac8wqCF7kBC+u7nGGK1sTdNzhN5dFrIfL0tkfl8/avfH
+YYyu/WeZEEZ8MJVk0KruXUgG1kge3FJc2v79AdDaiZtp6xcl5p+pVtCkx8QrCfGg
+ofPjEtmGKSatIW/PmnOt0L/qmMQNnzwSbT+zgeUfgUXYLiH3NFK7wAdW5hWS4T3n
+v5h1O8t3THZLnmc1Fdv4pfI3ozcoWjSLROlnWhtO1E9JEtVon8XfpyPObJzKV5GA
+9CT+5Ivrirz/4TEUJ1kCKBQcxyZUFEmEVKYu9KiMPux2Doz4MI4TZOZ/TcWTJiCJ
+hCXCtU398UOpnwVyy//D
+=N9bA
+-----END PGP SIGNATURE-----
