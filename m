@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaKFRfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:35:51 -0500
-Received: from [65.55.169.54] ([65.55.169.54]:41280 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751325AbaKFRfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:35:50 -0500
-Date: Thu, 6 Nov 2014 09:33:54 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Michal Simek <michal.simek@xilinx.com>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, <stable@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: zynq: Enable PL clocks for Parallella
-References: <1415294531-8942-1-git-send-email-afaerber@suse.de>
+	id S1751848AbaKFRh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:37:29 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:55357 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaKFRh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:37:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415294531-8942-1-git-send-email-afaerber@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21078.007
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <e78290abdb85497081f502e5886bf045@BL2FFO11FD057.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(24454002)(51704005)(189002)(377424004)(6806004)(64706001)(53416004)(110136001)(107046002)(47776003)(44976005)(21056001)(83506001)(20776003)(92566001)(86362001)(4396001)(54356999)(95666004)(104016003)(50466002)(106466001)(99396003)(85182001)(77096003)(23676002)(87936001)(77156002)(50986999)(102836001)(85202003)(76176999)(108616004)(74316001)(46102003)(120916001)(62966003)(31966008)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB065;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB065;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0387D64A71
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <1632312.tiWezf5I7W@vostro.rjw.lan>
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
+ <545912D2.5090708@codeaurora.org> <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com>
+ <1632312.tiWezf5I7W@vostro.rjw.lan>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 6 Nov 2014 17:37:06 +0000
+X-Google-Sender-Auth: npe5i6tOuqDqpNJCZJSYYByIG4o
+Message-ID: <CACxGe6sVXkiFpXaJccbYP+3ErmvVvZtL=FqkaJQ5FnnsKJ95Fw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Timur Tabi <timur@codeaurora.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas,
+On Wed, Nov 5, 2014 at 10:15 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Wednesday, November 05, 2014 09:46:14 PM Grant Likely wrote:
+>> On Tue, Nov 4, 2014 at 5:54 PM, Timur Tabi <timur@codeaurora.org> wrote:
+>> > On 11/04/2014 02:20 AM, Mika Westerberg wrote:
+>> >>
+>> >> There is nothing like that yet in ACPI world but with the ACPI _DSD
+>> >> patches we are getting properties similar to DT which means that we can
+>> >> provide pinctrl bindings from ACPI systems as well.
+>> >
+>> >
+>> > Do you know if anyone has signed up to actually do the work of defining how
+>> > pinctrl will look in ACPI?  I'm guessing the simplest approach would be to:
+>>
+>> Actually, for the most part we /don't/ want to try and put pinctrl
+>> into an ACPI binding. The assumption is that on an ACPI platform it
+>> would be the combination of ACPI and firmware responsible for the pin
+>> mappings, not the operating system.
+>>
+>> Before even attempting to put pinctrl mappings into your driver, there
+>> should instead be a conversation at the ACPI spec level about whether
+>> or not it makes sense and what such a binding should look like.
+>
+> We may need to support pinctrl on ACPI platforms in the meantime, though,
+> for reasons that Mika mentioned at one point (there are systems where the
+> firmware mangles things etc., which quite frankly is to be expected).
+>
+> So while I'm all for discussing this in the ASWG, what's the interim approach
+> we should be using, in your opinion?
 
-On Thu, 2014-11-06 at 06:22PM +0100, Andreas Färber wrote:
-> The Parallella board comes with a U-Boot bootloader that loads one of
-> two predefined FPGA bitstreams before booting the kernel. Both define an
-> AXI interface to the on-board Epiphany processor.
-> 
-> Enable clocks FCLK0..FCLK3 for the Programmable Logic by default.
-> 
-> Otherwise accessing, e.g., the ESYSRESET register freezes the board,
-> as seen with the Epiphany SDK tools e-reset and e-hw-rev, using /dev/mem.
+Context would be useful at this point. I know (well, I /strongly/
+suspect) that Timur is working on ARM server support, where as most of
+the work you, Darren and Mika are doing is focused on getting into
+embedded.
 
-Yeah, this is the problem. Bypassing the kernel banging on memory
-directly through /dev/mem does not leave any chance of enabling clocks on
-demand through the proper interfaces.
+The reason I'm pushing for a pinctrl discussion at the ASWG level is
+because it affects OS portability. The OS should not not be required
+to have a driver for the pinctrl hardware in order to boot into a
+usable state (at least far enough to obtain further drivers). The same
+goes for clock controllers and power regulators. In x86 world this is
+the default assumption, but in the ARM world it needs to be
+re-enforced over and over to break out of the embedded mindset that a
+lot of us have.
 
-Though, this is a valid workaround for the immediate problem, longer
-term, you should consider adding some kind of proper kernel driver for
-this interface that would then use the clock framework to control the
-required clocks dynamically.
+So, to answer your question, what's the interim approach? I think it
+is two things:
+1) The base assumption must be that firmware sets up the pinctrl
+hardware into a usable state at boot and ACPI is used to adjust it as
+part of the normal OSPM runtime PM operations on devices.
 
-	Sören
+2) Where direct control over the pinctrl hardware is required by the
+OS, build it into the GPIO driver functionality (which from what I
+understand is exactly what Mika has done). If any data for the pinctrl
+is required from ACPI, it can be driver specific data, but any attempt
+to create a generic binding that the OS is expected to understand
+should be avoided. This is so we don't end up with the OS needing to
+understand more than is in the ACPI spec in order to boot.
+
+For a more generic solution (building into OSPM the understanding of
+pin groups and how to control them when power managing devices), there
+needs to be work at the ASWG level to figure out what it is going to
+look like.
+
+g.
+
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
