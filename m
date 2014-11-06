@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaKFIWF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:22:05 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:10689 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbaKFIWC (ORCPT
+	id S1751722AbaKFIXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:23:33 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54818 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaKFIXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:22:02 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 06 Nov 2014 00:22:47 -0800
-Message-ID: <545B2D6B.9030001@nvidia.com>
-Date: Thu, 6 Nov 2014 17:12:27 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 6 Nov 2014 03:23:30 -0500
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, <linux-tegra@vger.kernel.org>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 05/13] of: Document timings subnode of nvidia,tegra-mc
-References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com> <1414599796-30597-6-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1414599796-30597-6-git-send-email-tomeu.vizoso@collabora.com>
-X-NVConfidentiality: public
-X-Originating-IP: [10.19.57.128]
-X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
- HKMAIL102.nvidia.com (10.18.16.11)
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
+References: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
+	<20141105.163825.1433973842938441546.davem@davemloft.net>
+	<20141106010501.GA18339@gmail.com>
+	<20141105.211558.969082848816106943.davem@davemloft.net>
+	<CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
+Date: Thu, 6 Nov 2014 10:23:30 +0200
+Message-ID: <CAJ3xEMi8bGS2ez0aLsyF0z1Ag18b8YtAH23uCdjHtP1Kxp-7hg@mail.gmail.com>
+Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
+From: Or Gerlitz <gerlitz.or@gmail.com>
+To: Tom Herbert <therbert@google.com>
+Cc: David Miller <davem@davemloft.net>, Joe Stringer <joestringer@nicira.com>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>, Amir Vadai <amirv@mellanox.com>,
+        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
+        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
-> The MC driver needs some timing-specific information to program the EMEM during
-> a rate change of the EMC clock.
+On Thu, Nov 6, 2014 at 4:44 AM, Tom Herbert <therbert@google.com> wrote:
+> On Wed, Nov 5, 2014 at 6:15 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Joe Stringer <joestringer@nicira.com>
+>> Date: Wed, 5 Nov 2014 17:06:46 -0800
+>>
+>>> My impression was that the changes are more likely to be
+>>> hardware-specific (like the i40e changes) rather than software-specific,
+>>> like changes that might be integrated into the helper.
+>>
+>> I think there is more commonality amongst hardware capabilities,
+>> and this is why I want the helper to play itself out.
+>>
+>>> That said, I can rework for one helper. The way I see it would be the
+>>> same code as these patches, as "vxlan_gso_check(struct sk_buff *)" in
+>>> drivers/net/vxlan.c which would be called from each driver. Is that what
+>>> you had in mind?
+>>
+>> Yes.
 >
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> ---
->   .../memory-controllers/nvidia,tegra-mc.txt         | 46 +++++++++++++++++++++-
->   1 file changed, 44 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
-> index f3db93c..8467b8c 100644
-> --- a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
-> +++ b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
-> @@ -15,9 +15,26 @@ Required properties:
->   This device implements an IOMMU that complies with the generic IOMMU binding.
->   See ../iommu/iommu.txt for details.
->
-> -Example:
-> ---------
-> +The node should contain a "timings" subnode for each supported RAM type (see
-> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address being its
-> +RAM_CODE.
->
-> +Required properties for "timings" nodes :
-> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set is used
-> +for.
-> +
-> +Each "timings" node should contain a "timing" subnode for every supported EMC
-> +clock rate. The "timing" subnodes should have the clock rate in Hz as their unit
-> +address.
+> Note that this code is not VXLAN specific, it will also accept NVGRE
+> and GRE/UDP with keyid and TEB. I imagine all these cases should be
+> indistinguishable to the hardware so they probably just work (which
+> would be cool!). It might be better to name and locate the helper
+> function to reflect that.
 
-In patch 04, a similar sub-node is named "emc-timings". Shouldn't the 
-same name be used here for consistency?
-
-Also, it seems like there is a need for timing nodes in the MC to have 
-match timing nodes in the CAR. It would be nice to add that information 
-in all related bindings files.
-
-> +
-> +Required properties for "timing" nodes :
-> +- clock-frequency : Should contain the memory clock rate in Hz.
-> +- nvidia,emem-configuration : Values to be written to the EMEM register block,
-> +as specified by the board documentation.
-
-Could you add some more information about which range of registers we 
-are talking about, and whether they must all be specified or only part 
-of them?
-
-> +
-> +Example SoC include file:
-> +
-> +/ {
->   	mc: memory-controller@0,70019000 {
->   		compatible = "nvidia,tegra124-mc";
->   		reg = <0x0 0x70019000 0x0 0x1000>;
-> @@ -34,3 +51,28 @@ Example:
->   		...
->   		iommus = <&mc TEGRA_SWGROUP_SDMMC1A>;
->   	};
-> +};
-> +
-> +Example board file:
-> +
-> +/ {
-> +	memory-controller@0,70019000 {
-> +		timings@3 {
-> +			nvidia,ram-code = <3>;
-> +
-> +			timing@12750000 {
-> +				clock-frequency = <12750000>;
-> +
-> +				nvidia,emem-configuration = <
-> +					0x40040001 /* MC_EMEM_ARB_CFG */
-> +					0x8000000a /* MC_EMEM_ARB_OUTSTANDING_REQ */
-> +					0x00000001 /* MC_EMEM_ARB_TIMING_RCD */
-> +					0x00000001 /* MC_EMEM_ARB_TIMING_RP */
-> +					0x00000002 /* MC_EMEM_ARB_TIMING_RC */
-> +					0x00000000 /* MC_EMEM_ARB_TIMING_RAS */
-> +					0x00000002 /* MC_EMEM_ARB_TIMING_FAW */
-> +				>;
-
-Looking at the actual board files I suppose this example here is 
-incomplete. It would be nice to make this explicit, maybe by adding 
-"..." on a new line to indicate more registers are expected.
+Unlike the VXLAN case, currently there's no indication from the
+network stack towards the driver that an NVGRE tunnel was set, so in
+our case we're not arming the HW offloads for NVGRE. I'll look into
+that, maybe we can make them work always. Also re the math there to be
+the same for VXLAN/NVGRE  -- skb_inner_mac_header(skb) -
+skb_transport_header(skb) is exactly 8 (sizeof struct gre_base_hdr),
+isn't that?
