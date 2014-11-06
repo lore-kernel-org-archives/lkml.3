@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaKFWoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:44:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59077 "EHLO
+	id S1753289AbaKFWoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59098 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaKFWoB (ORCPT
+	with ESMTP id S1753246AbaKFWoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:01 -0500
+	Thu, 6 Nov 2014 17:44:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlad Catoi <vladcatoi@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 081/162] ALSA: usb-audio: Add support for Steinberg UR22 USB interface
-Date: Thu,  6 Nov 2014 14:35:45 -0800
-Message-Id: <1415313426-9622-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 029/162] sparc64: Fix pcr_ops initialization and usage bugs.
+Date: Thu,  6 Nov 2014 14:34:53 -0800
+Message-Id: <1415313426-9622-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,72 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Catoi <vladcatoi@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit f0b127fbfdc8756eba7437ab668f3169280bd358 upstream.
+[ Upstream commit 8bccf5b313180faefce38e0d1140f76e0f327d28 ]
 
-Adding support for Steinberg UR22 USB interface via quirks table patch
+Christopher reports that perf_event_print_debug() can crash in uniprocessor
+builds.  The crash is due to pcr_ops being NULL.
 
-See Ubuntu bug report:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
-Also see threads:
-http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
-http://www.steinberg.net/forums/viewtopic.php?t=62290
+This happens because pcr_arch_init() is only invoked by smp_cpus_done() which
+only executes in SMP builds.
 
-Tested by at least 4 people judging by the threads.
-Did not test MIDI interface, but audio output and capture both are
-functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
-Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
+init_hw_perf_events() is closely intertwined with pcr_ops being setup properly,
+therefore:
 
-Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+1) Call pcr_arch_init() early on from init_hw_perf_events(), instead of
+   from smp_cpus_done().
+
+2) Do not hook up a PMU type if pcr_ops is NULL after pcr_arch_init().
+
+3) Move init_hw_perf_events to a later initcall so that it we will be
+   sure to invoke pcr_arch_init() after all cpus are brought up.
+
+Finally, guard the one naked sequence of pcr_ops dereferences in
+__global_pmu_self() with an appropriate NULL check.
+
+Reported-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/quirks-table.h | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ arch/sparc/kernel/perf_event.c | 7 +++++--
+ arch/sparc/kernel/process_64.c | 3 +++
+ arch/sparc/kernel/smp_64.c     | 1 -
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-index 0e52836..8590a32 100644
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -386,6 +386,36 @@ YAMAHA_DEVICE(0x105d, NULL),
- 	}
- },
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index b5c38fa..857baca 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1671,9 +1671,12 @@ static bool __init supported_pmu(void)
+ 
+ int __init init_hw_perf_events(void)
  {
-+	USB_DEVICE(0x0499, 0x1509),
-+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-+		/* .vendor_name = "Yamaha", */
-+		/* .product_name = "Steinberg UR22", */
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 3,
-+				.type = QUIRK_MIDI_YAMAHA
-+			},
-+			{
-+				.ifnum = 4,
-+				.type = QUIRK_IGNORE_INTERFACE
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
-+{
- 	USB_DEVICE(0x0499, 0x150a),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		/* .vendor_name = "Yamaha", */
++	int err;
++
+ 	pr_info("Performance events: ");
+ 
+-	if (!supported_pmu()) {
++	err = pcr_arch_init();
++	if (err || !supported_pmu()) {
+ 		pr_cont("No support for PMU type '%s'\n", sparc_pmu_type);
+ 		return 0;
+ 	}
+@@ -1685,7 +1688,7 @@ int __init init_hw_perf_events(void)
+ 
+ 	return 0;
+ }
+-early_initcall(init_hw_perf_events);
++pure_initcall(init_hw_perf_events);
+ 
+ void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ 			   struct pt_regs *regs)
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index d7b4967..c6f7113 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -306,6 +306,9 @@ static void __global_pmu_self(int this_cpu)
+ 	struct global_pmu_snapshot *pp;
+ 	int i, num;
+ 
++	if (!pcr_ops)
++		return;
++
+ 	pp = &global_cpu_snapshot[this_cpu].pmu;
+ 
+ 	num = 1;
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 8416d7f..8311f3d 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -1395,7 +1395,6 @@ void __cpu_die(unsigned int cpu)
+ 
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+-	pcr_arch_init();
+ }
+ 
+ void smp_send_reschedule(int cpu)
 -- 
 1.9.1
 
