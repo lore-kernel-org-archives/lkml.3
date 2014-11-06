@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaKFWjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:39:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58550 "EHLO
+	id S1752037AbaKFWjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:39:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58563 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964AbaKFWjG (ORCPT
+	with ESMTP id S1751964AbaKFWjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:39:06 -0500
+	Thu, 6 Nov 2014 17:39:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+Cc: Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 135/162] Revert "iwlwifi: mvm: treat EAPOLs like mgmt frames wrt rate"
-Date: Thu,  6 Nov 2014 14:36:39 -0800
-Message-Id: <1415313426-9622-136-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 119/162] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Date: Thu,  6 Nov 2014 14:36:23 -0800
+Message-Id: <1415313426-9622-120-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,77 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Frans Klaver <frans.klaver@xsens.com>
 
-commit 1ffde699aae127e7abdb98dbdedc2cc6a973a1a1 upstream.
+commit edd74ffab1f6909eee400c7de8ce621870aacac9 upstream.
 
-This reverts commit aa11bbf3df026d6b1c6b528bef634fd9de7c2619.
-This commit was causing connection issues and is not needed
-if IWL_MVM_RS_RSSI_BASED_INIT_RATE is set to false by default.
+Add new IDs for the Xsens Awinda Station and Awinda Dongle.
 
-Regardless of the issues mentioned above, this patch added the
-following WARNING:
+While at it, order the definitions by PID and add a logical separation
+between devices using Xsens' VID and those using FTDI's VID.
 
-WARNING: CPU: 0 PID: 3946 at drivers/net/wireless/iwlwifi/mvm/tx.c:190 iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]()
-Got an HT rate for a non data frame 0x8
-CPU: 0 PID: 3946 Comm: wpa_supplicant Tainted: G           O   3.17.0+ #6
-Hardware name: LENOVO 20ANCTO1WW/20ANCTO1WW, BIOS GLET71WW (2.25 ) 07/02/2014
- 0000000000000009 ffffffff814fa911 ffff8804288db8f8 ffffffff81064f52
- 0000000000001808 ffff8804288db948 ffff88040add8660 ffff8804291b5600
- 0000000000000000 ffffffff81064fb7 ffffffffa07b73d0 0000000000000020
-Call Trace:
- [<ffffffff814fa911>] ? dump_stack+0x41/0x51
- [<ffffffff81064f52>] ? warn_slowpath_common+0x72/0x90
- [<ffffffff81064fb7>] ? warn_slowpath_fmt+0x47/0x50
- [<ffffffffa07a39ea>] ? iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]
- [<ffffffffa07a3cf8>] ? iwl_mvm_tx_skb+0x48/0x3c0 [iwlmvm]
- [<ffffffffa079cb9b>] ? iwl_mvm_mac_tx+0x7b/0x180 [iwlmvm]
- [<ffffffffa0746ce9>] ? __ieee80211_tx+0x2b9/0x3c0 [mac80211]
- [<ffffffffa07492f3>] ? ieee80211_tx+0xb3/0x100 [mac80211]
- [<ffffffffa0749c49>] ? ieee80211_subif_start_xmit+0x459/0xca0 [mac80211]
- [<ffffffff814116e7>] ? dev_hard_start_xmit+0x337/0x5f0
- [<ffffffff81430d46>] ? sch_direct_xmit+0x96/0x1f0
- [<ffffffff81411ba3>] ? __dev_queue_xmit+0x203/0x4f0
- [<ffffffff8142f670>] ? ether_setup+0x70/0x70
- [<ffffffff814e96a1>] ? packet_sendmsg+0xf81/0x1110
- [<ffffffff8140625c>] ? skb_free_datagram+0xc/0x40
- [<ffffffff813f7538>] ? sock_sendmsg+0x88/0xc0
- [<ffffffff813f7274>] ? move_addr_to_kernel.part.20+0x14/0x60
- [<ffffffff811c47c2>] ? __inode_wait_for_writeback+0x62/0xb0
- [<ffffffff813f7a91>] ? SYSC_sendto+0xf1/0x180
- [<ffffffff813f88f9>] ? __sys_recvmsg+0x39/0x70
- [<ffffffff8150066d>] ? system_call_fastpath+0x1a/0x1f
----[ end trace cc19a150d311fc63 ]---
-
-which was reported here: https://bugzilla.kernel.org/show_bug.cgi?id=85691
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/mvm/tx.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/tx.c b/drivers/net/wireless/iwlwifi/mvm/tx.c
-index edf9f7b..c8f6974 100644
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -173,14 +173,10 @@ static void iwl_mvm_set_tx_cmd_rate(struct iwl_mvm *mvm,
- 
- 	/*
- 	 * for data packets, rate info comes from the table inside the fw. This
--	 * table is controlled by LINK_QUALITY commands. Exclude ctrl port
--	 * frames like EAPOLs which should be treated as mgmt frames. This
--	 * avoids them being sent initially in high rates which increases the
--	 * chances for completion of the 4-Way handshake.
-+	 * table is controlled by LINK_QUALITY commands
- 	 */
- 
--	if (ieee80211_is_data(fc) && sta &&
--	    !(info->control.flags & IEEE80211_TX_CTRL_PORT_CTRL_PROTO)) {
-+	if (ieee80211_is_data(fc) && sta) {
- 		tx_cmd->initial_rate_index = 0;
- 		tx_cmd->tx_flags |= cpu_to_le32(TX_CMD_FLG_STA_RATE);
- 		return;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index c903b0b..6c69d1f 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -675,6 +675,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 5937b2d..b68084c 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -143,8 +143,12 @@
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
+ #define XSENS_VID		0x2639
+-#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_AWINDA_STATION_PID 0x0101
++#define XSENS_AWINDA_DONGLE_PID 0x0102
+ #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++
++/* Xsens devices using FTDI VID */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
 -- 
 1.9.1
 
