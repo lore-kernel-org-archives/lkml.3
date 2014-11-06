@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbaKFWxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:53:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59063 "EHLO
+	id S1753783AbaKFWxX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:53:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59054 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209AbaKFWn5 (ORCPT
+	with ESMTP id S1753194AbaKFWnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:57 -0500
+	Thu, 6 Nov 2014 17:43:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 067/162] ext4: don't orphan or truncate the boot loader inode
-Date: Thu,  6 Nov 2014 14:35:31 -0800
-Message-Id: <1415313426-9622-68-git-send-email-kamal@canonical.com>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 063/162] ext4: grab missed write_count for EXT4_IOC_SWAP_BOOT
+Date: Thu,  6 Nov 2014 14:35:27 -0800
+Message-Id: <1415313426-9622-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -26,73 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit e2bfb088fac03c0f621886a04cffc7faa2b49b1d upstream.
+commit 3e67cfad22230ebed85c56cbe413876f33fea82b upstream.
 
-The boot loader inode (inode #5) should never be visible in the
-directory hierarchy, but it's possible if the file system is corrupted
-that there will be a directory entry that points at inode #5.  In
-order to avoid accidentally trashing it, when such a directory inode
-is opened, the inode will be marked as a bad inode, so that it's not
-possible to modify (or read) the inode from userspace.
+Otherwise this provokes complain like follows:
+WARNING: CPU: 12 PID: 5795 at fs/ext4/ext4_jbd2.c:48 ext4_journal_check_start+0x4e/0xa0()
+Modules linked in: brd iTCO_wdt lpc_ich mfd_core igb ptp dm_mirror dm_region_hash dm_log dm_mod
+CPU: 12 PID: 5795 Comm: python Not tainted 3.17.0-rc2-00175-gae5344f #158
+Hardware name: Intel Corporation W2600CR/W2600CR, BIOS SE5C600.86B.99.99.x028.061320111235 06/13/2011
+ 0000000000000030 ffff8808116cfd28 ffffffff815c7dfc 0000000000000030
+ 0000000000000000 ffff8808116cfd68 ffffffff8106ce8c ffff8808116cfdc8
+ ffff880813b16000 ffff880806ad6ae8 ffffffff81202008 0000000000000000
+Call Trace:
+ [<ffffffff815c7dfc>] dump_stack+0x51/0x6d
+ [<ffffffff8106ce8c>] warn_slowpath_common+0x8c/0xc0
+ [<ffffffff81202008>] ? ext4_ioctl+0x9e8/0xeb0
+ [<ffffffff8106ceda>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8122867e>] ext4_journal_check_start+0x4e/0xa0
+ [<ffffffff81228c10>] __ext4_journal_start_sb+0x90/0x110
+ [<ffffffff81202008>] ext4_ioctl+0x9e8/0xeb0
+ [<ffffffff8107b0bd>] ? ptrace_stop+0x24d/0x2f0
+ [<ffffffff81088530>] ? alloc_pid+0x480/0x480
+ [<ffffffff8107b1f2>] ? ptrace_do_notify+0x92/0xb0
+ [<ffffffff81186545>] do_vfs_ioctl+0x4e5/0x550
+ [<ffffffff815cdbcb>] ? _raw_spin_unlock_irq+0x2b/0x40
+ [<ffffffff81186603>] SyS_ioctl+0x53/0x80
+ [<ffffffff815ce2ce>] tracesys+0xd0/0xd5
 
-Unfortunately, when we unlink this (invalid/illegal) directory entry,
-we will put the bad inode on the ophan list, and then when try to
-unlink the directory, we don't actually remove the bad inode from the
-orphan list before freeing in-memory inode structure.  This means the
-in-memory orphan list is corrupted, leading to a kernel oops.
-
-In addition, avoid truncating a bad inode in ext4_destroy_inode(),
-since truncating the boot loader inode is not a smart thing to do.
-
-Reported-by: Sami Liedes <sami.liedes@iki.fi>
 Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[ kamal: backport to 3.13-stable (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/inode.c | 7 +++----
- fs/ext4/namei.c | 2 +-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ fs/ext4/ioctl.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index fd6501e3..37d3b1a 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -221,16 +221,15 @@ void ext4_evict_inode(struct inode *inode)
- 		goto no_delete;
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index 4a5fe55..2c3541b 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -548,9 +548,17 @@ group_add_out:
  	}
  
--	if (!is_bad_inode(inode))
--		dquot_initialize(inode);
-+	if (is_bad_inode(inode))
-+		goto no_delete;
-+	dquot_initialize(inode);
+ 	case EXT4_IOC_SWAP_BOOT:
++	{
++		int err;
+ 		if (!(filp->f_mode & FMODE_WRITE))
+ 			return -EBADF;
+-		return swap_inode_boot_loader(sb, inode);
++		err = mnt_want_write_file(filp);
++		if (err)
++			return err;
++		err = swap_inode_boot_loader(sb, inode);
++		mnt_drop_write_file(filp);
++		return err;
++	}
  
- 	if (ext4_should_order_data(inode))
- 		ext4_begin_ordered_truncate(inode, 0);
- 	truncate_inode_pages(&inode->i_data, 0);
- 
- 	WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count));
--	if (is_bad_inode(inode))
--		goto no_delete;
- 
- 	/*
- 	 * Protect us against freezing - iput() caller didn't have to have any
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 5a0408d..d4fa3ed 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2554,7 +2554,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
- 	struct ext4_iloc iloc;
- 	int err = 0, rc;
- 
--	if (!EXT4_SB(sb)->s_journal)
-+	if (!EXT4_SB(sb)->s_journal || is_bad_inode(inode))
- 		return 0;
- 
- 	mutex_lock(&EXT4_SB(sb)->s_orphan_lock);
+ 	case EXT4_IOC_RESIZE_FS: {
+ 		ext4_fsblk_t n_blocks_count;
 -- 
 1.9.1
 
