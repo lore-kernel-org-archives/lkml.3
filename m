@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaKFV34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:29:56 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:51477 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaKFV3z (ORCPT
+	id S1751249AbaKFVcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:32:15 -0500
+Received: from smtprelay0045.hostedemail.com ([216.40.44.45]:59665 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750706AbaKFVcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:29:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141106183808.GH19702@e104818-lin.cambridge.arm.com>
-References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
-	<1414496662-25202-2-git-send-email-will.deacon@arm.com>
-	<CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
-	<CA+55aFwpOCeXdThX3zB64AU4hFwufD6UdJDi2tkD8Q7yEV2pOA@mail.gmail.com>
-	<20141029194738.GA29911@arm.com>
-	<20141104142955.GA24816@e104818-lin.cambridge.arm.com>
-	<CA+55aFzBggoXtNXQeng5d_mRoDnaMBE5Y+URs+PHR67nUpMtaw@mail.gmail.com>
-	<20141106135740.GC19702@e104818-lin.cambridge.arm.com>
-	<CA+55aFzQM-yvvXYENiviLBm0=jiZoO7xPmz5mLowuTb-Pb8e6Q@mail.gmail.com>
-	<20141106183808.GH19702@e104818-lin.cambridge.arm.com>
-Date: Thu, 6 Nov 2014 13:29:54 -0800
-X-Google-Sender-Auth: bkYJjRSdH-00o3r4XFhC3dj1TFM
-Message-ID: <CA+55aFwE847pZgOpcLuZah6qhMDPV1v8oUpTV1_ROQNTtWhZKQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Nov 2014 16:32:14 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3868:3870:3871:3872:4321:4559:4605:5007:6119:6261:7576:7903:7904:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: berry88_4d2f2138c304a
+X-Filterd-Recvd-Size: 1635
+Message-ID: <1415309523.21965.2.camel@perches.com>
+Subject: Re: [PATCH] lib/halfmd4: make build optional
+From: Joe Perches <joe@perches.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Aristeu Rozanski <arozansk@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Josh Triplett <josh@joshtriplett.org>
+In-Reply-To: <1415309253-13019-1-git-send-email-aris@redhat.com>
+References: <1415309253-13019-1-git-send-email-aris@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 06 Nov 2014 13:32:03 -0800
+Mime-Version: 1.0
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 10:38 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Thu, Nov 06, 2014 at 05:53:58PM +0000, Linus Torvalds wrote:
->
-> Sorry, I wasn't clear enough about the "increments" part. I agreed with
-> not using end = start + PMD_SIZE/PAGE_SIZE from your previous email
-> already.
+On Thu, 2014-11-06 at 16:27 -0500, Aristeu Rozanski wrote:
+> From: Aristeu Rozanski <arozansk@redhat.com>
+> 
+> halfmd4 currently is built unconditionally:
+> 	text    data     bss     dec     hex filename
+> 	 801     176       8     985     3d9 lib/halfmd4.o
+> 	 801     176       8     985     3d9 (TOTALS)
+> 
+> and it's used by ext3 and ext4. This patch is useful for situations
+> in which memory footprint is a concern and those filesystems aren't
+> used.
+[]
+> diff --git a/lib/Kconfig b/lib/Kconfig
+[]
+> +config HALF_MD4
+> +	bool "Half MD4 transform"
+> +	default y
 
-Ahh, I misunderstood. You're really just after the granularity of tlb flushes.
+why not default n ? (and in the other patch)
 
-That's fine. That makes sense. In fact, how about adding "granularity"
-to the mmu_gather structure, and then doing:\
-
- - in __tlb_reset_range(), setting it to ~0ul
-
- - add "granularity" to __tlb_adjust_range(), and make it do something like
-
-       if (!tlb->fullmm) {
-               tlb->granularity = min(tlb->granularity, granularity);
-               tlb->start = min(tlb->start, address);
-               tlb->end = max(tlb->end, address+1);
-       }
-
-and then the TLB flush logic would basically do
-
-   address = tlb->start;
-   do {
-        flush(address);
-        if (address + tlb->granularity < address)
-                break;
-        address = address + tlb->granularity;
-   } while (address < tlb->end);
-
-or something like that.
-
-Now, if you unmap mixed ranges of large-pages and regular pages, you'd
-still have that granularity of one page, but quite frankly, if you do
-that, you probably deserve it. The common case is almost certainly
-going to be just "unmap large pages" or "unmap normal pages".
-
-And if it turns out that I'm completely wrong, and mixed granularities
-are common, maybe there could be some hack in the "tlb->granularity"
-calculations that just forces a TLB flush when the granularity
-changes.
-
-Hmm?
-
-                 Linus
