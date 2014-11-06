@@ -1,138 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaKFV1t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:27:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43822 "EHLO mx1.redhat.com"
+	id S1751478AbaKFV15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:27:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167AbaKFV1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:27:47 -0500
+	id S1751141AbaKFV1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:27:52 -0500
 From: Aristeu Rozanski <aris@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Aristeu Rozanski <arozansk@redhat.com>, Changli Gao <xiaosuo@gmail.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, Eric Paris <eparis@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Jesse Gross <jesse@nicira.com>, Jonathan Corbet <corbet@lwn.net>,
+Cc: Aristeu Rozanski <arozansk@redhat.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
         Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH] lib/flex_array: make build optional
-Date: Thu,  6 Nov 2014 16:27:21 -0500
-Message-Id: <1415309241-12971-1-git-send-email-aris@redhat.com>
+Subject: [PATCH] lib/halfmd4: make build optional
+Date: Thu,  6 Nov 2014 16:27:33 -0500
+Message-Id: <1415309253-13019-1-git-send-email-aris@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Aristeu Rozanski <arozansk@redhat.com>
 
-flex_array currently is built unconditionally:
+halfmd4 currently is built unconditionally:
 	text    data     bss     dec     hex filename
-	2294    1008    1568    4870    1306 lib/flex_array.o
-	2294    1008    1568    4870    1306 (TOTALS)
+	 801     176       8     985     3d9 lib/halfmd4.o
+	 801     176       8     985     3d9 (TOTALS)
 
-and it's used by procfs, selinux and openvswitch. This patch is
-useful for situations in which memory footprint is a concern and
-those features aren't used.
+and it's used by ext3 and ext4. This patch is useful for situations
+in which memory footprint is a concern and those filesystems aren't
+used.
 
-Cc: Changli Gao <xiaosuo@gmail.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Jesse Gross <jesse@nicira.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Pravin Shelar <pshelar@nicira.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
 ---
- fs/proc/Kconfig          |  1 +
- lib/Kconfig              | 10 ++++++++++
- lib/Makefile             |  3 ++-
- net/openvswitch/Kconfig  |  1 +
- security/selinux/Kconfig |  1 +
- 5 files changed, 15 insertions(+), 1 deletion(-)
+ fs/ext3/Kconfig | 1 +
+ fs/ext4/Kconfig | 1 +
+ lib/Kconfig     | 7 +++++++
+ lib/Makefile    | 3 ++-
+ 4 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-index 2183fcf..2d624b7 100644
---- a/fs/proc/Kconfig
-+++ b/fs/proc/Kconfig
+diff --git a/fs/ext3/Kconfig b/fs/ext3/Kconfig
+index e8c6ba0..a6ab4e8 100644
+--- a/fs/ext3/Kconfig
++++ b/fs/ext3/Kconfig
 @@ -1,6 +1,7 @@
- config PROC_FS
- 	bool "/proc file system support" if EXPERT
- 	default y
-+	select FLEX_ARRAY
+ config EXT3_FS
+ 	tristate "Ext3 journalling file system support"
+ 	select JBD
++	select HALF_MD4
  	help
- 	  This is a virtual file system providing information about the status
- 	  of the system. "Virtual" means that it doesn't take up any space on
+ 	  This is the journalling version of the Second extended file system
+ 	  (often called ext3), the de facto standard Linux file system
+diff --git a/fs/ext4/Kconfig b/fs/ext4/Kconfig
+index efea5d5..cbb56ee 100644
+--- a/fs/ext4/Kconfig
++++ b/fs/ext4/Kconfig
+@@ -4,6 +4,7 @@ config EXT4_FS
+ 	select CRC16
+ 	select CRYPTO
+ 	select CRYPTO_CRC32C
++	select HALF_MD4
+ 	help
+ 	  This is the next generation of the ext3 filesystem.
+ 
 diff --git a/lib/Kconfig b/lib/Kconfig
-index 54cf309..675920b 100644
+index 675920b..108196c 100644
 --- a/lib/Kconfig
 +++ b/lib/Kconfig
-@@ -432,6 +432,16 @@ config GLOB_SELFTEST
- 	  module load) by a small amount, so you're welcome to play with
- 	  it, but you probably don't need it.
+@@ -180,6 +180,13 @@ config CRC8
+ 	  when they need to do cyclic redundancy check according CRC8
+ 	  algorithm. Module will be called crc8.
  
-+config FLEX_ARRAY
-+	bool "Flexible array"
-+	default n
++config HALF_MD4
++	bool "Half MD4 transform"
++	default y
 +	help
-+	  This option enables an implementation of flexible arrays which
-+	  allows creating arrays of fixed size elements with an arbritrary
-+	  size without requiring the single allocation of a contiguous area.
++	  This option enables a reduced (32 bit output) version of MD4
++	  transform.
 +
-+	  See Documentation/flexible-arrays.txt
-+
- #
- # Netlink attribute parsing support is select'ed if needed
- #
+ config AUDIT_GENERIC
+ 	bool
+ 	depends on AUDIT && !AUDIT_ARCH
 diff --git a/lib/Makefile b/lib/Makefile
-index 7512dc9..9c12cbc 100644
+index 9c12cbc..53fd120 100644
 --- a/lib/Makefile
 +++ b/lib/Makefile
-@@ -24,7 +24,7 @@ obj-y	+= lockref.o
+@@ -22,7 +22,7 @@ lib-$(CONFIG_SMP) += cpumask.o
+ lib-y	+= kobject.o klist.o
+ obj-y	+= lockref.o
  
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+-obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
++obj-y += bcd.o div64.o sort.o parser.o debug_locks.o random32.o \
  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--	 gcd.o lcm.o list_sort.o uuid.o flex_array.o iovec.o clz_ctz.o \
-+	 gcd.o lcm.o list_sort.o uuid.o iovec.o clz_ctz.o \
+ 	 gcd.o lcm.o list_sort.o uuid.o iovec.o clz_ctz.o \
  	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
- 	 percpu-refcount.o percpu_ida.o hash.o rhashtable.o
- obj-y += string_helpers.o
-@@ -35,6 +35,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
- obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
- obj-$(CONFIG_TEST_BPF) += test_bpf.o
- obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
-+obj-$(CONFIG_FLEX_ARRAY) += flex_array.o
+@@ -74,6 +74,7 @@ obj-$(CONFIG_CRC7)	+= crc7.o
+ obj-$(CONFIG_LIBCRC32C)	+= libcrc32c.o
+ obj-$(CONFIG_CRC8)	+= crc8.o
+ obj-$(CONFIG_GENERIC_ALLOCATOR) += genalloc.o
++obj-$(CONFIG_HALF_MD4) += halfmd4.o
  
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/net/openvswitch/Kconfig b/net/openvswitch/Kconfig
-index ba3bb82..1d979ce 100644
---- a/net/openvswitch/Kconfig
-+++ b/net/openvswitch/Kconfig
-@@ -5,6 +5,7 @@
- config OPENVSWITCH
- 	tristate "Open vSwitch"
- 	select LIBCRC32C
-+	select FLEX_ARRAY
- 	---help---
- 	  Open vSwitch is a multilayer Ethernet switch targeted at virtualized
- 	  environments.  In addition to supporting a variety of features
-diff --git a/security/selinux/Kconfig b/security/selinux/Kconfig
-index bca1b74..cfcc7c1 100644
---- a/security/selinux/Kconfig
-+++ b/security/selinux/Kconfig
-@@ -2,6 +2,7 @@ config SECURITY_SELINUX
- 	bool "NSA SELinux Support"
- 	depends on SECURITY_NETWORK && AUDIT && NET && INET
- 	select NETWORK_SECMARK
-+	select FLEX_ARRAY
- 	default n
- 	help
- 	  This selects NSA Security-Enhanced Linux (SELinux).
+ obj-$(CONFIG_ZLIB_INFLATE) += zlib_inflate/
+ obj-$(CONFIG_ZLIB_DEFLATE) += zlib_deflate/
 -- 
 1.8.3.1
 
