@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaKFCH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:07:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45359 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883AbaKFCH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:07:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="484928043"
-Date: Thu, 6 Nov 2014 09:46:34 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Wanpeng Li <kernellwp@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
-        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2] sched/deadline: support dl task migration during
- cpu hotplug
-Message-ID: <20141106014634.GA25640@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1415177517-7189-1-git-send-email-wanpeng.li@linux.intel.com>
- <20141105105058.GQ3337@twins.programming.kicks-ass.net>
- <545A0317.4090406@gmail.com>
- <20141105125254.GT3337@twins.programming.kicks-ass.net>
+	id S1751346AbaKFCJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:09:49 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:43317 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaKFCJs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 21:09:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141105125254.GT3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141105100912.GD27686@lukather>
+References: <1415074039-16590-1-git-send-email-wens@csie.org>
+ <1415074039-16590-2-git-send-email-wens@csie.org> <20141104165733.GI26729@lukather>
+ <CAGb2v65VojZVEijdjXYGkMud7dMFzMzagfN=_4S3msZygu3YPQ@mail.gmail.com> <20141105100912.GD27686@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 6 Nov 2014 10:09:27 +0800
+X-Google-Sender-Auth: T-3UWc3elucxZ5f68JralNFzOyk
+Message-ID: <CAGb2v64RT4PKTji2KfDTFfc8b_kiTk0Vh49nEE9ZJukum7h2_Q@mail.gmail.com>
+Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and resets
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-On Wed, Nov 05, 2014 at 01:52:54PM +0100, Peter Zijlstra wrote:
->On Wed, Nov 05, 2014 at 06:59:35PM +0800, Wanpeng Li wrote:
->> Hi Peter,
->> On 14/11/5 下午6:50, Peter Zijlstra wrote:
->> >On Wed, Nov 05, 2014 at 04:51:57PM +0800, Wanpeng Li wrote:
->> >>Note: dl task can be migrated successfully if rq is offline currently, however,
->> >>I'm still not sure why task_rq(task)->rd->span just include the cpu which the dl
->> >>task previous running on, so cpu_active_mask is used in the patch.
->> >>
->> >>Peterz, Juri?
->> >So the root domain span is for exclusive cpusets
->> >(Documentation/cgroups/cpusets.txt) where we fully separate sets of CPUs
->> >and have no load-balancing between the sets.
+On Wed, Nov 5, 2014 at 6:09 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Wed, Nov 05, 2014 at 06:02:35PM +0800, Chen-Yu Tsai wrote:
+>> >> +static void __init sunxi_usb_clk_setup(struct device_node *node,
+>> >> +                                    const struct usb_clk_data *data,
+>> >> +                                    spinlock_t *lock)
+>> >> +{
+>> >> +     struct clk_onecell_data *clk_data;
+>> >> +     struct usb_reset_data *reset_data;
+>> >> +     const char *clk_parent;
+>> >> +     const char *clk_name;
+>> >> +     void __iomem *reg;
+>> >> +     int qty;
+>> >> +     int i = 0;
+>> >> +     int j = 0;
+>> >> +
+>> >> +     reg = of_iomap(node, 0);
 >> >
->> >For 'normal' setups the rd->span is the entire machine, but using
->> >cpusets you can create more (smaller) domains.
->> 
->> I don't setup any cpusets related stuff, however, task_rq(task)->rd->span
->> just include the cpu which the dl task previous running on instead of the
->> entire machine in find_later_rq().
+>> > of_io_request_and_map?
+>>
+>> OK. About that, any recommended naming style for the 3rd argument?
+>> Maybe the driver name "clk_sun9i_usb"? Or just a generic name like
+>> "usb_clk"?
+>>
+>> I'm asking now as we'll likely be changing the existing drivers to
+>> use it as well.
 >
->Ah, it could be that for offline cpus we have a singleton rd. Lemme try
+> I don't really have a preference. Maybe the DT node name would be both
+> the easier and better solution.
 
-I still cannot find where build the singleton rd in the codes, could you
-point out?
+Using of_node_full_name() then.
 
-Regards,
-Wanpeng Li
+> [...]
+>
+>> >> +static void __init sun9i_a80_usb_mod_setup(struct device_node *node)
+>> >> +{
+>> >> +     /* AHB1 gate must be enabled to access registers */
+>> >> +     struct clk *ahb = of_clk_get(node, 0);
+>> >> +
+>> >> +     WARN_ON(IS_ERR(ahb));
+>> >> +     clk_prepare_enable(ahb);
+>> >
+>> > Hmmmm. That look off.
+>> >
+>> > Why do you need the clock to be enabled all the time? Isn't the CCF
+>> > already taking care of enabling the parent clock whenever it needs to
+>> > access any register?
+>>
+>> There are also resets in the same block. That and I couldn't get it
+>> working without enabling the clock beforehand.
+>
+> Ah, right.
+>
+> What happens if you just enable and disable the clocks in the
+> reset_assert and reset_deassert right before and after accessing the
+> registers?
 
->and remember wth we did there.
+That doesn't work either. I forgot to mention that most of the clock
+gates have the peripheral pll as their parent, not the ahb clock gate.
 
+Since most of the clocks are special clocks @ 12M, 48M, or 480M, which
+on previous SoCs were driven by PLL6 or another special PLL, it seems
+to make sense to assume the same on A80 and set them this way.
+
+ChenYu
