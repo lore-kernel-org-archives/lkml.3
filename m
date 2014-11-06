@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaKFLwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 06:52:44 -0500
-Received: from antispam.ahnlab.com ([210.121.169.55]:57445 "EHLO
-	antispam.ahnlab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaKFLwl (ORCPT
+	id S1751313AbaKFLyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 06:54:44 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:40927 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751096AbaKFLyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 06:52:41 -0500
-X-Original-SENDERIP: 172.16.11.209
-X-Original-MAILFROM: suhyun.park@ahnlab.com
-From: =?utf-8?B?67CV7IiY7ZiE?= <suhyun.park@ahnlab.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "bridge@lists.linux-foundation.org" 
-	<bridge@lists.linux-foundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] bridge: missing null bridge device check causing null
- pointer dereference (bugfix)
-Thread-Topic: [PATCH] bridge: missing null bridge device check causing null
- pointer dereference (bugfix)
-Thread-Index: AQHP+YqrhNePGBbJkEOg7Nz1l90pj5xSlqaAgACjdfD//6digIAAmgCg
-Date: Thu, 6 Nov 2014 11:52:33 +0000
-Message-ID: <8D1F1238A24CE743B8F3CED0F137C69E408AA143@EXMB02.ahnbang.ahnlab.com>
-References: <1415255192-13584-1-git-send-email-suhyun.park@ahnlab.com>
-	 <545B1E27.3080302@lab.ntt.co.jp>
-	 <8D1F1238A24CE743B8F3CED0F137C69E408AA087@EXMB02.ahnbang.ahnlab.com>
- <1415273711.13896.67.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1415273711.13896.67.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: ko-KR, en-US
-Content-Language: ko-KR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.20.32.26]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 6 Nov 2014 06:54:41 -0500
+Message-ID: <545B6144.2020503@st.com>
+Date: Thu, 6 Nov 2014 12:53:40 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kernel@stlinux.com>, Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x Driver
+ defines
+References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org> <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org> <545B1C53.9010406@ti.com> <545B3FA4.8040109@st.com> <20141106112825.GC26543@x1>
+In-Reply-To: <20141106112825.GC26543@x1>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-06_04:2014-11-06,2014-11-06,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sA6BqnKx002537
-
-My appologies,
-
-I was working on kernel 3.2.30 when I hit the crash. I only looked at the up-to-date kernel for br_handle_frame function where I still found "p->state" reference.
-
-Please disregard my patch.
-
-Thanks,
-Su-Hyun Park
-
------Original Message-----
-From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
-Sent: Thursday, November 06, 2014 8:35 PM
-To: ë°•ìˆ˜í˜„
-Cc: Toshiaki Makita; Stephen Hemminger; David S. Miller; bridge@lists.linux-foundation.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bridge: missing null bridge device check causing null pointer dereference (bugfix)
-
-On Thu, 2014-11-06 at 07:58 +0000, ë°•ìˆ˜í˜„ wrote:
-> >-----Original Message-----
-> >From: Toshiaki Makita [mailto:makita.toshiaki@lab.ntt.co.jp]
-> >Sent: Thursday, November 06, 2014 4:07 PM
-> >To: ë°•ìˆ˜í˜„; Stephen Hemminger; David S. Miller
-> >Cc: bridge@lists.linux-foundation.org; netdev@vger.kernel.org; linux- 
-> >kernel@vger.kernel.org
-> >Subject: Re: [PATCH] bridge: missing null bridge device check causing 
-> >null pointer dereference (bugfix)
-> >
-> >On 2014/11/06 15:26, Su-Hyun Park wrote:
-> >> the bridge device can be null if the bridge is being deleted while 
-> >> processing the packet, which causes the null pointer dereference in
-> >switch statement.
-> >
-> >How can this happen??
-> >It is guarded by rcu.
-> >netdev_rx_handler_unregister() ensures rx_handler_data is non NULL.
-> >
-> 
-> The RCU protect rx_handler_data, not the bridge member port. It can be NULL according to below code.
-> 
-
-Where do you find this 'below code' ?
-
-Are you sending a patch for an old linux kernel ?
-
-> static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev) {
-> 	struct net_bridge_port *port = rcu_dereference(dev->rx_handler_data);
-> 	return br_port_exists(dev) ? port : NULL; }
-
-Actual code is :
-
-static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev) {
-	return rcu_dereference(dev->rx_handler_data);
-}
 
 
-> 
-> The crash happens at the below switch statement in br_handle_frame, where p is NULL.
-> 
-> 	switch (p->state)
+On 11/06/2014 12:28 PM, Lee Jones wrote:
+> On Thu, 06 Nov 2014, Maxime Coquelin wrote:
+>
+>> Hi Kishon,
+>> On 11/06/2014 07:59 AM, Kishon Vijay Abraham I wrote:
+>>> Hi,
+>>>
+>>> On Tuesday 04 November 2014 04:21 PM, Gabriel FERNANDEZ wrote:
+>>>> This provides the shared header file which will be reference from both
+>>>> PHY driver and its associated Device Tree node(s).
+>>>>
+>>>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>>>> ---
+>>>>   include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
+>>> I don't see this being used in device tree file. Are you planning to add this
+>>> after -rc1 is tagged. Or else I have to create a separate branch for this file
+>>> which will be merged by both me and the dt maintainer. Let me know.
+>> I think we don't need to create a branch we will merged by both of us.
+>>
+>> What we can do that both of us apply this patch in our trees.
+>> It will avoid dependencies on each others.
+>>
+>> What do you think?
+> This makes no sense to me.  Can you find another way to explain this
+> please?
 
-Is your tree really including the fix we already did to fix this issue ?
+I apply the patch on my STi tree.
+Kishon applies the patch on his phy tree.
 
-(commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2 )
-bridge: fix NULL pointer deref of br_port_get_rcu
+At the end, both STi and phy branches will be merged in Linus tree,
+with no conflicts.
 
+This is what we are doing for the STiH407 reset DT bindings with Philipp Z.
 
+Regards,
+Maxime
+>
+>>> Thanks
+>>> Kishon
+>>>>   1 file changed, 18 insertions(+)
+>>>>   create mode 100644 include/dt-bindings/phy/phy.h
+>>>>
+>>>> diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+>>>> new file mode 100644
+>>>> index 0000000..e8c6a3f
+>>>> --- /dev/null
+>>>> +++ b/include/dt-bindings/phy/phy.h
+>>>> @@ -0,0 +1,18 @@
+>>>> +/*
+>>>> + *
+>>>> + * This header provides constants for the phy framework
+>>>> + *
+>>>> + * Copyright (C) 2014 STMicroelectronics
+>>>> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+>>>> + * License terms:  GNU General Public License (GPL), version 2
+>>>> + */
+>>>> +
+>>>> +#ifndef _DT_BINDINGS_PHY
+>>>> +#define _DT_BINDINGS_PHY
+>>>> +
+>>>> +#define PHY_TYPE_SATA		1
+>>>> +#define PHY_TYPE_PCIE		2
+>>>> +#define PHY_TYPE_USB2		3
+>>>> +#define PHY_TYPE_USB3		4
+>>>> +
+>>>> +#endif /* _DT_BINDINGS_PHY */
+>>>>
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
