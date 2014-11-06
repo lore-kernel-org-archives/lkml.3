@@ -1,603 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaKFJ4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:56:08 -0500
-Received: from par-mail.meas-spec.com ([198.190.228.178]:56057 "EHLO
-	PAR-MAIL.MEAS-SPEC.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaKFJz5 convert rfc822-to-8bit (ORCPT
+	id S1752147AbaKFJ5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:57:18 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48417 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751330AbaKFJ5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:55:57 -0500
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 04:55:55 EST
-From: "Markezana, William" <William.Markezana@meas-spec.com>
-To: "jic23@kernel.org" <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] iio: (ms5637) Add Measurement Specialties MS5637 support
-Thread-Topic: [PATCH] iio: (ms5637) Add Measurement Specialties MS5637
- support
-Thread-Index: Ac/5pcFY8cb1l4EdRwG6ywV+W9lTgw==
-Date: Thu, 6 Nov 2014 09:46:08 +0000
-Message-ID: <8B5E2C57A478A447A3ECC506FBF26C030E1E2E@TLSE-SVR-MAIL01.europe.msiusa.com>
-Accept-Language: fr-FR, en-US
-Content-Language: fr-FR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.73.26]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 6 Nov 2014 04:57:14 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 00/10] [media] Make mediabus format subsystem neutral
+Date: Thu,  6 Nov 2014 10:56:58 +0100
+Message-Id: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ludovic <ludovic.tancerel@maplehightech.com>
----
- drivers/iio/pressure/Kconfig                      |   10 +
- drivers/iio/pressure/Makefile                     |    1 +
- drivers/iio/pressure/ms5637.c                     |  488 +++++++++++++++++++++
- drivers/staging/iio/Documentation/pressure/ms5637 |   25 ++
- 4 files changed, 524 insertions(+)
- create mode 100644 drivers/iio/pressure/ms5637.c
- create mode 100644 drivers/staging/iio/Documentation/pressure/ms5637
+Hello,
 
-diff --git a/drivers/iio/pressure/Kconfig b/drivers/iio/pressure/Kconfig
-index ffac8ac..4ba9bd5 100644
---- a/drivers/iio/pressure/Kconfig
-+++ b/drivers/iio/pressure/Kconfig
-@@ -41,6 +41,16 @@ config MPL3115
-           To compile this driver as a module, choose M here: the module
-           will be called mpl3115.
- 
-+config MS5637
-+        tristate "MS5637 pressure & temperature sensor"
-+        depends on I2C
-+        help
-+          If you say yes here you get support for the Measurement Specialties
-+          MS5637 pressure and temperature sensor.
-+
-+          This driver can also be built as a module. If so, the module will
-+          be called ms5637.
-+
- config IIO_ST_PRESS
- 	tristate "STMicroelectronics pressure sensor Driver"
- 	depends on (I2C || SPI_MASTER) && SYSFS
-diff --git a/drivers/iio/pressure/Makefile b/drivers/iio/pressure/Makefile
-index c53d250..50fe66e 100644
---- a/drivers/iio/pressure/Makefile
-+++ b/drivers/iio/pressure/Makefile
-@@ -6,6 +6,7 @@
- obj-$(CONFIG_HID_SENSOR_PRESS)   += hid-sensor-press.o
- obj-$(CONFIG_MPL115) += mpl115.o
- obj-$(CONFIG_MPL3115) += mpl3115.o
-+obj-$(CONFIG_MS5637) += ms5637.o
- obj-$(CONFIG_IIO_ST_PRESS) += st_pressure.o
- st_pressure-y := st_pressure_core.o
- st_pressure-$(CONFIG_IIO_BUFFER) += st_pressure_buffer.o
-diff --git a/drivers/iio/pressure/ms5637.c b/drivers/iio/pressure/ms5637.c
-new file mode 100644
-index 0000000..ea74636
---- /dev/null
-+++ b/drivers/iio/pressure/ms5637.c
-@@ -0,0 +1,488 @@
-+/*
-+ * ms5637.c - Support for Measurement Specialties MS5637 temperature sensor
-+ *
-+ * Copyright (c) 2014 Measurement Specialties
-+ *
-+ * Licensed under the GPL-2.
-+ *
-+ * (7-bit I2C slave address 0x77)
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/stat.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/jiffies.h>
-+#include <linux/delay.h>
-+#include <linux/mutex.h>
-+
-+/* MS5637 Commands */
-+#define MS5637_RESET				(0x1E)
-+#define MS5637_TEMPERATURE_CONVERSION_START	(0x50)
-+#define MS5637_PRESSURE_CONVERSION_START	(0x40)
-+#define MS5637_ADC_READ				(0x00)
-+#define MS5637_PROM_READ			(0xA0)
-+#define MS5637_PROM_ELEMENTS_NB                 (7)
-+
-+#define ATTR_RESET				0
-+#define ATTR_RESOLUTION				1
-+
-+static const u16 conversion_time[] = { 1000, 2000, 3000, 5000, 9000, 17000 };
-+
-+struct ms5637_dev {
-+	struct i2c_client *client;
-+	struct mutex lock; /* mutex protecting this data structure */
-+	u16 calibration_coeffs[MS5637_PROM_ELEMENTS_NB];
-+	bool got_calibration_words;
-+	unsigned long last_update;
-+	bool valid;
-+	int temperature;
-+	unsigned int pressure;
-+	u8 resolution_index;
-+};
-+
-+static int ms5637_get_calibration_coeffs(struct ms5637_dev *dev_data,
-+					 unsigned char index, u16 *word)
-+{
-+	int ret = 0;
-+
-+	ret = i2c_smbus_read_word_swapped(dev_data->client,
-+					  MS5637_PROM_READ + (index << 1));
-+	if (ret < 0)
-+		return ret;
-+	*word = (u16) ret & 0xFFFF;
-+	return 0;
-+}
-+
-+static bool ms5637_crc_check(u16 *n_prom, u8 crc)
-+{
-+	u8 cnt, n_bit;
-+	u16 n_rem, crc_read;
-+
-+	n_rem = 0x00;
-+	crc_read = n_prom[0];
-+	n_prom[MS5637_PROM_ELEMENTS_NB] = 0;
-+	n_prom[0] = (0x0FFF & (n_prom[0]));	/* Clear the CRC byte */
-+
-+	for (cnt = 0; cnt < (MS5637_PROM_ELEMENTS_NB + 1) * 2; cnt++) {
-+		if (cnt % 2 == 1)
-+			n_rem ^= n_prom[cnt >> 1] & 0x00FF;
-+		else
-+			n_rem ^= n_prom[cnt >> 1] >> 8;
-+
-+		for (n_bit = 8; n_bit > 0; n_bit--) {
-+			if (n_rem & 0x8000)
-+				n_rem = (n_rem << 1) ^ 0x3000;
-+			else
-+				n_rem <<= 1;
-+		}
-+	}
-+	n_rem >>= 12;
-+	n_prom[0] = crc_read;
-+	return (n_rem == crc);
-+}
-+
-+static int ms5637_fill_calibration_coeffs(struct ms5637_dev *dev_data)
-+{
-+	int i, ret = 0;
-+
-+	for (i = 0; i < MS5637_PROM_ELEMENTS_NB; i++) {
-+		ret = ms5637_get_calibration_coeffs(dev_data, i,
-+				&dev_data->calibration_coeffs
-+				[i]);
-+
-+		dev_dbg(&dev_data->client->dev, "Coeff %d : %d", i,
-+			dev_data->calibration_coeffs[i]);
-+
-+		if (ret < 0) {
-+			dev_err(&dev_data->client->dev,
-+				"unable to get calibration coefficients at address %d\n",
-+				i + 1);
-+			return ret;
-+		}
-+	}
-+
-+	if (!ms5637_crc_check(dev_data->calibration_coeffs,
-+			      (dev_data->
-+			       calibration_coeffs[0] & 0xF000) >> 12)) {
-+		dev_err(&dev_data->client->dev,
-+			"Calibration coefficients crc check error\n");
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int ms5637_read_adc_value(struct ms5637_dev *dev_data, u32 *adc_value)
-+{
-+	int ret = 0;
-+	u8 buf[3];
-+
-+	ret =
-+	    i2c_smbus_read_i2c_block_data(dev_data->client, MS5637_ADC_READ, 3,
-+					  buf);
-+	if (ret < 0)
-+		return ret;
-+	dev_dbg(&dev_data->client->dev, "ADC raw value : %x %x %x\n", buf[0],
-+		buf[1], buf[2]);
-+	*adc_value = (buf[0] << 16) + (buf[1] << 8) + buf[0];
-+	return 0;
-+}
-+
-+static int ms5637_conversion_and_read_adc(struct ms5637_dev *dev_data,
-+					  u32 *t_adc, u32 *p_adc)
-+{
-+	int ret;
-+
-+	/* Trigger Temperature conversion */
-+	ret = i2c_smbus_write_byte(dev_data->client,
-+				   MS5637_TEMPERATURE_CONVERSION_START
-+				   + dev_data->resolution_index * 2);
-+	if (ret < 0)
-+		return ret;
-+	usleep_range(conversion_time[dev_data->resolution_index],
-+		     conversion_time[dev_data->resolution_index]+3000);
-+	/* Retrieve ADC value */
-+	ret = ms5637_read_adc_value(dev_data, t_adc);
-+
-+	/* Trigger Pressure conversion */
-+	ret = i2c_smbus_write_byte(dev_data->client,
-+				   MS5637_PRESSURE_CONVERSION_START
-+				   + dev_data->resolution_index * 2);
-+	if (ret < 0)
-+		return ret;
-+	usleep_range(conversion_time[dev_data->resolution_index],
-+		     conversion_time[dev_data->resolution_index]+3000);
-+	/* Retrieve ADC value */
-+	ret = ms5637_read_adc_value(dev_data, p_adc);
-+
-+	if (ret < 0)
-+		return ret;
-+	return 0;
-+}
-+
-+static int ms5637_read_temperature_and_pressure(struct ms5637_dev *dev_data)
-+{
-+	int ret = 0;
-+	u32 t_adc, p_adc;
-+	s32 dt, temp;
-+	s64 off, sens, t2, off2, sens2;
-+
-+	mutex_lock(&dev_data->lock);
-+
-+	if (time_after(jiffies, dev_data->last_update + HZ / 2) ||
-+	    !dev_data->valid) {
-+		if (!dev_data->got_calibration_words) {
-+			ret = ms5637_fill_calibration_coeffs(dev_data);
-+			if (ret < 0)
-+				goto out;
-+
-+			dev_data->got_calibration_words = true;
-+		}
-+
-+		ret = ms5637_conversion_and_read_adc(dev_data, &t_adc, &p_adc);
-+
-+		if (ret < 0) {
-+			dev_data->got_calibration_words = false;
-+			dev_err(&dev_data->client->dev,
-+				"unable to make sensor adc conversion\n");
-+			goto out;
-+		}
-+
-+		dt = (s32) t_adc - (dev_data->calibration_coeffs[5] << 8);
-+
-+		/* Actual temperature = 2000 + dT * TEMPSENS */
-+		temp =
-+		    2000 + (((s64) dt * dev_data->calibration_coeffs[6]) >> 23);
-+
-+		/* Second order temperature compensation */
-+		if (temp < 2000) {
-+			s64 tmp = (s64) temp - 2000;
-+
-+			t2 = (3 * ((s64) dt * (s64) dt)) >> 33;
-+			off2 = (61 * tmp * tmp) >> 4;
-+			sens2 = (29 * tmp * tmp) >> 4;
-+
-+			if (temp < -1500) {
-+				s64 tmp = (s64) temp + 1500;
-+
-+				off2 += 17 * tmp * tmp;
-+				sens2 += 9 * tmp * tmp;
-+			}
-+		} else {
-+			t2 = (5 * ((s64) dt * (s64) dt)) >> 38;
-+			off2 = 0;
-+			sens2 = 0;
-+		}
-+
-+		/* OFF = OFF_T1 + TCO * dT */
-+		off = (((s64) dev_data->calibration_coeffs[2]) << 17)
-+		    +
-+		    ((((s64) dev_data->calibration_coeffs[4]) * (s64) dt) >> 6);
-+		off -= off2;
-+
-+		/* Sensitivity at actual temperature = SENS_T1 + TCS * dT */
-+		sens = (((s64) dev_data->calibration_coeffs[1]) << 16)
-+		    + (((s64) dev_data->calibration_coeffs[3] * dt) >> 7);
-+		sens -= sens2;
-+
-+		/* Temperature compensated pressure = D1 * SENS - OFF */
-+		dev_data->temperature = (temp - t2) * 10;
-+		dev_data->pressure = (u32) (((((s64) p_adc * sens) >> 21)
-+					     - off) >> 15) / 100;
-+
-+		dev_data->last_update = jiffies;
-+		dev_data->valid = true;
-+	}
-+ out:
-+	mutex_unlock(&dev_data->lock);
-+
-+	return ret >= 0 ? 0 : ret;
-+}
-+
-+static int ms5637_read_raw(struct iio_dev *indio_dev,
-+			   struct iio_chan_spec const *channel, int *val,
-+			   int *val2, long mask)
-+{
-+	int ret;
-+	struct ms5637_dev *dev_data = iio_priv(indio_dev);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_PROCESSED:
-+		switch (channel->type) {
-+		case IIO_TEMP:	/* in 0.001 °C */
-+			ret = ms5637_read_temperature_and_pressure(dev_data);
-+			if (ret)
-+				goto t_err;
-+			*val = dev_data->temperature;
-+			break;
-+		case IIO_PRESSURE:	/* in mB */
-+			ret = ms5637_read_temperature_and_pressure(dev_data);
-+			if (ret)
-+				goto p_err;
-+			*val = dev_data->pressure;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		ret = IIO_VAL_INT;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return ret;
-+ t_err:
-+	dev_err(&indio_dev->dev, "Temperature read error\n");
-+	return ret;
-+ p_err:
-+	dev_err(&indio_dev->dev, "Pressure read error\n");
-+	return ret;
-+}
-+
-+static const struct iio_chan_spec ms5637_channels[] = {
-+	{
-+	 .type = IIO_TEMP,
-+	 .output = 1,
-+	 .info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-+	 .scan_index = 0,
-+	 },
-+	{
-+	 .type = IIO_PRESSURE,
-+	 .output = 1,
-+	 .info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-+	 .scan_index = 0,
-+	 }
-+};
-+
-+static ssize_t ms5637_read_attr(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
-+	struct ms5637_dev *dev_data = iio_priv(indio_dev);
-+	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
-+	int ret = 0;
-+
-+	switch (this_attr->address) {
-+	case ATTR_RESET:
-+		ret = sprintf(buf, "0\n");
-+		break;
-+	case ATTR_RESOLUTION:
-+		ret = sprintf(buf, "%d\n", dev_data->resolution_index + 8);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+
-+static ssize_t ms5637_write_attr(struct device *dev,
-+				 struct device_attribute *attr,
-+				 const char *buf, size_t len)
-+{
-+	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
-+	struct ms5637_dev *dev_data = iio_priv(indio_dev);
-+	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
-+	u8 val;
-+	int ret;
-+
-+	ret = kstrtou8(buf, 10, &val);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&dev_data->lock);
-+	switch (this_attr->address) {
-+	case ATTR_RESET:
-+		if (val != 1)
-+			goto einval;
-+
-+		ret = i2c_smbus_write_byte(dev_data->client, MS5637_RESET);
-+		if (ret < 0)
-+			goto out;
-+		usleep_range(3000, 6000);
-+
-+		break;
-+	case ATTR_RESOLUTION:
-+		if ((val < 8) || (val > 13))
-+			goto einval;
-+		dev_data->resolution_index = val - 8;
-+		break;
-+	default:
-+		goto einval;
-+	}
-+
-+	dev_data->valid = false;
-+	goto out;
-+ einval:
-+	ret = -EINVAL;
-+ out:
-+	mutex_unlock(&dev_data->lock);
-+
-+	return ret ? ret : len;
-+}
-+
-+static IIO_DEVICE_ATTR(in_reset,
-+		       S_IRUGO | S_IWUSR,
-+		       ms5637_read_attr, ms5637_write_attr, ATTR_RESET);
-+static IIO_DEVICE_ATTR(in_resolution,
-+		       S_IRUGO | S_IWUSR,
-+		       ms5637_read_attr, ms5637_write_attr, ATTR_RESOLUTION);
-+static IIO_CONST_ATTR(resolution_available, "8 9 10 11 12 13");
-+
-+static struct attribute *ms5637_attributes[] = {
-+	&iio_dev_attr_in_reset.dev_attr.attr,
-+	&iio_dev_attr_in_resolution.dev_attr.attr,
-+	&iio_const_attr_resolution_available.dev_attr.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group ms5637_attribute_group = {
-+	.attrs = ms5637_attributes,
-+};
-+
-+static const struct iio_info ms5637_info = {
-+	.read_raw = ms5637_read_raw,
-+	.attrs = &ms5637_attribute_group,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static int ms5637_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct ms5637_dev *dev_data;
-+	struct iio_dev *indio_dev;
-+	int ret;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_READ_WORD_DATA)) {
-+		dev_err(&client->dev,
-+			"adapter does not support SMBus read word transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_WRITE_BYTE)) {
-+		dev_err(&client->dev,
-+			"adapter does not support SMBus write byte transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_READ_I2C_BLOCK)) {
-+		dev_err(&client->dev,
-+			"adapter does not support SMBus read block transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*dev_data));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	dev_data = iio_priv(indio_dev);
-+	dev_data->client = client;
-+	mutex_init(&dev_data->lock);
-+
-+	indio_dev->info = &ms5637_info;
-+	indio_dev->name = id->name;
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->channels = ms5637_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(ms5637_channels);
-+
-+	i2c_set_clientdata(client, indio_dev);
-+	ret = iio_device_register(indio_dev);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = i2c_smbus_write_byte(client, MS5637_RESET);
-+	if (ret < 0)
-+		return ret;
-+	usleep_range(3000, 6000);
-+
-+	ret = ms5637_fill_calibration_coeffs(dev_data);
-+	if (ret == 0)
-+		dev_data->got_calibration_words = true;
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	dev_dbg(&client->dev, "Driver initialization done");
-+	return 0;
-+}
-+
-+static int ms5637_remove(struct i2c_client *client)
-+{
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+
-+	iio_device_unregister(indio_dev);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id ms5637_id[] = {
-+	{"ms5637", 0},
-+	{}
-+};
-+
-+static struct i2c_driver ms5637_driver = {
-+	.probe = ms5637_probe,
-+	.remove = ms5637_remove,
-+	.id_table = ms5637_id,
-+	.driver = {
-+		   .name = "ms5637",
-+		   .owner = THIS_MODULE,
-+		   },
-+};
-+
-+module_i2c_driver(ms5637_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Measurement Specialties MS5637 temperature driver");
-+MODULE_AUTHOR("William Markezana <william.markezana@meas-spec.com>");
-+MODULE_AUTHOR("Ludovic Tancerel <ludovic.tancerel@maplehightech.com>");
-diff --git a/drivers/staging/iio/Documentation/pressure/ms5637 b/drivers/staging/iio/Documentation/pressure/ms5637
-new file mode 100644
-index 0000000..d0d64f3
---- /dev/null
-+++ b/drivers/staging/iio/Documentation/pressure/ms5637
-@@ -0,0 +1,25 @@
-+Kernel driver ms5637
-+====================
-+
-+Supported chips:
-+  * Measurement Specialties MS5637
-+    Prefix: 'ms5637'
-+    Addresses scanned: I2C 0x76
-+    Datasheet: Available for download on meas-spec.com
-+
-+Authors:
-+    William Markezana (Meas-Spec) <william.markezana@meas-spec.com>
-+    Ludovic Tancerel <ludovic.tancerel@maplehightech.com>
-+
-+Description
-+-----------
-+
-+The MS5637 is a single chip pressure & temperature sensor.
-+The driver returns a milli-bar pressure value and a milli-degre celius value using the iio framework
-+
-+Via the iio sysfs interface, there are several attributes available.
-+in_reset - Reset ms5637 device by writing a 1 in it.
-+in_resolution - Set the number of bits for ADC resolution.
-+out_pressure_input - Current pressure from ms5637 sensor (milli-bar)
-+out_temp_input - Current temperature from htu21 sensor (milli-°C value)
-+resolution_available - List of resolutions supported
+This patch series prepares the use of media bus formats outside of
+the V4L2 subsytem (my final goal is to use it in the Atmel HLCDC DRM
+driver where I have to configure my DPI/RGB bus according to the
+connected display).
+
+The series first defines a new enum with a neutral name (media_bus_format),
+and then replace all references to the old enum and its values within the
+kernel.
+
+Best Regards,
+
+Boris
+
+Changes since v1:
+- drop patches deprecating v4l2_mbus_pixelcode for user-space users
+- put V4L2 legacy format definitions into media-bus-format.h
+
+Boris Brezillon (10):
+  [media] Move mediabus format definition to a more standard place
+  [media] v4l: Update subdev-formats doc with new MEDIA_BUS_FMT values
+  [media] Make use of the new media_bus_format definitions
+  [media] i2c: Make use of media_bus_format enum
+  [media] pci: Make use of media_bus_format enum
+  [media] platform: Make use of media_bus_format enum
+  [media] usb: Make use of media_bus_format enum
+  staging: media: Make use of media_bus_format enum
+  gpu: ipu-v3: Make use of media_bus_format enum
+  [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the
+    kernel
+
+ Documentation/DocBook/media/Makefile               |   2 +-
+ Documentation/DocBook/media/v4l/subdev-formats.xml | 308 ++++++++++-----------
+ Documentation/video4linux/soc-camera.txt           |   2 +-
+ arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
+ arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
+ arch/arm/mach-davinci/dm355.c                      |   6 +-
+ arch/arm/mach-davinci/dm365.c                      |   6 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |   2 +-
+ arch/sh/boards/mach-ap325rxa/setup.c               |   2 +-
+ drivers/gpu/ipu-v3/ipu-csi.c                       |  66 ++---
+ drivers/media/i2c/adv7170.c                        |  16 +-
+ drivers/media/i2c/adv7175.c                        |  16 +-
+ drivers/media/i2c/adv7180.c                        |   6 +-
+ drivers/media/i2c/adv7183.c                        |   6 +-
+ drivers/media/i2c/adv7604.c                        |  72 ++---
+ drivers/media/i2c/adv7842.c                        |   6 +-
+ drivers/media/i2c/ak881x.c                         |   8 +-
+ drivers/media/i2c/cx25840/cx25840-core.c           |   2 +-
+ drivers/media/i2c/m5mols/m5mols_core.c             |   6 +-
+ drivers/media/i2c/ml86v7667.c                      |   6 +-
+ drivers/media/i2c/mt9m032.c                        |   6 +-
+ drivers/media/i2c/mt9p031.c                        |   8 +-
+ drivers/media/i2c/mt9t001.c                        |   8 +-
+ drivers/media/i2c/mt9v011.c                        |   6 +-
+ drivers/media/i2c/mt9v032.c                        |  12 +-
+ drivers/media/i2c/noon010pc30.c                    |  12 +-
+ drivers/media/i2c/ov7670.c                         |  16 +-
+ drivers/media/i2c/ov9650.c                         |  10 +-
+ drivers/media/i2c/s5c73m3/s5c73m3.h                |   6 +-
+ drivers/media/i2c/s5k4ecgx.c                       |   4 +-
+ drivers/media/i2c/s5k5baf.c                        |  14 +-
+ drivers/media/i2c/s5k6a3.c                         |   2 +-
+ drivers/media/i2c/s5k6aa.c                         |   8 +-
+ drivers/media/i2c/saa6752hs.c                      |   6 +-
+ drivers/media/i2c/saa7115.c                        |   2 +-
+ drivers/media/i2c/saa717x.c                        |   2 +-
+ drivers/media/i2c/smiapp/smiapp-core.c             |  32 +--
+ drivers/media/i2c/soc_camera/imx074.c              |   8 +-
+ drivers/media/i2c/soc_camera/mt9m001.c             |  14 +-
+ drivers/media/i2c/soc_camera/mt9m111.c             |  70 ++---
+ drivers/media/i2c/soc_camera/mt9t031.c             |  10 +-
+ drivers/media/i2c/soc_camera/mt9t112.c             |  22 +-
+ drivers/media/i2c/soc_camera/mt9v022.c             |  26 +-
+ drivers/media/i2c/soc_camera/ov2640.c              |  54 ++--
+ drivers/media/i2c/soc_camera/ov5642.c              |   8 +-
+ drivers/media/i2c/soc_camera/ov6650.c              |  58 ++--
+ drivers/media/i2c/soc_camera/ov772x.c              |  20 +-
+ drivers/media/i2c/soc_camera/ov9640.c              |  40 +--
+ drivers/media/i2c/soc_camera/ov9740.c              |  12 +-
+ drivers/media/i2c/soc_camera/rj54n1cb0c.c          |  54 ++--
+ drivers/media/i2c/soc_camera/tw9910.c              |  10 +-
+ drivers/media/i2c/sr030pc30.c                      |  14 +-
+ drivers/media/i2c/tvp514x.c                        |  12 +-
+ drivers/media/i2c/tvp5150.c                        |   6 +-
+ drivers/media/i2c/tvp7002.c                        |  10 +-
+ drivers/media/i2c/vs6624.c                         |  18 +-
+ drivers/media/pci/cx18/cx18-av-core.c              |   2 +-
+ drivers/media/pci/cx18/cx18-controls.c             |   2 +-
+ drivers/media/pci/cx18/cx18-ioctl.c                |   2 +-
+ drivers/media/pci/cx23885/cx23885-video.c          |   2 +-
+ drivers/media/pci/ivtv/ivtv-controls.c             |   2 +-
+ drivers/media/pci/ivtv/ivtv-ioctl.c                |   2 +-
+ drivers/media/pci/saa7134/saa7134-empress.c        |   4 +-
+ drivers/media/platform/blackfin/bfin_capture.c     |  14 +-
+ drivers/media/platform/davinci/vpbe.c              |   2 +-
+ drivers/media/platform/davinci/vpfe_capture.c      |   4 +-
+ drivers/media/platform/exynos-gsc/gsc-core.c       |   8 +-
+ drivers/media/platform/exynos-gsc/gsc-core.h       |   2 +-
+ drivers/media/platform/exynos4-is/fimc-capture.c   |   2 +-
+ drivers/media/platform/exynos4-is/fimc-core.c      |  14 +-
+ drivers/media/platform/exynos4-is/fimc-core.h      |   4 +-
+ drivers/media/platform/exynos4-is/fimc-isp.c       |  16 +-
+ drivers/media/platform/exynos4-is/fimc-lite-reg.c  |  26 +-
+ drivers/media/platform/exynos4-is/fimc-lite.c      |  14 +-
+ drivers/media/platform/exynos4-is/fimc-reg.c       |  14 +-
+ drivers/media/platform/exynos4-is/mipi-csis.c      |  14 +-
+ drivers/media/platform/marvell-ccic/mcam-core.c    |  22 +-
+ drivers/media/platform/marvell-ccic/mcam-core.h    |   2 +-
+ drivers/media/platform/omap3isp/ispccdc.c          | 112 ++++----
+ drivers/media/platform/omap3isp/ispccp2.c          |  18 +-
+ drivers/media/platform/omap3isp/ispcsi2.c          |  42 +--
+ drivers/media/platform/omap3isp/isppreview.c       |  58 ++--
+ drivers/media/platform/omap3isp/ispresizer.c       |  18 +-
+ drivers/media/platform/omap3isp/ispvideo.c         |  94 +++----
+ drivers/media/platform/omap3isp/ispvideo.h         |  10 +-
+ drivers/media/platform/s3c-camif/camif-capture.c   |  10 +-
+ drivers/media/platform/s3c-camif/camif-regs.c      |   8 +-
+ drivers/media/platform/s5p-tv/hdmi_drv.c           |   2 +-
+ drivers/media/platform/s5p-tv/sdo_drv.c            |   2 +-
+ drivers/media/platform/sh_vou.c                    |   8 +-
+ drivers/media/platform/soc_camera/atmel-isi.c      |  22 +-
+ drivers/media/platform/soc_camera/mx2_camera.c     |  24 +-
+ drivers/media/platform/soc_camera/mx3_camera.c     |   6 +-
+ drivers/media/platform/soc_camera/omap1_camera.c   |  36 +--
+ drivers/media/platform/soc_camera/pxa_camera.c     |  16 +-
+ drivers/media/platform/soc_camera/rcar_vin.c       |  14 +-
+ .../platform/soc_camera/sh_mobile_ceu_camera.c     |  20 +-
+ drivers/media/platform/soc_camera/sh_mobile_csi2.c |  38 +--
+ drivers/media/platform/soc_camera/soc_camera.c     |   2 +-
+ .../platform/soc_camera/soc_camera_platform.c      |   2 +-
+ drivers/media/platform/soc_camera/soc_mediabus.c   |  78 +++---
+ drivers/media/platform/via-camera.c                |   8 +-
+ drivers/media/platform/vsp1/vsp1_bru.c             |  14 +-
+ drivers/media/platform/vsp1/vsp1_hsit.c            |  12 +-
+ drivers/media/platform/vsp1/vsp1_lif.c             |  10 +-
+ drivers/media/platform/vsp1/vsp1_lut.c             |  14 +-
+ drivers/media/platform/vsp1/vsp1_rwpf.c            |  10 +-
+ drivers/media/platform/vsp1/vsp1_sru.c             |  12 +-
+ drivers/media/platform/vsp1/vsp1_uds.c             |  10 +-
+ drivers/media/platform/vsp1/vsp1_video.c           |  42 +--
+ drivers/media/usb/cx231xx/cx231xx-417.c            |   2 +-
+ drivers/media/usb/cx231xx/cx231xx-video.c          |   4 +-
+ drivers/media/usb/em28xx/em28xx-camera.c           |   2 +-
+ drivers/media/usb/go7007/go7007-v4l2.c             |   2 +-
+ drivers/media/usb/pvrusb2/pvrusb2-hdw.c            |   2 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |  18 +-
+ .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    |  26 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 100 +++----
+ drivers/staging/media/davinci_vpfe/dm365_isif.c    |  90 +++---
+ drivers/staging/media/davinci_vpfe/dm365_resizer.c |  96 +++----
+ .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  18 +-
+ drivers/staging/media/omap4iss/iss_csi2.c          |  62 ++---
+ drivers/staging/media/omap4iss/iss_ipipe.c         |  16 +-
+ drivers/staging/media/omap4iss/iss_ipipeif.c       |  28 +-
+ drivers/staging/media/omap4iss/iss_resizer.c       |  26 +-
+ drivers/staging/media/omap4iss/iss_video.c         |  78 +++---
+ drivers/staging/media/omap4iss/iss_video.h         |  10 +-
+ include/media/davinci/vpbe.h                       |   2 +-
+ include/media/davinci/vpbe_venc.h                  |   4 +-
+ include/media/exynos-fimc.h                        |   2 +-
+ include/media/soc_camera.h                         |   2 +-
+ include/media/soc_mediabus.h                       |   6 +-
+ include/media/v4l2-mediabus.h                      |   2 +-
+ include/media/v4l2-subdev.h                        |   2 +-
+ include/uapi/linux/Kbuild                          |   1 +
+ include/uapi/linux/media-bus-format.h              | 136 +++++++++
+ include/uapi/linux/v4l2-mediabus.h                 | 116 +-------
+ include/uapi/linux/v4l2-subdev.h                   |   6 +-
+ 138 files changed, 1499 insertions(+), 1470 deletions(-)
+ create mode 100644 include/uapi/linux/media-bus-format.h
+
 -- 
-1.7.9.5
+1.9.1
 
