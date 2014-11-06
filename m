@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaKFRRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:17:06 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36383 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaKFRRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:17:03 -0500
-Message-ID: <545BAD05.3050800@windriver.com>
-Date: Thu, 6 Nov 2014 11:16:53 -0600
-From: Chris Friesen <chris.friesen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752040AbaKFRRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:17:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970AbaKFRR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:17:29 -0500
+Message-ID: <545BACF4.2080808@redhat.com>
+Date: Thu, 06 Nov 2014 12:16:36 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-References: <545BA625.40308@windriver.com>
-In-Reply-To: <545BA625.40308@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.119.46]
+To: j.glisse@gmail.com, akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, joro@8bytes.org,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Brendan Conoboy <blc@redhat.com>, Joe Donohue <jdonohue@redhat.com>,
+        Duncan Poole <dpoole@nvidia.com>, Sherry Cheung <SCheung@nvidia.com>,
+        Subhash Gutti <sgutti@nvidia.com>, John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Subject: Re: [PATCH 1/5] mmu_notifier: add event information to address invalidation
+ v5
+References: <1415047353-29160-1-git-send-email-j.glisse@gmail.com> <1415047353-29160-2-git-send-email-j.glisse@gmail.com>
+In-Reply-To: <1415047353-29160-2-git-send-email-j.glisse@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 10:47 AM, Chris Friesen wrote:
-> Hi,
->
-> I'm running a modified 3.4-stable on relatively recent X86 server-class
-> hardware.
->
-> I recently installed a Seagate ST900MM0026 (900GB 2.5in 10K SAS drive)
-> and it's reporting a value of 4294966784 for optimal_io_size.  The other
-> parameters look normal though:
->
-> /sys/block/sda/queue/hw_sector_size:512
-> /sys/block/sda/queue/logical_block_size:512
-> /sys/block/sda/queue/max_segment_size:65536
-> /sys/block/sda/queue/minimum_io_size:512
-> /sys/block/sda/queue/optimal_io_size:4294966784
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-<snip>
+On 11/03/2014 03:42 PM, j.glisse@gmail.com wrote:
+> From: Jérôme Glisse <jglisse@redhat.com>
+> 
+> The event information will be usefull for new user of mmu_notifier
+> API. The event argument differentiate between a vma disappearing, a
+> page being write protected or simply a page being unmaped. This
+> allow new user to take different path for different event for
+> instance on unmap the resource used to track a vma are still valid
+> and should stay around. While if the event is saying that a vma is
+> being destroy it means that any resources used to track this vma
+> can be free.
 
-> According to the manual, the ST900MM0026 has a 512 byte physical sector
-> size.
->
-> Is this a drive firmware bug?  Or a bug in the SAS driver?  Or is there
-> a valid reason for a single drive to report such a huge value?
->
-> Would it make sense for the kernel to do some sort of sanity checking on
-> this value?
+Looks good. All I found was one spelling mistake :)
 
-Looks like this sort of thing has been seen before, in other drives (one 
-of which is from the same family as my drive):
+> + *   - MMU_WRITE_BACK: memory is being written back to disk, all
+> write accesses + *     must stop after invalidate_range_start
+> callback returns. Read access are + *     still allowed. + * + *
+> - MMU_WRITE_PROTECT: memory is being writte protected (ie should be
+> mapped
 
-http://www.spinics.net/lists/linux-scsi/msg65292.html
+                                             "write protected"
 
-http://iamlinux.technoyard.in/blog/why-is-my-ssd-disk-not-reconized-by-the-rhel6-anaconda-installer/
+> + *     read only no matter what the vma memory protection allows).
+> All write + *     accesses must stop after invalidate_range_start
+> callback returns. Read + *     access are still allowed.
 
-Perhaps the ST900MM0026 should be blacklisted as well?
+After fixing the spelling mistake, feel free to add my
 
-Or maybe the SCSI code should do a variation on Mike Snitzer's original 
-patch and just ignore any values above some reasonable threshold?  (And 
-then we could remove the blacklist on the ST900MM0006.)
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Chris
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUW6z0AAoJEM553pKExN6DN3wIALqZPmNihc/AbOc6MCnp+two
+do5pO0DTl61AD0SmPsjSKrADa8deHKDL3PqsEcA7aYOlwrJOkPhNxZZsq1SHscAO
+iw4Ar9BbI0JwBZO4xq4RwFhAVnu5r5NZEcyG1t1EqOGoOVc8NIflTNCxQYOU+vkj
+YxCZb4A0+e6nKe3P+tWso69AGHH5GVvFOqLy709OxneLbTVDRRBM1KzYtdkGR62i
+u3Xa41WGVjAa6OVYEoENloa/o8cmL9vgqPG3bhbCjR8zpBPAQ7fS3g8Ckux72mS+
+UNzyoZjCGpWg7IxF94xhTvydzER0XDMancbKzrYW14YoJ3mW7ZDj58vpK25SKM8=
+=f2u6
+-----END PGP SIGNATURE-----
