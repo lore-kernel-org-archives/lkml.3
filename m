@@ -1,120 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaKFOTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:19:53 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:40465 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaKFOTq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:19:46 -0500
-From: Romain Perier <romain.perier@gmail.com>
-To: heiko@sntech.de
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
-        lgirdwood@gmail.com, broonie@kernel.org, johan@kernel.org,
-        mark.rutland@arm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com
-Subject: [PATCH v3 1/2] of: Rename "poweroff-source" property to "system-power-controller"
-Date: Thu,  6 Nov 2014 14:23:02 +0000
-Message-Id: <1415283784-10885-2-git-send-email-romain.perier@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415283784-10885-1-git-send-email-romain.perier@gmail.com>
-References: <1415283784-10885-1-git-send-email-romain.perier@gmail.com>
+	id S1751864AbaKFOUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:20:01 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25169 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751218AbaKFOT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:19:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
+   d="scan'208";a="618222472"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch Part2 v5 11/31] x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
+Date: Thu,  6 Nov 2014 22:20:24 +0800
+Message-Id: <1415283644-2559-12-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It reverts commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
-As discussed on the mailing list, it makes more sense to rename back to the
-old established property name, without the vendor prefix. Problem being that
-the word "source" usually tends to be used for inputs and that is out of control
-of the OS. The poweroff capability is an output which simply turns the
-system-power off. Also, this property might be used by drivers which power-off
-the system and power back on subsequent RTC alarms. This seems to suggest to
-remove "poweroff" from the property name and to choose "system-power-controller"
-as the more generic name. This patchs adds the required renaming changes and
-defines an helper function which is compatible with both properties, the old one
-which was only used by tps65910 and the new one without vendor-prefix.
+Use new irqdomain interfaces to allocate/free IRQ for HTIRQ, so we could
+kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
 
-Signed-off-by: Romain Perier <romain.perier@gmail.com>
+This patch changes the interfaces between arch independent PCI driver
+and arch specific code. Currently HT_IRQ is only enabled on x86, so it
+shouldn't break other architectures.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- .../bindings/power/{poweroff.txt => power-controller.txt}         | 0
- Documentation/devicetree/bindings/regulator/act8865-regulator.txt | 4 ++--
- drivers/mfd/tps65910.c                                            | 2 +-
- drivers/regulator/act8865-regulator.c                             | 2 +-
- include/linux/of.h                                                | 8 +++++---
- 5 files changed, 9 insertions(+), 7 deletions(-)
- rename Documentation/devicetree/bindings/power/{poweroff.txt => power-controller.txt} (100%)
+ arch/x86/kernel/apic/htirq.c |   26 +++++++++++++-------------
+ drivers/pci/htirq.c          |    7 +++----
+ include/linux/htirq.h        |    2 ++
+ 3 files changed, 18 insertions(+), 17 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/power/poweroff.txt b/Documentation/devicetree/bindings/power/power-controller.txt
-similarity index 100%
-rename from Documentation/devicetree/bindings/power/poweroff.txt
-rename to Documentation/devicetree/bindings/power/power-controller.txt
-diff --git a/Documentation/devicetree/bindings/regulator/act8865-regulator.txt b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-index 01a5b07..dad6358 100644
---- a/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/act8865-regulator.txt
-@@ -6,8 +6,8 @@ Required properties:
- - reg: I2C slave address
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+index 816f36e979ad..b307ee7a7148 100644
+--- a/arch/x86/kernel/apic/htirq.c
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -14,6 +14,7 @@
+ #include <linux/device.h>
+ #include <linux/pci.h>
+ #include <linux/htirq.h>
++#include <linux/irqdomain.h>
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
+ #include <asm/hypertransport.h>
+@@ -61,31 +62,30 @@ static struct irq_chip ht_irq_chip = {
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
  
- Optional properties:
--- poweroff-source: Telling whether or not this pmic is controlling
--  the system power. See Documentation/devicetree/bindings/power/poweroff.txt .
-+- system-power-controller: Telling whether or not this pmic is controlling
-+  the system power. See Documentation/devicetree/bindings/power/power-controller.txt .
- 
- Any standard regulator properties can be used to configure the single regulator.
- 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index b8dca8a..77a7f78 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -423,7 +423,7 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
- 
- 	board_info->irq = client->irq;
- 	board_info->irq_base = -1;
--	board_info->pm_off = of_system_has_poweroff_source(np);
-+	board_info->pm_off = of_is_system_power_controller(np);
- 
- 	return board_info;
- }
-diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-index 76301ed..435aba1 100644
---- a/drivers/regulator/act8865-regulator.c
-+++ b/drivers/regulator/act8865-regulator.c
-@@ -365,7 +365,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 		return ret;
- 	}
- 
--	if (of_system_has_poweroff_source(dev->of_node)) {
-+	if (of_is_system_power_controller(dev->of_node)) {
- 		if (!pm_power_off) {
- 			act8865_i2c_client = client;
- 			act8865->off_reg = off_reg;
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 868fdad..f3595ba 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -911,14 +911,16 @@ static inline int of_changeset_update_property(struct of_changeset *ocs,
- extern int of_resolve_phandles(struct device_node *tree);
- 
- /**
-- * of_system_has_poweroff_source - Tells if poweroff-source is found for device_node
-+ * of_is_system_power_controller - Tells if system-power-controller is found for device_node
-  * @np: Pointer to the given device_node
-  *
-  * return true if present false otherwise
-  */
--static inline bool of_system_has_poweroff_source(const struct device_node *np)
-+static inline bool of_is_system_power_controller(const struct device_node *np)
++int arch_alloc_ht_irq(struct pci_dev *dev)
++{
++	return irq_domain_alloc_irqs(NULL, 1, dev_to_node(&dev->dev), NULL);
++}
++
++void arch_free_ht_irq(int irq)
++{
++	irq_domain_free_irqs(irq, 1);
++}
++
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
  {
--	return of_property_read_bool(np, "poweroff-source");
-+	if (of_property_read_bool(np, "system-power-controller"))
-+		return true;
-+	return of_property_read_bool(np, "ti,system-power-controller");
- }
+ 	struct irq_cfg *cfg;
+ 	struct ht_irq_msg msg;
+-	unsigned dest;
+-	int err;
  
- #endif /* _LINUX_OF_H */
+ 	if (disable_apic)
+ 		return -ENXIO;
+ 
+ 	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
+-
+-	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
++	msg.address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
+ 
+ 	msg.address_lo =
+ 		HT_IRQ_LOW_BASE |
+-		HT_IRQ_LOW_DEST_ID(dest) |
++		HT_IRQ_LOW_DEST_ID(cfg->dest_apicid) |
+ 		HT_IRQ_LOW_VECTOR(cfg->vector) |
+ 		((apic->irq_dest_mode == 0) ?
+ 			HT_IRQ_LOW_DM_PHYSICAL :
+diff --git a/drivers/pci/htirq.c b/drivers/pci/htirq.c
+index a94dd2c4183a..ceb0ebeb7b5f 100644
+--- a/drivers/pci/htirq.c
++++ b/drivers/pci/htirq.c
+@@ -117,8 +117,8 @@ int __ht_create_irq(struct pci_dev *dev, int idx, ht_irq_update_t *update)
+ 	cfg->msg.address_lo = 0xffffffff;
+ 	cfg->msg.address_hi = 0xffffffff;
+ 
+-	irq = irq_alloc_hwirq(dev_to_node(&dev->dev));
+-	if (!irq) {
++	irq = arch_alloc_ht_irq(dev);
++	if (irq <= 0) {
+ 		kfree(cfg);
+ 		return -EBUSY;
+ 	}
+@@ -163,8 +163,7 @@ void ht_destroy_irq(unsigned int irq)
+ 	cfg = irq_get_handler_data(irq);
+ 	irq_set_chip(irq, NULL);
+ 	irq_set_handler_data(irq, NULL);
+-	irq_free_hwirq(irq);
+-
++	arch_free_ht_irq(irq);
+ 	kfree(cfg);
+ }
+ EXPORT_SYMBOL(ht_destroy_irq);
+diff --git a/include/linux/htirq.h b/include/linux/htirq.h
+index 70a1dbbf2093..5caa51b7b95c 100644
+--- a/include/linux/htirq.h
++++ b/include/linux/htirq.h
+@@ -15,6 +15,8 @@ void unmask_ht_irq(struct irq_data *data);
+ 
+ /* The arch hook for getting things started */
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev);
++int arch_alloc_ht_irq(struct pci_dev *dev);
++void arch_free_ht_irq(int irq);
+ 
+ /* For drivers of buggy hardware */
+ typedef void (ht_irq_update_t)(struct pci_dev *dev, int irq,
 -- 
-1.9.1
+1.7.10.4
 
