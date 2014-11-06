@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaKFXIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:08:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58779 "EHLO
+	id S1754129AbaKFXJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:09:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58763 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbaKFWlo (ORCPT
+	with ESMTP id S1752613AbaKFWlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:41:44 -0500
+	Thu, 6 Nov 2014 17:41:37 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bob Picco <bob.picco@oracle.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 052/162] sparc64: sparse irq
-Date: Thu,  6 Nov 2014 14:35:16 -0800
-Message-Id: <1415313426-9622-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 033/162] sparc64: find_node adjustment
+Date: Thu,  6 Nov 2014 14:34:57 -0800
+Message-Id: <1415313426-9622-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -29,791 +30,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: bob picco <bpicco@meloft.net>
 
-[ Upstream commit ee6a9333fa58e11577c1b531b8e0f5ffc0fd6f50 ]
+[ Upstream commit 3dee9df54836d5f844f3d58281d3f3e6331b467f ]
 
-This patch attempts to do a few things. The highlights are: 1) enable
-SPARSE_IRQ unconditionally, 2) kills off !SPARSE_IRQ code 3) allocates
-ivector_table at boot time and 4) default to cookie only VIRQ mechanism
-for supported firmware. The first firmware with cookie only support for
-me appears on T5. You can optionally force the HV firmware to not cookie
-only mode which is the sysino support.
+We have seen an issue with guest boot into LDOM that causes early boot failures
+because of no matching rules for node identitity of the memory. I analyzed this
+on my T4 and concluded there might not be a solution. I saw the issue in
+mainline too when booting into the control/primary domain - with guests
+configured.  Note, this could be a firmware bug on some older machines.
 
-The sysino is a deprecated HV mechanism according to the most recent
-SPARC Virtual Machine Specification. HV_GRP_INTR is what controls the
-cookie/sysino firmware versioning.
+I'll provide a full explanation of the issues below. Should we not find a
+matching BEST latency group for a real address (RA) then we will assume node 0.
+On the T4-2 here with the information provided I can't see an alternative.
 
-The history of this interface is:
+Technically the LDOM shown below should match the MBLOCK to the
+favorable latency group. However other factors must be considered too. Were
+the memory controllers configured "fine" grained interleave or "coarse"
+grain interleaved -  T4. Also should a "group" MD node be considered a NUMA
+node?
 
-1) Major version 1.0 only supported sysino based interrupt interfaces.
+There has to be at least one Machine Description (MD) "group" and hence one
+NUMA node. The group can have one or more latency groups (lg) - more than one
+memory controller. The current code chooses the smallest latency as the most
+favorable per group. The latency and lg information is in MLGROUP below.
+MBLOCK is the base and size of the RAs for the machine as fetched from OBP
+/memory "available" property. My machine has one MBLOCK but more would be
+possible - with holes?
 
-2) Major version 2.0 added cookie based VIRQs, however due to the fact
-   that OSs were using the VIRQs without negoatiating major version
-   2.0 (Linux and Solaris are both guilty), the VIRQs calls were
-   allowed even with major version 1.0
+For a T4-2 the following information has been gathered:
+with LDOM guest
+MEMBLOCK configuration:
+ memory size = 0x27f870000
+ memory.cnt  = 0x3
+ memory[0x0]    [0x00000020400000-0x0000029fc67fff], 0x27f868000 bytes
+ memory[0x1]    [0x0000029fd8a000-0x0000029fd8bfff], 0x2000 bytes
+ memory[0x2]    [0x0000029fd92000-0x0000029fd97fff], 0x6000 bytes
+ reserved.cnt  = 0x2
+ reserved[0x0]  [0x00000020800000-0x000000216c15c0], 0xec15c1 bytes
+ reserved[0x1]  [0x00000024800000-0x0000002c180c1e], 0x7980c1f bytes
+MBLOCK[0]: base[20000000] size[280000000] offset[0]
+(note: "base" and "size" reported in "MBLOCK" encompass the "memory[X]" values)
+(note: (RA + offset) & mask = val is the formula to detect a match for the
+memory controller. should there be no match for find_node node, a return
+value of -1 resulted for the node - BAD)
 
-   To complicate things even further, the VIRQ interfaces were only
-   actually hooked up in the hypervisor for LDC interrupt sources.
-   VIRQ calls on other device types would result in HV_EINVAL errors.
+There is one group. It has these forward links
+MLGROUP[1]: node[545] latency[1f7e8] match[200000000] mask[200000000]
+MLGROUP[2]: node[54d] latency[2de60] match[0] mask[200000000]
+NUMA NODE[0]: node[545] mask[200000000] val[200000000] (latency[1f7e8])
+(note: "val" is the best lg's (smallest latency) "match")
 
-   So effectively, major version 2.0 is unusable.
+no LDOM guest - bare metal
+MEMBLOCK configuration:
+ memory size = 0xfdf2d0000
+ memory.cnt  = 0x3
+ memory[0x0]    [0x00000020400000-0x00000fff6adfff], 0xfdf2ae000 bytes
+ memory[0x1]    [0x00000fff6d2000-0x00000fff6e7fff], 0x16000 bytes
+ memory[0x2]    [0x00000fff766000-0x00000fff771fff], 0xc000 bytes
+ reserved.cnt  = 0x2
+ reserved[0x0]  [0x00000020800000-0x00000021a04580], 0x1204581 bytes
+ reserved[0x1]  [0x00000024800000-0x0000002c7d29fc], 0x7fd29fd bytes
+MBLOCK[0]: base[20000000] size[fe0000000] offset[0]
 
-3) Major version 3.0 was created to signal use of VIRQs and the fact
-   that the hypervisor has these calls hooked up for all interrupt
-   sources, not just those for LDC devices.
+there are two groups
+group node[16d5]
+MLGROUP[0]: node[1765] latency[1f7e8] match[0] mask[200000000]
+MLGROUP[3]: node[177d] latency[2de60] match[200000000] mask[200000000]
+NUMA NODE[0]: node[1765] mask[200000000] val[0] (latency[1f7e8])
+group node[171d]
+MLGROUP[2]: node[1775] latency[2de60] match[0] mask[200000000]
+MLGROUP[1]: node[176d] latency[1f7e8] match[200000000] mask[200000000]
+NUMA NODE[1]: node[176d] mask[200000000] val[200000000] (latency[1f7e8])
+(note: for this two "group" bare metal machine, 1/2 memory is in group one's
+lg and 1/2 memory is in group two's lg).
 
-A new boot option is provided should cookie only HV support have issues.
-hvirq - this is the version for HV_GRP_INTR. This is related to HV API
-versioning.  The code attempts major=3 first by default. The option can
-be used to override this default.
-
-I've tested with SPARSE_IRQ on T5-8, M7-4 and T4-X and Jalap?no.
-
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/Kconfig              |   1 +
- arch/sparc/include/asm/irq_64.h |   9 +-
- arch/sparc/kernel/irq_64.c      | 507 ++++++++++++++++++++++++++--------------
- 3 files changed, 342 insertions(+), 175 deletions(-)
+ arch/sparc/mm/init_64.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 94cd9c1..57cf13a 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -66,6 +66,7 @@ config SPARC64
- 	select HAVE_SYSCALL_TRACEPOINTS
- 	select HAVE_CONTEXT_TRACKING
- 	select HAVE_DEBUG_KMEMLEAK
-+	select SPARSE_IRQ
- 	select RTC_DRV_CMOS
- 	select RTC_DRV_BQ4802
- 	select RTC_DRV_SUN4V
-diff --git a/arch/sparc/include/asm/irq_64.h b/arch/sparc/include/asm/irq_64.h
-index abf6afe..3deb07f 100644
---- a/arch/sparc/include/asm/irq_64.h
-+++ b/arch/sparc/include/asm/irq_64.h
-@@ -37,7 +37,7 @@
-  *
-  * ino_bucket->irq allocation is made during {sun4v_,}build_irq().
-  */
--#define NR_IRQS    255
-+#define NR_IRQS		(2048)
- 
- extern void irq_install_pre_handler(int irq,
- 				    void (*func)(unsigned int, void *, void *),
-@@ -57,11 +57,8 @@ extern unsigned int sun4u_build_msi(u32 portid, unsigned int *irq_p,
- 				    unsigned long iclr_base);
- extern void sun4u_destroy_msi(unsigned int irq);
- 
--extern unsigned char irq_alloc(unsigned int dev_handle,
--				    unsigned int dev_ino);
--#ifdef CONFIG_PCI_MSI
--extern void irq_free(unsigned int irq);
--#endif
-+unsigned int irq_alloc(unsigned int dev_handle, unsigned int dev_ino);
-+void irq_free(unsigned int irq);
- 
- extern void __init init_IRQ(void);
- extern void fixup_irqs(void);
-diff --git a/arch/sparc/kernel/irq_64.c b/arch/sparc/kernel/irq_64.c
-index 666193f..4033c23 100644
---- a/arch/sparc/kernel/irq_64.c
-+++ b/arch/sparc/kernel/irq_64.c
-@@ -47,8 +47,6 @@
- #include "cpumap.h"
- #include "kstack.h"
- 
--#define NUM_IVECS	(IMAP_INR + 1)
--
- struct ino_bucket *ivector_table;
- unsigned long ivector_table_pa;
- 
-@@ -107,55 +105,196 @@ static void bucket_set_irq(unsigned long bucket_pa, unsigned int irq)
- 
- #define irq_work_pa(__cpu)	&(trap_block[(__cpu)].irq_worklist_pa)
- 
--static struct {
--	unsigned int dev_handle;
--	unsigned int dev_ino;
--	unsigned int in_use;
--} irq_table[NR_IRQS];
--static DEFINE_SPINLOCK(irq_alloc_lock);
-+static unsigned long hvirq_major __initdata;
-+static int __init early_hvirq_major(char *p)
-+{
-+	int rc = kstrtoul(p, 10, &hvirq_major);
-+
-+	return rc;
-+}
-+early_param("hvirq", early_hvirq_major);
-+
-+static int hv_irq_version;
-+
-+/* Major version 2.0 of HV_GRP_INTR added support for the VIRQ cookie
-+ * based interfaces, but:
-+ *
-+ * 1) Several OSs, Solaris and Linux included, use them even when only
-+ *    negotiating version 1.0 (or failing to negotiate at all).  So the
-+ *    hypervisor has a workaround that provides the VIRQ interfaces even
-+ *    when only verion 1.0 of the API is in use.
-+ *
-+ * 2) Second, and more importantly, with major version 2.0 these VIRQ
-+ *    interfaces only were actually hooked up for LDC interrupts, even
-+ *    though the Hypervisor specification clearly stated:
-+ *
-+ *	The new interrupt API functions will be available to a guest
-+ *	when it negotiates version 2.0 in the interrupt API group 0x2. When
-+ *	a guest negotiates version 2.0, all interrupt sources will only
-+ *	support using the cookie interface, and any attempt to use the
-+ *	version 1.0 interrupt APIs numbered 0xa0 to 0xa6 will result in the
-+ *	ENOTSUPPORTED error being returned.
-+ *
-+ *   with an emphasis on "all interrupt sources".
-+ *
-+ * To correct this, major version 3.0 was created which does actually
-+ * support VIRQs for all interrupt sources (not just LDC devices).  So
-+ * if we want to move completely over the cookie based VIRQs we must
-+ * negotiate major version 3.0 or later of HV_GRP_INTR.
-+ */
-+static bool sun4v_cookie_only_virqs(void)
-+{
-+	if (hv_irq_version >= 3)
-+		return true;
-+	return false;
-+}
- 
--unsigned char irq_alloc(unsigned int dev_handle, unsigned int dev_ino)
-+static void __init irq_init_hv(void)
- {
--	unsigned long flags;
--	unsigned char ent;
-+	unsigned long hv_error, major, minor = 0;
-+
-+	if (tlb_type != hypervisor)
-+		return;
- 
--	BUILD_BUG_ON(NR_IRQS >= 256);
-+	if (hvirq_major)
-+		major = hvirq_major;
-+	else
-+		major = 3;
- 
--	spin_lock_irqsave(&irq_alloc_lock, flags);
-+	hv_error = sun4v_hvapi_register(HV_GRP_INTR, major, &minor);
-+	if (!hv_error)
-+		hv_irq_version = major;
-+	else
-+		hv_irq_version = 1;
- 
--	for (ent = 1; ent < NR_IRQS; ent++) {
--		if (!irq_table[ent].in_use)
-+	pr_info("SUN4V: Using IRQ API major %d, cookie only virqs %s\n",
-+		hv_irq_version,
-+		sun4v_cookie_only_virqs() ? "enabled" : "disabled");
-+}
-+
-+/* This function is for the timer interrupt.*/
-+int __init arch_probe_nr_irqs(void)
-+{
-+	return 1;
-+}
-+
-+#define DEFAULT_NUM_IVECS	(0xfffU)
-+static unsigned int nr_ivec = DEFAULT_NUM_IVECS;
-+#define NUM_IVECS (nr_ivec)
-+
-+static unsigned int __init size_nr_ivec(void)
-+{
-+	if (tlb_type == hypervisor) {
-+		switch (sun4v_chip_type) {
-+		/* Athena's devhandle|devino is large.*/
-+		case SUN4V_CHIP_SPARC64X:
-+			nr_ivec = 0xffff;
- 			break;
-+		}
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index e275cde..a1d48b9 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -838,7 +838,10 @@ static int find_node(unsigned long addr)
+ 		if ((addr & p->mask) == p->val)
+ 			return i;
  	}
--	if (ent >= NR_IRQS) {
--		printk(KERN_ERR "IRQ: Out of virtual IRQs.\n");
--		ent = 0;
--	} else {
--		irq_table[ent].dev_handle = dev_handle;
--		irq_table[ent].dev_ino = dev_ino;
--		irq_table[ent].in_use = 1;
--	}
-+	return nr_ivec;
-+}
-+
-+struct irq_handler_data {
-+	union {
-+		struct {
-+			unsigned int dev_handle;
-+			unsigned int dev_ino;
-+		};
-+		unsigned long sysino;
-+	};
-+	struct ino_bucket bucket;
-+	unsigned long	iclr;
-+	unsigned long	imap;
-+};
-+
-+static inline unsigned int irq_data_to_handle(struct irq_data *data)
-+{
-+	struct irq_handler_data *ihd = data->handler_data;
-+
-+	return ihd->dev_handle;
-+}
-+
-+static inline unsigned int irq_data_to_ino(struct irq_data *data)
-+{
-+	struct irq_handler_data *ihd = data->handler_data;
- 
--	spin_unlock_irqrestore(&irq_alloc_lock, flags);
-+	return ihd->dev_ino;
-+}
-+
-+static inline unsigned long irq_data_to_sysino(struct irq_data *data)
-+{
-+	struct irq_handler_data *ihd = data->handler_data;
- 
--	return ent;
-+	return ihd->sysino;
- }
- 
--#ifdef CONFIG_PCI_MSI
- void irq_free(unsigned int irq)
- {
--	unsigned long flags;
-+	void *data = irq_get_handler_data(irq);
- 
--	if (irq >= NR_IRQS)
--		return;
-+	kfree(data);
-+	irq_set_handler_data(irq, NULL);
-+	irq_free_descs(irq, 1);
-+}
- 
--	spin_lock_irqsave(&irq_alloc_lock, flags);
-+unsigned int irq_alloc(unsigned int dev_handle, unsigned int dev_ino)
-+{
-+	int irq;
- 
--	irq_table[irq].in_use = 0;
-+	irq = __irq_alloc_descs(-1, 1, 1, numa_node_id(), NULL);
-+	if (irq <= 0)
-+		goto out;
- 
--	spin_unlock_irqrestore(&irq_alloc_lock, flags);
-+	return irq;
-+out:
+-	return -1;
++	/* The following condition has been observed on LDOM guests.*/
++	WARN_ONCE(1, "find_node: A physical address doesn't match a NUMA node"
++		" rule. Some physical memory will be owned by node 0.");
 +	return 0;
-+}
-+
-+static unsigned int cookie_exists(u32 devhandle, unsigned int devino)
-+{
-+	unsigned long hv_err, cookie;
-+	struct ino_bucket *bucket;
-+	unsigned int irq = 0U;
-+
-+	hv_err = sun4v_vintr_get_cookie(devhandle, devino, &cookie);
-+	if (hv_err) {
-+		pr_err("HV get cookie failed hv_err = %ld\n", hv_err);
-+		goto out;
-+	}
-+
-+	if (cookie & ((1UL << 63UL))) {
-+		cookie = ~cookie;
-+		bucket = (struct ino_bucket *) __va(cookie);
-+		irq = bucket->__irq;
-+	}
-+out:
-+	return irq;
-+}
-+
-+static unsigned int sysino_exists(u32 devhandle, unsigned int devino)
-+{
-+	unsigned long sysino = sun4v_devino_to_sysino(devhandle, devino);
-+	struct ino_bucket *bucket;
-+	unsigned int irq;
-+
-+	bucket = &ivector_table[sysino];
-+	irq = bucket_get_irq(__pa(bucket));
-+
-+	return irq;
-+}
-+
-+void ack_bad_irq(unsigned int irq)
-+{
-+	pr_crit("BAD IRQ ack %d\n", irq);
-+}
-+
-+void irq_install_pre_handler(int irq,
-+			     void (*func)(unsigned int, void *, void *),
-+			     void *arg1, void *arg2)
-+{
-+	pr_warn("IRQ pre handler NOT supported.\n");
- }
--#endif
- 
- /*
-  * /proc/interrupts printing:
-@@ -206,15 +345,6 @@ static unsigned int sun4u_compute_tid(unsigned long imap, unsigned long cpuid)
- 	return tid;
  }
  
--struct irq_handler_data {
--	unsigned long	iclr;
--	unsigned long	imap;
--
--	void		(*pre_handler)(unsigned int, void *, void *);
--	void		*arg1;
--	void		*arg2;
--};
--
- #ifdef CONFIG_SMP
- static int irq_choose_cpu(unsigned int irq, const struct cpumask *affinity)
- {
-@@ -316,8 +446,8 @@ static void sun4u_irq_eoi(struct irq_data *data)
- 
- static void sun4v_irq_enable(struct irq_data *data)
- {
--	unsigned int ino = irq_table[data->irq].dev_ino;
- 	unsigned long cpuid = irq_choose_cpu(data->irq, data->affinity);
-+	unsigned int ino = irq_data_to_sysino(data);
- 	int err;
- 
- 	err = sun4v_intr_settarget(ino, cpuid);
-@@ -337,8 +467,8 @@ static void sun4v_irq_enable(struct irq_data *data)
- static int sun4v_set_affinity(struct irq_data *data,
- 			       const struct cpumask *mask, bool force)
- {
--	unsigned int ino = irq_table[data->irq].dev_ino;
- 	unsigned long cpuid = irq_choose_cpu(data->irq, mask);
-+	unsigned int ino = irq_data_to_sysino(data);
- 	int err;
- 
- 	err = sun4v_intr_settarget(ino, cpuid);
-@@ -351,7 +481,7 @@ static int sun4v_set_affinity(struct irq_data *data,
- 
- static void sun4v_irq_disable(struct irq_data *data)
- {
--	unsigned int ino = irq_table[data->irq].dev_ino;
-+	unsigned int ino = irq_data_to_sysino(data);
- 	int err;
- 
- 	err = sun4v_intr_setenabled(ino, HV_INTR_DISABLED);
-@@ -362,7 +492,7 @@ static void sun4v_irq_disable(struct irq_data *data)
- 
- static void sun4v_irq_eoi(struct irq_data *data)
- {
--	unsigned int ino = irq_table[data->irq].dev_ino;
-+	unsigned int ino = irq_data_to_sysino(data);
- 	int err;
- 
- 	err = sun4v_intr_setstate(ino, HV_INTR_STATE_IDLE);
-@@ -373,14 +503,13 @@ static void sun4v_irq_eoi(struct irq_data *data)
- 
- static void sun4v_virq_enable(struct irq_data *data)
- {
--	unsigned long cpuid, dev_handle, dev_ino;
-+	unsigned long dev_handle = irq_data_to_handle(data);
-+	unsigned long dev_ino = irq_data_to_ino(data);
-+	unsigned long cpuid;
- 	int err;
- 
- 	cpuid = irq_choose_cpu(data->irq, data->affinity);
- 
--	dev_handle = irq_table[data->irq].dev_handle;
--	dev_ino = irq_table[data->irq].dev_ino;
--
- 	err = sun4v_vintr_set_target(dev_handle, dev_ino, cpuid);
- 	if (err != HV_EOK)
- 		printk(KERN_ERR "sun4v_vintr_set_target(%lx,%lx,%lu): "
-@@ -403,14 +532,13 @@ static void sun4v_virq_enable(struct irq_data *data)
- static int sun4v_virt_set_affinity(struct irq_data *data,
- 				    const struct cpumask *mask, bool force)
- {
--	unsigned long cpuid, dev_handle, dev_ino;
-+	unsigned long dev_handle = irq_data_to_handle(data);
-+	unsigned long dev_ino = irq_data_to_ino(data);
-+	unsigned long cpuid;
- 	int err;
- 
- 	cpuid = irq_choose_cpu(data->irq, mask);
- 
--	dev_handle = irq_table[data->irq].dev_handle;
--	dev_ino = irq_table[data->irq].dev_ino;
--
- 	err = sun4v_vintr_set_target(dev_handle, dev_ino, cpuid);
- 	if (err != HV_EOK)
- 		printk(KERN_ERR "sun4v_vintr_set_target(%lx,%lx,%lu): "
-@@ -422,11 +550,10 @@ static int sun4v_virt_set_affinity(struct irq_data *data,
- 
- static void sun4v_virq_disable(struct irq_data *data)
- {
--	unsigned long dev_handle, dev_ino;
-+	unsigned long dev_handle = irq_data_to_handle(data);
-+	unsigned long dev_ino = irq_data_to_ino(data);
- 	int err;
- 
--	dev_handle = irq_table[data->irq].dev_handle;
--	dev_ino = irq_table[data->irq].dev_ino;
- 
- 	err = sun4v_vintr_set_valid(dev_handle, dev_ino,
- 				    HV_INTR_DISABLED);
-@@ -438,12 +565,10 @@ static void sun4v_virq_disable(struct irq_data *data)
- 
- static void sun4v_virq_eoi(struct irq_data *data)
- {
--	unsigned long dev_handle, dev_ino;
-+	unsigned long dev_handle = irq_data_to_handle(data);
-+	unsigned long dev_ino = irq_data_to_ino(data);
- 	int err;
- 
--	dev_handle = irq_table[data->irq].dev_handle;
--	dev_ino = irq_table[data->irq].dev_ino;
--
- 	err = sun4v_vintr_set_state(dev_handle, dev_ino,
- 				    HV_INTR_STATE_IDLE);
- 	if (err != HV_EOK)
-@@ -479,31 +604,10 @@ static struct irq_chip sun4v_virq = {
- 	.flags			= IRQCHIP_EOI_IF_HANDLED,
- };
- 
--static void pre_flow_handler(struct irq_data *d)
--{
--	struct irq_handler_data *handler_data = irq_data_get_irq_handler_data(d);
--	unsigned int ino = irq_table[d->irq].dev_ino;
--
--	handler_data->pre_handler(ino, handler_data->arg1, handler_data->arg2);
--}
--
--void irq_install_pre_handler(int irq,
--			     void (*func)(unsigned int, void *, void *),
--			     void *arg1, void *arg2)
--{
--	struct irq_handler_data *handler_data = irq_get_handler_data(irq);
--
--	handler_data->pre_handler = func;
--	handler_data->arg1 = arg1;
--	handler_data->arg2 = arg2;
--
--	__irq_set_preflow_handler(irq, pre_flow_handler);
--}
--
- unsigned int build_irq(int inofixup, unsigned long iclr, unsigned long imap)
- {
--	struct ino_bucket *bucket;
- 	struct irq_handler_data *handler_data;
-+	struct ino_bucket *bucket;
- 	unsigned int irq;
- 	int ino;
- 
-@@ -537,119 +641,166 @@ out:
- 	return irq;
- }
- 
--static unsigned int sun4v_build_common(unsigned long sysino,
--				       struct irq_chip *chip)
-+static unsigned int sun4v_build_common(u32 devhandle, unsigned int devino,
-+		void (*handler_data_init)(struct irq_handler_data *data,
-+		u32 devhandle, unsigned int devino),
-+		struct irq_chip *chip)
- {
--	struct ino_bucket *bucket;
--	struct irq_handler_data *handler_data;
-+	struct irq_handler_data *data;
- 	unsigned int irq;
- 
--	BUG_ON(tlb_type != hypervisor);
-+	irq = irq_alloc(devhandle, devino);
-+	if (!irq)
-+		goto out;
- 
--	bucket = &ivector_table[sysino];
--	irq = bucket_get_irq(__pa(bucket));
--	if (!irq) {
--		irq = irq_alloc(0, sysino);
--		bucket_set_irq(__pa(bucket), irq);
--		irq_set_chip_and_handler_name(irq, chip, handle_fasteoi_irq,
--					      "IVEC");
-+	data = kzalloc(sizeof(struct irq_handler_data), GFP_ATOMIC);
-+	if (unlikely(!data)) {
-+		pr_err("IRQ handler data allocation failed.\n");
-+		irq_free(irq);
-+		irq = 0;
-+		goto out;
- 	}
- 
--	handler_data = irq_get_handler_data(irq);
--	if (unlikely(handler_data))
--		goto out;
-+	irq_set_handler_data(irq, data);
-+	handler_data_init(data, devhandle, devino);
-+	irq_set_chip_and_handler_name(irq, chip, handle_fasteoi_irq, "IVEC");
-+	data->imap = ~0UL;
-+	data->iclr = ~0UL;
-+out:
-+	return irq;
-+}
- 
--	handler_data = kzalloc(sizeof(struct irq_handler_data), GFP_ATOMIC);
--	if (unlikely(!handler_data)) {
--		prom_printf("IRQ: kzalloc(irq_handler_data) failed.\n");
--		prom_halt();
--	}
--	irq_set_handler_data(irq, handler_data);
-+static unsigned long cookie_assign(unsigned int irq, u32 devhandle,
-+		unsigned int devino)
-+{
-+	struct irq_handler_data *ihd = irq_get_handler_data(irq);
-+	unsigned long hv_error, cookie;
- 
--	/* Catch accidental accesses to these things.  IMAP/ICLR handling
--	 * is done by hypervisor calls on sun4v platforms, not by direct
--	 * register accesses.
-+	/* handler_irq needs to find the irq. cookie is seen signed in
-+	 * sun4v_dev_mondo and treated as a non ivector_table delivery.
- 	 */
--	handler_data->imap = ~0UL;
--	handler_data->iclr = ~0UL;
-+	ihd->bucket.__irq = irq;
-+	cookie = ~__pa(&ihd->bucket);
- 
--out:
--	return irq;
-+	hv_error = sun4v_vintr_set_cookie(devhandle, devino, cookie);
-+	if (hv_error)
-+		pr_err("HV vintr set cookie failed = %ld\n", hv_error);
-+
-+	return hv_error;
- }
- 
--unsigned int sun4v_build_irq(u32 devhandle, unsigned int devino)
-+static void cookie_handler_data(struct irq_handler_data *data,
-+				u32 devhandle, unsigned int devino)
- {
--	unsigned long sysino = sun4v_devino_to_sysino(devhandle, devino);
-+	data->dev_handle = devhandle;
-+	data->dev_ino = devino;
-+}
- 
--	return sun4v_build_common(sysino, &sun4v_irq);
-+static unsigned int cookie_build_irq(u32 devhandle, unsigned int devino,
-+				     struct irq_chip *chip)
-+{
-+	unsigned long hv_error;
-+	unsigned int irq;
-+
-+	irq = sun4v_build_common(devhandle, devino, cookie_handler_data, chip);
-+
-+	hv_error = cookie_assign(irq, devhandle, devino);
-+	if (hv_error) {
-+		irq_free(irq);
-+		irq = 0;
-+	}
-+
-+	return irq;
- }
- 
--unsigned int sun4v_build_virq(u32 devhandle, unsigned int devino)
-+static unsigned int sun4v_build_cookie(u32 devhandle, unsigned int devino)
- {
--	struct irq_handler_data *handler_data;
--	unsigned long hv_err, cookie;
--	struct ino_bucket *bucket;
- 	unsigned int irq;
- 
--	bucket = kzalloc(sizeof(struct ino_bucket), GFP_ATOMIC);
--	if (unlikely(!bucket))
--		return 0;
-+	irq = cookie_exists(devhandle, devino);
-+	if (irq)
-+		goto out;
- 
--	/* The only reference we store to the IRQ bucket is
--	 * by physical address which kmemleak can't see, tell
--	 * it that this object explicitly is not a leak and
--	 * should be scanned.
--	 */
--	kmemleak_not_leak(bucket);
-+	irq = cookie_build_irq(devhandle, devino, &sun4v_virq);
- 
--	__flush_dcache_range((unsigned long) bucket,
--			     ((unsigned long) bucket +
--			      sizeof(struct ino_bucket)));
-+out:
-+	return irq;
-+}
- 
--	irq = irq_alloc(devhandle, devino);
-+static void sysino_set_bucket(unsigned int irq)
-+{
-+	struct irq_handler_data *ihd = irq_get_handler_data(irq);
-+	struct ino_bucket *bucket;
-+	unsigned long sysino;
-+
-+	sysino = sun4v_devino_to_sysino(ihd->dev_handle, ihd->dev_ino);
-+	BUG_ON(sysino >= nr_ivec);
-+	bucket = &ivector_table[sysino];
- 	bucket_set_irq(__pa(bucket), irq);
-+}
- 
--	irq_set_chip_and_handler_name(irq, &sun4v_virq, handle_fasteoi_irq,
--				      "IVEC");
-+static void sysino_handler_data(struct irq_handler_data *data,
-+				u32 devhandle, unsigned int devino)
-+{
-+	unsigned long sysino;
- 
--	handler_data = kzalloc(sizeof(struct irq_handler_data), GFP_ATOMIC);
--	if (unlikely(!handler_data))
--		return 0;
-+	sysino = sun4v_devino_to_sysino(devhandle, devino);
-+	data->sysino = sysino;
-+}
- 
--	/* In order to make the LDC channel startup sequence easier,
--	 * especially wrt. locking, we do not let request_irq() enable
--	 * the interrupt.
--	 */
--	irq_set_status_flags(irq, IRQ_NOAUTOEN);
--	irq_set_handler_data(irq, handler_data);
-+static unsigned int sysino_build_irq(u32 devhandle, unsigned int devino,
-+				     struct irq_chip *chip)
-+{
-+	unsigned int irq;
- 
--	/* Catch accidental accesses to these things.  IMAP/ICLR handling
--	 * is done by hypervisor calls on sun4v platforms, not by direct
--	 * register accesses.
--	 */
--	handler_data->imap = ~0UL;
--	handler_data->iclr = ~0UL;
-+	irq = sun4v_build_common(devhandle, devino, sysino_handler_data, chip);
-+	if (!irq)
-+		goto out;
- 
--	cookie = ~__pa(bucket);
--	hv_err = sun4v_vintr_set_cookie(devhandle, devino, cookie);
--	if (hv_err) {
--		prom_printf("IRQ: Fatal, cannot set cookie for [%x:%x] "
--			    "err=%lu\n", devhandle, devino, hv_err);
--		prom_halt();
--	}
-+	sysino_set_bucket(irq);
-+out:
-+	return irq;
-+}
- 
-+static int sun4v_build_sysino(u32 devhandle, unsigned int devino)
-+{
-+	int irq;
-+
-+	irq = sysino_exists(devhandle, devino);
-+	if (irq)
-+		goto out;
-+
-+	irq = sysino_build_irq(devhandle, devino, &sun4v_irq);
-+out:
- 	return irq;
- }
- 
--void ack_bad_irq(unsigned int irq)
-+unsigned int sun4v_build_irq(u32 devhandle, unsigned int devino)
- {
--	unsigned int ino = irq_table[irq].dev_ino;
-+	unsigned int irq;
- 
--	if (!ino)
--		ino = 0xdeadbeef;
-+	if (sun4v_cookie_only_virqs())
-+		irq = sun4v_build_cookie(devhandle, devino);
-+	else
-+		irq = sun4v_build_sysino(devhandle, devino);
- 
--	printk(KERN_CRIT "Unexpected IRQ from ino[%x] irq[%u]\n",
--	       ino, irq);
-+	return irq;
-+}
-+
-+unsigned int sun4v_build_virq(u32 devhandle, unsigned int devino)
-+{
-+	int irq;
-+
-+	irq = cookie_build_irq(devhandle, devino, &sun4v_virq);
-+	if (!irq)
-+		goto out;
-+
-+	/* This is borrowed from the original function.
-+	 */
-+	irq_set_status_flags(irq, IRQ_NOAUTOEN);
-+
-+out:
-+	return irq;
- }
- 
- void *hardirq_stack[NR_CPUS];
-@@ -720,9 +871,12 @@ void fixup_irqs(void)
- 
- 	for (irq = 0; irq < NR_IRQS; irq++) {
- 		struct irq_desc *desc = irq_to_desc(irq);
--		struct irq_data *data = irq_desc_get_irq_data(desc);
-+		struct irq_data *data;
- 		unsigned long flags;
- 
-+		if (!desc)
-+			continue;
-+		data = irq_desc_get_irq_data(desc);
- 		raw_spin_lock_irqsave(&desc->lock, flags);
- 		if (desc->action && !irqd_is_per_cpu(data)) {
- 			if (data->chip->irq_set_affinity)
-@@ -922,16 +1076,22 @@ static struct irqaction timer_irq_action = {
- 	.name = "timer",
- };
- 
--/* Only invoked on boot processor. */
--void __init init_IRQ(void)
-+static void __init irq_ivector_init(void)
- {
--	unsigned long size;
-+	unsigned long size, order;
-+	unsigned int ivecs;
- 
--	map_prom_timers();
--	kill_prom_timer();
-+	/* If we are doing cookie only VIRQs then we do not need the ivector
-+	 * table to process interrupts.
-+	 */
-+	if (sun4v_cookie_only_virqs())
-+		return;
- 
--	size = sizeof(struct ino_bucket) * NUM_IVECS;
--	ivector_table = kzalloc(size, GFP_KERNEL);
-+	ivecs = size_nr_ivec();
-+	size = sizeof(struct ino_bucket) * ivecs;
-+	order = get_order(size);
-+	ivector_table = (struct ino_bucket *)
-+		__get_free_pages(GFP_KERNEL | __GFP_ZERO, order);
- 	if (!ivector_table) {
- 		prom_printf("Fatal error, cannot allocate ivector_table\n");
- 		prom_halt();
-@@ -940,6 +1100,15 @@ void __init init_IRQ(void)
- 			     ((unsigned long) ivector_table) + size);
- 
- 	ivector_table_pa = __pa(ivector_table);
-+}
-+
-+/* Only invoked on boot processor.*/
-+void __init init_IRQ(void)
-+{
-+	irq_init_hv();
-+	irq_ivector_init();
-+	map_prom_timers();
-+	kill_prom_timer();
- 
- 	if (tlb_type == hypervisor)
- 		sun4v_init_mondo_queues();
+ static u64 memblock_nid_range(u64 start, u64 end, int *nid)
 -- 
 1.9.1
 
