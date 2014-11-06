@@ -1,130 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaKFJ0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:26:19 -0500
-Received: from [119.145.14.65] ([119.145.14.65]:18083 "EHLO
-	szxga02-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbaKFJ0Q (ORCPT
+	id S1751731AbaKFJbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:31:15 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:57013 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751021AbaKFJbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:26:16 -0500
-Message-ID: <545B3E48.9020804@huawei.com>
-Date: Thu, 6 Nov 2014 17:24:24 +0800
-From: Li Liu <john.liuli@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 6 Nov 2014 04:31:12 -0500
+Message-ID: <545B3FA4.8040109@st.com>
+Date: Thu, 6 Nov 2014 10:30:12 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Shannon Zhao <zhaoshenglong@huawei.com>,
-        Eric Auger <eric.auger@linaro.org>,
-        Peter Maydell <peter.maydell@linaro.org>
-CC: Joel Schopp <joel.schopp@amd.com>,
-        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, <remy.gauguey@cea.fr>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "lkml - Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
-        QEMU Developers <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "eric.auger@st.com" <eric.auger@st.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
- vhost-net based on virtio-mmio
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>	<CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com> <544E2B18.8010702@huawei.com> <5459E343.6030907@linaro.org> <545AD5FC.1030600@huawei.com>
-In-Reply-To: <545AD5FC.1030600@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x Driver
+ defines
+References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org> <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org> <545B1C53.9010406@ti.com>
+In-Reply-To: <545B1C53.9010406@ti.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.142.143.9]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-06_04:2014-11-05,2014-11-06,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 2014/11/6 9:59, Shannon Zhao wrote:
-> 
-> 
-> On 2014/11/5 16:43, Eric Auger wrote:
->> On 10/27/2014 12:23 PM, Li Liu wrote:
->>>
->>>
->>> On 2014/10/27 17:37, Peter Maydell wrote:
->>>> On 25 October 2014 09:24, john.liuli <john.liuli@huawei.com> wrote:
->>>>> To get the interrupt reason to support such VIRTIO_NET_F_STATUS
->>>>> features I add a new register offset VIRTIO_MMIO_ISRMEM which
->>>>> will help to establish a shared memory region between qemu and
->>>>> virtio-mmio device. Then the interrupt reason can be accessed by
->>>>> guest driver through this region. At the same time, the virtio-mmio
->>>>> dirver check this region to see irqfd is supported or not during
->>>>> the irq handler registration, and different handler will be assigned.
->>>>
->>>> If you want to add a new register you should probably propose
->>>> an update to the virtio spec. However, it seems to me it would
->>>> be better to get generic PCI/PCIe working on the ARM virt
->>>> board instead; then we can let virtio-mmio quietly fade away.
->>>> This has been on the todo list for ages (and there have been
->>>> RFC patches posted for plain PCI), it's just nobody's had time
->>>> to work on it.
->>>>
->>>> thanks
->>>> -- PMM
->>>>
->>>
->>> So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
->>> If so, let this patch go with the wind:). Thx.
->>
->> Hi,
->>
->> As a fix of current situation where ISR is only partially updated when
->> vhost-irqfd handles standard IRQ and waiting for PCI emuluation,
->> wouldn't it make sense to store ISR content on vhost driver side and
->> introduce ioctls to read/write it. When using vhost BE, virtio QEMU
->> device would use those ioctl to read/update the ISR content. On top of
->> that we would update the ISR in vhost before triggering the irqfd. If I
->> do not miss anything this would at least make things functional with irqfd.
->>
->> As a second step, we could try to introduce in-kernel emulation of
->> ISR/ACK to fix the performance issue related to going to user-side each
->> time ISR/ACK accesses are done.
->>
->> Do you think it is worth investigating this direction?
->>
+Hi Kishon,
+On 11/06/2014 07:59 AM, Kishon Vijay Abraham I wrote:
 > Hi,
-> 
-> About this problem I have a talk with Li Liu. As MST said, we could use
-> multiple GSI to support vhost-net with irqfd. And we have figured out a way
-> to solve this problem. The method is as same as virtio-pci which is to assign
-> multiple irqs for virtio-mmio. Also it can support multiqueue virtio-net on arm.
-> 
-> Would you have a look at this method? Thank you very much.
-> 
-> - virtio-mmio: support for multiple irqs
-> http://www.spinics.net/lists/kernel/msg1858860.html
-> 
-> Thanks,
-> Shannon
-> 
-
-Yeah, I think multiple GSI is more compatible with MSI-X. And even virtio-mmio
-will fade away at last. It still make senses for ARM32 which can't support PCI/PCIe.
-
-BTW, this patch is handed over to Shannon and please refer to new patch at
-http://www.spinics.net/lists/kernel/msg1858860.html.
-
-Li.
-
->> Thank you in advance
+>
+> On Tuesday 04 November 2014 04:21 PM, Gabriel FERNANDEZ wrote:
+>> This provides the shared header file which will be reference from both
+>> PHY driver and its associated Device Tree node(s).
 >>
->> Best Regards
+>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>> ---
+>>   include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
+> I don't see this being used in device tree file. Are you planning to add this
+> after -rc1 is tagged. Or else I have to create a separate branch for this file
+> which will be merged by both me and the dt maintainer. Let me know.
+I think we don't need to create a branch we will merged by both of us.
+
+What we can do that both of us apply this patch in our trees.
+It will avoid dependencies on each others.
+
+What do you think?
+
+Best regards,
+Maxime
+
+>
+> Thanks
+> Kishon
+>>   1 file changed, 18 insertions(+)
+>>   create mode 100644 include/dt-bindings/phy/phy.h
 >>
->> Eric
+>> diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+>> new file mode 100644
+>> index 0000000..e8c6a3f
+>> --- /dev/null
+>> +++ b/include/dt-bindings/phy/phy.h
+>> @@ -0,0 +1,18 @@
+>> +/*
+>> + *
+>> + * This header provides constants for the phy framework
+>> + *
+>> + * Copyright (C) 2014 STMicroelectronics
+>> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+>> + * License terms:  GNU General Public License (GPL), version 2
+>> + */
+>> +
+>> +#ifndef _DT_BINDINGS_PHY
+>> +#define _DT_BINDINGS_PHY
+>> +
+>> +#define PHY_TYPE_SATA		1
+>> +#define PHY_TYPE_PCIE		2
+>> +#define PHY_TYPE_USB2		3
+>> +#define PHY_TYPE_USB3		4
+>> +
+>> +#endif /* _DT_BINDINGS_PHY */
 >>
->>
->>>
->>> Li.
->>>> .
->>>>
-> 
-> 
-> .
-> 
 
