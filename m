@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaKFRWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:22:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954AbaKFRVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:21:38 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Drivers: hv: kvp,vss: Fast propagation of userspace communication failure
-Date: Thu,  6 Nov 2014 18:21:25 +0100
-Message-Id: <1415294485-23945-3-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1415294485-23945-1-git-send-email-vkuznets@redhat.com>
-References: <1415294485-23945-1-git-send-email-vkuznets@redhat.com>
+	id S1752376AbaKFRWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:22:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50358 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338AbaKFRWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:22:47 -0500
+Date: Thu, 6 Nov 2014 09:22:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Yijing Wang <wangyijing@huawei.com>, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org,
+        Weng Meiling <wengmeiling.weng@huawei.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] sysfs: driver core: Fix glue dir race condition
+Message-ID: <20141106172246.GA20192@kroah.com>
+References: <1415261798-9671-1-git-send-email-wangyijing@huawei.com>
+ <20141106165547.GG25642@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106165547.GG25642@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail to send a message to userspace daemon with cn_netlink_send()
-there is no need to wait for userspace to reply as it is not going to
-happen. This happens when kvp or vss daemon is stopped after a successful
-handshake. Report HV_E_FAIL immediately and cancel the timeout job so
-host won't receive two failures.
-Use pr_warn() for VSS and pr_debug() for KVP deliberately as VSS request
-are rare and result in a failed backup. KVP requests are much more frequent
-after a successful handshake so avoid flooding logs. It would be nice to
-have an ability to de-negotiate with the host in case userspace daemon gets
-disconnected so we won't receive new requests. But I'm not sure it is
-possible.
+On Thu, Nov 06, 2014 at 11:55:47AM -0500, Tejun Heo wrote:
+> Maybe "fix glue dir race condition by not removing them" is a better
+> title?
+> 
+> On Thu, Nov 06, 2014 at 04:16:38PM +0800, Yijing Wang wrote:
+> > There is a race condition when removing glue directory.
+> > It can be reproduced in following test:
+> > 
+> > path 1: Add first child device
+> > device_add()
+> > 	get_device_parent()
+> > 		/*find parent from glue_dirs.list*/
+> > 		list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
+> > 			if (k->parent == parent_kobj) {
+> > 				kobj = kobject_get(k);
+> > 				break;
+> > 			}
+> > 		....
+> > 		class_dir_create_and_add()
+> > 
+> > path2: Remove last child device under glue dir
+> > device_del()
+> > 	cleanup_device_parent()
+> > 		cleanup_glue_dir()
+> > 			kobject_put(glue_dir);
+> > 
+> > If path2 has been called cleanup_glue_dir(), but not
+> > call kobject_put(glue_dir), the glue dir is still
+> > in parent's kset list. Meanwhile, path1 find the glue
+> > dir from the glue_dirs.list. Path2 may release glue dir
+> > before path1 call kobject_get(). So kernel will report
+> > the warning and bug_on.
+> > 
+> > This fix keep glue dir around once it created suggested
+> > by Tejun Heo.
+> 
+> I think you prolly want to explain why this is okay / desired.
+> e.g. list how the glue dir is used and how many of them are there and
+> explain that there's no real benefit in removing them.
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- drivers/hv/hv_kvp.c      | 9 ++++++++-
- drivers/hv/hv_snapshot.c | 8 +++++++-
- 2 files changed, 15 insertions(+), 2 deletions(-)
+I'd really _like_ to remove them if at all possible, as if there isn't
+any "children" in the subdirectory, there shouldn't be a need for that
+directory to be there.
 
-diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
-index 521c146..beb8105 100644
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -350,6 +350,7 @@ kvp_send_key(struct work_struct *dummy)
- 	__u8 pool = kvp_transaction.kvp_msg->kvp_hdr.pool;
- 	__u32 val32;
- 	__u64 val64;
-+	int rc;
- 
- 	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg) , GFP_ATOMIC);
- 	if (!msg)
-@@ -446,7 +447,13 @@ kvp_send_key(struct work_struct *dummy)
- 	}
- 
- 	msg->len = sizeof(struct hv_kvp_msg);
--	cn_netlink_send(msg, 0, 0, GFP_ATOMIC);
-+	rc = cn_netlink_send(msg, 0, 0, GFP_ATOMIC);
-+	if (rc) {
-+		pr_debug("KVP: failed to communicate to the daemon: %d\n", rc);
-+		if (cancel_delayed_work_sync(&kvp_work))
-+			kvp_respond_to_host(message, HV_E_FAIL);
-+	}
-+
- 	kfree(msg);
- 
- 	return;
-diff --git a/drivers/hv/hv_snapshot.c b/drivers/hv/hv_snapshot.c
-index 21e51be..9d5e0d1 100644
---- a/drivers/hv/hv_snapshot.c
-+++ b/drivers/hv/hv_snapshot.c
-@@ -96,6 +96,7 @@ vss_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- static void vss_send_op(struct work_struct *dummy)
- {
- 	int op = vss_transaction.msg->vss_hdr.operation;
-+	int rc;
- 	struct cn_msg *msg;
- 	struct hv_vss_msg *vss_msg;
- 
-@@ -111,7 +112,12 @@ static void vss_send_op(struct work_struct *dummy)
- 	vss_msg->vss_hdr.operation = op;
- 	msg->len = sizeof(struct hv_vss_msg);
- 
--	cn_netlink_send(msg, 0, 0, GFP_ATOMIC);
-+	rc = cn_netlink_send(msg, 0, 0, GFP_ATOMIC);
-+	if (rc) {
-+		pr_warn("VSS: failed to communicate to the daemon: %d\n", rc);
-+		if (cancel_delayed_work_sync(&vss_timeout_work))
-+			vss_respond_to_host(HV_E_FAIL);
-+	}
- 	kfree(msg);
- 
- 	return;
--- 
-1.9.3
+This seems to be the "classic" problem we have of a kref in a list that
+can be found while the last instance could be removed at the same time.
+I hate to just throw another lock at the problem, but wouldn't a lock to
+protect the list of glue_dirs be the answer here?
 
+thanks,
+
+greg k-h
