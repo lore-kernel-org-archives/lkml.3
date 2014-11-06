@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaKFCA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:00:29 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40226 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaKFCA0 (ORCPT
+	id S1751420AbaKFCEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:04:39 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:42217 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaKFCEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:00:26 -0500
-Message-ID: <545AD5FC.1030600@huawei.com>
-Date: Thu, 6 Nov 2014 09:59:24 +0800
-From: Shannon Zhao <zhaoshenglong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Eric Auger <eric.auger@linaro.org>, Li Liu <john.liuli@huawei.com>,
-        "Peter Maydell" <peter.maydell@linaro.org>
-CC: Joel Schopp <joel.schopp@amd.com>,
-        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, <remy.gauguey@cea.fr>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "lkml - Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
-        QEMU Developers <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "eric.auger@st.com" <eric.auger@st.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
- vhost-net based on virtio-mmio
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>	<CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com> <544E2B18.8010702@huawei.com> <5459E343.6030907@linaro.org>
-In-Reply-To: <5459E343.6030907@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.16.142]
-X-CFilter-Loop: Reflected
+	Wed, 5 Nov 2014 21:04:34 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/3] ftracetest: Use logfile name supported by busybox's mktemp
+Date: Thu,  6 Nov 2014 11:04:28 +0900
+Message-Id: <1415239470-28705-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When I run the ftracetest in a busybox docker container, I saw
+following error.  Make the logfile template to comply with busybox's
+mktemp.  It also keep the logfiles under the logs directory.
 
+  # /linux/tools/testing/selftests/ftrace/ftracetest
+  === Ftrace unit tests ===
+  mktemp: unrecognized option `--tmpdir=/linux/tools/testing/selftests/ftrace/logs/20141106-003624/'
+  BusyBox v1.22.1 (2014-05-22 23:22:11 UTC) multi-call binary.
 
-On 2014/11/5 16:43, Eric Auger wrote:
-> On 10/27/2014 12:23 PM, Li Liu wrote:
->>
->>
->> On 2014/10/27 17:37, Peter Maydell wrote:
->>> On 25 October 2014 09:24, john.liuli <john.liuli@huawei.com> wrote:
->>>> To get the interrupt reason to support such VIRTIO_NET_F_STATUS
->>>> features I add a new register offset VIRTIO_MMIO_ISRMEM which
->>>> will help to establish a shared memory region between qemu and
->>>> virtio-mmio device. Then the interrupt reason can be accessed by
->>>> guest driver through this region. At the same time, the virtio-mmio
->>>> dirver check this region to see irqfd is supported or not during
->>>> the irq handler registration, and different handler will be assigned.
->>>
->>> If you want to add a new register you should probably propose
->>> an update to the virtio spec. However, it seems to me it would
->>> be better to get generic PCI/PCIe working on the ARM virt
->>> board instead; then we can let virtio-mmio quietly fade away.
->>> This has been on the todo list for ages (and there have been
->>> RFC patches posted for plain PCI), it's just nobody's had time
->>> to work on it.
->>>
->>> thanks
->>> -- PMM
->>>
->>
->> So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
->> If so, let this patch go with the wind:). Thx.
-> 
-> Hi,
-> 
-> As a fix of current situation where ISR is only partially updated when
-> vhost-irqfd handles standard IRQ and waiting for PCI emuluation,
-> wouldn't it make sense to store ISR content on vhost driver side and
-> introduce ioctls to read/write it. When using vhost BE, virtio QEMU
-> device would use those ioctl to read/update the ISR content. On top of
-> that we would update the ISR in vhost before triggering the irqfd. If I
-> do not miss anything this would at least make things functional with irqfd.
-> 
-> As a second step, we could try to introduce in-kernel emulation of
-> ISR/ACK to fix the performance issue related to going to user-side each
-> time ISR/ACK accesses are done.
-> 
-> Do you think it is worth investigating this direction?
-> 
-Hi,
+  Usage: mktemp [-dt] [-p DIR] [TEMPLATE]
 
-About this problem I have a talk with Li Liu. As MST said, we could use
-multiple GSI to support vhost-net with irqfd. And we have figured out a way
-to solve this problem. The method is as same as virtio-pci which is to assign
-multiple irqs for virtio-mmio. Also it can support multiqueue virtio-net on arm.
+  Create a temporary file with name based on TEMPLATE and print its name.
+  TEMPLATE must end with XXXXXX (e.g. [/dir/]nameXXXXXX).
+  Without TEMPLATE, -t tmp.XXXXXX is assumed.
 
-Would you have a look at this method? Thank you very much.
+  	-d	  Make directory, not file
+  	-q	  Fail silently on errors
+  	-t	  Prepend base directory name to TEMPLATE
+  	-p DIR	  Use DIR as a base directory (implies -t)
+  	-u Do not create anything; print a name
 
-- virtio-mmio: support for multiple irqs
-http://www.spinics.net/lists/kernel/msg1858860.html
+  Base directory is: -p DIR, else $TMPDIR, else /tmp
 
-Thanks,
-Shannon
+  [1] Basic trace file check/linux/tools/testing/selftests/ftrace/ftracetest: line 244: can't create : nonexistent directory
+  /linux/tools/testing/selftests/ftrace/ftracetest: line 244: can't create : nonexistent directory
+						  [FAIL]
 
-> Thank you in advance
-> 
-> Best Regards
-> 
-> Eric
-> 
-> 
->>
->> Li.
->>> .
->>>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/testing/selftests/ftrace/ftracetest | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
+index 8cc01c14262f..93b1bf5eadb5 100755
+--- a/tools/testing/selftests/ftrace/ftracetest
++++ b/tools/testing/selftests/ftrace/ftracetest
+@@ -218,7 +218,7 @@ trap 'SIG_RESULT=$XFAIL' $SIG_XFAIL
+ # Run one test case
+ run_test() { # testfile
+   local testname=`basename $1`
+-  local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
++  local testlog=`mktemp $LOG_DIR/${testname}-log.XXXXXX`
+   testcase $1
+   echo "execute: "$1 > $testlog
+   SIG_RESULT=0
+-- 
+2.1.2
 
