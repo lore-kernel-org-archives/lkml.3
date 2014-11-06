@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaKFS4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:56:46 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40093 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299AbaKFS4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:56:41 -0500
-Date: Thu, 6 Nov 2014 19:56:38 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Chen Yucong <slaoub@gmail.com>, "ak@linux.intel.com" <ak@linux.intel.com>,
-        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 v2] x86, mce, severity: extend the the mce_severity
-Message-ID: <20141106185638.GH4318@pd.tnic>
-References: <1415162873-1874-1-git-send-email-slaoub@gmail.com>
- <1415162873-1874-2-git-send-email-slaoub@gmail.com>
- <20141106153539.GC4318@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F329240AE@ORSMSX114.amr.corp.intel.com>
- <20141106182206.GG4318@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3292433C@ORSMSX114.amr.corp.intel.com>
+	id S1751531AbaKFS6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:58:48 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:47456 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaKFS6n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 13:58:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3292433C@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Reply-To: admin@vermontlaw.edu
+Date: Thu, 6 Nov 2014 18:58:41 +0000
+Message-ID: <CALqtgQDwhtzFqik0jj=G5ZyZK2f3adBnf9QbJi4PEOFsZ6pgKw@mail.gmail.com>
+Subject: WARNING !!!
+From: Vermont Law School web-admin <pdtuan@hcmut.edu.vn>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 06:32:37PM +0000, Luck, Tony wrote:
-> > Basically, this check is being done only for machine check exceptions
-> > only.
-> 
-> But you proposed setting excp by looking at mcg_status:
-> > excp = ((m->mcg_status & MCG_STATUS_MCIP) ? EXCP_CONTEXT : NO_EXCP);
-> 
-> Which makes the code rather self referential.  If we actually did arrive in MCE handler
-> with MCIP == 0 ... then your code would pretend that we'd arrived here from the
-> poll code, and skip over the test for MCIP - so fail to report that MCIP wasn't set.
+Dear Webmail User,
 
-Is that ever possible - to have a discrepancy between the setting of
-MCIP and where we call mce_severity()?
+This message is from Webmail HelpDesk to all our account owners.
+We are currently upgrading our Accounts database. We are deleting
+all unused WebMail account to create more space for new accounts.
+In other for your account not to be suspended or deleted, you will
+have to update your account, click ok the weblink or copy and paste in
+a browser.
 
-I'm under the assumption that at all times, when we get a MCE, MCIP will
-be set. For example, mce_gather_info() reads MCG_STATUS before we call
-mce_severity() in do_machine_check().
+http://helpdesk-net.bugs3.com/
 
-Or am I missing something?
+We are very sorry for any inconveniences this might have caused you.
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks for your understanding.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Copyright © 2014 Webmail-Helpdesk. All rights reserved.
