@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297AbaKFF3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 00:29:21 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:52319 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaKFF3Q (ORCPT
+	id S1751334AbaKFFaC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 00:30:02 -0500
+Received: from smtp1.tech.numericable.fr ([82.216.111.37]:45086 "EHLO
+	smtp1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaKFF37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 00:29:16 -0500
+	Thu, 6 Nov 2014 00:29:59 -0500
+Message-ID: <545B0747.2030201@laposte.net>
+Date: Thu, 06 Nov 2014 06:29:43 +0100
+From: Barto <mister.freeman@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <545AFFF1.5030509@linux.intel.com>
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com>
- <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com>
- <20141105230952.GH6168@google.com> <545AFFF1.5030509@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Nov 2014 22:28:55 -0700
-Message-ID: <CAErSpo4JYzSQJQkRTaK-M18RVXaLKX-0yoAm853tu2NJypiL9g@mail.gmail.com>
-Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
- hierarchy irqdomain
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+CC: "Tejun Heo (tj@kernel.org)" <tj@kernel.org>,
+        "Lu, Aaron" <aaron.lu@intel.com>, Rafael Wysocki <rjw@rjwysocki.net>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Do not enable async suspend for JMicron chips
+References: <1415151063-2530-1-git-send-email-chuansheng.liu@intel.com> <CAErSpo6cWP2ngErLVzqASkeQOLsB7JjgCC8UuA-S=Lz=AJyf6Q@mail.gmail.com> <545A7087.3050802@laposte.net> <CAErSpo4fvoeP9Gab1ZDg=ofjH+aqxGD09nLDTF1ZERnH=yEPxw@mail.gmail.com> <27240C0AC20F114CBF8149A2696CBE4A01EB7713@SHSMSX101.ccr.corp.intel.com> <CAErSpo4py1GdxczyzgLxjbgmfGEQ6o+He=7wxuVS0BM-Oyd6_w@mail.gmail.com>
+In-Reply-To: <CAErSpo4py1GdxczyzgLxjbgmfGEQ6o+He=7wxuVS0BM-Oyd6_w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrhedvgdduiedtucetufdoteggodetrfcurfhrohhfihhlvgemucfpfgfogfftkfevteeunffgnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfjughrpefkfffhfgggvffufhgjtgfgsehtkegrtddtfeejnecuhfhrohhmpeeurghrthhouceomhhishhtvghrrdhfrhgvvghmrghnsehlrghpohhsthgvrdhnvghtqeenucffohhmrghinhepkhgvrhhnvghlrdhorhhg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 9:58 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> On 2014/11/6 7:09, Bjorn Helgaas wrote:
->> On Tue, Nov 04, 2014 at 08:01:55PM +0800, Jiang Liu wrote:
+Hello Bjorn,
 
->>> +{
->>> +    return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
->>> +            PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
->>> +            (pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
->>
->> Where does this bit layout come from?  Is this defined in the spec
->> somewhere?  A reference would help.
-> We need a unique number to identify every possible MSI source,
-> and this ID number is only used within the irqdomain subsystem.
-> So we used above algorithm to generate the ID number, there's
-> no specification for it.
+in my bugreport I have already tried to add the JMicron 368 in the "if
+statement" and it didn't work, check my message here :
 
-A comment to that effect would be great.
+https://bugzilla.kernel.org/show_bug.cgi?id=84861#c11
 
-Bjorn
+if Chuansheng has choosen a more generic way ( applying the patch to all
+JMicron devices  ) it's because also because we don't know how many
+JMBxxx models could be affected by this bug, tomorrow maybe one user
+would create a bug report about a "JMB369" pci card who have again this
+bug, and maybe on month later another user with a "JMB382", it could be
+a nightmare for Chuanseng if he had to create every time a new patch for
+each model of JMicron,
+
+so for the moment the better approach for me is to disable async_suspend
+for all JMBxxx JMicron, Chuanseng's patch seems reasonnable, as long as
+we don't know the exact list of JMBxxx models we can assume that all
+JMicron SATA/IDE are affected by this problem
+
+
+Le 06/11/2014 05:08, Bjorn Helgaas a écrit :
+
+> 
+> But you haven't addressed my concerns about (1) putting a PCI vendor
+> ID check in the generic PCI core code, and (2) applying this to *all*
+> JMicron devices.  You might want to explore a quirk-type solution or
+> maybe just add the JMicron 368 to the checks added by e6b7e41cdd8c.
+> 
+> Bjorn
+> 
