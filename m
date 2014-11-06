@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaKFPLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:11:06 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37569 "EHLO mga11.intel.com"
+	id S1751813AbaKFPLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:11:02 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37539 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565AbaKFPJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751424AbaKFPJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 10:09:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="627701943"
+   d="scan'208";a="627701966"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 10/14] perf, core: simplify need branch stack check
-Date: Thu,  6 Nov 2014 09:54:27 -0500
-Message-Id: <1415285671-16894-11-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V8 11/14] perf, x86: re-organize code that implicitly enables LBR/PEBS
+Date: Thu,  6 Nov 2014 09:54:28 -0500
+Message-Id: <1415285671-16894-12-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
 References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
@@ -26,105 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yan, Zheng <zheng.z.yan@intel.com>
 
-Using event->attr.branch_sample_type to replace
-intel_pmu_needs_lbr_smpl() for avoiding duplicating code
-that implicitly enables the LBR.
-Currently, branch stack can be enabled by user explicitly requested
-branch sampling or implicit branch sampling to correct PEBS skid.
-For user explicitly requested branch sampling, the branch_sample_type is
-explicitly set by user. For PEBS case, the branch_sample_type is also
-implicitly set to PERF_SAMPLE_BRANCH_ANY in x86_pmu_hw_config.
+make later patch more readable, no logic change.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 20 +++-----------------
- include/linux/perf_event.h             |  5 +++++
- kernel/events/core.c                   |  3 +++
- 3 files changed, 11 insertions(+), 17 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 59 ++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 30 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index a0c0739..5f449fb 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1029,20 +1029,6 @@ static __initconst const u64 slm_hw_cache_event_ids
-  },
- };
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 1fd9492..02be0e4 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -395,36 +395,35 @@ int x86_pmu_hw_config(struct perf_event *event)
  
--static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
--{
--	/* user explicitly requested branch sampling */
--	if (has_branch_stack(event))
--		return true;
+ 		if (event->attr.precise_ip > precise)
+ 			return -EOPNOTSUPP;
+-		/*
+-		 * check that PEBS LBR correction does not conflict with
+-		 * whatever the user is asking with attr->branch_sample_type
+-		 */
+-		if (event->attr.precise_ip > 1 &&
+-		    x86_pmu.intel_cap.pebs_format < 2) {
+-			u64 *br_type = &event->attr.branch_sample_type;
 -
--	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
--	    x86_pmu.intel_cap.pebs_format < 2)
--		return true;
+-			if (has_branch_stack(event)) {
+-				if (!precise_br_compat(event))
+-					return -EOPNOTSUPP;
 -
--	return false;
--}
+-				/* branch_sample_type is compatible */
 -
- static void intel_pmu_disable_all(void)
- {
- 	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
-@@ -1207,7 +1193,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 	 * must disable before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_disable(event);
- 
- 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
-@@ -1268,7 +1254,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	 * must enabled before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_enable(event);
- 
- 	if (event->attr.exclude_host)
-@@ -1747,7 +1733,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
- 		x86_pmu.pebs_aliases(event);
- 
--	if (intel_pmu_needs_lbr_smpl(event)) {
-+	if (needs_branch_stack(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
- 		if (ret)
- 			return ret;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 84ec3e6..0d67460 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -796,6 +796,11 @@ static inline bool has_branch_stack(struct perf_event *event)
- 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
- }
- 
-+static inline bool needs_branch_stack(struct perf_event *event)
-+{
-+	return event->attr.branch_sample_type != 0;
-+}
+-			} else {
+-				/*
+-				 * user did not specify  branch_sample_type
+-				 *
+-				 * For PEBS fixups, we capture all
+-				 * the branches at the priv level of the
+-				 * event.
+-				 */
+-				*br_type = PERF_SAMPLE_BRANCH_ANY;
+-
+-				if (!event->attr.exclude_user)
+-					*br_type |= PERF_SAMPLE_BRANCH_USER;
+-
+-				if (!event->attr.exclude_kernel)
+-					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+-			}
++	}
++	/*
++	 * check that PEBS LBR correction does not conflict with
++	 * whatever the user is asking with attr->branch_sample_type
++	 */
++	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
++		u64 *br_type = &event->attr.branch_sample_type;
 +
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4360c95..3f3e43d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7015,6 +7015,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
- 		goto err_ns;
- 
-+	if (!has_branch_stack(event))
-+		event->attr.branch_sample_type = 0;
++		if (has_branch_stack(event)) {
++			if (!precise_br_compat(event))
++				return -EOPNOTSUPP;
 +
- 	pmu = perf_init_event(event);
- 	if (!pmu)
- 		goto err_ns;
++			/* branch_sample_type is compatible */
++
++		} else {
++			/*
++			 * user did not specify  branch_sample_type
++			 *
++			 * For PEBS fixups, we capture all
++			 * the branches at the priv level of the
++			 * event.
++			 */
++			*br_type = PERF_SAMPLE_BRANCH_ANY;
++
++			if (!event->attr.exclude_user)
++				*br_type |= PERF_SAMPLE_BRANCH_USER;
++
++			if (!event->attr.exclude_kernel)
++				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+ 		}
+ 	}
+ 
 -- 
 1.8.3.2
 
