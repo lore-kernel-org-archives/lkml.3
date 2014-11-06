@@ -1,114 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaKFSXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:23:41 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54142 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaKFSXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:23:38 -0500
-Date: Thu, 6 Nov 2014 18:23:29 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clocksource: arch_timer: Mark ARMv8 system timer as
- 'always-on'
-Message-ID: <20141106182329.GA445@red-moon>
-References: <1415296639-40203-1-git-send-email-anatol.pomozov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415296639-40203-1-git-send-email-anatol.pomozov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751764AbaKFSYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:24:06 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34219 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216AbaKFSXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 13:23:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,327,1413270000"; 
+   d="scan'208";a="603639348"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Cc: Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Noor U Mubeen <noor.u.mubeen@intel.com>,
+        Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 1/3] powercap/rapl: abstract per cpu type functions
+Date: Thu,  6 Nov 2014 10:22:35 -0800
+Message-Id: <1415298157-7615-2-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415298157-7615-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1415298157-7615-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 05:57:19PM +0000, Anatol Pomozov wrote:
-> Quoting ARMv8 Reference Manual section D6.1:
-> "The system counter must be implemented in an always-on power domain."
+RAPL implementations may vary slightly between Core and Atom CPUs. There are
+also potential differences among generations of CPUs within the family.
 
-Do not mix up the system counter with arch timers. System counter is
-always-on, but the arch timer(s) logic (that implements eg timers
-comparators against the system counter value) might not be (timer logic
-is in the processor), so it can be lost on processor(s) power down.
+This patch adds a per model structure to abstract the differences such that
+variations can be handled cleanly.
 
-NAK.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ drivers/powercap/intel_rapl.c | 45 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 35 insertions(+), 10 deletions(-)
 
-Lorenzo
+diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+index 45e05b3..256efed 100644
+--- a/drivers/powercap/intel_rapl.c
++++ b/drivers/powercap/intel_rapl.c
+@@ -188,6 +188,15 @@ struct rapl_package {
+ 					*/
+ 	struct list_head plist;
+ };
++
++struct rapl_defaults {
++	int (*check_unit)(struct rapl_package *rp, int cpu);
++	void (*set_floor_freq)(struct rapl_domain *rd, bool mode);
++	u64 (*compute_time_window)(struct rapl_package *rp, u64 val,
++				bool to_raw);
++};
++static struct rapl_defaults *rapl_defaults;
++
+ #define PACKAGE_PLN_INT_SAVED   BIT(0)
+ #define MAX_PRIM_NAME (32)
+ 
+@@ -946,16 +955,28 @@ static void package_power_limit_irq_restore(int package_id)
+ 	wrmsr_on_cpu(cpu, MSR_IA32_PACKAGE_THERM_INTERRUPT, l, h);
+ }
+ 
++static const struct rapl_defaults rapl_defaults_core = {
++};
++
++static const struct rapl_defaults rapl_defaults_atom = {
++};
++
++#define RAPL_CPU(_model, _ops) {			\
++		.vendor = X86_VENDOR_INTEL,		\
++		.family = 6,				\
++		.model = _model,			\
++		.driver_data = (kernel_ulong_t)&_ops,	\
++		}
++
+ static const struct x86_cpu_id rapl_ids[] = {
+-	{ X86_VENDOR_INTEL, 6, 0x2a},/* Sandy Bridge */
+-	{ X86_VENDOR_INTEL, 6, 0x2d},/* Sandy Bridge EP */
+-	{ X86_VENDOR_INTEL, 6, 0x37},/* Valleyview */
+-	{ X86_VENDOR_INTEL, 6, 0x3a},/* Ivy Bridge */
+-	{ X86_VENDOR_INTEL, 6, 0x3c},/* Haswell */
+-	{ X86_VENDOR_INTEL, 6, 0x3d},/* Broadwell */
+-	{ X86_VENDOR_INTEL, 6, 0x3f},/* Haswell */
+-	{ X86_VENDOR_INTEL, 6, 0x45},/* Haswell ULT */
+-	/* TODO: Add more CPU IDs after testing */
++	RAPL_CPU(0x2a, rapl_defaults_core),/* Sandy Bridge */
++	RAPL_CPU(0x2d, rapl_defaults_core),/* Sandy Bridge EP */
++	RAPL_CPU(0x37, rapl_defaults_atom),/* Valleyview */
++	RAPL_CPU(0x3a, rapl_defaults_core),/* Ivy Bridge */
++	RAPL_CPU(0x3c, rapl_defaults_core),/* Haswell */
++	RAPL_CPU(0x3d, rapl_defaults_core),/* Broadwell */
++	RAPL_CPU(0x3f, rapl_defaults_core),/* Haswell */
++	RAPL_CPU(0x45, rapl_defaults_core),/* Haswell ULT */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, rapl_ids);
+@@ -1358,14 +1379,18 @@ static struct notifier_block rapl_cpu_notifier = {
+ static int __init rapl_init(void)
+ {
+ 	int ret = 0;
++	const struct x86_cpu_id *id;
+ 
+-	if (!x86_match_cpu(rapl_ids)) {
++	id = x86_match_cpu(rapl_ids);
++	if (!id) {
+ 		pr_err("driver does not support CPU family %d model %d\n",
+ 			boot_cpu_data.x86, boot_cpu_data.x86_model);
+ 
+ 		return -ENODEV;
+ 	}
+ 
++	rapl_defaults = (struct rapl_defaults *)id->driver_data;
++
+ 	cpu_notifier_register_begin();
+ 
+ 	/* prevent CPU hotplug during detection */
+-- 
+1.9.1
 
-> There is no need to keep 'always-on' configurable on ARMv8. We ignore
-> this dts property value and unconditionally set it to true.
-
-
-> 
-> The issue was discovered while working on ARMv8 board with only one timer
-> (arm arch timer). If 'always-on' is false then it disables high-resolution
-> timer functionality.
-> 
-> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-> ---
->  .../devicetree/bindings/arm/arch_timer.txt          |  8 ++++++--
->  drivers/clocksource/arm_arch_timer.c                | 21 +++++++++++++++++----
->  2 files changed, 23 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 37b2caf..cb2d572 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -19,8 +19,12 @@ to deliver its interrupts via SPIs.
->  
->  - clock-frequency : The frequency of the main counter, in Hz. Optional.
->  
-> -- always-on : a boolean property. If present, the timer is powered through an
-> -  always-on power domain, therefore it never loses context.
-> +- always-on : an "armv7-timer" specific boolean property.
-> +  If present, the timer is powered through an always-on power domain, therefore
-> +  it never loses context.
-> +  ARMv8 system timer is in always-on power domain (per Architecture Reference
-> +  section D6.1) thus this proprty is ignored for "arm,armv8-timer" compatible
-> +  timer.
->  
->  Example:
->  
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 2133f9d..610052d 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -719,13 +719,26 @@ static void __init arch_timer_init(struct device_node *np)
->  		}
->  	}
->  
-> -	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
-> -
->  	arch_timer_register();
->  	arch_timer_common_init();
->  }
-> -CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", arch_timer_init);
-> -CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", arch_timer_init);
-> +
-> +static void __init v7_arch_timer_init(struct device_node *np)
-> +{
-> +	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
-> +	arch_timer_init(np);
-> +}
-> +
-> +static void __init v8_arch_timer_init(struct device_node *np)
-> +{
-> +	/* Per ARMv8 Architecture Reference Manual section D6.1
-> +	 * the system timer is in always-on power domain.
-> +	 */
-> +	arch_timer_c3stop = false;
-> +	arch_timer_init(np);
-> +}
-> +CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", v7_arch_timer_init);
-> +CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", v8_arch_timer_init);
->  
->  static void __init arch_timer_mem_init(struct device_node *np)
->  {
-> -- 
-> 2.1.0.rc2.206.gedb03e5
-> 
-> 
