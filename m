@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaKFXFE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:05:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58836 "EHLO
+	id S1753791AbaKFXFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:05:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58831 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaKFWmN (ORCPT
+	with ESMTP id S1752718AbaKFWmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:13 -0500
+	Thu, 6 Nov 2014 17:42:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 107/162] staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
-Date: Thu,  6 Nov 2014 14:36:11 -0800
-Message-Id: <1415313426-9622-108-git-send-email-kamal@canonical.com>
+Cc: Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 114/162] usb: dwc3: gadget: fix set_halt() bug with pending transfers
+Date: Thu,  6 Nov 2014 14:36:18 -0800
+Message-Id: <1415313426-9622-115-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,118 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 824269c5868d2a7a26417e5ef3841a27d42c6139 upstream.
+commit 7a60855972f0d3c014093046cb6f013a1ee5bb19 upstream.
 
-In older versions of the IIO framework it was possible to pass a
-completely different set of channels to iio_buffer_register() as the one
-that is assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
-iio_sw_buffer_preenable much more general.") introduced a restriction that
-requires that the set of channels that is passed to iio_buffer_register() is
-a subset of the channels assigned to the IIO device as the IIO core will use
-the list of channels that is assigned to the device to lookup a channel by
-scan index in iio_compute_scan_bytes(). If it can not find the channel the
-function will crash. This patch fixes the issue by making sure that the same
-set of channels is assigned to the IIO device and passed to
-iio_buffer_register().
+According to our Gadget Framework API documentation,
+->set_halt() *must* return -EAGAIN if we have pending
+transfers (on either direction) or FIFO isn't empty (on
+TX endpoints).
 
-Fixes the follow NULL pointer derefernce kernel crash:
-	Unable to handle kernel NULL pointer dereference at virtual address 00000016
-	pgd = d53d0000
-	[00000016] *pgd=1534e831, *pte=00000000, *ppte=00000000
-	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-	Modules linked in:
-	CPU: 1 PID: 1626 Comm: bash Not tainted 3.15.0-19969-g2a180eb-dirty #9545
-	task: d6c124c0 ti: d539a000 task.ti: d539a000
-	PC is at iio_compute_scan_bytes+0x34/0xa8
-	LR is at iio_compute_scan_bytes+0x34/0xa8
-	pc : [<c03052e4>]    lr : [<c03052e4>]    psr: 60070013
-	sp : d539beb8  ip : 00000001  fp : 00000000
-	r10: 00000002  r9 : 00000000  r8 : 00000001
-	r7 : 00000000  r6 : d6dc8800  r5 : d7571000  r4 : 00000002
-	r3 : d7571000  r2 : 00000044  r1 : 00000001  r0 : 00000000
-	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-	Control: 18c5387d  Table: 153d004a  DAC: 00000015
-	Process bash (pid: 1626, stack limit = 0xd539a240)
-	Stack: (0xd539beb8 to 0xd539c000)
-	bea0:                                                       c02fc0e4 d7571000
-	bec0: d76c1640 d6dc8800 d757117c 00000000 d757112c c0305b04 d76c1690 d76c1640
-	bee0: d7571188 00000002 00000000 d7571000 d539a000 00000000 000dd1c8 c0305d54
-	bf00: d7571010 0160b868 00000002 c69d3900 d7573278 d7573308 c69d3900 c01ece90
-	bf20: 00000002 c0103fac c0103f6c d539bf88 00000002 c69d3b00 c69d3b0c c0103468
-	bf40: 00000000 00000000 d7694a00 00000002 000af408 d539bf88 c000dd84 c00b2f94
-	bf60: d7694a00 000af408 00000002 d7694a00 d7694a00 00000002 000af408 c000dd84
-	bf80: 00000000 c00b32d0 00000000 00000000 00000002 b6f1aa78 00000002 000af408
-	bfa0: 00000004 c000dc00 b6f1aa78 00000002 00000001 000af408 00000002 00000000
-	bfc0: b6f1aa78 00000002 000af408 00000004 be806a4c 000a6094 00000000 000dd1c8
-	bfe0: 00000000 be8069cc b6e8ab77 b6ec125c 40070010 00000001 22940489 154a5007
-	[<c03052e4>] (iio_compute_scan_bytes) from [<c0305b04>] (__iio_update_buffers+0x248/0x438)
-	[<c0305b04>] (__iio_update_buffers) from [<c0305d54>] (iio_buffer_store_enable+0x60/0x7c)
-	[<c0305d54>] (iio_buffer_store_enable) from [<c01ece90>] (dev_attr_store+0x18/0x24)
-	[<c01ece90>] (dev_attr_store) from [<c0103fac>] (sysfs_kf_write+0x40/0x4c)
-	[<c0103fac>] (sysfs_kf_write) from [<c0103468>] (kernfs_fop_write+0x110/0x154)
-	[<c0103468>] (kernfs_fop_write) from [<c00b2f94>] (vfs_write+0xd0/0x160)
-	[<c00b2f94>] (vfs_write) from [<c00b32d0>] (SyS_write+0x40/0x78)
-	[<c00b32d0>] (SyS_write) from [<c000dc00>] (ret_fast_syscall+0x0/0x30)
-	Code: ea00000e e1a01008 e1a00005 ebfff6fc (e5d0a016)
+Fix this bug so that the mass storage gadget can be used
+without stall=0 parameter.
 
-Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This patch should be backported to all kernels since v3.2.
+
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ kamal: backport to 3.13-stable: omitted ep_set_wedge() change ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/impedance-analyzer/ad5933.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/usb/dwc3/ep0.c    |  4 ++--
+ drivers/usb/dwc3/gadget.c | 14 +++++++++++---
+ drivers/usb/dwc3/gadget.h |  2 +-
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
-index 2b96665..3854f99 100644
---- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-+++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-@@ -115,6 +115,7 @@ static const struct iio_chan_spec ad5933_channels[] = {
- 		.channel = 0,
- 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
- 		.address = AD5933_REG_TEMP_DATA,
-+		.scan_index = -1,
- 		.scan_type = {
- 			.sign = 's',
- 			.realbits = 14,
-@@ -125,8 +126,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "real_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
--		BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD5933_REG_REAL_DATA,
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -139,8 +138,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "imag_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
--		BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD5933_REG_IMAG_DATA,
- 		.scan_index = 1,
- 		.scan_type = {
-@@ -748,14 +745,14 @@ static int ad5933_probe(struct i2c_client *client,
- 	indio_dev->name = id->name;
- 	indio_dev->modes = INDIO_DIRECT_MODE;
- 	indio_dev->channels = ad5933_channels;
--	indio_dev->num_channels = 1; /* only register temp0_input */
-+	indio_dev->num_channels = ARRAY_SIZE(ad5933_channels);
+diff --git a/drivers/usb/dwc3/ep0.c b/drivers/usb/dwc3/ep0.c
+index 21a3520..0985ff7 100644
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -251,7 +251,7 @@ static void dwc3_ep0_stall_and_restart(struct dwc3 *dwc)
  
- 	ret = ad5933_register_ring_funcs_and_init(indio_dev);
- 	if (ret)
- 		goto error_disable_reg;
+ 	/* stall is always issued on EP0 */
+ 	dep = dwc->eps[0];
+-	__dwc3_gadget_ep_set_halt(dep, 1);
++	__dwc3_gadget_ep_set_halt(dep, 1, false);
+ 	dep->flags = DWC3_EP_ENABLED;
+ 	dwc->delayed_status = false;
  
--	/* skip temp0_input, register in0_(real|imag)_raw */
--	ret = iio_buffer_register(indio_dev, &ad5933_channels[1], 2);
-+	ret = iio_buffer_register(indio_dev, ad5933_channels,
-+		ARRAY_SIZE(ad5933_channels));
- 	if (ret)
- 		goto error_unreg_ring;
+@@ -461,7 +461,7 @@ static int dwc3_ep0_handle_feature(struct dwc3 *dwc,
+ 				return -EINVAL;
+ 			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
+ 				break;
+-			ret = __dwc3_gadget_ep_set_halt(dep, set);
++			ret = __dwc3_gadget_ep_set_halt(dep, set, true);
+ 			if (ret)
+ 				return -EINVAL;
+ 			break;
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index c37da0c..27b9c8a 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -588,7 +588,7 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
  
+ 	/* make sure HW endpoint isn't stalled */
+ 	if (dep->flags & DWC3_EP_STALL)
+-		__dwc3_gadget_ep_set_halt(dep, 0);
++		__dwc3_gadget_ep_set_halt(dep, 0, false);
+ 
+ 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
+ 	reg &= ~DWC3_DALEPENA_EP(dep->number);
+@@ -1186,7 +1186,7 @@ out0:
+ 	return ret;
+ }
+ 
+-int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
++int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol)
+ {
+ 	struct dwc3_gadget_ep_cmd_params	params;
+ 	struct dwc3				*dwc = dep->dwc;
+@@ -1195,6 +1195,14 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
+ 	memset(&params, 0x00, sizeof(params));
+ 
+ 	if (value) {
++		if (!protocol && ((dep->direction && dep->flags & DWC3_EP_BUSY) ||
++				(!list_empty(&dep->req_queued) ||
++				 !list_empty(&dep->request_list)))) {
++			dev_dbg(dwc->dev, "%s: pending request, cannot halt\n",
++					dep->name);
++			return -EAGAIN;
++		}
++
+ 		ret = dwc3_send_gadget_ep_cmd(dwc, dep->number,
+ 			DWC3_DEPCMD_SETSTALL, &params);
+ 		if (ret)
+@@ -1234,7 +1242,7 @@ static int dwc3_gadget_ep_set_halt(struct usb_ep *ep, int value)
+ 		goto out;
+ 	}
+ 
+-	ret = __dwc3_gadget_ep_set_halt(dep, value);
++	ret = __dwc3_gadget_ep_set_halt(dep, value, false);
+ out:
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+diff --git a/drivers/usb/dwc3/gadget.h b/drivers/usb/dwc3/gadget.h
+index a0ee75b..ac625582 100644
+--- a/drivers/usb/dwc3/gadget.h
++++ b/drivers/usb/dwc3/gadget.h
+@@ -85,7 +85,7 @@ void dwc3_ep0_out_start(struct dwc3 *dwc);
+ int dwc3_gadget_ep0_set_halt(struct usb_ep *ep, int value);
+ int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
+ 		gfp_t gfp_flags);
+-int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
++int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol);
+ 
+ /**
+  * dwc3_gadget_ep_get_transfer_index - Gets transfer index from HW
 -- 
 1.9.1
 
