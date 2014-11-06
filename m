@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaKFEnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 23:43:39 -0500
-Received: from ozlabs.org ([103.22.144.67]:54171 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002AbaKFEni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 23:43:38 -0500
-Date: Thu, 6 Nov 2014 15:43:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tapasweni Pathak <tapaswenipathak@gmail.com>,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the y2038 tree with the staging tree
-Message-ID: <20141106154311.3907b565@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751407AbaKFEpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 23:45:52 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50595 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaKFEpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 23:45:50 -0500
+Date: Thu, 6 Nov 2014 13:45:34 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mark Brown <broonie@kernel.org>, sameo@linux.intel.com,
+        lee.jones@linaro.org, jg1.han@samsung.com, cooloney@gmail.com,
+        lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [RESUBMIT PATCH v6 7/8] regulator: sky81452: Add compatible
+ string for device binding
+Message-ID: <20141106044534.GB5068@jack-ThinkPad-T520>
+References: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1414739322-12487-8-git-send-email-jack.yoo@skyworksinc.com>
+ <20141031164418.GC18557@sirena.org.uk>
+ <1415051139.20372.85.camel@x220>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/9QcPEsjF=6zU8wKNzpctXO="; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1415051139.20372.85.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/9QcPEsjF=6zU8wKNzpctXO=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 03, 2014 at 10:45:39PM +0100, Paul Bolle wrote:
+> On Fri, 2014-10-31 at 16:44 +0000, Mark Brown wrote:
+> > On Fri, Oct 31, 2014 at 04:08:41PM +0900, gyungoh@gmail.com wrote:
+> > > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > > 
+> > > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > 
+> > This doesn't apply against current code and depends on the MFD symbol
+> > rename - can you please check what's going on here?
+> > 
+> > It would make sense to split the Kconfig symbol rename into a separate
+> > patch to ease merging,
+> 
+> The relicensing (from GPL to GPL v2, thus dropping the "or later"
+> provision) is odd too. The header still uses GPL v2 or later, doesn't
+> it? Anyhow, that could be a separate patch too.
 
-Hi Arnd,
+I will modify the licensing text and resubmit it.
+Thank you for your comment.
 
-Today's linux-next merge of the y2038 tree got a conflict in
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c between commit
-ecdd21c7b982 ("staging: ft1000: Whitespace neatening") from the staging
-tree and commit 4115d2b27a50 ("staging: ft1000: Replace timeval and
-time_t with time64_t") from the y2038 tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index 11dbe369e18b,9a9655cdc64d..000000000000
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@@ -1019,29 -1055,19 +1019,29 @@@ static void ft1000_proc_drvmsg(struct n
-  			info->CardReady =3D 1;
-  			break;
-  		case MEDIA_STATE:
- -			pmediamsg =3D (struct media_msg *) & cmdbuffer[0];
- +			pmediamsg =3D (struct media_msg *)&cmdbuffer[0];
-  			if (info->ProgConStat !=3D 0xFF) {
- -			if (pmediamsg->state) {
- -				DEBUG(1, "Media is up\n");
- -				if (info->mediastate =3D=3D 0) {
- -					netif_carrier_on(dev);
- -					netif_wake_queue(dev);
- -					info->mediastate =3D 1;
- -					time =3D get_seconds();
- -					info->ConTm =3D time;
- +				if (pmediamsg->state) {
- +					pr_debug("Media is up\n");
- +					if (info->mediastate =3D=3D 0) {
- +						netif_carrier_on(dev);
- +						netif_wake_queue(dev);
- +						info->mediastate =3D 1;
-- 						do_gettimeofday(&tv);
-- 						info->ConTm =3D tv.tv_sec;
-++						time =3D get_seconds();
-++						info->ConTm =3D time;
- +					}
- +				} else {
- +					pr_debug("Media is down\n");
- +					if (info->mediastate =3D=3D 1) {
- +						info->mediastate =3D 0;
- +						netif_carrier_off(dev);
- +						netif_stop_queue(dev);
- +						info->ConTm =3D 0;
- +					}
-  				}
- -			} else {
- -				DEBUG(1, "Media is down\n");
- +			}
- +			else {
- +				pr_debug("Media is down\n");
-  				if (info->mediastate =3D=3D 1) {
-  					info->mediastate =3D 0;
-  					netif_carrier_off(dev);
-
---Sig_/9QcPEsjF=6zU8wKNzpctXO=
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUWvxlAAoJEMDTa8Ir7ZwVV2cP/iFE7QgZO+TJH0xRdoaCx7gm
-OAXggw/GIGP9XndrMPhcFDfIPhTq4+QpCYMOkZHak1rrCwNisI0W+MOlSn7DG8Pq
-MPQlZmOAgRt8zhE6POPPtRkl04sXC9Lrw+5YFJg807L1ICDB2qu+nuPtxOgA5/rp
-+DQu1JXHMraz6egoQ8cubEW7Fpi7iK3Ykrj8Q3wWCEKX+F8238M++/nG7wUbD/72
-B0QGBDQqT2rntOcNx60lPYcxsjl8Ogxd1eoikO7bPV+fwgwIz3BBzxt4IMYHjuQm
-bfX9JPMDxngJ6J4acpAZyHxizXY6QPW1IudsI4EqXiQvlQWAdb8v+8jJP9blxAKg
-F4avi7sOzP54o/5PJy4/su4mp0ZEuXC3AyrDNE5f2kQ+SI+la1VKL0SwtJQvcrhg
-VE3ehw5/ATWsQwaMkn8apfpY5gi9WB0LeoC7KiAn3zJYIe4HFrUIrAi7SETjP19d
-xzVCMRmxuAV44pCo08pdpjVQLR6ueIHHLJbJMNFSHF7FlHmhxJTQ6itH/vcazRYy
-7F/Pv+hvB4vgq80vQneH4tVjsMg61R4Eglou+Fvl4oBHniqjfSHgphCmH1lITAvD
-WXQ6I5xZhBYkZT0wIx1+RJomYzbpsnlii2SQ6MIjp8/RC2Ec4tvg89IWakMvSERD
-3VsbxefQoZ5Gyb0lrbX8
-=59Uq
------END PGP SIGNATURE-----
-
---Sig_/9QcPEsjF=6zU8wKNzpctXO=--
+> 
+> > it doesn't seem obviously related to the driver
+> > change and should probably be in the same patch as the MFD symbol rename
+> > for bisetion.
+> 
+> I don't think there will be bisection problems (in mainline). Currently
+> this driver depends on SKY81452. But that symbol doesn't exist. Only
+> after both 1/8 and this patch will this driver become buildable, for the
+> first time. So it's not that this driver was buildable, became
+> unbuildable in 1/8 and buildable again in this patch.
+> 
+> (I don't think it's much of a problem that the regulator driver got
+> merged, in v3.18-rc1, before the mfd driver on which it depends.
+> Avoiding that temporarily problem appears to be more trouble than it's
+> worth.)
+> 
+> 
+> Paul Bolle
+> 
