@@ -1,61 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaKFJ5m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:57:42 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:34556 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752283AbaKFJ5h (ORCPT
+	id S1752459AbaKFJ6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:58:37 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48487 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752155AbaKFJ5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:57:37 -0500
-Message-ID: <545B45E9.8070903@st.com>
-Date: Thu, 6 Nov 2014 10:56:57 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, <gong.chen@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, <tytso@mit.edu>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <kernel@stlinux.com>, <eric.paire@st.com>
-Subject: Re: [PATCH v3] bitops: Fix shift overflow in GENMASK macros
-References: <1415098697-16304-1-git-send-email-maxime.coquelin@st.com> <87vbmt52dm.fsf@rasmusvillemoes.dk> <545A4682.2080302@st.com> <20141105164454.GY3337@twins.programming.kicks-ass.net>
-In-Reply-To: <20141105164454.GY3337@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-06_04:2014-11-05,2014-11-06,1970-01-01 signatures=0
+	Thu, 6 Nov 2014 04:57:22 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 09/10] gpu: ipu-v3: Make use of media_bus_format enum
+Date: Thu,  6 Nov 2014 10:57:07 +0100
+Message-Id: <1415267829-4177-10-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In order to have subsytem agnostic media bus format definitions we've
+moved media bus definition to include/uapi/linux/media-bus-format.h and
+prefixed enum values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
 
-On 11/05/2014 05:44 PM, Peter Zijlstra wrote:
-> On Wed, Nov 05, 2014 at 04:47:14PM +0100, Maxime Coquelin wrote:
->> On 11/05/2014 12:10 PM, Rasmus Villemoes wrote:
->>> On Tue, Nov 04 2014, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
->>>
->>>> -#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
->>>> -#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
->>>> +#define GENMASK(h, l) \
->>>> +	((~0UL >> (BITS_PER_LONG - ((h) - (l) + 1))) << (l))
->>>> +
->>>> +#define GENMASK_ULL(h, l) \
->>>> +	((~0ULL >> (BITS_PER_LONG_LONG - ((h) - (l) + 1))) << (l))
->>> Slightly bikeshedding here, but may I suggest spelling it
->>>
->>>    (((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
->>>
->>> ? This will ensure the arguments are expanded once each, and will, IMHO,
->>> DTRT if/when l > h (namely, yield 0).
->> That's a good point.
->>
->> Peter, what is your view?
-> I'm fine with that, feel free to post another version and I'll replace
-> v3.
+Reference new definitions in the ipu-v3 driver.
 
-Thanks Peter, v4 just sent.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ drivers/gpu/ipu-v3/ipu-csi.c | 66 ++++++++++++++++++++++----------------------
+ 1 file changed, 33 insertions(+), 33 deletions(-)
 
-Regards,
-Maxime
+diff --git a/drivers/gpu/ipu-v3/ipu-csi.c b/drivers/gpu/ipu-v3/ipu-csi.c
+index d6f56471..752cdd2 100644
+--- a/drivers/gpu/ipu-v3/ipu-csi.c
++++ b/drivers/gpu/ipu-v3/ipu-csi.c
+@@ -227,83 +227,83 @@ static int ipu_csi_set_testgen_mclk(struct ipu_csi *csi, u32 pixel_clk,
+ static int mbus_code_to_bus_cfg(struct ipu_csi_bus_config *cfg, u32 mbus_code)
+ {
+ 	switch (mbus_code) {
+-	case V4L2_MBUS_FMT_BGR565_2X8_BE:
+-	case V4L2_MBUS_FMT_BGR565_2X8_LE:
+-	case V4L2_MBUS_FMT_RGB565_2X8_BE:
+-	case V4L2_MBUS_FMT_RGB565_2X8_LE:
++	case MEDIA_BUS_FMT_BGR565_2X8_BE:
++	case MEDIA_BUS_FMT_BGR565_2X8_LE:
++	case MEDIA_BUS_FMT_RGB565_2X8_BE:
++	case MEDIA_BUS_FMT_RGB565_2X8_LE:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_RGB565;
+ 		cfg->mipi_dt = MIPI_DT_RGB565;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_RGB444_2X8_PADHI_BE:
+-	case V4L2_MBUS_FMT_RGB444_2X8_PADHI_LE:
++	case MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE:
++	case MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_RGB444;
+ 		cfg->mipi_dt = MIPI_DT_RGB444;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_RGB555_2X8_PADHI_BE:
+-	case V4L2_MBUS_FMT_RGB555_2X8_PADHI_LE:
++	case MEDIA_BUS_FMT_RGB555_2X8_PADHI_BE:
++	case MEDIA_BUS_FMT_RGB555_2X8_PADHI_LE:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_RGB555;
+ 		cfg->mipi_dt = MIPI_DT_RGB555;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_UYVY8_2X8:
++	case MEDIA_BUS_FMT_UYVY8_2X8:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_YUV422_UYVY;
+ 		cfg->mipi_dt = MIPI_DT_YUV422;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_YUYV8_2X8:
++	case MEDIA_BUS_FMT_YUYV8_2X8:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_YUV422_YUYV;
+ 		cfg->mipi_dt = MIPI_DT_YUV422;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_UYVY8_1X16:
++	case MEDIA_BUS_FMT_UYVY8_1X16:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_YUV422_UYVY;
+ 		cfg->mipi_dt = MIPI_DT_YUV422;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_16;
+ 		break;
+-	case V4L2_MBUS_FMT_YUYV8_1X16:
++	case MEDIA_BUS_FMT_YUYV8_1X16:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_YUV422_YUYV;
+ 		cfg->mipi_dt = MIPI_DT_YUV422;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_16;
+ 		break;
+-	case V4L2_MBUS_FMT_SBGGR8_1X8:
+-	case V4L2_MBUS_FMT_SGBRG8_1X8:
+-	case V4L2_MBUS_FMT_SGRBG8_1X8:
+-	case V4L2_MBUS_FMT_SRGGB8_1X8:
++	case MEDIA_BUS_FMT_SBGGR8_1X8:
++	case MEDIA_BUS_FMT_SGBRG8_1X8:
++	case MEDIA_BUS_FMT_SGRBG8_1X8:
++	case MEDIA_BUS_FMT_SRGGB8_1X8:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_BAYER;
+ 		cfg->mipi_dt = MIPI_DT_RAW8;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_SBGGR10_DPCM8_1X8:
+-	case V4L2_MBUS_FMT_SGBRG10_DPCM8_1X8:
+-	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
+-	case V4L2_MBUS_FMT_SRGGB10_DPCM8_1X8:
+-	case V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_BE:
+-	case V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_LE:
+-	case V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_BE:
+-	case V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_LE:
++	case MEDIA_BUS_FMT_SBGGR10_DPCM8_1X8:
++	case MEDIA_BUS_FMT_SGBRG10_DPCM8_1X8:
++	case MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8:
++	case MEDIA_BUS_FMT_SRGGB10_DPCM8_1X8:
++	case MEDIA_BUS_FMT_SBGGR10_2X8_PADHI_BE:
++	case MEDIA_BUS_FMT_SBGGR10_2X8_PADHI_LE:
++	case MEDIA_BUS_FMT_SBGGR10_2X8_PADLO_BE:
++	case MEDIA_BUS_FMT_SBGGR10_2X8_PADLO_LE:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_BAYER;
+ 		cfg->mipi_dt = MIPI_DT_RAW10;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_8;
+ 		break;
+-	case V4L2_MBUS_FMT_SBGGR10_1X10:
+-	case V4L2_MBUS_FMT_SGBRG10_1X10:
+-	case V4L2_MBUS_FMT_SGRBG10_1X10:
+-	case V4L2_MBUS_FMT_SRGGB10_1X10:
++	case MEDIA_BUS_FMT_SBGGR10_1X10:
++	case MEDIA_BUS_FMT_SGBRG10_1X10:
++	case MEDIA_BUS_FMT_SGRBG10_1X10:
++	case MEDIA_BUS_FMT_SRGGB10_1X10:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_BAYER;
+ 		cfg->mipi_dt = MIPI_DT_RAW10;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_10;
+ 		break;
+-	case V4L2_MBUS_FMT_SBGGR12_1X12:
+-	case V4L2_MBUS_FMT_SGBRG12_1X12:
+-	case V4L2_MBUS_FMT_SGRBG12_1X12:
+-	case V4L2_MBUS_FMT_SRGGB12_1X12:
++	case MEDIA_BUS_FMT_SBGGR12_1X12:
++	case MEDIA_BUS_FMT_SGBRG12_1X12:
++	case MEDIA_BUS_FMT_SGRBG12_1X12:
++	case MEDIA_BUS_FMT_SRGGB12_1X12:
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_BAYER;
+ 		cfg->mipi_dt = MIPI_DT_RAW12;
+ 		cfg->data_width = IPU_CSI_DATA_WIDTH_12;
+ 		break;
+-	case V4L2_MBUS_FMT_JPEG_1X8:
++	case MEDIA_BUS_FMT_JPEG_1X8:
+ 		/* TODO */
+ 		cfg->data_fmt = CSI_SENS_CONF_DATA_FMT_JPEG;
+ 		cfg->mipi_dt = MIPI_DT_RAW8;
+-- 
+1.9.1
+
