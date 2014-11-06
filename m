@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaKFAtj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 19:49:39 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40086 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaKFAti (ORCPT
+	id S1751240AbaKFA7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 19:59:33 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:3531 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaKFA7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 19:49:38 -0500
-Date: Thu, 6 Nov 2014 01:49:21 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-cc: Jiang Liu <jiang.liu@linux.intel.com>, marc.zyngier@arm.com,
-        mark.rutland@arm.com, jason@lakedaemon.net, Catalin.Marinas@arm.com,
-        Will.Deacon@arm.com, liviu.dudau@arm.com,
-        Harish.Kasiviswanathan@amd.com, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [V10 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
- MSI(-X)
-In-Reply-To: <545ABF6C.1000308@amd.com>
-Message-ID: <alpine.DEB.2.11.1411060146050.24960@nanos>
-References: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com> <1415052977-26036-3-git-send-email-suravee.suthikulpanit@amd.com> <5458CE31.3040404@linux.intel.com> <545ABB4C.8010103@amd.com> <545ABF6C.1000308@amd.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 5 Nov 2014 19:59:30 -0500
+Message-ID: <545AC7DE.8080602@huawei.com>
+Date: Thu, 6 Nov 2014 08:59:10 +0800
+From: leizhen <thunder.leizhen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Grant Likely <grant.likely@linaro.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        Kefeng Wang <wangkefeng.wang@huawei.com>
+Subject: Re: [PATCH 1/1] of/fdt: simplify early_init_dt_verify
+References: <1414497065-9808-1-git-send-email-thunder.leizhen@huawei.com> <20141104162054.4CC9BC423D0@trevor.secretlab.ca> <CAErSpo6Upf=QPn7=Cd=XDazXVnSPhb-9gDZjH9_CcY37-xUKLw@mail.gmail.com> <5459740B.6000906@huawei.com> <CACxGe6tkOWtqtt9nVk2R=NqsEVZBDCV-1deVhEXf1pAGS7YhFA@mail.gmail.com>
+In-Reply-To: <CACxGe6tkOWtqtt9nVk2R=NqsEVZBDCV-1deVhEXf1pAGS7YhFA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.142]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Nov 2014, Suravee Suthikulanit wrote:
-> On 11/5/2014 6:05 PM, Suravee Suthikulanit wrote:
-> > - Overall, it seems that msi_domain_alloc() could be quite different
-> > across architectures. Would it be possible to declare this function as
-> > weak, and allow arch to override (similar to arch_setup_msi_irq)?
+On 2014/11/5 21:52, Grant Likely wrote:
+> On Wed, Nov 5, 2014 at 12:49 AM, leizhen <thunder.leizhen@huawei.com> wrote:
+>> On 2014/11/5 1:03, Bjorn Helgaas wrote:
+>>> On Tue, Nov 4, 2014 at 9:20 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>>>> On Tue, 28 Oct 2014 19:51:05 +0800
+>>>> , Zhen Lei <thunder.leizhen@huawei.com>
+>>>>  wrote:
+>>>>> put off initial_boot_params = params; until all checks finished. If any check
+>>>>> failed, initial_boot_params is equal NULL, base upon bss segment initial value.
+>>>>>
+>>>>> Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
+>>>>
+>>>> Interesting. I received exactly the same patch from Bjorn Helgaas. Were
+>>>> the two of you working together, or is this merely a coincedence?
+>>>
+>>> LOL, that's really funny.  We're not working together, so it's a total
+>>> coincidence :)
+>>>
+>> Haha!!!
+>>
+>> Hi, Bjorn Helgaas. Nice to meet you.
 > 
-> Actually, declaring "msi_domain_ops" as non-static, and allow other code to
-> override the .alloc and .free?
+> I've applied Bjorn's version, but since the diffstat is *identical*,
+> I've put both of your s-o-b lines into it.
+> 
+> BTW Lei, what prompted you to write this patch? Was there a bug you
+> were fixing, or did you just notice the inconsistency and decide to
+> fix it?
+> 
+> g.
+> 
+> .
+> 
+OK
 
-Why do you want to do that?
+The latter case. Just found it when I reading code.
 
-Thanks,
-
-	tglx
