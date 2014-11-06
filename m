@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaKFJSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:18:06 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:40554 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaKFJSA (ORCPT
+	id S1752168AbaKFJTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:19:50 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:48223 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022AbaKFJTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:18:00 -0500
-Date: Thu, 6 Nov 2014 12:17:49 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 8/8] slab: recharge slab pages to the allocating
- memory cgroup
-Message-ID: <20141106091749.GB4839@esperanza>
-References: <cover.1415046910.git.vdavydov@parallels.com>
- <fe7c55a7ff9bb8a1ddff0256f5404196c10bfd08.1415046910.git.vdavydov@parallels.com>
- <alpine.DEB.2.11.1411051242410.28485@gentwo.org>
+	Thu, 6 Nov 2014 04:19:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411051242410.28485@gentwo.org>
+In-Reply-To: <20141106085424.GF2989@lukather>
+References: <1415074039-16590-1-git-send-email-wens@csie.org>
+ <1415074039-16590-2-git-send-email-wens@csie.org> <20141104165733.GI26729@lukather>
+ <CAGb2v65VojZVEijdjXYGkMud7dMFzMzagfN=_4S3msZygu3YPQ@mail.gmail.com>
+ <20141105100912.GD27686@lukather> <CAGb2v64RT4PKTji2KfDTFfc8b_kiTk0Vh49nEE9ZJukum7h2_Q@mail.gmail.com>
+ <20141106085424.GF2989@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 6 Nov 2014 17:19:24 +0800
+X-Google-Sender-Auth: 5Df9GTGgX_fA1jiaa71xk4kl5FA
+Message-ID: <CAGb2v66Riu43PEzR2vLbg9r_WvZDLvxWtwAc3z43FkF57O2ksg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] clk: sunxi: Add support for sun9i a80 usb clocks and resets
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+On Thu, Nov 6, 2014 at 4:54 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Thu, Nov 06, 2014 at 10:09:27AM +0800, Chen-Yu Tsai wrote:
+>> >> >> +static void __init sun9i_a80_usb_mod_setup(struct device_node *node)
+>> >> >> +{
+>> >> >> +     /* AHB1 gate must be enabled to access registers */
+>> >> >> +     struct clk *ahb = of_clk_get(node, 0);
+>> >> >> +
+>> >> >> +     WARN_ON(IS_ERR(ahb));
+>> >> >> +     clk_prepare_enable(ahb);
+>> >> >
+>> >> > Hmmmm. That look off.
+>> >> >
+>> >> > Why do you need the clock to be enabled all the time? Isn't the CCF
+>> >> > already taking care of enabling the parent clock whenever it needs to
+>> >> > access any register?
+>> >>
+>> >> There are also resets in the same block. That and I couldn't get it
+>> >> working without enabling the clock beforehand.
+>> >
+>> > Ah, right.
+>> >
+>> > What happens if you just enable and disable the clocks in the
+>> > reset_assert and reset_deassert right before and after accessing the
+>> > registers?
+>>
+>> That doesn't work either. I forgot to mention that most of the clock
+>> gates have the peripheral pll as their parent, not the ahb clock gate.
+>
+> Why it doesn't work? The clock needs more time to stabilize? The reset
+> line is set back in reset if the clocks are disabled?
 
-On Wed, Nov 05, 2014 at 12:43:31PM -0600, Christoph Lameter wrote:
-> On Mon, 3 Nov 2014, Vladimir Davydov wrote:
-> 
-> > +static __always_inline void slab_free(struct kmem_cache *cachep, void *objp);
-> > +
-> >  static __always_inline void *
-> >  slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
-> >  		   unsigned long caller)
-> > @@ -3185,6 +3187,10 @@ slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
-> >  		kmemcheck_slab_alloc(cachep, flags, ptr, cachep->object_size);
-> >  		if (unlikely(flags & __GFP_ZERO))
-> >  			memset(ptr, 0, cachep->object_size);
-> > +		if (unlikely(memcg_kmem_recharge_slab(ptr, flags))) {
-> > +			slab_free(cachep, ptr);
-> > +			ptr = NULL;
-> > +		}
-> >  	}
-> >
-> >  	return ptr;
-> > @@ -3250,6 +3256,10 @@ slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
-> >  		kmemcheck_slab_alloc(cachep, flags, objp, cachep->object_size);
-> >  		if (unlikely(flags & __GFP_ZERO))
-> >  			memset(objp, 0, cachep->object_size);
-> > +		if (unlikely(memcg_kmem_recharge_slab(objp, flags))) {
-> > +			slab_free(cachep, objp);
-> > +			objp = NULL;
-> > +		}
-> >  	}
-> >
-> 
-> Please do not add code to the hotpaths if its avoidable. Can you charge
-> the full slab only when allocated please?
+Let me clarify, what you proposed will work for the resets.
 
-I call memcg_kmem_recharge_slab only on alloc path. Free path isn't
-touched. The overhead added is one function call. The function only
-reads and compares two pointers under RCU most of time. This is
-comparable to the overhead introduced by memcg_kmem_get_cache, which is
-called in slab_alloc/slab_alloc_node earlier.
+However the clock gates won't work if we use the generic clk-gate driver.
+The problem is most of the gates don't have the ahb gate as their parent,
+but pll4 (peripheral pll). When we enable the clock, the ahb gate isn't
+its parent, and doesn't get enabled as a result. This is especially true
+for the usb phy clocks: all of them use pll4 as their parent.
 
-Anyways, if you think this is unacceptable, I don't mind dropping the
-whole patch set and thinking more on how to fix this per-memcg caches
-trickery. What do you think?
+I think this is a better representation of the hardware, but without
+documents this is really just a guess.
 
-Thanks,
-Vladimir
+As a whole, I think enabling the clock gate at the beginning is simpler.
+
+ChenYu
