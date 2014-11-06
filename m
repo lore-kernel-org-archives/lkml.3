@@ -1,56 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299AbaKFCoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:44:10 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:32783 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaKFCoG (ORCPT
+	id S1751268AbaKFCu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:50:28 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53839 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751020AbaKFCu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:44:06 -0500
+	Wed, 5 Nov 2014 21:50:26 -0500
+Message-ID: <545AE1EE.30902@hurleysoftware.com>
+Date: Wed, 05 Nov 2014 21:50:22 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141105.211558.969082848816106943.davem@davemloft.net>
-References: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
-	<20141105.163825.1433973842938441546.davem@davemloft.net>
-	<20141106010501.GA18339@gmail.com>
-	<20141105.211558.969082848816106943.davem@davemloft.net>
-Date: Wed, 5 Nov 2014 18:44:04 -0800
-Message-ID: <CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
-Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
-From: Tom Herbert <therbert@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: Joe Stringer <joestringer@nicira.com>, Or Gerlitz <gerlitz.or@gmail.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        Sathya Perla <sathya.perla@emulex.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "linux.nics" <linux.nics@intel.com>, Amir Vadai <amirv@mellanox.com>,
-        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
-        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH -next v2 10/26] tty: Don't take tty_mutex for tty count
+ changes
+References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com> <1415207589-15967-1-git-send-email-peter@hurleysoftware.com> <1415207589-15967-11-git-send-email-peter@hurleysoftware.com> <20141106023310.GA5035@kroah.com> <545ADF52.9030401@hurleysoftware.com>
+In-Reply-To: <545ADF52.9030401@hurleysoftware.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 6:15 PM, David Miller <davem@davemloft.net> wrote:
-> From: Joe Stringer <joestringer@nicira.com>
-> Date: Wed, 5 Nov 2014 17:06:46 -0800
->
->> My impression was that the changes are more likely to be
->> hardware-specific (like the i40e changes) rather than software-specific,
->> like changes that might be integrated into the helper.
->
-> I think there is more commonality amongst hardware capabilities,
-> and this is why I want the helper to play itself out.
->
->> That said, I can rework for one helper. The way I see it would be the
->> same code as these patches, as "vxlan_gso_check(struct sk_buff *)" in
->> drivers/net/vxlan.c which would be called from each driver. Is that what
->> you had in mind?
->
-> Yes.
+On 11/05/2014 09:39 PM, Peter Hurley wrote:
+> On 11/05/2014 09:33 PM, Greg Kroah-Hartman wrote:
+>> On Wed, Nov 05, 2014 at 12:12:53PM -0500, Peter Hurley wrote:
+>>> Holding tty_mutex is no longer required to serialize changes to
+>>> the tty_count or to prevent concurrent opens of closing ttys;
+>>> tty_lock() is sufficient.
+>>>
+>>> Reviewed-by: Alan Cox <alan@linux.intel.com>
+>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>>> ---
+>>>  drivers/tty/tty_io.c | 6 ------
+>>>  1 file changed, 6 deletions(-)
+>>>
+>>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+>>> index ea8c6cae8d12..e59de81c39a9 100644
+>>> --- a/drivers/tty/tty_io.c
+>>> +++ b/drivers/tty/tty_io.c
+>>> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>>>  	 * each iteration we avoid any problems.
+>>>  	 */
+>>>  	while (1) {
+>>> -		/* Guard against races with tty->count changes elsewhere and
+>>> -		   opens on /dev/tty */
+>>> -
+>>> -		mutex_lock(&tty_mutex);
+>>>  		tty_lock_pair(tty, o_tty);
+>>>  		tty_closing = tty->count <= 1;
+>>>  		o_tty_closing = o_tty &&
+>>> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>>>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
+>>>  				__func__, tty_name(tty, buf));
+>>>  		tty_unlock_pair(tty, o_tty);
+>>> -		mutex_unlock(&tty_mutex);
+>>>  		schedule();
+>>>  	}
+>>>  
+>>
+>> The code in my tree in this section of tty_release() looks a bit
+>> different, so I had to hand-apply this patch.
+> 
+> Although there's nothing wrong with your version, I'm wondering why this
+> didn't apply cleanly.
+> 
+> While I go look at your tree, can you check that these patches are
+> sitting on top of the earlier two patches you applied to your tty-linus
+> branch; specifically 'tty: Fix high cpu load if tty is unreleasable' and
+> 'tty: Prevent "read/write wait queue active!" log flooding'?
 
-Note that this code is not VXLAN specific, it will also accept NVGRE
-and GRE/UDP with keyid and TEB. I imagine all these cases should be
-indistinguishable to the hardware so they probably just work (which
-would be cool!). It might be better to name and locate the helper
-function to reflect that.
+Yep, that's the problem: your 'tty-testing' branch doesn't have the 3 patches
+from me that you put in your 'tty-linus' branch earlier this evening. Those are:
+
+serial: Fix divide-by-zero fault in uart_get_divisor()
+tty: Fix high cpu load if tty is unreleasable
+tty: Prevent "read/write wait queue active!" log flooding
+
+How can I help fix this?
+
+Regards,
+Peter Hurley
+
+
+>> I've included the version
+>> I used below, please verify I didn't mess it up.
+>>
+>> thanks,
+>>
+>> greg k-h
+>>
+>>
+>>
+>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+>> index ea8c6cae8d12..e59de81c39a9 100644
+>> --- a/drivers/tty/tty_io.c
+>> +++ b/drivers/tty/tty_io.c
+>> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>>  	 * each iteration we avoid any problems.
+>>  	 */
+>>  	while (1) {
+>> -		/* Guard against races with tty->count changes elsewhere and
+>> -		   opens on /dev/tty */
+>> -
+>> -		mutex_lock(&tty_mutex);
+>>  		tty_lock_pair(tty, o_tty);
+>>  		tty_closing = tty->count <= 1;
+>>  		o_tty_closing = o_tty &&
+>> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
+>>  				__func__, tty_name(tty, buf));
+>>  		tty_unlock_pair(tty, o_tty);
+>> -		mutex_unlock(&tty_mutex);
+>>  		schedule();
+>>  	}
+>>  
+>> @@ -1891,7 +1886,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>>  		read_unlock(&tasklist_lock);
+>>  	}
+>>  
+>> -	mutex_unlock(&tty_mutex);
+>>  	tty_unlock_pair(tty, o_tty);
+>>  	/* At this point, the tty->count == 0 should ensure a dead tty
+>>  	   cannot be re-opened by a racing opener */
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-serial" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
