@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaKFWhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:37:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58420 "EHLO
+	id S1751513AbaKFWhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:37:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58466 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaKFWh3 (ORCPT
+	with ESMTP id S1751441AbaKFWhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:37:29 -0500
+	Thu, 6 Nov 2014 17:37:33 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        Vladislav Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 021/162] Revert "net/macb: add pinctrl consumer support"
-Date: Thu,  6 Nov 2014 14:34:45 -0800
-Message-Id: <1415313426-9622-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 017/162] tg3: Allow for recieve of full-size 8021AD frames
+Date: Thu,  6 Nov 2014 14:34:41 -0800
+Message-Id: <1415313426-9622-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,58 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 9026968abe7ad102f4ac5c6d96d733643f75399c ]
+[ Upstream commit 7d3083ee36b51e425b6abd76778a2046906b0fd3 ]
 
-This reverts commit 8ef29f8aae524bd51298fb10ac6a5ce6c4c5a3d8.
-The driver core already calls pinctrl_get() and claims the default
-state. There is no need to replicate this in the driver.
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+When receiving a vlan-tagged frame that still contains
+a vlan header, the length of the packet will be greater
+then MTU+ETH_HLEN since it will account of the extra
+vlan header.  TG3 checks this for the case for 802.1Q,
+but not for 802.1ad.  As a result, full sized 802.1ad
+frames get dropped by the card.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Add a check for 802.1ad protocol when receving full
+sized frames.
+
+Suggested-by: Prashant Sreedharan <prashant@broadcom.com>
+CC: Prashant Sreedharan <prashant@broadcom.com>
+CC: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 11 -----------
- 1 file changed, 11 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 9257869..b020d1c 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -29,7 +29,6 @@
- #include <linux/of_device.h>
- #include <linux/of_mdio.h>
- #include <linux/of_net.h>
--#include <linux/pinctrl/consumer.h>
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 072f401..1b84139 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -6907,7 +6907,8 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
+ 		skb->protocol = eth_type_trans(skb, tp->dev);
  
- #include "macb.h"
- 
-@@ -1755,7 +1754,6 @@ static int __init macb_probe(struct platform_device *pdev)
- 	struct phy_device *phydev;
- 	u32 config;
- 	int err = -ENXIO;
--	struct pinctrl *pinctrl;
- 	const char *mac;
- 
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -1764,15 +1762,6 @@ static int __init macb_probe(struct platform_device *pdev)
- 		goto err_out;
- 	}
- 
--	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
--	if (IS_ERR(pinctrl)) {
--		err = PTR_ERR(pinctrl);
--		if (err == -EPROBE_DEFER)
--			goto err_out;
--
--		dev_warn(&pdev->dev, "No pinctrl provided\n");
--	}
--
- 	err = -ENOMEM;
- 	dev = alloc_etherdev(sizeof(*bp));
- 	if (!dev)
+ 		if (len > (tp->dev->mtu + ETH_HLEN) &&
+-		    skb->protocol != htons(ETH_P_8021Q)) {
++		    skb->protocol != htons(ETH_P_8021Q) &&
++		    skb->protocol != htons(ETH_P_8021AD)) {
+ 			dev_kfree_skb(skb);
+ 			goto drop_it_no_recycle;
+ 		}
 -- 
 1.9.1
 
