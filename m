@@ -1,163 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbaKFWy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:54:29 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:65016 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820AbaKFWyZ (ORCPT
+	id S1752629AbaKFWzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:55:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59040 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183AbaKFWnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:54:25 -0500
-Message-ID: <545BFBB4.3040005@gmail.com>
-Date: Thu, 06 Nov 2014 20:52:36 -0200
-From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 6 Nov 2014 17:43:50 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 089/162] cpufreq: intel_pstate: Fix setting max_perf_pct in performance policy
+Date: Thu,  6 Nov 2014 14:35:53 -0800
+Message-Id: <1415313426-9622-90-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
-Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
-References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>	 <5451BED0.2060906@lwfinger.net> <1415178975.5402.66.camel@marge.simpson.net> <545A6894.7040506@lwfinger.net> <545B5E19.7030704@gmail.com>
-In-Reply-To: <545B5E19.7030704@gmail.com>
-In-Reply-To: 545B5E19.7030704@gmail.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 09:40 AM, Murilo Opsfelder Araujo wrote:
-> On 11/05/2014 04:12 PM, Larry Finger wrote:
->> On 11/05/2014 03:16 AM, Mike Galbraith wrote:
->>> On Wed, 2014-10-29 at 23:30 -0500, Larry Finger wrote:
->>>> On 10/29/2014 06:28 PM, Murilo Opsfelder Araujo wrote:
->>>>> This is a complement of commit 08054200117a95afc14c3d2ed3a38bf4e345bf78
->>>>> "rtlwifi: Add check for get_btc_status callback".
->>>>>
->>>>> With this patch, next-20141029 at least does not panic with rtl8192se
->>>>> device.
->>>>>
->>>>
->>>> This patch is OK, but as noted it is not complete.
->>>>
->>>> I have patches to fix all the kernel panics for rtl8192se AND
->>>> rtl8192ce. There
->>>> are missing parts, but I would prefer submitting mine, which would
->>>> conflict with
->>>> this one. For that reason, NACK for this one, and please apply the
->>>> set I am
->>>> submitting now.
->>>
->>> It's all in there now, but my RTL8191SEvB is still dead.  Squabbling
->>> with it isn't going all that well either.
->>>
->>> As soon as 38506ece rtlwifi: rtl_pci: Start modification for new drivers
->>> is applied, explosions appear.  Subsequently applying...
->>>
->>> 08054200 rtlwifi: Add check for get_btc_status callback
->>> c0386f15 rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for
->>> missing get_btc_status
->>> 50147969 rtlwifi: rtl8192se: Fix duplicate calls to
->>> ieee80211_register_hw()
->>> 30c5ccc6 rtlwifi: rtl8192se: Add missing section to read descriptor
->>> setting
->>> 75a916e1 rtlwifi: rtl8192se: Fix firmware loading
->>>
->>> ...fixes that mess up, but leaves the interface dead in the same manner
->>> as if nothing has been reverted.  So it _seems_ the bustage lurks in
->>> 38506ece somewhere.  Too bad it's non-dinky, and written in wifi-ese :)
->>
->> Yes, I am aware that rtl8192se is failing, and now that I am back from
->> vacation, I am working on the problem. If you want to use the driver
->> with kernel 3.18, clone the repo at
->> http://github.com/lwfinger/rtlwifi_new.git and build and install either
->> the master or kernel_version branches. Both work.
->>
->> I am in the process of trying to find what the crucial difference is
->> between that repo and the kernel version.
->>
->> Larry
->>
->>
-> I'm sending to everyone so others can jump in as well.
-> 
-> Here are the steps I've followed.
-> 
-> Installed and booted my kernel:
-> 
-> $ sudo dpkg -i linux-image-3.18.0-rc3-next-20141105-panda_3.18.0-rc3-next-20141105-panda-1_amd64.deb linux-headers-3.18.0-rc3-next-20141105-panda_3.18.0-rc3-next-20141105-panda-1_amd64.deb
-> 
-> Built modules from Larry's github repository.
-> 
-> $ cd rtlwifi_new
-> $ make
-> $ sudo make install
-> 
-> $ sudo modprobe -rv rtl8192se
-> rmmod rtl8192se
-> rmmod rtl_pci
-> rmmod rtlwifi
-> rmmod mac80211
-> rmmod cfg80211
-> 
-> The module does not load:
-> 
-> $ sudo modprobe -v rtl8192se
-> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/net/wireless/cfg80211.ko
-> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/net/mac80211/mac80211.ko
-> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/drivers/net/wireless/rtlwifi/rtlwifi.ko
-> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/drivers/net/wireless/rtlwifi/rtl_pci.ko
-> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/extra/rtl8192se.ko
-> ERROR: could not insert 'rtl8192se': Invalid argument
-> 
-> And /var/log/messages showed:
-> 
-> Nov  5 22:28:01 laptop kernel: [  301.276806] rtl8192se: disagrees about version of symbol rtl_process_phyinfo
-> Nov  5 22:28:01 laptop kernel: [  301.276812] rtl8192se: Unknown symbol rtl_process_phyinfo (err -22)
-> Nov  5 22:28:01 laptop kernel: [  301.276864] rtl8192se: disagrees about version of symbol rtl_get_tcb_desc
-> Nov  5 22:28:01 laptop kernel: [  301.276866] rtl8192se: Unknown symbol rtl_get_tcb_desc (err -22)
-> 
+3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
 
-Here is what I did in order to get the rtl8192se from Larry's repo to
-work:
+------------------
 
-$ cd rtlwifi_new
-$ make
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 
-$ sudo modprobe -rv rtl8192se
-rmmod rtl8192se
-rmmod rtl_pci
-rmmod rtlwifi
-rmmod mac80211
-rmmod cfg80211
+commit 36b4bed5cd8f6e17019fa7d380e0836872c7b367 upstream.
 
-$ sudo modprobe -v cfg80211
-insmod /lib/modules/3.18.0-rc3-next-20141106-panda/kernel/net/wireless/cfg80211.ko
+Code which changes policy to powersave changes also max_policy_pct based on
+max_freq. Code which change max_perf_pct has upper limit base on value
+max_policy_pct. When policy is changing from powersave back to performance
+then max_policy_pct is not changed. Which means that changing max_perf_pct is
+not possible to high values if max_freq was too low in powersave policy.
 
-$ sudo modprobe -v mac80211
-insmod /lib/modules/3.18.0-rc3-next-20141106-panda/kernel/net/mac80211/mac80211.ko
+Test case:
 
-$ sudo insmod ./rtlwifi.ko
-$ sudo insmod ./rtl_pci.ko
-$ sudo insmod ./rtl8192se/rtl8192se.ko
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+800000
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+3300000
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+performance
+$ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+100
 
-Cascardo helped me to investigate this and the issue was that modprobe
-was loading the core rtl drivers from the next-20141105 and the
-rtl8192se from Larry's repo.  Thus, rtl8192se didn't have all its
-required symbols at loading time.
+$ echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+$ echo 800000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+$ echo 20 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
 
-Loading the drivers in reverse order using insmod did the trick.
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+powersave
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+800000
+$ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+20
 
-Larry, your rtl8192se from rtlwifi_new repository is working pretty
-fine on my hardware.  I'm looking forward to see that code landing
-linux 3.18.
+$ echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+$ echo 3300000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+$ echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
 
-Thanks everyone for the help and support.  At least now, I have a
-workaround.
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+performance
+$ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+3300000
+$ cat /sys/devices/system/cpu/intel_pstate/max_perf_pct
+24
 
-Apreciated!
+And now intel_pstate driver allows to set maximal value for max_perf_pct based
+on max_policy_pct which is 24 for previous powersave max_freq 800000.
 
+This patch will set default value for max_policy_pct when setting policy to
+performance so it will allow to set also max value for max_perf_pct.
+
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/cpufreq/intel_pstate.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 2d26563..d21cd02 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -733,6 +733,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
+ 	if (policy->policy == CPUFREQ_POLICY_PERFORMANCE) {
+ 		limits.min_perf_pct = 100;
+ 		limits.min_perf = int_tofp(1);
++		limits.max_policy_pct = 100;
+ 		limits.max_perf_pct = 100;
+ 		limits.max_perf = int_tofp(1);
+ 		limits.no_turbo = limits.turbo_disabled;
 -- 
-Murilo
+1.9.1
+
