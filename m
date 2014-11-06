@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaKFWru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:47:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59154 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaKFWoZ (ORCPT
+	id S1753532AbaKFWsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:48:03 -0500
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:63002 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400AbaKFWr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:25 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 026/162] sctp: handle association restarts when the socket is closed.
-Date: Thu,  6 Nov 2014 14:34:50 -0800
-Message-Id: <1415313426-9622-27-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 6 Nov 2014 17:47:58 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] clk: tegra: SDMMC controllers are on APB
+Date: Thu,  6 Nov 2014 14:47:55 -0800
+Message-Id: <1415314075-14099-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+Since the SDMMC controller registers are accessed via the APB,
+the APB must be flushed before gating the SDMMC clocks to prevent
+register accesses to the SDMMC controllers after their clocks are
+gated.
 
-------------------
-
-From: Vlad Yasevich <vyasevich@gmail.com>
-
-[ Upstream commit bdf6fa52f01b941d4a80372d56de465bdbbd1d23 ]
-
-Currently association restarts do not take into consideration the
-state of the socket.  When a restart happens, the current assocation
-simply transitions into established state.  This creates a condition
-where a remote system, through a the restart procedure, may create a
-local association that is no way reachable by user.  The conditions
-to trigger this are as follows:
-  1) Remote does not acknoledge some data causing data to remain
-     outstanding.
-  2) Local application calls close() on the socket.  Since data
-     is still outstanding, the association is placed in SHUTDOWN_PENDING
-     state.  However, the socket is closed.
-  3) The remote tries to create a new association, triggering a restart
-     on the local system.  The association moves from SHUTDOWN_PENDING
-     to ESTABLISHED.  At this point, it is no longer reachable by
-     any socket on the local system.
-
-This patch addresses the above situation by moving the newly ESTABLISHED
-association into SHUTDOWN-SENT state and bundling a SHUTDOWN after
-the COOKIE-ACK chunk.  This way, the restarted associate immidiately
-enters the shutdown procedure and forces the termination of the
-unreachable association.
-
-Reported-by: David Laight <David.Laight@aculab.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- include/net/sctp/command.h |  2 +-
- net/sctp/sm_statefuns.c    | 19 ++++++++++++++++---
- 2 files changed, 17 insertions(+), 4 deletions(-)
+ drivers/clk/tegra/clk-tegra-periph.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
-index 832f219..c3f0cd9 100644
---- a/include/net/sctp/command.h
-+++ b/include/net/sctp/command.h
-@@ -116,7 +116,7 @@ typedef enum {
-  * analysis of the state functions, but in reality just taken from
-  * thin air in the hopes othat we don't trigger a kernel panic.
-  */
--#define SCTP_MAX_NUM_COMMANDS 14
-+#define SCTP_MAX_NUM_COMMANDS 20
- 
- typedef union {
- 	__s32 i32;
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index cd0d5a2..4b549a3 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -1776,9 +1776,22 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(struct net *net,
- 	/* Update the content of current association. */
- 	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
--	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
--			SCTP_STATE(SCTP_STATE_ESTABLISHED));
--	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	if (sctp_state(asoc, SHUTDOWN_PENDING) &&
-+	    (sctp_sstate(asoc->base.sk, CLOSING) ||
-+	     sock_flag(asoc->base.sk, SOCK_DEAD))) {
-+		/* if were currently in SHUTDOWN_PENDING, but the socket
-+		 * has been closed by user, don't transition to ESTABLISHED.
-+		 * Instead trigger SHUTDOWN bundled with COOKIE_ACK.
-+		 */
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+		return sctp_sf_do_9_2_start_shutdown(net, ep, asoc,
-+						     SCTP_ST_CHUNK(0), NULL,
-+						     commands);
-+	} else {
-+		sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-+				SCTP_STATE(SCTP_STATE_ESTABLISHED));
-+		sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
-+	}
- 	return SCTP_DISPOSITION_CONSUME;
- 
- nomem_ev:
+diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
+index 37f32c4..fa20002 100644
+--- a/drivers/clk/tegra/clk-tegra-periph.c
++++ b/drivers/clk/tegra/clk-tegra-periph.c
+@@ -434,10 +434,10 @@ static struct tegra_periph_init_data periph_clks[] = {
+ 	MUX("hda", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_HDA, 125, TEGRA_PERIPH_ON_APB, tegra_clk_hda),
+ 	MUX("hda2codec_2x", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_HDA2CODEC_2X, 111, TEGRA_PERIPH_ON_APB, tegra_clk_hda2codec_2x),
+ 	MUX("vfir", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_VFIR, 7, TEGRA_PERIPH_ON_APB, tegra_clk_vfir),
+-	MUX("sdmmc1", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC1, 14, 0, tegra_clk_sdmmc1),
+-	MUX("sdmmc2", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC2, 9, 0, tegra_clk_sdmmc2),
+-	MUX("sdmmc3", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC3, 69, 0, tegra_clk_sdmmc3),
+-	MUX("sdmmc4", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC4, 15, 0, tegra_clk_sdmmc4),
++	MUX("sdmmc1", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC1, 14, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc1),
++	MUX("sdmmc2", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC2, 9, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc2),
++	MUX("sdmmc3", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC3, 69, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc3),
++	MUX("sdmmc4", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_SDMMC4, 15, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc4),
+ 	MUX("la", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_LA, 76, TEGRA_PERIPH_ON_APB, tegra_clk_la),
+ 	MUX("trace", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_TRACE, 77, TEGRA_PERIPH_ON_APB, tegra_clk_trace),
+ 	MUX("owr", mux_pllp_pllc_pllm_clkm, CLK_SOURCE_OWR, 71, TEGRA_PERIPH_ON_APB, tegra_clk_owr),
+@@ -470,10 +470,10 @@ static struct tegra_periph_init_data periph_clks[] = {
+ 	MUX("adx1", mux_plla_pllc_pllp_clkm, CLK_SOURCE_ADX1, 180, TEGRA_PERIPH_ON_APB, tegra_clk_adx1),
+ 	MUX("amx1", mux_plla_pllc_pllp_clkm, CLK_SOURCE_AMX1, 185, TEGRA_PERIPH_ON_APB, tegra_clk_amx1),
+ 	MUX("vi_sensor2", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI_SENSOR2, 165, TEGRA_PERIPH_NO_RESET, tegra_clk_vi_sensor2),
+-	MUX8("sdmmc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC1, 14, 0, tegra_clk_sdmmc1_8),
+-	MUX8("sdmmc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC2, 9, 0, tegra_clk_sdmmc2_8),
+-	MUX8("sdmmc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC3, 69, 0, tegra_clk_sdmmc3_8),
+-	MUX8("sdmmc4", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC4, 15, 0, tegra_clk_sdmmc4_8),
++	MUX8("sdmmc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC1, 14, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc1_8),
++	MUX8("sdmmc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC2, 9, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc2_8),
++	MUX8("sdmmc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC3, 69, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc3_8),
++	MUX8("sdmmc4", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SDMMC4, 15, TEGRA_PERIPH_ON_APB, tegra_clk_sdmmc4_8),
+ 	MUX8("sbc1", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC1, 41, TEGRA_PERIPH_ON_APB, tegra_clk_sbc1_8),
+ 	MUX8("sbc2", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC2, 44, TEGRA_PERIPH_ON_APB, tegra_clk_sbc2_8),
+ 	MUX8("sbc3", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_SBC3, 46, TEGRA_PERIPH_ON_APB, tegra_clk_sbc3_8),
 -- 
-1.9.1
+2.1.0.rc2.206.gedb03e5
 
