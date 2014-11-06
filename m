@@ -1,106 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaKFGUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 01:20:21 -0500
-Received: from mga14.intel.com ([192.55.52.115]:39583 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaKFGUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 01:20:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,324,1413270000"; 
-   d="scan'208";a="618016998"
-Date: Thu, 6 Nov 2014 08:19:52 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, lenb@kernel.org, wsa@the-dreams.de,
-        robert.moore@intel.com, lv.zheng@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devel@acpica.org
-Subject: Re: [RFC PATCH V2] ACPI: Add _DEP(Operation Region Dependencies)
- support to fix battery issue on the Asus T100TA
-Message-ID: <20141106061952.GC1618@lahna.fi.intel.com>
-References: <1414422584-2638-1-git-send-email-tianyu.lan@intel.com>
- <20141105085414.GV1618@lahna.fi.intel.com>
- <7320898.JB9z5hUzdG@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7320898.JB9z5hUzdG@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751448AbaKFGXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 01:23:14 -0500
+Received: from regular1.263xmail.com ([211.150.99.140]:46513 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbaKFGXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 01:23:10 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: linus.walleij@linaro.org
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <6772107aa0eba67bbffc64cda467cedf>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
+        cf@rock-chips.com, caesar.wang@rock-chips.com,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: [PATCH v8 0/3]     ARM: rk3288 : Add PM Domain support
+Date: Thu,  6 Nov 2014 14:22:38 +0800
+Message-Id: <1415254961-5746-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 10:55:23PM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 05, 2014 10:54:14 AM Mika Westerberg wrote:
-> > On Mon, Oct 27, 2014 at 11:09:44PM +0800, Lan Tianyu wrote:
-> > > ACPI 5.0 introduces _DEP to designate device objects that OSPM should
-> > > assign a higher priority in start ordering due to future operation region
-> > > accesses.
-> > > 
-> > > On Asus T100TA, ACPI battery info are read from a I2C slave device via
-> > > I2C operation region. Before I2C operation region handler is installed,
-> > > battery _STA always returns 0. There is a _DEP method of designating
-> > > start order under battery device node.
-> > > 
-> > > This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
-> > > Introducing acpi_dep_list and adding dep_unmet count in the struct
-> > > acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
-> > > valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
-> > > master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
-> > > count will increase by one if there is a device under its _DEP. Driver's probe() should
-> > > return EPROBE_DEFER when find dep_unmet larger than 0. When I2C operation
-> > > region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
-> > > whose master is pointed to I2C host controller and decrease slave's dep_unmet.
-> > > When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
-> > > for the device in order to resolve battery _STA issue on the Asus T100TA.
-> > 
-> > Is there a reason why the driver core can't handle this automatically in
-> > such way that when there are unmet dependencies, it will not probe the
-> > device? Or am I missing something?
-> 
-> Yes, there is a reason: There's no way to represent such dependencies in the
-> driver core. :-)
-> 
-> That's been discussed for several times (and I've even mentioned _DEP in one
-> of those discussions) and it's always ended up being seen as "complexity
-> nightmare".
+    Add power domain drivers based on generic power domain for
+    Rockchip platform, and support RK3288.
 
-OK, I see.
+    https://chromium-review.googlesource.com/#/c/220253/9
+    This is the GPU driver, add the following information in DT,
+    and it can support the PMDOMAIN
 
-> > Now it looks like the driver itself needs to know about these and handle
-> > them somehow.
-> 
-> The patch is missing the user of it which is going to be the battery driver
-> only for the time being.  Tianyu, can you please include the battery changes
-> into the patch at least for now?
-> 
-> > I'm asking this because there are other things like devices using GPIOs
-> > that also take advantage of _DEP, like this on Asus T100:
-> > 
-> >         Device (SDHB)
-> >         {
-> >             Name (_ADR, Zero)  // _ADR: Address
-> >             Name (_HID, "INT33BB")  // _HID: Hardware ID
-> >             ...
-> >             Name (_DEP, Package (0x02)  // _DEP: Dependencies
-> >             {
-> >                 PEPD,
-> >                 GPO2
-> >             })
-> > 
-> > I don't know what PEPD is but GPO2 is the GPIO controller.
-> 
-> Well, if you read the definition of _DEP in ACPI 5.1, it is all about operation
-> regions, so this smells like abuse of sorts.  In any case, it is hard to argue
-> that _DEP is not internal to ACPI because of that definition.
+gpu: gpu@ffa30000 {
+                    compatible = "arm,malit764",
+                                 "arm,malit76x",
+                                 "arm,malit7xx",
+                                 "arm,mali-midgard";
+                    reg = <0xffa30000 0x10000>;
+                    interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+                                 <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+                                 <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+                    interrupt-names = "JOB", "MMU", "GPU";
+                    clocks = <&cru ACLK_GPU>;
+                    clock-names = "aclk_gpu";
+                    operating-points = <
+                            /* KHz uV */
+                            100000 800000
+                            200000 850000
+                            300000 950000
+                            400000 1000000
+                            600000 1150000
+                    >;
+                    power-domains = <&power RK3288_PD_GPU>;
+                    status = "disabled";
+};
 
-So if we have a device, like SDHB above (SDIO controller), that needs
-GPIOs for powering the SDIO card and that is done by using GPIO
-operation regions how do we ensure that the GPIO controller driver is
-there?
+Based on:
+    - [PATCH v1 1/4] PM / clock_ops: Add pm_clk_add_clk()
+    http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735599.html
 
-I think the answer is that we just make sure the the GPIO driver is
-there before anything that is going to use it. E.g make it
-subsys_initcall() or so?
+Changes in v8:
+    - This reconciles the v2 and v7 code so that we power domain have
+    lists of clocks they toggle on and off during power transitions and
+    independently from power domains clocks we attach clocks to devices
+    comprising power domain and prepare them so they are turned on and off
+    by runtime PM.
+    - document go back to v2
+    - DTS go back to v2
+
+Changes in v7:
+    - Delete unused variables
+
+Changes in v6:
+    - delete pmu_lock
+    - modify dev_lock using mutex
+    - pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
+    - pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
+    - add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+
+Changes in v5:
+    - delete idle_lock
+    - add timeout in rockchip_pmu_set_idle_request()
+
+Changes in v4:
+    - use list storage dev
+
+Changes in v3:
+    - change use pm_clk_resume() and pm_clk_suspend()
+    - DT structure has changed
+    - Decomposition power-controller, changed to multiple controller
+    (gpu-power-controller, hevc-power-controller)
+
+Changes in v2:
+    - remove the "pd->pd.of_node = np"
+    - move clocks to "optional"
+    - make pd_vio clocks all one entry per line and alphabetize.
+    - power: power-controller move back to pinctrl: pinctrl.
+
+Caesar Wang (3):
+  power-domain: rockchip: add power domain drivers
+  dt-bindings: add document of Rockchip power domain
+  ARM: dts: add rk3288 power-domain node
+
+ .../bindings/arm/rockchip/power_domain.txt         |  48 +++
+ arch/arm/boot/dts/rk3288.dtsi                      |  66 +++
+ arch/arm/mach-rockchip/Kconfig                     |   1 +
+ arch/arm/mach-rockchip/Makefile                    |   1 +
+ arch/arm/mach-rockchip/pm_domains.c                | 469 +++++++++++++++++++++
+ include/dt-bindings/power-domain/rk3288.h          |  11 +
+ 6 files changed, 596 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+ create mode 100644 include/dt-bindings/power-domain/rk3288.h
+
+-- 
+1.9.1
+
+
