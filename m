@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaKFE64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 23:58:56 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42330 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaKFE6w (ORCPT
+	id S1751216AbaKFFBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 00:01:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51654 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbaKFFBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 23:58:52 -0500
-Date: Wed, 5 Nov 2014 22:59:15 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with the usb tree
-Message-ID: <20141106045915.GC6272@saruman>
-Reply-To: <balbi@ti.com>
-References: <20141106145832.633bb8c2@canb.auug.org.au>
+	Thu, 6 Nov 2014 00:01:47 -0500
+Message-ID: <545B00B9.5090108@wwwdotorg.org>
+Date: Wed, 05 Nov 2014 22:01:45 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fig2xvG2VGoz8o/s"
-Content-Disposition: inline
-In-Reply-To: <20141106145832.633bb8c2@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Scott Branden <sbranden@broadcom.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Chris Ball <chris@printf.net>, Piotr Krol <pietrushnic@gmail.com>
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, linux-rpi-kernel@lists.infradead.org,
+        Ray Jui <rjui@broadcom.com>, bcm-kernel-feedback-list@broadcom.com
+Subject: Re: [PATCHv2 4/5] mmc: shdci-bcm2835: add verify for 32-bit back-to-back
+ workaround
+References: <Scott Branden <sbranden@broadcom.com> <1414651017-3545-1-git-send-email-sbranden@broadcom.com> <1414651017-3545-5-git-send-email-sbranden@broadcom.com> <5459AECF.8000402@wwwdotorg.org> <5459CB17.3020303@broadcom.com>
+In-Reply-To: <5459CB17.3020303@broadcom.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Fig2xvG2VGoz8o/s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/05/2014 12:00 AM, Scott Branden wrote:
+> On 14-11-04 08:59 PM, Stephen Warren wrote:
+>> On 10/30/2014 12:36 AM, Scott Branden wrote:
+>>> Add a verify option to driver to print out an error message if a
+>>> potential back to back write could cause a clock domain issue.
+>>
+>>> index f8c450a..11af27f 100644
+>>
+>>> +#ifdef CONFIG_MMC_SDHCI_BCM2835_VERIFY_WORKAROUND
+>>> +    struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+>>> +    struct bcm2835_sdhci_host *bcm2835_host = pltfm_host->priv;
+>>> +
+>>> +    if (bcm2835_host->previous_reg == reg) {
+>>> +        if ((reg != SDHCI_HOST_CONTROL)
+>>> +            && (reg != SDHCI_CLOCK_CONTROL)) {
+>>
+>> The comment in patch 3 says the problem doesn't apply to the data
+>> register. Why does this check for these two registers rather than data?
+> This Verify workaround patch still a work in progress.  I'm still
+> getting more info from the silicon designers on the back-to-back
+> register writes that are affect.  The spew of 0x20 or 0x28 or 0x2c
+> register writes are all ok locations that don't need to be worked
+> around.  This patch needs to be corrected with the proper register rules
+> still.
 
-On Thu, Nov 06, 2014 at 02:58:32PM +1100, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> drivers/usb/chipidea/otg_fsm.c between commit 51f1741fcc16 ("usb:
-> chipidea: otg_fsm: delete unnecessary 'out of memory' messages") from
-> the usb tree and commit ef44cb4226d1 ("usb: allow to supply the PHY in
-> the drivers when using HCD") from the usb-gadget tree.
->=20
-> I fixed it up (the latter removed the code modified by the former) and
-> can carry the fix as necessary (no action is required).
-
-Alright, thanks for fixing it up.
-
---=20
-balbi
-
---Fig2xvG2VGoz8o/s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUWwAiAAoJEIaOsuA1yqREtrMP/1borPbLiK2+KBOP0HbSZYPq
-cPiedJtrwLHx6XBjbG9VMFDe+tYOBeJm6Wbhn5eEPD+3dRIN3V5yfN3xcA/jc0BD
-IOOU5lF40q/BxkXyyzFVdkYJX486oW1BPj1Rvefk44Y0IeknEE6YnuXVdIa/S3xF
-xMzc5gMERvYlYaQ0kNj3qVizUs92URGEeD42iQzMyVdWx4NvqQTZ3j3PdU4Q0r15
-DdNX884hmrXIyn4IRITwdot5ADVBSbfaCWe959NqVYBUK429P9yv/9qa4noxlmPQ
-W5Sc7cWTDJ6aqG647Gm4vS+G7QlXp6PBKs6drC+QjlNm3GqPs5Nz1mUW0WX/DlBG
-4RexAvk446d4CQXKJ08EudpsO5ev+aqGN/AoxlISTJyLIA3B7KNtjOEqNGPE85JE
-S2gzMVlpw5wANIuNStuL+Yrft4lCxdfLlr2wJ/eevUPuhOPWEH/4sCZDt+vpAd1h
-AoxdklPA4EpO4dmbL1Ko9+6u/5RVGk+JSeF+9nFF5D0d3DSkiAfz3OerYnc4e256
-E+22uKE+1DypKBjudaXF9tZlhpVhB9xNiN0u95X+ilA0dutewcOD0l5m07D/BGni
-WPL2isB+sUkCs93RFQ3tu2fxjFtGI5sdghUIAX6JlBH45VqNCczpFIdVP/wXH8oY
-LxoIFSoh9pDzVKI7Xbu5
-=oOCl
------END PGP SIGNATURE-----
-
---Fig2xvG2VGoz8o/s--
+FYI, I applied the series except for this patch, and everything
+/appeared/ to work OK for a brief test (boot, log in, reboot). Still,
+I'll hold off my Tested-by/acked-by until the comment in patch 3 and the
+register list above match, and there's no log spew with everything applied.
