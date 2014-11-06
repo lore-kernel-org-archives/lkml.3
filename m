@@ -1,115 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaKFX2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:28:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58421 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaKFWh3 (ORCPT
+	id S1752793AbaKFXaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:30:21 -0500
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:63610 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaKFXaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:37:29 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 008/162] packet: handle too big packets for PACKET_V3
-Date: Thu,  6 Nov 2014 14:34:32 -0800
-Message-Id: <1415313426-9622-9-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 6 Nov 2014 18:30:18 -0500
+Message-ID: <545C0487.1090707@lwfinger.net>
+Date: Thu, 06 Nov 2014 17:30:15 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
+Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
+References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>	 <5451BED0.2060906@lwfinger.net> <1415178975.5402.66.camel@marge.simpson.net> <545A6894.7040506@lwfinger.net> <545B5E19.7030704@gmail.com> <545BFBB4.3040005@gmail.com>
+In-Reply-To: <545BFBB4.3040005@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+On 11/06/2014 04:52 PM, Murilo Opsfelder Araujo wrote:
+> On 11/06/2014 09:40 AM, Murilo Opsfelder Araujo wrote:
+>> On 11/05/2014 04:12 PM, Larry Finger wrote:
+>>> On 11/05/2014 03:16 AM, Mike Galbraith wrote:
+>>>> On Wed, 2014-10-29 at 23:30 -0500, Larry Finger wrote:
+>>>>> On 10/29/2014 06:28 PM, Murilo Opsfelder Araujo wrote:
+>>>>>> This is a complement of commit 08054200117a95afc14c3d2ed3a38bf4e345bf78
+>>>>>> "rtlwifi: Add check for get_btc_status callback".
+>>>>>>
+>>>>>> With this patch, next-20141029 at least does not panic with rtl8192se
+>>>>>> device.
+>>>>>>
+>>>>>
+>>>>> This patch is OK, but as noted it is not complete.
+>>>>>
+>>>>> I have patches to fix all the kernel panics for rtl8192se AND
+>>>>> rtl8192ce. There
+>>>>> are missing parts, but I would prefer submitting mine, which would
+>>>>> conflict with
+>>>>> this one. For that reason, NACK for this one, and please apply the
+>>>>> set I am
+>>>>> submitting now.
+>>>>
+>>>> It's all in there now, but my RTL8191SEvB is still dead.  Squabbling
+>>>> with it isn't going all that well either.
+>>>>
+>>>> As soon as 38506ece rtlwifi: rtl_pci: Start modification for new drivers
+>>>> is applied, explosions appear.  Subsequently applying...
+>>>>
+>>>> 08054200 rtlwifi: Add check for get_btc_status callback
+>>>> c0386f15 rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for
+>>>> missing get_btc_status
+>>>> 50147969 rtlwifi: rtl8192se: Fix duplicate calls to
+>>>> ieee80211_register_hw()
+>>>> 30c5ccc6 rtlwifi: rtl8192se: Add missing section to read descriptor
+>>>> setting
+>>>> 75a916e1 rtlwifi: rtl8192se: Fix firmware loading
+>>>>
+>>>> ...fixes that mess up, but leaves the interface dead in the same manner
+>>>> as if nothing has been reverted.  So it _seems_ the bustage lurks in
+>>>> 38506ece somewhere.  Too bad it's non-dinky, and written in wifi-ese :)
+>>>
+>>> Yes, I am aware that rtl8192se is failing, and now that I am back from
+>>> vacation, I am working on the problem. If you want to use the driver
+>>> with kernel 3.18, clone the repo at
+>>> http://github.com/lwfinger/rtlwifi_new.git and build and install either
+>>> the master or kernel_version branches. Both work.
+>>>
+>>> I am in the process of trying to find what the crucial difference is
+>>> between that repo and the kernel version.
+>>>
+>>> Larry
+>>>
+>>>
+>> I'm sending to everyone so others can jump in as well.
+>>
+>> Here are the steps I've followed.
+>>
+>> Installed and booted my kernel:
+>>
+>> $ sudo dpkg -i linux-image-3.18.0-rc3-next-20141105-panda_3.18.0-rc3-next-20141105-panda-1_amd64.deb linux-headers-3.18.0-rc3-next-20141105-panda_3.18.0-rc3-next-20141105-panda-1_amd64.deb
+>>
+>> Built modules from Larry's github repository.
+>>
+>> $ cd rtlwifi_new
+>> $ make
+>> $ sudo make install
+>>
+>> $ sudo modprobe -rv rtl8192se
+>> rmmod rtl8192se
+>> rmmod rtl_pci
+>> rmmod rtlwifi
+>> rmmod mac80211
+>> rmmod cfg80211
+>>
+>> The module does not load:
+>>
+>> $ sudo modprobe -v rtl8192se
+>> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/net/wireless/cfg80211.ko
+>> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/net/mac80211/mac80211.ko
+>> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/drivers/net/wireless/rtlwifi/rtlwifi.ko
+>> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/drivers/net/wireless/rtlwifi/rtl_pci.ko
+>> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/extra/rtl8192se.ko
+>> ERROR: could not insert 'rtl8192se': Invalid argument
+>>
+>> And /var/log/messages showed:
+>>
+>> Nov  5 22:28:01 laptop kernel: [  301.276806] rtl8192se: disagrees about version of symbol rtl_process_phyinfo
+>> Nov  5 22:28:01 laptop kernel: [  301.276812] rtl8192se: Unknown symbol rtl_process_phyinfo (err -22)
+>> Nov  5 22:28:01 laptop kernel: [  301.276864] rtl8192se: disagrees about version of symbol rtl_get_tcb_desc
+>> Nov  5 22:28:01 laptop kernel: [  301.276866] rtl8192se: Unknown symbol rtl_get_tcb_desc (err -22)
+>>
+>
+> Here is what I did in order to get the rtl8192se from Larry's repo to
+> work:
+>
+> $ cd rtlwifi_new
+> $ make
+>
+> $ sudo modprobe -rv rtl8192se
+> rmmod rtl8192se
+> rmmod rtl_pci
+> rmmod rtlwifi
+> rmmod mac80211
+> rmmod cfg80211
+>
+> $ sudo modprobe -v cfg80211
+> insmod /lib/modules/3.18.0-rc3-next-20141106-panda/kernel/net/wireless/cfg80211.ko
+>
+> $ sudo modprobe -v mac80211
+> insmod /lib/modules/3.18.0-rc3-next-20141106-panda/kernel/net/mac80211/mac80211.ko
+>
+> $ sudo insmod ./rtlwifi.ko
+> $ sudo insmod ./rtl_pci.ko
+> $ sudo insmod ./rtl8192se/rtl8192se.ko
+>
+> Cascardo helped me to investigate this and the issue was that modprobe
+> was loading the core rtl drivers from the next-20141105 and the
+> rtl8192se from Larry's repo.  Thus, rtl8192se didn't have all its
+> required symbols at loading time.
+>
+> Loading the drivers in reverse order using insmod did the trick.
+>
+> Larry, your rtl8192se from rtlwifi_new repository is working pretty
+> fine on my hardware.  I'm looking forward to see that code landing
+> linux 3.18.
 
-------------------
+I am happy that it is working now; however, if you had done "sudo make install", 
+the new drivers would have been in the proper directories, and you would not 
+have gotten the incorrect symbol errors, or need to use the insmod commands that 
+you post.
 
-From: Eric Dumazet <edumazet@google.com>
+Larry
 
-[ Upstream commit dc808110bb62b64a448696ecac3938902c92e1ab ]
-
-af_packet can currently overwrite kernel memory by out of bound
-accesses, because it assumed a [new] block can always hold one frame.
-
-This is not generally the case, even if most existing tools do it right.
-
-This patch clamps too long frames as API permits, and issue a one time
-error on syslog.
-
-[  394.357639] tpacket_rcv: packet too big, clamped from 5042 to 3966. macoff=82
-
-In this example, packet header tp_snaplen was set to 3966,
-and tp_len was set to 5042 (skb->len)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/packet/af_packet.c | 17 +++++++++++++++++
- net/packet/internal.h  |  1 +
- 2 files changed, 18 insertions(+)
-
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 88cfbc1..a846125 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -565,6 +565,7 @@ static void init_prb_bdqc(struct packet_sock *po,
- 	p1->tov_in_jiffies = msecs_to_jiffies(p1->retire_blk_tov);
- 	p1->blk_sizeof_priv = req_u->req3.tp_sizeof_priv;
- 
-+	p1->max_frame_len = p1->kblk_size - BLK_PLUS_PRIV(p1->blk_sizeof_priv);
- 	prb_init_ft_ops(p1, req_u);
- 	prb_setup_retire_blk_timer(po, tx_ring);
- 	prb_open_block(p1, pbd);
-@@ -1814,6 +1815,18 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
- 			if ((int)snaplen < 0)
- 				snaplen = 0;
- 		}
-+	} else if (unlikely(macoff + snaplen >
-+			    GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len)) {
-+		u32 nval;
-+
-+		nval = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len - macoff;
-+		pr_err_once("tpacket_rcv: packet too big, clamped from %u to %u. macoff=%u\n",
-+			    snaplen, nval, macoff);
-+		snaplen = nval;
-+		if (unlikely((int)snaplen < 0)) {
-+			snaplen = 0;
-+			macoff = GET_PBDQC_FROM_RB(&po->rx_ring)->max_frame_len;
-+		}
- 	}
- 	spin_lock(&sk->sk_receive_queue.lock);
- 	h.raw = packet_current_rx_frame(po, skb,
-@@ -3610,6 +3623,10 @@ static int packet_set_ring(struct sock *sk, union tpacket_req_u *req_u,
- 			goto out;
- 		if (unlikely(req->tp_block_size & (PAGE_SIZE - 1)))
- 			goto out;
-+		if (po->tp_version >= TPACKET_V3 &&
-+		    (int)(req->tp_block_size -
-+			  BLK_PLUS_PRIV(req_u->req3.tp_sizeof_priv)) <= 0)
-+			goto out;
- 		if (unlikely(req->tp_frame_size < po->tp_hdrlen +
- 					po->tp_reserve))
- 			goto out;
-diff --git a/net/packet/internal.h b/net/packet/internal.h
-index 1035fa2..ca086c0 100644
---- a/net/packet/internal.h
-+++ b/net/packet/internal.h
-@@ -29,6 +29,7 @@ struct tpacket_kbdq_core {
- 	char		*pkblk_start;
- 	char		*pkblk_end;
- 	int		kblk_size;
-+	unsigned int	max_frame_len;
- 	unsigned int	knum_blocks;
- 	uint64_t	knxt_seq_num;
- 	char		*prev;
--- 
-1.9.1
 
