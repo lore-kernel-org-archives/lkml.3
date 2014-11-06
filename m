@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaKFQnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:43:43 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56041 "EHLO
+	id S1751801AbaKFQnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:43:51 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56073 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaKFQnj (ORCPT
+	with ESMTP id S1751609AbaKFQns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:43:39 -0500
+	Thu, 6 Nov 2014 11:43:48 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>
-Subject: [PATCH v5 00/48] kernel: Add support for power-off handler call chain
-Date: Thu,  6 Nov 2014 08:42:44 -0800
-Message-Id: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+        Greg Ungerer <gerg@uclinux.org>, Joshua Thompson <funaho@jurai.org>,
+        linux-m68k@vger.kernel.org
+Subject: [PATCH v5 04/48] m68k: Replace mach_power_off with pm_power_off
+Date: Thu,  6 Nov 2014 08:42:48 -0800
+Message-Id: <1415292213-28652-5-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 X-Authenticated_sender: guenter@roeck-us.net
 X-OutGoing-Spam-Status: No, score=-1.0
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA53A.017B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.545BA544.0122,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalMessages: 14
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -54,145 +51,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various drivers implement architecture and/or device specific means to
-remove power from the system.  For the most part, those drivers set the
-global variable pm_power_off to point to a function within the driver.
+Replace mach_power_off with pm_power_off to simplify the subsequent
+move of pm_power_off to generic code.
 
-This mechanism has a number of drawbacks.  Typically only one means
-to remove power is supported (at least if pm_power_off is used).
-At least in theory there can be multiple means to remove power, some of
-which may be less desirable.  For example, one mechanism might power off the
-entire system through an I/O port or gpio pin, while another might power off
-a board by disabling its power controller. Other mechanisms may really just
-execute a restart sequence or drop into the ROM monitor, or put the CPU into
-sleep mode.  Using pm_power_off can also be racy if the function pointer is
-set from a driver built as module, as the driver may be in the process of
-being unloaded when pm_power_off is called.  If there are multiple power-off
-handlers in the system, removing a module with such a handler may
-inadvertently reset the pointer to pm_power_off to NULL, leaving the system
-with no means to remove power.
-
-Introduce a system power-off handler call chain to solve the described
-problems.  This call chain is expected to be executed from the architecture
-specific machine_power_off() function.  Drivers providing system power-off
-functionality are expected to register with this call chain.  By using the
-priority field in the notifier block, callers can control power-off handler
-execution sequence and thus ensure that the power-off handler with the
-optimal capabilities to remove power for a given system is called first.
-A call chain instead of a single call to the highest priority handler is
-used to provide fallback: If multiple power-off handlers are installed,
-all handlers will be called until one actually succeeds to power off the
-system.
-
-Patch 01/48 implements the power-off handler API.
-
-Patches 02/48 to 04/48 are cleanup patches to prepare for the move of
-pm_power_off to a common location.
-
-Patches 05/48 to 07/48 remove references to pm_power_off from devicetree
-bindings descriptions.
-
-Patch 08/48 moves the pm_power_off variable from architecture code to
-kernel/reboot.c. 
-
-Patches 09/48 to 34/48 convert various drivers to register with the kernel
-power-off handler instead of setting pm_power_off directly.
-
-Patches 35/48 to 47/48 do the same for architecture code.
-
-Patch 48/48 finally removes pm_power_off.
-
-For the most part, the individual patches include explanations why specific
-priorities were chosen, at least if the selected priority is not the default
-priority. Subsystem and architecture maintainers are encouraged to have a look
-at the selected priorities and suggest improvements.
-
-I ran the final code through my normal build and qemu tests. Results are
-available at http://server.roeck-us.net:8010/builders in the 'poweroff-handler'
-column. I also built all available configurations for arm, mips, powerpc,
-m68k, and sh architectures.
-
-The series is available in branch poweroff-handler of my repository at
-git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git.
-It is based on 3.18-rc3 plus the power-off tracking branch from
-git://git.kernel.org/pub/scm/linux/kernel/git/mpe/linux.git (to merge
-powerpc related power-off changes).
-
-A note on Cc: In the initial submission I had way too many Cc:, causing the
-patchset to be treated as spam by many mailers and mailing list handlers,
-which of course defeated the purpose. Starting with v3, the distribution
-list has been cut down significantly. Copied mailing lists and individuals are
-for the most part generated from the output of get_maintainer.pl for each
-individual patch.  My apologies to anyone I may have failed to copy; if you
-believe that some additional individuals or mailing lists should be copied
-on the entire series or on individual patches, please let me know.
-
-Merge plan is to send the entire series directly to Linus during the next commit
-window, except for the last patch. The last patch would then be part of another
-pull request after -rc1, which would include any changes necessary due to newly
-merged power-off handling code.
-
-v5:
-- Rebased series to v3.18-rc3
-- Merge remote-tracking branch 'power/topic/pm-power-off'
-  from git://git.kernel.org/pub/scm/linux/kernel/git/mpe/linux.git
-  and implement powerpc conversion (patch 41/48).
-v4:
-- Do not use notifiers but internal functions and data structures to manage
-  the list of power-off handlers. Drop unused parameters from callbacks, and
-  make the power-off function type void.
-  Code to manage and walk the list of callbacks was derived from notifier.c.
-  Note that only patch 01/47 was sent for review of this version.
-v3:
-- Rebased series to v3.18-rc2.
-- Do not hold any locks while executing the power-off call chain.
-  This ensures that power-off handlers are executed in the state
-  selected by the machine_power_off function for a given architecture,
-  ie without changing the current semantics of power-off callbacks and
-  machine_power_off functions.
-  Power-off handler registration and de-registration is handled in atomic
-  context with interrupts disabled to ensure that those functions are not
-  interrupted by code which powers off the system.
-- Use [xxx_]power_off[_xxx] instead of [xxx_]poweroff[_xxx] for newly
-  introduced function and variable names.
-- Use power-off instead of poweroff in descriptive text and comments.
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-- Use ACPI: instead of acpi: for messages in acpi code.
-v2:
-- Rebased series to v3.18-rc1.
-- Use raw notifier with spinlock protection instead of atomic notifiers,
-  since some power-off handlers need to have interrupts enabled.
-- Renamed API functions from _poweroff to _power_off.
-- Added various Acks.
-- Build tested all configurations for arm, powerpc, and mips architectures.
-- Fixed two compile errors in mips patch.
-- Replaced dev_err and pr_err with dev_warn and pr_warn if an error is not
-  fatal.
-- Provide managed resources API and use where appropriate.
-- Provide and use definitions for standard priorities.
-- Added patches to convert newly introduced power-off handlers.
-- Various minor changes.
-v1 (from RFC):
-- Move API to new file kernel/power/power_off_handler.c.
-- Move pm_power_off pointer to kernel/power/power_off_handler.c. Call
-  pm_power_off from do_kernel_power_off, and only call do_kernel_power_off
-  from architecture code instead of calling both pm_power_off and
-  do_kernel_power_off.
-- Provide additional API function register_power_off_handler_simple
-  to simplify conversion of architecture code.
-- Provide additional API function have_kernel_power_off to check if
-  a power-off handler was installed.
-- Convert all drivers and architecture code to use the new API.
-- Remove pm_power_off as last patch of the series.
-
-Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Heiko Stuebner <heiko@sntech.de>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Romain Perier <romain.perier@gmail.com>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Joshua Thompson <funaho@jurai.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v5:
+- Rebase to v3.18-rc3
+v4:
+- No change
+v3:
+- No change
+v2:
+- have_kernel_poweroff -> have_kernel_power_off
+
+ arch/m68k/emu/natfeat.c         | 3 ++-
+ arch/m68k/include/asm/machdep.h | 1 -
+ arch/m68k/kernel/process.c      | 5 +++--
+ arch/m68k/kernel/setup_mm.c     | 1 -
+ arch/m68k/kernel/setup_no.c     | 1 -
+ arch/m68k/mac/config.c          | 3 ++-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+index 71b78ec..91e2ae7 100644
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -15,6 +15,7 @@
+ #include <linux/string.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/io.h>
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
+@@ -90,5 +91,5 @@ void __init nf_init(void)
+ 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
+ 		version & 0xffff);
+ 
+-	mach_power_off = nf_poweroff;
++	pm_power_off = nf_poweroff;
+ }
+diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
+index 953ca21..f9fac51 100644
+--- a/arch/m68k/include/asm/machdep.h
++++ b/arch/m68k/include/asm/machdep.h
+@@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
+ extern int (*mach_set_clock_mmss)(unsigned long);
+ extern void (*mach_reset)( void );
+ extern void (*mach_halt)( void );
+-extern void (*mach_power_off)( void );
+ extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
+ extern void (*mach_hd_setup)(char *, int *);
+ extern long mach_max_dma_address;
+diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
+index c55ff71..afe3d6e 100644
+--- a/arch/m68k/kernel/process.c
++++ b/arch/m68k/kernel/process.c
+@@ -22,6 +22,7 @@
+ #include <linux/unistd.h>
+ #include <linux/ptrace.h>
+ #include <linux/user.h>
++#include <linux/pm.h>
+ #include <linux/reboot.h>
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
+@@ -77,8 +78,8 @@ void machine_halt(void)
+ 
+ void machine_power_off(void)
+ {
+-	if (mach_power_off)
+-		mach_power_off();
++	if (pm_power_off)
++		pm_power_off();
+ 	for (;;);
+ }
+ 
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index 5b8ec4d..002fea6 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
+ EXPORT_SYMBOL(mach_set_rtc_pll);
+ void (*mach_reset)( void );
+ void (*mach_halt)( void );
+-void (*mach_power_off)( void );
+ long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
+ #ifdef CONFIG_HEARTBEAT
+ void (*mach_heartbeat) (int);
+diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
+index 88c27d9..1520156 100644
+--- a/arch/m68k/kernel/setup_no.c
++++ b/arch/m68k/kernel/setup_no.c
+@@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
+ /* machine dependent reboot functions */
+ void (*mach_reset)(void);
+ void (*mach_halt)(void);
+-void (*mach_power_off)(void);
+ 
+ #ifdef CONFIG_M68000
+ #if defined(CONFIG_M68328)
+diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
+index a471eab..677913ff 100644
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -16,6 +16,7 @@
+ #include <linux/tty.h>
+ #include <linux/console.h>
+ #include <linux/interrupt.h>
++#include <linux/pm.h>
+ /* keyb */
+ #include <linux/random.h>
+ #include <linux/delay.h>
+@@ -159,7 +160,7 @@ void __init config_mac(void)
+ 	mach_set_clock_mmss = mac_set_clock_mmss;
+ 	mach_reset = mac_reset;
+ 	mach_halt = mac_poweroff;
+-	mach_power_off = mac_poweroff;
++	pm_power_off = mac_poweroff;
+ 	mach_max_dma_address = 0xffffffff;
+ #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
+ 	mach_beep = mac_mksound;
+-- 
+1.9.1
+
