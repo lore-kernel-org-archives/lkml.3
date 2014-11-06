@@ -1,645 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaKFNt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 08:49:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27646 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423AbaKFNsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 08:48:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="627659099"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org
-Cc: arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v11 3/3] gpio: add support for the Diolan DLN-2 USB GPIO driver
-Date: Thu,  6 Nov 2014 15:48:05 +0200
-Message-Id: <1415281685-14866-4-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415281685-14866-1-git-send-email-octavian.purdila@intel.com>
-References: <1415281685-14866-1-git-send-email-octavian.purdila@intel.com>
+	id S1751514AbaKFNtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 08:49:50 -0500
+Received: from icebox.esperi.org.uk ([81.187.191.129]:59493 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789AbaKFNtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 08:49:24 -0500
+From: Nix <nix@esperi.org.uk>
+To: Johan Hovold <johan@kernel.org>
+Cc: Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
+        Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+References: <20141012185845.GB2786@localhost>
+	<878uklynq9.fsf@spindle.srvr.nix> <20141014083432.GB7958@localhost>
+	<871tq04fiy.fsf@spindle.srvr.nix> <20141022101458.GK2113@localhost>
+	<87y4s8yv38.fsf@spindle.srvr.nix> <20141024111442.GA19377@localhost>
+	<87d298i3y9.fsf@spindle.srvr.nix> <20141105115643.GR31358@localhost>
+	<87vbmtbrx2.fsf@spindle.srvr.nix> <20141105181454.GW31358@localhost>
+Emacs: featuring the world's first municipal garbage collector!
+Date: Thu, 06 Nov 2014 13:49:13 +0000
+In-Reply-To: <20141105181454.GW31358@localhost> (Johan Hovold's message of
+	"Wed, 5 Nov 2014 19:14:54 +0100")
+Message-ID: <877fz8bfs6.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=7 Fuz1=7 Fuz2=7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Baluta <daniel.baluta@intel.com>
+On 5 Nov 2014, Johan Hovold told this:
 
-This patch adds GPIO and IRQ support for the Diolan DLN-2 GPIO module.
+> On Wed, Nov 05, 2014 at 03:14:49PM +0000, Nix wrote:
+>> >> >                                                      What if you
+>> >> > physically disconnect and reconnect the device instead, or simply
+>> >> 
+>> >> That fixes it, in fact it's the only way to fix it once it's broken by
+>> >> this bug.
+>> >
+>> > I didn't mean whether it would get the device working again, but rather
+>> > whether you could kill it this way.
+>> 
+>> Never seen it fail after a physical disconnection.
+>
+> Ok.
+>
+> And it has to include an enumeration, since just opening and closing it
+> (restarting the daemon) repeatedly seems to work?
 
-Information about the USB protocol interface can be found in the
-Programmer's Reference Manual [1], see section 2.9 for the GPIO
-module commands and responses.
+Well, it's more accurate to say that restarting the daemon doesn't make
+it fail, but won't make it start working if it's already gone nuts
+either. It normally copes fine with the daemon stopping and starting,
+yes (and the daemon copes fine with keys being connected and
+disconnected).
 
-[1] https://www.diolan.com/downloads/dln-api-manual.pdf
+>> > Yeah, it seems your device firmware has crashed. It stops responding to
+>> > control requests.
+>> 
+>> Not surprising: I was fairly sure we were provoking a key firmware crash
+>> or something like that. This is a device with no support for flow
+>> control at all, after all, so I'm not terribly surprised that trying to
+>> do flow control confuses it.
+>
+> Only weird thing is that it has been coping with those calls for a long
+> time. Only the slightly changed timings seems to have triggered this
+> issue.
 
-Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Reviewed-by: Johan Hovold <johan@kernel.org>
----
- drivers/gpio/Kconfig     |  12 +
- drivers/gpio/Makefile    |   1 +
- drivers/gpio/gpio-dln2.c | 553 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 566 insertions(+)
- create mode 100644 drivers/gpio/gpio-dln2.c
+Yeah. I get the strong impression from Daniel that the USB side of this
+was done by taking something that worked on the kernel of the day,
+adding the key-specific stuff to it, and making sure that it still
+worked. i.e. this was not a from-spec reimplementation, it was using an
+existing (old) stack. If that stack makes iffy assumptions, so will the
+entropy key.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 0959ca9..23dfd5f 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -905,4 +905,16 @@ config GPIO_VIPERBOARD
-           River Tech's viperboard.h for detailed meaning
-           of the module parameters.
- 
-+config GPIO_DLN2
-+	tristate "Diolan DLN2 GPIO support"
-+	depends on MFD_DLN2
-+	select GPIOLIB_IRQCHIP
-+
-+	help
-+	  Select this option to enable GPIO driver for the Diolan DLN2
-+	  board.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called gpio-dln2.
-+
- endif
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index e5d346c..e60677b 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -26,6 +26,7 @@ obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
- obj-$(CONFIG_GPIO_DAVINCI)	+= gpio-davinci.o
-+obj-$(CONFIG_GPIO_DLN2)		+= gpio-dln2.o
- obj-$(CONFIG_GPIO_DWAPB)	+= gpio-dwapb.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
- obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
-diff --git a/drivers/gpio/gpio-dln2.c b/drivers/gpio/gpio-dln2.c
-new file mode 100644
-index 0000000..978b51e
---- /dev/null
-+++ b/drivers/gpio/gpio-dln2.c
-@@ -0,0 +1,553 @@
-+/*
-+ * Driver for the Diolan DLN-2 USB-GPIO adapter
-+ *
-+ * Copyright (c) 2014 Intel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/irqdomain.h>
-+#include <linux/irq.h>
-+#include <linux/irqchip/chained_irq.h>
-+#include <linux/gpio.h>
-+#include <linux/gpio/driver.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/dln2.h>
-+
-+#define DLN2_GPIO_ID			0x01
-+
-+#define DLN2_GPIO_GET_PIN_COUNT		DLN2_CMD(0x01, DLN2_GPIO_ID)
-+#define DLN2_GPIO_SET_DEBOUNCE		DLN2_CMD(0x04, DLN2_GPIO_ID)
-+#define DLN2_GPIO_GET_DEBOUNCE		DLN2_CMD(0x05, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PORT_GET_VAL		DLN2_CMD(0x06, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_VAL		DLN2_CMD(0x0B, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_SET_OUT_VAL	DLN2_CMD(0x0C, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_OUT_VAL	DLN2_CMD(0x0D, DLN2_GPIO_ID)
-+#define DLN2_GPIO_CONDITION_MET_EV	DLN2_CMD(0x0F, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_ENABLE		DLN2_CMD(0x10, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_DISABLE		DLN2_CMD(0x11, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_SET_DIRECTION	DLN2_CMD(0x13, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_DIRECTION	DLN2_CMD(0x14, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_SET_EVENT_CFG	DLN2_CMD(0x1E, DLN2_GPIO_ID)
-+#define DLN2_GPIO_PIN_GET_EVENT_CFG	DLN2_CMD(0x1F, DLN2_GPIO_ID)
-+
-+#define DLN2_GPIO_EVENT_NONE		0
-+#define DLN2_GPIO_EVENT_CHANGE		1
-+#define DLN2_GPIO_EVENT_LVL_HIGH	2
-+#define DLN2_GPIO_EVENT_LVL_LOW		3
-+#define DLN2_GPIO_EVENT_CHANGE_RISING	0x11
-+#define DLN2_GPIO_EVENT_CHANGE_FALLING  0x21
-+#define DLN2_GPIO_EVENT_MASK		0x0F
-+
-+#define DLN2_GPIO_MAX_PINS 32
-+
-+struct dln2_irq_work {
-+	struct work_struct work;
-+	struct dln2_gpio *dln2;
-+	int pin;
-+	int type;
-+};
-+
-+struct dln2_gpio {
-+	struct platform_device *pdev;
-+	struct gpio_chip gpio;
-+
-+	/*
-+	 * Cache pin direction to save us one transfer, since the hardware has
-+	 * separate commands to read the in and out values.
-+	 */
-+	DECLARE_BITMAP(output_enabled, DLN2_GPIO_MAX_PINS);
-+
-+	DECLARE_BITMAP(irqs_masked, DLN2_GPIO_MAX_PINS);
-+	DECLARE_BITMAP(irqs_enabled, DLN2_GPIO_MAX_PINS);
-+	DECLARE_BITMAP(irqs_pending, DLN2_GPIO_MAX_PINS);
-+	struct dln2_irq_work *irq_work;
-+};
-+
-+struct dln2_gpio_pin {
-+	__le16 pin;
-+};
-+
-+struct dln2_gpio_pin_val {
-+	__le16 pin __packed;
-+	u8 value;
-+};
-+
-+static int dln2_gpio_get_pin_count(struct platform_device *pdev)
-+{
-+	int ret;
-+	__le16 count;
-+	int len = sizeof(count);
-+
-+	ret = dln2_transfer_rx(pdev, DLN2_GPIO_GET_PIN_COUNT, &count, &len);
-+	if (ret < 0)
-+		return ret;
-+	if (len < sizeof(count))
-+		return -EPROTO;
-+
-+	return le16_to_cpu(count);
-+}
-+
-+static int dln2_gpio_pin_cmd(struct dln2_gpio *dln2, int cmd, unsigned pin)
-+{
-+	struct dln2_gpio_pin req = {
-+		.pin = cpu_to_le16(pin),
-+	};
-+
-+	return dln2_transfer_tx(dln2->pdev, cmd, &req, sizeof(req));
-+}
-+
-+static int dln2_gpio_pin_val(struct dln2_gpio *dln2, int cmd, unsigned int pin)
-+{
-+	int ret;
-+	struct dln2_gpio_pin req = {
-+		.pin = cpu_to_le16(pin),
-+	};
-+	struct dln2_gpio_pin_val rsp;
-+	int len = sizeof(rsp);
-+
-+	ret = dln2_transfer(dln2->pdev, cmd, &req, sizeof(req), &rsp, &len);
-+	if (ret < 0)
-+		return ret;
-+	if (len < sizeof(rsp) || req.pin != rsp.pin)
-+		return -EPROTO;
-+
-+	return rsp.value;
-+}
-+
-+static int dln2_gpio_pin_get_in_val(struct dln2_gpio *dln2, unsigned int pin)
-+{
-+	int ret;
-+
-+	ret = dln2_gpio_pin_val(dln2, DLN2_GPIO_PIN_GET_VAL, pin);
-+	if (ret < 0)
-+		return ret;
-+	return !!ret;
-+}
-+
-+static int dln2_gpio_pin_get_out_val(struct dln2_gpio *dln2, unsigned int pin)
-+{
-+	int ret;
-+
-+	ret = dln2_gpio_pin_val(dln2, DLN2_GPIO_PIN_GET_OUT_VAL, pin);
-+	if (ret < 0)
-+		return ret;
-+	return !!ret;
-+}
-+
-+static void dln2_gpio_pin_set_out_val(struct dln2_gpio *dln2,
-+				      unsigned int pin, int value)
-+{
-+	struct dln2_gpio_pin_val req = {
-+		.pin = cpu_to_le16(pin),
-+		.value = value,
-+	};
-+
-+	dln2_transfer_tx(dln2->pdev, DLN2_GPIO_PIN_SET_OUT_VAL, &req,
-+			 sizeof(req));
-+}
-+
-+#define DLN2_GPIO_DIRECTION_IN		0
-+#define DLN2_GPIO_DIRECTION_OUT		1
-+
-+static int dln2_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	struct dln2_gpio_pin req = {
-+		.pin = cpu_to_le16(offset),
-+	};
-+	struct dln2_gpio_pin_val rsp;
-+	int len = sizeof(rsp);
-+	int ret;
-+
-+	ret = dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_ENABLE, offset);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* cache the pin direction */
-+	ret = dln2_transfer(dln2->pdev, DLN2_GPIO_PIN_GET_DIRECTION,
-+			    &req, sizeof(req), &rsp, &len);
-+	if (ret < 0)
-+		return ret;
-+	if (len < sizeof(rsp) || req.pin != rsp.pin) {
-+		ret = -EPROTO;
-+		goto out_disable;
-+	}
-+
-+	switch (rsp.value) {
-+	case DLN2_GPIO_DIRECTION_IN:
-+		clear_bit(offset, dln2->output_enabled);
-+		return 0;
-+	case DLN2_GPIO_DIRECTION_OUT:
-+		set_bit(offset, dln2->output_enabled);
-+		return 0;
-+	default:
-+		ret = -EPROTO;
-+		goto out_disable;
-+	}
-+
-+out_disable:
-+	dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_DISABLE, offset);
-+	return ret;
-+}
-+
-+static void dln2_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+
-+	dln2_gpio_pin_cmd(dln2, DLN2_GPIO_PIN_DISABLE, offset);
-+}
-+
-+static int dln2_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+
-+	if (test_bit(offset, dln2->output_enabled))
-+		return GPIOF_DIR_OUT;
-+
-+	return GPIOF_DIR_IN;
-+}
-+
-+static int dln2_gpio_get(struct gpio_chip *chip, unsigned int offset)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	int dir;
-+
-+	dir = dln2_gpio_get_direction(chip, offset);
-+	if (dir < 0)
-+		return dir;
-+
-+	if (dir == GPIOF_DIR_IN)
-+		return dln2_gpio_pin_get_in_val(dln2, offset);
-+
-+	return dln2_gpio_pin_get_out_val(dln2, offset);
-+}
-+
-+static void dln2_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+
-+	dln2_gpio_pin_set_out_val(dln2, offset, value);
-+}
-+
-+static int dln2_gpio_set_direction(struct gpio_chip *chip, unsigned offset,
-+				   unsigned dir)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	struct dln2_gpio_pin_val req = {
-+		.pin = cpu_to_le16(offset),
-+		.value = dir,
-+	};
-+	int ret;
-+
-+	ret = dln2_transfer_tx(dln2->pdev, DLN2_GPIO_PIN_SET_DIRECTION,
-+			       &req, sizeof(req));
-+	if (ret < 0)
-+		return ret;
-+
-+	if (dir == DLN2_GPIO_DIRECTION_OUT)
-+		set_bit(offset, dln2->output_enabled);
-+	else
-+		clear_bit(offset, dln2->output_enabled);
-+
-+	return ret;
-+}
-+
-+static int dln2_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	return dln2_gpio_set_direction(chip, offset, DLN2_GPIO_DIRECTION_IN);
-+}
-+
-+static int dln2_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
-+				      int value)
-+{
-+	return dln2_gpio_set_direction(chip, offset, DLN2_GPIO_DIRECTION_OUT);
-+}
-+
-+static int dln2_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
-+				  unsigned debounce)
-+{
-+	struct dln2_gpio *dln2 = container_of(chip, struct dln2_gpio, gpio);
-+	__le32 duration = cpu_to_le32(debounce);
-+
-+	return dln2_transfer_tx(dln2->pdev, DLN2_GPIO_SET_DEBOUNCE,
-+				&duration, sizeof(duration));
-+}
-+
-+static int dln2_gpio_set_event_cfg(struct dln2_gpio *dln2, unsigned pin,
-+				   unsigned type, unsigned period)
-+{
-+	struct {
-+		__le16 pin;
-+		u8 type;
-+		__le16 period;
-+	} __packed req = {
-+		.pin = cpu_to_le16(pin),
-+		.type = type,
-+		.period = cpu_to_le16(period),
-+	};
-+
-+	return dln2_transfer_tx(dln2->pdev, DLN2_GPIO_PIN_SET_EVENT_CFG,
-+				&req, sizeof(req));
-+}
-+
-+static void dln2_irq_work(struct work_struct *w)
-+{
-+	struct dln2_irq_work *iw = container_of(w, struct dln2_irq_work, work);
-+	struct dln2_gpio *dln2 = iw->dln2;
-+	u8 type = iw->type & DLN2_GPIO_EVENT_MASK;
-+
-+	if (test_bit(iw->pin, dln2->irqs_enabled))
-+		dln2_gpio_set_event_cfg(dln2, iw->pin, type, 0);
-+	else
-+		dln2_gpio_set_event_cfg(dln2, iw->pin, DLN2_GPIO_EVENT_NONE, 0);
-+}
-+
-+static void dln2_irq_enable(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	set_bit(pin, dln2->irqs_enabled);
-+	schedule_work(&dln2->irq_work[pin].work);
-+}
-+
-+static void dln2_irq_disable(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	clear_bit(pin, dln2->irqs_enabled);
-+	schedule_work(&dln2->irq_work[pin].work);
-+}
-+
-+static void dln2_irq_mask(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	set_bit(pin, dln2->irqs_masked);
-+}
-+
-+static void dln2_irq_unmask(struct irq_data *irqd)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	struct device *dev = dln2->gpio.dev;
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	if (test_and_clear_bit(pin, dln2->irqs_pending)) {
-+		int irq;
-+
-+		irq = irq_find_mapping(dln2->gpio.irqdomain, pin);
-+		if (!irq) {
-+			dev_err(dev, "pin %d not mapped to IRQ\n", pin);
-+			return;
-+		}
-+
-+		generic_handle_irq(irq);
-+	}
-+}
-+
-+static int dln2_irq_set_type(struct irq_data *irqd, unsigned type)
-+{
-+	struct gpio_chip *gc = irq_data_get_irq_chip_data(irqd);
-+	struct dln2_gpio *dln2 = container_of(gc, struct dln2_gpio, gpio);
-+	int pin = irqd_to_hwirq(irqd);
-+
-+	switch (type) {
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_LVL_HIGH;
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_LVL_LOW;
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_CHANGE;
-+		break;
-+	case IRQ_TYPE_EDGE_RISING:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_CHANGE_RISING;
-+		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		dln2->irq_work[pin].type = DLN2_GPIO_EVENT_CHANGE_FALLING;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct irq_chip dln2_gpio_irqchip = {
-+	.name = "dln2-irq",
-+	.irq_enable = dln2_irq_enable,
-+	.irq_disable = dln2_irq_disable,
-+	.irq_mask = dln2_irq_mask,
-+	.irq_unmask = dln2_irq_unmask,
-+	.irq_set_type = dln2_irq_set_type,
-+};
-+
-+static void dln2_gpio_event(struct platform_device *pdev, u16 echo,
-+			    const void *data, int len)
-+{
-+	int pin, irq;
-+	const struct {
-+		__le16 count;
-+		__u8 type;
-+		__le16 pin;
-+		__u8 value;
-+	} __packed *event = data;
-+	struct dln2_gpio *dln2 = platform_get_drvdata(pdev);
-+
-+	if (len < sizeof(*event)) {
-+		dev_err(dln2->gpio.dev, "short event message\n");
-+		return;
-+	}
-+
-+	pin = le16_to_cpu(event->pin);
-+	if (pin >= dln2->gpio.ngpio) {
-+		dev_err(dln2->gpio.dev, "out of bounds pin %d\n", pin);
-+		return;
-+	}
-+
-+	irq = irq_find_mapping(dln2->gpio.irqdomain, pin);
-+	if (!irq) {
-+		dev_err(dln2->gpio.dev, "pin %d not mapped to IRQ\n", pin);
-+		return;
-+	}
-+
-+	if (!test_bit(pin, dln2->irqs_enabled))
-+		return;
-+	if (test_bit(pin, dln2->irqs_masked)) {
-+		set_bit(pin, dln2->irqs_pending);
-+		return;
-+	}
-+
-+	switch (dln2->irq_work[pin].type) {
-+	case DLN2_GPIO_EVENT_CHANGE_RISING:
-+		if (event->value)
-+			generic_handle_irq(irq);
-+		break;
-+	case DLN2_GPIO_EVENT_CHANGE_FALLING:
-+		if (!event->value)
-+			generic_handle_irq(irq);
-+		break;
-+	default:
-+		generic_handle_irq(irq);
-+	}
-+}
-+
-+static int dln2_gpio_probe(struct platform_device *pdev)
-+{
-+	struct dln2_gpio *dln2;
-+	struct device *dev = &pdev->dev;
-+	int pins;
-+	int i, ret;
-+
-+	pins = dln2_gpio_get_pin_count(pdev);
-+	if (pins < 0) {
-+		dev_err(dev, "failed to get pin count: %d\n", pins);
-+		return pins;
-+	}
-+	if (pins > DLN2_GPIO_MAX_PINS) {
-+		pins = DLN2_GPIO_MAX_PINS;
-+		dev_warn(dev, "clamping pins to %d\n", DLN2_GPIO_MAX_PINS);
-+	}
-+
-+	dln2 = devm_kzalloc(&pdev->dev, sizeof(*dln2), GFP_KERNEL);
-+	if (!dln2)
-+		return -ENOMEM;
-+
-+	dln2->irq_work = devm_kcalloc(&pdev->dev, pins,
-+				      sizeof(struct dln2_irq_work), GFP_KERNEL);
-+	if (!dln2->irq_work)
-+		return -ENOMEM;
-+	for (i = 0; i < pins; i++) {
-+		INIT_WORK(&dln2->irq_work[i].work, dln2_irq_work);
-+		dln2->irq_work[i].pin = i;
-+		dln2->irq_work[i].dln2 = dln2;
-+	}
-+
-+	dln2->pdev = pdev;
-+
-+	dln2->gpio.label = "dln2";
-+	dln2->gpio.dev = dev;
-+	dln2->gpio.owner = THIS_MODULE;
-+	dln2->gpio.base = -1;
-+	dln2->gpio.ngpio = pins;
-+	dln2->gpio.exported = true;
-+	dln2->gpio.can_sleep = true;
-+	dln2->gpio.irq_not_threaded = true;
-+	dln2->gpio.set = dln2_gpio_set;
-+	dln2->gpio.get = dln2_gpio_get;
-+	dln2->gpio.request = dln2_gpio_request;
-+	dln2->gpio.free = dln2_gpio_free;
-+	dln2->gpio.get_direction = dln2_gpio_get_direction;
-+	dln2->gpio.direction_input = dln2_gpio_direction_input;
-+	dln2->gpio.direction_output = dln2_gpio_direction_output;
-+	dln2->gpio.set_debounce = dln2_gpio_set_debounce;
-+
-+	platform_set_drvdata(pdev, dln2);
-+
-+	ret = gpiochip_add(&dln2->gpio);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to add gpio chip: %d\n", ret);
-+		goto out;
-+	}
-+
-+	ret = gpiochip_irqchip_add(&dln2->gpio, &dln2_gpio_irqchip, 0,
-+				   handle_simple_irq, IRQ_TYPE_NONE);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to add irq chip: %d\n", ret);
-+		goto out_gpiochip_remove;
-+	}
-+
-+	ret = dln2_register_event_cb(pdev, DLN2_GPIO_CONDITION_MET_EV,
-+				     dln2_gpio_event);
-+	if (ret) {
-+		dev_err(dev, "failed to register event cb: %d\n", ret);
-+		goto out_gpiochip_remove;
-+	}
-+
-+	return 0;
-+
-+out_gpiochip_remove:
-+	gpiochip_remove(&dln2->gpio);
-+out:
-+	return ret;
-+}
-+
-+static int dln2_gpio_remove(struct platform_device *pdev)
-+{
-+	struct dln2_gpio *dln2 = platform_get_drvdata(pdev);
-+	int i;
-+
-+	dln2_unregister_event_cb(pdev, DLN2_GPIO_CONDITION_MET_EV);
-+	for (i = 0; i < dln2->gpio.ngpio; i++)
-+		flush_work(&dln2->irq_work[i].work);
-+	gpiochip_remove(&dln2->gpio);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver dln2_gpio_driver = {
-+	.driver.name	= "dln2-gpio",
-+	.probe		= dln2_gpio_probe,
-+	.remove		= dln2_gpio_remove,
-+};
-+
-+module_platform_driver(dln2_gpio_driver);
-+
-+MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com");
-+MODULE_DESCRIPTION("Driver for the Diolan DLN2 GPIO interface");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:dln2-gpio");
+>> Look at it? Only Daniel Silverstone (Cc:ed) can do that. The only copy
+>> of the firmware I have is baked into the sealed key. :)
+
+As his email noted, no he can't :) but you do now have a link to the
+thing it was based on.
+
+> Ah, ok. I guess we need a new quirk then. There's already a quirk in the
+> driver to suppress error from when trying to set the control lines.
+>
+> But that doesn't help this device, which happily accepts the requests
+> and then dies at random times.
+
+Yeah. Strange. (I thought it was it's 'right after', but you seem to
+have disproved that. It's only 'sometime later'.)
+
+> Could you try two more things (too make sure line control is really the
+> culprit):
+>
+> 1. If you clear HUPCL in ekeyd so that the lines are never lowered, does
+> that fix the stability issue?
+
+Definitely not. I got a hang after the first reboot out of an afflicted
+kernel, when using a HUPCLless ekeyd. Weird. (I guess they're lowered on
+reboot anyway?)
+
+> 2. Can you verify that the patch below works? Did I use the correct
+> VID/PID? Could you provide "lsusb -v" output (for the capability flags)
+> as well?
+
+The VID/PID are right.
+
+The patch seems to work. I tested against the usb testing tree directly,
+since that was easier than adjusting it to apply against 3.16. Sixteen
+reboots, no failures, looks to be fixed.
+
+lsusb output:
+
+Bus 002 Device 003: ID 20df:0001 Simtec Electronics Entropy Key [UDEKEY01]
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            2 Communications
+  bDeviceSubClass         0
+  bDeviceProtocol         0
+  bMaxPacketSize0        64
+  idVendor           0x20df Simtec Electronics
+  idProduct          0x0001 Entropy Key [UDEKEY01]
+  bcdDevice            2.00
+  iManufacturer           1 Simtec Electronics
+  iProduct                2 Entropy Key
+  iSerial                 3 M/9tBjBLNzE2RSFD
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength           67
+    bNumInterfaces          2
+    bConfigurationValue     1
+    iConfiguration          0
+    bmAttributes         0xc0
+      Self Powered
+    MaxPower               76mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           1
+      bInterfaceClass         2 Communications
+      bInterfaceSubClass      2 Abstract (modem)
+      bInterfaceProtocol      1 AT-commands (v.25ter)
+      iInterface              0
+      CDC Header:
+        bcdCDC               1.10
+      CDC Call Management:
+        bmCapabilities       0x00
+        bDataInterface          1
+      CDC ACM:
+        bmCapabilities       0x00
+      CDC Union:
+        bMasterInterface        0
+        bSlaveInterface         1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0008  1x 8 bytes
+        bInterval             255
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass        10 CDC Data
+      bInterfaceSubClass      0 Unused
+      bInterfaceProtocol      0
+      iInterface              0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0040  1x 64 bytes
+        bInterval               0
+Device Status:     0x0000
+  (Bus Powered)
+
+> Note that the patch is against the usb-linus branch of the usb tree,
+
+OK. (I presume this is gregkh's tree, not yours?)
+
+> which also contains another fix which could affect this device
+> (set_termios will now be called an extra time on every open). You also
+> need this one, which have not yet been applied:
+>
+> 	http://marc.info/?l=linux-usb&m=141520959813505&w=2
+
+It had been applied by the time I tested this :)
+
 -- 
-1.9.1
-
+NULL && (void)
