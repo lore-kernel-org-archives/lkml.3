@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaKFQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:44:26 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56194 "EHLO
+	id S1752059AbaKFQof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:44:35 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56239 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaKFQoO (ORCPT
+	with ESMTP id S1751976AbaKFQoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:14 -0500
+	Thu, 6 Nov 2014 11:44:23 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-omap@vger.kernel.org
-Subject: [PATCH v5 14/48] mfd: tps80031: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:42:58 -0800
-Message-Id: <1415292213-28652-15-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v5 18/48] mfd: twl4030-power: Register with kernel power-off handler
+Date: Thu,  6 Nov 2014 08:43:02 -0800
+Message-Id: <1415292213-28652-19-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA55E.0080,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020205.545BA567.01DB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 85
+X-CTCH-SenderID-TotalMessages: 109
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -54,6 +54,9 @@ Register with kernel power-off handler instead of setting pm_power_off
 directly. Register with low priority to reflect that the original code
 only sets pm_power_off if it was not already set.
 
+Make twl4030_power_off static as it is only called from the twl4030-power
+driver. Drop remove function as it is no longer needed.
+
 Cc: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Lee Jones <lee.jones@linaro.org>
 Cc: linux-omap@vger.kernel.org
@@ -73,91 +76,105 @@ v3:
 v2:
 - Use define to specify poweroff handler priority
 - Use dev_warn instead of dev_err
+- Use devm_register_power_off_handler
+- Drop remove function as it is no longer needed.
 
- drivers/mfd/tps80031.c       | 27 +++++++++++++++------------
- include/linux/mfd/tps80031.h |  2 ++
- 2 files changed, 17 insertions(+), 12 deletions(-)
+ drivers/mfd/twl4030-power.c | 25 +++++++++++++++----------
+ include/linux/i2c/twl.h     |  1 -
+ 2 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mfd/tps80031.c b/drivers/mfd/tps80031.c
-index ed6c5b0..996fd7c 100644
---- a/drivers/mfd/tps80031.c
-+++ b/drivers/mfd/tps80031.c
-@@ -147,7 +147,6 @@ static const struct tps80031_pupd_data tps80031_pupds[] = {
- 	[TPS80031_CTLI2C_SCL]		= PUPD_DATA(4, 0,	BIT(2)),
- 	[TPS80031_CTLI2C_SDA]		= PUPD_DATA(4, 0,	BIT(3)),
- };
--static struct tps80031 *tps80031_power_off_dev;
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index cf92a6d..88fd33c 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -25,9 +25,9 @@
+  */
  
- int tps80031_ext_power_req_config(struct device *dev,
- 		unsigned long ext_ctrl_flag, int preq_bit,
-@@ -209,11 +208,14 @@ int tps80031_ext_power_req_config(struct device *dev,
- }
- EXPORT_SYMBOL_GPL(tps80031_ext_power_req_config);
+ #include <linux/module.h>
+-#include <linux/pm.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
  
--static void tps80031_power_off(void)
-+static void tps80031_power_off(struct power_off_handler_block *this)
+@@ -611,7 +611,7 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
+  * After a successful execution, TWL shuts down the power to the SoC
+  * and all peripherals connected to it.
+  */
+-void twl4030_power_off(void)
++static void twl4030_power_off(struct power_off_handler_block *this)
  {
--	dev_info(tps80031_power_off_dev->dev, "switching off PMU\n");
--	tps80031_write(tps80031_power_off_dev->dev, TPS80031_SLAVE_ID1,
--				TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
-+	struct tps80031 *tps80031 = container_of(this, struct tps80031,
-+						 power_off_hb);
-+
-+	dev_info(tps80031->dev, "switching off PMU\n");
-+	tps80031_write(tps80031->dev, TPS80031_SLAVE_ID1,
-+		       TPS80031_PHOENIX_DEV_ON, TPS80031_DEVOFF);
+ 	int err;
+ 
+@@ -621,6 +621,11 @@ void twl4030_power_off(void)
+ 		pr_err("TWL4030 Unable to power off\n");
  }
  
- static void tps80031_pupd_init(struct tps80031 *tps80031,
-@@ -501,9 +503,13 @@ static int tps80031_probe(struct i2c_client *client,
- 		goto fail_mfd_add;
++static struct power_off_handler_block twl4030_power_off_hb = {
++	.handler = twl4030_power_off,
++	.priority = POWER_OFF_PRIORITY_LOW,
++};
++
+ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+ 					struct device_node *node)
+ {
+@@ -839,7 +844,9 @@ static int twl4030_power_probe(struct platform_device *pdev)
  	}
  
--	if (pdata->use_power_off && !pm_power_off) {
--		tps80031_power_off_dev = tps80031;
--		pm_power_off = tps80031_power_off;
-+	if (pdata->use_power_off) {
-+		tps80031->power_off_hb.handler = tps80031_power_off;
-+		tps80031->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
-+		ret = register_power_off_handler(&tps80031->power_off_hb);
+ 	/* Board has to be wired properly to use this feature */
+-	if (twl4030_power_use_poweroff(pdata, node) && !pm_power_off) {
++	if (twl4030_power_use_poweroff(pdata, node)) {
++		int ret;
++
+ 		/* Default for SEQ_OFFSYNC is set, lets ensure this */
+ 		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &val,
+ 				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
+@@ -856,7 +863,11 @@ static int twl4030_power_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 
+-		pm_power_off = twl4030_power_off;
++		ret = devm_register_power_off_handler(&pdev->dev,
++						      &twl4030_power_off_hb);
 +		if (ret)
-+			dev_warn(&client->dev,
++			dev_warn(&pdev->dev,
 +				 "Failed to register power-off handler\n");
  	}
- 	return 0;
  
-@@ -523,10 +529,7 @@ static int tps80031_remove(struct i2c_client *client)
- 	struct tps80031 *tps80031 = i2c_get_clientdata(client);
- 	int i;
+ relock:
+@@ -870,11 +881,6 @@ relock:
+ 	return err;
+ }
  
--	if (tps80031_power_off_dev == tps80031) {
--		tps80031_power_off_dev = NULL;
--		pm_power_off = NULL;
--	}
-+	unregister_power_off_handler(&tps80031->power_off_hb);
- 
- 	mfd_remove_devices(tps80031->dev);
- 
-diff --git a/include/linux/mfd/tps80031.h b/include/linux/mfd/tps80031.h
-index 2c75c9c..5716077 100644
---- a/include/linux/mfd/tps80031.h
-+++ b/include/linux/mfd/tps80031.h
-@@ -24,6 +24,7 @@
- #define __LINUX_MFD_TPS80031_H
- 
- #include <linux/device.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- 
- /* Pull-ups/Pull-downs */
-@@ -513,6 +514,7 @@ struct tps80031 {
- 	struct i2c_client	*clients[TPS80031_NUM_SLAVES];
- 	struct regmap		*regmap[TPS80031_NUM_SLAVES];
- 	struct regmap_irq_chip_data *irq_data;
-+	struct power_off_handler_block power_off_hb;
+-static int twl4030_power_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ static struct platform_driver twl4030_power_driver = {
+ 	.driver = {
+ 		.name	= "twl4030_power",
+@@ -882,7 +888,6 @@ static struct platform_driver twl4030_power_driver = {
+ 		.of_match_table = of_match_ptr(twl4030_power_of_match),
+ 	},
+ 	.probe		= twl4030_power_probe,
+-	.remove		= twl4030_power_remove,
  };
  
- struct tps80031_pupd_init_data {
+ module_platform_driver(twl4030_power_driver);
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 8cfb50f..f8544f1 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -680,7 +680,6 @@ struct twl4030_power_data {
+ };
+ 
+ extern int twl4030_remove_script(u8 flags);
+-extern void twl4030_power_off(void);
+ 
+ struct twl4030_codec_data {
+ 	unsigned int digimic_delay; /* in ms */
 -- 
 1.9.1
 
