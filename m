@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaKFS4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:56:03 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49001 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaKFSz7 (ORCPT
+	id S1751856AbaKFS4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:56:12 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:53339 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaKFS4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:55:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
-References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
-Date: Thu, 6 Nov 2014 22:55:58 +0400
-Message-ID: <CALYGNiO85ts2J_c8fiYHGDe5gEhb4QMB_HAsST3opdwumUptFg@mail.gmail.com>
-Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Nov 2014 13:56:09 -0500
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Dmitry Voytik <voytikd@gmail.com>
+Subject: [PATCH] ARM: imx: refactor mxc_iomux_mode()
+Date: Thu,  6 Nov 2014 22:55:04 +0400
+Message-Id: <1415300104-21278-1-git-send-email-voytikd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 2, 2014 at 6:15 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> Memory cgroups used to have 5 per-page pointers.  To allow users to
-> disable that amount of overhead during runtime, those pointers were
-> allocated in a separate array, with a translation layer between them
-> and struct page.
->
-> There is now only one page pointer remaining: the memcg pointer, that
-> indicates which cgroup the page is associated with when charged.  The
-> complexity of runtime allocation and the runtime translation overhead
-> is no longer justified to save that *potential* 0.19% of memory.  With
-> CONFIG_SLUB, page->mem_cgroup actually sits in the doubleword padding
-> after the page->private member and doesn't even increase struct page,
-> and then this patch actually saves space.  Remaining users that care
-> can still compile their kernels without CONFIG_MEMCG.
->
->    text    data     bss     dec     hex     filename
-> 8828345 1725264  983040 11536649 b00909  vmlinux.old
-> 8827425 1725264  966656 11519345 afc571  vmlinux.new
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Refactor mxc_iomux_mode():
+ - since it always returns 0 make it to return void
+ - remove unnecessary ret variable
+ - declare variables according to the kernel coding style
 
-Great! Never thought I'd see this. =)
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+---
+ arch/arm/mach-imx/iomux-imx31.c | 8 ++++----
+ arch/arm/mach-imx/iomux-mx3.h   | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-Acked-by: Konstantin Khlebnikov <koct9i@gmail.com>
+diff --git a/arch/arm/mach-imx/iomux-imx31.c b/arch/arm/mach-imx/iomux-imx31.c
+index 1657fe6..d6a3075 100644
+--- a/arch/arm/mach-imx/iomux-imx31.c
++++ b/arch/arm/mach-imx/iomux-imx31.c
+@@ -44,9 +44,11 @@ static unsigned long mxc_pin_alloc_map[NB_PORTS * 32 / BITS_PER_LONG];
+ /*
+  * set the mode for a IOMUX pin.
+  */
+-int mxc_iomux_mode(unsigned int pin_mode)
++void mxc_iomux_mode(unsigned int pin_mode)
+ {
+-	u32 field, l, mode, ret = 0;
++	u32 field;
++	u32 l;
++	u32 mode;
+ 	void __iomem *reg;
+ 
+ 	reg = IOMUXSW_MUX_CTL + (pin_mode & IOMUX_REG_MASK);
+@@ -61,8 +63,6 @@ int mxc_iomux_mode(unsigned int pin_mode)
+ 	__raw_writel(l, reg);
+ 
+ 	spin_unlock(&gpio_mux_lock);
+-
+-	return ret;
+ }
+ 
+ /*
+diff --git a/arch/arm/mach-imx/iomux-mx3.h b/arch/arm/mach-imx/iomux-mx3.h
+index f79f78a..0a5adba 100644
+--- a/arch/arm/mach-imx/iomux-mx3.h
++++ b/arch/arm/mach-imx/iomux-mx3.h
+@@ -144,7 +144,7 @@ void mxc_iomux_set_gpr(enum iomux_gp_func, bool en);
+  * It is called by the setup functions and should not be called directly anymore.
+  * It is here visible for backward compatibility
+  */
+-int mxc_iomux_mode(unsigned int pin_mode);
++void mxc_iomux_mode(unsigned int pin_mode);
+ 
+ #define IOMUX_PADNUM_MASK	0x1ff
+ #define IOMUX_GPIONUM_SHIFT	9
+-- 
+1.9.1
 
-
-> ---
->  include/linux/memcontrol.h  |   6 +-
->  include/linux/mm_types.h    |   5 +
->  include/linux/mmzone.h      |  12 --
->  include/linux/page_cgroup.h |  53 --------
->  init/main.c                 |   7 -
->  mm/memcontrol.c             | 124 +++++------------
->  mm/page_alloc.c             |   2 -
->  mm/page_cgroup.c            | 319 --------------------------------------------
->  8 files changed, 41 insertions(+), 487 deletions(-)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index d4575a1d6e99..dafba59b31b4 100644
-
-
-
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
