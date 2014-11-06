@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477AbaKFTaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 14:30:25 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:64409 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaKFTaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 14:30:24 -0500
+	id S1751501AbaKFTfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 14:35:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051AbaKFTfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 14:35:07 -0500
+Date: Thu, 6 Nov 2014 13:34:33 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel Live Patching
+Message-ID: <20141106193433.GA16347@treble.redhat.com>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <20141106184446.GA12779@infradead.org>
+ <20141106185157.GB29272@suse.cz>
+ <20141106185857.GA7106@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20141104190451.GS1618@lahna.fi.intel.com>
-References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com>
-	<CAOZdJXXAQtmR_Wq194nbiEpg2TYS7_5tXhLtDWckD4xMHGkdZg@mail.gmail.com>
-	<20141104082056.GG1618@lahna.fi.intel.com>
-	<545912D2.5090708@codeaurora.org>
-	<20141104190451.GS1618@lahna.fi.intel.com>
-Date: Thu, 6 Nov 2014 20:30:23 +0100
-Message-ID: <CACRpkdZOhcUsxC+VTBbpGSKfR7bXJ-WS9MxUb948r0Bvzyz2Mw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Timur Tabi <timur@codeaurora.org>, Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141106185857.GA7106@infradead.org>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 8:04 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+On Thu, Nov 06, 2014 at 10:58:57AM -0800, Christoph Hellwig wrote:
+> On Thu, Nov 06, 2014 at 07:51:57PM +0100, Vojtech Pavlik wrote:
+> > I don't think this specific example was generated. 
 
-> We still need to account the fact that BIOS is supposed to configure the
-> pins in advance. The pinctrl mappings are just for refining that, like
-> muxing out the SPI pins instead of GPIOs and so on.
+So there are two ways to use this live patching API: using a generated
+module (e.g., using the kpatch-build tool) or manually compiling a
+module via kbuild.
 
-Pinctrl currently has no real way of reading out the state from the
-hardware and presenting it as a selected group+function combination,
-it only knows what has been selected intrinsically with the system,
-so some enhancements may be needed to make pinctrl reflect
-the state when booting.
+Vojtech's right, the provided example was not generated.  Maybe it
+belongs in samples/livepatch?
 
-Yours,
-Linus Walleij
+> > 
+> > I also don't think including the whole kpatch automation into the kernel
+> > tree is a viable development model for it. (Same would apply for kGraft
+> > automation.)
+> 
+> Why?  We (IMHO incorrectly) used the argument of tight coupling to put
+> perf into the kernel tree.  Generating kernel live patches is way more
+> integrated that it absolutely has to go into the tree to be able to do
+> proper development on it in an integrated fashion.
+
+I agree that we should also put kpatch-build (or some converged
+kpatch/kGraft-build tool) into the kernel tree, because of the tight
+interdependencies between it and the kernel.  I think it would make
+development much easier.  Otherwise, for example, it may end up having a
+lot of #ifdef hacks based on what kernel version it's targeting.
+
+-- 
+Josh
