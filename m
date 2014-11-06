@@ -1,204 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaKFRpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:45:44 -0500
-Received: from smtp107.biz.mail.bf1.yahoo.com ([98.139.244.55]:40675 "EHLO
-	smtp107.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751931AbaKFRpm (ORCPT
+	id S1751928AbaKFRqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:46:55 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:35002 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaKFRqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:45:42 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 9YAAbfwVM1nh6bLoEWl8Md7f7e66D6tpJgsUApc60TGuZQk
- H3Ie4EALYvIDOlVg9M7w_MJWriKB6vdL9zyXRTwHqxEk14ohxv0AFSt4Mu2H
- F3BTnnn91YT9hDSTiYB5wAmhYD6Qges.AfGOVxkr.kTJSGsbpTxjA7pDM9RT
- 0Rw35IwzDniKgFJsmXP.n5Rb80mfnBRLE_6UQ8ruPXmIJ2v2lpc9i.xKiawY
- pYZ5DSLwBUyjNYCP2g.30hnA8eiFswDoEKv3xonqp_9.I_1iJu9oSIhxFnRX
- ePtttVJ5xop7tozHKcPkkg9L_CakDwAIbhU0_mLYl6w4TWYWi7IGjvqAE6WX
- 4e1zciakzMyT0Z5smDq0kLcbN9FDUfCUszmIPx9cAa0iEswWFGSU2IlPfDLE
- ehqDwGK27fy5eHjZTvDr7CbbW8DBuVGekcXzhcgq8bY2crVxr3nulz6HlSkC
- HCRUUHMNw16uUE1eY_msr.Ck5McSw0Hf1.z5AJ909PuUZstKB9XOrMgIHF89
- 5vFzdIWfPt6JiUqODnPW1yUbGsrw6wnQWBtQxX2j8l_S2lxaV.vw_0jXYeci
- lHC5wcqLnWuc8uTl7s5BEQbw-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <545BB3DD.1010607@schaufler-ca.com>
-Date: Thu, 06 Nov 2014 09:46:05 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>, linux-unionfs@vger.kernel.org,
-        selinux@tycho.nsa.gov
-CC: linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+	Thu, 6 Nov 2014 12:46:52 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v3 0/4] Fixes for ALPS driver
+Date: Thu, 6 Nov 2014 18:46:46 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] Security: Provide copy-up security hooks for unioned
- files
-References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154228.2555.55814.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141105154228.2555.55814.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <1414884310-19842-1-git-send-email-pali.rohar@gmail.com> <54563C5F.10702@redhat.com>
+In-Reply-To: <54563C5F.10702@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2402195.MMvO1HV68e";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201411061846.48626@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/5/2014 7:42 AM, David Howells wrote:
-> Provide two new security hooks for use with security files that are used when
-> a file is copied up between layers:
->
->  (1) security_inode_copy_up().  This is called so that the security label on
->      the destination file can be set appropriately.
->
->  (2) security_inode_copy_up_xattr().  This is called so that each xattr being
->      copied up can be vetted - including modification and discard.
->
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
->
->  include/linux/security.h |   35 +++++++++++++++++++++++++++++++++++
->  security/capability.c    |   13 +++++++++++++
->  security/security.c      |   13 +++++++++++++
->  3 files changed, 61 insertions(+)
->
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index ba96471c11ba..637a24c75d46 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -562,6 +562,24 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->   *	@inode contains a pointer to the inode.
->   *	@secid contains a pointer to the location where result will be saved.
->   *	In case of failure, @secid will be set to zero.
-> + * @inode_copy_up:
-> + *	Generate the secid associated with the destination inode when a unioned
+--nextPart2402195.MMvO1HV68e
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-NAK.
+On Sunday 02 November 2014 15:14:55 Hans de Goede wrote:
+> Hi,
+>=20
+> On 11/02/2014 12:25 AM, Pali Roh=C3=A1r wrote:
+> > This patch series tries to fix problems with ALPS dualpoint
+> > devices on Dell Latitude laptops which are probably caused
+> > by bugs in Dell BIOS, Dell EC or in ALPS touchpad firmware
+> > itself.
+> >=20
+> > Root of problems is yet unknown but at least this patch
+> > series could eliminate reporting bogus data to userspace.
+> >=20
+> > Reported bugs:
+> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1258837
+> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1320022
+> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1272624
+> > https://bugzilla.redhat.com/show_bug.cgi?id=3D1145954
+> >=20
+> > Pali Roh=C3=A1r (4):
+> >   input: alps: Do not try to parse data as 3 bytes packet
+> >   when driver
+> >  =20
+> >     is out of sync
+> >  =20
+> >   input: alps: Allow 2 invalid packets without resetting
+> >   device input: alps: For protocol V3, do not process data
+> >   when last packet's
+> >  =20
+> >     bit7 is set
+> >  =20
+> >   input: alps: Fix trackstick detection
+> > =20
+> >  drivers/input/mouse/alps.c |  113
+> >  +++++++++++++++++++++++++++++++------------- 1 file
+> >  changed, 80 insertions(+), 33 deletions(-)
+>=20
+> Thanks for working on this, patches 1-3 are:
+>=20
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+>=20
+> Patch 4 is too much work to review on a Sunday :), so I'll
+> leave reviewing it to Dmitry.
+>=20
+> Regards,
+>=20
+> Hans
 
-You can't just deal with the access label, nor can you assume that there
-is exactly one. Don't use secids. Secids are a performance problem for
-Smack and any LSM that uses blobs directly. I don't see anything in the
-code here that involves secids. Why comment on them here?
+Dmitry, can you review v3 patches?
 
-> + *	file is copied up from a lower layer to the union/overlay layer.
-> + *	@src indicates the file that is being copied up.
-> + *	@dst indicates the file that has being created by the copy up.
-> + *	Returns 0 on success or a negative error code on error.
-> + * @inode_copy_up_xattr:
-> + *	Filter/modify the xattrs being copied up when a unioned file is copied
-> + *	up from a lower layer to the union/overlay layer.
-> + *	@src indicates the file that is being copied up.
-> + *	@dst indicates the file that has being created by the copy up.
-> + *	@name indicates the name of the xattr.
-> + *	@value, *@size indicate the payload of the xattr.
-> + *	Returns 0 to accept the xattr, 1 to discard the xattr or a negative
-> + *	error code to abort the copy up.  The xattr buffer must be at least
-> + *	XATTR_SIZE_MAX in capacity and the contents may be modified and *@size
-> + *	changed appropriately.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Who is going to call this? How are is the caller going to know all the xattr
-names that matter?
+--nextPart2402195.MMvO1HV68e
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-> + *
->   *
->   * Security hooks for file operations
->   *
-> @@ -1543,6 +1561,9 @@ struct security_operations {
->  	int (*inode_setsecurity) (struct inode *inode, const char *name, const void *value, size_t size, int flags);
->  	int (*inode_listsecurity) (struct inode *inode, char *buffer, size_t buffer_size);
->  	void (*inode_getsecid) (const struct inode *inode, u32 *secid);
-> +	int (*inode_copy_up) (struct dentry *src, struct dentry *dst);
-> +	int (*inode_copy_up_xattr) (struct dentry *src, struct dentry *dst,
-> +				    const char *name, void *value, size_t *size);
->  
->  	int (*file_permission) (struct file *file, int mask);
->  	int (*file_alloc_security) (struct file *file);
-> @@ -1823,6 +1844,10 @@ int security_inode_getsecurity(const struct inode *inode, const char *name, void
->  int security_inode_setsecurity(struct inode *inode, const char *name, const void *value, size_t size, int flags);
->  int security_inode_listsecurity(struct inode *inode, char *buffer, size_t buffer_size);
->  void security_inode_getsecid(const struct inode *inode, u32 *secid);
-> +int security_inode_copy_up(struct dentry *src, struct dentry *dst);
-> +int security_inode_copy_up_xattr(struct dentry *src, struct dentry *dst,
-> +				 const char *name, void *value, size_t *size);
-> +
->  int security_file_permission(struct file *file, int mask);
->  int security_file_alloc(struct file *file);
->  void security_file_free(struct file *file);
-> @@ -2264,6 +2289,16 @@ static inline void security_inode_getsecid(const struct inode *inode, u32 *secid
->  	*secid = 0;
->  }
->  
-> +static inline int security_inode_copy_up(struct dentry *src, struct dentry *dst)
-> +{
-> +	return 0;
-> +}
-> +static inline int security_inode_copy_up_xattr(struct dentry *src, struct dentry *dst,
-> +					       const char *name, const void *value, size_t size)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline int security_file_permission(struct file *file, int mask)
->  {
->  	return 0;
-> diff --git a/security/capability.c b/security/capability.c
-> index d68c57a62bcf..6b21615d1500 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -245,6 +245,17 @@ static void cap_inode_getsecid(const struct inode *inode, u32 *secid)
->  	*secid = 0;
->  }
->  
-> +static int cap_inode_copy_up(struct dentry *src, struct dentry *dst)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int cap_inode_copy_up_xattr(struct dentry *src, struct dentry *dst,
-> +				   const char *name, void *value, size_t *size)
-> +{
-> +	return 0;
-> +}
-> +
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Does this mean that without LSM help no xattrs ever get copied?
+iEYEABECAAYFAlRbtAgACgkQi/DJPQPkQ1LWmACgiwlVUjp/Ppgk6TT6KH5nVX9W
+H24An0HjaXDcWT/sGPPwZOPKdAv+mBzk
+=b4DD
+-----END PGP SIGNATURE-----
 
->  #ifdef CONFIG_SECURITY_PATH
->  static int cap_path_mknod(struct path *dir, struct dentry *dentry, umode_t mode,
->  			  unsigned int dev)
-> @@ -986,6 +997,8 @@ void __init security_fixup_ops(struct security_operations *ops)
->  	set_to_cap_if_null(ops, inode_setsecurity);
->  	set_to_cap_if_null(ops, inode_listsecurity);
->  	set_to_cap_if_null(ops, inode_getsecid);
-> +	set_to_cap_if_null(ops, inode_copy_up);
-> +	set_to_cap_if_null(ops, inode_copy_up_xattr);
->  #ifdef CONFIG_SECURITY_PATH
->  	set_to_cap_if_null(ops, path_mknod);
->  	set_to_cap_if_null(ops, path_mkdir);
-> diff --git a/security/security.c b/security/security.c
-> index 18b35c63fc0c..96e2f189ff1e 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -683,6 +683,19 @@ void security_inode_getsecid(const struct inode *inode, u32 *secid)
->  	security_ops->inode_getsecid(inode, secid);
->  }
->  
-> +int security_inode_copy_up(struct dentry *src, struct dentry *dst)
-> +{
-> +	return security_ops->inode_copy_up(src, dst);
-> +}
-> +EXPORT_SYMBOL(security_inode_copy_up);
-> +
-> +int security_inode_copy_up_xattr(struct dentry *src, struct dentry *dst,
-> +				 const char *name, void *value, size_t *size)
-> +{
-> +	return security_ops->inode_copy_up_xattr(src, dst, name, value, size);
-> +}
-> +EXPORT_SYMBOL(security_inode_copy_up_xattr);
-> +
->  int security_file_permission(struct file *file, int mask)
->  {
->  	int ret;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
+--nextPart2402195.MMvO1HV68e--
