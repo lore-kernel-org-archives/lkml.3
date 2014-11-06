@@ -1,206 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaKFW45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:56:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59013 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146AbaKFWnl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:41 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 085/162] OOM, PM: OOM killed task shouldn't escape PM suspend
-Date: Thu,  6 Nov 2014 14:35:49 -0800
-Message-Id: <1415313426-9622-86-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1753906AbaKFW5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:57:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146AbaKFW5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 17:57:02 -0500
+Message-ID: <545BFC86.2000006@redhat.com>
+Date: Thu, 06 Nov 2014 17:56:06 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Jerome Glisse <j.glisse@gmail.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Brendan Conoboy <blc@redhat.com>, Joe Donohue <jdonohue@redhat.com>,
+        Duncan Poole <dpoole@nvidia.com>, Sherry Cheung <SCheung@nvidia.com>,
+        Subhash Gutti <sgutti@nvidia.com>, John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page table
+ (gpt) v2.
+References: <1415047353-29160-1-git-send-email-j.glisse@gmail.com> <1415047353-29160-4-git-send-email-j.glisse@gmail.com> <545BF6E0.8060001@redhat.com> <20141106224051.GA6877@gmail.com>
+In-Reply-To: <20141106224051.GA6877@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-------------------
+On 11/06/2014 05:40 PM, Jerome Glisse wrote:
+> On Thu, Nov 06, 2014 at 05:32:00PM -0500, Rik van Riel wrote:
 
-From: Michal Hocko <mhocko@suse.cz>
+> Never a fan of preprocessor magic, but I  see why it's needed.
+> 
+> Acked-by: Rik van Riel <riel@redhat.com>
+> 
+>> v1 is not using preprocessor but has a bigger gpt struct
+>> footprint and also more complex calculation for page table
+>> walking due to the fact that i just rely more on runtime
+>> computation than on compile time shift define through 
+>> preprocessor magic.
+> 
+>> Given i am not a fan either of preprocessor magic if it makes you
+>> feel any better i can resort to use v1, both have seen same kind
+>> of testing and both are functionaly equivalent (API they expose
+>> is obviously slightly different).
+> 
+>> I am not convince that what the computation i save using
+>> preprocessor will show up in anyway as being bottleneck for hot
+>> path.
 
-commit 5695be142e203167e3cb515ef86a88424f3524eb upstream.
+I have no strong preference either way. This code is perfectly readable.
 
-PM freezer relies on having all tasks frozen by the time devices are
-getting frozen so that no task will touch them while they are getting
-frozen. But OOM killer is allowed to kill an already frozen task in
-order to handle OOM situtation. In order to protect from late wake ups
-OOM killer is disabled after all tasks are frozen. This, however, still
-keeps a window open when a killed task didn't manage to die by the time
-freeze_processes finishes.
+Andrew?
 
-Reduce the race window by checking all tasks after OOM killer has been
-disabled. This is still not race free completely unfortunately because
-oom_killer_disable cannot stop an already ongoing OOM killer so a task
-might still wake up from the fridge and get killed without
-freeze_processes noticing. Full synchronization of OOM and freezer is,
-however, too heavy weight for this highly unlikely case.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Introduce and check oom_kills counter which gets incremented early when
-the allocator enters __alloc_pages_may_oom path and only check all the
-tasks if the counter changes during the freezing attempt. The counter
-is updated so early to reduce the race window since allocator checked
-oom_killer_disabled which is set by PM-freezing code. A false positive
-will push the PM-freezer into a slow path but that is not a big deal.
-
-Changes since v1
-- push the re-check loop out of freeze_processes into
-  check_frozen_processes and invert the condition to make the code more
-  readable as per Rafael
-
-Fixes: f660daac474c6f (oom: thaw threads if oom killed thread is frozen before deferring)
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- include/linux/oom.h    |  3 +++
- kernel/power/process.c | 40 +++++++++++++++++++++++++++++++++++++++-
- mm/oom_kill.c          | 17 +++++++++++++++++
- mm/page_alloc.c        |  8 ++++++++
- 4 files changed, 67 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 4cd6267..17f0949 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -50,6 +50,9 @@ static inline bool oom_task_origin(const struct task_struct *p)
- extern unsigned long oom_badness(struct task_struct *p,
- 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
- 		unsigned long totalpages);
-+
-+extern int oom_kills_count(void);
-+extern void note_oom_kill(void);
- extern void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			     unsigned int points, unsigned long totalpages,
- 			     struct mem_cgroup *memcg, nodemask_t *nodemask,
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 14f9a8d..f1fe7ec 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -107,6 +107,28 @@ static int try_to_freeze_tasks(bool user_only)
- 	return todo ? -EBUSY : 0;
- }
- 
-+/*
-+ * Returns true if all freezable tasks (except for current) are frozen already
-+ */
-+static bool check_frozen_processes(void)
-+{
-+	struct task_struct *g, *p;
-+	bool ret = true;
-+
-+	read_lock(&tasklist_lock);
-+	for_each_process_thread(g, p) {
-+		if (p != current && !freezer_should_skip(p) &&
-+		    !frozen(p)) {
-+			ret = false;
-+			goto done;
-+		}
-+	}
-+done:
-+	read_unlock(&tasklist_lock);
-+
-+	return ret;
-+}
-+
- /**
-  * freeze_processes - Signal user space processes to enter the refrigerator.
-  * The current thread will not be frozen.  The same process that calls
-@@ -117,6 +139,7 @@ static int try_to_freeze_tasks(bool user_only)
- int freeze_processes(void)
- {
- 	int error;
-+	int oom_kills_saved;
- 
- 	error = __usermodehelper_disable(UMH_FREEZING);
- 	if (error)
-@@ -130,12 +153,27 @@ int freeze_processes(void)
- 
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
-+	oom_kills_saved = oom_kills_count();
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
--		printk("done.");
- 		__usermodehelper_set_disable_depth(UMH_DISABLED);
- 		oom_killer_disable();
-+
-+		/*
-+		 * There might have been an OOM kill while we were
-+		 * freezing tasks and the killed task might be still
-+		 * on the way out so we have to double check for race.
-+		 */
-+		if (oom_kills_count() != oom_kills_saved &&
-+				!check_frozen_processes()) {
-+			__usermodehelper_set_disable_depth(UMH_ENABLED);
-+			printk("OOM in progress.");
-+			error = -EBUSY;
-+			goto done;
-+		}
-+		printk("done.");
- 	}
-+done:
- 	printk("\n");
- 	BUG_ON(in_atomic());
- 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 616b2eb..9c01afd 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -394,6 +394,23 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- 		dump_tasks(memcg, nodemask);
- }
- 
-+/*
-+ * Number of OOM killer invocations (including memcg OOM killer).
-+ * Primarily used by PM freezer to check for potential races with
-+ * OOM killed frozen task.
-+ */
-+static atomic_t oom_kills = ATOMIC_INIT(0);
-+
-+int oom_kills_count(void)
-+{
-+	return atomic_read(&oom_kills);
-+}
-+
-+void note_oom_kill(void)
-+{
-+	atomic_inc(&oom_kills);
-+}
-+
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /*
-  * Must be called while holding a reference to p, which will be released upon
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 38dca81..83a20df 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2178,6 +2178,14 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	}
- 
- 	/*
-+	 * PM-freezer should be notified that there might be an OOM killer on
-+	 * its way to kill and wake somebody up. This is too early and we might
-+	 * end up not killing anything but false positives are acceptable.
-+	 * See freeze_processes.
-+	 */
-+	note_oom_kill();
-+
-+	/*
- 	 * Go through the zonelist yet one more time, keep very high watermark
- 	 * here, this is only to catch a parallel oom killing, we must fail if
- 	 * we're still under heavy pressure.
--- 
-1.9.1
-
+iQEcBAEBAgAGBQJUW/yGAAoJEM553pKExN6DqcwIAJAh8mUCOuzyhqJl21qMGWu9
+FwL8qEUCxxXxLuX2MFv/wbkb07+OLI8nStI5rPxk6qUdC53YV4Bc7CWfvwF4slRB
+hpPVGhmNKj4e5jwP+d8/MMSd6QfGA/jaiiRw9IxasOxzYKJxtKW4wAsme+qiDy6Y
+i59sGQndVUstP6Zf5ZnaKN7BkG57daQqwypktPpMf7CQxv2uN5nnErDDFzhvm8Qz
+tCcKtpsdZgek7l6RPaovvRHi0kT3L67gq5oIFuS9iiHGqhmohpj2sTENafLeWUb1
+zGdjy8EcxBL5H0L1/wxs3PWjyKez1q/wEZJ390+wmRaMBWl1WqbGsAZ1uZ98bd0=
+=ZAbm
+-----END PGP SIGNATURE-----
