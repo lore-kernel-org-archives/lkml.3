@@ -1,66 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaKFH0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 02:26:53 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:62980 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaKFH0w (ORCPT
+	id S1751446AbaKFHc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 02:32:58 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:54054 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaKFHcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 02:26:52 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-28-545b22b94f5c
-Message-id: <545B22B6.9050607@samsung.com>
-Date: Thu, 06 Nov 2014 08:26:46 +0100
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] drm/panel: ld9040: Update calls to gpiod_get*()
-References: <1414052177-19978-1-git-send-email-acourbot@nvidia.com>
- <5448CE4A.6010207@samsung.com>
- <CAAVeFu+wiczN3zP-phsCy=-59pxJQcoyzeQpen4PNbywjymtFg@mail.gmail.com>
-In-reply-to: <CAAVeFu+wiczN3zP-phsCy=-59pxJQcoyzeQpen4PNbywjymtFg@mail.gmail.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xK7o7laJDDK7uVbD4/vAUq8WVr+/Z
-	LM69esRicXnXHDaLn7vmsTiweuycdZfd4373cSaP3uZ3bB6fN8kFsERx2aSk5mSWpRbp2yVw
-	ZTxtX8RUsJG9YvWVG8wNjG1sXYwcHBICJhKbduZ1MXICmWISF+6tBwpzcQgJLGWUmPnyFBOE
-	84lR4tPeQ4wgVbwCWhJXV7Wzg9gsAqoSDS96weJsApoSfzffZAOxRQUiJK6smQNVLyjxY/I9
-	FpBlIgIaEo/WiYDMZBa4zShxo28/M0hcWMBF4vSnSohdq4F23XwKNodTIFhiwYFzYDXMAuoS
-	U6bkgoSZBeQlNq95yzyBUWAWkg2zEKpmIalawMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93
-	EyMkhL/uYFx6zOoQowAHoxIPbwR7dIgQa2JZcWXuIUYJDmYlEd5eaaAQb0piZVVqUX58UWlO
-	avEhRiYOTqkGxsbypUkP125atVpxRfVjxZizams2M4pEmp4s/5IZsstpcfmFl/+vflafrznP
-	Xbrswctelb82Se5JcYbr30reYd0UMuf5i9R98zyvr7zVt7aoxa17D7cnK8NT9bDL280+Okqo
-	buN62xvSGFF3v2OzTOv3+1kyG2t/BoabRk76u7Kfi+dC22uet0osxRmJhlrMRcWJAFLsq7g/	AgAA
+	Thu, 6 Nov 2014 02:32:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F07701654561@SHSMSX103.ccr.corp.intel.com>
+References: <1414757172-20064-1-git-send-email-kan.liang@intel.com>
+ <87tx2f5xpo.fsf@sejong.aot.lge.com> <37D7C6CF3E00A74B8858931C1DB2F07701653813@SHSMSX103.ccr.corp.intel.com>
+ <87d292w41p.fsf@sejong.aot.lge.com> <37D7C6CF3E00A74B8858931C1DB2F07701654561@SHSMSX103.ccr.corp.intel.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 6 Nov 2014 16:32:34 +0900
+X-Google-Sender-Auth: KXsMTib96dzkAM_VIrdzeVT5p9k
+Message-ID: <CAM9d7cj2T4SrwsvZvCmZRh9xLBFvgeaUVqFtkUjakAD-WdL-JQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] perf tools: perf diff for different binaries
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: "acme@kernel.org" <acme@kernel.org>, "jolsa@kernel.org" <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 04:32 AM, Alexandre Courbot wrote:
-> On Thu, Oct 23, 2014 at 6:45 PM, Andrzej Hajda <a.hajda@samsung.com> wrote:
->> On 10/23/2014 10:16 AM, Alexandre Courbot wrote:
->>> Add the new flags argument to calls of (devm_)gpiod_get*() and
->>> remove any direction setting code afterwards.
->>>
->>> Currently both forms (with or without the flags argument)
->>> are valid thanks to transitional macros in
->>> <linux/gpio/consumer.h>. These macros will be removed once
->>> all consumers are updated and the flags argument will become
->>> compulsary.
->>>
->>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> It needs patch "gpio: Fix gpio direction flags not getting set" to work
->> correctly. It is not yet present in drm-next. Beside this:
->>
->> Acked-by: Andrzej Hajda <a.hajda@samsung.com>
-> The required patch is now merged, can we go on with this patch?
+Hi Kan,
+
+On Thu, Nov 6, 2014 at 2:28 AM, Liang, Kan <kan.liang@intel.com> wrote:
 >
-Yes, for both panels. Thanks.
+>> Hi Kan,
+>>
+>> On Tue, 4 Nov 2014 17:07:43 +0000, Kan Liang wrote:
+>> >> What about setting the
+>> >> sort_sym.se_collapse in data_process() so that hists__match() can use
+>> >> symbol names?
+>> >
+>> > Yes, we can set it if we only do function level diff. But I'd like to
+>> > keep both. So I defined two sort keys.
+>> > "symbol" means "symbol address executed at the time of sample "
+>> > "symbol_name" means "name of function executed at the time of
+>> sample"
+>>
+>> Hmm.. I don't think the symbol sort key provides the instruction level diff
+>> that you want.  If it finds a symbol it just use the start address of the
+>> symbol, not the exact address of the sample.  Am I missing something?
+>>
+>
+> No, the meaning of symbol in perf diff is different as in perf report. It uses
+> the exact address of the sample.
 
-Regards
-Andrzej
+Hmm.. are you sure?  I think it uses same code..
 
+
+>
+> Here is current perf diff result and objdump fragment of the first binary.
+> You can see the exact address of the sample in function f3 was used, not the
+> start address.
+> 33.55%                  [unknown]          [.] 0x0000000000400554
+> 48.13%                  [unknown]          [.] 0x000000000040056b
+
+But I think it's because it failed to find a symbol (f3) for some
+reason.  The symbol sort key will use the ip address only if it didn't
+find a symbol for the address.  Please see sort__sym_cmp (and
+_sort__sym_cmp too).
+
+Thanks,
+Namhyung
+
+
+>
+> [perf-test]#./perf diff -s dso,symbol --compute ratio ../../../v1_1_6perf.data
+> ../../../v2_1_7perf.data
+> # Event 'cycles'
+> #
+> # Baseline           Ratio  Shared Object      Symbol
+> # ........  ..............  .................  .........................
+> #
+>                             [kernel.kallsyms]  [k] __update_cpu_load
+>                             [kernel.kallsyms]  [k] mod_timer
+>      0.01%                  [kernel.kallsyms]  [k] native_write_msr_safe
+>      0.01%                  [kernel.kallsyms]  [k] notifier_call_chain
+>      0.01%                  [kernel.kallsyms]  [k] perf_event_task_tick
+>                             [kernel.kallsyms]  [k] rt_mutex_slowlock
+>      0.01%                  [kernel.kallsyms]  [k] run_posix_cpu_timers
+>      0.01%                  [kernel.kallsyms]  [k] run_timer_softirq
+>      0.01%                  [kernel.kallsyms]  [k] trigger_load_balance
+>      0.01%                  [kernel.kallsyms]  [k] update_vsyscall
+>                             [kernel.kallsyms]  [k] wait_for_common
+>                             [kernel.kallsyms]  [k] 0x000000000028482a
+>      0.05%                  [unknown]          [.] 0x0000000000400540
+>      0.04%                  [unknown]          [.] 0x0000000000400541
+>      0.03%                  [unknown]          [.] 0x000000000040054b
+>      0.04%                  [unknown]          [.] 0x0000000000400552
+>     33.55%                  [unknown]          [.] 0x0000000000400554
+>      1.22%                  [unknown]          [.] 0x000000000040055a
+>      8.00%                  [unknown]          [.] 0x000000000040055e
+>      0.02%                  [unknown]          [.] 0x0000000000400562
+>      8.41%                  [unknown]          [.] 0x0000000000400564
+>     48.13%                  [unknown]          [.] 0x000000000040056b
+>      0.16%                  [unknown]          [.] 0x0000000000400570
+>      0.17%                  [unknown]          [.] 0x0000000000400571
+>                             [unknown]          [.] 0x0000000000400580
+>                             [unknown]          [.] 0x0000000000400581
+>      0.01%                  [unknown]          [.] 0x0000000000400583
+>      0.01%                  [unknown]          [.] 0x0000000000400588
+>                             [unknown]          [.] 0x000000000040058b
+>      0.01%     1240.990221  [unknown]          [.] 0x000000000040058d
+>                             [unknown]          [.] 0x0000000000400590
+>      0.06%                  [unknown]          [.] 0x0000000000400591
+>                             [unknown]          [.] 0x0000000000400593
+>      0.04%                  [unknown]          [.] 0x0000000000400595
+>      0.01%     1240.603148  [unknown]          [.] 0x0000000000400597
+>                             [unknown]          [.] 0x000000000040059b
+>                             [unknown]          [.] 0x000000000040059d
+>                             [unknown]          [.] 0x00000000004005a1
+>                             [unknown]          [.] 0x00000000004005a5
+>                             [unknown]          [.] 0x00000000004005a7
+>                             [unknown]          [.] 0x00000000004005a8
+>                             [unknown]          [.] 0x00000000004005aa
+>                             [unknown]          [.] 0x00000000004005ba
+>                             [unknown]          [.] 0x00000000004005bf
+>                             [unknown]          [.] 0x00000000004005c4
+>                             [unknown]          [.] 0x00000000004005c9
+>                             [unknown]          [.] 0x00000000004005ce
+>                             [unknown]          [.] 0x00000000004005d2
+>                             [unknown]          [.] 0x00000000004005d6
+>                             [unknown]          [.] 0x00000000004005d8
+>                             [unknown]          [.] 0x00000000004005f5
+>
+>
+> [perf-test]#objdump -d tchain_edit_1
+>
+> 0000000000400540 <f3>:
+>   400540:       55                      push   %rbp
+>   400541:       48 89 e5                mov    %rsp,%rbp
+>   400544:       c7 45 f8 e8 03 00 00    movl   $0x3e8,-0x8(%rbp)
+>   40054b:       c7 45 fc 00 00 00 00    movl   $0x0,-0x4(%rbp)
+>   400552:       eb 14                   jmp    400568 <f3+0x28>
+>   400554:       8b 45 fc                mov    -0x4(%rbp),%eax
+>   400557:       83 e0 01                and    $0x1,%eax
+>   40055a:       85 c0                   test   %eax,%eax
+>   40055c:       74 06                   je     400564 <f3+0x24>
+>   40055e:       83 45 fc 01             addl   $0x1,-0x4(%rbp)
+>   400562:       eb 04                   jmp    400568 <f3+0x28>
+>   400564:       83 45 fc 01             addl   $0x1,-0x4(%rbp)
+>   400568:       8b 45 fc                mov    -0x4(%rbp),%eax
+>   40056b:       3b 45 f8                cmp    -0x8(%rbp),%eax
+>   40056e:       7c e4                   jl     400554 <f3+0x14>
+>   400570:       5d                      pop    %rbp
+>   400571:       c3                      retq
+>
+>
+> Thanks,
+> Kan
+>
+>> Thanks,
+>> Namhyung
+
+
+
+-- 
+Thanks,
+Namhyung
