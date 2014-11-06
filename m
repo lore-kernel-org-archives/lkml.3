@@ -1,123 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaKFKCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:02:51 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41637 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670AbaKFKCn (ORCPT
+	id S1752670AbaKFKDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:03:12 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:42456 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaKFKDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:02:43 -0500
-Date: Thu, 6 Nov 2014 11:01:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
- hierarchy irqdomain
-In-Reply-To: <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1411061023400.24960@nanos>
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 6 Nov 2014 05:03:06 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1415263010-7992-4-git-send-email-k.kozlowski@samsung.com>
+References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
+	<1415263010-7992-4-git-send-email-k.kozlowski@samsung.com>
+Date: Thu, 6 Nov 2014 11:03:05 +0100
+Message-ID: <CAPDyKFrrtEAHUEU_aws327Za6cz3rCG_VHhqY5b8ZseKK2UXgA@mail.gmail.com>
+Subject: Re: [PATCH v10 3/5] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Nov 2014, Jiang Liu wrote:
-> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
-> +static inline irq_hw_number_t
-> +msi_get_hwirq(struct pci_dev *pdev, struct msi_desc *msidesc)
-> +{
-> +	return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
-> +		PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
-> +		(pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
-> +}
+On 6 November 2014 09:36, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> The AMBA bus driver defines runtime Power Management functions which
+> disable and unprepare AMBA bus clock. This is problematic for runtime PM
+> because unpreparing a clock might sleep so it is not interrupt safe.
+>
+> However some drivers may want to implement runtime PM functions in
+> interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+> bus driver should only disable/enable the clock in runtime suspend and
+> resume callbacks.
+>
+> Detect the device driver behavior during runtime suspend. During runtime
+> resume deal with clocks according to stored value.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+
+> ---
+>  drivers/amba/bus.c       | 17 +++++++++++++----
+>  include/linux/amba/bus.h |  1 +
+>  2 files changed, 14 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+> index 47bbdc1b5be3..356f906c6966 100644
+> --- a/drivers/amba/bus.c
+> +++ b/drivers/amba/bus.c
+> @@ -95,8 +95,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
+>         struct amba_device *pcdev = to_amba_device(dev);
+>         int ret = pm_generic_runtime_suspend(dev);
+>
+> -       if (ret == 0 && dev->driver)
+> -               clk_disable_unprepare(pcdev->pclk);
+> +       if (ret == 0 && dev->driver) {
+> +               pcdev->irq_safe = dev->power.irq_safe;
 > +
-> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
-> +			    unsigned int nr_irqs, void *arg)
-> +{
-> +	int i, ret;
-> +	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
-> +
-> +	if (irq_find_mapping(domain, hwirq) > 0)
-> +		return -EEXIST;
-> +
-> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-> +	if (ret >= 0)
-> +		for (i = 0; i < nr_irqs; i++) {
-> +			irq_domain_set_hwirq_and_chip(domain, virq + i,
-> +					hwirq + i, &msi_chip, (void *)(long)i);
-
-I think msi_chip being a global unique thing is problematic. It does
-not allow multi platform kernels to select a chip at boot time and it
-does not allow per domain chip implementations when you have multiple
-msi domains. Aside of that msi_chip is a pretty bad name for a global.
-
-The solution is rather simple and msi is wide spread enough to justify
-that.
-
-struct irqdomain_msi_data {
-       struct irq_chip       *irq_chip;
-};
-
-We make that a struct so we can accomodate for other special things
-which might be domain rather than architecture specific. One
-obvious use case would be to hold the arch_msi_irq_domain_get/set_hwirq
-callbacks.
-
-struct irq_domain *msi_create_irq_domain(struct irq_domain *parent,
-       		  			 struct irqdomain_msi_data *data)
-{
-        struct irq_domain *domain;
-
-        domain = irq_domain_add_tree(NULL, &msi_domain_ops, NULL);
-        if (domain) {
-                domain->parent = parent;
-		domain->msi_data = data;
-	}
-        return domain;
-}
-
-Now the above becomes:
-
-    	struct irq_chip *msi_chip = domain->msi_data->irq_chip;
-
-	irq_domain_set_hwirq_and_chip(domain, virq + i,
-				      hwirq + i, msi_chip, (void *)(long)i);
-
-> +int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
-> +			      struct pci_dev *dev, void *arg)
-> +{
-> +	int i, virq;
-> +	struct msi_desc *msidesc;
-> +	int node = dev_to_node(&dev->dev);
-> +
-> +	list_for_each_entry(msidesc, &dev->msi_list, list) {
-> +		arch_msi_irq_domain_set_hwirq(arg, msi_get_hwirq(dev, msidesc));
-
-The arch_xxx callbacks want to be documented. It's not obvious what
-they are supposed to do.
-
-Thanks,
-
-	tglx
+> +               if (pcdev->irq_safe)
+> +                       clk_disable(pcdev->pclk);
+> +               else
+> +                       clk_disable_unprepare(pcdev->pclk);
+> +       }
+>
+>         return ret;
+>  }
+> @@ -107,7 +113,10 @@ static int amba_pm_runtime_resume(struct device *dev)
+>         int ret;
+>
+>         if (dev->driver) {
+> -               ret = clk_prepare_enable(pcdev->pclk);
+> +               if (pcdev->irq_safe)
+> +                       ret = clk_enable(pcdev->pclk);
+> +               else
+> +                       ret = clk_prepare_enable(pcdev->pclk);
+>                 /* Failure is probably fatal to the system, but... */
+>                 if (ret)
+>                         return ret;
+> @@ -115,7 +124,7 @@ static int amba_pm_runtime_resume(struct device *dev)
+>
+>         return pm_generic_runtime_resume(dev);
+>  }
+> -#endif
+> +#endif /* CONFIG_PM */
+>
+>  static const struct dev_pm_ops amba_pm = {
+>         .suspend        = pm_generic_suspend,
+> diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+> index ac02f9bd63dc..c4bae79851fb 100644
+> --- a/include/linux/amba/bus.h
+> +++ b/include/linux/amba/bus.h
+> @@ -32,6 +32,7 @@ struct amba_device {
+>         struct clk              *pclk;
+>         unsigned int            periphid;
+>         unsigned int            irq[AMBA_NR_IRQS];
+> +       unsigned int            irq_safe:1;
+>  };
+>
+>  struct amba_driver {
+> --
+> 1.9.1
+>
