@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaKFR2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:28:48 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:63344 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaKFR2q (ORCPT
+	id S1751714AbaKFRaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:30:22 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46516 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaKFRaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:28:46 -0500
+	Thu, 6 Nov 2014 12:30:17 -0500
+Date: Thu, 6 Nov 2014 17:30:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141106173012.GY7996@ZenIV.linux.org.uk>
+References: <20141106082704.GB29800@gondor.apana.org.au>
+ <E1XmIQU-0007m1-2e@gondolin.me.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20141104135726.GB14014@htj.dyndns.org>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
- <1414783141-6947-8-git-send-email-adityakali@google.com> <CALCETrXTaZ3SJ_t-gnbc93BVZXg-912NqO78kFd0Tpi-5-dZoQ@mail.gmail.com>
- <CAGr1F2FuPQxLraYv7PstJ9c8H-XQsgawaAtj4AS77B+_0k2o+A@mail.gmail.com> <20141104135726.GB14014@htj.dyndns.org>
-From: Aditya Kali <adityakali@google.com>
-Date: Thu, 6 Nov 2014 09:28:25 -0800
-Message-ID: <CAGr1F2Es3nkWePqRpKoAFoRB5SZp=BvQh7espyxjaRy_fYAbCw@mail.gmail.com>
-Subject: Re: [PATCHv2 7/7] cgroup: mount cgroupns-root when inside non-init cgroupns
-To: Tejun Heo <tj@kernel.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Li Zefan <lizefan@huawei.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1XmIQU-0007m1-2e@gondolin.me.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 4, 2014 at 5:57 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Aditya.
->
-> On Mon, Nov 03, 2014 at 03:12:28PM -0800, Aditya Kali wrote:
->> I think the sane-behavior flag is only temporary and will be removed
->> anyways, right? So I didn't bother asking user to supply it. But I can
->> make the change as you suggested. We just have to make sure that tasks
->> inside cgroupns cannot mount non-default hierarchies as it would be a
->> regression.
->
-> I'm not sure whether supporting mounting from inside a ns is even
-> necessary but, if it is, can't you just test against cgrp_dfl_root?
-> There's no reason to do anything differnetly for ns mounting.
->
+On Thu, Nov 06, 2014 at 04:28:18PM +0800, Herbert Xu wrote:
+> +		if (copy_to_iter(skb->data + offset, copy, to))
+> +			goto fault;
 
-I am not sure I fully understand what you mean. But we don't have a
-way to test against cgrp_dfl_root while parsing mount-options. They
-only way we know that user is trying to mount a default hierarchy is
-via the sane_behavior flag. So I need to test against this flag it if
-we want to restrict processes inside cgroupns to mounting the default
-hierarchy only.
-Or are you suggesting that its OK for nsown_capable(CAP_SYS_ADMIN)
-processes to mount any cgroup hierarchy (irrespective of their
-cgroupns)? I assumed that this will be a undesirable.
+Sorry, no - copy_to_iter() returns the number of bytes copied, not 0 or -EFAULT.
 
-> Thanks.
->
-> --
-> tejun
+> +			vaddr = kmap(page);
+> +			err = copy_to_iter(vaddr + frag->page_offset +
+> +					   offset - start, copy, to);
+> +			kunmap(page);
+> +			if (err)
+> +				goto fault;
 
+And that one should be
+			copied = copy_page_to_iter(page, frag->page_offset +
+					   offset - start, copy, to);
+			if (copied != copy)
+				goto fault;
 
-Thanks,
--- 
-Aditya
+Don't bother with kmap(), vaddr and all that shite.  The primitive is
+	copy_page_to_iter(page, offset_in_page, nbytes, iter)
+it does all needed kmap itself and it's smart enough to use kmap_atomic
+when it can get away with that.  Similar for copy_page_from_iter().
+
+Both of those (as well as copy_{to,from}_iter()) advance iov_iter and return
+the number of bytes actually copied.  So the check for EFAULT is "it has copied
+less than you've asked it to copy *and* you haven't run out that iov_iter".
+The second part is guaranteed to be true in this case - your code makes sure
+that 'copy' is no more than the space left in iterator.
+
+In general, this check would be spelled
+			if (copied != copy && iov_iter_count(to))
+				goto fault;
