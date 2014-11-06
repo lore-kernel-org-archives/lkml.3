@@ -1,185 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaKFPoR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:44:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49369 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaKFPoM (ORCPT
+	id S1751612AbaKFPog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:44:36 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:62396 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaKFPob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:44:12 -0500
-Date: Thu, 6 Nov 2014 07:43:01 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
-        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:rtl8723au: core: Fix Warning reported by
- checkpatch.
-Message-ID: <20141106154301.GC19605@kroah.com>
-References: <wrfjy4rxzk5b.fsf@redhat.com>
- <1415255796-8471-1-git-send-email-sanjeev_sharma@mentor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415255796-8471-1-git-send-email-sanjeev_sharma@mentor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 6 Nov 2014 10:44:31 -0500
+From: Milosz Tanski <milosz@adfin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
+Subject: [PATCH v2 1/2] Add preadv2/pwritev2 documentation.
+Date: Thu,  6 Nov 2014 10:44:26 -0500
+Message-Id: <d2cbc4795f774b521e13ac448d07a1156c6aa04d.1415288353.git.milosz@adfin.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1415220890.git.milosz@adfin.com>
+References: <cover.1415220890.git.milosz@adfin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 12:06:36PM +0530, Sanjeev Sharma wrote:
-> This is a patch to the rtw_cmd.c file that fixes following
-> Warning by introducing temporary structure.
-> 
-> WARNING: line over 80 characters
-> 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
->  drivers/staging/rtl8723au/core/rtw_cmd.c | 123 +++++++++++++++----------------
->  1 file changed, 60 insertions(+), 63 deletions(-)
+New syscalls that are a variation on the preadv/pwritev but support an extra
+flag argument.
 
-Same as the other patch, give us a hint as to the warning in the
-subject.
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
+Suggested-by: Jeff Moyer <jmoyer@redhat.com>
+Fixes: Jeff Moyer <jmoyer@redhat.com>
+---
+ man2/readv.2 | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 61 insertions(+), 10 deletions(-)
 
+diff --git a/man2/readv.2 b/man2/readv.2
+index 8748efa..31b3870 100644
+--- a/man2/readv.2
++++ b/man2/readv.2
+@@ -45,6 +45,12 @@ readv, writev, preadv, pwritev \- read or write data into multiple buffers
+ .sp
+ .BI "ssize_t pwritev(int " fd ", const struct iovec *" iov ", int " iovcnt ,
+ .BI "                off_t " offset );
++.sp
++.BI "ssize_t preadv2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
++.BI "                off_t " offset ", int " flags );
++.sp
++.BI "ssize_t pwritev2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
++.BI "                 off_t " offset ", int " flags );
+ .fi
+ .sp
+ .in -4n
+@@ -162,9 +168,9 @@ The
+ system call combines the functionality of
+ .BR writev ()
+ and
+-.BR pwrite (2).
++.BR pwrite (2) "."
+ It performs the same task as
+-.BR writev (),
++.BR writev () ","
+ but adds a fourth argument,
+ .IR offset ,
+ which specifies the file offset at which the output operation
+@@ -174,15 +180,41 @@ The file offset is not changed by these system calls.
+ The file referred to by
+ .I fd
+ must be capable of seeking.
++.SS preadv2() and pwritev2()
++
++This pair of system calls has similar functionality to the
++.BR preadv ()
++and
++.BR pwritev ()
++calls, but adds a fifth argument, \fIflags\fP, which modifies the behavior on a per call basis.
++
++Like the
++.BR preadv ()
++and
++.BR pwritev ()
++calls, they accept an \fIoffset\fP argument. Unlike those calls, if the \fIoffset\fP argument is set to -1 then the current file offset is used and updated.
++
++The \fIflags\fP arguments to
++.BR preadv2 ()
++and
++.BR pwritev2 ()
++contains a bitwise OR of one or more of the following flags:
++.TP
++.BR RWF_NONBLOCK " (only " preadv2() " since Linux 3.19)"
++Performs a non-blocking operation for regular files (not sockets) opened in buffered mode (not
++.BR O_DIRECT ")."
++
+ .SH RETURN VALUE
+ On success,
+-.BR readv ()
+-and
++.BR readv () ","
+ .BR preadv ()
+-return the number of bytes read;
+-.BR writev ()
+ and
++.BR preadv2 ()
++return the number of bytes read;
++.BR writev () ","
+ .BR pwritev ()
++and
++.BR pwritev2 ()
+ return the number of bytes written.
+ On error, \-1 is returned, and \fIerrno\fP is set appropriately.
+ .SH ERRORS
+@@ -191,12 +223,22 @@ The errors are as given for
+ and
+ .BR write (2).
+ Furthermore,
+-.BR preadv ()
+-and
++.BR preadv () ","
++.BR preadv2 () ","
+ .BR pwritev ()
++and
++.BR pwritev2 ()
+ can also fail for the same reasons as
+ .BR lseek (2).
+-Additionally, the following error is defined:
++Additionally, the following errors are defined:
++.TP
++.B EAGAIN
++The operation would block. This is possible if the file descriptor \fIfd\fP refers to a socket and has been marked nonblocking
++.RB ( O_NONBLOCK ),
++or the operation is a
++.BR preadv2
++and the \fIflags\fP argument is set to
++.BR RWF_NONBLOCK.
+ .TP
+ .B EINVAL
+ The sum of the
+@@ -205,12 +247,17 @@ values overflows an
+ .I ssize_t
+ value.
+ Or, the vector count \fIiovcnt\fP is less than zero or greater than the
+-permitted maximum.
++permitted maximum. Or, an unknown flag is specified in \fIflags\fP.
+ .SH VERSIONS
+ .BR preadv ()
+ and
+ .BR pwritev ()
+ first appeared in Linux 2.6.30; library support was added in glibc 2.10.
++.sp
++.BR preadv2 ()
++and
++.BR pwritev2 ()
++first appeared in Linux 3.19 (if we're lucky);
+ .SH CONFORMING TO
+ .BR readv (),
+ .BR writev ():
+@@ -223,6 +270,10 @@ first appeared in Linux 2.6.30; library support was added in glibc 2.10.
+ .BR preadv (),
+ .BR pwritev ():
+ nonstandard, but present also on the modern BSDs.
++.sp
++.BR preadv2 (),
++.BR pwritev2 ():
++nonstandard, Linux extension.
+ .SH NOTES
+ .SS C library/kernel ABI differences
+ POSIX.1-2001 allows an implementation to place a limit on
+-- 
+1.9.1
 
-> 
-> diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-> index 4eaa502..6186575 100644
-> --- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-> +++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-> @@ -919,34 +919,34 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
->  	u8 bHigherBusyTxTraffic = false;
->  	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
->  	int BusyThreshold = 100;
-> +	struct rt_link_detect *ldi = &pmlmepriv->LinkDetectInfo;
-> +
->  	/*  */
->  	/*  Determine if our traffic is busy now */
->  	/*  */
->  	if (check_fwstate(pmlmepriv, _FW_LINKED)) {
->  		if (rtl8723a_BT_coexist(padapter))
->  			BusyThreshold = 50;
-> -		else if (pmlmepriv->LinkDetectInfo.bBusyTraffic)
-> +		else if (ldi->bBusyTraffic)
->  			BusyThreshold = 75;
->  		/*  if we raise bBusyTraffic in last watchdog, using
->  		    lower threshold. */
-> -		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > BusyThreshold ||
-> -		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > BusyThreshold) {
-> +		if (ldi->NumRxOkInPeriod > BusyThreshold ||
-> +		    ldi->NumTxOkInPeriod > BusyThreshold) {
->  			bBusyTraffic = true;
->  
-> -			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
-> -			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
-> +			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
->  				bRxBusyTraffic = true;
->  			else
->  				bTxBusyTraffic = true;
->  		}
->  
->  		/*  Higher Tx/Rx data. */
-> -		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > 4000 ||
-> -		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > 4000) {
-> +		if (ldi->NumRxOkInPeriod > 4000 ||
-> +		    ldi->NumTxOkInPeriod > 4000) {
->  			bHigherBusyTraffic = true;
->  
-> -			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
-> -			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
-> +			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
->  				bHigherBusyRxTraffic = true;
->  			else
->  				bHigherBusyTxTraffic = true;
-> @@ -955,9 +955,9 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
->  		if (!rtl8723a_BT_coexist(padapter) ||
->  		    !rtl8723a_BT_using_antenna_1(padapter)) {
->  		/*  check traffic for  powersaving. */
-> -			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
-> -			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
-> -			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
-> +			if (((ldi->NumRxUnicastOkInPeriod +
-> +			      ldi->NumTxOkInPeriod) > 8) ||
-> +			    ldi->NumRxUnicastOkInPeriod > 2)
->  				bEnterPS = false;
->  			else
->  				bEnterPS = true;
-> @@ -971,15 +971,15 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
->  	} else
->  		LPS_Leave23a(padapter);
->  
-> -	pmlmepriv->LinkDetectInfo.NumRxOkInPeriod = 0;
-> -	pmlmepriv->LinkDetectInfo.NumTxOkInPeriod = 0;
-> -	pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod = 0;
-> -	pmlmepriv->LinkDetectInfo.bBusyTraffic = bBusyTraffic;
-> -	pmlmepriv->LinkDetectInfo.bTxBusyTraffic = bTxBusyTraffic;
-> -	pmlmepriv->LinkDetectInfo.bRxBusyTraffic = bRxBusyTraffic;
-> -	pmlmepriv->LinkDetectInfo.bHigherBusyTraffic = bHigherBusyTraffic;
-> -	pmlmepriv->LinkDetectInfo.bHigherBusyRxTraffic = bHigherBusyRxTraffic;
-> -	pmlmepriv->LinkDetectInfo.bHigherBusyTxTraffic = bHigherBusyTxTraffic;
-> +	ldi->NumRxOkInPeriod = 0;
-> +	ldi->NumTxOkInPeriod = 0;
-> +	ldi->NumRxUnicastOkInPeriod = 0;
-> +	ldi->bBusyTraffic = bBusyTraffic;
-> +	ldi->bTxBusyTraffic = bTxBusyTraffic;
-> +	ldi->bRxBusyTraffic = bRxBusyTraffic;
-> +	ldi->bHigherBusyTraffic = bHigherBusyTraffic;
-> +	ldi->bHigherBusyRxTraffic = bHigherBusyRxTraffic;
-> +	ldi->bHigherBusyTxTraffic = bHigherBusyTxTraffic;
->  }
->  
->  static void dynamic_chk_wk_hdl(struct rtw_adapter *padapter, u8 *pbuf, int sz)
-> @@ -1017,46 +1017,44 @@ static void lps_ctrl_wk_hdl(struct rtw_adapter *padapter, u8 lps_ctrl_type)
->  	    check_fwstate(pmlmepriv, WIFI_ADHOC_STATE))
->  		return;
->  
-> -	switch (lps_ctrl_type)
-> -	{
-> -		case LPS_CTRL_SCAN:
-> -			rtl8723a_BT_wifiscan_notify(padapter, true);
-> -			if (!rtl8723a_BT_using_antenna_1(padapter)) {
-> -				if (check_fwstate(pmlmepriv, _FW_LINKED))
-> -					LPS_Leave23a(padapter);
-> -			}
-> -			break;
-> -		case LPS_CTRL_JOINBSS:
-> -			LPS_Leave23a(padapter);
-> -			break;
-> -		case LPS_CTRL_CONNECT:
-> -			mstatus = 1;/* connect */
-> -			/*  Reset LPS Setting */
-> -			padapter->pwrctrlpriv.LpsIdleCount = 0;
-> -			rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
-> -			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
-> -			break;
-> -		case LPS_CTRL_DISCONNECT:
-> -			mstatus = 0;/* disconnect */
-> -			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
-> -			if (!rtl8723a_BT_using_antenna_1(padapter))
-> -				LPS_Leave23a(padapter);
-> -			rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
-> -			break;
-> -		case LPS_CTRL_SPECIAL_PACKET:
-> -			pwrpriv->DelayLPSLastTimeStamp = jiffies;
-> -			rtl8723a_BT_specialpacket_notify(padapter);
-> -			if (!rtl8723a_BT_using_antenna_1(padapter))
-> -				LPS_Leave23a(padapter);
-> -			break;
-> -		case LPS_CTRL_LEAVE:
-> -			rtl8723a_BT_lps_leave(padapter);
-> -			if (!rtl8723a_BT_using_antenna_1(padapter))
-> +	switch (lps_ctrl_type) {
-> +	case LPS_CTRL_SCAN:
-> +		rtl8723a_BT_wifiscan_notify(padapter, true);
-> +		if (!rtl8723a_BT_using_antenna_1(padapter)) {
-> +			if (check_fwstate(pmlmepriv, _FW_LINKED))
->  				LPS_Leave23a(padapter);
-
-You are doing more than one thing here, something you did not specify in
-your changelog above, which isn't ok :(
-
-Please fix up and resend.
-
-thanks,
-
-greg k-h
