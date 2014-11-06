@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781AbaKFSzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:55:00 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47102 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613AbaKFSy5 (ORCPT
+	id S1751246AbaKFS4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:56:03 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49001 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaKFSz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:54:57 -0500
-Date: Thu, 6 Nov 2014 11:54:53 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chao Zhou <chao.zhou@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [GIT PULL] PCI fixes for v3.18
-Message-ID: <20141106185453.GA17929@google.com>
+	Thu, 6 Nov 2014 13:55:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+References: <1414898156-4741-1-git-send-email-hannes@cmpxchg.org>
+Date: Thu, 6 Nov 2014 22:55:58 +0400
+Message-ID: <CALYGNiO85ts2J_c8fiYHGDe5gEhb4QMB_HAsST3opdwumUptFg@mail.gmail.com>
+Subject: Re: [patch 1/3] mm: embed the memcg pointer directly into struct page
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Nov 2, 2014 at 6:15 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> Memory cgroups used to have 5 per-page pointers.  To allow users to
+> disable that amount of overhead during runtime, those pointers were
+> allocated in a separate array, with a translation layer between them
+> and struct page.
+>
+> There is now only one page pointer remaining: the memcg pointer, that
+> indicates which cgroup the page is associated with when charged.  The
+> complexity of runtime allocation and the runtime translation overhead
+> is no longer justified to save that *potential* 0.19% of memory.  With
+> CONFIG_SLUB, page->mem_cgroup actually sits in the doubleword padding
+> after the page->private member and doesn't even increase struct page,
+> and then this patch actually saves space.  Remaining users that care
+> can still compile their kernels without CONFIG_MEMCG.
+>
+>    text    data     bss     dec     hex     filename
+> 8828345 1725264  983040 11536649 b00909  vmlinux.old
+> 8827425 1725264  966656 11519345 afc571  vmlinux.new
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-This fixes an oops when enabling SR-IOV VF devices.  The oops is a
-regression I added by configuring all devices during enumeration.
+Great! Never thought I'd see this. =)
 
-Bjorn
+Acked-by: Konstantin Khlebnikov <koct9i@gmail.com>
 
 
-The following changes since commit d8e7d53a2fc14e0830ab728cb84ee19933d3ac8d:
+> ---
+>  include/linux/memcontrol.h  |   6 +-
+>  include/linux/mm_types.h    |   5 +
+>  include/linux/mmzone.h      |  12 --
+>  include/linux/page_cgroup.h |  53 --------
+>  init/main.c                 |   7 -
+>  mm/memcontrol.c             | 124 +++++------------
+>  mm/page_alloc.c             |   2 -
+>  mm/page_cgroup.c            | 319 --------------------------------------------
+>  8 files changed, 41 insertions(+), 487 deletions(-)
+>
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index d4575a1d6e99..dafba59b31b4 100644
 
-  PCI: Rename sysfs 'enabled' file back to 'enable' (2014-10-30 11:17:10 -0600)
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.18-fixes-2
-
-for you to fetch changes up to 32f638fc11db0526c706454d9ab4339d55ac89f3:
-
-  PCI: Don't oops on virtual buses in acpi_pci_get_bridge_handle() (2014-11-05 13:06:16 -0700)
-
-----------------------------------------------------------------
-PCI update for v3.18:
-
-  Enumeration
-    - Don't oops on virtual buses in acpi_pci_get_bridge_handle() (Yinghai Lu)
-
-----------------------------------------------------------------
-Yinghai Lu (1):
-      PCI: Don't oops on virtual buses in acpi_pci_get_bridge_handle()
-
- include/linux/pci-acpi.h | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
