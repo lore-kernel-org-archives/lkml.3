@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaKFXE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:04:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58859 "EHLO
+	id S1753770AbaKFXFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:05:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58836 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaKFWmZ (ORCPT
+	with ESMTP id S1752733AbaKFWmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:25 -0500
+	Thu, 6 Nov 2014 17:42:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 161/162] ACPI / EC: Add support to disallow QR_EC to be issued when SCI_EVT isn't set
-Date: Thu,  6 Nov 2014 14:37:05 -0800
-Message-Id: <1415313426-9622-162-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 107/162] staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
+Date: Thu,  6 Nov 2014 14:36:11 -0800
+Message-Id: <1415313426-9622-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,85 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08 upstream.
+commit 824269c5868d2a7a26417e5ef3841a27d42c6139 upstream.
 
-There is a platform refusing to respond QR_EC when SCI_EVT isn't set
-(Acer Aspire V5-573G).
+In older versions of the IIO framework it was possible to pass a
+completely different set of channels to iio_buffer_register() as the one
+that is assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
+iio_sw_buffer_preenable much more general.") introduced a restriction that
+requires that the set of channels that is passed to iio_buffer_register() is
+a subset of the channels assigned to the IIO device as the IIO core will use
+the list of channels that is assigned to the device to lookup a channel by
+scan index in iio_compute_scan_bytes(). If it can not find the channel the
+function will crash. This patch fixes the issue by making sure that the same
+set of channels is assigned to the IIO device and passed to
+iio_buffer_register().
 
-Currently, we rely on the behaviour that the EC firmware can respond
-something (for example, 0x00 to indicate "no outstanding events") to
-QR_EC even when SCI_EVT is not set, but the reporter has complained
-about AC/battery pluging/unpluging and video brightness change delay
-on that platform.
+Fixes the follow NULL pointer derefernce kernel crash:
+	Unable to handle kernel NULL pointer dereference at virtual address 00000016
+	pgd = d53d0000
+	[00000016] *pgd=1534e831, *pte=00000000, *ppte=00000000
+	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+	Modules linked in:
+	CPU: 1 PID: 1626 Comm: bash Not tainted 3.15.0-19969-g2a180eb-dirty #9545
+	task: d6c124c0 ti: d539a000 task.ti: d539a000
+	PC is at iio_compute_scan_bytes+0x34/0xa8
+	LR is at iio_compute_scan_bytes+0x34/0xa8
+	pc : [<c03052e4>]    lr : [<c03052e4>]    psr: 60070013
+	sp : d539beb8  ip : 00000001  fp : 00000000
+	r10: 00000002  r9 : 00000000  r8 : 00000001
+	r7 : 00000000  r6 : d6dc8800  r5 : d7571000  r4 : 00000002
+	r3 : d7571000  r2 : 00000044  r1 : 00000001  r0 : 00000000
+	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	Control: 18c5387d  Table: 153d004a  DAC: 00000015
+	Process bash (pid: 1626, stack limit = 0xd539a240)
+	Stack: (0xd539beb8 to 0xd539c000)
+	bea0:                                                       c02fc0e4 d7571000
+	bec0: d76c1640 d6dc8800 d757117c 00000000 d757112c c0305b04 d76c1690 d76c1640
+	bee0: d7571188 00000002 00000000 d7571000 d539a000 00000000 000dd1c8 c0305d54
+	bf00: d7571010 0160b868 00000002 c69d3900 d7573278 d7573308 c69d3900 c01ece90
+	bf20: 00000002 c0103fac c0103f6c d539bf88 00000002 c69d3b00 c69d3b0c c0103468
+	bf40: 00000000 00000000 d7694a00 00000002 000af408 d539bf88 c000dd84 c00b2f94
+	bf60: d7694a00 000af408 00000002 d7694a00 d7694a00 00000002 000af408 c000dd84
+	bf80: 00000000 c00b32d0 00000000 00000000 00000002 b6f1aa78 00000002 000af408
+	bfa0: 00000004 c000dc00 b6f1aa78 00000002 00000001 000af408 00000002 00000000
+	bfc0: b6f1aa78 00000002 000af408 00000004 be806a4c 000a6094 00000000 000dd1c8
+	bfe0: 00000000 be8069cc b6e8ab77 b6ec125c 40070010 00000001 22940489 154a5007
+	[<c03052e4>] (iio_compute_scan_bytes) from [<c0305b04>] (__iio_update_buffers+0x248/0x438)
+	[<c0305b04>] (__iio_update_buffers) from [<c0305d54>] (iio_buffer_store_enable+0x60/0x7c)
+	[<c0305d54>] (iio_buffer_store_enable) from [<c01ece90>] (dev_attr_store+0x18/0x24)
+	[<c01ece90>] (dev_attr_store) from [<c0103fac>] (sysfs_kf_write+0x40/0x4c)
+	[<c0103fac>] (sysfs_kf_write) from [<c0103468>] (kernfs_fop_write+0x110/0x154)
+	[<c0103468>] (kernfs_fop_write) from [<c00b2f94>] (vfs_write+0xd0/0x160)
+	[<c00b2f94>] (vfs_write) from [<c00b32d0>] (SyS_write+0x40/0x78)
+	[<c00b32d0>] (SyS_write) from [<c000dc00>] (ret_fast_syscall+0x0/0x30)
+	Code: ea00000e e1a01008 e1a00005 ebfff6fc (e5d0a016)
 
-This is because the work item that has issued QR_EC has to wait until
-timeout in this case, and the _Qxx method evaluation work item queued
-after QR_EC one is delayed.
-
-It sounds reasonable to fix this issue by:
- 1. Implementing SCI_EVT sanity check before issuing QR_EC in the EC
-    driver's main state machine.
- 2. Moving QR_EC issuing out of the work queue used by _Qxx evaluation
-    to a seperate IRQ handling thread.
-
-This patch fixes this issue using solution 1.
-
-By disallowing QR_EC to be issued when SCI_EVT isn't set, we are able to
-handle such platform in the EC driver's main state machine. This patch
-enhances the state machine in this way to survive with such malfunctioning
-EC firmware.
-
-Note that this patch can also fix CLEAR_ON_RESUME quirk which also relies
-on the assumption that the platforms are able to respond even when SCI_EVT
-isn't set.
-
-Fixes: c0d653412fc8 ACPI / EC: Fix race condition in ec_transaction_completed()
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
-Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/staging/iio/impedance-analyzer/ad5933.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 3b20294..aa232a3 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -191,6 +191,8 @@ static bool advance_transaction(struct acpi_ec *ec)
- 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
- 				if (t->rlen == t->ri) {
- 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+					if (t->command == ACPI_EC_COMMAND_QUERY)
-+						pr_debug("hardware QR_EC completion\n");
- 					wakeup = true;
- 				}
- 			} else
-@@ -202,7 +204,20 @@ static bool advance_transaction(struct acpi_ec *ec)
- 		}
- 		return wakeup;
- 	} else {
--		if ((status & ACPI_EC_FLAG_IBF) == 0) {
-+		/*
-+		 * There is firmware refusing to respond QR_EC when SCI_EVT
-+		 * is not set, for which case, we complete the QR_EC
-+		 * without issuing it to the firmware.
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=86211
-+		 */
-+		if (!(status & ACPI_EC_FLAG_SCI) &&
-+		    (t->command == ACPI_EC_COMMAND_QUERY)) {
-+			t->flags |= ACPI_EC_COMMAND_POLL;
-+			t->rdata[t->ri++] = 0x00;
-+			t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+			pr_debug("software QR_EC completion\n");
-+			wakeup = true;
-+		} else if ((status & ACPI_EC_FLAG_IBF) == 0) {
- 			acpi_ec_write_cmd(ec, t->command);
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index 2b96665..3854f99 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -115,6 +115,7 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.channel = 0,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+ 		.address = AD5933_REG_TEMP_DATA,
++		.scan_index = -1,
+ 		.scan_type = {
+ 			.sign = 's',
+ 			.realbits = 14,
+@@ -125,8 +126,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "real_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_REAL_DATA,
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -139,8 +138,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "imag_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_IMAG_DATA,
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -748,14 +745,14 @@ static int ad5933_probe(struct i2c_client *client,
+ 	indio_dev->name = id->name;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	indio_dev->channels = ad5933_channels;
+-	indio_dev->num_channels = 1; /* only register temp0_input */
++	indio_dev->num_channels = ARRAY_SIZE(ad5933_channels);
+ 
+ 	ret = ad5933_register_ring_funcs_and_init(indio_dev);
+ 	if (ret)
+ 		goto error_disable_reg;
+ 
+-	/* skip temp0_input, register in0_(real|imag)_raw */
+-	ret = iio_buffer_register(indio_dev, &ad5933_channels[1], 2);
++	ret = iio_buffer_register(indio_dev, ad5933_channels,
++		ARRAY_SIZE(ad5933_channels));
+ 	if (ret)
+ 		goto error_unreg_ring;
+ 
 -- 
 1.9.1
 
