@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439AbaKFUMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 15:12:03 -0500
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:30056 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaKFULz (ORCPT
+	id S1751454AbaKFUMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 15:12:50 -0500
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:48019 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaKFUMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 15:11:55 -0500
-X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 15:11:55 EST
-X-ME-Helo: beldin
-X-ME-Date: Thu, 06 Nov 2014 21:04:23 +0100
-X-ME-IP: 109.222.82.103
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Daniel Mack <zonque@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 0/3] Transition pxa25x clock to common clocks
-References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
-	<CALT56yOCBN1NAfNw=vThVZ_o=ONGOTvzKHBH5tCTQShJY0wkrQ@mail.gmail.com>
-X-URL: http://belgarath.falguerolles.org/
-Date: Thu, 06 Nov 2014 21:04:21 +0100
-In-Reply-To: <CALT56yOCBN1NAfNw=vThVZ_o=ONGOTvzKHBH5tCTQShJY0wkrQ@mail.gmail.com>
-	(Dmitry Eremin-Solenikov's message of "Thu, 6 Nov 2014 12:45:02
-	+0400")
-Message-ID: <87lhnoxfi2.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	Thu, 6 Nov 2014 15:12:48 -0500
+X-ASG-Debug-ID: 1415304760-0759e711ce1deb30002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Frans Klaver <frans.klaver@xsens.com>, Jiri Slaby <jslaby@suse.cz>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] serial: 8250_core: actually limit char reads to max_count
+Date: Thu, 6 Nov 2014 21:10:17 +0100
+X-ASG-Orig-Subj: [PATCH v2] serial: 8250_core: actually limit char reads to max_count
+Message-ID: <1415304617-14835-1-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1413212951-20901-1-git-send-email-frans.klaver@xsens.com>
+References: <1413212951-20901-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1415304760
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.11303
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
+In serial8250_rx_chars(), max_count is set to 256. Due to the
+post-decrement operator used in the while() condition, the maximum
+number of iterations actually 257. This is not a problem, but it is
+mildly surprising if you're debugging. Use pre-decrement instead.
 
-> Hello,
->
-> Tested in qemu (pxa25x target).
-Excellent.
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+v1..v2: change subject to better reflect the goal of the patch
 
->
-> 0) Had to revert 23c4a3a5212701ad34bd30591fa33d7bacef9c5f to get kernel
-> to build for pxa25x + pxa27x.
-Yes, good move.
+ drivers/tty/serial/8250/8250_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 1) I got the following backtrace early in the boot:
->
-> Division by zero in kernel.
-> CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc2-00011-g7805b78 #97
-> [<c000e028>] (unwind_backtrace) from [<c000c0b4>] (show_stack+0x10/0x14)
-> [<c000c0b4>] (show_stack) from [<c01a3af0>] (Ldiv0+0x8/0x10)
-> [<c01a3af0>] (Ldiv0) from [<c029bb9c>] (clk_pxa25x_memory_get_rate+0x28/0x30)
-> [<c029bb9c>] (clk_pxa25x_memory_get_rate) from [<c029b114>]
-> (clk_composite_recalc_rate+0x20/0x24)
-> [<c029b114>] (clk_composite_recalc_rate) from [<c0299888>]
-> (__clk_init+0x1d0/0x4e8)
-> [<c0299888>] (__clk_init) from [<c0299d24>] (clk_register+0x100/0x1c4)
-> [<c0299d24>] (clk_register) from [<c029b518>]
-> (clk_register_composite+0x17c/0x250)
-> [<c029b518>] (clk_register_composite) from [<c04cecd4>]
-> (pxa25x_clocks_init+0x194/0x240)
-> [<c04cecd4>] (pxa25x_clocks_init) from [<c04c048c>] (pxa_timer_init+0x18/0x64)
-> [<c04c048c>] (pxa_timer_init) from [<c04bde88>] (time_init+0x1c/0x2c)
-> [<c04bde88>] (time_init) from [<c04bbb14>] (start_kernel+0x268/0x3e8)
-> [<c04bbb14>] (start_kernel) from [<a0008040>] (0xa0008040)
->
-> It might be due to something being not emulated properly, but I'd
-> suggest to add a check
-> anyway.
-You're right about that part. According to the specification, the "M" multiplier
-in CCCR can only be 1, 2, or 3. 0 is a reserved value which should never happen,
-and if it happens, hardware is already lost.
-I don't want to be that defensive in this code unless it blocks something for
-good.
-
-> 2) sa1100-rtc could not find a clock and thus failed to be probed.
-Ha I'll check that, thanks.
-
-> 3) Had to patch tc6393xb driver to call
-> clk_prepare_enable/clk_disable_unprepare -
->   will submit a patch shortly.
-Good catch.
-
-> 4) Got an issue with IrDA driver - it gets -ENODEV for UARTCLK clock
-I'll check that too. It's probable I either forgot a clock or mispelled a
-clock.
-
-Thanks for the test Dmitry.
-
-Cheers.
-
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index a06084d..cc9f1a8 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1485,7 +1485,7 @@ serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr)
+ 
+ ignore_char:
+ 		lsr = serial_in(up, UART_LSR);
+-	} while ((lsr & (UART_LSR_DR | UART_LSR_BI)) && (max_count-- > 0));
++	} while ((lsr & (UART_LSR_DR | UART_LSR_BI)) && (--max_count > 0));
+ 	spin_unlock(&port->lock);
+ 	tty_flip_buffer_push(&port->state->port);
+ 	spin_lock(&port->lock);
 -- 
-Robert
+2.1.0
+
