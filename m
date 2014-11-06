@@ -1,102 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaKFQeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:34:19 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:48620 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaKFQeR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:34:17 -0500
-Message-ID: <545BA301.8000709@arm.com>
-Date: Thu, 06 Nov 2014 16:34:09 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751805AbaKFQeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:34:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57104 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762AbaKFQef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:34:35 -0500
+Date: Thu, 6 Nov 2014 17:34:30 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Len Brown <len.brown@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH] perf, amd, ibs: Update IBS MSRs and feature definitions
+Message-ID: <20141106163430.GB4737@pd.tnic>
+References: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [V10 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
- MSI(-X)
-References: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com> <1415052977-26036-3-git-send-email-suravee.suthikulpanit@amd.com> <5458CE31.3040404@linux.intel.com> <545ABB4C.8010103@amd.com> <545ABF6C.1000308@amd.com> <alpine.DEB.2.11.1411060146050.24960@nanos> <alpine.DEB.2.11.1411061131330.24960@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411061131330.24960@nanos>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 06 Nov 2014 16:34:10.0696 (UTC) FILETIME=[7E2D6080:01CFF9DF]
-X-MC-Unique: 114110616341209101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On 06/11/14 10:42, Thomas Gleixner wrote:
-> On Thu, 6 Nov 2014, Thomas Gleixner wrote:
->> On Wed, 5 Nov 2014, Suravee Suthikulanit wrote:
->>> On 11/5/2014 6:05 PM, Suravee Suthikulanit wrote:
->>>> - Overall, it seems that msi_domain_alloc() could be quite different
->>>> across architectures. Would it be possible to declare this function as
->>>> weak, and allow arch to override (similar to arch_setup_msi_irq)?
->>>
->>> Actually, declaring "msi_domain_ops" as non-static, and allow other code to
->>> override the .alloc and .free?
->>
->> Why do you want to do that?
+On Thu, Nov 06, 2014 at 10:26:22AM -0600, Aravind Gopalakrishnan wrote:
+> New Fam15h models carry extra feature bits and extend
+> the MSR register space for IBS ops. Adding them here.
 > 
-> I know why. Because you want to spare a level of hierarchy. But thats
-> wrong simply because MSI itself is an interrupt chip at the device
-> level.
+> While at it, add functionality to read IbsBrTarget and
+> OpData4 depending on their availability if user wants a
+> PERF_SAMPLE_RAW.
 > 
-> [ MSI ] ---> [ GIC-MSI ] ---> [ GIC ]
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Jan Kiszka <jan.kiszka@siemens.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> ---
+>  arch/x86/include/asm/perf_event.h        |  3 +++
+>  arch/x86/include/uapi/asm/msr-index.h    |  2 ++
+>  arch/x86/kernel/cpu/perf_event_amd_ibs.c | 15 +++++++++++++++
+>  3 files changed, 20 insertions(+)
 > 
-> So the MSI level only cares about the allocation of the virq
-> space. GIC-MSI allocates out of the bitmap which handles the hard
-> wired range of MSI capable GIC interrupts and GIC handles the
-> underlying functionality.
+> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+> index 8dfc9fd..dc0f6ed 100644
+> --- a/arch/x86/include/asm/perf_event.h
+> +++ b/arch/x86/include/asm/perf_event.h
+> @@ -177,6 +177,9 @@ struct x86_pmu_capability {
+>  #define IBS_CAPS_BRNTRGT		(1U<<5)
+>  #define IBS_CAPS_OPCNTEXT		(1U<<6)
+>  #define IBS_CAPS_RIPINVALIDCHK		(1U<<7)
+> +#define IBS_CAPS_OPBRNFUSE		(1U<<8)
+> +#define IBS_CAPS_FETCHCTLEXTD		(1U<<9)
+> +#define IBS_CAPS_OPDATA4		(1U<<10)
+>  
+>  #define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
+>  					 | IBS_CAPS_FETCHSAM	\
+> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+> index e21331c..ba7b609 100644
+> --- a/arch/x86/include/uapi/asm/msr-index.h
+> +++ b/arch/x86/include/uapi/asm/msr-index.h
+> @@ -206,6 +206,8 @@
+>  #define MSR_AMD64_IBSOP_REG_MASK	((1UL<<MSR_AMD64_IBSOP_REG_COUNT)-1)
+>  #define MSR_AMD64_IBSCTL		0xc001103a
+>  #define MSR_AMD64_IBSBRTARGET		0xc001103b
+> +#define MSR_AMD64_IBS_FETCH_EXTD_CTL	0xc001103c
+> +#define MSR_AMD64_IBSOPDATA4		0xc001103d
+>  #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
+>  
+>  /* Fam 16h MSRs */
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> index cbb1be3e..a61f5c6 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> @@ -565,6 +565,21 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
+>  				       perf_ibs->offset_max,
+>  				       offset + 1);
+>  	} while (offset < offset_max);
+> +	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
+> +		/*
+> +		 * Read IbsBrTarget and IbsOpData4 separately
+> +		 * depending on their availability.
+> +		 * Can't add to offset_max as they are staggered
+> +		 */
+> +		if (ibs_caps & IBS_CAPS_BRNTRGT) {
+> +			rdmsrl(MSR_AMD64_IBSBRTARGET, *buf++);
+
+Are those MSRs present on everything that supports IBS and if not, you
+probably should do rdmsr_safe() here instead and handle the error case.
+Or do something with f/m/s checking or so...
+
+> +			size++;
+> +		}
+> +		if (ibs_caps & IBS_CAPS_OPDATA4) {
+> +			rdmsrl(MSR_AMD64_IBSOPDATA4, *buf++);
+> +			size++;
+> +		}
+> +	}
+>  	ibs_data.size = sizeof(u64) * size;
+>  
+>  	regs = *iregs;
+> -- 
+> 1.9.1
 > 
-> And this makes a lot of sense, if you think about interrupt
-> remapping. If ARM ever grows that you simply insert it into the chain:
-> 
-> [ MSI ] ---> [ Remap] ---> [ GIC-MSI ] ---> [ GIC ]
 
-I think ARM has reached that stage with the ITS block in GICv3:
-- Each device gets programmed with a set of  "event IDs" ranging from 0
-to N-1, with N being the number of MSI vectors used by the device
-- the ITS uses both the device ID (basically the PCI requester ID) and
-the event ID to parse a set of software-managed tables (think page
-tables for interrupts).
-
-The x86 remapping thing looks quite similar to that, by reading a couple
-of pages from the VT-D document.
-
-So the way I understand the layout (and please correct me if I'm wrong,
-which is certainly the case) is that the MSI domain is entirely generic,
-allocates the virq, uses Remap as a parent, and uses
-irq_chip_compose_msi_msg to call into the parent and generate whatever
-goes into the MSI message.
-
-I'm still struggling a bit to see how the remapping layer can access the
-requester ID. x86 uses the irq_alloc_info to store that (the result of
-an msi_get_hwirq call), but we don't have an equivalent structure on
-arm/arm64.
-
-I'll try to hack something with my current ITS driver and come back with
-the results.
-
-Thanks,
-
-	M.
 -- 
-Jazz is not dead. It just smells funny...
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
