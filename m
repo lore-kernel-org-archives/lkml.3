@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaKFREj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:04:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41200 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695AbaKFQnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753153AbaKFREx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:04:53 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56063 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681AbaKFQnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 11:43:46 -0500
-Message-ID: <1415292194.16601.96.camel@ul30vt.home>
-Subject: Re: [PATCH 2/2] iommu/vt-d: Only remove domain when device is
- removed
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <jroedel@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Myron Stowe <mstowe@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Date: Thu, 06 Nov 2014 09:43:14 -0700
-In-Reply-To: <1415290565.16601.92.camel@ul30vt.home>
-References: <1412074923-6342-1-git-send-email-joro@8bytes.org>
-	 <1412074923-6342-3-git-send-email-joro@8bytes.org>
-	 <1415117537.27420.428.camel@ul30vt.home> <20141106125405.GI8354@suse.de>
-	 <1415290565.16601.92.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH v5 03/48] hibernate: Call have_kernel_power_off instead of checking pm_power_off
+Date: Thu,  6 Nov 2014 08:42:47 -0800
+Message-Id: <1415292213-28652-4-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.545BA541.018E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-06 at 09:16 -0700, Alex Williamson wrote:
-> On Thu, 2014-11-06 at 13:54 +0100, Joerg Roedel wrote:
-> > Hi Alex,
-> > 
-> > On Tue, Nov 04, 2014 at 09:12:17AM -0700, Alex Williamson wrote:
-> > > I haven't tested it, but I'm concerned whether this has introduced a
-> > > domain leak.  If we think about the case of unbinding a device from a
-> > > host driver and attaching it to a domain through the IOMMU API, I think
-> > > we used to count on this path to call domain_exit(), which made the
-> > > domain_context_mapped() in intel_iommu_attach_device() "unlikely".  With
-> > > this change, isn't the test in intel_iommu_attach_device() now neither
-> > > likely nor unlikely and we're only removing the dev_info from the domain
-> > > and not destroying the domain itself?  Thanks,
-> > 
-> > As I see it, there is no leak. The DMA-API domains are kept in the
-> > device_domain_list and re-used when the device driver re-attaches. But
-> > your are right that the unlikely in intel_iommu_attach_device() isn't
-> > true anymore. We could probably remove it.
-> 
-> But the domains are unlinked from device_domain_list using
-> unlink_domain_info() which is called from both domain_remove_dev_info()
-> and domain_remove_one_dev_info() which are both part of that more
-> likely, unlikely branch in intel_iommu_attach_device().  So it seems
-> like any time we switch a device from the DMA-API to the IOMMU-API, we
-> lose the reference to the domain.  Is that incorrect?  I'll try to test.
+Power-off handlers may now be installed with register_power_off_handler.
+Use the new API function have_kernel_power_off to determine if a power-off
+handler has been installed.
 
-Trying the simple approach, a printk in each of alloc_domain() and
-free_domain_mem(), this is what I see when I start and stop a VM with an
-assigned device:
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Len Brown <len.brown@intel.com>
+Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v5:
+- Rebase to v3.18-rc3
+v4:
+- No change
+v3:
+- No change
+v2:
+- have_kernel_poweroff -> have_kernel_power_off
 
-alloc_domain(): ffff8801e22ac000
-free_domain_mem(ffff8801e22ac000)
-alloc_domain(): ffff8801e3425c80
+ kernel/power/hibernate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The IOMMU API domain is alloc'd and free'd, then a new DMA-API domain is
-alloc'd.  There are no frees of the DMA-API domain.  Thanks,
-
-Alex
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 1f35a34..1202cf0 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -608,7 +608,7 @@ static void power_down(void)
+ 	case HIBERNATION_PLATFORM:
+ 		hibernation_platform_enter();
+ 	case HIBERNATION_SHUTDOWN:
+-		if (pm_power_off)
++		if (have_kernel_power_off())
+ 			kernel_power_off();
+ 		break;
+ #ifdef CONFIG_SUSPEND
+-- 
+1.9.1
 
