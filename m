@@ -1,129 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaKFGXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 01:23:22 -0500
-Received: from regular1.263xmail.com ([211.150.99.134]:37267 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaKFGXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 01:23:15 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: linus.walleij@linaro.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <12a75ac8d01a1b3c524e001decd3d0aa>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
-        cf@rock-chips.com, caesar.wang@rock-chips.com,
-        Jack Dai <jack.dai@rock-chips.com>,
-        "jinkun.hong" <jinkun.hong@rock-chips.com>
-Subject: [PATCH v8 2/3] dt-bindings: add document of Rockchip power domain
-Date: Thu,  6 Nov 2014 14:22:40 +0800
-Message-Id: <1415254961-5746-3-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415254961-5746-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1415254961-5746-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1751646AbaKFG0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 01:26:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23866 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768AbaKFG0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 01:26:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,324,1413270000"; 
+   d="scan'208";a="632425766"
+Date: Thu, 6 Nov 2014 11:56:57 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: swarren@wwwdotorg.org, dan.j.williams@intel.com, ldewangan@nvidia.com,
+        thierry.reding@gmail.com, dmaengine@vger.kernel.org,
+        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, kiran.padwal21@gmail.com
+Subject: Re: [PATCH 2/5] DMA: Remove .owner field for driver
+Message-ID: <20141106062657.GU1870@intel.com>
+References: <1411540764-27571-1-git-send-email-kiran.padwal@smartplayin.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411540764-27571-1-git-send-email-kiran.padwal@smartplayin.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
-Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+On Wed, Sep 24, 2014 at 12:09:23PM +0530, Kiran Padwal wrote:
+> There is no need to init .owner field.
+> 
+> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+> "mmc: remove .owner field for drivers using module_platform_driver"
+> 
+> This patch removes the superflous .owner field for drivers which
+> use the module_platform_driver API, as this is overriden in
+> platform_driver_register anyway."
 
----
+Please make sure you use right subsytem name in patches
 
-Changes in v8:
-    - document go back to v2
+Applied with name fix
 
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-    - DT structure has changed
-
-Changes in v2:
-    - move clocks to "optional"
-
- .../bindings/arm/rockchip/power_domain.txt         | 48 ++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt b/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-new file mode 100644
-index 0000000..3e74e6d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-@@ -0,0 +1,48 @@
-+* Rockchip Power Domains
-+
-+Rockchip processors include support for multiple power domains which can be
-+powered up/down by software based on different application scenes to save power.
-+
-+Required properties for power domain controller:
-+- compatible: should be one of the following.
-+    * rockchip,rk3288-power-controller - for rk3288 type power domain.
-+- #power-domain-cells: Number of cells in a power-domain specifier.
-+		       should be 1.
-+- rockchip,pmu: phandle referencing a syscon providing the pmu registers
-+- #address-cells: should be 1.
-+- #size-cells: should be 0.
-+
-+Required properties for power domain sub nodes:
-+- reg: index of the power domain, should use macros in:
-+    *  include/dt-bindings/power-domain/rk3288.h - for rk3288 type power domain.
-+- clocks (optional): phandles to clocks which need to be enabled while power domain
-+          switches state.
-+
-+Example:
-+
-+	power: power-controller {
-+	       compatible = "rockchip,rk3288-power-controller";
-+	       #power-domain-cells = <1>;
-+	       rockchip,pmu = <&pmu>;
-+               #address-cells = <1>;
-+               #size-cells = <0>;
-+
-+	       pd_gpu {
-+	               reg = <RK3288_PD_GPU>;
-+	               clocks = <&cru ACLK_GPU>;
-+	       };
-+	};
-+
-+Node of a device using power domains must have a power-domains property,
-+containing a phandle to the power device node and an index specifying which
-+power domain to use.
-+The index should use macros in:
-+   * include/dt-bindings/power-domain/rk3288.h - for rk3288 type power domain.
-+
-+Example of the node using power domain:
-+
-+	node {
-+		/* ... */
-+		power-domains = <&power RK3288_PD_GPU>;
-+		/* ... */
-+	};
 -- 
-1.9.1
-
-
+~Vinod
