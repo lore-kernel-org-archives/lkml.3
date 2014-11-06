@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaKFRlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:41:06 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:65279 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaKFRlA (ORCPT
+	id S1751866AbaKFRla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:41:30 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45174 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaKFRk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:41:00 -0500
+	Thu, 6 Nov 2014 12:40:58 -0500
 From: dirk.brandewie@gmail.com
 X-Google-Original-From: dirk.j.brandewie@intel.com
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: rjw@rjwysocki.net, dirk.brandweie@gmail.com, robert.a.kasten@intel.com,
         charles.d.prestopine@intel.com, x86@kernel.org,
         Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH 2/2] intel_pstate: Add support for HWP
-Date: Thu,  6 Nov 2014 09:40:47 -0800
-Message-Id: <1415295647-4063-3-git-send-email-dirk.j.brandewie@intel.com>
+Subject: [PATCH 1/2] x86: Add support for Intel HWP feature detection.
+Date: Thu,  6 Nov 2014 09:40:46 -0800
+Message-Id: <1415295647-4063-2-git-send-email-dirk.j.brandewie@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415295647-4063-1-git-send-email-dirk.j.brandewie@intel.com>
 References: <1415295647-4063-1-git-send-email-dirk.j.brandewie@intel.com>
@@ -28,396 +28,49 @@ From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 Add support of Hardware Managed Performance States (HWP) described in Volume 3
 section 14.4 of the SDM.
 
-With HWP enbaled intel_pstate will no longer be responsible for selecting P
-states for the processor. intel_pstate will continue to register to
-the cpufreq core as the scaling driver for CPUs implementing
-HWP. In HWP mode intel_pstate provides three functions reporting
-frequency to the cpufreq core, support for the set_policy() interface
-from the core and maintaining the intel_pstate sysfs interface in
-/sys/devices/system/cpu/intel_pstate.  User preferences expressed via
-the set_policy() interface or the sysfs interface are forwared to the
-CPU via the HWP MSR interface.
+One bit CPUID.06H:EAX[bit 7] expresses the presence of the HWP feature on
+the processor. The remaining bits CPUID.06H:EAX[bit 8-11] denote the
+presense of various HWP features.
 
+Cc: x86@kernel.org
 Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 ---
- Documentation/cpu-freq/intel-pstate.txt |  37 ++++++++----
- Documentation/kernel-parameters.txt     |   3 +
- arch/x86/include/uapi/asm/msr-index.h   |  41 +++++++++++++
- drivers/cpufreq/intel_pstate.c          | 102 +++++++++++++++++++++++++++++++-
- 4 files changed, 168 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/cpufeature.h | 5 +++++
+ arch/x86/kernel/cpu/scattered.c   | 5 +++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
-index a69ffe1..765d7fc 100644
---- a/Documentation/cpu-freq/intel-pstate.txt
-+++ b/Documentation/cpu-freq/intel-pstate.txt
-@@ -1,17 +1,28 @@
- Intel P-state driver
- --------------------
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 0bb1335..aede2c3 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -189,6 +189,11 @@
+ #define X86_FEATURE_DTHERM	( 7*32+ 7) /* Digital Thermal Sensor */
+ #define X86_FEATURE_HW_PSTATE	( 7*32+ 8) /* AMD HW-PState */
+ #define X86_FEATURE_PROC_FEEDBACK ( 7*32+ 9) /* AMD ProcFeedbackInterface */
++#define X86_FEATURE_HWP		( 7*32+ 10) /* "hwp" Intel HWP */
++#define X86_FEATURE_HWP_NOITFY	( 7*32+ 11) /* Intel HWP_NOTIFY */
++#define X86_FEATURE_HWP_ACT_WINDOW ( 7*32+ 12) /* Intel HWP_ACT_WINDOW */
++#define X86_FEATURE_HWP_EPP	( 7*32+13) /* Intel HWP_EPP */
++#define X86_FEATURE_HWP_PKG_REQ ( 7*32+14) /* Intel HWP_PKG_REQ */
  
--This driver implements a scaling driver with an internal governor for
--Intel Core processors.  The driver follows the same model as the
--Transmeta scaling driver (longrun.c) and implements the setpolicy()
--instead of target().  Scaling drivers that implement setpolicy() are
--assumed to implement internal governors by the cpufreq core. All the
--logic for selecting the current P state is contained within the
--driver; no external governor is used by the cpufreq core.
--
--Intel SandyBridge+ processors are supported.
--
--New sysfs files for controlling P state selection have been added to
-+This driver provides an interface to control the P state selection for
-+SandyBridge+ Intel processors.  The driver can operate two different
-+modes based on the processor model legacy and Hardware P state (HWP)
-+mode.
-+
-+In legacy mode the driver implements a scaling driver with an internal
-+governor for Intel Core processors.  The driver follows the same model
-+as the Transmeta scaling driver (longrun.c) and implements the
-+setpolicy() instead of target().  Scaling drivers that implement
-+setpolicy() are assumed to implement internal governors by the cpufreq
-+core. All the logic for selecting the current P state is contained
-+within the driver; no external governor is used by the cpufreq core.
-+
-+In HWP mode P state selection is implemented in the processor
-+itself. The driver provides the interfaces between the cpufreq core and
-+the processor to control P state selection based on user preferences
-+and reporting frequency to the cpufreq core.  In this mode the
-+internal governor code is disabled.
-+
-+In addtion to the interfaces provided by the cpufreq core for
-+controlling frequency the driver provides sysfs files for
-+controlling P state selection. These files have been added to
- /sys/devices/system/cpu/intel_pstate/
- 
-       max_perf_pct: limits the maximum P state that will be requested by
-@@ -33,7 +44,9 @@ frequency is fiction for Intel Core processors. Even if the scaling
- driver selects a single P state the actual frequency the processor
- will run at is selected by the processor itself.
- 
--New debugfs files have also been added to /sys/kernel/debug/pstate_snb/
-+For legacy mode debugfs files have also been added to allow tuning of
-+the internal governor algorythm. These files are located at
-+/sys/kernel/debug/pstate_snb/ These files are NOT present in HWP mode.
- 
-       deadband
-       d_gain_pct
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4c81a86..571f9d2 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1446,6 +1446,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		       disable
- 		         Do not enable intel_pstate as the default
- 		         scaling driver for the supported processors
-+		       no_hwp
-+		         Do not enable hardware P state control (HWP)
-+			 if available.		 
- 
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index e21331c..86dda97 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -152,6 +152,45 @@
- #define MSR_CC6_DEMOTION_POLICY_CONFIG	0x00000668
- #define MSR_MC6_DEMOTION_POLICY_CONFIG	0x00000669
- 
-+/* Hardware P state interface */
-+#define MSR_PPERF			0x0000064e
-+#define MSR_PERF_LIMIT_REASONS		0x0000064f
-+#define MSR_PM_ENABLE			0x00000770
-+#define MSR_HWP_CAPABILITIES		0x00000771
-+#define MSR_HWP_REQUEST_PKG		0x00000772
-+#define MSR_HWP_INTERRUPT		0x00000773
-+#define MSR_HWP_REQUEST 		0x00000774
-+#define MSR_HWP_STATUS			0x00000777
-+
-+/* CPUID.6.EAX */
-+#define HWP_BASE_BIT			(1<<7)
-+#define HWP_NOTIFICATIONS_BIT		(1<<8)
-+#define HWP_ACTIVITY_WINDOW_BIT		(1<<9)
-+#define HWP_ENERGY_PERF_PREFERENCE_BIT	(1<<10)
-+#define HWP_PACKAGE_LEVEL_REQUEST_BIT	(1<<11)
-+
-+/* IA32_HWP_CAPABILITIES */
-+#define HWP_HIGHEST_PERF(x)		(x & 0xff)
-+#define HWP_GUARANTEED_PERF(x)		((x & (0xff << 8)) >>8)
-+#define HWP_MOSTEFFICIENT_PERF(x)	((x & (0xff << 16)) >>16)
-+#define HWP_LOWEST_PERF(x)		((x & (0xff << 24)) >>24)
-+
-+/* IA32_HWP_REQUEST */
-+#define HWP_MIN_PERF(x) 		(x & 0xff)
-+#define HWP_MAX_PERF(x) 		((x & 0xff) << 8) 
-+#define HWP_DESIRED_PERF(x)		((x & 0xff) << 16)
-+#define HWP_ENERGY_PERF_PREFERENCE(x)	((x & 0xff) << 24) 
-+#define HWP_ACTIVITY_WINDOW(x)		((x & 0xff3) << 32) 
-+#define HWP_PACKAGE_CONTROL(x)		((x & 0x1) << 42) 
-+
-+/* IA32_HWP_STATUS */
-+#define HWP_GUARANTEED_CHANGE(x)	(x & 0x1)
-+#define HWP_EXCURSION_TO_MINIMUM(x)	(x & 0x4)
-+
-+/* IA32_HWP_INTERRUPT */
-+#define HWP_CHANGE_TO_GUARANTEED_INT(x)	(x & 0x1)
-+#define HWP_EXCURSION_TO_MINIMUM_INT(x)	(x & 0x2)
-+
- #define MSR_AMD64_MC0_MASK		0xc0010044
- 
- #define MSR_IA32_MCx_CTL(x)		(MSR_IA32_MC0_CTL + 4*(x))
-@@ -345,6 +384,8 @@
- 
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
-+#define MSR_MISC_PWR_MGMT		0x000001aa
-+
- #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
- #define ENERGY_PERF_BIAS_PERFORMANCE	0
- #define ENERGY_PERF_BIAS_NORMAL		6
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 27bb6d3..5d66dc5 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -137,6 +137,7 @@ struct cpu_defaults {
- 
- static struct pstate_adjust_policy pid_params;
- static struct pstate_funcs pstate_funcs;
-+static int hwp_active;
- 
- struct perf_limits {
- 	int no_turbo;
-@@ -244,6 +245,34 @@ static inline void update_turbo_state(void)
- 		 cpu->pstate.max_pstate == cpu->pstate.turbo_pstate);
- }
- 
-+#define PCT_TO_HWP(x) (x * 255 / 100)
-+static void intel_pstate_hwp_set(void)
-+{
-+	int min, max, cpu;
-+	u64 value, freq, pct;
-+ 
-+	get_online_cpus();
-+
-+	for_each_online_cpu(cpu) {
-+		rdmsrl_on_cpu(cpu, MSR_HWP_REQUEST, &value);
-+		min = PCT_TO_HWP(limits.min_perf_pct);
-+		value &= ~HWP_MIN_PERF(~0L);
-+		value |= HWP_MIN_PERF(min);
-+
-+		max = PCT_TO_HWP(limits.max_perf_pct);
-+		if (limits.no_turbo) {
-+			rdmsrl( MSR_HWP_CAPABILITIES, freq);
-+			max = HWP_GUARANTEED_PERF(freq);
-+		}
-+		
-+		value &= ~HWP_MAX_PERF(~0L);
-+		value |= HWP_MAX_PERF(max);
-+		wrmsrl_on_cpu(cpu, MSR_HWP_REQUEST, value);
-+	}
-+
-+	put_online_cpus();
-+}
-+
- /************************** debugfs begin ************************/
- static int pid_param_set(void *data, u64 val)
- {
-@@ -279,6 +308,8 @@ static void __init intel_pstate_debug_expose_params(void)
- 	struct dentry *debugfs_parent;
- 	int i = 0;
- 
-+	if (hwp_active)
-+		return;
- 	debugfs_parent = debugfs_create_dir("pstate_snb", NULL);
- 	if (IS_ERR_OR_NULL(debugfs_parent))
- 		return;
-@@ -329,8 +360,12 @@ static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
- 		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
- 		return -EPERM;
- 	}
-+
- 	limits.no_turbo = clamp_t(int, input, 0, 1);
- 
-+	if (hwp_active)
-+		intel_pstate_hwp_set();
-+
- 	return count;
- }
- 
-@@ -348,6 +383,8 @@ static ssize_t store_max_perf_pct(struct kobject *a, struct attribute *b,
- 	limits.max_perf_pct = min(limits.max_policy_pct, limits.max_sysfs_pct);
- 	limits.max_perf = div_fp(int_tofp(limits.max_perf_pct), int_tofp(100));
- 
-+	if (hwp_active)
-+		intel_pstate_hwp_set();
- 	return count;
- }
- 
-@@ -362,7 +399,9 @@ static ssize_t store_min_perf_pct(struct kobject *a, struct attribute *b,
- 		return -EINVAL;
- 	limits.min_perf_pct = clamp_t(int, input, 0 , 100);
- 	limits.min_perf = div_fp(int_tofp(limits.min_perf_pct), int_tofp(100));
--
-+	
-+	if (hwp_active)
-+		intel_pstate_hwp_set();
- 	return count;
- }
- 
-@@ -395,8 +434,16 @@ static void __init intel_pstate_sysfs_expose_params(void)
- 	rc = sysfs_create_group(intel_pstate_kobject, &intel_pstate_attr_group);
- 	BUG_ON(rc);
- }
--
- /************************** sysfs end ************************/
-+
-+static void intel_pstate_hwp_enable(void)
-+{
-+	hwp_active++; 
-+	pr_info("intel_pstate HWP enabled\n");
-+	
-+	wrmsrl( MSR_PM_ENABLE, 0x1);
-+}
-+
- static int byt_get_min_pstate(void)
- {
- 	u64 value;
-@@ -648,6 +695,14 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
- 	cpu->prev_mperf = mperf;
- }
- 
-+static inline void intel_hwp_set_sample_time(struct cpudata *cpu)
-+{
-+	int delay;
-+
-+	delay = msecs_to_jiffies(50);
-+	mod_timer_pinned(&cpu->timer, jiffies + delay);
-+}
-+
- static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
- {
- 	int delay;
-@@ -694,6 +749,14 @@ static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
- 	intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
- }
- 
-+static void intel_hwp_timer_func(unsigned long __data)
-+{
-+	struct cpudata *cpu = (struct cpudata *) __data;
-+
-+	intel_pstate_sample(cpu);
-+	intel_hwp_set_sample_time(cpu);
-+}
-+
- static void intel_pstate_timer_func(unsigned long __data)
- {
- 	struct cpudata *cpu = (struct cpudata *) __data;
-@@ -737,6 +800,11 @@ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_pstate_cpu_ids);
- 
-+static const struct x86_cpu_id intel_pstate_cpu_oob_ids[] = {
-+	ICPU(0x56, core_params),
-+	{}
-+};
-+
- static int intel_pstate_init_cpu(unsigned int cpunum)
- {
- 	struct cpudata *cpu;
-@@ -753,9 +821,14 @@ static int intel_pstate_init_cpu(unsigned int cpunum)
- 	intel_pstate_get_cpu_pstates(cpu);
- 
- 	init_timer_deferrable(&cpu->timer);
--	cpu->timer.function = intel_pstate_timer_func;
- 	cpu->timer.data = (unsigned long)cpu;
- 	cpu->timer.expires = jiffies + HZ/100;
-+	
-+	if (!hwp_active) {
-+		cpu->timer.function = intel_pstate_timer_func;
-+	} else {
-+		cpu->timer.function = intel_hwp_timer_func;
-+	}
- 	intel_pstate_busy_pid_reset(cpu);
- 	intel_pstate_sample(cpu);
- 
-@@ -792,6 +865,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
- 		limits.no_turbo = 0;
- 		return 0;
- 	}
-+
- 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
- 	limits.min_perf_pct = clamp_t(int, limits.min_perf_pct, 0 , 100);
- 	limits.min_perf = div_fp(int_tofp(limits.min_perf_pct), int_tofp(100));
-@@ -801,6 +875,9 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
- 	limits.max_perf_pct = min(limits.max_policy_pct, limits.max_sysfs_pct);
- 	limits.max_perf = div_fp(int_tofp(limits.max_perf_pct), int_tofp(100));
- 
-+	if (hwp_active)
-+		intel_pstate_hwp_set();
-+
- 	return 0;
- }
- 
-@@ -823,6 +900,9 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
- 	pr_info("intel_pstate CPU %d exiting\n", cpu_num);
- 
- 	del_timer_sync(&all_cpu_data[cpu_num]->timer);
-+	if (hwp_active)
-+		return;
-+
- 	intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
- }
- 
-@@ -866,6 +946,7 @@ static struct cpufreq_driver intel_pstate_driver = {
- };
- 
- static int __initdata no_load;
-+static int __initdata no_hwp;
- 
- static int intel_pstate_msrs_not_valid(void)
- {
-@@ -959,6 +1040,15 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- {
- 	struct acpi_table_header hdr;
- 	struct hw_vendor_info *v_info;
-+	const struct x86_cpu_id *id;
-+	u64 misc_pwr;
-+
-+	id = x86_match_cpu(intel_pstate_cpu_oob_ids);
-+	if (id) {
-+		rdmsrl(MSR_MISC_PWR_MGMT, misc_pwr);
-+		if ( misc_pwr & (1 << 8))
-+			return true;	
-+	}
- 
- 	if (acpi_disabled ||
- 	    ACPI_FAILURE(acpi_get_table_header(ACPI_SIG_FADT, 0, &hdr)))
-@@ -982,6 +1072,7 @@ static int __init intel_pstate_init(void)
- 	int cpu, rc = 0;
- 	const struct x86_cpu_id *id;
- 	struct cpu_defaults *cpu_info;
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
- 
- 	if (no_load)
- 		return -ENODEV;
-@@ -1011,6 +1102,9 @@ static int __init intel_pstate_init(void)
- 	if (!all_cpu_data)
- 		return -ENOMEM;
- 
-+	if (cpu_has(c,X86_FEATURE_HWP) && !no_hwp)
-+		intel_pstate_hwp_enable();
-+	
- 	rc = cpufreq_register_driver(&intel_pstate_driver);
- 	if (rc)
- 		goto out;
-@@ -1041,6 +1135,8 @@ static int __init intel_pstate_setup(char *str)
- 
- 	if (!strcmp(str, "disable"))
- 		no_load = 1;
-+	if (!strcmp(str, "no_hwp"))
-+		no_hwp = 1;
- 	return 0;
- }
- early_param("intel_pstate", intel_pstate_setup);
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  ( 8*32+ 0) /* Intel TPR Shadow */
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index 4a8013d..6063909 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -36,6 +36,11 @@ void init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
+ 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
+ 		{ X86_FEATURE_PTS,		CR_EAX, 6, 0x00000006, 0 },
++		{ X86_FEATURE_HWP,		CR_EAX, 7, 0x00000006, 0 },
++		{ X86_FEATURE_HWP_NOITFY,	CR_EAX, 8, 0x00000006, 0 },
++		{ X86_FEATURE_HWP_ACT_WINDOW,	CR_EAX, 9, 0x00000006, 0 },
++		{ X86_FEATURE_HWP_EPP,		CR_EAX,10, 0x00000006, 0 },
++		{ X86_FEATURE_HWP_PKG_REQ,	CR_EAX,11, 0x00000006, 0 },
+ 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+ 		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
 -- 
 1.9.3
 
