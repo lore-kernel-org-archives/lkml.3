@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaKFIvs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:51:48 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:47337 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaKFIvr (ORCPT
+	id S1751936AbaKFIw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:52:57 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:61374 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaKFIw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:51:47 -0500
-Date: Thu, 6 Nov 2014 09:51:44 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH] drm/panel: s6e8aa0: Update calls to gpiod_get*()
-Message-ID: <20141106085143.GB26297@ulmo>
-References: <1414052218-20157-1-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
-Content-Disposition: inline
-In-Reply-To: <1414052218-20157-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 6 Nov 2014 03:52:56 -0500
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: tc6393xb: prepare/unprepare clocks
+Date: Thu,  6 Nov 2014 11:52:38 +0300
+Message-Id: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Change clk_enable/disable() calls to clk_prepare_enable() and
+clk_disable_unrepapre().
 
---wzJLGUyc3ArbnUjN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/mfd/tc6393xb.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-On Thu, Oct 23, 2014 at 05:16:57PM +0900, Alexandre Courbot wrote:
-> Add the new flags argument to calls of (devm_)gpiod_get*() and
-> remove any direction setting code afterwards.
->=20
-> Currently both forms (with or without the flags argument)
-> are valid thanks to transitional macros in
-> <linux/gpio/consumer.h>. These macros will be removed once
-> all consumers are updated and the flags argument will become
-> compulsary.
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/panel/panel-s6e8aa0.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index 48579e5..abcb4eb 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -665,7 +665,7 @@ static int tc6393xb_probe(struct platform_device *dev)
+ 		goto err_ioremap;
+ 	}
+ 
+-	ret = clk_enable(tc6393xb->clk);
++	ret = clk_prepare_enable(tc6393xb->clk);
+ 	if (ret)
+ 		goto err_clk_enable;
+ 
+@@ -728,7 +728,7 @@ err_gpio_add:
+ 		temp = gpiochip_remove(&tc6393xb->gpio);
+ 	tcpd->disable(dev);
+ err_enable:
+-	clk_disable(tc6393xb->clk);
++	clk_disable_unprepare(tc6393xb->clk);
+ err_clk_enable:
+ 	iounmap(tc6393xb->scr);
+ err_ioremap:
+@@ -764,7 +764,7 @@ static int tc6393xb_remove(struct platform_device *dev)
+ 	}
+ 
+ 	ret = tcpd->disable(dev);
+-	clk_disable(tc6393xb->clk);
++	clk_disable_unprepare(tc6393xb->clk);
+ 	iounmap(tc6393xb->scr);
+ 	release_resource(&tc6393xb->rscr);
+ 	clk_put(tc6393xb->clk);
+@@ -792,7 +792,7 @@ static int tc6393xb_suspend(struct platform_device *dev, pm_message_t state)
+ 			ioread8(tc6393xb->scr + SCR_GPI_BCR(i));
+ 	}
+ 	ret = tcpd->suspend(dev);
+-	clk_disable(tc6393xb->clk);
++	clk_disable_unprepare(tc6393xb->clk);
+ 
+ 	return ret;
+ }
+@@ -804,7 +804,7 @@ static int tc6393xb_resume(struct platform_device *dev)
+ 	int ret;
+ 	int i;
+ 
+-	clk_enable(tc6393xb->clk);
++	clk_prepare_enable(tc6393xb->clk);
+ 
+ 	ret = tcpd->resume(dev);
+ 	if (ret)
+-- 
+2.1.1
 
-Applied, thanks.
-
-Thierry
-
---wzJLGUyc3ArbnUjN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUWzafAAoJEN0jrNd/PrOhwXMP/A9eqzThGTe6yn6wbSuCdR0S
-F+abMyTUL1SP6teL6H5c09K1VIzvoO7v72fyt7kIkq60PhUdDnBt1rMNd/i4j8pa
-q1am5oXC/jnhbMnDk3lTP/Posl2nCBzI03kd3yL11ZOGESWyXdyP99AUwt/wGRd7
-oM4anu780lWkhTmvNfitEtc1VmQZC42MuIRa9kl5svx4xLgnMIWhzhf6KuGluBeH
-6jMGbYam+xk3xmXvLwRSB3dVZJu0UIF9w0jO3cAha/7Jc2MZEzVqrA+ERgqDcrJ0
-NNiqJzs1kgd8VL0AWN4d6UhXJLUclQOjy8FUPtZHlyHS8AKLRG8RUzitvlMbTB4B
-0tqeBZqJpkkrWvFxRpatcdY3lixAUOn3Sw92lChNw0IF4JcfajZC7zZOAMvVBKIw
-ZvabWr+uw5wdSMt+zLp1KBZIhbXrR1tUoJK8Yvys5FUJp0z7MIZpLZS2hpHXh9Ry
-cvvroXEHYD0W6pO/dM2TCpo658JbiBWU6osOCHwiXBs7xlW+qux/X1qpmYrx4sWE
-WR50zlPH3ka3xfNFe5mYn3+xZ6Nn1Agx8T8iuAwWXkflxtTEx5StJZBlZXBFykGI
-ckWooMXPZY/XPkuLo3W5et5rY4aDIT7cdT8qPFFErmXBrySPxIn++7K5y4ENkFhl
-SPnkUO4qy0a/j8/KyZQs
-=8jJy
------END PGP SIGNATURE-----
-
---wzJLGUyc3ArbnUjN--
