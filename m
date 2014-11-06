@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328AbaKFUtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 15:49:08 -0500
-Received: from unicorn.mansr.com ([81.2.72.234]:50671 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706AbaKFUtF convert rfc822-to-8bit (ORCPT
+	id S1751346AbaKFUxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 15:53:49 -0500
+Received: from smtprelay0157.hostedemail.com ([216.40.44.157]:57324 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751088AbaKFUxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 15:49:05 -0500
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Christian Riesch <christian.riesch@omicron.at>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in receive path
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
-	<20141106203832.GB30170@kroah.com>
-Date: Thu, 06 Nov 2014 20:49:01 +0000
-In-Reply-To: <20141106203832.GB30170@kroah.com> (Greg Kroah-Hartman's message
-	of "Thu, 6 Nov 2014 12:38:32 -0800")
-Message-ID: <yw1xwq78jbr6.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Nov 2014 15:53:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:3872:4321:4419:4605:5007:6117:6119:6261:7875:7903:10004:10400:10848:11026:11232:11658:11914:12114:12296:12438:12517:12519:12555:12740:13019:13069:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: birds41_20aaa80dce145
+X-Filterd-Recvd-Size: 2339
+Message-ID: <1415307221.21526.0.camel@perches.com>
+Subject: [PATCH net-next] dccp: Convert DCCP_WARN to net_warn_ratelimited
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gerrit Renker <gerrit@erg.abdn.ac.uk>
+Date: Thu, 06 Nov 2014 12:53:41 -0800
+In-Reply-To: <20141106.151149.1321164537677873976.davem@davemloft.net>
+References: <1415230568.6634.36.camel@perches.com>
+	 <1415230929.6634.38.camel@perches.com>
+	 <20141106.151149.1321164537677873976.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+Remove the dependency on the "warning" sysctl (net_msg_warn)
+which is only used by the LIMIT_NETDEBUG macro.
 
-> On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
->> The current implementation of put_tty_queue() causes a race condition
->> when re-arranged by the compiler.
->> 
->> On my build with gcc 4.8.3, cross-compiling for ARM, the line
->> 
->> 	*read_buf_addr(ldata, ldata->read_head++) = c;
->> 
->> was re-arranged by the compiler to something like
->> 
->> 	x = ldata->read_head
->> 	ldata->read_head++
->> 	*read_buf_addr(ldata, x) = c;
->> 
->> which causes a race condition. Invalid data is read if data is read
->> before it is actually written to the read buffer.
->
-> Really?  A compiler can rearange things like that and expect things to
-> actually work?  How is that valid?
+Convert the LIMIT_NETDEBUG use in DCCP_WARN to the more
+common net_warn_ratelimited mechanism.
 
-This is actually required by the C spec.  There is a sequence point
-before a function call, after the arguments have been evaluated.  Thus
-all side-effects, such as the post-increment, must be complete before
-the function is called, just like in the example.
+This still ratelimits based on the net_ratelimit()
+function, but removes the check for the sysctl.
 
-There is no "re-arranging" here.  The code is simply wrong.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+On Thu, 2014-11-06 at 15:11 -0500, David Miller wrote:
+> Applied, thanks for doing this work Joe.
+No worries.
 
--- 
-Måns Rullgård
-mans@mansr.com
+What about the LIMIT_NETDEBUG stuff now?
+
+Maybe all of them might as well be net_dbg_ratelimited
+even if it changes some of the logging levels.
+
+Probably DCCP_WARN should be net_warn_ratelimited
+so let's start there...
+
+ net/dccp/dccp.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/dccp/dccp.h b/net/dccp/dccp.h
+index c678166..e4c144f 100644
+--- a/net/dccp/dccp.h
++++ b/net/dccp/dccp.h
+@@ -22,8 +22,8 @@
+ /*
+  * 	DCCP - specific warning and debugging macros.
+  */
+-#define DCCP_WARN(fmt, a...) LIMIT_NETDEBUG(KERN_WARNING "%s: " fmt,       \
+-							__func__, ##a)
++#define DCCP_WARN(fmt, ...)						\
++	net_warn_ratelimited("%s: " fmt, __func__, ##__VA_ARGS__)
+ #define DCCP_CRIT(fmt, a...) printk(KERN_CRIT fmt " at %s:%d/%s()\n", ##a, \
+ 					 __FILE__, __LINE__, __func__)
+ #define DCCP_BUG(a...)       do { DCCP_CRIT("BUG: " a); dump_stack(); } while(0)
+
+
+
