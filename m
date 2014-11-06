@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaKFRGC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:06:02 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54105 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558AbaKFRF7 (ORCPT
+	id S1752136AbaKFRIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:08:07 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38820 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaKFRIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:05:59 -0500
-Date: Thu, 6 Nov 2014 17:05:48 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "ghackmann@google.com" <ghackmann@google.com>,
-        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
-        Serban Constantinescu <Serban.Constantinescu@arm.com>,
-        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/1] arm64: Fix /proc/cpuinfo
-Message-ID: <20141106170548.GF19702@e104818-lin.cambridge.arm.com>
-References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
- <20141106164311.GD19702@e104818-lin.cambridge.arm.com>
- <20141106165430.GH31605@arm.com>
+	Thu, 6 Nov 2014 12:08:04 -0500
+From: Frediano Ziglio <frediano.ziglio@huawei.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, <frediano.ziglio@huawei.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xen/arm: Return correct code error for xen_swiotlb_map_page
+Date: Thu, 6 Nov 2014 17:07:31 +0000
+Message-ID: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106165430.GH31605@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.47.66.28]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 04:54:31PM +0000, Will Deacon wrote:
-> On Thu, Nov 06, 2014 at 04:43:12PM +0000, Catalin Marinas wrote:
-> > On Fri, Oct 24, 2014 at 02:56:39PM +0100, Mark Rutland wrote:
-> > > [d] Print different hwcaps dependent on the personality.
-> > > 
-> > >     This would allow for 32-bit and 64-bit applications to function
-> > >     correctly, but for some 32-bit applications the personality would
-> > >     need to be set explicitly by the user.
-> > 
-> > Which makes this option actually in line with the uname -m behaviour. My
-> > vote goes for [d] with option [b] as a close alternative.
-> > 
-> > > [1] arm, v3.17, Versatile Express A15x2 A7x3 coretile
-> > > Features        : half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm 
-> > [...]
-> > > [2] arm64, v3.17, Juno platform
-> > > Features        : fp asimd evtstrm aes pmull sha1 sha2 crc32 
-> > 
-> > As an exercise, I'm trying to see what option [b] would look like when
-> > CONFIG_COMPAT is enabled:
-> > 
-> > Features        : fp asimd evtstrm aes pmull sha1 sha2 crc32 half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae
-> > 
-> > The duplicate strings would only be listed once (evtstrm, aes, pmull,
-> > sha1, sha2, crc32). New AArch64 features that we may expect to be
-> > optional on AArch32 could be prefixed with "a64". If they are missing
-> > entirely from AArch32, (like asimd), no need for the prefix.
-> > 
-> > The advantage is that we don't need to check the personality but we have
-> > to assume that scripts would not search for substrings (sane people
-> > shouldn't do this anyway as the Features string can always be extended).
-> 
-> And a big disadvantage is that I can imagine AArch64 applications checking
-> for "neon" instead of "asimd", which will break if they're run under kernels
-> without COMPAT support enabled.
+On ARM error code is not 0 so avoid to return it as error.
 
-That's because they do stupid things and I they probably deserve to
-break ;). But I agree, there is a risk.
+Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
+---
+ drivers/xen/swiotlb-xen.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> So I'm inclined to stick with Mark's patch as it is.
-
-If we don't hear otherwise, I propose sometime next week we queue Mark's
-patch for -next.
-
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index ebd8f21..3b8d628 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 */
+ 	if (!dma_capable(dev, dev_addr, size)) {
+ 		swiotlb_tbl_unmap_single(dev, map, size, dir);
+-		dev_addr = 0;
++		dev_addr = DMA_ERROR_CODE;
+ 	}
+ 	return dev_addr;
+ }
 -- 
-Catalin
+1.9.1
+
+
