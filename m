@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaKFMmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:42:39 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:36637 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaKFMmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:42:19 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH RESEND 3.18-rc3 v2 2/2] trace: kdb: Fix kernel livelock with empty buffers
-Date: Thu,  6 Nov 2014 12:41:56 +0000
-Message-Id: <1415277716-19419-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
-References: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
- <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
+	id S1751516AbaKFMmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:42:52 -0500
+Received: from 8bytes.org ([81.169.241.247]:49039 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141AbaKFMmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:42:50 -0500
+Date: Thu, 6 Nov 2014 13:42:48 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oded.Gabbay@amd.com, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH] iommu/amd: Use new invalidate_range mmu-notifier
+Message-ID: <20141106124248.GM10744@8bytes.org>
+References: <1415277608-23688-1-git-send-email-joro@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415277608-23688-1-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kdb's ftdump command will livelock by constantly printk'ing
-the empty string at KERN_EMERG level if it run when the ftrace system is
-not in use. This occurs because trace_empty() never returns false when
-the ring buffers are left at the start of a non-consuming read [launched
-by ring_buffer_read_start()].
+Hey Andrew,
 
-This patch changes the loop exit condition to use the result of
-trace_find_next_entry_inc(). Effectively this switches the non-consuming
-kdb dumper to follow the approach of the non-consuming userspace
-interface [s_next()] rather than the consuming ftrace_dump().
+On Thu, Nov 06, 2014 at 01:40:08PM +0100, Joerg Roedel wrote:
+> From: Joerg Roedel <jroedel@suse.de>
+> 
+> Make use of the new invalidate_range mmu_notifier call-back
+> and remove the old logic of assigning an empty page-table
+> between invalidate_range_start and invalidate_range_end.
+> 
+> Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> ---
+>  drivers/iommu/amd_iommu_v2.c | 61 +++++++-------------------------------------
+>  1 file changed, 9 insertions(+), 52 deletions(-)
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kdb.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+This patch depends on the mmu_notifier_invalidate_range patches in your
+mm-tree. It converts the AMD IOMMUv2 driver to make use of it and is
+tested by AMD. Can you please carry this patch in the mm-tree too?
 
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index 8faa7ce..b0b1c44 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -59,19 +59,19 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
- 		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
- 		tracing_iter_reset(&iter, cpu_file);
- 	}
--	if (!trace_empty(&iter))
--		trace_find_next_entry_inc(&iter);
--	while (!trace_empty(&iter)) {
-+
-+	while (trace_find_next_entry_inc(&iter)) {
- 		if (!cnt)
- 			kdb_printf("---------------------------------\n");
- 		cnt++;
- 
--		if (trace_find_next_entry_inc(&iter) != NULL && !skip_lines)
-+		if (!skip_lines) {
- 			print_trace_line(&iter);
--		if (!skip_lines)
- 			trace_printk_seq(&iter.seq);
--		else
-+		} else {
- 			skip_lines--;
-+		}
-+
- 		if (KDB_FLAG(CMD_INTERRUPT))
- 			goto out;
- 	}
--- 
-1.9.3
+Thanks,
+
+	Joerg
 
