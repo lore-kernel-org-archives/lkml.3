@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaKFWrC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:47:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59170 "EHLO
+	id S1753494AbaKFWr3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:47:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59161 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361AbaKFWo3 (ORCPT
+	with ESMTP id S1753304AbaKFWo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:29 -0500
+	Thu, 6 Nov 2014 17:44:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Hellstrom <daniel@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/162] sparc32: dma_alloc_coherent must honour gfp flags
-Date: Thu,  6 Nov 2014 14:34:54 -0800
-Message-Id: <1415313426-9622-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 076/162] drm/radeon: use gart memory for DMA ring tests
+Date: Thu,  6 Nov 2014 14:35:40 -0800
+Message-Id: <1415313426-9622-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,49 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Hellstrom <daniel@gaisler.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-[ Upstream commit d1105287aabe88dbb3af825140badaa05cf0442c ]
+commit adfed2b0587289013f8143c54913ddfd44ac1fd3 upstream.
 
-dma_zalloc_coherent() calls dma_alloc_coherent(__GFP_ZERO)
-but the sparc32 implementations sbus_alloc_coherent() and
-pci32_alloc_coherent() doesn't take the gfp flags into
-account.
+Avoids HDP cache flush issues when using vram which can
+cause ring test failures on certain boards.
 
-Tested on the SPARC32/LEON GRETH Ethernet driver which fails
-due to dma_alloc_coherent(__GFP_ZERO) returns non zeroed
-pages.
-
-Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Alexander Fyodorov <halcy@yandex.ru>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/kernel/ioport.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/cik_sdma.c | 21 ++++++++++++---------
+ drivers/gpu/drm/radeon/r600_dma.c | 21 ++++++++++++---------
+ drivers/gpu/drm/radeon/radeon.h   |  2 ++
+ 3 files changed, 26 insertions(+), 18 deletions(-)
 
-diff --git a/arch/sparc/kernel/ioport.c b/arch/sparc/kernel/ioport.c
-index e7e215d..c2d81ad 100644
---- a/arch/sparc/kernel/ioport.c
-+++ b/arch/sparc/kernel/ioport.c
-@@ -278,7 +278,8 @@ static void *sbus_alloc_coherent(struct device *dev, size_t len,
+diff --git a/drivers/gpu/drm/radeon/cik_sdma.c b/drivers/gpu/drm/radeon/cik_sdma.c
+index 9fd95c7..376502d 100644
+--- a/drivers/gpu/drm/radeon/cik_sdma.c
++++ b/drivers/gpu/drm/radeon/cik_sdma.c
+@@ -508,16 +508,19 @@ int cik_sdma_ring_test(struct radeon_device *rdev,
+ {
+ 	unsigned i;
+ 	int r;
+-	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
++	unsigned index;
+ 	u32 tmp;
++	u64 gpu_addr;
+ 
+-	if (!ptr) {
+-		DRM_ERROR("invalid vram scratch pointer\n");
+-		return -EINVAL;
+-	}
++	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
++		index = R600_WB_DMA_RING_TEST_OFFSET;
++	else
++		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
++
++	gpu_addr = rdev->wb.gpu_addr + index;
+ 
+ 	tmp = 0xCAFEDEAD;
+-	writel(tmp, ptr);
++	rdev->wb.wb[index/4] = cpu_to_le32(tmp);
+ 
+ 	r = radeon_ring_lock(rdev, ring, 5);
+ 	if (r) {
+@@ -525,14 +528,14 @@ int cik_sdma_ring_test(struct radeon_device *rdev,
+ 		return r;
  	}
+ 	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_WRITE, SDMA_WRITE_SUB_OPCODE_LINEAR, 0));
+-	radeon_ring_write(ring, rdev->vram_scratch.gpu_addr & 0xfffffffc);
+-	radeon_ring_write(ring, upper_32_bits(rdev->vram_scratch.gpu_addr) & 0xffffffff);
++	radeon_ring_write(ring, lower_32_bits(gpu_addr));
++	radeon_ring_write(ring, upper_32_bits(gpu_addr));
+ 	radeon_ring_write(ring, 1); /* number of DWs to follow */
+ 	radeon_ring_write(ring, 0xDEADBEEF);
+ 	radeon_ring_unlock_commit(rdev, ring);
  
- 	order = get_order(len_total);
--	if ((va = __get_free_pages(GFP_KERNEL|__GFP_COMP, order)) == 0)
-+	va = __get_free_pages(gfp, order);
-+	if (va == 0)
- 		goto err_nopages;
+ 	for (i = 0; i < rdev->usec_timeout; i++) {
+-		tmp = readl(ptr);
++		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
+ 		if (tmp == 0xDEADBEEF)
+ 			break;
+ 		DRM_UDELAY(1);
+diff --git a/drivers/gpu/drm/radeon/r600_dma.c b/drivers/gpu/drm/radeon/r600_dma.c
+index 616d37a..cf5e181 100644
+--- a/drivers/gpu/drm/radeon/r600_dma.c
++++ b/drivers/gpu/drm/radeon/r600_dma.c
+@@ -227,16 +227,19 @@ int r600_dma_ring_test(struct radeon_device *rdev,
+ {
+ 	unsigned i;
+ 	int r;
+-	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
++	unsigned index;
+ 	u32 tmp;
++	u64 gpu_addr;
  
- 	if ((res = kzalloc(sizeof(struct resource), GFP_KERNEL)) == NULL)
-@@ -443,7 +444,7 @@ static void *pci32_alloc_coherent(struct device *dev, size_t len,
+-	if (!ptr) {
+-		DRM_ERROR("invalid vram scratch pointer\n");
+-		return -EINVAL;
+-	}
++	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
++		index = R600_WB_DMA_RING_TEST_OFFSET;
++	else
++		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
++
++	gpu_addr = rdev->wb.gpu_addr + index;
+ 
+ 	tmp = 0xCAFEDEAD;
+-	writel(tmp, ptr);
++	rdev->wb.wb[index/4] = cpu_to_le32(tmp);
+ 
+ 	r = radeon_ring_lock(rdev, ring, 4);
+ 	if (r) {
+@@ -244,13 +247,13 @@ int r600_dma_ring_test(struct radeon_device *rdev,
+ 		return r;
  	}
+ 	radeon_ring_write(ring, DMA_PACKET(DMA_PACKET_WRITE, 0, 0, 1));
+-	radeon_ring_write(ring, rdev->vram_scratch.gpu_addr & 0xfffffffc);
+-	radeon_ring_write(ring, upper_32_bits(rdev->vram_scratch.gpu_addr) & 0xff);
++	radeon_ring_write(ring, lower_32_bits(gpu_addr));
++	radeon_ring_write(ring, upper_32_bits(gpu_addr) & 0xff);
+ 	radeon_ring_write(ring, 0xDEADBEEF);
+ 	radeon_ring_unlock_commit(rdev, ring);
  
- 	order = get_order(len_total);
--	va = (void *) __get_free_pages(GFP_KERNEL, order);
-+	va = (void *) __get_free_pages(gfp, order);
- 	if (va == NULL) {
- 		printk("pci_alloc_consistent: no %ld pages\n", len_total>>PAGE_SHIFT);
- 		goto err_nopages;
+ 	for (i = 0; i < rdev->usec_timeout; i++) {
+-		tmp = readl(ptr);
++		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
+ 		if (tmp == 0xDEADBEEF)
+ 			break;
+ 		DRM_UDELAY(1);
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index fd2526c..ee3be48 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -1081,6 +1081,8 @@ struct radeon_wb {
+ #define R600_WB_EVENT_OFFSET     3072
+ #define CIK_WB_CP1_WPTR_OFFSET     3328
+ #define CIK_WB_CP2_WPTR_OFFSET     3584
++#define R600_WB_DMA_RING_TEST_OFFSET 3588
++#define CAYMAN_WB_DMA1_RING_TEST_OFFSET 3592
+ 
+ /**
+  * struct radeon_pm - power management datas
 -- 
 1.9.1
 
