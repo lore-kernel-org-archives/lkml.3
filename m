@@ -1,333 +1,1077 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075AbaKFXFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:05:51 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:52075 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393AbaKFXFo (ORCPT
+	id S1754093AbaKFXFy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:05:54 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:53260 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390AbaKFXFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 18:05:44 -0500
+	Thu, 6 Nov 2014 18:05:43 -0500
 From: Konrad Zapalowicz <bergo.torino@gmail.com>
 To: gregkh@linuxfoundation.org, jslaby@suse.cz, cascardo@linux.vnet.ibm.com,
         markh@compro.net
 Cc: lidza.louina@gmail.com, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-serial@vger.kernel.org,
         Konrad Zapalowicz <bergo.torino@gmail.com>
-Subject: [PATCH v2 2/4] drivers: serial: jsm: Enable support for Digi Classic adapters
-Date: Fri,  7 Nov 2014 00:05:33 +0100
-Message-Id: <1415315135-29716-3-git-send-email-bergo.torino@gmail.com>
+Subject: [PATCH v2 1/4] drivers: serial: jsm: Add the Classic board implementation
+Date: Fri,  7 Nov 2014 00:05:32 +0100
+Message-Id: <1415315135-29716-2-git-send-email-bergo.torino@gmail.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415315135-29716-2-git-send-email-bergo.torino@gmail.com>
+In-Reply-To: <1415315135-29716-1-git-send-email-bergo.torino@gmail.com>
 References: <20141106191808.GA32427@kroah.com>
  <1415315135-29716-1-git-send-email-bergo.torino@gmail.com>
- <1415315135-29716-2-git-send-email-bergo.torino@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit enables support for the Digi Classic adapters line in the
-jsm driver. This means changes in:
-	- device probing code
-	- device cleanup code
-	- driver description (Kconfig)
+This commit adds the Digi Classic board implementation to the
+staging/jsm driver.
 
-The init/cleanup code is based on the staging/dgnc driver.
+The code here is taken from the staging/dgnc driver and modified to
+match the serial/jsm state. This work is mostly based on the changes
+that has been done to the code handling the Digi Neo cards with the
+inspiration coming from the diff between staging/dgnc and serial/jsm
+as well as the LKML history for the jsm_neo.c
+
+The code compiles now and has no sparse and checkpatch errors or
+warnings.
 
 Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
 ---
- drivers/tty/serial/Kconfig          |   4 +-
- drivers/tty/serial/jsm/jsm.h        |   4 +
- drivers/tty/serial/jsm/jsm_driver.c | 151 ++++++++++++++++++++++++++++--------
- drivers/tty/serial/jsm/jsm_tty.c    |   2 +
- 4 files changed, 128 insertions(+), 33 deletions(-)
+ drivers/tty/serial/jsm/Makefile  |   2 +-
+ drivers/tty/serial/jsm/jsm.h     |   3 +-
+ drivers/tty/serial/jsm/jsm_cls.c | 990 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 993 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/tty/serial/jsm/jsm_cls.c
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 649b784..da6570f 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1029,11 +1029,11 @@ config SERIAL_VR41XX_CONSOLE
- 	  a console on a serial port, say Y.  Otherwise, say N.
+diff --git a/drivers/tty/serial/jsm/Makefile b/drivers/tty/serial/jsm/Makefile
+index e46b6e0..705d1ff 100644
+--- a/drivers/tty/serial/jsm/Makefile
++++ b/drivers/tty/serial/jsm/Makefile
+@@ -4,5 +4,5 @@
  
- config SERIAL_JSM
--	tristate "Digi International NEO PCI Support"
-+	tristate "Digi International NEO and Classic PCI Support"
- 	depends on PCI
- 	select SERIAL_CORE
- 	help
--	  This is a driver for Digi International's Neo series
-+	  This is a driver for Digi International's Neo and Classic series
- 	  of cards which provide multiple serial ports. You would need
- 	  something like this to connect more than two modems to your Linux
- 	  box, for instance in order to become a dial-in server. This driver
+ obj-$(CONFIG_SERIAL_JSM) += jsm.o
+ 
+-jsm-objs :=    jsm_driver.o jsm_neo.o jsm_tty.o
++jsm-objs :=    jsm_driver.o jsm_neo.o jsm_tty.o jsm_cls.o
+ 
 diff --git a/drivers/tty/serial/jsm/jsm.h b/drivers/tty/serial/jsm/jsm.h
-index 3094282..662523d 100644
+index 9861639..3094282 100644
 --- a/drivers/tty/serial/jsm/jsm.h
 +++ b/drivers/tty/serial/jsm/jsm.h
-@@ -68,6 +68,10 @@ do {								\
- #define MAX_STOPS_SENT	5
+@@ -189,7 +189,7 @@ struct jsm_board
+ #define CH_LOOPBACK 0x2000		/* Channel is in lookback mode	*/
+ #define CH_BAUD0	0x08000		/* Used for checking B0 transitions */
  
- /* Board ids */
-+#define PCI_DEVICE_ID_CLASSIC_4		0x0028
-+#define PCI_DEVICE_ID_CLASSIC_8		0x0029
-+#define PCI_DEVICE_ID_CLASSIC_4_422	0x00D0
-+#define PCI_DEVICE_ID_CLASSIC_8_422	0x00D1
- #define PCI_DEVICE_ID_NEO_4             0x00B0
- #define PCI_DEVICE_ID_NEO_1_422         0x00CC
- #define PCI_DEVICE_ID_NEO_1_422_485     0x00CD
-diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
-index d2885a7..0927ddf 100644
---- a/drivers/tty/serial/jsm/jsm_driver.c
-+++ b/drivers/tty/serial/jsm/jsm_driver.c
-@@ -31,8 +31,7 @@
- #include "jsm.h"
+-/* Our Read/Error/Write queue sizes */
++/* Our Read/Error queue sizes */
+ #define RQUEUEMASK	0x1FFF		/* 8 K - 1 */
+ #define EQUEUEMASK	0x1FFF		/* 8 K - 1 */
+ #define RQUEUESIZE	(RQUEUEMASK + 1)
+@@ -431,6 +431,7 @@ struct neo_uart_struct {
+  */
+ extern struct	uart_driver jsm_uart_driver;
+ extern struct	board_ops jsm_neo_ops;
++extern struct	board_ops jsm_cls_ops;
+ extern int	jsm_debug;
  
- MODULE_AUTHOR("Digi International, http://www.digi.com");
--MODULE_DESCRIPTION("Driver for the Digi International "
--		   "Neo PCI based product line");
-+MODULE_DESCRIPTION("Driver for the Digi International Neo and Classic PCI based product line");
- MODULE_LICENSE("GPL");
- MODULE_SUPPORTED_DEVICE("jsm");
- 
-@@ -50,7 +49,7 @@ struct uart_driver jsm_uart_driver = {
- };
- 
- static pci_ers_result_t jsm_io_error_detected(struct pci_dev *pdev,
--                                       pci_channel_state_t state);
-+					pci_channel_state_t state);
- static pci_ers_result_t jsm_io_slot_reset(struct pci_dev *pdev);
- static void jsm_io_resume(struct pci_dev *pdev);
- 
-@@ -68,7 +67,7 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	int rc = 0;
- 	struct jsm_board *brd;
--	static int adapter_count = 0;
-+	static int adapter_count;
- 
- 	rc = pci_enable_device(pdev);
- 	if (rc) {
-@@ -82,10 +81,8 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		goto out_disable_device;
- 	}
- 
--	brd = kzalloc(sizeof(struct jsm_board), GFP_KERNEL);
-+	brd = kzalloc(sizeof(*brd), GFP_KERNEL);
- 	if (!brd) {
--		dev_err(&pdev->dev,
--			"memory allocation for board structure failed\n");
- 		rc = -ENOMEM;
- 		goto out_release_regions;
- 	}
-@@ -95,7 +92,6 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	brd->pci_dev = pdev;
- 
- 	switch (pdev->device) {
--
- 	case PCI_DEVICE_ID_NEO_2DB9:
- 	case PCI_DEVICE_ID_NEO_2DB9PRI:
- 	case PCI_DEVICE_ID_NEO_2RJ45:
-@@ -104,6 +100,8 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		brd->maxports = 2;
- 		break;
- 
-+	case PCI_DEVICE_ID_CLASSIC_4:
-+	case PCI_DEVICE_ID_CLASSIC_4_422:
- 	case PCI_DEVICE_ID_NEO_4:
- 	case PCIE_DEVICE_ID_NEO_4:
- 	case PCIE_DEVICE_ID_NEO_4RJ45:
-@@ -111,6 +109,8 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		brd->maxports = 4;
- 		break;
- 
-+	case PCI_DEVICE_ID_CLASSIC_8:
-+	case PCI_DEVICE_ID_CLASSIC_8_422:
- 	case PCI_DEVICE_ID_DIGI_NEO_8:
- 	case PCIE_DEVICE_ID_NEO_8:
- 	case PCIE_DEVICE_ID_NEO_8RJ45:
-@@ -129,36 +129,109 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	brd->irq = pdev->irq;
- 
--	jsm_dbg(INIT, &brd->pci_dev, "jsm_found_board - NEO adapter\n");
-+	switch (pdev->device) {
-+	case PCI_DEVICE_ID_CLASSIC_4:
-+	case PCI_DEVICE_ID_CLASSIC_4_422:
-+	case PCI_DEVICE_ID_CLASSIC_8:
-+	case PCI_DEVICE_ID_CLASSIC_8_422:
+ /*************************************************************************
+diff --git a/drivers/tty/serial/jsm/jsm_cls.c b/drivers/tty/serial/jsm/jsm_cls.c
+new file mode 100644
+index 0000000..b3a508d
+--- /dev/null
++++ b/drivers/tty/serial/jsm/jsm_cls.c
+@@ -0,0 +1,990 @@
++/*
++ * Copyright 2003 Digi International (www.digi.com)
++ *	Scott H Kilau <Scott_Kilau at digi dot com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
++ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
++ * PURPOSE.  See the GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ *
++ *	NOTE TO LINUX KERNEL HACKERS:  DO NOT REFORMAT THIS CODE!
++ *
++ *	This is shared code between Digi's CVS archive and the
++ *	Linux Kernel sources.
++ *	Changing the source just for reformatting needlessly breaks
++ *	our CVS diff history.
++ *
++ *	Send any bug fixes/changes to:  Eng.Linux at digi dot com.
++ *	Thank you.
++ *
++ */
 +
-+		jsm_dbg(INIT, &brd->pci_dev,
-+			"jsm_found_board - Classic adapter\n");
++#include <linux/delay.h>	/* For udelay */
++#include <linux/io.h>		/* For read[bwl]/write[bwl] */
++#include <linux/serial.h>	/* For struct async_serial */
++#include <linux/serial_reg.h>	/* For the various UART offsets */
++#include <linux/pci.h>
++#include <linux/tty.h>
++
++#include "jsm.h"	/* Driver main header file */
++
++static struct {
++	unsigned int rate;
++	unsigned int cflag;
++} baud_rates[] = {
++	{ 921600, B921600 },
++	{ 460800, B460800 },
++	{ 230400, B230400 },
++	{ 115200, B115200 },
++	{  57600, B57600  },
++	{  38400, B38400  },
++	{  19200, B19200  },
++	{   9600, B9600   },
++	{   4800, B4800   },
++	{   2400, B2400   },
++	{   1200, B1200   },
++	{    600, B600    },
++	{    300, B300    },
++	{    200, B200    },
++	{    150, B150    },
++	{    134, B134    },
++	{    110, B110    },
++	{     75, B75     },
++	{     50, B50     },
++};
++
++static void cls_set_cts_flow_control(struct jsm_channel *ch)
++{
++	u8 lcrb = readb(&ch->ch_cls_uart->lcr);
++	u8 ier = readb(&ch->ch_cls_uart->ier);
++	u8 isr_fcr = 0;
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn on CTS flow control, turn off IXON flow control */
++	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_CTSDSR);
++	isr_fcr &= ~(UART_EXAR654_EFR_IXON);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/*
++	 * Enable interrupts for CTS flow, turn off interrupts for
++	 * received XOFF chars
++	 */
++	ier |= (UART_EXAR654_IER_CTSDSR);
++	ier &= ~(UART_EXAR654_IER_XOFF);
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	/* Set the usual FIFO values */
++	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_56 |
++		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
++		&ch->ch_cls_uart->isr_fcr);
++
++	ch->ch_t_tlevel = 16;
++}
++
++static void cls_set_ixon_flow_control(struct jsm_channel *ch)
++{
++	u8 lcrb = readb(&ch->ch_cls_uart->lcr);
++	u8 ier = readb(&ch->ch_cls_uart->ier);
++	u8 isr_fcr = 0;
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn on IXON flow control, turn off CTS flow control */
++	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_IXON);
++	isr_fcr &= ~(UART_EXAR654_EFR_CTSDSR);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Now set our current start/stop chars while in enhanced mode */
++	writeb(ch->ch_startc, &ch->ch_cls_uart->mcr);
++	writeb(0, &ch->ch_cls_uart->lsr);
++	writeb(ch->ch_stopc, &ch->ch_cls_uart->msr);
++	writeb(0, &ch->ch_cls_uart->spr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/*
++	 * Disable interrupts for CTS flow, turn on interrupts for
++	 * received XOFF chars
++	 */
++	ier &= ~(UART_EXAR654_IER_CTSDSR);
++	ier |= (UART_EXAR654_IER_XOFF);
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	/* Set the usual FIFO values */
++	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
++		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
++		&ch->ch_cls_uart->isr_fcr);
++}
++
++static void cls_set_no_output_flow_control(struct jsm_channel *ch)
++{
++	u8 lcrb = readb(&ch->ch_cls_uart->lcr);
++	u8 ier = readb(&ch->ch_cls_uart->ier);
++	u8 isr_fcr = 0;
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn off IXON flow control, turn off CTS flow control */
++	isr_fcr |= (UART_EXAR654_EFR_ECB);
++	isr_fcr &= ~(UART_EXAR654_EFR_CTSDSR | UART_EXAR654_EFR_IXON);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/*
++	 * Disable interrupts for CTS flow, turn off interrupts for
++	 * received XOFF chars
++	 */
++	ier &= ~(UART_EXAR654_IER_CTSDSR);
++	ier &= ~(UART_EXAR654_IER_XOFF);
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	/* Set the usual FIFO values */
++	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
++		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
++		&ch->ch_cls_uart->isr_fcr);
++
++	ch->ch_r_watermark = 0;
++	ch->ch_t_tlevel = 16;
++	ch->ch_r_tlevel = 16;
++}
++
++static void cls_set_rts_flow_control(struct jsm_channel *ch)
++{
++	u8 lcrb = readb(&ch->ch_cls_uart->lcr);
++	u8 ier = readb(&ch->ch_cls_uart->ier);
++	u8 isr_fcr = 0;
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn on RTS flow control, turn off IXOFF flow control */
++	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_RTSDTR);
++	isr_fcr &= ~(UART_EXAR654_EFR_IXOFF);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/* Enable interrupts for RTS flow */
++	ier |= (UART_EXAR654_IER_RTSDTR);
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	/* Set the usual FIFO values */
++	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_56 |
++		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
++		&ch->ch_cls_uart->isr_fcr);
++
++	ch->ch_r_watermark = 4;
++	ch->ch_r_tlevel = 8;
++}
++
++static void cls_set_ixoff_flow_control(struct jsm_channel *ch)
++{
++	u8 lcrb = readb(&ch->ch_cls_uart->lcr);
++	u8 ier = readb(&ch->ch_cls_uart->ier);
++	u8 isr_fcr = 0;
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn on IXOFF flow control, turn off RTS flow control */
++	isr_fcr |= (UART_EXAR654_EFR_ECB | UART_EXAR654_EFR_IXOFF);
++	isr_fcr &= ~(UART_EXAR654_EFR_RTSDTR);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Now set our current start/stop chars while in enhanced mode */
++	writeb(ch->ch_startc, &ch->ch_cls_uart->mcr);
++	writeb(0, &ch->ch_cls_uart->lsr);
++	writeb(ch->ch_stopc, &ch->ch_cls_uart->msr);
++	writeb(0, &ch->ch_cls_uart->spr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/* Disable interrupts for RTS flow */
++	ier &= ~(UART_EXAR654_IER_RTSDTR);
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	/* Set the usual FIFO values */
++	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
++		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
++		&ch->ch_cls_uart->isr_fcr);
++}
++
++static void cls_set_no_input_flow_control(struct jsm_channel *ch)
++{
++	u8 lcrb = readb(&ch->ch_cls_uart->lcr);
++	u8 ier = readb(&ch->ch_cls_uart->ier);
++	u8 isr_fcr = 0;
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn off IXOFF flow control, turn off RTS flow control */
++	isr_fcr |= (UART_EXAR654_EFR_ECB);
++	isr_fcr &= ~(UART_EXAR654_EFR_RTSDTR | UART_EXAR654_EFR_IXOFF);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/* Disable interrupts for RTS flow */
++	ier &= ~(UART_EXAR654_IER_RTSDTR);
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	/* Set the usual FIFO values */
++	writeb((UART_FCR_ENABLE_FIFO), &ch->ch_cls_uart->isr_fcr);
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_16654_FCR_RXTRIGGER_16 |
++		UART_16654_FCR_TXTRIGGER_16 | UART_FCR_CLEAR_RCVR),
++		&ch->ch_cls_uart->isr_fcr);
++
++	ch->ch_t_tlevel = 16;
++	ch->ch_r_tlevel = 16;
++}
++
++/*
++ * cls_clear_break.
++ * Determines whether its time to shut off break condition.
++ *
++ * No locks are assumed to be held when calling this function.
++ * channel lock is held and released in this function.
++ */
++static void cls_clear_break(struct jsm_channel *ch, int force)
++{
++	unsigned long lock_flags;
++
++	spin_lock_irqsave(&ch->ch_lock, lock_flags);
++
++	/* Turn break off, and unset some variables */
++	if (ch->ch_flags & CH_BREAK_SENDING) {
++		u8 temp = readb(&ch->ch_cls_uart->lcr);
++
++		writeb((temp & ~UART_LCR_SBC), &ch->ch_cls_uart->lcr);
++
++		ch->ch_flags &= ~(CH_BREAK_SENDING);
++		jsm_dbg(IOCTL, &ch->ch_bd->pci_dev,
++			"clear break Finishing UART_LCR_SBC! finished: %lx\n",
++			jiffies);
++	}
++	spin_unlock_irqrestore(&ch->ch_lock, lock_flags);
++}
++
++static void cls_disable_receiver(struct jsm_channel *ch)
++{
++	u8 tmp = readb(&ch->ch_cls_uart->ier);
++
++	tmp &= ~(UART_IER_RDI);
++	writeb(tmp, &ch->ch_cls_uart->ier);
++}
++
++static void cls_enable_receiver(struct jsm_channel *ch)
++{
++	u8 tmp = readb(&ch->ch_cls_uart->ier);
++
++	tmp |= (UART_IER_RDI);
++	writeb(tmp, &ch->ch_cls_uart->ier);
++}
++
++/* Make the UART raise any of the output signals we want up */
++static void cls_assert_modem_signals(struct jsm_channel *ch)
++{
++	if (!ch)
++		return;
++
++	writeb(ch->ch_mostat, &ch->ch_cls_uart->mcr);
++}
++
++static void cls_copy_data_from_uart_to_queue(struct jsm_channel *ch)
++{
++	int qleft = 0;
++	u8 linestatus = 0;
++	u8 error_mask = 0;
++	u16 head;
++	u16 tail;
++	unsigned long flags;
++
++	if (!ch)
++		return;
++
++	spin_lock_irqsave(&ch->ch_lock, flags);
++
++	/* cache head and tail of queue */
++	head = ch->ch_r_head & RQUEUEMASK;
++	tail = ch->ch_r_tail & RQUEUEMASK;
++
++	/* Get our cached LSR */
++	linestatus = ch->ch_cached_lsr;
++	ch->ch_cached_lsr = 0;
++
++	/* Store how much space we have left in the queue */
++	qleft = tail - head - 1;
++	if (qleft < 0)
++		qleft += RQUEUEMASK + 1;
++
++	/*
++	 * Create a mask to determine whether we should
++	 * insert the character (if any) into our queue.
++	 */
++	if (ch->ch_c_iflag & IGNBRK)
++		error_mask |= UART_LSR_BI;
++
++	while (1) {
++		/*
++		 * Grab the linestatus register, we need to
++		 * check to see if there is any data to read
++		 */
++		linestatus = readb(&ch->ch_cls_uart->lsr);
++
++		/* Break out if there is no data to fetch */
++		if (!(linestatus & UART_LSR_DR))
++			break;
 +
 +		/*
-+		 * For PCI ClassicBoards
-+		 * PCI Local Address (.i.e. "resource" number) space
-+		 * 0	PLX Memory Mapped Config
-+		 * 1	PLX I/O Mapped Config
-+		 * 2	I/O Mapped UARTs and Status
-+		 * 3	Memory Mapped VPD
-+		 * 4	Memory Mapped UARTs and Status
++		 * Discard character if we are ignoring the error mask
++		 * which in this case is the break signal.
 +		 */
++		if (linestatus & error_mask)  {
++			u8 discard;
 +
-+		/* Get the PCI Base Address Registers */
-+		brd->membase = pci_resource_start(pdev, 4);
-+		brd->membase_end = pci_resource_end(pdev, 4);
-+
-+		if (brd->membase & 0x1)
-+			brd->membase &= ~0x3;
-+		else
-+			brd->membase &= ~0xF;
-+
-+		brd->iobase = pci_resource_start(pdev, 1);
-+		brd->iobase_end = pci_resource_end(pdev, 1);
-+		brd->iobase = ((unsigned int)(brd->iobase)) & 0xFFFE;
-+
-+		/* Assign the board_ops struct */
-+		brd->bd_ops = &jsm_cls_ops;
-+
-+		brd->bd_uart_offset = 0x8;
-+		brd->bd_dividend = 921600;
-+
-+		brd->re_map_membase = ioremap(brd->membase,
-+						pci_resource_len(pdev, 4));
-+		if (!brd->re_map_membase) {
-+			dev_err(&pdev->dev,
-+				"Card has no PCI Memory resources, failing board.\n");
-+			rc = -ENOMEM;
-+			goto out_kfree_brd;
++			linestatus = 0;
++			discard = readb(&ch->ch_cls_uart->txrx);
++			continue;
 +		}
- 
--	/* get the PCI Base Address Registers */
--	brd->membase	= pci_resource_start(pdev, 0);
--	brd->membase_end = pci_resource_end(pdev, 0);
++
 +		/*
-+		 * Enable Local Interrupt 1			(0x1),
-+		 * Local Interrupt 1 Polarity Active high	(0x2),
-+		 * Enable PCI interrupt				(0x43)
++		 * If our queue is full, we have no choice but to drop some
++		 * data. The assumption is that HWFLOW or SWFLOW should have
++		 * stopped things way way before we got to this point.
++		 *
++		 * I decided that I wanted to ditch the oldest data first,
++		 * I hope thats okay with everyone? Yes? Good.
 +		 */
-+		outb(0x43, brd->iobase + 0x4c);
- 
--	if (brd->membase & 1)
--		brd->membase &= ~3;
--	else
--		brd->membase &= ~15;
-+		break;
- 
--	/* Assign the board_ops struct */
--	brd->bd_ops = &jsm_neo_ops;
-+	case PCI_DEVICE_ID_NEO_2DB9:
-+	case PCI_DEVICE_ID_NEO_2DB9PRI:
-+	case PCI_DEVICE_ID_NEO_2RJ45:
-+	case PCI_DEVICE_ID_NEO_2RJ45PRI:
-+	case PCI_DEVICE_ID_NEO_2_422_485:
-+	case PCI_DEVICE_ID_NEO_4:
-+	case PCIE_DEVICE_ID_NEO_4:
-+	case PCIE_DEVICE_ID_NEO_4RJ45:
-+	case PCIE_DEVICE_ID_NEO_4_IBM:
-+	case PCI_DEVICE_ID_DIGI_NEO_8:
-+	case PCIE_DEVICE_ID_NEO_8:
-+	case PCIE_DEVICE_ID_NEO_8RJ45:
- 
--	brd->bd_uart_offset = 0x200;
--	brd->bd_dividend = 921600;
-+		jsm_dbg(INIT, &brd->pci_dev, "jsm_found_board - NEO adapter\n");
- 
--	brd->re_map_membase = ioremap(brd->membase, pci_resource_len(pdev, 0));
--	if (!brd->re_map_membase) {
--		dev_err(&pdev->dev,
--			"card has no PCI Memory resources, "
--			"failing board.\n");
--		rc = -ENOMEM;
--		goto out_kfree_brd;
-+		/* get the PCI Base Address Registers */
-+		brd->membase	= pci_resource_start(pdev, 0);
-+		brd->membase_end = pci_resource_end(pdev, 0);
-+
-+		if (brd->membase & 1)
-+			brd->membase &= ~0x3;
-+		else
-+			brd->membase &= ~0xF;
-+
-+		/* Assign the board_ops struct */
-+		brd->bd_ops = &jsm_neo_ops;
-+
-+		brd->bd_uart_offset = 0x200;
-+		brd->bd_dividend = 921600;
-+
-+		brd->re_map_membase = ioremap(brd->membase,
-+						pci_resource_len(pdev, 0));
-+		if (!brd->re_map_membase) {
-+			dev_err(&pdev->dev,
-+				"Card has no PCI Memory resources, failing board.\n");
-+			rc = -ENOMEM;
-+			goto out_kfree_brd;
++		while (qleft < 1) {
++			tail = (tail + 1) & RQUEUEMASK;
++			ch->ch_r_tail = tail;
++			ch->ch_err_overrun++;
++			qleft++;
 +		}
 +
++		ch->ch_equeue[head] = linestatus & (UART_LSR_BI | UART_LSR_PE
++								 | UART_LSR_FE);
++		ch->ch_rqueue[head] = readb(&ch->ch_cls_uart->txrx);
++
++		qleft--;
++
++		if (ch->ch_equeue[head] & UART_LSR_PE)
++			ch->ch_err_parity++;
++		if (ch->ch_equeue[head] & UART_LSR_BI)
++			ch->ch_err_break++;
++		if (ch->ch_equeue[head] & UART_LSR_FE)
++			ch->ch_err_frame++;
++
++		/* Add to, and flip head if needed */
++		head = (head + 1) & RQUEUEMASK;
++		ch->ch_rxcount++;
++	}
++
++	/*
++	 * Write new final heads to channel structure.
++	 */
++	ch->ch_r_head = head & RQUEUEMASK;
++	ch->ch_e_head = head & EQUEUEMASK;
++
++	spin_unlock_irqrestore(&ch->ch_lock, flags);
++}
++
++static void cls_copy_data_from_queue_to_uart(struct jsm_channel *ch)
++{
++	u16 tail;
++	int n;
++	int qlen;
++	u32 len_written = 0;
++	struct circ_buf *circ;
++
++	if (!ch)
++		return;
++
++	circ = &ch->uart_port.state->xmit;
++
++	/* No data to write to the UART */
++	if (uart_circ_empty(circ))
++		return;
++
++	/* If port is "stopped", don't send any data to the UART */
++	if ((ch->ch_flags & CH_STOP) || (ch->ch_flags & CH_BREAK_SENDING))
++		return;
++
++	/* We have to do it this way, because of the EXAR TXFIFO count bug. */
++	if (!(ch->ch_flags & (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM)))
++		return;
++
++	n = 32;
++
++	/* cache tail of queue */
++	tail = circ->tail & (UART_XMIT_SIZE - 1);
++	qlen = uart_circ_chars_pending(circ);
++
++	/* Find minimum of the FIFO space, versus queue length */
++	n = min(n, qlen);
++
++	while (n > 0) {
++		writeb(circ->buf[tail], &ch->ch_cls_uart->txrx);
++		tail = (tail + 1) & (UART_XMIT_SIZE - 1);
++		n--;
++		ch->ch_txcount++;
++		len_written++;
++	}
++
++	/* Update the final tail */
++	circ->tail = tail & (UART_XMIT_SIZE - 1);
++
++	if (len_written > ch->ch_t_tlevel)
++		ch->ch_flags &= ~(CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
++
++	if (uart_circ_empty(circ))
++		uart_write_wakeup(&ch->uart_port);
++}
++
++static void cls_parse_modem(struct jsm_channel *ch, u8 signals)
++{
++	u8 msignals = signals;
++
++	jsm_dbg(MSIGS, &ch->ch_bd->pci_dev,
++		"neo_parse_modem: port: %d msignals: %x\n",
++		ch->ch_portnum, msignals);
++
++	/*
++	 * Scrub off lower bits.
++	 * They signify delta's, which I don't care about
++	 * Keep DDCD and DDSR though
++	 */
++	msignals &= 0xf8;
++
++	if (msignals & UART_MSR_DDCD)
++		uart_handle_dcd_change(&ch->uart_port, msignals & UART_MSR_DCD);
++	if (msignals & UART_MSR_DDSR)
++		uart_handle_dcd_change(&ch->uart_port, msignals & UART_MSR_CTS);
++
++	if (msignals & UART_MSR_DCD)
++		ch->ch_mistat |= UART_MSR_DCD;
++	else
++		ch->ch_mistat &= ~UART_MSR_DCD;
++
++	if (msignals & UART_MSR_DSR)
++		ch->ch_mistat |= UART_MSR_DSR;
++	else
++		ch->ch_mistat &= ~UART_MSR_DSR;
++
++	if (msignals & UART_MSR_RI)
++		ch->ch_mistat |= UART_MSR_RI;
++	else
++		ch->ch_mistat &= ~UART_MSR_RI;
++
++	if (msignals & UART_MSR_CTS)
++		ch->ch_mistat |= UART_MSR_CTS;
++	else
++		ch->ch_mistat &= ~UART_MSR_CTS;
++
++	jsm_dbg(MSIGS, &ch->ch_bd->pci_dev,
++		"Port: %d DTR: %d RTS: %d CTS: %d DSR: %d " "RI: %d CD: %d\n",
++		ch->ch_portnum,
++		!!((ch->ch_mistat | ch->ch_mostat) & UART_MCR_DTR),
++		!!((ch->ch_mistat | ch->ch_mostat) & UART_MCR_RTS),
++		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_CTS),
++		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_DSR),
++		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_RI),
++		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_DCD));
++}
++
++/* Parse the ISR register for the specific port */
++static inline void cls_parse_isr(struct jsm_board *brd, uint port)
++{
++	struct jsm_channel *ch;
++	u8 isr = 0;
++	unsigned long flags;
++
++	/*
++	 * No need to verify board pointer, it was already
++	 * verified in the interrupt routine.
++	 */
++
++	if (port > brd->nasync)
++		return;
++
++	ch = brd->channels[port];
++	if (!ch)
++		return;
++
++	/* Here we try to figure out what caused the interrupt to happen */
++	while (1) {
++		isr = readb(&ch->ch_cls_uart->isr_fcr);
++
++		/* Bail if no pending interrupt on port */
++		if (isr & UART_IIR_NO_INT)
++			break;
++
++		/* Receive Interrupt pending */
++		if (isr & (UART_IIR_RDI | UART_IIR_RDI_TIMEOUT)) {
++			/* Read data from uart -> queue */
++			cls_copy_data_from_uart_to_queue(ch);
++			jsm_check_queue_flow_control(ch);
++		}
++
++		/* Transmit Hold register empty pending */
++		if (isr & UART_IIR_THRI) {
++			/* Transfer data (if any) from Write Queue -> UART. */
++			spin_lock_irqsave(&ch->ch_lock, flags);
++			ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
++			spin_unlock_irqrestore(&ch->ch_lock, flags);
++			cls_copy_data_from_queue_to_uart(ch);
++		}
++
++		/*
++		 * CTS/RTS change of state:
++		 * Don't need to do anything, the cls_parse_modem
++		 * below will grab the updated modem signals.
++		 */
++
++		/* Parse any modem signal changes */
++		cls_parse_modem(ch, readb(&ch->ch_cls_uart->msr));
++	}
++}
++
++/* Channel lock MUST be held before calling this function! */
++static void cls_flush_uart_write(struct jsm_channel *ch)
++{
++	u8 tmp = 0;
++	u8 i = 0;
++
++	if (!ch)
++		return;
++
++	writeb((UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_XMIT),
++						&ch->ch_cls_uart->isr_fcr);
++
++	for (i = 0; i < 10; i++) {
++		/* Check to see if the UART feels it completely flushed FIFO */
++		tmp = readb(&ch->ch_cls_uart->isr_fcr);
++		if (tmp & UART_FCR_CLEAR_XMIT) {
++			jsm_dbg(IOCTL, &ch->ch_bd->pci_dev,
++				"Still flushing TX UART... i: %d\n", i);
++			udelay(10);
++		} else
++			break;
++	}
++
++	ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
++}
++
++/* Channel lock MUST be held before calling this function! */
++static void cls_flush_uart_read(struct jsm_channel *ch)
++{
++	if (!ch)
++		return;
++
++	/*
++	 * For complete POSIX compatibility, we should be purging the
++	 * read FIFO in the UART here.
++	 *
++	 * However, clearing the read FIFO (UART_FCR_CLEAR_RCVR) also
++	 * incorrectly flushes write data as well as just basically trashing the
++	 * FIFO.
++	 *
++	 * Presumably, this is a bug in this UART.
++	 */
++
++	udelay(10);
++}
++
++static void cls_send_start_character(struct jsm_channel *ch)
++{
++	if (!ch)
++		return;
++
++	if (ch->ch_startc != __DISABLED_CHAR) {
++		ch->ch_xon_sends++;
++		writeb(ch->ch_startc, &ch->ch_cls_uart->txrx);
++	}
++}
++
++static void cls_send_stop_character(struct jsm_channel *ch)
++{
++	if (!ch)
++		return;
++
++	if (ch->ch_stopc != __DISABLED_CHAR) {
++		ch->ch_xoff_sends++;
++		writeb(ch->ch_stopc, &ch->ch_cls_uart->txrx);
++	}
++}
++
++/*
++ * cls_param()
++ * Send any/all changes to the line to the UART.
++ */
++static void cls_param(struct jsm_channel *ch)
++{
++	u8 lcr = 0;
++	u8 uart_lcr = 0;
++	u8 ier = 0;
++	u32 baud = 9600;
++	int quot = 0;
++	struct jsm_board *bd;
++	int i;
++	unsigned int cflag;
++
++	bd = ch->ch_bd;
++	if (!bd)
++		return;
++
++	/*
++	 * If baud rate is zero, flush queues, and set mval to drop DTR.
++	 */
++	if ((ch->ch_c_cflag & (CBAUD)) == 0) {
++		ch->ch_r_head = 0;
++		ch->ch_r_tail = 0;
++		ch->ch_e_head = 0;
++		ch->ch_e_tail = 0;
++
++		cls_flush_uart_write(ch);
++		cls_flush_uart_read(ch);
++
++		/* The baudrate is B0 so all modem lines are to be dropped. */
++		ch->ch_flags |= (CH_BAUD0);
++		ch->ch_mostat &= ~(UART_MCR_RTS | UART_MCR_DTR);
++		cls_assert_modem_signals(ch);
++		return;
++	}
++
++	cflag = C_BAUD(ch->uart_port.state->port.tty);
++	baud = 9600;
++	for (i = 0; i < ARRAY_SIZE(baud_rates); i++) {
++		if (baud_rates[i].cflag == cflag) {
++			baud = baud_rates[i].rate;
++			break;
++		}
++	}
++
++	if (ch->ch_flags & CH_BAUD0)
++		ch->ch_flags &= ~(CH_BAUD0);
++
++	if (ch->ch_c_cflag & PARENB)
++		lcr |= UART_LCR_PARITY;
++
++	if (!(ch->ch_c_cflag & PARODD))
++		lcr |= UART_LCR_EPAR;
++
++	/*
++	 * Not all platforms support mark/space parity,
++	 * so this will hide behind an ifdef.
++	 */
++#ifdef CMSPAR
++	if (ch->ch_c_cflag & CMSPAR)
++		lcr |= UART_LCR_SPAR;
++#endif
++
++	if (ch->ch_c_cflag & CSTOPB)
++		lcr |= UART_LCR_STOP;
++
++	switch (ch->ch_c_cflag & CSIZE) {
++	case CS5:
++		lcr |= UART_LCR_WLEN5;
 +		break;
-+	default:
-+		return -ENXIO;
- 	}
- 
--	rc = request_irq(brd->irq, brd->bd_ops->intr,
--			IRQF_SHARED, "JSM", brd);
-+	rc = request_irq(brd->irq, brd->bd_ops->intr, IRQF_SHARED, "JSM", brd);
- 	if (rc) {
--		printk(KERN_WARNING "Failed to hook IRQ %d\n",brd->irq);
-+		dev_warn(&pdev->dev, "Failed to hook IRQ %d\n", brd->irq);
- 		goto out_iounmap;
- 	}
- 
-@@ -178,7 +251,7 @@ static int jsm_probe_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	}
- 
- 	/* Log the information about the board */
--	dev_info(&pdev->dev, "board %d: Digi Neo (rev %d), irq %d\n",
-+	dev_info(&pdev->dev, "board %d: Digi Classic/Neo (rev %d), irq %d\n",
- 			adapter_count, brd->rev, brd->irq);
- 
- 	pci_set_drvdata(pdev, brd);
-@@ -205,6 +278,18 @@ static void jsm_remove_one(struct pci_dev *pdev)
- 	struct jsm_board *brd = pci_get_drvdata(pdev);
- 	int i = 0;
- 
-+	switch (pdev->device) {
-+	case PCI_DEVICE_ID_CLASSIC_4:
-+	case PCI_DEVICE_ID_CLASSIC_4_422:
-+	case PCI_DEVICE_ID_CLASSIC_8:
-+	case PCI_DEVICE_ID_CLASSIC_8_422:
-+		/* Tell card not to interrupt anymore. */
-+		outb(0x0, brd->iobase + 0x4c);
++	case CS6:
++		lcr |= UART_LCR_WLEN6;
 +		break;
++	case CS7:
++		lcr |= UART_LCR_WLEN7;
++		break;
++	case CS8:
 +	default:
++		lcr |= UART_LCR_WLEN8;
 +		break;
 +	}
 +
- 	jsm_remove_uart_port(brd);
- 
- 	free_irq(brd->irq, brd);
-@@ -239,6 +324,10 @@ static struct pci_device_id jsm_pci_tbl[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCIE_DEVICE_ID_NEO_4), 0, 0, 11 },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCIE_DEVICE_ID_NEO_4RJ45), 0, 0, 12 },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCIE_DEVICE_ID_NEO_8RJ45), 0, 0, 13 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_CLASSIC_4), 0, 0, 14 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_CLASSIC_4_422), 0, 0, 15 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_CLASSIC_8), 0, 0, 16 },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_CLASSIC_8_422), 0, 0, 17 },
- 	{ 0, }
- };
- MODULE_DEVICE_TABLE(pci, jsm_pci_tbl);
-diff --git a/drivers/tty/serial/jsm/jsm_tty.c b/drivers/tty/serial/jsm/jsm_tty.c
-index 3e5c156..f9b1fbd 100644
---- a/drivers/tty/serial/jsm/jsm_tty.c
-+++ b/drivers/tty/serial/jsm/jsm_tty.c
-@@ -415,6 +415,8 @@ int jsm_tty_init(struct jsm_board *brd)
- 
- 		if (brd->bd_uart_offset == 0x200)
- 			ch->ch_neo_uart =  vaddr + (brd->bd_uart_offset * i);
++	ier = readb(&ch->ch_cls_uart->ier);
++	uart_lcr = readb(&ch->ch_cls_uart->lcr);
++
++	if (baud == 0)
++		baud = 9600;
++
++	quot = ch->ch_bd->bd_dividend / baud;
++
++	if (quot != 0) {
++		writeb(UART_LCR_DLAB, &ch->ch_cls_uart->lcr);
++		writeb((quot & 0xff), &ch->ch_cls_uart->txrx);
++		writeb((quot >> 8), &ch->ch_cls_uart->ier);
++		writeb(lcr, &ch->ch_cls_uart->lcr);
++	}
++
++	if (uart_lcr != lcr)
++		writeb(lcr, &ch->ch_cls_uart->lcr);
++
++	if (ch->ch_c_cflag & CREAD)
++		ier |= (UART_IER_RDI | UART_IER_RLSI);
++
++	ier |= (UART_IER_THRI | UART_IER_MSI);
++
++	writeb(ier, &ch->ch_cls_uart->ier);
++
++	if (ch->ch_c_cflag & CRTSCTS)
++		cls_set_cts_flow_control(ch);
++	else if (ch->ch_c_iflag & IXON) {
++		/*
++		 * If start/stop is set to disable,
++		 * then we should disable flow control.
++		 */
++		if ((ch->ch_startc == __DISABLED_CHAR) ||
++			(ch->ch_stopc == __DISABLED_CHAR))
++			cls_set_no_output_flow_control(ch);
 +		else
-+			ch->ch_cls_uart =  vaddr + (brd->bd_uart_offset * i);
- 
- 		ch->ch_bd = brd;
- 		ch->ch_portnum = i;
++			cls_set_ixon_flow_control(ch);
++	} else
++		cls_set_no_output_flow_control(ch);
++
++	if (ch->ch_c_cflag & CRTSCTS)
++		cls_set_rts_flow_control(ch);
++	else if (ch->ch_c_iflag & IXOFF) {
++		/*
++		 * If start/stop is set to disable,
++		 * then we should disable flow control.
++		 */
++		if ((ch->ch_startc == __DISABLED_CHAR) ||
++			(ch->ch_stopc == __DISABLED_CHAR))
++			cls_set_no_input_flow_control(ch);
++		else
++			cls_set_ixoff_flow_control(ch);
++	} else
++		cls_set_no_input_flow_control(ch);
++
++	cls_assert_modem_signals(ch);
++
++	/* get current status of the modem signals now */
++	cls_parse_modem(ch, readb(&ch->ch_cls_uart->msr));
++}
++
++/*
++ * cls_intr()
++ *
++ * Classic specific interrupt handler.
++ */
++static irqreturn_t cls_intr(int irq, void *voidbrd)
++{
++	struct jsm_board *brd = voidbrd;
++	unsigned long lock_flags;
++	unsigned char uart_poll;
++	uint i = 0;
++
++	/* Lock out the slow poller from running on this board. */
++	spin_lock_irqsave(&brd->bd_intr_lock, lock_flags);
++
++	/*
++	 * Check the board's global interrupt offset to see if we
++	 * acctually do have an interrupt pending on us.
++	 */
++	uart_poll = readb(brd->re_map_membase + UART_CLASSIC_POLL_ADDR_OFFSET);
++
++	jsm_dbg(INTR, &brd->pci_dev, "%s:%d uart_poll: %x\n",
++		__FILE__, __LINE__, uart_poll);
++
++	if (!uart_poll) {
++		jsm_dbg(INTR, &brd->pci_dev,
++			"Kernel interrupted to me, but no pending interrupts...\n");
++		spin_unlock_irqrestore(&brd->bd_intr_lock, lock_flags);
++		return IRQ_NONE;
++	}
++
++	/* At this point, we have at least SOMETHING to service, dig further. */
++
++	/* Parse each port to find out what caused the interrupt */
++	for (i = 0; i < brd->nasync; i++)
++		cls_parse_isr(brd, i);
++
++	spin_unlock_irqrestore(&brd->bd_intr_lock, lock_flags);
++
++	return IRQ_HANDLED;
++}
++
++/* Inits UART */
++static void cls_uart_init(struct jsm_channel *ch)
++{
++	unsigned char lcrb = readb(&ch->ch_cls_uart->lcr);
++	unsigned char isr_fcr = 0;
++
++	writeb(0, &ch->ch_cls_uart->ier);
++
++	/*
++	 * The Enhanced Register Set may only be accessed when
++	 * the Line Control Register is set to 0xBFh.
++	 */
++	writeb(UART_EXAR654_ENHANCED_REGISTER_SET, &ch->ch_cls_uart->lcr);
++
++	isr_fcr = readb(&ch->ch_cls_uart->isr_fcr);
++
++	/* Turn on Enhanced/Extended controls */
++	isr_fcr |= (UART_EXAR654_EFR_ECB);
++
++	writeb(isr_fcr, &ch->ch_cls_uart->isr_fcr);
++
++	/* Write old LCR value back out, which turns enhanced access off */
++	writeb(lcrb, &ch->ch_cls_uart->lcr);
++
++	/* Clear out UART and FIFO */
++	readb(&ch->ch_cls_uart->txrx);
++
++	writeb((UART_FCR_ENABLE_FIFO|UART_FCR_CLEAR_RCVR|UART_FCR_CLEAR_XMIT),
++						 &ch->ch_cls_uart->isr_fcr);
++	udelay(10);
++
++	ch->ch_flags |= (CH_FIFO_ENABLED | CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
++
++	readb(&ch->ch_cls_uart->lsr);
++	readb(&ch->ch_cls_uart->msr);
++}
++
++/*
++ * Turns off UART.
++ */
++static void cls_uart_off(struct jsm_channel *ch)
++{
++	/* Stop all interrupts from accurring. */
++	writeb(0, &ch->ch_cls_uart->ier);
++}
++
++/*
++ * cls_get_uarts_bytes_left.
++ * Returns 0 is nothing left in the FIFO, returns 1 otherwise.
++ *
++ * The channel lock MUST be held by the calling function.
++ */
++static u32 cls_get_uart_bytes_left(struct jsm_channel *ch)
++{
++	u8 left = 0;
++	u8 lsr = readb(&ch->ch_cls_uart->lsr);
++
++	/* Determine whether the Transmitter is empty or not */
++	if (!(lsr & UART_LSR_TEMT))
++		left = 1;
++	else {
++		ch->ch_flags |= (CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
++		left = 0;
++	}
++
++	return left;
++}
++
++/*
++ * cls_send_break.
++ * Starts sending a break thru the UART.
++ *
++ * The channel lock MUST be held by the calling function.
++ */
++static void cls_send_break(struct jsm_channel *ch)
++{
++	/* Tell the UART to start sending the break */
++	if (!(ch->ch_flags & CH_BREAK_SENDING)) {
++		u8 temp = readb(&ch->ch_cls_uart->lcr);
++
++		writeb((temp | UART_LCR_SBC), &ch->ch_cls_uart->lcr);
++		ch->ch_flags |= (CH_BREAK_SENDING);
++	}
++}
++
++/*
++ * cls_send_immediate_char.
++ * Sends a specific character as soon as possible to the UART,
++ * jumping over any bytes that might be in the write queue.
++ *
++ * The channel lock MUST be held by the calling function.
++ */
++static void cls_send_immediate_char(struct jsm_channel *ch, unsigned char c)
++{
++	writeb(c, &ch->ch_cls_uart->txrx);
++}
++
++struct board_ops jsm_cls_ops = {
++	.intr =				cls_intr,
++	.uart_init =			cls_uart_init,
++	.uart_off =			cls_uart_off,
++	.param =			cls_param,
++	.assert_modem_signals =		cls_assert_modem_signals,
++	.flush_uart_write =		cls_flush_uart_write,
++	.flush_uart_read =		cls_flush_uart_read,
++	.disable_receiver =		cls_disable_receiver,
++	.enable_receiver =		cls_enable_receiver,
++	.send_break =			cls_send_break,
++	.clear_break =			cls_clear_break,
++	.send_start_character =		cls_send_start_character,
++	.send_stop_character =		cls_send_stop_character,
++	.copy_data_from_queue_to_uart = cls_copy_data_from_queue_to_uart,
++	.get_uart_bytes_left =		cls_get_uart_bytes_left,
++	.send_immediate_char =		cls_send_immediate_char
++};
++
 -- 
 1.9.1
 
