@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaKFCTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:19:38 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55063 "EHLO
+	id S1751751AbaKFCT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:19:58 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47768 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751033AbaKFCTg (ORCPT
+	by vger.kernel.org with ESMTP id S1751714AbaKFCTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:19:36 -0500
-X-Sasl-enc: 9SO9EKgF3YXS270ZDznMRHfW6HJiEEzhotGUtM9cS3/9 1415240375
-Date: Wed, 5 Nov 2014 18:19:34 -0800
+	Wed, 5 Nov 2014 21:19:55 -0500
+X-Sasl-enc: OSKN0gFhOBnxTgLnMpssjcj2fJM9dcjxb05m+WfgZJMz 1415240394
+Date: Wed, 5 Nov 2014 18:19:53 -0800
 From: Greg KH <greg@kroah.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: linux-next: manual merge of the usb tree with the usb.current
+        Amber Thrall <amber.rose.thrall@gmail.com>,
+        Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb
  tree
-Message-ID: <20141106021934.GB17253@kroah.com>
-References: <20141105151825.26c53948@canb.auug.org.au>
- <20141105043030.GB10613@kroah.com>
- <1415176413.20372.206.camel@x220>
+Message-ID: <20141106021953.GC17253@kroah.com>
+References: <20141105152911.69bd1a14@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415176413.20372.206.camel@x220>
+In-Reply-To: <20141105152911.69bd1a14@canb.auug.org.au>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 09:33:33AM +0100, Paul Bolle wrote:
-> On Tue, 2014-11-04 at 20:30 -0800, Greg KH wrote:
-> > On Wed, Nov 05, 2014 at 03:18:25PM +1100, Stephen Rothwell wrote: 
-> > > Today's linux-next merge of the usb tree got a conflict in
-> > > drivers/usb/host/Kconfig between commit cd6e245a2d06 ("usb: Remove
-> > > references to non-existent PLAT_S5P symbol") from the usb.current tree
-> > > and commit dd3cf17488b1 ("usb: host: Remove optional dependencies on
-> > > PLAT_S5P") from the usb tree.
-> > > 
-> > > I fixed it up (I used the usb tree version) and can carry the fix as
-> > > necessary (no action is required).
-> > 
-> > That's the correct fix, thanks for doing that.
+On Wed, Nov 05, 2014 at 03:29:11PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Shouldn't that be the other way round?
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/media/lirc/lirc_imon.c between commit f3a75505ab5f
+> ("[media] Staging: media: lirc: cleaned up packet dump in 2 files")
+> from the v4l-dvb tree and commit 732ba199ab07 ("staging: media: lirc:
+> lirc_imon.c: replace printk by dev_dbg") from the staging tree.
+> 
+> I fixed it up (the staging tree patch was not complete, so I did the
+> below) and can carry the fix as necessary (no action is required).
 
-Sorry, you are right, I read the merge backwards.
-
-> I thought we would choose Sylwester's commit from the usb.current tree
-> over my commit from the usb tree. Or will Sylwester's commit end up in
-> linux-next through yet another usb tree?
-
-I will do that when I do the merge in my tree when it hits Linus's tree.
-
-thanks,
+Thanks for all 3 of these, they look fine.
 
 greg k-h
