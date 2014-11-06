@@ -1,222 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbaKFOXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:23:04 -0500
-Received: from mga14.intel.com ([192.55.52.115]:10958 "EHLO mga14.intel.com"
+	id S1752174AbaKFOXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:23:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49581 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752080AbaKFOWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:22:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="618223866"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        iommu@lists.linux-foundation.org
-Subject: [Patch Part2 v5 24/31] iommu/vt-d: Clean up unused MSI related code
-Date: Thu,  6 Nov 2014 22:20:37 +0800
-Message-Id: <1415283644-2559-25-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752127AbaKFOXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:23:00 -0500
+Message-ID: <545B8438.1040100@ti.com>
+Date: Thu, 6 Nov 2014 16:22:48 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ldv-project@linuxtesting.org>
+Subject: Re: [PATCH] m501fb: don't return zero on failure path in sm501fb_probe()
+References: <1414795247-14686-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1414795247-14686-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now MSI interrupt has been converted to new hierarchy irqdomain
-interfaces, so kill legacy MSI related code.
+--2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-by: Joerg Roedel <jroedel@suse.de>
----
- drivers/iommu/intel_irq_remapping.c |  144 -----------------------------------
- 1 file changed, 144 deletions(-)
+On 01/11/14 00:40, Alexey Khoroshilov wrote:
+> If no framebuffers found, sm501fb_probe() breaks off initialization,
+> deallocates sm501fb_info, but returns zero. As a result, use after free=
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index e58b9a594311..d32e3699a55e 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -145,44 +145,6 @@ static int qi_flush_iec(struct intel_iommu *iommu, int index, int mask)
- 	return qi_submit_sync(&desc, iommu);
- }
- 
--static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	unsigned long flags;
--	int index;
--
--	if (!irq_iommu)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--	*sub_handle = irq_iommu->sub_handle;
--	index = irq_iommu->irte_index;
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--	return index;
--}
--
--static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_cfg(irq);
--	unsigned long flags;
--
--	if (!irq_iommu)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--
--	cfg->remapped = 1;
--	irq_iommu->iommu = iommu;
--	irq_iommu->irte_index = index;
--	irq_iommu->sub_handle = subhandle;
--	irq_iommu->irte_mask = 0;
--
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--
--	return 0;
--}
--
- static int modify_irte(struct irq_2_iommu *irq_iommu,
- 		       struct irte *irte_modified)
- {
-@@ -1070,108 +1032,6 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	return 0;
- }
- 
--static void intel_compose_msi_msg(struct pci_dev *pdev,
--				  unsigned int irq, unsigned int dest,
--				  struct msi_msg *msg, u8 hpet_id)
--{
--	struct irq_cfg *cfg;
--	struct irte irte;
--	u16 sub_handle = 0;
--	int ir_index;
--
--	cfg = irq_cfg(irq);
--
--	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
--	BUG_ON(ir_index == -1);
--
--	prepare_irte(&irte, cfg->vector, dest);
--
--	/* Set source-id of interrupt request */
--	if (pdev)
--		set_msi_sid(&irte, pdev);
--	else
--		set_hpet_sid(&irte, hpet_id);
--
--	modify_irte(irq_2_iommu(irq), &irte);
--
--	msg->address_hi = MSI_ADDR_BASE_HI;
--	msg->data = sub_handle;
--	msg->address_lo = MSI_ADDR_BASE_LO | MSI_ADDR_IR_EXT_INT |
--			  MSI_ADDR_IR_SHV |
--			  MSI_ADDR_IR_INDEX1(ir_index) |
--			  MSI_ADDR_IR_INDEX2(ir_index);
--}
--
--/*
-- * Map the PCI dev to the corresponding remapping hardware unit
-- * and allocate 'nvec' consecutive interrupt-remapping table entries
-- * in it.
-- */
--static int intel_msi_alloc_irq(struct pci_dev *dev, int irq, int nvec)
--{
--	struct intel_iommu *iommu;
--	int index;
--
--	down_read(&dmar_global_lock);
--	iommu = map_dev_to_ir(dev);
--	if (!iommu) {
--		printk(KERN_ERR
--		       "Unable to map PCI %s to iommu\n", pci_name(dev));
--		index = -ENOENT;
--	} else {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), nvec);
--		if (index < 0) {
--			printk(KERN_ERR
--			       "Unable to allocate %d IRTE for PCI %s\n",
--			       nvec, pci_name(dev));
--			index = -ENOSPC;
--		}
--	}
--	up_read(&dmar_global_lock);
--
--	return index;
--}
--
--static int intel_msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
--			       int index, int sub_handle)
--{
--	struct intel_iommu *iommu;
--	int ret = -ENOENT;
--
--	down_read(&dmar_global_lock);
--	iommu = map_dev_to_ir(pdev);
--	if (iommu) {
--		/*
--		 * setup the mapping between the irq and the IRTE
--		 * base index, the sub_handle pointing to the
--		 * appropriate interrupt remap table entry.
--		 */
--		set_irte_irq(irq, iommu, index, sub_handle);
--		ret = 0;
--	}
--	up_read(&dmar_global_lock);
--
--	return ret;
--}
--
--static int intel_alloc_hpet_msi(unsigned int irq, unsigned int id)
--{
--	int ret = -1;
--	struct intel_iommu *iommu;
--	int index;
--
--	down_read(&dmar_global_lock);
--	iommu = map_hpet_to_ir(id);
--	if (iommu) {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), 1);
--		if (index >= 0)
--			ret = 0;
--	}
--	up_read(&dmar_global_lock);
--
--	return ret;
--}
--
- static struct irq_domain *intel_get_ir_irq_domain(struct irq_alloc_info *info)
- {
- 	struct intel_iommu *iommu = NULL;
-@@ -1229,10 +1089,6 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.setup_ioapic_entry	= intel_setup_ioapic_entry,
- 	.set_affinity		= intel_ioapic_set_affinity,
- 	.free_irq		= free_irte,
--	.compose_msi_msg	= intel_compose_msi_msg,
--	.msi_alloc_irq		= intel_msi_alloc_irq,
--	.msi_setup_irq		= intel_msi_setup_irq,
--	.alloc_hpet_msi		= intel_alloc_hpet_msi,
- 	.get_ir_irq_domain	= intel_get_ir_irq_domain,
- 	.get_irq_domain		= intel_get_irq_domain,
- };
--- 
-1.7.10.4
+> can happen in sm501fb_remove().
+>=20
+> The patch adds -ENODEV as a return value in this case.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+>=20
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/video/fbdev/sm501fb.c | 1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/video/fbdev/sm501fb.c b/drivers/video/fbdev/sm501f=
+b.c
+> index 9e74e8fbe074..8b98b011fc04 100644
+> --- a/drivers/video/fbdev/sm501fb.c
+> +++ b/drivers/video/fbdev/sm501fb.c
+> @@ -1988,6 +1988,7 @@ static int sm501fb_probe(struct platform_device *=
+pdev)
+>  	if (info->fb[HEAD_PANEL] =3D=3D NULL &&
+>  	    info->fb[HEAD_CRT] =3D=3D NULL) {
+>  		dev_err(dev, "no framebuffers found\n");
+> +		ret =3D -ENODEV;
+>  		goto err_alloc;
+>  	}
+> =20
+>=20
 
+Thanks, queued for 3.19.
+
+ Tomi
+
+
+
+--2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUW4Q4AAoJEPo9qoy8lh714B4P/iELhDqNc+pIAaCzPVlTmEZy
+Wlqod20MmeDJsfqy6IQvLNt4kQDC2qP3vpp5SU8xBg3HvsCdDTLH9Tnjoevo8Bu7
+rfctqAByIPHwUpwuepH73zuBkkkC8RWovg680eGmXs6ve8KPIap88DcjnrVfJ2z4
+8b2oSDhAwHcgV0/aQBKNCxobNFTT1Ln4o0LfHUomZOIpP/l0H2gvTdnoPIlM1vh4
+OOPZ6YeE16rVNa2WoQajeXIoY735/qCCrVrmnwOiE/Ong6ujhRwuwluh2yEtyX5j
+AwxBnE+31IAXMiQvCrae87/EUFQl9PAmdliLRZF/hOlTONyUAtzhwSFASZMI7ByI
+QS8V72CN1v1/6w0pLcvHz+cvIRAm/tjEWsj3QMOsXl8vemBZYYeFNMH2TOoR1kJ/
+eS3cX90DopnjhAVjCe8KQ1AoY7dlLAf4tcv0J4zzhrj7ycB8+pFrA5eaMx/zszzi
+kv5ZmmBPuvuixwxMHLkc0lpAHoPG1alo/vEyvBk4CkhH+tjD791SnCDqIMOVd+6g
+Y+qF1SvnyABthf9AJ6EdkBZV2UzaKYXIKqBjCP4vFE5mfIcDdqrNNP0BoEYaAd1E
+AJotTzSVMVpHxRz5EC8EscKg+iARgvWc4EwzokCAV+lAbjB10QolS6GHfvx+atvX
+FtbQAnAzliRnP8XZh+Jt
+=qKma
+-----END PGP SIGNATURE-----
+
+--2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0--
