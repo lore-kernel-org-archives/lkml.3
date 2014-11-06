@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263AbaKFUih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 15:38:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54717 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbaKFUid (ORCPT
+	id S1751245AbaKFUqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 15:46:34 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:51226 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaKFUqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 15:38:33 -0500
-Date: Thu, 6 Nov 2014 12:38:32 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Christian Riesch <christian.riesch@omicron.at>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in
- receive path
-Message-ID: <20141106203832.GB30170@kroah.com>
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
+	Thu, 6 Nov 2014 15:46:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141106182329.GA445@red-moon>
+References: <1415296639-40203-1-git-send-email-anatol.pomozov@gmail.com>
+	<20141106182329.GA445@red-moon>
+Date: Thu, 6 Nov 2014 12:46:32 -0800
+Message-ID: <CAOMFOmUHBLOuHMh-cL_GD06NU1JrE2gO3jsb5_SZ=9ZabcbSZg@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: arch_timer: Mark ARMv8 system timer as 'always-on'
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
-> The current implementation of put_tty_queue() causes a race condition
-> when re-arranged by the compiler.
-> 
-> On my build with gcc 4.8.3, cross-compiling for ARM, the line
-> 
-> 	*read_buf_addr(ldata, ldata->read_head++) = c;
-> 
-> was re-arranged by the compiler to something like
-> 
-> 	x = ldata->read_head
-> 	ldata->read_head++
-> 	*read_buf_addr(ldata, x) = c;
-> 
-> which causes a race condition. Invalid data is read if data is read
-> before it is actually written to the read buffer.
+Hi
 
-Really?  A compiler can rearange things like that and expect things to
-actually work?  How is that valid?
+On Thu, Nov 6, 2014 at 10:23 AM, Lorenzo Pieralisi
+<lorenzo.pieralisi@arm.com> wrote:
+> On Thu, Nov 06, 2014 at 05:57:19PM +0000, Anatol Pomozov wrote:
+>> Quoting ARMv8 Reference Manual section D6.1:
+>> "The system counter must be implemented in an always-on power domain."
+>
+> Do not mix up the system counter with arch timers. System counter is
+> always-on, but the arch timer(s) logic (that implements eg timers
+> comparators against the system counter value) might not be (timer logic
+> is in the processor), so it can be lost on processor(s) power down.
 
-Is this the "broken gcc" version that ARM developers keep running into
-all the time with odd crashes and problems?  Can you upgrade to 4.9 and
-see if that solves the issue for you?
+Thanks everyone for replies.
 
-thanks,
+I am trying to enable tegra20_timer on my board. But this driver does
+not compile because it uses headers from arch/arm. It particular it
+needs register_persistent_clock() function. How I suppose to port
+tegra20_timer to ARM64? Do I just need to duplicate the function
+declaration/implementation to arch/arm64?
 
-greg k-h
+>
+> NAK.
+>
+> Lorenzo
+>
+>> There is no need to keep 'always-on' configurable on ARMv8. We ignore
+>> this dts property value and unconditionally set it to true.
+>
+>
+>>
+>> The issue was discovered while working on ARMv8 board with only one timer
+>> (arm arch timer). If 'always-on' is false then it disables high-resolution
+>> timer functionality.
+>>
+>> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+>> ---
+>>  .../devicetree/bindings/arm/arch_timer.txt          |  8 ++++++--
+>>  drivers/clocksource/arm_arch_timer.c                | 21 +++++++++++++++++----
+>>  2 files changed, 23 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+>> index 37b2caf..cb2d572 100644
+>> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+>> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+>> @@ -19,8 +19,12 @@ to deliver its interrupts via SPIs.
+>>
+>>  - clock-frequency : The frequency of the main counter, in Hz. Optional.
+>>
+>> -- always-on : a boolean property. If present, the timer is powered through an
+>> -  always-on power domain, therefore it never loses context.
+>> +- always-on : an "armv7-timer" specific boolean property.
+>> +  If present, the timer is powered through an always-on power domain, therefore
+>> +  it never loses context.
+>> +  ARMv8 system timer is in always-on power domain (per Architecture Reference
+>> +  section D6.1) thus this proprty is ignored for "arm,armv8-timer" compatible
+>> +  timer.
+>>
+>>  Example:
+>>
+>> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+>> index 2133f9d..610052d 100644
+>> --- a/drivers/clocksource/arm_arch_timer.c
+>> +++ b/drivers/clocksource/arm_arch_timer.c
+>> @@ -719,13 +719,26 @@ static void __init arch_timer_init(struct device_node *np)
+>>               }
+>>       }
+>>
+>> -     arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+>> -
+>>       arch_timer_register();
+>>       arch_timer_common_init();
+>>  }
+>> -CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", arch_timer_init);
+>> -CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", arch_timer_init);
+>> +
+>> +static void __init v7_arch_timer_init(struct device_node *np)
+>> +{
+>> +     arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+>> +     arch_timer_init(np);
+>> +}
+>> +
+>> +static void __init v8_arch_timer_init(struct device_node *np)
+>> +{
+>> +     /* Per ARMv8 Architecture Reference Manual section D6.1
+>> +      * the system timer is in always-on power domain.
+>> +      */
+>> +     arch_timer_c3stop = false;
+>> +     arch_timer_init(np);
+>> +}
+>> +CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", v7_arch_timer_init);
+>> +CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", v8_arch_timer_init);
+>>
+>>  static void __init arch_timer_mem_init(struct device_node *np)
+>>  {
+>> --
+>> 2.1.0.rc2.206.gedb03e5
+>>
+>>
