@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065AbaKFXRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:17:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58590 "EHLO
+	id S1754241AbaKFXRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:17:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58580 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaKFWjq (ORCPT
+	with ESMTP id S1751268AbaKFWji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:39:46 -0500
+	Thu, 6 Nov 2014 17:39:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Imre Deak <imre.deak@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 140/162] PM / Sleep: fix recovery during resuming from hibernation
-Date: Thu,  6 Nov 2014 14:36:44 -0800
-Message-Id: <1415313426-9622-141-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 153/162] ext4: fix oops when loading block bitmap failed
+Date: Thu,  6 Nov 2014 14:36:57 -0800
+Message-Id: <1415313426-9622-154-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,42 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 94fb823fcb4892614f57e59601bb9d4920f24711 upstream.
+commit 599a9b77ab289d85c2d5c8607624efbe1f552b0f upstream.
 
-If a device's dev_pm_ops::freeze callback fails during the QUIESCE
-phase, we don't rollback things correctly calling the thaw and complete
-callbacks. This could leave some devices in a suspended state in case of
-an error during resuming from hibernation.
+When we fail to load block bitmap in __ext4_new_inode() we will
+dereference NULL pointer in ext4_journal_get_write_access(). So check
+for error from ext4_read_block_bitmap().
 
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Coverity-id: 989065
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/power/hibernate.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/ext4/ialloc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 0121dab..7ef5244 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -491,8 +491,14 @@ int hibernation_restore(int platform_mode)
- 	error = dpm_suspend_start(PMSG_QUIESCE);
- 	if (!error) {
- 		error = resume_target_kernel(platform_mode);
--		dpm_resume_end(PMSG_RECOVER);
-+		/*
-+		 * The above should either succeed and jump to the new kernel,
-+		 * or return with an error. Otherwise things are just
-+		 * undefined, so let's be paranoid.
-+		 */
-+		BUG_ON(!error);
- 	}
-+	dpm_resume_end(PMSG_RECOVER);
- 	pm_restore_gfp_mask();
- 	ftrace_start();
- 	resume_console();
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 158ddf6..a8d1a64 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -864,6 +864,10 @@ got:
+ 		struct buffer_head *block_bitmap_bh;
+ 
+ 		block_bitmap_bh = ext4_read_block_bitmap(sb, group);
++		if (!block_bitmap_bh) {
++			err = -EIO;
++			goto out;
++		}
+ 		BUFFER_TRACE(block_bitmap_bh, "get block bitmap access");
+ 		err = ext4_journal_get_write_access(handle, block_bitmap_bh);
+ 		if (err) {
 -- 
 1.9.1
 
