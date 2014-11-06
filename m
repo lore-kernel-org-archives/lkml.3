@@ -1,115 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaKFDwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:52:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38860 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750999AbaKFDwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:52:04 -0500
-Message-ID: <545AF05A.1040300@suse.de>
-Date: Thu, 06 Nov 2014 04:51:54 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Heiko Stuebner <heiko@sntech.de>, linux-sh@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Olof Johansson <olof@lixom.net>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        Andreas Olofsson <andreas@adapteva.com>
-Subject: Re: [PATCH 0/7] Pinctrl support for Zynq
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com> <5459BC1C.3000807@suse.de> <44de30f0237545c6b62871d6c0480a67@BY2FFO11FD050.protection.gbl>
-In-Reply-To: <44de30f0237545c6b62871d6c0480a67@BY2FFO11FD050.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="tXPsp2GTfp1VGKUQqMsDQgikFSr1x740V"
+	id S1751316AbaKFDxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:53:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57144 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750999AbaKFDxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 22:53:17 -0500
+Message-ID: <1415245982.3398.53.camel@decadent.org.uk>
+Subject: [RFC][PATCH] x86: Make x32 syscall support conditional on a kernel
+ parameter
+From: Ben Hutchings <ben@decadent.org.uk>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 06 Nov 2014 03:53:02 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-xD4f/5InkdRmdHInBkuZ"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---tXPsp2GTfp1VGKUQqMsDQgikFSr1x740V
-Content-Type: text/plain; charset=utf-8
+
+--=-xD4f/5InkdRmdHInBkuZ
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Am 05.11.2014 um 18:03 schrieb S=C3=B6ren Brinkmann:
-> On Wed, 2014-11-05 at 06:56AM +0100, Andreas F=C3=A4rber wrote:
->> I've tracked down all 54 MIO pins of the Parallella and cooked up the
->> equivalent DT patch. [...] For testing purposes I've configured a
->> heartbeat trigger for the USER_LED (CR10).
->>
->> To my disappointment these pinctrl additions did not fix one issue:
->> Whenever a write access to be handled by the bitstream (0x808f0f04) is=
+Enabling x32 in a distribution default kernel increases its attack
+surface while providing no benefit to the vast majority of its users.
+No-one seems interested in regularly checking for vulnerabilities
+specific to x32 (at least no-one with a white hat).
 
->> performed, the board hangs and the heartbeat stops. Would a bug in the=
+Still, requiring a separate or custom configuration just to turn on
+x32 seems wasteful.  And the only differences on syscall entry are
+two instructions (mask out the x32 flag and compare the syscall
+number).
 
->> bitstream allow this to happen, or are more drivers missing to actuall=
-y
->> make use of the PL in general? With a downstream ADI/Xilinx 3.12 kerne=
-l
->> that problem does not surface.
->=20
-> This doesn't sound like being related to pinctrl at all.
-> Devices in the PL are just memory mapped on the AXI bus. There is
-> nothing needed to access those. Hangs do in most cases indicate that th=
-e
-> IP does not respond (properly). In my experience this is mostly caused
-> by=20
->  - level shifters not enabled
->  - IP kept in reset
->  - IP is clock gated
-> With the clock gating being the culprit in most cases. Did you check
-> those things?
+So pad the standard comparison with a nop and add a kernel parameter
+"syscall.x32" which controls whether this is replaced with the x32
+version at boot time.  Add a Kconfig parameter to set the default.
 
-Figured it out: zynq-7000.dtsi sets fclk-enable =3D <0>, i.e., all PL
-clocks are disabled by default. When overriding that tiny property with
-0xf it suddenly works as expected! I'll send a patch later in the day.
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+This is currently used in Debian, where x32 is an unofficial port that
+can be installed in parallel with amd64 (multiarch).  I acknowledge the
+patch is a bit hacky, e.g. it has several magic numbers.  I'm sending
+this to find out whether anything like this would be acceptable
+upstream.
 
-Are boards expected to use clocks =3D <&clkc 15>, ...; on individual node=
-s
-relying on the PL? Or does enabling those clocks require actually
-loading a bitstream so that it is not being done by default?
+Ben.
 
-It seems ranger dangerous to me that a single MMIO write can freeze the
-system - as a software developer I would've expected this to be caught
-and handled as a SIGBUS.
+ Documentation/kernel-parameters.txt |  4 ++++
+ arch/x86/Kconfig                    |  8 +++++++
+ arch/x86/include/asm/elf.h          |  8 ++++++-
+ arch/x86/kernel/entry_64.S          | 26 ++++++++++++++++++----
+ arch/x86/kernel/syscall_64.c        | 43 +++++++++++++++++++++++++++++++++=
+++++
+ 5 files changed, 84 insertions(+), 5 deletions(-)
 
-Regards,
-Andreas
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-par=
+ameters.txt
+index 4c81a86..1e161b0 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3397,6 +3397,10 @@ bytes respectively. Such letter suffixes can also be=
+ entirely omitted.
+=20
+ 	switches=3D	[HW,M68k]
+=20
++	syscall.x32=3D	[KNL,x86_64] Enable/disable use of x32 syscalls on
++			an x86_64 kernel where CONFIG_X86_X32 is enabled.
++			Default depends on CONFIG_X86_X32_DISABLED.
++
+ 	sysfs.deprecated=3D0|1 [KNL]
+ 			Enable/disable old style sysfs layout for old udev
+ 			on older distributions. When this option is enabled
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ded8a67..9627922 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2455,6 +2455,14 @@ config X86_X32
+ 	  elf32_x86_64 support enabled to compile a kernel with this
+ 	  option set.
+=20
++config X86_X32_DISABLED
++	bool "x32 ABI disabled by default"
++	depends on X86_X32
++	default n
++	help
++	  Disable the x32 ABI unless explicitly enabled using the
++	  kernel paramter "syscall.x32=3Dy".
++
+ config COMPAT
+ 	def_bool y
+ 	depends on IA32_EMULATION || X86_X32
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index ca3347a..2a8b89a 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -154,6 +154,12 @@ do {						\
+=20
+ #else /* CONFIG_X86_32 */
+=20
++#ifdef CONFIG_X86_X32_ABI
++extern bool x32_enabled;
++#else
++#define x32_enabled 0
++#endif
++
+ /*
+  * This is used to ensure we don't load something for the wrong architectu=
+re.
+  */
+@@ -162,7 +168,7 @@ do {						\
+=20
+ #define compat_elf_check_arch(x)					\
+ 	(elf_check_arch_ia32(x) ||					\
+-	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine =3D=3D EM_X86_64))
++	 (x32_enabled && (x)->e_machine =3D=3D EM_X86_64))
+=20
+ #if __USER32_DS !=3D __USER_DS
+ # error "The following code assumes __USER32_DS =3D=3D __USER_DS"
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index df088bb..50b265a 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -414,8 +414,12 @@ system_call_fastpath:
+ #if __SYSCALL_MASK =3D=3D ~0
+ 	cmpq $__NR_syscall_max,%rax
+ #else
+-	andl $__SYSCALL_MASK,%eax
+-	cmpl $__NR_syscall_max,%eax
++	.globl system_call_fast_compare
++	.globl system_call_fast_compare_end
++system_call_fast_compare:
++	cmpq $511,%rax			/* x32 syscalls start at 512 */
++	.byte P6_NOP4
++system_call_fast_compare_end:
+ #endif
+ 	ja ret_from_sys_call  /* and return regs->ax */
+ 	movq %r10,%rcx
+@@ -520,8 +524,12 @@ tracesys_phase2:
+ #if __SYSCALL_MASK =3D=3D ~0
+ 	cmpq $__NR_syscall_max,%rax
+ #else
+-	andl $__SYSCALL_MASK,%eax
+-	cmpl $__NR_syscall_max,%eax
++	.globl system_call_trace_compare
++	.globl system_call_trace_compare_end
++system_call_trace_compare:
++	cmpq $511,%rax			/* x32 syscalls start at 512 */
++	.byte P6_NOP4
++system_call_trace_compare_end:
+ #endif
+ 	ja   int_ret_from_sys_call	/* RAX(%rsp) is already set */
+ 	movq %r10,%rcx	/* fixup for C */
+@@ -593,6 +601,16 @@ int_restore_rest:
+ 	CFI_ENDPROC
+ END(system_call)
+=20
++#if __SYSCALL_MASK !=3D ~0
++	/* This replaces the usual comparisons if syscall.x32 is set */
++	.globl system_call_mask_compare
++	.globl system_call_mask_compare_end
++system_call_mask_compare:
++	andl $__SYSCALL_MASK,%eax
++	cmpl $__NR_syscall_max,%eax
++system_call_mask_compare_end:
++#endif
++
+ 	.macro FORK_LIKE func
+ ENTRY(stub_\func)
+ 	CFI_STARTPROC
+diff --git a/arch/x86/kernel/syscall_64.c b/arch/x86/kernel/syscall_64.c
+index 4ac730b..7a6e66f 100644
+--- a/arch/x86/kernel/syscall_64.c
++++ b/arch/x86/kernel/syscall_64.c
+@@ -3,8 +3,14 @@
+ #include <linux/linkage.h>
+ #include <linux/sys.h>
+ #include <linux/cache.h>
++#include <linux/moduleparam.h>
++#undef MODULE_PARAM_PREFIX
++#define MODULE_PARAM_PREFIX "syscall."
++#include <linux/bug.h>
++#include <linux/init.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/syscall.h>
++#include <asm/alternative.h>
+=20
+ #define __SYSCALL_COMMON(nr, sym, compat) __SYSCALL_64(nr, sym, compat)
+=20
+@@ -30,3 +36,40 @@ asmlinkage const sys_call_ptr_t sys_call_table[__NR_sysc=
+all_max+1] =3D {
+ 	[0 ... __NR_syscall_max] =3D &sys_ni_syscall,
+ #include <asm/syscalls_64.h>
+ };
++
++#ifdef CONFIG_X86_X32_ABI
++
++/* Maybe enable x32 syscalls */
++
++bool x32_enabled =3D !IS_ENABLED(CONFIG_X86_X32_DISABLED);
++module_param_named(x32, x32_enabled, bool, 0444);
++
++extern char system_call_fast_compare_end[], system_call_fast_compare[],
++	system_call_trace_compare_end[], system_call_trace_compare[],
++	system_call_mask_compare_end[], system_call_mask_compare[];
++
++static int __init x32_enable(void)
++{
++	BUG_ON(system_call_fast_compare_end - system_call_fast_compare !=3D 10);
++	BUG_ON(system_call_trace_compare_end - system_call_trace_compare !=3D 10)=
+;
++	BUG_ON(system_call_mask_compare_end - system_call_mask_compare !=3D 10);
++
++	if (x32_enabled) {
++		text_poke_early(system_call_fast_compare,
++				system_call_mask_compare, 10);
++		text_poke_early(system_call_trace_compare,
++				system_call_mask_compare, 10);
++#ifdef CONFIG_X86_X32_DISABLED
++		pr_info("Enabled x32 syscalls\n");
++#endif
++	}
++#ifndef CONFIG_X86_X32_DISABLED
++	else
++		pr_info("Disabled x32 syscalls\n");
++#endif
++
++	return 0;
++}
++late_initcall(x32_enable);
++
++#endif
 
 --=20
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imend=C3=B6rffer; HRB 21284 AG N=C3=BC=
-rnberg
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
 
-
---tXPsp2GTfp1VGKUQqMsDQgikFSr1x740V
+--=-xD4f/5InkdRmdHInBkuZ
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUWvBdAAoJEPou0S0+fgE/HWIQAI9ySqe3HSMJnPw+NEe0JJXm
-IGU8xqkIB2+/gGM5GBc/mtJ6uz8HuHmG+myG28n6+xMMPID3U/ZG1CAMpvqe2IOb
-qSuUqGW/arsUXP1ZhJRfQDwyyPYCwPlMPIvaBt373WmFgo6ITSxezjhNUuoTz8rp
-C+jbYle1ZltRvWzYRz9W42mEzisXlaiJaG3eYQUYmd0zRX1UazaqrUT7E5jgsfrU
-KCmahkSDezxnKz91iDjXie1oOd3t2Hd7PndrLd9WvcuR+wX/H0D1SobKLYyWmbFD
-xrg+Jv0yWknYkDnL6thhV5SLR8Lb7uxWj5/rQ3YeGiUcsKJvEZHRenD8/wNdMVau
-9Jm3Vytpr4QbIwhgn2Ao9CL/FGEbrrg5rWUDWDMovyTpI5g+5y1joSZNWeQUNqwk
-cEE6O5Kl2vsPIbvGjCZaUiN3H0ihFb4A4CgQweOEpXxfxaIialilaGhyLSKotaeK
-NvP0iA9R6wA6RnTwgPm5Xfi7tX+bzuPxnw+TrPJcrv4VEy2xBlJl30v0l0XpQ4ge
-7EroBHiRzpH29bwryIk0jFkaXObJ9Axm6lnV09eqaUGo8GoRA509ScwlX/Pru/U3
-9br+EdMFfDfVauy0ysq9x68IDwlnLlKT7u5L6BROfaxxK+MvnqufJgGmaWwM07vE
-K4XJbiLR1WNcR31+b9bJ
-=olJ6
+iQIVAwUAVFrwpee/yOyVhhEJAQr75A//eh403XkrauFWBTOqt9zHQQB4eHaGmXr3
+jfNxFPD2krxbnWROw+5IdWjWbsAfPTHz2UukXyUDWhI+Q6E5Mpy1n5bpqo18imtI
+uKUVJNqMZv8VZb6XOcayWaVPdQMIzQsfh+LRAuaEkcKHtrL5bvgWunBum1LoB+Dq
+auBxwIdti2M6sRh7T5Di6GKvYUptQ6VhAnC7dNB6WwjlZrdrXW2dnOBijnvUPHoG
+wdbs1Y0QlhVK/cVMjcy8qo2ICuMt1q/frnLf1O0zlmjaiRmop/wnxSvKineEQvoo
+qshPudGRriH8vO5oMs3Umgnr0wCSBJctD7uzTqdesXJA6B2bmS2c8dTS3qzbpRVg
+tzO3GMxF5BP6UANG5M4HBikq7Ch9PNXPxss5UxwgB+mm899JfGBuncuBke8lW2/Y
+ko08qv+QETFulVdCBMMeP0PFKG8a9tIimb/3sqin8QS7yqKM0kPsq7OBrbaqK/Ob
+LAiMqeGhJf+XJUUZdOQbpuoBp/mZUUIbapkQmQq94U7j5Ol/XFLjtue9+GRSSMNs
+7y9/rCKdBvATx96VGa0W1AGtSqcLVtzVs/sPvxdSi0o74I5z7hxR9BBb4YnJYMjK
+S2IvmbvjemHcnskolXphWSXPWwEeQZ5SwrREnm+TU4fxZaf5oRbgqYFdU6xxGCLd
+eWHFXg0ES8M=
+=iwN+
 -----END PGP SIGNATURE-----
 
---tXPsp2GTfp1VGKUQqMsDQgikFSr1x740V--
+--=-xD4f/5InkdRmdHInBkuZ--
