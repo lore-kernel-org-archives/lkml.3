@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348AbaKFTPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 14:15:07 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:6803 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbaKFTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 14:15:03 -0500
-X-IronPort-AV: E=Sophos;i="5.07,327,1413244800"; 
-   d="scan'208";a="190310907"
-Date: Thu, 6 Nov 2014 19:14:51 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Frediano Ziglio <freddy77@gmail.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Frediano Ziglio <frediano.ziglio@huawei.com>,
-        <xen-devel@lists.xenproject.org>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/arm: Return correct code error for
- xen_swiotlb_map_page
-In-Reply-To: <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
-References: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com> <alpine.DEB.2.02.1411061730240.22875@kaball.uk.xensource.com> <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751570AbaKFTP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 14:15:56 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:52662 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaKFTPx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 14:15:53 -0500
+Message-ID: <545BC88A.7060706@windriver.com>
+Date: Thu, 6 Nov 2014 13:14:18 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="1342847746-387728907-1415301291=:22875"
-X-DLP: MIA2
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com> <yq1fvdwb3lq.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1fvdwb3lq.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.119.46]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1342847746-387728907-1415301291=:22875
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+On 11/06/2014 12:12 PM, Martin K. Petersen wrote:
+>>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com>
+>>>>>> writes:
+>
+> Chris> That'd work, but is it the best way to go?  I mean, I found
+> one Chris> report of a similar problem on an SSD (model number
+> unknown).  In Chris> that case it was a near-UINT_MAX value as well.
+>
+> My concern is still the same. Namely that this particular drive
+> happens to be returning UINT_MAX but it might as well be a value
+> that's entirely random. Or even a value that is small and innocuous
+> looking but completely wrong.
+>
+> Chris> The problem with the blacklist is that until someone patches
+> it, Chris> the drive is broken.  And then it stays blacklisted even
+> if the Chris> firmware gets fixed.
+>
+> Well, you can manually blacklist in /proc/scsi/device_info.
+>
+> Chris> I'm wondering if it might not be better to just ignore all
+> values Chris> larger than X (where X is whatever we think is the
+> largest Chris> conceivable reasonable value).
+>
+> The problem is that finding that is not easy and it too will be a
+> moving target.
 
-On Thu, 6 Nov 2014, Frediano Ziglio wrote:
-> 2014-11-06 17:30 GMT+00:00 Stefano Stabellini <stefano.stabellini@eu.citr=
-ix.com>:
->       On Thu, 6 Nov 2014, Frediano Ziglio wrote:
->       > On ARM error code is not 0 so avoid to return it as error.
->       >
->       > Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
->=20
->       Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->=20
->=20
->       Could you please fix the same error in lib/swiotlb.c too please?
->=20
->=20
-> Same patch or another ?
->=20
 
-Another
+Do we need to be perfect, or just "good enough"?
 
-> =C2=A0
->       >=C2=A0 drivers/xen/swiotlb-xen.c | 2 +-
->       >=C2=A0 1 file changed, 1 insertion(+), 1 deletion(-)
->       >
->       > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.=
-c
->       > index ebd8f21..3b8d628 100644
->       > --- a/drivers/xen/swiotlb-xen.c
->       > +++ b/drivers/xen/swiotlb-xen.c
->       > @@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct device=
- *dev, struct page *page,
->       >=C2=A0 =C2=A0 =C2=A0 =C2=A0 */
->       >=C2=A0 =C2=A0 =C2=A0 =C2=A0if (!dma_capable(dev, dev_addr, size)) =
-{
->       >=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0swiotlb_tbl=
-_unmap_single(dev, map, size, dir);
->       > -=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0dev_addr =3D 0;
->       > +=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0dev_addr =3D DMA=
-_ERROR_CODE;
->       >=C2=A0 =C2=A0 =C2=A0 =C2=A0}
->       >=C2=A0 =C2=A0 =C2=A0 =C2=A0return dev_addr;
->       >=C2=A0 }
->       > --
->       > 1.9.1
->       >
->       >
->       > --
->       > To unsubscribe from this list: send the line "unsubscribe linux-k=
-ernel" in
->       > the body of a message to majordomo@vger.kernel.org
->       > More majordomo info at=C2=A0 http://vger.kernel.org/majordomo-inf=
-o.html
->       > Please read the FAQ at=C2=A0http://secure-web.cisco.com/1cvjROyUx=
-V6SnA0uBTMRubqrQWsaXGhps-FWjY3vly9AxaKKlt2DPY7GjL0FCHeP4rsbjKsc-P4zH2_7-kpc=
-xwEH-udGrGCCq
->       kCLlH1-fLOo1X6Nlui6EwEVHUpB2r7gt-Gsgxbep9QWPnIdypDPNf8Hf5clxCMXYcvW=
-sOK5s3qg/http%3A%2F%2Fwww.tux.org%2Flkml%2F
->       >
->=20
->       _______________________________________________
->       Xen-devel mailing list
->       Xen-devel@lists.xen.org
->       http://lists.xen.org/xen-devel
->=20
->=20
->=20
->=20
---1342847746-387728907-1415301291=:22875--
+For a RAID card I expect it would be related to chunk size or stripe
+width or something...but even then I would expect to be able to cap it
+at 100MB or so.  Or are there storage systems on really fast interfaces
+that could legitimately want a hundred meg of data at a time?
+
+On 11/06/2014 12:15 PM, Jens Axboe wrote:
+> Didn't check, but assuming the value is the upper 24 bits of 32. If
+> so, might not hurt to check for as 0xfffffe00 as an invalid value.
+
+Yep, in all three wonky cases so far "optimal_io_size" ended up as 
+4294966784, which is 0xfffffe00.  Does something mask out the lower bits?
+
+Chris
