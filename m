@@ -1,122 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbaKFCjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:39:23 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40924 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750905AbaKFCjS (ORCPT
+	id S1751301AbaKFCk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:40:28 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37673 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaKFCkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:39:18 -0500
-Message-ID: <545ADF52.9030401@hurleysoftware.com>
-Date: Wed, 05 Nov 2014 21:39:14 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 21:40:23 -0500
+Message-ID: <545ADF8F.70809@linaro.org>
+Date: Thu, 06 Nov 2014 11:40:15 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH -next v2 10/26] tty: Don't take tty_mutex for tty count
- changes
-References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com> <1415207589-15967-1-git-send-email-peter@hurleysoftware.com> <1415207589-15967-11-git-send-email-peter@hurleysoftware.com> <20141106023310.GA5035@kroah.com>
-In-Reply-To: <20141106023310.GA5035@kroah.com>
-Content-Type: text/plain; charset=utf-8
+To: Will Deacon <will.deacon@arm.com>, Kees Cook <keescook@chromium.org>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
+References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org> <1412243176-16192-2-git-send-email-takahiro.akashi@linaro.org> <20141008141306.GQ26140@arm.com> <CAGXu5jJkP_fg1Ck+rj1nn7tK=ckuMk5ObvgCOJLNhb3cHb3D-Q@mail.gmail.com> <20141009092358.GB3141@arm.com>
+In-Reply-To: <20141009092358.GB3141@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 09:33 PM, Greg Kroah-Hartman wrote:
-> On Wed, Nov 05, 2014 at 12:12:53PM -0500, Peter Hurley wrote:
->> Holding tty_mutex is no longer required to serialize changes to
->> the tty_count or to prevent concurrent opens of closing ttys;
->> tty_lock() is sufficient.
+Hi Will, Kees
+
+#Sorry for this late ping,
+
+On 10/09/2014 06:23 PM, Will Deacon wrote:
+> On Wed, Oct 08, 2014 at 04:30:18PM +0100, Kees Cook wrote:
+>> On Wed, Oct 8, 2014 at 9:13 AM, Will Deacon <will.deacon@arm.com> wrote:
+>>> On Thu, Oct 02, 2014 at 10:46:11AM +0100, AKASHI Takahiro wrote:
+>>>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>>>> index fe63ac5..2842f9f 100644
+>>>> --- a/arch/arm64/kernel/ptrace.c
+>>>> +++ b/arch/arm64/kernel/ptrace.c
+>>>> @@ -1082,7 +1082,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+>>>>   long arch_ptrace(struct task_struct *child, long request,
+>>>>                 unsigned long addr, unsigned long data)
+>>>>   {
+>>>> -     return ptrace_request(child, request, addr, data);
+>>>> +     int ret;
+>>>> +
+>>>> +     switch (request) {
+>>>> +             case PTRACE_SET_SYSCALL:
+>>>> +                     task_pt_regs(child)->syscallno = data;
+>>>> +                     ret = 0;
+>>>> +                     break;
+>>>> +             default:
+>>>> +                     ret = ptrace_request(child, request, addr, data);
+>>>> +                     break;
+>>>> +     }
+>>>> +
+>>>> +     return ret;
+>>>>   }
+>>>
+>>> I still don't understand why this needs to be in arch-specific code. Can't
+>>> we implement this in generic code and get architectures to implement
+>>> something like syscall_set_nr if they want the generic interface?
 >>
->> Reviewed-by: Alan Cox <alan@linux.intel.com>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>  drivers/tty/tty_io.c | 6 ------
->>  1 file changed, 6 deletions(-)
->>
->> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
->> index ea8c6cae8d12..e59de81c39a9 100644
->> --- a/drivers/tty/tty_io.c
->> +++ b/drivers/tty/tty_io.c
->> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>  	 * each iteration we avoid any problems.
->>  	 */
->>  	while (1) {
->> -		/* Guard against races with tty->count changes elsewhere and
->> -		   opens on /dev/tty */
->> -
->> -		mutex_lock(&tty_mutex);
->>  		tty_lock_pair(tty, o_tty);
->>  		tty_closing = tty->count <= 1;
->>  		o_tty_closing = o_tty &&
->> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
->>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
->>  				__func__, tty_name(tty, buf));
->>  		tty_unlock_pair(tty, o_tty);
->> -		mutex_unlock(&tty_mutex);
->>  		schedule();
->>  	}
->>  
-> 
-> The code in my tree in this section of tty_release() looks a bit
-> different, so I had to hand-apply this patch.
+>> Personally, I'd rather see this land as-is in the arm64 tree, and then
+>> later optimize PTRACE_SET_SYSCALL out of arm/ and arm64/, especially
+>> since only these architectures implement this at the moment.
+>
+> Why? It should be really straightforward to do this in core code from the
+> get-go and experience shows that, if we don't do it now, it will never
+> happen.
 
-Although there's nothing wrong with your version, I'm wondering why this
-didn't apply cleanly.
+How should I deal with this issue? I would be able to go either way.
 
-While I go look at your tree, can you check that these patches are
-sitting on top of the earlier two patches you applied to your tty-linus
-branch; specifically 'tty: Fix high cpu load if tty is unreleasable' and
-'tty: Prevent "read/write wait queue active!" log flooding'?
+Other than that, I will submit v8 patch series with a few very minor updates:
+- use compat_uint_t in struct compat_siginfo
+- use a new call interface of secure_computing(void)
+- modify and clarify comments in syscall_trace_enter()
 
-Regards,
-Peter
+Thanks,
+-Takahiro AKASHI
 
-> I've included the version
-> I used below, please verify I didn't mess it up.
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> 
-> 
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index ea8c6cae8d12..e59de81c39a9 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
->  	 * each iteration we avoid any problems.
->  	 */
->  	while (1) {
-> -		/* Guard against races with tty->count changes elsewhere and
-> -		   opens on /dev/tty */
-> -
-> -		mutex_lock(&tty_mutex);
->  		tty_lock_pair(tty, o_tty);
->  		tty_closing = tty->count <= 1;
->  		o_tty_closing = o_tty &&
-> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
->  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
->  				__func__, tty_name(tty, buf));
->  		tty_unlock_pair(tty, o_tty);
-> -		mutex_unlock(&tty_mutex);
->  		schedule();
->  	}
->  
-> @@ -1891,7 +1886,6 @@ int tty_release(struct inode *inode, struct file *filp)
->  		read_unlock(&tasklist_lock);
->  	}
->  
-> -	mutex_unlock(&tty_mutex);
->  	tty_unlock_pair(tty, o_tty);
->  	/* At this point, the tty->count == 0 should ensure a dead tty
->  	   cannot be re-opened by a racing opener */
-> 
-
+>> This is my plan for the asm-generic seccomp.h too -- I'd rather avoid
+>> touching other architectures in this series, as it's easier to review
+>> this way. Then we can optimize the code in a separate series, which
+>> will have those changes isolated, etc.
+>
+> But this doesn't need to touch any other architectures...
+>
+> Will
+>
