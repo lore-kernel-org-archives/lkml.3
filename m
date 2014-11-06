@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575AbaKFKBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:01:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41786 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752324AbaKFKBH (ORCPT
+	id S1752619AbaKFKCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:02:11 -0500
+Received: from mail-bl2on0121.outbound.protection.outlook.com ([65.55.169.121]:45568
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752597AbaKFKCF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:01:07 -0500
-Date: Thu, 6 Nov 2014 10:01:04 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Riku Voipio <riku.voipio@iki.fi>
-Cc: "Stam, Michel [FINT]" <M.Stam@fugro.nl>, freddy@asix.com.tw,
-        davem@davemloft.net, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
-	arndale platform
-Message-ID: <20141106100104.GS23178@opensource.wolfsonmicro.com>
-References: <20141104072236.GA559@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <C89EFD3CD56F64468D3D206D683A8D22039FFC5F@ldam-msx2.fugro-nl.local> <20141105150258.GR23178@opensource.wolfsonmicro.com> <20141106090651.GA19109@afflict.kos.to>
+	Thu, 6 Nov 2014 05:02:05 -0500
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/6] usb: chipidea: setup ci_hdrc_platform_data in core
+ driver
+Thread-Topic: [PATCH 1/6] usb: chipidea: setup ci_hdrc_platform_data in core
+ driver
+Thread-Index: AQHP9DXN0B6KNbdoa0S7b1O/uf6RxpxIhRWAgArMYACAABdUYA==
+Date: Thu, 6 Nov 2014 10:02:00 +0000
+Message-ID: <47e2cb9fdb474eb3a48b41c64ecfbcd1@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1414669007-9850-1-git-send-email-antoine.tenart@free-electrons.com>
+ <20141030114341.GA7798@kwain> <20141106083746.GB8096@kwain>
+In-Reply-To: <20141106083746.GB8096@kwain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [192.88.158.211]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0772;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-forefront-prvs: 0387D64A71
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(51704005)(189002)(46102003)(2656002)(87936001)(15202345003)(108616004)(92566001)(50986999)(76176999)(77096003)(31966008)(54356999)(122556002)(64706001)(86362001)(40100003)(33646002)(76576001)(74316001)(77156002)(62966003)(4396001)(15975445006)(99396003)(120916001)(106356001)(106116001)(21056001)(105586002)(110136001)(19580395003)(97736003)(66066001)(20776003)(95666004)(107046002)(99286002)(101416001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0772;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106090651.GA19109@afflict.kos.to>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0721;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 11:06:51AM +0200, Riku Voipio wrote:
-> On Wed, Nov 05, 2014 at 03:02:58PM +0000, Charles Keepax wrote:
-> > On Wed, Nov 05, 2014 at 01:04:37PM +0100, Stam, Michel [FINT] wrote:
-> > > Hello Charles,
-> > > 
-> > > After looking around I found the reset value for the 8772 chip, which
-> > > seems to be 0x1E1 (ANAR register).
-> > > 
-> > > This equates to (according to include/uapi/linux/mii.h)
-> > > ADVERTISE_ALL | ADVERTISE_CSMA.
-> > > 
-> > > The register only seems to become 0 if the software reset fails.
->  
-> > Odd it definitely reads back as zero on Arndale. I am guessing
-> > that the root of the problem here is that for some reason Arndale
-> > POR of the ethernet is pants and it needs a full software reset
-> > before it will work and the patch removes the full reset
-> > callback.
+ 
+> Subject: Re: [PATCH 1/6] usb: chipidea: setup ci_hdrc_platform_data in core
+> driver
 > 
-> The asix on arndale comes semi-configured from u-boot, which I guess is
-> not the state kernel expects it to come in. At least in my case where
-> I use tftp from u-boot to load my kernel.
+> Hi guys,
 > 
-> So probably the full reset is needed here to make the asix chip come
-> to a truly pristine state.
+> On Thu, Oct 30, 2014 at 12:43:41PM +0100, Antoine Tenart wrote:
+> > On Thu, Oct 30, 2014 at 12:36:41PM +0100, Antoine Tenart wrote:
+> > > Hello,
+> > >
+> > > This series introduce the ci_hdrc_get_platdata function to help
+> > > setting up the ChipIdea internal ci_hdrc_platform_data structure.
+> > > This helps avoiding duplicating code.
+> > >
+> > > This series comes from a duscission on Berlin's USB pacthes where it
+> > > was asked to move the PHY phandle handling in the ChipIdea core[1].
+> > >
+> > > With the introduction of the ci_hdrc_get_platdata function, the old
+> > > ci_get_platdata function is removed. Changes in ChipIdea drivers
+> > > have also been made.
+> > >
+> > > This series is needed for the Berlin USB support and has been tested
+> > > with an updated version of the USB Berlin driver (not in mainline yet).
+> > >
+> > > [1]
+> > > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/2
+> > > 92383.html
+> > >
+> >
+> > Of course, this is the cover letter so it should be [PATCH 0/6].
+> >
+> > This series depends on the generic PHY framework support in USB and CI:
+> > https://lkml.org/lkml/2014/10/28/807
 > 
-> The commit that Michel partially reverted (by returning to use
-> ax88772_link_reset instead of ax88772_reset), indicates that a strong reset
-> is needed for suspend/resume as well:
+> Any news? I have another series depending on this one waiting in my queue.
+> 
 
-Ok I think I have cracked this one. I am pretty sure you are
-right that the USB comes to us in a strange state and needs
-a full reset, but that only needs to happen once when the driver
-is bound in. So there is some code in ax88772_bind that appears
-to try to reset the device but does a lot less than ax88772_reset
-and I think that must be the problem. Applying the following on
-top of the patch we have been debating I think will make
-everything work for all of us:
+I have some issues on hand now, will review them next week.
 
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -465,19 +465,7 @@ static int ax88772_bind(struct usbnet *dev,
-struct usb_interface *in
-                return ret;
-        }
-
--       ret = asix_sw_reset(dev, AX_SWRESET_IPPD | AX_SWRESET_PRL);
--       if (ret < 0)
--               return ret;
--
--       msleep(150);
--
--       ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
--       if (ret < 0)
--               return ret;
--
--       msleep(150);
--
--       ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL : AX_SWRESET_PRTE);
-+       ax88772_reset(dev);
-
-If you guys could test that and let me know how you get on I will
-send in a proper patch if it looks good.
-
-Thanks,
-Charles
+Peter
