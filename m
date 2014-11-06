@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaKFQ7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:59:18 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56258 "EHLO
+	id S1752182AbaKFQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:59:43 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56255 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaKFQoa (ORCPT
+	with ESMTP id S1751708AbaKFQo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:30 -0500
+	Thu, 6 Nov 2014 11:44:28 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Corey Minyard <minyard@acm.org>,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH v5 21/48] ipmi: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:43:05 -0800
-Message-Id: <1415292213-28652-22-git-send-email-linux@roeck-us.net>
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v5 20/48] mfd: rn5t618: Register power-off handler with kernel power-off handler
+Date: Thu,  6 Nov 2014 08:43:04 -0800
+Message-Id: <1415292213-28652-21-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA56E.01B6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.545BA56C.00AA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 122
+X-CTCH-SenderID-TotalMessages: 120
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -51,14 +51,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with high priority to reflect that the original code
-overwrites pm_power_off unconditionally.
+directly. Register with low priority to reflect that the original code
+only sets pm_power_off if it was not already set.
 
-Register power-off handler after the ipmi system is ready, and unregister
-it prior to cleanup. This avoids having to check for the ready variable
-in the poweroff callback.
-
-Reviewed-by: Corey Minyard <minyard@acm.org>
+Cc: Beniamino Galvani <b.galvani@gmail.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v5:
@@ -72,89 +69,95 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
-- Use pr_warn instead of pr_err
-- Call unregister_power_off_handler on exit only if not already unregistered
+- New patch
 
- drivers/char/ipmi/ipmi_poweroff.c | 25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/mfd/rn5t618.c       | 28 ++++++++++++----------------
+ include/linux/mfd/rn5t618.h |  2 ++
+ 2 files changed, 14 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_poweroff.c b/drivers/char/ipmi/ipmi_poweroff.c
-index 9f2e3be..4ae2f22 100644
---- a/drivers/char/ipmi/ipmi_poweroff.c
-+++ b/drivers/char/ipmi/ipmi_poweroff.c
-@@ -63,9 +63,6 @@ static ipmi_user_t ipmi_user;
- static int ipmi_ifnum;
- static void (*specific_poweroff_func)(ipmi_user_t user);
+diff --git a/drivers/mfd/rn5t618.c b/drivers/mfd/rn5t618.c
+index 6668571..1492025 100644
+--- a/drivers/mfd/rn5t618.c
++++ b/drivers/mfd/rn5t618.c
+@@ -15,6 +15,7 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/rn5t618.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/regmap.h>
  
--/* Holds the old poweroff function so we can restore it on removal. */
--static void (*old_poweroff_func)(void);
+ static const struct mfd_cell rn5t618_cells[] = {
+@@ -47,15 +48,16 @@ static const struct regmap_config rn5t618_regmap_config = {
+ 	.cache_type	= REGCACHE_RBTREE,
+ };
+ 
+-static struct rn5t618 *rn5t618_pm_power_off;
 -
- static int set_param_ifnum(const char *val, struct kernel_param *kp)
+-static void rn5t618_power_off(void)
++static void rn5t618_power_off(struct power_off_handler_block *this)
  {
- 	int rv = param_set_int(val, kp);
-@@ -544,15 +541,17 @@ static struct poweroff_function poweroff_functions[] = {
- 
- 
- /* Called on a powerdown request. */
--static void ipmi_poweroff_function(void)
-+static void ipmi_poweroff_function(struct power_off_handler_block *this)
- {
--	if (!ready)
--		return;
--
- 	/* Use run-to-completion mode, since interrupts may be off. */
- 	specific_poweroff_func(ipmi_user);
++	struct rn5t618 *rn5t618 = container_of(this, struct rn5t618,
++					       power_off_hb);
++
+ 	/* disable automatic repower-on */
+-	regmap_update_bits(rn5t618_pm_power_off->regmap, RN5T618_REPCNT,
++	regmap_update_bits(rn5t618->regmap, RN5T618_REPCNT,
+ 			   RN5T618_REPCNT_REPWRON, 0);
+ 	/* start power-off sequence */
+-	regmap_update_bits(rn5t618_pm_power_off->regmap, RN5T618_SLPCNT,
++	regmap_update_bits(rn5t618->regmap, RN5T618_SLPCNT,
+ 			   RN5T618_SLPCNT_SWPWROFF, RN5T618_SLPCNT_SWPWROFF);
  }
  
-+static struct power_off_handler_block ipmi_power_off_hb = {
-+	.handler = ipmi_poweroff_function,
-+	.priority = POWER_OFF_PRIORITY_HIGH,
-+};
-+
- /* Wait for an IPMI interface to be installed, the first one installed
-    will be grabbed by this code and used to perform the powerdown. */
- static void ipmi_po_new_smi(int if_num, struct device *device)
-@@ -631,9 +630,12 @@ static void ipmi_po_new_smi(int if_num, struct device *device)
- 	printk(KERN_INFO PFX "Found a %s style poweroff function\n",
- 	       poweroff_functions[i].platform_type);
- 	specific_poweroff_func = poweroff_functions[i].poweroff_func;
--	old_poweroff_func = pm_power_off;
--	pm_power_off = ipmi_poweroff_function;
-+
- 	ready = 1;
-+
-+	rv = register_power_off_handler(&ipmi_power_off_hb);
-+	if (rv)
-+		pr_warn(PFX "failed to register power-off handler\n");
- }
- 
- static void ipmi_po_smi_gone(int if_num)
-@@ -644,9 +646,10 @@ static void ipmi_po_smi_gone(int if_num)
- 	if (ipmi_ifnum != if_num)
- 		return;
- 
-+	unregister_power_off_handler(&ipmi_power_off_hb);
-+
- 	ready = 0;
- 	ipmi_destroy_user(ipmi_user);
--	pm_power_off = old_poweroff_func;
- }
- 
- static struct ipmi_smi_watcher smi_watcher = {
-@@ -733,11 +736,11 @@ static void __exit ipmi_poweroff_cleanup(void)
- 	ipmi_smi_watcher_unregister(&smi_watcher);
- 
- 	if (ready) {
-+		unregister_power_off_handler(&ipmi_power_off_hb);
- 		rv = ipmi_destroy_user(ipmi_user);
- 		if (rv)
- 			printk(KERN_ERR PFX "could not cleanup the IPMI"
- 			       " user: 0x%x\n", rv);
--		pm_power_off = old_poweroff_func;
+@@ -85,23 +87,17 @@ static int rn5t618_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
  	}
+ 
+-	if (!pm_power_off) {
+-		rn5t618_pm_power_off = priv;
+-		pm_power_off = rn5t618_power_off;
+-	}
++	priv->power_off_hb.handler = rn5t618_power_off;
++	priv->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
++	ret = devm_register_power_off_handler(&i2c->dev, &priv->power_off_hb);
++	if (ret)
++		dev_warn(&i2c->dev, "Failed to register power-off handler\n");
+ 
+ 	return 0;
  }
- module_exit(ipmi_poweroff_cleanup);
+ 
+ static int rn5t618_i2c_remove(struct i2c_client *i2c)
+ {
+-	struct rn5t618 *priv = i2c_get_clientdata(i2c);
+-
+-	if (priv == rn5t618_pm_power_off) {
+-		rn5t618_pm_power_off = NULL;
+-		pm_power_off = NULL;
+-	}
+-
+ 	mfd_remove_devices(&i2c->dev);
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/rn5t618.h b/include/linux/mfd/rn5t618.h
+index c72d534..87e34b3 100644
+--- a/include/linux/mfd/rn5t618.h
++++ b/include/linux/mfd/rn5t618.h
+@@ -14,6 +14,7 @@
+ #ifndef __LINUX_MFD_RN5T618_H
+ #define __LINUX_MFD_RN5T618_H
+ 
++#include <linux/pm.h>
+ #include <linux/regmap.h>
+ 
+ #define RN5T618_LSIVER			0x00
+@@ -223,6 +224,7 @@ enum {
+ 
+ struct rn5t618 {
+ 	struct regmap *regmap;
++	struct power_off_handler_block power_off_hb;
+ };
+ 
+ #endif /* __LINUX_MFD_RN5T618_H */
 -- 
 1.9.1
 
