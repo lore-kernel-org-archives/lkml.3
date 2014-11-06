@@ -1,389 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaKFILS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:11:18 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:51704 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaKFILP (ORCPT
+	id S1751622AbaKFIMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:12:24 -0500
+Received: from regular1.263xmail.com ([211.150.99.131]:45965 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaKFIMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:11:15 -0500
-X-AuditID: cbfee68d-f79296d000004278-b4-545b2d1dca70
-Message-id: <545B2D1D.6070306@samsung.com>
-Date: Thu, 06 Nov 2014 17:11:09 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Prabu Thangamuthu <Prabu.T@synopsys.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alim Akhtar <alim.akhtar@gmail.com>
-Cc: Manjunath M Bettegowda <Manjunath.MB@synopsys.com>
-Subject: Re: [PATCH V7] mmc: dw_mmc: Add IDMAC 64-bit address mode support
-References: <705D14B1C7978B40A723277C067CEDE21B3344F0@IN01WEMBXB.internal.synopsys.com>
-In-reply-to: <705D14B1C7978B40A723277C067CEDE21B3344F0@IN01WEMBXB.internal.synopsys.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsWyRsSkWFdJNzrEYKafxdJb1RYTLm9ntLi8
-	aw6bxZH//YwWK2bPZbOYsPU4q8WH+xeZLY6vDXfg8Ng56y67x51re9g8brxayOTRt2UVo8eW
-	/Z8ZPT5vkgtgi+KySUnNySxLLdK3S+DKmL5oNnPBmciKC5e3MTUwXnHtYuTkkBAwkZhx7Asj
-	hC0mceHeerYuRi4OIYGljBIPT69hgyk6du0PO0RiOqPExgfzoapeM0rc2LAfrJ1XQEvi5o7f
-	zCA2i4CqxOWdW8FsNgEdie3fjjOB2KICYRKH2uYxQdQLSvyYfI8FZJCIwD4miaOn1oIlmAXM
-	JJrOgKzj5BAW8JLYtnQt2CAhgUiJuUfvsIDYnAJREmvmv2WEqNeR2N86jQ3ClpfYvOYtM8hQ
-	CYFb7BI37t+HukhA4tvkQ0DNHEAJWYlNB5ghXpOUOLjiBssERrFZSG6ahWTsLCRjFzAyr2IU
-	TS1ILihOSi8y1CtOzC0uzUvXS87P3cQIjMTT/5717mC8fcD6EKMAB6MSD6/AiagQIdbEsuLK
-	3EOMpkBXTGSWEk3OB8Z7Xkm8obGZkYWpiamxkbmlmZI4r6LUz2AhgfTEktTs1NSC1KL4otKc
-	1OJDjEwcnFINjOv3ux7gvDXziIvekc/N3k3+CZlfl1o8OHJywk2bhzpnLsqp9jhNPX9n65L/
-	YuvKw/o+Bf5s6fsZqnvlR+edx58Z+F60vd17smKN9tpb4vp6er9zT0y9b2xuVSNjeWLFjylb
-	/9pfPlle1M19KEfw0pybnbLHORazP4peNnHZL1Pm2PU+649ohR9VYinOSDTUYi4qTgQAdvV5
-	sr8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jQV1Z3egQgwkvJSyW3qq2mHB5O6PF
-	5V1z2CyO/O9ntFgxey6bxYStx1ktPty/yGxxfG24A4fHzll32T3uXNvD5nHj1UImj74tqxg9
-	tuz/zOjxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2S
-	i0+ArltmDtA9SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM6YtmMxec
-	iay4cHkbUwPjFdcuRk4OCQETiWPX/rBD2GISF+6tZ+ti5OIQEpjOKLHxwXwo5zWjxI0N+xlB
-	qngFtCRu7vjNDGKzCKhKXN65FcxmE9CR2P7tOBOILSoQJnGobR4TRL2gxI/J91hABokI7GOS
-	OHpqLViCWcBMoukMxGphAS+JbUvXgg0SEoiUmHv0DguIzSkQJbFm/ltGiHodif2t09ggbHmJ
-	zWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc6c+kdzCu
-	arA4xCjAwajEw7vjaFSIEGtiWXFl7iFGCQ5mJRHeXunoECHelMTKqtSi/Pii0pzU4kOMpsAg
-	mMgsJZqcD0xCeSXxhsYmZkaWRuaGFkbG5krivAdbrQOFBNITS1KzU1MLUotg+pg4OKUaGAtN
-	NVzv63YE5m9R2fTxxOdEofQTmrGGTwWZnslvE9vFxDAh8esN3r/nT5akfrGvvPIsVGNHeN2O
-	cy0unzuu/Wif/qpMUO/nS9aIXd+Ee6c/FnunNNf/8OIb91mOJZdJXpaXfSE+0f33gtzWepG5
-	5kdrfhQt/P112faojXf9WxfmhS+9LL674Y0SS3FGoqEWc1FxIgA+8voNCgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 6 Nov 2014 03:12:22 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: wsa@the-dreams.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <70dad6a6034f865c668b382ca3029277>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Addy Ke <addy.ke@rock-chips.com>
+To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
+        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH] i2c: rk3x: fix bug that cause measured high_ns doesn't meet I2C spec
+Date: Thu,  6 Nov 2014 16:11:54 +0800
+Message-Id: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+high_ns calculated from the low division of CLKDIV register is the sum of
+actual measured high_ns and rise_ns. The rise time which related to
+external pull-up resistor can be up to the maximum rise time in I2C spec.
 
-I have tested this patch with 32bit/64bit board.
-It's working fine. 
-After apply this patch, it can be upstream the codes related with exynos7.
+In my test, if external pull-up resistor is 4.7K, rise_ns is about 700ns.
+So the actual measured high_ns is about 3900ns, which is less than 4000ns
+(the minimum high_ns in I2C spec).
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+ drivers/i2c/busses/i2c-rk3x.c | 58 +++++++++++++++++++++++++++----------------
+ 1 file changed, 37 insertions(+), 21 deletions(-)
 
-Best Regards,
-Jaehoon Chung
+diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+index e276ffb..8e1cc2b 100644
+--- a/drivers/i2c/busses/i2c-rk3x.c
++++ b/drivers/i2c/busses/i2c-rk3x.c
+@@ -432,9 +432,12 @@ out:
+ static int rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
+ 			       unsigned long *div_low, unsigned long *div_high)
+ {
++	unsigned long spec_min_low_ns, spec_min_high_ns;
++	unsigned long spec_max_data_hold_ns;
++	unsigned long spec_data_hold_buffer_ns;
++	unsigned long spec_max_rise_ns;
++
+ 	unsigned long min_low_ns, min_high_ns;
+-	unsigned long max_data_hold_ns;
+-	unsigned long data_hold_buffer_ns;
+ 	unsigned long max_low_ns, min_total_ns;
+ 
+ 	unsigned long i2c_rate_khz, scl_rate_khz;
+@@ -453,30 +456,43 @@ static int rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
+ 	if (WARN_ON(scl_rate < 1000))
+ 		scl_rate = 1000;
+ 
++	if (scl_rate <= 100000) {
++		spec_min_low_ns = 4700;
++		spec_min_high_ns = 4000;
++		spec_max_rise_ns = 1000;
++		spec_max_data_hold_ns = 3450;
++		spec_data_hold_buffer_ns = 50;
++	} else {
++		spec_min_low_ns = 1300;
++		spec_min_high_ns = 600;
++		spec_max_rise_ns = 300;
++		spec_max_data_hold_ns = 900;
++		spec_data_hold_buffer_ns = 50;
++	}
++
+ 	/*
+-	 * min_low_ns:  The minimum number of ns we need to hold low
+-	 *		to meet i2c spec
+-	 * min_high_ns: The minimum number of ns we need to hold high
+-	 *		to meet i2c spec
+-	 * max_low_ns:  The maximum number of ns we can hold low
+-	 *		to meet i2c spec
++	 * min_low_ns:  The minimum number of ns we need to hold low.
++	 *		The fall time in RK3X's I2C controller is approximately
++	 *		equal to 0. So min_low_ns = spec_min_low_ns.
++	 * Note: low_ns should be (measured_low_ns + measured_fall_time)
++	 *	 and measured_low_ns must meet I2C spec.
+ 	 *
+-	 * Note: max_low_ns should be (max data hold time * 2 - buffer)
++	 * min_high_ns: The minimum number of ns we need to hold high.
++	 *		The rise time which related to external pull-up resistor
++	 *		can be up to spec_max_rise_ns.
++	 *		So min_high_ns = spec_min_high_ns + spec_max_rise_ns
++	 * Note: high_ns should be (measured_high_ns + measured_rise_time)
++	 *	 and measured_high_ns must meet I2C spec.
++	 *
++	 * max_low_ns:  The maximum number of ns we can hold low.
++	 * Note: max_low_ns should be (max_data_hold_time * 2 - buffer)
+ 	 *	 This is because the i2c host on Rockchip holds the data line
+ 	 *	 for half the low time.
+ 	 */
+-	if (scl_rate <= 100000) {
+-		min_low_ns = 4700;
+-		min_high_ns = 4000;
+-		max_data_hold_ns = 3450;
+-		data_hold_buffer_ns = 50;
+-	} else {
+-		min_low_ns = 1300;
+-		min_high_ns = 600;
+-		max_data_hold_ns = 900;
+-		data_hold_buffer_ns = 50;
+-	}
+-	max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
++	min_low_ns = spec_min_low_ns;
++	min_high_ns = spec_min_high_ns + spec_max_rise_ns;
++	max_low_ns = spec_max_data_hold_ns * 2 - spec_data_hold_buffer_ns;
++
+ 	min_total_ns = min_low_ns + min_high_ns;
+ 
+ 	/* Adjust to avoid overflow */
+-- 
+1.8.3.2
 
-On 10/20/2014 04:12 PM, Prabu Thangamuthu wrote:
-> Synopsys DW_MMC IP core supports Internal DMA Controller with 64-bit address mode from IP version 2.70a onwards.
-> Updated the driver to support IDMAC 64-bit addressing mode.
-> 
-> Signed-off-by: Prabu Thangamuthu <prabu.t@synopsys.com>
-> ---
-> Change log v7:
-> 	- Initialized reserved fileds and buffer size filed to zero.
-> 	- Removed warnings.
-> 
-> Change log v6:
-> 	- Updated with review comment.
-> 
-> Change log v5:
-> 	- Recreated the patch against linux-next as this patch is required for another patch http://www.spinics.net/lists/arm-kernel/msg357985.html
-> 
->  drivers/mmc/host/dw_mmc.c  |  199 +++++++++++++++++++++++++++++++++++---------
->  drivers/mmc/host/dw_mmc.h  |   11 +++
->  include/linux/mmc/dw_mmc.h |    2 +
->  3 files changed, 174 insertions(+), 38 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 69f0cc6..b64393b 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -62,6 +62,24 @@
->  				 SDMMC_IDMAC_INT_FBE | SDMMC_IDMAC_INT_RI | \
->  				 SDMMC_IDMAC_INT_TI)
->  
-> +struct idmac_desc_64addr {
-> +	u32		des0;	/* Control Descriptor */
-> +
-> +	u32		des1;	/* Reserved */
-> +
-> +	u32		des2;	/*Buffer sizes */
-> +#define IDMAC_64ADDR_SET_BUFFER1_SIZE(d, s) \
-> +	((d)->des2 = ((d)->des2 & 0x03ffe000) | ((s) & 0x1fff))
-> +
-> +	u32		des3;	/* Reserved */
-> +
-> +	u32		des4;	/* Lower 32-bits of Buffer Address Pointer 1*/
-> +	u32		des5;	/* Upper 32-bits of Buffer Address Pointer 1*/
-> +
-> +	u32		des6;	/* Lower 32-bits of Next Descriptor Address */
-> +	u32		des7;	/* Upper 32-bits of Next Descriptor Address */
-> +};
-> +
->  struct idmac_desc {
->  	u32		des0;	/* Control Descriptor */
->  #define IDMAC_DES0_DIC	BIT(1)
-> @@ -414,30 +432,66 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
->  				    unsigned int sg_len)
->  {
->  	int i;
-> -	struct idmac_desc *desc = host->sg_cpu;
-> +	if (host->dma_64bit_address == 1) {
-> +		struct idmac_desc_64addr *desc = host->sg_cpu;
->  
-> -	for (i = 0; i < sg_len; i++, desc++) {
-> -		unsigned int length = sg_dma_len(&data->sg[i]);
-> -		u32 mem_addr = sg_dma_address(&data->sg[i]);
-> +		for (i = 0; i < sg_len; i++, desc++) {
-> +			unsigned int length = sg_dma_len(&data->sg[i]);
-> +			u64 mem_addr = sg_dma_address(&data->sg[i]);
->  
-> -		/* Set the OWN bit and disable interrupts for this descriptor */
-> -		desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC | IDMAC_DES0_CH;
-> +			/*
-> +			 * Set the OWN bit and disable interrupts for this
-> +			 * descriptor
-> +			 */
-> +			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
-> +						IDMAC_DES0_CH;
-> +			/* Buffer length */
-> +			IDMAC_64ADDR_SET_BUFFER1_SIZE(desc, length);
-> +
-> +			/* Physical address to DMA to/from */
-> +			desc->des4 = mem_addr & 0xffffffff;
-> +			desc->des5 = mem_addr >> 32;
-> +		}
->  
-> -		/* Buffer length */
-> -		IDMAC_SET_BUFFER1_SIZE(desc, length);
-> +		/* Set first descriptor */
-> +		desc = host->sg_cpu;
-> +		desc->des0 |= IDMAC_DES0_FD;
->  
-> -		/* Physical address to DMA to/from */
-> -		desc->des2 = mem_addr;
-> -	}
-> +		/* Set last descriptor */
-> +		desc = host->sg_cpu + (i - 1) *
-> +				sizeof(struct idmac_desc_64addr);
-> +		desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
-> +		desc->des0 |= IDMAC_DES0_LD;
-> +
-> +	} else {
-> +		struct idmac_desc *desc = host->sg_cpu;
-> +
-> +		for (i = 0; i < sg_len; i++, desc++) {
-> +			unsigned int length = sg_dma_len(&data->sg[i]);
-> +			u32 mem_addr = sg_dma_address(&data->sg[i]);
-> +
-> +			/*
-> +			 * Set the OWN bit and disable interrupts for this
-> +			 * descriptor
-> +			 */
-> +			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
-> +						IDMAC_DES0_CH;
-> +			/* Buffer length */
-> +			IDMAC_SET_BUFFER1_SIZE(desc, length);
-> +
-> +			/* Physical address to DMA to/from */
-> +			desc->des2 = mem_addr;
-> +		}
->  
-> -	/* Set first descriptor */
-> -	desc = host->sg_cpu;
-> -	desc->des0 |= IDMAC_DES0_FD;
-> +		/* Set first descriptor */
-> +		desc = host->sg_cpu;
-> +		desc->des0 |= IDMAC_DES0_FD;
->  
-> -	/* Set last descriptor */
-> -	desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
-> -	desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
-> -	desc->des0 |= IDMAC_DES0_LD;
-> +		/* Set last descriptor */
-> +		desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
-> +		desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
-> +		desc->des0 |= IDMAC_DES0_LD;
-> +	}
->  
->  	wmb();
->  }
-> @@ -466,29 +520,71 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
->  
->  static int dw_mci_idmac_init(struct dw_mci *host)
->  {
-> -	struct idmac_desc *p;
->  	int i;
->  
-> -	/* Number of descriptors in the ring buffer */
-> -	host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
-> +	if (host->dma_64bit_address == 1) {
-> +		struct idmac_desc_64addr *p;
-> +		/* Number of descriptors in the ring buffer */
-> +		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc_64addr);
-> +
-> +		/* Forward link the descriptor list */
-> +		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1;
-> +								i++, p++) {
-> +			p->des6 = (host->sg_dma +
-> +					(sizeof(struct idmac_desc_64addr) *
-> +							(i + 1))) & 0xffffffff;
-> +
-> +			p->des7 = (u64)(host->sg_dma +
-> +					(sizeof(struct idmac_desc_64addr) *
-> +							(i + 1))) >> 32;
-> +			/* Initialize reserved and buffer size fields to "0" */
-> +			p->des1 = 0;
-> +			p->des2 = 0;
-> +			p->des3 = 0;
-> +		}
-> +
-> +		/* Set the last descriptor as the end-of-ring descriptor */
-> +		p->des6 = host->sg_dma & 0xffffffff;
-> +		p->des7 = (u64)host->sg_dma >> 32;
-> +		p->des0 = IDMAC_DES0_ER;
-> +
-> +	} else {
-> +		struct idmac_desc *p;
-> +		/* Number of descriptors in the ring buffer */
-> +		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
->  
-> -	/* Forward link the descriptor list */
-> -	for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
-> -		p->des3 = host->sg_dma + (sizeof(struct idmac_desc) * (i + 1));
-> +		/* Forward link the descriptor list */
-> +		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
-> +			p->des3 = host->sg_dma + (sizeof(struct idmac_desc) *
-> +								(i + 1));
->  
-> -	/* Set the last descriptor as the end-of-ring descriptor */
-> -	p->des3 = host->sg_dma;
-> -	p->des0 = IDMAC_DES0_ER;
-> +		/* Set the last descriptor as the end-of-ring descriptor */
-> +		p->des3 = host->sg_dma;
-> +		p->des0 = IDMAC_DES0_ER;
-> +	}
->  
->  	dw_mci_idmac_reset(host);
->  
-> -	/* Mask out interrupts - get Tx & Rx complete only */
-> -	mci_writel(host, IDSTS, IDMAC_INT_CLR);
-> -	mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI | SDMMC_IDMAC_INT_RI |
-> -		   SDMMC_IDMAC_INT_TI);
-> +	if (host->dma_64bit_address == 1) {
-> +		/* Mask out interrupts - get Tx & Rx complete only */
-> +		mci_writel(host, IDSTS64, IDMAC_INT_CLR);
-> +		mci_writel(host, IDINTEN64, SDMMC_IDMAC_INT_NI |
-> +				SDMMC_IDMAC_INT_RI | SDMMC_IDMAC_INT_TI);
-> +
-> +		/* Set the descriptor base address */
-> +		mci_writel(host, DBADDRL, host->sg_dma & 0xffffffff);
-> +		mci_writel(host, DBADDRU, (u64)host->sg_dma >> 32);
-> +
-> +	} else {
-> +		/* Mask out interrupts - get Tx & Rx complete only */
-> +		mci_writel(host, IDSTS, IDMAC_INT_CLR);
-> +		mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI |
-> +				SDMMC_IDMAC_INT_RI | SDMMC_IDMAC_INT_TI);
-> +
-> +		/* Set the descriptor base address */
-> +		mci_writel(host, DBADDR, host->sg_dma);
-> +	}
->  
-> -	/* Set the descriptor base address */
-> -	mci_writel(host, DBADDR, host->sg_dma);
->  	return 0;
->  }
->  
-> @@ -2045,11 +2141,22 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
->  
->  #ifdef CONFIG_MMC_DW_IDMAC
->  	/* Handle DMA interrupts */
-> -	pending = mci_readl(host, IDSTS);
-> -	if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
-> -		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
-> -		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
-> -		host->dma_ops->complete(host);
-> +	if (host->dma_64bit_address == 1) {
-> +		pending = mci_readl(host, IDSTS64);
-> +		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
-> +			mci_writel(host, IDSTS64, SDMMC_IDMAC_INT_TI |
-> +							SDMMC_IDMAC_INT_RI);
-> +			mci_writel(host, IDSTS64, SDMMC_IDMAC_INT_NI);
-> +			host->dma_ops->complete(host);
-> +		}
-> +	} else {
-> +		pending = mci_readl(host, IDSTS);
-> +		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
-> +			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI |
-> +							SDMMC_IDMAC_INT_RI);
-> +			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
-> +			host->dma_ops->complete(host);
-> +		}
->  	}
->  #endif
->  
-> @@ -2309,6 +2416,22 @@ static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
->  
->  static void dw_mci_init_dma(struct dw_mci *host)
->  {
-> +	int addr_config;
-> +	/* Check ADDR_CONFIG bit in HCON to find IDMAC address bus width */
-> +	addr_config = (mci_readl(host, HCON) >> 27) & 0x01;
-> +
-> +	if (addr_config == 1) {
-> +		/* host supports IDMAC in 64-bit address mode */
-> +		host->dma_64bit_address = 1;
-> +		dev_info(host->dev, "IDMAC supports 64-bit address mode.\n");
-> +		if (!dma_set_mask(host->dev, DMA_BIT_MASK(64)))
-> +			dma_set_coherent_mask(host->dev, DMA_BIT_MASK(64));
-> +	} else {
-> +		/* host supports IDMAC in 32-bit address mode */
-> +		host->dma_64bit_address = 0;
-> +		dev_info(host->dev, "IDMAC supports 32-bit address mode.\n");
-> +	}
-> +
->  	/* Alloc memory for sg translation */
->  	host->sg_cpu = dmam_alloc_coherent(host->dev, PAGE_SIZE,
->  					  &host->sg_dma, GFP_KERNEL);
-> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-> index 01b99e8..64b04aa 100644
-> --- a/drivers/mmc/host/dw_mmc.h
-> +++ b/drivers/mmc/host/dw_mmc.h
-> @@ -55,6 +55,17 @@
->  #define SDMMC_BUFADDR		0x098
->  #define SDMMC_CDTHRCTL		0x100
->  #define SDMMC_DATA(x)		(x)
-> +/*
-> +* Registers to support idmac 64-bit address mode
-> +*/
-> +#define SDMMC_DBADDRL		0x088
-> +#define SDMMC_DBADDRU		0x08c
-> +#define SDMMC_IDSTS64		0x090
-> +#define SDMMC_IDINTEN64		0x094
-> +#define SDMMC_DSCADDRL		0x098
-> +#define SDMMC_DSCADDRU		0x09c
-> +#define SDMMC_BUFADDRL		0x0A0
-> +#define SDMMC_BUFADDRU		0x0A4
->  
->  /*
->   * Data offset is difference according to Version
-> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-> index 0013669..9e6eabb 100644
-> --- a/include/linux/mmc/dw_mmc.h
-> +++ b/include/linux/mmc/dw_mmc.h
-> @@ -54,6 +54,7 @@ struct mmc_data;
->   *	transfer is in progress.
->   * @use_dma: Whether DMA channel is initialized or not.
->   * @using_dma: Whether DMA is in use for the current transfer.
-> + * @dma_64bit_address: Whether DMA supports 64-bit address mode or not.
->   * @sg_dma: Bus address of DMA buffer.
->   * @sg_cpu: Virtual address of DMA buffer.
->   * @dma_ops: Pointer to platform-specific DMA callbacks.
-> @@ -140,6 +141,7 @@ struct dw_mci {
->  	/* DMA interface members*/
->  	int			use_dma;
->  	int			using_dma;
-> +	int			dma_64bit_address;
->  
->  	dma_addr_t		sg_dma;
->  	void			*sg_cpu;
-> 
 
