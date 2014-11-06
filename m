@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaKFCSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:18:47 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62333 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052AbaKFCSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:18:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,323,1413270000"; 
-   d="scan'208";a="627384823"
-Message-ID: <545ADA1D.1000800@linux.intel.com>
-Date: Thu, 06 Nov 2014 10:17:01 +0800
-From: "Lu, Baolu" <baolu.lu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751694AbaKFCTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:19:38 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55063 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751033AbaKFCTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 21:19:36 -0500
+X-Sasl-enc: 9SO9EKgF3YXS270ZDznMRHfW6HJiEEzhotGUtM9cS3/9 1415240375
+Date: Wed, 5 Nov 2014 18:19:34 -0800
+From: Greg KH <greg@kroah.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: linux-next: manual merge of the usb tree with the usb.current
+ tree
+Message-ID: <20141106021934.GB17253@kroah.com>
+References: <20141105151825.26c53948@canb.auug.org.au>
+ <20141105043030.GB10613@kroah.com>
+ <1415176413.20372.206.camel@x220>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] usb: xhci: This reworks ff8cbf250b448aac35589f6075082c3fcad8a8fe
-References: <Pine.LNX.4.44L0.1411051621280.1531-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1411051621280.1531-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415176413.20372.206.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 05, 2014 at 09:33:33AM +0100, Paul Bolle wrote:
+> On Tue, 2014-11-04 at 20:30 -0800, Greg KH wrote:
+> > On Wed, Nov 05, 2014 at 03:18:25PM +1100, Stephen Rothwell wrote: 
+> > > Today's linux-next merge of the usb tree got a conflict in
+> > > drivers/usb/host/Kconfig between commit cd6e245a2d06 ("usb: Remove
+> > > references to non-existent PLAT_S5P symbol") from the usb.current tree
+> > > and commit dd3cf17488b1 ("usb: host: Remove optional dependencies on
+> > > PLAT_S5P") from the usb tree.
+> > > 
+> > > I fixed it up (I used the usb tree version) and can carry the fix as
+> > > necessary (no action is required).
+> > 
+> > That's the correct fix, thanks for doing that.
+> 
+> Shouldn't that be the other way round?
 
-On 11/6/2014 5:24 AM, Alan Stern wrote:
-> On Wed, 5 Nov 2014, Lu Baolu wrote:
->
->> xhci: clear root port wake on bits if controller isn't allowed to do wakeup
->>
->> When system is being suspended, if host device is not allowed to do wakeup,
->> xhci_suspend() needs to clear all root port wake on bits. Otherwise, some
->> platforms may generate spurious wakeup, even if PCI PME# is disabled.
->>
->> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
->> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
-> This looks pretty good now.
->
->> +static void xhci_disable_port_wake_on_bits(struct xhci_hcd *xhci)
->> +{
->> +	int port_index;
->> +	__le32 __iomem **port_array;
->> +	unsigned long flags;
->> +	u32 t1, t2;
->> +
->> +	spin_lock_irqsave(&xhci->lock, flags);
->> +
->> +	/* disble usb3 ports Wake bits*/
->> +	port_index = xhci->num_usb3_ports;
->> +	port_array = xhci->usb3_ports;
->> +	while (port_index--) {
->> +		t1 = readl(port_array[port_index]);
->> +		t2 = xhci_port_state_to_neutral(t1);
->> +		t2 &= ~PORT_WAKE_BITS;
->> +		t1 = xhci_port_state_to_neutral(t1);
->> +		if (t1 != t2)
->> +			writel(t2, port_array[port_index]);
-> Why not just do:
->
-> 		t1 = readl(port_array[port_index]);
-> 		t1 = xhci_port_state_to_neutral(t1);
-> 		t2 = t1 & ~PORT_WAKE_BITS;
-> 		if (t1 != t2) ...
-Right, this looks better. I will test and resend the patches with this 
-change.
+Sorry, you are right, I read the merge backwards.
 
->
-> Apart from that minor point,
->
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
->
-> Alan Stern
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I thought we would choose Sylwester's commit from the usb.current tree
+> over my commit from the usb tree. Or will Sylwester's commit end up in
+> linux-next through yet another usb tree?
 
+I will do that when I do the merge in my tree when it hits Linus's tree.
+
+thanks,
+
+greg k-h
