@@ -1,123 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbaKFWUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:20:40 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55350 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKFWUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:20:36 -0500
-Date: Thu, 6 Nov 2014 14:20:31 -0800
-From: josh@joshtriplett.org
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Aristeu Rozanski <arozansk@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fabian Frederick <fabf@skynet.be>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>, Thomas Graf <tgraf@suug.ch>,
-        Ying Xue <ying.xue@windriver.com>
-Subject: Re: [PATCH] lib/rhashtable: make build optional
-Message-ID: <20141106222031.GA7424@cloud>
-References: <1415309263-13063-1-git-send-email-aris@redhat.com>
+	id S1751352AbaKFWUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:20:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36379 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069AbaKFWUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 17:20:52 -0500
+Date: Thu, 6 Nov 2014 23:20:48 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+In-Reply-To: <20141106162049.GA14689@cerebellum.variantweb.net>
+Message-ID: <alpine.LNX.2.00.1411062312220.29198@pobox.suse.cz>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com> <1415284748-14648-3-git-send-email-sjenning@redhat.com> <alpine.LNX.2.00.1411061607250.29198@pobox.suse.cz> <20141106162049.GA14689@cerebellum.variantweb.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415309263-13063-1-git-send-email-aris@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 04:27:43PM -0500, Aristeu Rozanski wrote:
-> From: Aristeu Rozanski <arozansk@redhat.com>
-> 
-> rhashtable currently is built unconditionally:
-> 	text    data     bss     dec     hex filename
-> 	9158    2008    5264   16430    402e lib/rhashtable.o
-> 	9158    2008    5264   16430    402e (TOTALS)
-> 
-> and it's used by netlink (which currently can't be optionally built if
-> CONFIG_NET is enabled) and netfilter_hash. This patch is useful for
-> situations in which memory footprint is a concern and networking is not
-> enabled.
-> 
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Fabian Frederick <fabf@skynet.be>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Thomas Graf <tgraf@suug.ch>
-> Cc: Ying Xue <ying.xue@windriver.com>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+On Thu, 6 Nov 2014, Seth Jennings wrote:
 
-I already have a patch for this in the tiny tree (tiny/no-rhashtable),
-using a non-user-visible Kconfig symbol.
-
-Sorry that you ran into some projects that have already been completed.
-I'll try to keep the tinification projects list more up to date; I've
-been getting patches *very* rapidly, and just about the entire "small"
-project list is either done or in progress.
-
-- Josh Triplett
-
->  lib/Kconfig  | 6 ++++++
->  lib/Makefile | 4 +++-
->  net/Kconfig  | 1 +
->  3 files changed, 10 insertions(+), 1 deletion(-)
+> > Thanks a lot for having started the work on this!
+> > 
+> > We will be reviewing it carefully in the coming days and will getting back 
+> > to you (I was surprised to see that that diffstat indicates that it's 
+> > actually more code than our whole kgraft implementation including the 
+> > consistency model :) ).
 > 
-> diff --git a/lib/Kconfig b/lib/Kconfig
-> index 108196c..d6b8879 100644
-> --- a/lib/Kconfig
-> +++ b/lib/Kconfig
-> @@ -369,6 +369,12 @@ config ASSOCIATIVE_ARRAY
->  
->  	  for more information.
->  
-> +config RHASH_TABLE
-> +	bool "Resizable hash table"
-> +	default y
-> +	help
-> +	  Resizable, scalable and concurrent hash table implementation.
-> +
->  config HAS_IOMEM
->  	boolean
->  	depends on !NO_IOMEM
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 53fd120..43d29ff 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -26,7 +26,7 @@ obj-y += bcd.o div64.o sort.o parser.o debug_locks.o random32.o \
->  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
->  	 gcd.o lcm.o list_sort.o uuid.o iovec.o clz_ctz.o \
->  	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
-> -	 percpu-refcount.o percpu_ida.o hash.o rhashtable.o
-> +	 percpu-refcount.o percpu_ida.o hash.o
->  obj-y += string_helpers.o
->  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
->  obj-y += kstrtox.o
-> @@ -155,6 +155,8 @@ obj-$(CONFIG_GENERIC_NET_UTILS) += net_utils.o
->  
->  obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
->  
-> +obj-$(CONFIG_RHASH_TABLE) += rhashtable.o
-> +
->  libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o \
->  	       fdt_empty_tree.o
->  $(foreach file, $(libfdt_files), \
-> diff --git a/net/Kconfig b/net/Kconfig
-> index 99815b5..d376630 100644
-> --- a/net/Kconfig
-> +++ b/net/Kconfig
-> @@ -7,6 +7,7 @@ menuconfig NET
->  	select NLATTR
->  	select GENERIC_NET_UTILS
->  	select BPF
-> +	select RHASH_TABLE
->  	---help---
->  	  Unless you really know what you are doing, you should say Y here.
->  	  The reason is that some programs need kernel networking support even
-> -- 
-> 1.8.3.1
-> 
+> The structure allocation and sysfs stuff is a lot of (mundane) code.
+> Lots of boring error path handling too.
+
+Also, lpc_create_object(), lpc_create_func(), lpc_create_patch(), 
+lpc_create_objects(), lpc_create_funcs(), ... they all are pretty much 
+alike, and are asking for some kind of unification ... perhaps iterator 
+for generic structure initialization?
+
+I am not also really fully convinced that we need the patch->object->funcs 
+abstraction hierarchy (which also contributes to the structure allocation 
+being rather a spaghetti copy/paste code) ... wouldn't patch->funcs be 
+suffcient, with the "object" being made just a property of the function, 
+for example?
+
+> Plus, I show that kernel/kgraft.c + kernel/kgraft_files.c is
+> 906+193=1099.  I'd say they are about the same size :)
+
+Which is still seem to me to be a ratio worth thinking about improving :)
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
