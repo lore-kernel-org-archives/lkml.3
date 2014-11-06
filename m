@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930AbaKFWms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:42:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58909 "EHLO
+	id S1753311AbaKFXA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:00:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58927 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaKFWmm (ORCPT
+	with ESMTP id S1752932AbaKFWmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:42 -0500
+	Thu, 6 Nov 2014 17:42:49 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robin van der Gracht <robin@protonic.nl>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 109/162] iio: st_sensors: Fix buffer copy
-Date: Thu,  6 Nov 2014 14:36:13 -0800
-Message-Id: <1415313426-9622-110-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 105/162] KVM: x86: Handle errors when RIP is set during far jumps
+Date: Thu,  6 Nov 2014 14:36:09 -0800
+Message-Id: <1415313426-9622-106-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,33 +27,252 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin van der Gracht <robin@protonic.nl>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 4250c90b30b8bf2a1a21122ba0484f8f351f152d upstream.
+commit d1442d85cc30ea75f7d399474ca738e0bc96f715 upstream.
 
-Use byte_for_channel as iterator to properly initialize the buffer.
+Far jmp/call/ret may fault while loading a new RIP.  Currently KVM does not
+handle this case, and may result in failed vm-entry once the assignment is
+done.  The tricky part of doing so is that loading the new CS affects the
+VMCS/VMCB state, so if we fail during loading the new RIP, we are left in
+unconsistent state.  Therefore, this patch saves on 64-bit the old CS
+descriptor and restores it if loading RIP failed.
 
-Signed-off-by: Robin van der Gracht <robin@protonic.nl>
-Acked-by: Denis Ciocca <denis.ciocca@st.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This fixes CVE-2014-3647.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[ kamal: backport to 3.13-stable: context; __long_segment_descriptor args ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/common/st_sensors/st_sensors_buffer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/emulate.c | 117 ++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 87 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/iio/common/st_sensors/st_sensors_buffer.c b/drivers/iio/common/st_sensors/st_sensors_buffer.c
-index 1665c8e..e18bc67 100644
---- a/drivers/iio/common/st_sensors/st_sensors_buffer.c
-+++ b/drivers/iio/common/st_sensors/st_sensors_buffer.c
-@@ -71,7 +71,7 @@ int st_sensors_get_buffer_element(struct iio_dev *indio_dev, u8 *buf)
- 				goto st_sensors_free_memory;
- 			}
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 300c164..a440bea 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1437,7 +1437,8 @@ static int write_segment_descriptor(struct x86_emulate_ctxt *ctxt,
  
--			for (i = 0; i < n * num_data_channels; i++) {
-+			for (i = 0; i < n * byte_for_channel; i++) {
- 				if (i < n)
- 					buf[i] = rx_array[i];
- 				else
+ /* Does not support long mode */
+ static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+-				     u16 selector, int seg, u8 cpl)
++				     u16 selector, int seg, u8 cpl,
++				     struct desc_struct *desc)
+ {
+ 	struct desc_struct seg_desc, old_desc;
+ 	u8 dpl, rpl;
+@@ -1563,6 +1564,8 @@ static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+ 	}
+ load:
+ 	ctxt->ops->set_segment(ctxt, selector, &seg_desc, 0, seg);
++	if (desc)
++		*desc = seg_desc;
+ 	return X86EMUL_CONTINUE;
+ exception:
+ 	emulate_exception(ctxt, err_vec, err_code, true);
+@@ -1573,7 +1576,7 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+ 				   u16 selector, int seg)
+ {
+ 	u8 cpl = ctxt->ops->cpl(ctxt);
+-	return __load_segment_descriptor(ctxt, selector, seg, cpl);
++	return __load_segment_descriptor(ctxt, selector, seg, cpl, NULL);
+ }
+ 
+ static void write_register_operand(struct operand *op)
+@@ -1970,17 +1973,31 @@ static int em_iret(struct x86_emulate_ctxt *ctxt)
+ static int em_jmp_far(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
+-	unsigned short sel;
++	unsigned short sel, old_sel;
++	struct desc_struct old_desc, new_desc;
++	const struct x86_emulate_ops *ops = ctxt->ops;
++	u8 cpl = ctxt->ops->cpl(ctxt);
++
++	/* Assignment of RIP may only fail in 64-bit mode */
++	if (ctxt->mode == X86EMUL_MODE_PROT64)
++		ops->get_segment(ctxt, &old_sel, &old_desc, NULL,
++				 VCPU_SREG_CS);
+ 
+ 	memcpy(&sel, ctxt->src.valptr + ctxt->op_bytes, 2);
+ 
+-	rc = load_segment_descriptor(ctxt, sel, VCPU_SREG_CS);
++	rc = __load_segment_descriptor(ctxt, sel, VCPU_SREG_CS, cpl,
++				       &new_desc);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 
+-	ctxt->_eip = 0;
+-	memcpy(&ctxt->_eip, ctxt->src.valptr, ctxt->op_bytes);
+-	return X86EMUL_CONTINUE;
++	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
++	if (rc != X86EMUL_CONTINUE) {
++		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
++		/* assigning eip failed; restore the old cs */
++		ops->set_segment(ctxt, old_sel, &old_desc, 0, VCPU_SREG_CS);
++		return rc;
++	}
++	return rc;
+ }
+ 
+ static int em_grp45(struct x86_emulate_ctxt *ctxt)
+@@ -2044,21 +2061,34 @@ static int em_ret(struct x86_emulate_ctxt *ctxt)
+ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
+-	unsigned long cs;
++	unsigned long eip, cs;
++	u16 old_cs;
+ 	int cpl = ctxt->ops->cpl(ctxt);
++	struct desc_struct old_desc, new_desc;
++	const struct x86_emulate_ops *ops = ctxt->ops;
++
++	if (ctxt->mode == X86EMUL_MODE_PROT64)
++		ops->get_segment(ctxt, &old_cs, &old_desc, NULL,
++				 VCPU_SREG_CS);
+ 
+-	rc = emulate_pop(ctxt, &ctxt->_eip, ctxt->op_bytes);
++	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+-	if (ctxt->op_bytes == 4)
+-		ctxt->_eip = (u32)ctxt->_eip;
+ 	rc = emulate_pop(ctxt, &cs, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
+ 	/* Outer-privilege level return is not implemented */
+ 	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
+ 		return X86EMUL_UNHANDLEABLE;
+-	rc = load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS);
++	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, 0,
++				       &new_desc);
++	if (rc != X86EMUL_CONTINUE)
++		return rc;
++	rc = assign_eip_far(ctxt, eip, new_desc.l);
++	if (rc != X86EMUL_CONTINUE) {
++		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
++		ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
++	}
+ 	return rc;
+ }
+ 
+@@ -2482,19 +2512,24 @@ static int load_state_from_tss16(struct x86_emulate_ctxt *ctxt,
+ 	 * Now load segment descriptors. If fault happens at this stage
+ 	 * it is handled in a context of new task
+ 	 */
+-	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+ 
+@@ -2620,25 +2655,32 @@ static int load_state_from_tss32(struct x86_emulate_ctxt *ctxt,
+ 	 * Now load segment descriptors. If fault happenes at this stage
+ 	 * it is handled in a context of new task
+ 	 */
+-	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR,
++					cpl, NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+-	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl);
++	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl,
++					NULL);
+ 	if (ret != X86EMUL_CONTINUE)
+ 		return ret;
+ 
+@@ -2918,24 +2960,39 @@ static int em_call_far(struct x86_emulate_ctxt *ctxt)
+ 	u16 sel, old_cs;
+ 	ulong old_eip;
+ 	int rc;
++	struct desc_struct old_desc, new_desc;
++	const struct x86_emulate_ops *ops = ctxt->ops;
++	int cpl = ctxt->ops->cpl(ctxt);
+ 
+-	old_cs = get_segment_selector(ctxt, VCPU_SREG_CS);
+ 	old_eip = ctxt->_eip;
++	ops->get_segment(ctxt, &old_cs, &old_desc, NULL, VCPU_SREG_CS);
+ 
+ 	memcpy(&sel, ctxt->src.valptr + ctxt->op_bytes, 2);
+-	if (load_segment_descriptor(ctxt, sel, VCPU_SREG_CS))
++	rc = __load_segment_descriptor(ctxt, sel, VCPU_SREG_CS, cpl,
++				       &new_desc);
++	if (rc != X86EMUL_CONTINUE)
+ 		return X86EMUL_CONTINUE;
+ 
+-	ctxt->_eip = 0;
+-	memcpy(&ctxt->_eip, ctxt->src.valptr, ctxt->op_bytes);
++	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
++	if (rc != X86EMUL_CONTINUE)
++		goto fail;
+ 
+ 	ctxt->src.val = old_cs;
+ 	rc = em_push(ctxt);
+ 	if (rc != X86EMUL_CONTINUE)
+-		return rc;
++		goto fail;
+ 
+ 	ctxt->src.val = old_eip;
+-	return em_push(ctxt);
++	rc = em_push(ctxt);
++	/* If we failed, we tainted the memory, but the very least we should
++	   restore cs */
++	if (rc != X86EMUL_CONTINUE)
++		goto fail;
++	return rc;
++fail:
++	ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
++	return rc;
++
+ }
+ 
+ static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
 -- 
 1.9.1
 
