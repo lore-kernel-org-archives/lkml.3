@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaKFQVC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:21:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54091 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122AbaKFQU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:20:58 -0500
-Date: Thu, 6 Nov 2014 10:20:49 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
-        kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] kernel: add support for live patching
-Message-ID: <20141106162049.GA14689@cerebellum.variantweb.net>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
- <1415284748-14648-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411061607250.29198@pobox.suse.cz>
+	id S1751346AbaKFQWd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:22:33 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:37121 "HELO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751133AbaKFQWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:22:31 -0500
+X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 11:22:31 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411061607250.29198@pobox.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+mtBx87o1Lo2zpMyUGC_P+7+DmXnZyA2NF0-GYCEWiRh6VJQg@mail.gmail.com>
+References: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
+ <20141105.163825.1433973842938441546.davem@davemloft.net> <20141106010501.GA18339@gmail.com>
+ <20141105.211558.969082848816106943.davem@davemloft.net> <CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
+ <CF9D1877D81D214CB0CA0669EFAE020C68CC79EF@CMEXMB1.ad.emulex.com> <CA+mtBx87o1Lo2zpMyUGC_P+7+DmXnZyA2NF0-GYCEWiRh6VJQg@mail.gmail.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Thu, 6 Nov 2014 08:15:46 -0800
+Message-ID: <CAEP_g=_59JW8a0DRT8XcCAbDCnY1mzX8-bNcuVUL+sa8WBAHow@mail.gmail.com>
+Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
+To: Tom Herbert <therbert@google.com>
+Cc: Sathya Perla <Sathya.Perla@emulex.com>, David Miller <davem@davemloft.net>,
+        Joe Stringer <joestringer@nicira.com>,
+        Or Gerlitz <gerlitz.or@gmail.com>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Amir Vadai <amirv@mellanox.com>,
+        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
+        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 04:11:37PM +0100, Jiri Kosina wrote:
-> On Thu, 6 Nov 2014, Seth Jennings wrote:
-> 
-> > This commit introduces code for the live patching core.  It implements
-> > an ftrace-based mechanism and kernel interface for doing live patching
-> > of kernel and kernel module functions.
-> > 
-> > It represents the greatest common functionality set between kpatch and
-> > kgraft and can accept patches built using either method.
-> > 
-> > This first version does not implement any consistency mechanism that
-> > ensures that old and new code do not run together.  In practice, ~90% of
-> > CVEs are safe to apply in this way, since they simply add a conditional
-> > check.  However, any function change that can not execute safely with
-> > the old version of the function can _not_ be safely applied in this
-> > version.
-> 
-> Thanks a lot for having started the work on this!
-> 
-> We will be reviewing it carefully in the coming days and will getting back 
-> to you (I was surprised to see that that diffstat indicates that it's 
-> actually more code than our whole kgraft implementation including the 
-> consistency model :) ).
+On Thu, Nov 6, 2014 at 8:06 AM, Tom Herbert <therbert@google.com> wrote:
+> On Wed, Nov 5, 2014 at 10:16 PM, Sathya Perla <Sathya.Perla@emulex.com> wrote:
+>>> -----Original Message-----
+>>> From: Tom Herbert [mailto:therbert@google.com]
+>>>
+>>> On Wed, Nov 5, 2014 at 6:15 PM, David Miller <davem@davemloft.net>
+>>> wrote:
+>>> > From: Joe Stringer <joestringer@nicira.com>
+>>> > Date: Wed, 5 Nov 2014 17:06:46 -0800
+>>> >
+>>> >> My impression was that the changes are more likely to be
+>>> >> hardware-specific (like the i40e changes) rather than software-specific,
+>>> >> like changes that might be integrated into the helper.
+>>> >
+>>> > I think there is more commonality amongst hardware capabilities,
+>>> > and this is why I want the helper to play itself out.
+>>> >
+>>> >> That said, I can rework for one helper. The way I see it would be the
+>>> >> same code as these patches, as "vxlan_gso_check(struct sk_buff *)" in
+>>> >> drivers/net/vxlan.c which would be called from each driver. Is that what
+>>> >> you had in mind?
+>>> >
+>>> > Yes.
+>>>
+>>> Note that this code is not VXLAN specific, it will also accept NVGRE
+>>> and GRE/UDP with keyid and TEB. I imagine all these cases should be
+>>> indistinguishable to the hardware so they probably just work (which
+>>> would be cool!). It might be better to name and locate the helper
+>>> function to reflect that.
+>>
+>> Tom, I'm confused as to how the value of (skb_inner_mac_header(skb) - skb_transport_header(skb))
+>> would be the same for VxLAN and NVGRE encapsulated packets. Wouldn't this value be 16 for VxLAN
+>> and 8 for NVGRE?
+>>
+> The inner headers are reset in iptunnel_handle_offloads. This is
+> called in the xmit encapsulation functions (GRE, fou, VXLAN, etc.)
+> before adding in encapsulation headers (skb_push), so the
+> mac_inner_header will point to the encapsulation payload, i.e. the
+> encapsulated packet. This should not change after being set, although
+> inner network and inner transport can. The headers are only set on the
+> first encapsulation, so with nested tunnels the inner headers point to
+> the innermost encapsulated packet. Since VXLAN and NVGRE have same
+> size of encapsulation (8 UDP + 8 header),   skb_inner_mac_header(skb)
+> - skb_transport_header(skb) should always be 16.
 
-The structure allocation and sysfs stuff is a lot of (mundane) code.
-Lots of boring error path handling too.
+Tom, NVGRE is not encapsulated in UDP and it is not 16 bytes.
 
-Plus, I show that kernel/kgraft.c + kernel/kgraft_files.c is
-906+193=1099.  I'd say they are about the same size :)
-
-> 
-> I have one questions right away though.
-> 
-> > +/****************************************
-> > + * dynamic relocations (load-time linker)
-> > + ****************************************/
-> > +
-> > +/*
-> > + * external symbols are located outside the parent object (where the parent
-> > + * object is either vmlinux or the kmod being patched).
-> > + */
-> 
-> I have no ideas what dynrela is, and quickly reading the source doesn't 
-> really help too much.
-> 
-> Could you please provide some explanation / pointer to some documentation, 
-> explaining what exactly it is, and why should it be part of the common 
-> infrastructure?
-
-Yes, I should explain it.
-
-This is something that is currently only used in the kpatch approach.
-It allows the patching core to do dynamic relocations on the new
-function code, similar to what the kernel module linker does, but this
-works for non-exported symbols as well.
-
-This is so the patch module doesn't have to do a kallsyms lookup on
-every non-exported symbol that the new functions use.
-
-The fields of the dynrela structure are those of a normal ELF rela
-entry, except for the "external" field, which conveys information about
-where the core module should go looking for the symbol referenced in the
-dynrela entry.
-
-Josh was under the impression that Vojtech was ok with putting the
-dynrela stuff in the core.  Is that not correct (misunderstanding)?
-
-Thanks,
-Seth
-
-> 
-> Thanks,
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
+http://tools.ietf.org/html/draft-sridharan-virtualization-nvgre-06
