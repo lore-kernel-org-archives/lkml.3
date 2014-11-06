@@ -1,122 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652AbaKFIOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:14:06 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096AbaKFIOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:14:01 -0500
-Message-ID: <545B2DC4.1090005@nod.at>
-Date: Thu, 06 Nov 2014 09:13:56 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mateusz Guzik <mguzik@redhat.com>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 1/2v6] procfs: show hierarchy of pid namespace
-References: <1415184115-12022-1-git-send-email-chenhanxiao@cn.fujitsu.com> <1415184115-12022-2-git-send-email-chenhanxiao@cn.fujitsu.com> <545A13DA.3090207@nod.at> <20141105124111.GA19563@mail.hallyn.com> <545A1D53.3070507@nod.at> <5871495633F38949900D2BF2DC04883E61F2B2@G08CNEXMBPEKD02.g08.fujitsu.local>
-In-Reply-To: <5871495633F38949900D2BF2DC04883E61F2B2@G08CNEXMBPEKD02.g08.fujitsu.local>
-Content-Type: text/plain; charset=gbk
-Content-Transfer-Encoding: 8bit
+	id S1751474AbaKFIRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:17:12 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25906 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaKFIRI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 03:17:08 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f6c6d00000120b-7d-545b2e81b818
+Content-transfer-encoding: 8BIT
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2] mm: slub: fix format mismatches in slab_err() callers
+Date: Thu, 06 Nov 2014 11:16:57 +0300
+Message-id: <1415261817-5283-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.3
+In-reply-to: <alpine.DEB.2.10.1411051344490.31575@chino.kir.corp.google.com>
+References: <alpine.DEB.2.10.1411051344490.31575@chino.kir.corp.google.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xa7qNetEhBs+maVhs+/WIzWLO+jVs
+	Fte/vWG0WNndzGZxedccNot7a/6zWrR9/gcklmxkcuDwWLCp1GPTqk42j02fJrF7dL29wuRx
+	YsZvFo8nV6YzefRtWcXo8XmTXABHFJdNSmpOZllqkb5dAlfGnN1P2AuuClVsvPiOsYFxFn8X
+	IyeHhICJxJx7a5ggbDGJC/fWs3UxcnEICSxllPjXOocZJMErICjxY/I9li5GDg5mAXmJI5ey
+	QcLMAuoSk+YtYoao72OSODBxNxtIgk1AT+LfrO1gtoiArMTUv+dZIBq+MkocuSEPYgsLeEoc
+	mr0abCaLgKrEn9N2EKtcJfas38wKEpYQkJPYus4bJMwp4CPxrH8OO4gtJOAtMeP2PpYJjAKz
+	kBw3C+G4WUiOW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJAq+7GBcfMzqEKMAB6MS
+	D+8GzugQIdbEsuLK3EOMEhzMSiK8vdJAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwSD6s+l994
+	uU76Qkj+ltAFV9cnX3eUP6Iie6DGxOBg8ysek3/OG59opja9W9257J9+UrHNq0mPY1dkbr4j
+	MvHXdrazPTI5/ZWf+k7P+eKR6yIjqmpgmhD4d+b05ib7B9nMq1wPr1/wXzdMwvtS4FRp181x
+	07cmRJQeC2R0dXl783COu33VhnwlluKMREMt5qLiRADVBp9tYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.11.2014 um 06:48 schrieb Chen, Hanxiao:
-> 
-> 
->> -----Original Message-----
->> From: Richard Weinberger [mailto:richard@nod.at]
->> Sent: Wednesday, November 05, 2014 8:52 PM
->> To: Serge E. Hallyn
->> Cc: Chen, Hanxiao/�� ����; Eric W. Biederman; Serge Hallyn; Oleg Nesterov;
->> containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org; Mateusz
->> Guzik; David Howells
->> Subject: Re: [PATCH 1/2v6] procfs: show hierarchy of pid namespace
->>
->> Am 05.11.2014 um 13:41 schrieb Serge E. Hallyn:
->>> Quoting Richard Weinberger (richard@nod.at):
->>>> Am 05.11.2014 um 11:41 schrieb Chen Hanxiao:
->>>>> We lack of pid hierarchy information, and this will lead to:
->>>>> a) we don't know pids' relationship, who is whose child:
->>>>>    /proc/PID/ns/pid only tell us whether two pids live in different ns
->>>>> b) bring trouble to nested lxc container check/restore/migration
->>>>> c) bring trouble to pid translation between containers;
->>>>>
->>>>> This patch will show the hierarchy of pid namespace
->>>>> by pidns_hierarchy like:
->>>>>
->>>>> [root@localhost ~]#cat /proc/pidns_hierarchy
->>>>> 18060 18102 1534
->>>>> 18060 18102 1600
->>>>> 1550
->>>>
->>>> Hmm, what about printing the pid hierarchy in the same way as
->> /proc/self/mountinfo
->>>> does with mount namespaces?
->>>> Your current approach is not bad but we should really try to be consistent
->> with existing
->>>> sources of information.
->>>
->>> Good point.  How would you structure it to make it look mor elike mountinfo?
->>> Adding the pidns inode number (in place of a mount sequence number) might be
->>> useful, but it sounds like you have a more concrete idea?
->>
->> Just list <init_PID> <parent_of_init_PID>. This way we have exactly one
->> information record per line and always exactly two columns to parse.
->>
->> e.g.
->> [root@localhost ~]#cat /proc/pidns_hierarchy
->> 1550 1
->> 18060 1
->> 18102 18060
->> 1534 18102
->> 1600 18102
->>
-> But this style lacks of *level* information:
+Adding __printf(3, 4) to slab_err exposed following:
 
-It does not.
+mm/slub.c: In function ‘check_slab’:
+mm/slub.c:852:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
+    s->name, page->objects, maxobj);
+    ^
+mm/slub.c:852:4: warning: too many arguments for format [-Wformat-extra-args]
+mm/slub.c:857:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
+    s->name, page->inuse, page->objects);
+    ^
+mm/slub.c:857:4: warning: too many arguments for format [-Wformat-extra-args]
 
-> Ex:
-> 1->18060->18102->1600->1700
-> If we want to check the 1700's level in pid ns
-> Style 1:
-> 18060 18102 1600 1700
-> 
-> Style 2:
-> 18060 1
-> 18102 18060
-> 1600 18102
-> 1700 1600
-> 
-> If we had a little more containers,
-> Style 2 would not be clear enough.
-> 1 line vs $(PID level) line
+mm/slub.c: In function ‘on_freelist’:
+mm/slub.c:905:4: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘long unsigned int’ [-Wformat=]
+    "should be %d", page->objects, max_objects);
 
-Any trivial program can find out the level of nesting.
+Fix first two warnings by removing redundant s->name.
+Fix the last by changing type of max_object from unsigned long to int.
 
-> If there were no more related information to show,
-> I think style 1 looks better.
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
 
-It is not about looking better, it is about parsing and being consistent with existing
-interfaces. /proc/pidns_hierarchy will be mostly read by *programs*, not humans.
-/proc/ has already too many horrible to parse files, please don't add another one.
-This is also why sysfs has the one-value-per-file rule.
+Changes since v1:
+  - To fix the last warning change the type of max_objects instead of changing format string (David)
+  - Slightly update changelog
 
-If it makes you feel better you can add a third column to the output which indicates
-the nesting level (or the distance to the initial pidns) . i.e.
-Style 2:
-18060 1 1
-18102 18060 2
-1600 18102 3
-1700 1600 4
+ mm/slub.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Thanks,
-//richard
+diff --git a/mm/slub.c b/mm/slub.c
+index 80c170e..ed816f8 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -849,12 +849,12 @@ static int check_slab(struct kmem_cache *s, struct page *page)
+ 	maxobj = order_objects(compound_order(page), s->size, s->reserved);
+ 	if (page->objects > maxobj) {
+ 		slab_err(s, page, "objects %u > max %u",
+-			s->name, page->objects, maxobj);
++			page->objects, maxobj);
+ 		return 0;
+ 	}
+ 	if (page->inuse > page->objects) {
+ 		slab_err(s, page, "inuse %u > max %u",
+-			s->name, page->inuse, page->objects);
++			page->inuse, page->objects);
+ 		return 0;
+ 	}
+ 	/* Slab_pad_check fixes things up after itself */
+@@ -871,7 +871,7 @@ static int on_freelist(struct kmem_cache *s, struct page *page, void *search)
+ 	int nr = 0;
+ 	void *fp;
+ 	void *object = NULL;
+-	unsigned long max_objects;
++	int max_objects;
+ 
+ 	fp = page->freelist;
+ 	while (fp && nr <= page->objects) {
+-- 
+2.1.3
+
