@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaKFPKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:10:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37579 "EHLO mga11.intel.com"
+	id S1751762AbaKFPKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:10:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37569 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588AbaKFPJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:09:48 -0500
+	id S1751574AbaKFPJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:09:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="627702005"
+   d="scan'208";a="627701985"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 13/14] perf, x86: Discard zero length call entries in LBR call stack
-Date: Thu,  6 Nov 2014 09:54:30 -0500
-Message-Id: <1415285671-16894-14-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V8 12/14] perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack mode
+Date: Thu,  6 Nov 2014 09:54:29 -0500
+Message-Id: <1415285671-16894-13-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
 References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
@@ -26,65 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yan, Zheng <zheng.z.yan@intel.com>
 
-"Zero length call" uses the attribute of the call instruction to push
-the immediate instruction pointer on to the stack and then pops off
-that address into a register. This is accomplished without any matching
-return instruction. It confuses the hardware and make the recorded call
-stack incorrect.
+LBR callstack is designed for PEBS, It does not work well with
+FREEZE_LBRS_ON_PMI for non PEBS event. If FREEZE_LBRS_ON_PMI is set for
+non PEBS event, PMIs near call/return instructions may cause superfluous
+increase/decrease of LBR_TOS.
 
-We can partially resolve this issue by: decode call instructions and
-discard any zero length call entry in the LBR stack.
+This patch modifies __intel_pmu_lbr_enable() to not enable
+FREEZE_LBRS_ON_PMI when LBR operates in callstack mode. We currently
+don't use LBR callstack to capture kernel space callchain, so disabling
+FREEZE_LBRS_ON_PMI should not be a problem.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 45a63a4..7ed04f8 100644
+index 0386b1d..45a63a4 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -94,7 +94,8 @@ enum {
- 	X86_BR_ABORT		= 1 << 12,/* transaction abort */
- 	X86_BR_IN_TX		= 1 << 13,/* in transaction */
- 	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
--	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
-+	X86_BR_ZERO_CALL	= 1 << 15,/* zero length call */
-+	X86_BR_CALL_STACK	= 1 << 16,/* call stack */
- };
+@@ -131,14 +131,23 @@ static void intel_pmu_lbr_filter(struct cpu_hw_events *cpuc);
  
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-@@ -111,13 +112,15 @@ enum {
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
- 	 X86_BR_ABORT	 |\
--	 X86_BR_IND_CALL)
-+	 X86_BR_IND_CALL |\
-+	 X86_BR_ZERO_CALL)
+ static void __intel_pmu_lbr_enable(void)
+ {
+-	u64 debugctl;
+ 	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
++	u64 debugctl, lbr_select = 0;
  
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
+-	if (cpuc->lbr_sel)
+-		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
++	if (cpuc->lbr_sel) {
++		lbr_select = cpuc->lbr_sel->config;
++		wrmsrl(MSR_LBR_SELECT, lbr_select);
++	}
  
- #define X86_BR_ANY_CALL		 \
- 	(X86_BR_CALL		|\
- 	 X86_BR_IND_CALL	|\
-+	 X86_BR_ZERO_CALL	|\
- 	 X86_BR_SYSCALL		|\
- 	 X86_BR_IRQ		|\
- 	 X86_BR_INT)
-@@ -689,6 +692,12 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
- 		ret = X86_BR_INT;
- 		break;
- 	case 0xe8: /* call near rel */
-+		insn_get_immediate(&insn);
-+		if (insn.immediate1.value == 0) {
-+			/* zero length call */
-+			ret = X86_BR_ZERO_CALL;
-+			break;
-+		}
- 	case 0x9a: /* call far absolute */
- 		ret = X86_BR_CALL;
- 		break;
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+-	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
++	debugctl |= DEBUGCTLMSR_LBR;
++	/*
++	 * LBR callstack does not work well with FREEZE_LBRS_ON_PMI.
++	 * If FREEZE_LBRS_ON_PMI is set, PMI near call/return instructions
++	 * may cause superfluous increase/decrease of LBR_TOS.
++	 */
++	if (!(lbr_select & LBR_CALL_STACK))
++		debugctl |= DEBUGCTLMSR_FREEZE_LBRS_ON_PMI;
+ 	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ }
+ 
 -- 
 1.8.3.2
 
