@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433AbaKFTHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 14:07:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43962 "EHLO mga02.intel.com"
+	id S1751494AbaKFTJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 14:09:53 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33925 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877AbaKFTHK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 14:07:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,327,1413270000"; 
-   d="scan'208";a="632842421"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [char-misc-next V3] mei: add reference counting for me clients
-Thread-Topic: [char-misc-next V3] mei: add reference counting for me clients
-Thread-Index: AQHP98GSdwWugMUfYUCeAzEHcOfoj5xP6kKwgALVFACAAHVl8IAAbzwAgABShkA=
-Date: Thu, 6 Nov 2014 19:05:57 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1C496DAE@HASMSX106.ger.corp.intel.com>
-References: <1415004125-5467-1-git-send-email-tomas.winkler@intel.com>
- <20141103235439.GA26158@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1C493153@HASMSX106.ger.corp.intel.com>
- <20141106022010.GD17253@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1C49677F@HASMSX106.ger.corp.intel.com>
- <20141106155828.GA20182@kroah.com>
-In-Reply-To: <20141106155828.GA20182@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750955AbaKFTJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 14:09:50 -0500
+Date: Thu, 6 Nov 2014 13:07:44 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Romain Perier <romain.perier@gmail.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>,
+        "xjq@rock-chips.com" <xjq@rock-chips.com>,
+        "hj@rock-chips.com" <hj@rock-chips.com>,
+        "dkl@rock-chips.com" <dkl@rock-chips.com>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        "linux-rockchip@lists.infradead.org" 
+	<linux-rockchip@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
+Message-ID: <20141106190744.GA19460@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
+ <CABgxDo+9aZJ8BP3h=3sUUbSBD5R_FQmWF9f8kbzDbZrVG01n1A@mail.gmail.com>
+ <20141106174011.GI16896@saruman>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844E9C67@US01WEMBX2.internal.synopsys.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
+Content-Disposition: inline
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E9C67@US01WEMBX2.internal.synopsys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--qDbXVdCdHGoSgWSk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, November 06, 2014 17:58
-> To: Winkler, Tomas
-> Cc: arnd@arndb.de; linux-kernel@vger.kernel.org
-> Subject: Re: [char-misc-next V3] mei: add reference counting for me clients
-> 
-> On Thu, Nov 06, 2014 at 08:40:21AM +0000, Winkler, Tomas wrote:
+On Thu, Nov 06, 2014 at 06:35:53PM +0000, Paul Zimmerman wrote:
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Thursday, November 06, 2014 9:40 AM
+> >=20
+> > On Thu, Nov 06, 2014 at 06:21:42PM +0100, Romain Perier wrote:
 > > >
-> > > On Tue, Nov 04, 2014 at 05:22:51AM +0000, Winkler, Tomas wrote:
-> > > > >
-> > > > > On Mon, Nov 03, 2014 at 10:42:05AM +0200, Tomas Winkler wrote:
-> > > > > > To support dynamic addition/remove we add reference
-> > > > > > counter.
-> > > > >
-> > > > > What is keeping two different threads / cpus from grabbing a reference
-> > > > > at the same time the other one is dropping it?
-> > > > >
-> > > > > You have a list here, with no locking, right?  You also don't have any
-> > > > > locking for your kref, which isn't good at all...
-> > > > >
-> > > > > Please audit and fix up.
+> > > 2014-11-06 2:30 GMT+01:00 Kever Yang <kever.yang@rock-chips.com>:
 > > > >
-> > > > Of course there is a lock, it wouldn't work at all. It is not explicit
-> > > > but we run under device_lock mutex.
+> > > > +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
+> > > > +{
+> > > > +       struct dwc2_hsotg *hsotg =3D dwc2_hcd_to_hsotg(hcd);
+> > > > +       u32 hprt0;
+> > > > +
+> > > > +       if (!((hsotg->op_state =3D=3D OTG_STATE_B_HOST) ||
+> > > > +               (hsotg->op_state =3D=3D OTG_STATE_A_HOST)))
+> > > > +               return 0;
+> > > > +
+> > > > +       if (hsotg->lx_state !=3D DWC2_L0)
+> > > > +               return 0;
+> > > > +
+> > > > +       hprt0 =3D dwc2_read_hprt0(hsotg);
+> > > > +       if (hprt0 & HPRT0_CONNSTS)
+> > > > +               dwc2_port_suspend(hsotg, 1);
+> > > > +
+> > > > +       return 0;
+> > > > +}
+> > > > +
+> > > > +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
+> > > > +{
+> > > > +       struct dwc2_hsotg *hsotg =3D dwc2_hcd_to_hsotg(hcd);
+> > > > +       u32 hprt0;
+> > > > +
+> > > > +       if (!((hsotg->op_state =3D=3D OTG_STATE_B_HOST) ||
+> > > > +               (hsotg->op_state =3D=3D OTG_STATE_A_HOST)))
+> > > > +               return 0;
+> > > > +
+> > > > +       if (hsotg->lx_state !=3D DWC2_L2)
+> > > > +               return 0;
+> > > > +
+> > > > +       hprt0 =3D dwc2_read_hprt0(hsotg);
+> > > > +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
+> > > > +               dwc2_port_resume(hsotg);
+> > > > +
+> > > > +       return 0;
+> > > > +}
 > > >
-> > > Please make it explicit :)
-> >
-> > Not sure what you mean by that? There is a lot of options in this laconic
-> sentence.
-> 
-> In looking at that patch, it was not obvious to me that any locking was
-> happening at all, so that needs to be addressed somehow before I can
-> accept the change.
+> > > Could you also define these functions under #ifdef CONFIG_PM ?
+> >=20
+> > please don't. I'm actually considering ripping all ifdefs from all these
+> > drivers and also stop using SIMPLE_DEV_PM_OPS or any of its friends.
+> >=20
+> > There's really nobody today would would build a kernel with CONFIG_PM.
+>=20
+> I'm sure Felipe meant *without* CONFIG_PM.
 
-I understand the concern though we are using a BIG driver mutex so no additional locking is required, we are already locked. 
-Currently we didn't hit any performance issue that required more fine grained locking but let say this is something we aware and that might  happen in the future. 
+oops, that's correct.
 
-Thanks
-Tomas
+> Kever, in that case you should remove the #ifdef CONFIG_PM around the
+> .bus_suspend and .bus_resume assignments also, otherwise there will be
+> compiler warnings when built without CONFIG_PM. After that, you can
+> add my acked-by.
 
+tks
+
+--=20
+balbi
+
+--qDbXVdCdHGoSgWSk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUW8cAAAoJEIaOsuA1yqREJdkP/jKUpxJ8Gwwq19Hzg1G0ciGG
+cBa58F/j6rljSugOEtY5Q0UyrV9tQJ/MsxccHXJx9/sNhDud8FcWLmECLa0kIesd
+DBEmHrisLT1wdl5S0KJZKtyaS1Vo9BzPn115ayNYlWsaBKjig4uTDg9Guys09r31
+b15FeCstP6IEiX+6ueyhRxj/f2HpOb1h2sYHYcWXxYY78lU7hBjmg+lmhPXFlq6+
+g8cJgRm8/5I6Zt5NOtw9ncO872HQdV459Kd2aM9EnpbfMLHZkijh4HkilhAeNMRz
+eTP/aMHo42X/PhKMQLPYhFm25RR59g11BOvsWBQm1n0Nhtc0vJJYkyzmsQZdjYW4
+VspJxMC8nzjfHWaHcj8rh+rMznkdTN/o4/bEKN89NqI7hfoRCa53OQy/d+IPWhwq
+JHHO+yIBBk/iQ8n4GGSsufs7HgS9jXTYrNv0OT5sCsdsyVTutwvM7FQcbxa/tujD
+bSvyip6G9+JvVFm7lxVBIqYAcPOe9xqr+V9OLmIEOWzKEeUkFfJDJ5hRRd9T+96F
+vqGn7m8gr3eRlDjcQ0Pacwjq4V+fEe2lRVo1sSjgQBKBkoFBr1wZblFaO1/13edW
+XA3hwm+kFj7xbkhNXv/K6HF8kMs+xO2v8WdBmYDyEURG/mHpxxZvv2zr4ZtgfueF
+ZYZM+REOnUipsmg6PEvx
+=CB3v
+-----END PGP SIGNATURE-----
+
+--qDbXVdCdHGoSgWSk--
