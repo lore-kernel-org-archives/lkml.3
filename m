@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaKFSoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:44:55 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:38681 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaKFSox (ORCPT
+	id S1751470AbaKFSqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:46:40 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:51275 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaKFSqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:44:53 -0500
-Date: Thu, 6 Nov 2014 10:44:46 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Kernel Live Patching
-Message-ID: <20141106184446.GA12779@infradead.org>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 6 Nov 2014 13:46:39 -0500
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Dmitry Voytik <voytikd@gmail.com>
+Subject: [PATCH] ARM: imx6q: drop unnecessary semicolon
+Date: Thu,  6 Nov 2014 22:46:20 +0400
+Message-Id: <1415299580-20790-1-git-send-email-voytikd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 08:39:06AM -0600, Seth Jennings wrote:
-> An example patch module can be found here:
-> https://github.com/spartacus06/livepatch/blob/master/patch/patch.c
+Drop unnecessary semicolon after closing curly bracket.
 
-Please include the generator for this patch in the kernel tree.
-Providing interfaces for out of tree modules (or generators) is not
-how the kernel internal APIs work.
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+---
+ arch/arm/mach-imx/clk-imx6q.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+index 1412daf..43f376f 100644
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -145,7 +145,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+ 		post_div_table[2].div = 1;
+ 		video_div_table[1].div = 1;
+ 		video_div_table[2].div = 1;
+-	};
++	}
+ 
+ 	clk[IMX6QDL_PLL1_BYPASS_SRC] = imx_clk_mux("pll1_bypass_src", base + 0x00, 14, 2, pll_bypass_src_sels, ARRAY_SIZE(pll_bypass_src_sels));
+ 	clk[IMX6QDL_PLL2_BYPASS_SRC] = imx_clk_mux("pll2_bypass_src", base + 0x30, 14, 2, pll_bypass_src_sels, ARRAY_SIZE(pll_bypass_src_sels));
+-- 
+1.9.1
 
