@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaKFXIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:08:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58788 "EHLO
+	id S1752657AbaKFWlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:41:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58768 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbaKFWls (ORCPT
+	with ESMTP id S1752619AbaKFWli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:41:48 -0500
+	Thu, 6 Nov 2014 17:41:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Larsson <andreas@gaisler.com>,
+Cc: Sowmini Varadhan <sowmini.varadhan@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 035/162] sparc: Let memset return the address argument
-Date: Thu,  6 Nov 2014 14:34:59 -0800
-Message-Id: <1415313426-9622-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 034/162] sparc64: Move request_irq() from ldc_bind() to ldc_alloc()
+Date: Thu,  6 Nov 2014 14:34:58 -0800
+Message-Id: <1415313426-9622-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,78 +28,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit 74cad25c076a2f5253312c2fe82d1a4daecc1323 ]
+[ Upstream commit c21c4ab0d6921f7160a43216fa6973b5924de561 ]
 
-This makes memset follow the standard (instead of returning 0 on success). This
-is needed when certain versions of gcc optimizes around memset calls and assume
-that the address argument is preserved in %o0.
+The request_irq() needs to be done from ldc_alloc()
+to avoid the following (caught by lockdep)
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+ [00000000004a0738] __might_sleep+0xf8/0x120
+ [000000000058bea4] kmem_cache_alloc_trace+0x184/0x2c0
+ [00000000004faf80] request_threaded_irq+0x80/0x160
+ [000000000044f71c] ldc_bind+0x7c/0x220
+ [0000000000452454] vio_port_up+0x54/0xe0
+ [00000000101f6778] probe_disk+0x38/0x220 [sunvdc]
+ [00000000101f6b8c] vdc_port_probe+0x22c/0x300 [sunvdc]
+ [0000000000451a88] vio_device_probe+0x48/0x60
+ [000000000074c56c] really_probe+0x6c/0x300
+ [000000000074c83c] driver_probe_device+0x3c/0xa0
+ [000000000074c92c] __driver_attach+0x8c/0xa0
+ [000000000074a6ec] bus_for_each_dev+0x6c/0xa0
+ [000000000074c1dc] driver_attach+0x1c/0x40
+ [000000000074b0fc] bus_add_driver+0xbc/0x280
+
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/lib/memset.S | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ arch/sparc/include/asm/ldc.h |  5 +++--
+ arch/sparc/kernel/ds.c       |  4 ++--
+ arch/sparc/kernel/ldc.c      | 41 +++++++++++++++++++++--------------------
+ arch/sparc/kernel/viohs.c    |  4 ++--
+ 4 files changed, 28 insertions(+), 26 deletions(-)
 
-diff --git a/arch/sparc/lib/memset.S b/arch/sparc/lib/memset.S
-index 99c017b..f75e690 100644
---- a/arch/sparc/lib/memset.S
-+++ b/arch/sparc/lib/memset.S
-@@ -3,8 +3,9 @@
-  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
-  *
-- * Returns 0, if ok, and number of bytes not yet set if exception
-- * occurs and we were called as clear_user.
-+ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
-+ * number of bytes not yet set if exception occurs and we were called as
-+ * clear_user.
+diff --git a/arch/sparc/include/asm/ldc.h b/arch/sparc/include/asm/ldc.h
+index bdb524a..8732ed3 100644
+--- a/arch/sparc/include/asm/ldc.h
++++ b/arch/sparc/include/asm/ldc.h
+@@ -53,13 +53,14 @@ struct ldc_channel;
+ /* Allocate state for a channel.  */
+ extern struct ldc_channel *ldc_alloc(unsigned long id,
+ 				     const struct ldc_channel_config *cfgp,
+-				     void *event_arg);
++				     void *event_arg,
++				     const char *name);
+ 
+ /* Shut down and free state for a channel.  */
+ extern void ldc_free(struct ldc_channel *lp);
+ 
+ /* Register TX and RX queues of the link with the hypervisor.  */
+-extern int ldc_bind(struct ldc_channel *lp, const char *name);
++extern int ldc_bind(struct ldc_channel *lp);
+ 
+ /* For non-RAW protocols we need to complete a handshake before
+  * communication can proceed.  ldc_connect() does that, if the
+diff --git a/arch/sparc/kernel/ds.c b/arch/sparc/kernel/ds.c
+index dff60ab..f87a55d 100644
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -1200,14 +1200,14 @@ static int ds_probe(struct vio_dev *vdev, const struct vio_device_id *id)
+ 	ds_cfg.tx_irq = vdev->tx_irq;
+ 	ds_cfg.rx_irq = vdev->rx_irq;
+ 
+-	lp = ldc_alloc(vdev->channel_id, &ds_cfg, dp);
++	lp = ldc_alloc(vdev->channel_id, &ds_cfg, dp, "DS");
+ 	if (IS_ERR(lp)) {
+ 		err = PTR_ERR(lp);
+ 		goto out_free_ds_states;
+ 	}
+ 	dp->lp = lp;
+ 
+-	err = ldc_bind(lp, "DS");
++	err = ldc_bind(lp);
+ 	if (err)
+ 		goto out_free_ldc;
+ 
+diff --git a/arch/sparc/kernel/ldc.c b/arch/sparc/kernel/ldc.c
+index 66dacd5..27bb554 100644
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1078,7 +1078,8 @@ static void ldc_iommu_release(struct ldc_channel *lp)
+ 
+ struct ldc_channel *ldc_alloc(unsigned long id,
+ 			      const struct ldc_channel_config *cfgp,
+-			      void *event_arg)
++			      void *event_arg,
++			      const char *name)
+ {
+ 	struct ldc_channel *lp;
+ 	const struct ldc_mode_ops *mops;
+@@ -1093,6 +1094,8 @@ struct ldc_channel *ldc_alloc(unsigned long id,
+ 	err = -EINVAL;
+ 	if (!cfgp)
+ 		goto out_err;
++	if (!name)
++		goto out_err;
+ 
+ 	switch (cfgp->mode) {
+ 	case LDC_MODE_RAW:
+@@ -1185,6 +1188,21 @@ struct ldc_channel *ldc_alloc(unsigned long id,
+ 
+ 	INIT_HLIST_HEAD(&lp->mh_list);
+ 
++	snprintf(lp->rx_irq_name, LDC_IRQ_NAME_MAX, "%s RX", name);
++	snprintf(lp->tx_irq_name, LDC_IRQ_NAME_MAX, "%s TX", name);
++
++	err = request_irq(lp->cfg.rx_irq, ldc_rx, 0,
++			  lp->rx_irq_name, lp);
++	if (err)
++		goto out_free_txq;
++
++	err = request_irq(lp->cfg.tx_irq, ldc_tx, 0,
++			  lp->tx_irq_name, lp);
++	if (err) {
++		free_irq(lp->cfg.rx_irq, lp);
++		goto out_free_txq;
++	}
++
+ 	return lp;
+ 
+ out_free_txq:
+@@ -1237,31 +1255,14 @@ EXPORT_SYMBOL(ldc_free);
+  * state.  This does not initiate a handshake, ldc_connect() does
+  * that.
   */
+-int ldc_bind(struct ldc_channel *lp, const char *name)
++int ldc_bind(struct ldc_channel *lp)
+ {
+ 	unsigned long hv_err, flags;
+ 	int err = -EINVAL;
  
- #include <asm/ptrace.h>
-@@ -65,6 +66,8 @@ __bzero_begin:
- 	.globl	__memset_start, __memset_end
- __memset_start:
- memset:
-+	mov	%o0, %g1
-+	mov	1, %g4
- 	and	%o1, 0xff, %g3
- 	sll	%g3, 8, %g2
- 	or	%g3, %g2, %g3
-@@ -89,6 +92,7 @@ memset:
- 	 sub	%o0, %o2, %o0
+-	if (!name ||
+-	    (lp->state != LDC_STATE_INIT))
++	if (lp->state != LDC_STATE_INIT)
+ 		return -EINVAL;
  
- __bzero:
-+	clr	%g4
- 	mov	%g0, %g3
- 1:
- 	cmp	%o1, 7
-@@ -151,8 +155,8 @@ __bzero:
- 	bne,a	8f
- 	 EX(stb	%g3, [%o0], and %o1, 1)
- 8:
--	retl
--	 clr	%o0
-+	b	0f
-+	 nop
- 7:
- 	be	13b
- 	 orcc	%o1, 0, %g0
-@@ -164,6 +168,12 @@ __bzero:
- 	bne	8b
- 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
- 0:
-+	andcc	%g4, 1, %g0
-+	be	5f
-+	 nop
-+	retl
-+	 mov	%g1, %o0
-+5:
- 	retl
- 	 clr	%o0
- __memset_end:
+-	snprintf(lp->rx_irq_name, LDC_IRQ_NAME_MAX, "%s RX", name);
+-	snprintf(lp->tx_irq_name, LDC_IRQ_NAME_MAX, "%s TX", name);
+-
+-	err = request_irq(lp->cfg.rx_irq, ldc_rx, 0,
+-			  lp->rx_irq_name, lp);
+-	if (err)
+-		return err;
+-
+-	err = request_irq(lp->cfg.tx_irq, ldc_tx, 0,
+-			  lp->tx_irq_name, lp);
+-	if (err) {
+-		free_irq(lp->cfg.rx_irq, lp);
+-		return err;
+-	}
+-
+-
+ 	spin_lock_irqsave(&lp->lock, flags);
+ 
+ 	enable_irq(lp->cfg.rx_irq);
+diff --git a/arch/sparc/kernel/viohs.c b/arch/sparc/kernel/viohs.c
+index f8e7dd5..9c5fbd0 100644
+--- a/arch/sparc/kernel/viohs.c
++++ b/arch/sparc/kernel/viohs.c
+@@ -714,7 +714,7 @@ int vio_ldc_alloc(struct vio_driver_state *vio,
+ 	cfg.tx_irq = vio->vdev->tx_irq;
+ 	cfg.rx_irq = vio->vdev->rx_irq;
+ 
+-	lp = ldc_alloc(vio->vdev->channel_id, &cfg, event_arg);
++	lp = ldc_alloc(vio->vdev->channel_id, &cfg, event_arg, vio->name);
+ 	if (IS_ERR(lp))
+ 		return PTR_ERR(lp);
+ 
+@@ -746,7 +746,7 @@ void vio_port_up(struct vio_driver_state *vio)
+ 
+ 	err = 0;
+ 	if (state == LDC_STATE_INIT) {
+-		err = ldc_bind(vio->lp, vio->name);
++		err = ldc_bind(vio->lp);
+ 		if (err)
+ 			printk(KERN_WARNING "%s: Port %lu bind failed, "
+ 			       "err=%d\n",
 -- 
 1.9.1
 
