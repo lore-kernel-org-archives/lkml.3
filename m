@@ -1,67 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbaKFJKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:10:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43080 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173AbaKFJKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:10:07 -0500
-Message-ID: <1415264981.15424.3.camel@linux-t7sj.site>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 06 Nov 2014 01:09:41 -0800
-In-Reply-To: <20141106164444.2123e6d5@canb.auug.org.au>
-References: <20141106164444.2123e6d5@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752169AbaKFJLe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:11:34 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54063 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaKFJLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 04:11:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <545B172C.4060105@nvidia.com>
+References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1414599796-30597-5-git-send-email-tomeu.vizoso@collabora.com> <545B172C.4060105@nvidia.com>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Thu, 6 Nov 2014 10:11:00 +0100
+X-Google-Sender-Auth: 7NL0KwSk-Mxn5DvTsTeXW-x1D8g
+Message-ID: <CAAObsKBe8kigKfEs_ER+1X5fqLw3dZD69XHicEn4cVuQTyoFAw@mail.gmail.com>
+Subject: Re: [PATCH v3 04/13] of: document new emc-timings subnode in nvidia,tegra124-car
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-06 at 16:44 +1100, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> After merging the akpm-current tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> mm/fremap.c: In function 'SYSC_remap_file_pages':
-> mm/fremap.c:241:22: error: 'struct address_space' has no member named 'i_mmap_mutex'
->    mutex_lock(&mapping->i_mmap_mutex);
->                       ^
-> mm/fremap.c:247:24: error: 'struct address_space' has no member named 'i_mmap_mutex'
->    mutex_unlock(&mapping->i_mmap_mutex);
->                         ^
-> 
-> Caused by commit 1f8c97e79f66 ("mm: convert i_mmap_mutex to rwsem").
-> 
-> I applied this patch for today (not sure if there is a better way):
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 6 Nov 2014 16:26:41 +1100
-> Subject: [PATCH] mm: convert i_mmap_mutex to rwsem fix
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  mm/fremap.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/fremap.c b/mm/fremap.c
-> index 9129013732d7..2805d71cf476 100644
-> --- a/mm/fremap.c
-> +++ b/mm/fremap.c
-> @@ -238,13 +238,13 @@ get_write_lock:
->  			}
->  			goto out_freed;
->  		}
-> -		mutex_lock(&mapping->i_mmap_mutex);
-> +		i_mmap_lock_write(mapping);
+On 6 November 2014 07:37, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
+>>
+>> The EMC clock needs some extra information for changing its rate.
+>>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>> ---
+>>   .../bindings/clock/nvidia,tegra124-car.txt         | 46
+>> +++++++++++++++++++++-
+>>   1 file changed, 44 insertions(+), 2 deletions(-)
+>>
+>> diff --git
+>> a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>> b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>> index ded5d62..42e0588 100644
+>> --- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>> @@ -19,12 +19,35 @@ Required properties :
+>>     In clock consumers, this cell represents the bit number in the CAR's
+>>     array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
+>>
+>> +The node should contain a "emc-timings" subnode for each supported RAM
+>> type (see
+>> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address
+>> being its
+>> +RAM_CODE.
+>> +
+>> +Required properties for "emc-timings" nodes :
+>> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
+>> +  is used for.
+>> +
+>> +Each "emc-timings" node should contain a "timing" subnode for every
+>> supported
+>> +EMC clock rate. The "timing" subnodes should have the clock rate in Hz as
+>> their
+>> +unit address.
+>
+>
+> This seems to be a quite liberal use of unit addresses (same in the next
+> patch) - is this allowed by DT?
 
-That's the correct fix, thanks. However, I had particularly dropped that
-modification because linux-next no longer even has mm/fremap.c so I'm
-not sure what went wrong here...
+Well, it's not that different from using the register address. I think
+it helps with readability more than an arbitrary index.
 
+>> +
+>> +Required properties for "timing" nodes :
+>> +- clock-frequency : Should contain the memory clock rate to which this
+>> timing
+>> +relates.
+>> +- nvidia,parent-clock-frequency : Should contain the rate at which the
+>> current
+>> +parent of the EMC clock should be running at this timing.
+>> +- clocks : Must contain an entry for each entry in clock-names.
+>> +  See ../clocks/clock-bindings.txt for details.
+>> +- clock-names : Must include the following entries:
+>> +  - emc-parent : the clock that should be the parent of the EMC clock at
+>> this
+>> +timing.
+>> +
+>>   Example SoC include file:
+>>
+>>   / {
+>> -       tegra_car: clock {
+>> +       tegra_car: clock@0,60006000 {
+>>                 compatible = "nvidia,tegra124-car";
+>> -               reg = <0x60006000 0x1000>;
+>> +               reg = <0x0 0x60006000 0x0 0x1000>;
+>>                 #clock-cells = <1>;
+>>                 #reset-cells = <1>;
+>>         };
+>> @@ -60,4 +83,23 @@ Example board file:
+>>         &tegra_car {
+>>                 clocks = <&clk_32k> <&osc>;
+>>         };
+>> +
+>> +       clock@0,60006000 {
+>> +               emc-timings@3 {
+>> +                       nvidia,ram-code = <3>;
+>> +
+>> +                       timing@12750000 {
+>> +                               clock-frequency = <12750000>;
+>> +                               nvidia,parent-clock-frequency =
+>> <408000000>;
+>> +                               clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                               clock-names = "emc-parent";
+>> +                       };
+>> +                       timing@20400000 {
+>> +                               clock-frequency = <20400000>;
+>> +                               nvidia,parent-clock-frequency =
+>> <408000000>;
+>> +                               clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                               clock-names = "emc-parent";
+>> +                       };
+>> +               };
+>> +       };
+>
+>
+> At first it seems confusing to see a top-level node without a compatible
+> property, until you realize it has already been defined before.
+>
+> In patch 05, you put "Example board file:" above a similar node, which is
+> enough to lift that ambiguity - could you do the same here?
+
+Oh, actually it was already in the file. I took this idea from here
+for patch 05.
+
+Thanks,
+
+Tomeu
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
