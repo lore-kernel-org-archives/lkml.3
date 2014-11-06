@@ -1,379 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaKFSXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:23:35 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34219 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392AbaKFSXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:23:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,327,1413270000"; 
-   d="scan'208";a="603639354"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Cc: Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Noor U Mubeen <noor.u.mubeen@intel.com>,
-        Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 2/3] powercap/rapl: handle atom and core differences
-Date: Thu,  6 Nov 2014 10:22:36 -0800
-Message-Id: <1415298157-7615-3-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415298157-7615-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1415298157-7615-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1751667AbaKFSXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:23:41 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54142 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618AbaKFSXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 13:23:38 -0500
+Date: Thu, 6 Nov 2014 18:23:29 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clocksource: arch_timer: Mark ARMv8 system timer as
+ 'always-on'
+Message-ID: <20141106182329.GA445@red-moon>
+References: <1415296639-40203-1-git-send-email-anatol.pomozov@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415296639-40203-1-git-send-email-anatol.pomozov@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RAPL implementation on Atom has made some changes that are not compatible
-with Core CPUs. Specifically, it is different in the way units are computed
-as well as floor frequency is enforced.
+On Thu, Nov 06, 2014 at 05:57:19PM +0000, Anatol Pomozov wrote:
+> Quoting ARMv8 Reference Manual section D6.1:
+> "The system counter must be implemented in an always-on power domain."
 
-This patch uses the per CPU model functions to handle the differences. Intel
-Software Developers' Manual has also been updated to reflect the changes in
-Table 35-7 V3C.
+Do not mix up the system counter with arch timers. System counter is
+always-on, but the arch timer(s) logic (that implements eg timers
+comparators against the system counter value) might not be (timer logic
+is in the processor), so it can be lost on processor(s) power down.
 
-Signed-off-by: Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/powercap/intel_rapl.c | 216 +++++++++++++++++++++++++++---------------
- 1 file changed, 139 insertions(+), 77 deletions(-)
+NAK.
 
-diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-index 256efed..bcbfa95 100644
---- a/drivers/powercap/intel_rapl.c
-+++ b/drivers/powercap/intel_rapl.c
-@@ -29,6 +29,7 @@
- #include <linux/sysfs.h>
- #include <linux/cpu.h>
- #include <linux/powercap.h>
-+#include <asm/iosf_mbi.h>
- 
- #include <asm/processor.h>
- #include <asm/cpu_device_id.h>
-@@ -70,11 +71,6 @@
- #define RAPL_PRIMITIVE_DERIVED       BIT(1) /* not from raw data */
- #define RAPL_PRIMITIVE_DUMMY         BIT(2)
- 
--/* scale RAPL units to avoid floating point math inside kernel */
--#define POWER_UNIT_SCALE     (1000000)
--#define ENERGY_UNIT_SCALE    (1000000)
--#define TIME_UNIT_SCALE      (1000000)
--
- #define TIME_WINDOW_MAX_MSEC 40000
- #define TIME_WINDOW_MIN_MSEC 250
- 
-@@ -175,9 +171,9 @@ struct rapl_package {
- 	unsigned int id; /* physical package/socket id */
- 	unsigned int nr_domains;
- 	unsigned long domain_map; /* bit map of active domains */
--	unsigned int power_unit_divisor;
--	unsigned int energy_unit_divisor;
--	unsigned int time_unit_divisor;
-+	unsigned int power_unit;
-+	unsigned int energy_unit;
-+	unsigned int time_unit;
- 	struct rapl_domain *domains; /* array of domains, sized at runtime */
- 	struct powercap_zone *power_zone; /* keep track of parent zone */
- 	int nr_cpus; /* active cpus on the package, topology info is lost during
-@@ -197,6 +193,9 @@ struct rapl_defaults {
- };
- static struct rapl_defaults *rapl_defaults;
- 
-+/* Sideband MBI registers */
-+#define IOSF_CPU_POWER_BUDGET_CTL (0x2)
-+
- #define PACKAGE_PLN_INT_SAVED   BIT(0)
- #define MAX_PRIM_NAME (32)
- 
-@@ -348,23 +347,13 @@ static int find_nr_power_limit(struct rapl_domain *rd)
- static int set_domain_enable(struct powercap_zone *power_zone, bool mode)
- {
- 	struct rapl_domain *rd = power_zone_to_rapl_domain(power_zone);
--	int nr_powerlimit;
- 
- 	if (rd->state & DOMAIN_STATE_BIOS_LOCKED)
- 		return -EACCES;
-+
- 	get_online_cpus();
--	nr_powerlimit = find_nr_power_limit(rd);
--	/* here we activate/deactivate the hardware for power limiting */
- 	rapl_write_data_raw(rd, PL1_ENABLE, mode);
--	/* always enable clamp such that p-state can go below OS requested
--	 * range. power capping priority over guranteed frequency.
--	 */
--	rapl_write_data_raw(rd, PL1_CLAMP, mode);
--	/* some domains have pl2 */
--	if (nr_powerlimit > 1) {
--		rapl_write_data_raw(rd, PL2_ENABLE, mode);
--		rapl_write_data_raw(rd, PL2_CLAMP, mode);
--	}
-+	rapl_defaults->set_floor_freq(rd, mode);
- 	put_online_cpus();
- 
- 	return 0;
-@@ -662,9 +651,7 @@ static void rapl_init_domains(struct rapl_package *rp)
- static u64 rapl_unit_xlate(int package, enum unit_type type, u64 value,
- 			int to_raw)
- {
--	u64 divisor = 1;
--	int scale = 1; /* scale to user friendly data without floating point */
--	u64 f, y; /* fraction and exp. used for time unit */
-+	u64 units = 1;
- 	struct rapl_package *rp;
- 
- 	rp = find_package_by_id(package);
-@@ -673,42 +660,24 @@ static u64 rapl_unit_xlate(int package, enum unit_type type, u64 value,
- 
- 	switch (type) {
- 	case POWER_UNIT:
--		divisor = rp->power_unit_divisor;
--		scale = POWER_UNIT_SCALE;
-+		units = rp->power_unit;
- 		break;
- 	case ENERGY_UNIT:
--		scale = ENERGY_UNIT_SCALE;
--		divisor = rp->energy_unit_divisor;
-+		units = rp->energy_unit;
- 		break;
- 	case TIME_UNIT:
--		divisor = rp->time_unit_divisor;
--		scale = TIME_UNIT_SCALE;
--		/* special processing based on 2^Y*(1+F)/4 = val/divisor, refer
--		 * to Intel Software Developer's manual Vol. 3a, CH 14.7.4.
--		 */
--		if (!to_raw) {
--			f = (value & 0x60) >> 5;
--			y = value & 0x1f;
--			value = (1 << y) * (4 + f) * scale / 4;
--			return div64_u64(value, divisor);
--		} else {
--			do_div(value, scale);
--			value *= divisor;
--			y = ilog2(value);
--			f = div64_u64(4 * (value - (1 << y)), 1 << y);
--			value = (y & 0x1f) | ((f & 0x3) << 5);
--			return value;
--		}
--		break;
-+		return rapl_defaults->compute_time_window(rp, value, to_raw);
- 	case ARBITRARY_UNIT:
- 	default:
- 		return value;
- 	};
- 
- 	if (to_raw)
--		return div64_u64(value * divisor, scale);
--	else
--		return div64_u64(value * scale, divisor);
-+		return div64_u64(value, units);
-+
-+	value *= units;
-+
-+	return value;
- }
- 
- /* in the order of enum rapl_primitives */
-@@ -842,12 +811,18 @@ static int rapl_write_data_raw(struct rapl_domain *rd,
- 	return 0;
- }
- 
--static const struct x86_cpu_id energy_unit_quirk_ids[] = {
--	{ X86_VENDOR_INTEL, 6, 0x37},/* Valleyview */
--	{}
--};
--
--static int rapl_check_unit(struct rapl_package *rp, int cpu)
-+/*
-+ * Raw RAPL data stored in MSRs are in certain scales. We need to
-+ * convert them into standard units based on the units reported in
-+ * the RAPL unit MSRs. This is specific to CPUs as the method to
-+ * calculate units differ on different CPUs.
-+ * We convert the units to below format based on CPUs.
-+ * i.e.
-+ * energy unit: microJoules : Represented in microJoules by default
-+ * power unit : microWatts  : Represented in milliWatts by default
-+ * time unit  : microseconds: Represented in seconds by default
-+ */
-+static int rapl_check_unit_core(struct rapl_package *rp, int cpu)
- {
- 	u64 msr_val;
- 	u32 value;
-@@ -858,36 +833,47 @@ static int rapl_check_unit(struct rapl_package *rp, int cpu)
- 		return -ENODEV;
- 	}
- 
--	/* Raw RAPL data stored in MSRs are in certain scales. We need to
--	 * convert them into standard units based on the divisors reported in
--	 * the RAPL unit MSRs.
--	 * i.e.
--	 * energy unit: 1/enery_unit_divisor Joules
--	 * power unit: 1/power_unit_divisor Watts
--	 * time unit: 1/time_unit_divisor Seconds
--	 */
- 	value = (msr_val & ENERGY_UNIT_MASK) >> ENERGY_UNIT_OFFSET;
--	/* some CPUs have different way to calculate energy unit */
--	if (x86_match_cpu(energy_unit_quirk_ids))
--		rp->energy_unit_divisor = 1000000 / (1 << value);
--	else
--		rp->energy_unit_divisor = 1 << value;
-+	rp->energy_unit = 1000000 / (1 << value);
- 
- 	value = (msr_val & POWER_UNIT_MASK) >> POWER_UNIT_OFFSET;
--	rp->power_unit_divisor = 1 << value;
-+	rp->power_unit = 1000000 / (1 << value);
- 
- 	value = (msr_val & TIME_UNIT_MASK) >> TIME_UNIT_OFFSET;
--	rp->time_unit_divisor = 1 << value;
-+	rp->time_unit = 1000000 / (1 << value);
- 
--	pr_debug("Physical package %d units: energy=%d, time=%d, power=%d\n",
--		rp->id,
--		rp->energy_unit_divisor,
--		rp->time_unit_divisor,
--		rp->power_unit_divisor);
-+	pr_debug("Core CPU package %d energy=%duJ, time=%dus, power=%duW\n",
-+		rp->id, rp->energy_unit, rp->time_unit, rp->power_unit);
- 
- 	return 0;
- }
- 
-+static int rapl_check_unit_atom(struct rapl_package *rp, int cpu)
-+{
-+	u64 msr_val;
-+	u32 value;
-+
-+	if (rdmsrl_safe_on_cpu(cpu, MSR_RAPL_POWER_UNIT, &msr_val)) {
-+		pr_err("Failed to read power unit MSR 0x%x on CPU %d, exit.\n",
-+			MSR_RAPL_POWER_UNIT, cpu);
-+		return -ENODEV;
-+	}
-+	value = (msr_val & ENERGY_UNIT_MASK) >> ENERGY_UNIT_OFFSET;
-+	rp->energy_unit = 1 << value;
-+
-+	value = (msr_val & POWER_UNIT_MASK) >> POWER_UNIT_OFFSET;
-+	rp->power_unit = (1 << value) * 1000;
-+
-+	value = (msr_val & TIME_UNIT_MASK) >> TIME_UNIT_OFFSET;
-+	rp->time_unit = 1000000 / (1 << value);
-+
-+	pr_debug("Atom package %d energy=%duJ, time=%dus, power=%duW\n",
-+		rp->id, rp->energy_unit, rp->time_unit, rp->power_unit);
-+
-+	return 0;
-+}
-+
-+
- /* REVISIT:
-  * When package power limit is set artificially low by RAPL, LVT
-  * thermal interrupt for package power limit should be ignored
-@@ -955,10 +941,86 @@ static void package_power_limit_irq_restore(int package_id)
- 	wrmsr_on_cpu(cpu, MSR_IA32_PACKAGE_THERM_INTERRUPT, l, h);
- }
- 
-+static void set_floor_freq_default(struct rapl_domain *rd, bool mode)
-+{
-+	int nr_powerlimit = find_nr_power_limit(rd);
-+
-+	/* always enable clamp such that p-state can go below OS requested
-+	 * range. power capping priority over guranteed frequency.
-+	 */
-+	rapl_write_data_raw(rd, PL1_CLAMP, mode);
-+
-+	/* some domains have pl2 */
-+	if (nr_powerlimit > 1) {
-+		rapl_write_data_raw(rd, PL2_ENABLE, mode);
-+		rapl_write_data_raw(rd, PL2_CLAMP, mode);
-+	}
-+}
-+
-+static void set_floor_freq_atom(struct rapl_domain *rd, bool enable)
-+{
-+	static u32 power_ctrl_orig_val;
-+	u32 mdata;
-+
-+	if (!power_ctrl_orig_val)
-+		iosf_mbi_read(BT_MBI_UNIT_PMC, BT_MBI_PMC_READ,
-+			IOSF_CPU_POWER_BUDGET_CTL, &power_ctrl_orig_val);
-+	mdata = power_ctrl_orig_val;
-+	if (enable) {
-+		mdata &= ~(0x7f << 8);
-+		mdata |= 1 << 8;
-+	}
-+	iosf_mbi_write(BT_MBI_UNIT_PMC, BT_MBI_PMC_WRITE,
-+		IOSF_CPU_POWER_BUDGET_CTL, mdata);
-+}
-+
-+static u64 rapl_compute_time_window_core(struct rapl_package *rp, u64 value,
-+					bool to_raw)
-+{
-+	u64 f, y; /* fraction and exp. used for time unit */
-+
-+	/*
-+	 * Special processing based on 2^Y*(1+F/4), refer
-+	 * to Intel Software Developer's manual Vol.3B: CH 14.9.3.
-+	 */
-+	if (!to_raw) {
-+		f = (value & 0x60) >> 5;
-+		y = value & 0x1f;
-+		value = (1 << y) * (4 + f) * rp->time_unit / 4;
-+	} else {
-+		do_div(value, rp->time_unit);
-+		y = ilog2(value);
-+		f = div64_u64(4 * (value - (1 << y)), 1 << y);
-+		value = (y & 0x1f) | ((f & 0x3) << 5);
-+	}
-+	return value;
-+}
-+
-+static u64 rapl_compute_time_window_atom(struct rapl_package *rp, u64 value,
-+					bool to_raw)
-+{
-+	/*
-+	 * Atom time unit encoding is straight forward val * time_unit,
-+	 * where time_unit is default to 1 sec. Never 0.
-+	 */
-+	if (!to_raw)
-+		return (value) ? value *= rp->time_unit : rp->time_unit;
-+	else
-+		value /= rp->time_unit;
-+
-+	return value;
-+}
-+
- static const struct rapl_defaults rapl_defaults_core = {
-+	.check_unit = rapl_check_unit_core,
-+	.set_floor_freq = set_floor_freq_default,
-+	.compute_time_window = rapl_compute_time_window_core,
- };
- 
- static const struct rapl_defaults rapl_defaults_atom = {
-+	.check_unit = rapl_check_unit_atom,
-+	.set_floor_freq = set_floor_freq_atom,
-+	.compute_time_window = rapl_compute_time_window_atom,
- };
- 
- #define RAPL_CPU(_model, _ops) {			\
-@@ -1262,7 +1324,7 @@ static int rapl_detect_topology(void)
- 
- 			/* check if the package contains valid domains */
- 			if (rapl_detect_domains(new_package, i) ||
--				rapl_check_unit(new_package, i)) {
-+				rapl_defaults->check_unit(new_package, i)) {
- 				kfree(new_package->domains);
- 				kfree(new_package);
- 				/* free up the packages already initialized */
-@@ -1317,7 +1379,7 @@ static int rapl_add_package(int cpu)
- 	rp->nr_cpus = 1;
- 	/* check if the package contains valid domains */
- 	if (rapl_detect_domains(rp, cpu) ||
--		rapl_check_unit(rp, cpu)) {
-+		rapl_defaults->check_unit(rp, cpu)) {
- 		ret = -ENODEV;
- 		goto err_free_package;
- 	}
--- 
-1.9.1
+Lorenzo
 
+> There is no need to keep 'always-on' configurable on ARMv8. We ignore
+> this dts property value and unconditionally set it to true.
+
+
+> 
+> The issue was discovered while working on ARMv8 board with only one timer
+> (arm arch timer). If 'always-on' is false then it disables high-resolution
+> timer functionality.
+> 
+> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+> ---
+>  .../devicetree/bindings/arm/arch_timer.txt          |  8 ++++++--
+>  drivers/clocksource/arm_arch_timer.c                | 21 +++++++++++++++++----
+>  2 files changed, 23 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> index 37b2caf..cb2d572 100644
+> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> @@ -19,8 +19,12 @@ to deliver its interrupts via SPIs.
+>  
+>  - clock-frequency : The frequency of the main counter, in Hz. Optional.
+>  
+> -- always-on : a boolean property. If present, the timer is powered through an
+> -  always-on power domain, therefore it never loses context.
+> +- always-on : an "armv7-timer" specific boolean property.
+> +  If present, the timer is powered through an always-on power domain, therefore
+> +  it never loses context.
+> +  ARMv8 system timer is in always-on power domain (per Architecture Reference
+> +  section D6.1) thus this proprty is ignored for "arm,armv8-timer" compatible
+> +  timer.
+>  
+>  Example:
+>  
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index 2133f9d..610052d 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -719,13 +719,26 @@ static void __init arch_timer_init(struct device_node *np)
+>  		}
+>  	}
+>  
+> -	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+> -
+>  	arch_timer_register();
+>  	arch_timer_common_init();
+>  }
+> -CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", arch_timer_init);
+> -CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", arch_timer_init);
+> +
+> +static void __init v7_arch_timer_init(struct device_node *np)
+> +{
+> +	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+> +	arch_timer_init(np);
+> +}
+> +
+> +static void __init v8_arch_timer_init(struct device_node *np)
+> +{
+> +	/* Per ARMv8 Architecture Reference Manual section D6.1
+> +	 * the system timer is in always-on power domain.
+> +	 */
+> +	arch_timer_c3stop = false;
+> +	arch_timer_init(np);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer", v7_arch_timer_init);
+> +CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer", v8_arch_timer_init);
+>  
+>  static void __init arch_timer_mem_init(struct device_node *np)
+>  {
+> -- 
+> 2.1.0.rc2.206.gedb03e5
+> 
+> 
