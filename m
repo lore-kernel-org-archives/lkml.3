@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaKFEtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 23:49:42 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:53498 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaKFEsO (ORCPT
+	id S1751813AbaKFEu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 23:50:56 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45146 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaKFEuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 23:48:14 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sA64m8pj012431, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/3] r8152: move r8152b_get_version
-Date: Thu, 6 Nov 2014 12:47:38 +0800
-Message-ID: <1394712342-15778-85-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-84-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-84-Taiwan-albertk@realtek.com>
+	Wed, 5 Nov 2014 23:50:55 -0500
+Message-ID: <545AFE2C.5050105@wwwdotorg.org>
+Date: Wed, 05 Nov 2014 21:50:52 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+To: Scott Branden <sbranden@broadcom.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Chris Ball <chris@printf.net>, Piotr Krol <pietrushnic@gmail.com>
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, linux-rpi-kernel@lists.infradead.org,
+        Ray Jui <rjui@broadcom.com>, bcm-kernel-feedback-list@broadcom.com
+Subject: Re: [PATCHv2 5/5] mmc: sdhci-bcm2835: add sdhci quirk SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12
+References: <Scott Branden <sbranden@broadcom.com> <1414651017-3545-1-git-send-email-sbranden@broadcom.com> <1414651017-3545-6-git-send-email-sbranden@broadcom.com> <5459AEEA.8050503@wwwdotorg.org> <5459CB76.3060601@broadcom.com>
+In-Reply-To: <5459CB76.3060601@broadcom.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move r8152b_get_version() to the location before rtl_ops_init().
-Then, the rtl_ops_init() could use tp->version.
+On 11/05/2014 12:02 AM, Scott Branden wrote:
+> On 14-11-04 09:00 PM, Stephen Warren wrote:
+>> On 10/30/2014 12:36 AM, Scott Branden wrote:
+>>> SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12 is missing and needed for this
+>>> controller.
+>>
+>> This seems fine, although any explanation of why this quirk is needed
+>> would be useful.
+>>
+> I don't know who to talk to at Arasan about this.  Will try hunting
+> around a little for more info as to why this is needed to have eMMC and
+> SD work properly through our internal testing on other non-2835 chipset
+> that shares the same SDHCI controller as 2835.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index fd41675..4b6db8a 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -3833,6 +3833,7 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	tp->netdev = netdev;
- 	tp->intf = intf;
- 
-+	r8152b_get_version(tp);
- 	ret = rtl_ops_init(tp, id);
- 	if (ret)
- 		goto out;
-@@ -3866,11 +3867,9 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	tp->mii.phy_id_mask = 0x3f;
- 	tp->mii.reg_num_mask = 0x1f;
- 	tp->mii.phy_id = R8152_PHY_ID;
--	tp->mii.supports_gmii = 0;
- 
- 	intf->needs_remote_wakeup = 1;
- 
--	r8152b_get_version(tp);
- 	tp->rtl_ops.init(tp);
- 	set_ethernet_addr(tp);
- 
--- 
-1.9.3
-
+I thought I heard that this wasn't a bug in the controller itself, but
+rather an integration issue between the IP core and the register bus
+it's attached to. Consequently, it may be SoC-specific or at least have
+SoC-specific variations?
