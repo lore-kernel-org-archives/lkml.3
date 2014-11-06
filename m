@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaKFXMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:12:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58719 "EHLO
+	id S1753800AbaKFXNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:13:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58705 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaKFWlT (ORCPT
+	with ESMTP id S1752438AbaKFWlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:41:19 -0500
+	Thu, 6 Nov 2014 17:41:14 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 044/162] sparc64: T5 PMU
-Date: Thu,  6 Nov 2014 14:35:08 -0800
-Message-Id: <1415313426-9622-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 055/162] sparc64: Fix register corruption in top-most kernel stack frame during boot.
+Date: Thu,  6 Nov 2014 14:35:19 -0800
+Message-Id: <1415313426-9622-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,192 +27,341 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: bob picco <bpicco@meloft.net>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 05aa1651e8b9ca078b1808a2fe7b50703353ec02 ]
+[ Upstream commit ef3e035c3a9b81da8a778bc333d10637acf6c199 ]
 
-The T5 (niagara5) has different PCR related HV fast trap values and a new
-HV API Group. This patch utilizes these and shares when possible with niagara4.
+Meelis Roos reported that kernels built with gcc-4.9 do not boot, we
+eventually narrowed this down to only impacting machines using
+UltraSPARC-III and derivitive cpus.
 
-We use the same sparc_pmu niagara4_pmu. Should there be new effort to
-obtain the MCU perf statistics then this would have to be changed.
+The crash happens right when the first user process is spawned:
 
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: Bob Picco <bob.picco@oracle.com>
+[   54.451346] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
+[   54.451346]
+[   54.571516] CPU: 1 PID: 1 Comm: init Not tainted 3.16.0-rc2-00211-gd7933ab #96
+[   54.666431] Call Trace:
+[   54.698453]  [0000000000762f8c] panic+0xb0/0x224
+[   54.759071]  [000000000045cf68] do_exit+0x948/0x960
+[   54.823123]  [000000000042cbc0] fault_in_user_windows+0xe0/0x100
+[   54.902036]  [0000000000404ad0] __handle_user_windows+0x0/0x10
+[   54.978662] Press Stop-A (L1-A) to return to the boot prom
+[   55.050713] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
+
+Further investigation showed that compiling only per_cpu_patch() with
+an older compiler fixes the boot.
+
+Detailed analysis showed that the function is not being miscompiled by
+gcc-4.9, but it is using a different register allocation ordering.
+
+With the gcc-4.9 compiled function, something during the code patching
+causes some of the %i* input registers to get corrupted.  Perhaps
+we have a TLB miss path into the firmware that is deep enough to
+cause a register window spill and subsequent restore when we get
+back from the TLB miss trap.
+
+Let's plug this up by doing two things:
+
+1) Stop using the firmware stack for client interface calls into
+   the firmware.  Just use the kernel's stack.
+
+2) As soon as we can, call into a new function "start_early_boot()"
+   to put a one-register-window buffer between the firmware's
+   deepest stack frame and the top-most initial kernel one.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/include/asm/hypervisor.h | 11 +++++++++
- arch/sparc/kernel/hvapi.c           |  1 +
- arch/sparc/kernel/hvcalls.S         | 16 +++++++++++++
- arch/sparc/kernel/pcr.c             | 47 +++++++++++++++++++++++++++++++++----
- arch/sparc/kernel/perf_event.c      |  3 ++-
- 5 files changed, 73 insertions(+), 5 deletions(-)
+ arch/sparc/include/asm/oplib_64.h |  3 ++-
+ arch/sparc/include/asm/setup.h    |  4 ++++
+ arch/sparc/kernel/entry.h         |  3 ---
+ arch/sparc/kernel/head_64.S       | 40 ++++-----------------------------------
+ arch/sparc/kernel/hvtramp.S       |  1 -
+ arch/sparc/kernel/setup_64.c      | 28 +++++++++++++++++++--------
+ arch/sparc/kernel/trampoline_64.S | 12 +++++++-----
+ arch/sparc/prom/cif.S             |  5 ++---
+ arch/sparc/prom/init_64.c         |  6 +++---
+ arch/sparc/prom/p1275.c           |  2 --
+ 10 files changed, 42 insertions(+), 62 deletions(-)
 
-diff --git a/arch/sparc/include/asm/hypervisor.h b/arch/sparc/include/asm/hypervisor.h
-index ca121f0..17be9d6 100644
---- a/arch/sparc/include/asm/hypervisor.h
-+++ b/arch/sparc/include/asm/hypervisor.h
-@@ -2944,6 +2944,16 @@ extern unsigned long sun4v_vt_set_perfreg(unsigned long reg_num,
- 					  unsigned long reg_val);
+diff --git a/arch/sparc/include/asm/oplib_64.h b/arch/sparc/include/asm/oplib_64.h
+index a12dbe3..e48fdf4 100644
+--- a/arch/sparc/include/asm/oplib_64.h
++++ b/arch/sparc/include/asm/oplib_64.h
+@@ -62,7 +62,8 @@ struct linux_mem_p1275 {
+ /* You must call prom_init() before using any of the library services,
+  * preferably as early as possible.  Pass it the romvec pointer.
+  */
+-extern void prom_init(void *cif_handler, void *cif_stack);
++extern void prom_init(void *cif_handler);
++extern void prom_init_report(void);
+ 
+ /* Boot argument acquisition, returns the boot command line string. */
+ extern char *prom_getbootargs(void);
+diff --git a/arch/sparc/include/asm/setup.h b/arch/sparc/include/asm/setup.h
+index 5e35e05..acd6146 100644
+--- a/arch/sparc/include/asm/setup.h
++++ b/arch/sparc/include/asm/setup.h
+@@ -24,6 +24,10 @@ static inline int con_is_present(void)
+ }
  #endif
  
-+#define	HV_FAST_T5_GET_PERFREG		0x1a8
-+#define	HV_FAST_T5_SET_PERFREG		0x1a9
-+
-+#ifndef	__ASSEMBLY__
-+unsigned long sun4v_t5_get_perfreg(unsigned long reg_num,
-+				   unsigned long *reg_val);
-+unsigned long sun4v_t5_set_perfreg(unsigned long reg_num,
-+				   unsigned long reg_val);
++#ifdef CONFIG_SPARC64
++extern void __init start_early_boot(void);
 +#endif
 +
- /* Function numbers for HV_CORE_TRAP.  */
- #define HV_CORE_SET_VER			0x00
- #define HV_CORE_PUTCHAR			0x01
-@@ -2975,6 +2985,7 @@ extern unsigned long sun4v_vt_set_perfreg(unsigned long reg_num,
- #define HV_GRP_VF_CPU			0x0205
- #define HV_GRP_KT_CPU			0x0209
- #define HV_GRP_VT_CPU			0x020c
-+#define HV_GRP_T5_CPU			0x0211
- #define HV_GRP_DIAG			0x0300
+ extern void sun_do_break(void);
+ extern int stop_a_enabled;
+ extern int scons_pwroff;
+diff --git a/arch/sparc/kernel/entry.h b/arch/sparc/kernel/entry.h
+index 140966f..c88ffb9 100644
+--- a/arch/sparc/kernel/entry.h
++++ b/arch/sparc/kernel/entry.h
+@@ -66,13 +66,10 @@ struct pause_patch_entry {
+ extern struct pause_patch_entry __pause_3insn_patch,
+ 	__pause_3insn_patch_end;
  
- #ifndef __ASSEMBLY__
-diff --git a/arch/sparc/kernel/hvapi.c b/arch/sparc/kernel/hvapi.c
-index c0a2de0..5c55145 100644
---- a/arch/sparc/kernel/hvapi.c
-+++ b/arch/sparc/kernel/hvapi.c
-@@ -46,6 +46,7 @@ static struct api_info api_table[] = {
- 	{ .group = HV_GRP_VF_CPU,				},
- 	{ .group = HV_GRP_KT_CPU,				},
- 	{ .group = HV_GRP_VT_CPU,				},
-+	{ .group = HV_GRP_T5_CPU,				},
- 	{ .group = HV_GRP_DIAG,		.flags = FLAG_PRE_API	},
- };
+-extern void __init per_cpu_patch(void);
+ extern void sun4v_patch_1insn_range(struct sun4v_1insn_patch_entry *,
+ 				    struct sun4v_1insn_patch_entry *);
+ extern void sun4v_patch_2insn_range(struct sun4v_2insn_patch_entry *,
+ 				    struct sun4v_2insn_patch_entry *);
+-extern void __init sun4v_patch(void);
+-extern void __init boot_cpu_id_too_large(int cpu);
+ extern unsigned int dcache_parity_tl1_occurred;
+ extern unsigned int icache_parity_tl1_occurred;
  
-diff --git a/arch/sparc/kernel/hvcalls.S b/arch/sparc/kernel/hvcalls.S
-index f3ab509..caedf83 100644
---- a/arch/sparc/kernel/hvcalls.S
-+++ b/arch/sparc/kernel/hvcalls.S
-@@ -821,3 +821,19 @@ ENTRY(sun4v_vt_set_perfreg)
- 	retl
+diff --git a/arch/sparc/kernel/head_64.S b/arch/sparc/kernel/head_64.S
+index 4fdeb80..3d61fca 100644
+--- a/arch/sparc/kernel/head_64.S
++++ b/arch/sparc/kernel/head_64.S
+@@ -672,14 +672,12 @@ tlb_fixup_done:
+ 	sethi	%hi(init_thread_union), %g6
+ 	or	%g6, %lo(init_thread_union), %g6
+ 	ldx	[%g6 + TI_TASK], %g4
+-	mov	%sp, %l6
+ 
+ 	wr	%g0, ASI_P, %asi
+ 	mov	1, %g1
+ 	sllx	%g1, THREAD_SHIFT, %g1
+ 	sub	%g1, (STACKFRAME_SZ + STACK_BIAS), %g1
+ 	add	%g6, %g1, %sp
+-	mov	0, %fp
+ 
+ 	/* Set per-cpu pointer initially to zero, this makes
+ 	 * the boot-cpu use the in-kernel-image per-cpu areas
+@@ -706,44 +704,14 @@ tlb_fixup_done:
  	 nop
- ENDPROC(sun4v_vt_set_perfreg)
-+
-+ENTRY(sun4v_t5_get_perfreg)
-+	mov	%o1, %o4
-+	mov	HV_FAST_T5_GET_PERFREG, %o5
-+	ta	HV_FAST_TRAP
-+	stx	%o1, [%o4]
-+	retl
-+	 nop
-+ENDPROC(sun4v_t5_get_perfreg)
-+
-+ENTRY(sun4v_t5_set_perfreg)
-+	mov	HV_FAST_T5_SET_PERFREG, %o5
-+	ta	HV_FAST_TRAP
-+	retl
-+	 nop
-+ENDPROC(sun4v_t5_set_perfreg)
-diff --git a/arch/sparc/kernel/pcr.c b/arch/sparc/kernel/pcr.c
-index 269af58..7e967c8 100644
---- a/arch/sparc/kernel/pcr.c
-+++ b/arch/sparc/kernel/pcr.c
-@@ -191,12 +191,41 @@ static const struct pcr_ops n4_pcr_ops = {
- 	.pcr_nmi_disable	= PCR_N4_PICNPT,
- };
+ #endif
  
-+static u64 n5_pcr_read(unsigned long reg_num)
-+{
-+	unsigned long val;
-+
-+	(void) sun4v_t5_get_perfreg(reg_num, &val);
-+
-+	return val;
-+}
-+
-+static void n5_pcr_write(unsigned long reg_num, u64 val)
-+{
-+	(void) sun4v_t5_set_perfreg(reg_num, val);
-+}
-+
-+static const struct pcr_ops n5_pcr_ops = {
-+	.read_pcr		= n5_pcr_read,
-+	.write_pcr		= n5_pcr_write,
-+	.read_pic		= n4_pic_read,
-+	.write_pic		= n4_pic_write,
-+	.nmi_picl_value		= n4_picl_value,
-+	.pcr_nmi_enable		= (PCR_N4_PICNPT | PCR_N4_STRACE |
-+				   PCR_N4_UTRACE | PCR_N4_TOE |
-+				   (26 << PCR_N4_SL_SHIFT)),
-+	.pcr_nmi_disable	= PCR_N4_PICNPT,
-+};
-+
-+
- static unsigned long perf_hsvc_group;
- static unsigned long perf_hsvc_major;
- static unsigned long perf_hsvc_minor;
+-	mov	%l6, %o1			! OpenPROM stack
+ 	call	prom_init
+ 	 mov	%l7, %o0			! OpenPROM cif handler
  
- static int __init register_perf_hsvc(void)
+-	/* Initialize current_thread_info()->cpu as early as possible.
+-	 * In order to do that accurately we have to patch up the get_cpuid()
+-	 * assembler sequences.  And that, in turn, requires that we know
+-	 * if we are on a Starfire box or not.  While we're here, patch up
+-	 * the sun4v sequences as well.
++	/* To create a one-register-window buffer between the kernel's
++	 * initial stack and the last stack frame we use from the firmware,
++	 * do the rest of the boot from a C helper function.
+ 	 */
+-	call	check_if_starfire
+-	 nop
+-	call	per_cpu_patch
+-	 nop
+-	call	sun4v_patch
+-	 nop
+-
+-#ifdef CONFIG_SMP
+-	call	hard_smp_processor_id
+-	 nop
+-	cmp	%o0, NR_CPUS
+-	blu,pt	%xcc, 1f
+-	 nop
+-	call	boot_cpu_id_too_large
+-	 nop
+-	/* Not reached... */
+-
+-1:
+-#else
+-	mov	0, %o0
+-#endif
+-	sth	%o0, [%g6 + TI_CPU]
+-
+-	call	prom_init_report
+-	 nop
+-
+-	/* Off we go.... */
+-	call	start_kernel
++	call	start_early_boot
+ 	 nop
+ 	/* Not reached... */
+ 
+diff --git a/arch/sparc/kernel/hvtramp.S b/arch/sparc/kernel/hvtramp.S
+index 4eb1a5a..4ad8138 100644
+--- a/arch/sparc/kernel/hvtramp.S
++++ b/arch/sparc/kernel/hvtramp.S
+@@ -110,7 +110,6 @@ hv_cpu_startup:
+ 	sllx		%g5, THREAD_SHIFT, %g5
+ 	sub		%g5, (STACKFRAME_SZ + STACK_BIAS), %g5
+ 	add		%g6, %g5, %sp
+-	mov		0, %fp
+ 
+ 	call		init_irqwork_curcpu
+ 	 nop
+diff --git a/arch/sparc/kernel/setup_64.c b/arch/sparc/kernel/setup_64.c
+index 1c7bfdf..61a5198 100644
+--- a/arch/sparc/kernel/setup_64.c
++++ b/arch/sparc/kernel/setup_64.c
+@@ -30,6 +30,7 @@
+ #include <linux/cpu.h>
+ #include <linux/initrd.h>
+ #include <linux/module.h>
++#include <linux/start_kernel.h>
+ 
+ #include <asm/io.h>
+ #include <asm/processor.h>
+@@ -174,7 +175,7 @@ char reboot_command[COMMAND_LINE_SIZE];
+ 
+ static struct pt_regs fake_swapper_regs = { { 0, }, 0, 0, 0, 0 };
+ 
+-void __init per_cpu_patch(void)
++static void __init per_cpu_patch(void)
  {
-+	unsigned long hverror;
-+
- 	if (tlb_type == hypervisor) {
- 		switch (sun4v_chip_type) {
- 		case SUN4V_CHIP_NIAGARA1:
-@@ -215,6 +244,10 @@ static int __init register_perf_hsvc(void)
- 			perf_hsvc_group = HV_GRP_VT_CPU;
- 			break;
- 
-+		case SUN4V_CHIP_NIAGARA5:
-+			perf_hsvc_group = HV_GRP_T5_CPU;
-+			break;
-+
- 		default:
- 			return -ENODEV;
- 		}
-@@ -222,10 +255,12 @@ static int __init register_perf_hsvc(void)
- 
- 		perf_hsvc_major = 1;
- 		perf_hsvc_minor = 0;
--		if (sun4v_hvapi_register(perf_hsvc_group,
--					 perf_hsvc_major,
--					 &perf_hsvc_minor)) {
--			printk("perfmon: Could not register hvapi.\n");
-+		hverror = sun4v_hvapi_register(perf_hsvc_group,
-+					       perf_hsvc_major,
-+					       &perf_hsvc_minor);
-+		if (hverror) {
-+			pr_err("perfmon: Could not register hvapi(0x%lx).\n",
-+			       hverror);
- 			return -ENODEV;
- 		}
+ 	struct cpuid_patch_entry *p;
+ 	unsigned long ver;
+@@ -266,7 +267,7 @@ void sun4v_patch_2insn_range(struct sun4v_2insn_patch_entry *start,
  	}
-@@ -254,6 +289,10 @@ static int __init setup_sun4v_pcr_ops(void)
- 		pcr_ops = &n4_pcr_ops;
- 		break;
+ }
  
-+	case SUN4V_CHIP_NIAGARA5:
-+		pcr_ops = &n5_pcr_ops;
-+		break;
+-void __init sun4v_patch(void)
++static void __init sun4v_patch(void)
+ {
+ 	extern void sun4v_hvapi_init(void);
+ 
+@@ -335,14 +336,25 @@ static void __init pause_patch(void)
+ 	}
+ }
+ 
+-#ifdef CONFIG_SMP
+-void __init boot_cpu_id_too_large(int cpu)
++void __init start_early_boot(void)
+ {
+-	prom_printf("Serious problem, boot cpu id (%d) >= NR_CPUS (%d)\n",
+-		    cpu, NR_CPUS);
+-	prom_halt();
++	int cpu;
 +
- 	default:
- 		ret = -ENODEV;
- 		break;
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 857baca..617b9fe 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1662,7 +1662,8 @@ static bool __init supported_pmu(void)
- 		sparc_pmu = &niagara2_pmu;
- 		return true;
- 	}
--	if (!strcmp(sparc_pmu_type, "niagara4")) {
-+	if (!strcmp(sparc_pmu_type, "niagara4") ||
-+	    !strcmp(sparc_pmu_type, "niagara5")) {
- 		sparc_pmu = &niagara4_pmu;
- 		return true;
- 	}
++	check_if_starfire();
++	per_cpu_patch();
++	sun4v_patch();
++
++	cpu = hard_smp_processor_id();
++	if (cpu >= NR_CPUS) {
++		prom_printf("Serious problem, boot cpu id (%d) >= NR_CPUS (%d)\n",
++			    cpu, NR_CPUS);
++		prom_halt();
++	}
++	current_thread_info()->cpu = cpu;
++
++	prom_init_report();
++	start_kernel();
+ }
+-#endif
+ 
+ /* On Ultra, we support all of the v8 capabilities. */
+ unsigned long sparc64_elf_hwcap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
+diff --git a/arch/sparc/kernel/trampoline_64.S b/arch/sparc/kernel/trampoline_64.S
+index ad4bde3..092a39d 100644
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -110,10 +110,13 @@ startup_continue:
+ 	brnz,pn		%g1, 1b
+ 	 nop
+ 
+-	sethi		%hi(p1275buf), %g2
+-	or		%g2, %lo(p1275buf), %g2
+-	ldx		[%g2 + 0x10], %l2
+-	add		%l2, -(192 + 128), %sp
++	/* Get onto temporary stack which will be in the locked
++	 * kernel image.
++	 */
++	sethi		%hi(tramp_stack), %g1
++	or		%g1, %lo(tramp_stack), %g1
++	add		%g1, TRAMP_STACK_SIZE, %g1
++	sub		%g1, STACKFRAME_SZ + STACK_BIAS + 256, %sp
+ 	flushw
+ 
+ 	/* Setup the loop variables:
+@@ -395,7 +398,6 @@ after_lock_tlb:
+ 	sllx		%g5, THREAD_SHIFT, %g5
+ 	sub		%g5, (STACKFRAME_SZ + STACK_BIAS), %g5
+ 	add		%g6, %g5, %sp
+-	mov		0, %fp
+ 
+ 	rdpr		%pstate, %o1
+ 	or		%o1, PSTATE_IE, %o1
+diff --git a/arch/sparc/prom/cif.S b/arch/sparc/prom/cif.S
+index 9c86b4b..8050f38 100644
+--- a/arch/sparc/prom/cif.S
++++ b/arch/sparc/prom/cif.S
+@@ -11,11 +11,10 @@
+ 	.text
+ 	.globl	prom_cif_direct
+ prom_cif_direct:
++	save	%sp, -192, %sp
+ 	sethi	%hi(p1275buf), %o1
+ 	or	%o1, %lo(p1275buf), %o1
+-	ldx	[%o1 + 0x0010], %o2	! prom_cif_stack
+-	save	%o2, -192, %sp
+-	ldx	[%i1 + 0x0008], %l2	! prom_cif_handler
++	ldx	[%o1 + 0x0008], %l2	! prom_cif_handler
+ 	mov	%g4, %l0
+ 	mov	%g5, %l1
+ 	mov	%g6, %l3
+diff --git a/arch/sparc/prom/init_64.c b/arch/sparc/prom/init_64.c
+index d95db75..110b0d7 100644
+--- a/arch/sparc/prom/init_64.c
++++ b/arch/sparc/prom/init_64.c
+@@ -26,13 +26,13 @@ phandle prom_chosen_node;
+  * It gets passed the pointer to the PROM vector.
+  */
+ 
+-extern void prom_cif_init(void *, void *);
++extern void prom_cif_init(void *);
+ 
+-void __init prom_init(void *cif_handler, void *cif_stack)
++void __init prom_init(void *cif_handler)
+ {
+ 	phandle node;
+ 
+-	prom_cif_init(cif_handler, cif_stack);
++	prom_cif_init(cif_handler);
+ 
+ 	prom_chosen_node = prom_finddevice(prom_chosen_path);
+ 	if (!prom_chosen_node || (s32)prom_chosen_node == -1)
+diff --git a/arch/sparc/prom/p1275.c b/arch/sparc/prom/p1275.c
+index ea5b427..fda23e6 100644
+--- a/arch/sparc/prom/p1275.c
++++ b/arch/sparc/prom/p1275.c
+@@ -21,7 +21,6 @@
+ struct {
+ 	long prom_callback;			/* 0x00 */
+ 	void (*prom_cif_handler)(long *);	/* 0x08 */
+-	unsigned long prom_cif_stack;		/* 0x10 */
+ } p1275buf;
+ 
+ extern void prom_world(int);
+@@ -53,5 +52,4 @@ void p1275_cmd_direct(unsigned long *args)
+ void prom_cif_init(void *cif_handler, void *cif_stack)
+ {
+ 	p1275buf.prom_cif_handler = (void (*)(long *))cif_handler;
+-	p1275buf.prom_cif_stack = (unsigned long)cif_stack;
+ }
 -- 
 1.9.1
 
