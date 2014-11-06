@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaKFVD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:03:29 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:49029 "EHLO gloria.sntech.de"
+	id S1751281AbaKFVEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:04:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36767 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaKFVD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:03:26 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        fzf@rock-chips.com, ykk@rock-chips.com, yzq@rock-chips.com,
-        dkl@rock-chips.com, huangtao@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] clk: rockchip: add full support for HDMI clock on rk3288
-Date: Thu, 06 Nov 2014 22:06:45 +0100
-Message-ID: <48806799.thBSifdUp8@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1415087559-19444-1-git-send-email-kever.yang@rock-chips.com>
-References: <1415087559-19444-1-git-send-email-kever.yang@rock-chips.com>
+	id S1750998AbaKFVEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:04:12 -0500
+Message-ID: <545BE218.8050506@redhat.com>
+Date: Thu, 06 Nov 2014 16:03:20 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: j.glisse@gmail.com, akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, joro@8bytes.org,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Brendan Conoboy <blc@redhat.com>, Joe Donohue <jdonohue@redhat.com>,
+        Duncan Poole <dpoole@nvidia.com>, Sherry Cheung <SCheung@nvidia.com>,
+        Subhash Gutti <sgutti@nvidia.com>, John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Subject: Re: [PATCH 2/5] mmu_notifier: keep track of active invalidation ranges
+References: <1415047353-29160-1-git-send-email-j.glisse@gmail.com> <1415047353-29160-3-git-send-email-j.glisse@gmail.com>
+In-Reply-To: <1415047353-29160-3-git-send-email-j.glisse@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kever,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Am Dienstag, 4. November 2014, 15:52:34 schrieb Kever Yang:
-> we are going to make a clock usage solution for rk3288:
-> 1. CPLL and GPLL always not change after assign init;
-> 2. NPLL default as 500MHz, may used for most scene;
-> 3. NPLL may be changed by VOP(HDMI) clock for some special
->    frequency requirement.
+On 11/03/2014 03:42 PM, j.glisse@gmail.com wrote:
+> From: Jérôme Glisse <jglisse@redhat.com>
 > 
->     I test it with rk3288 evb on top of Heiko's clk-for-next
+> The mmu_notifier_invalidate_range_start() and 
+> mmu_notifier_invalidate_range_end() can be considered as forming
+> an "atomic" section for the cpu page table update point of view. 
+> Between this two function the cpu page table content is unreliable
+>  for the address range being invalidated.
+> 
+> Current user such as kvm need to know when they can trust the 
+> content of the cpu page table. This becomes even more important to 
+> new users of the mmu_notifier api (such as HMM or ODP).
+> 
+> This patch use a structure define at all call site to 
+> invalidate_range_start() that is added to a list for the duration 
+> of the invalidation. It adds two new helpers to allow querying if
+> a range is being invalidated or to wait for a range to become
+> valid.
+> 
+> For proper synchronization, user must block new range invalidation 
+> from inside there invalidate_range_start() callback, before
+> calling the helper functions. Otherwise there is no garanty that a
+> new range invalidation will not be added after the call to the
+> helper function to query for existing range.
+> 
+> Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
 
-In general I'm not really sure if allowing one component to arbitarily change 
-a shared clock wouldn't result in trouble.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-At the moment only dclk_vop0 is included in your series, while the hdmi 
-controller can connect to both vop0 and vop1.
-And as Doug mentioned the gpu also has the npll as one possible source.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Looking through the clock-tree there are a lot more components possibly using 
-(or wanting to use) the npll: of course the VOPs, the edp, hdmi, isp, hevc, 
-gpu, tsp uart0 and gmac. So I'm slightly uncomfortable with somehow reserving 
-the npll for VOP0 alone.
-
-But I also don't see a different way to get these frequencies right now.
-
-
-Heiko
+iQEcBAEBAgAGBQJUW+IYAAoJEM553pKExN6DGQ0H/AsZn+UKNsKtys8kCnouMzvM
+SiCZQE4xCTdYM/vvyhg6Iw1INz0aNescYRhI2k++S16vgaaleXEDXthJ2gKO8qB7
+dgZ3eBDj9SzYVee6i779w77Eq9w1nhoPLyzTMpyYyB5PvfwKU8kq/j44rBNFVkdU
+byKnQzWvzOkaAtifvsZYR/uTABB8D39O+++mARy39SqZRBDtb3aGL/4QidHI52qD
+OEqtRFTftZ/yaeKvmrGw16e6NtAiE9IN/51pGuSH8vLjg9v884lnealMtfuLPbKR
+e3LXaWZfl3cRJkBQjqe252wNHvqCX7T1dKBI0+V3rMqQuUHyuKLGg+Rq6NX1b7Q=
+=sdxT
+-----END PGP SIGNATURE-----
