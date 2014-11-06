@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703AbaKFDO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:14:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39590 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaKFDOW (ORCPT
+	id S1751481AbaKFDRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:17:40 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50759 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaKFDRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:14:22 -0500
-Date: Wed, 5 Nov 2014 19:14:21 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com
-Subject: Re: [PATCH 00/13 v10] omap 8250 based UART + DMA
-Message-ID: <20141106031421.GA22185@kroah.com>
-References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 5 Nov 2014 22:17:37 -0500
+Date: Wed, 05 Nov 2014 22:17:34 -0500 (EST)
+Message-Id: <20141105.221734.1934150161399944443.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next] r8152: disable the tasklet by default
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-83-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-83-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 05 Nov 2014 19:17:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 08:06:36PM +0200, Sebastian Andrzej Siewior wrote:
-> The queue is getting smaller. The highlights of v9…v10
-> - the DMA stall Frans Klaver reported which popped up in yocto is gone. It
->   also seems that the "ack the err-irq even if nothing happened" in EDMA
->   can be dropped.
-> - the RX- and TX-DMA callbacks are now OMAP-only and no "bugs" flags are
->   introduced into the generic DMA code. This also means that there is
->   custom IRQ routine in case of DMA.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Wed, 5 Nov 2014 10:17:02 +0800
 
-I've now applied the patches here that I could, if I have missed any,
-please let me know and resend.
+> Let the tasklet only be enabled after open(), and be disabled for
+> the other situation. The tasklet is only necessary after open() for
+> tx/rx, so it could be disabled by default.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-thanks,
-
-greg k-h
+Applied, thanks.
