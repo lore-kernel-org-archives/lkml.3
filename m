@@ -1,251 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaKFPfs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:35:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43338 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbaKFPfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:35:44 -0500
-Date: Thu, 6 Nov 2014 16:35:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: tony.luck@intel.com, ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] x86, mce, severity: extend the the mce_severity
-Message-ID: <20141106153539.GC4318@pd.tnic>
-References: <1415162873-1874-1-git-send-email-slaoub@gmail.com>
- <1415162873-1874-2-git-send-email-slaoub@gmail.com>
+	id S1751441AbaKFPhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:37:13 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:52613 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaKFPhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:37:10 -0500
+Date: Thu, 6 Nov 2014 15:36:59 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x
+ Driver defines
+Message-ID: <20141106153659.GD26543@x1>
+References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org>
+ <545B1C53.9010406@ti.com>
+ <545B3FA4.8040109@st.com>
+ <20141106112825.GC26543@x1>
+ <545B6144.2020503@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415162873-1874-2-git-send-email-slaoub@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <545B6144.2020503@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 12:47:52PM +0800, Chen Yucong wrote:
-> Until now, the mce_severity mechanism can only identify the severity
-> of UCNA error as MCE_KEEP_SEVERITY. Meanwhile, it is not able to filter
-> out DEFERRED error for ADM platform.
+On Thu, 06 Nov 2014, Maxime Coquelin wrote:
+> On 11/06/2014 12:28 PM, Lee Jones wrote:
+> >On Thu, 06 Nov 2014, Maxime Coquelin wrote:
+> >
+> >>Hi Kishon,
+> >>On 11/06/2014 07:59 AM, Kishon Vijay Abraham I wrote:
+> >>>Hi,
+> >>>
+> >>>On Tuesday 04 November 2014 04:21 PM, Gabriel FERNANDEZ wrote:
+> >>>>This provides the shared header file which will be reference from both
+> >>>>PHY driver and its associated Device Tree node(s).
+> >>>>
+> >>>>Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> >>>>---
+> >>>>  include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
+> >>>I don't see this being used in device tree file. Are you planning to add this
+> >>>after -rc1 is tagged. Or else I have to create a separate branch for this file
+> >>>which will be merged by both me and the dt maintainer. Let me know.
+> >>I think we don't need to create a branch we will merged by both of us.
+> >>
+> >>What we can do that both of us apply this patch in our trees.
+> >>It will avoid dependencies on each others.
+> >>
+> >>What do you think?
+> >This makes no sense to me.  Can you find another way to explain this
+> >please?
 > 
-> This patch aims to extend the mce_severity mechanism for handling
-> UCNA/DEFERRED error. In order to do this, the patch introduces a new
-> severity level - MCE_UCNA/DEFERRED_SEVERITY.
+> I apply the patch on my STi tree.
+> Kishon applies the patch on his phy tree.
 > 
-> In addition, mce_severity is specific to machine check exception,
-> and it will check MCIP/EIPV/RIPV bits. In order to use mce_severity
-> mechanism in non-exception context, the patch also introduces a new
-> argument (is_excp) for mce_severity. `is_excp' is used to explicitly
-> specify the calling context of mce_severity.
+> At the end, both STi and phy branches will be merged in Linus tree,
+> with no conflicts.
 > 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/include/asm/mce.h                |    4 ++++
->  arch/x86/kernel/cpu/mcheck/mce-internal.h |    4 +++-
->  arch/x86/kernel/cpu/mcheck/mce-severity.c |   21 ++++++++++++++++-----
->  arch/x86/kernel/cpu/mcheck/mce.c          |   14 ++++++++------
->  4 files changed, 31 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index 958b90f..40b35a5 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -34,6 +34,10 @@
->  #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
->  #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
->  
-> +/* AMD-specific bits */
-> +#define MCI_STATUS_DEFERRED	(1ULL<<44)  /* declare an uncorrected error */
-> +#define MCI_STATUS_POISON	(1ULL<<43)  /* access poisonous data */
+> This is what we are doing for the STiH407 reset DT bindings with Philipp Z.
 
-In file included from drivers/edac/mce_amd.c:4:0:
-drivers/edac/mce_amd.h:35:0: warning: "MCI_STATUS_DEFERRED" redefined
- #define MCI_STATUS_DEFERRED  BIT_64(44)
- ^
-In file included from drivers/edac/mce_amd.h:6:0,
-                 from drivers/edac/mce_amd.c:4:
-./arch/x86/include/asm/mce.h:38:0: note: this is the location of the previous definition
- #define MCI_STATUS_DEFERRED (1ULL<<44)  /* declare an uncorrected error */
- ^
-In file included from drivers/edac/mce_amd.c:4:0:
-drivers/edac/mce_amd.h:36:0: warning: "MCI_STATUS_POISON" redefined
- #define MCI_STATUS_POISON  BIT_64(43)
- ^
-In file included from drivers/edac/mce_amd.h:6:0,
-                 from drivers/edac/mce_amd.c:4:
-./arch/x86/include/asm/mce.h:39:0: note: this is the location of the previous definition
- #define MCI_STATUS_POISON (1ULL<<43)  /* access poisonous data */
- ^
-...
+If you do that, you will almost certainly get conflicts.  The commits
+have to share the same SHA1 for Git to know for sure that they are the
+same patch.  One of you needs to create a branch and tag it.  The
+other can then merge the tag _then_ you won't get conflicts.
 
-> +
->  /*
->   * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
->   * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> index 09edd0b..10b4690 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> @@ -3,6 +3,8 @@
->  
->  enum severity_level {
->  	MCE_NO_SEVERITY,
-> +	MCE_DEFERRED_SEVERITY,
-> +	MCE_UCNA_SEVERITY = MCE_DEFERRED_SEVERITY,
->  	MCE_KEEP_SEVERITY,
->  	MCE_SOME_SEVERITY,
->  	MCE_AO_SEVERITY,
-> @@ -21,7 +23,7 @@ struct mce_bank {
->  	char			attrname[ATTR_LEN];	/* attribute name */
->  };
->  
-> -int mce_severity(struct mce *a, int tolerant, char **msg);
-> +int mce_severity(struct mce *a, int tolerant, char **msg, bool is_excp);
->  struct dentry *mce_get_debugfs_dir(void);
->  
->  extern struct mce_bank *mce_banks;
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> index c370e1c..d31618d 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> @@ -31,6 +31,7 @@
->  
->  enum context { IN_KERNEL = 1, IN_USER = 2 };
->  enum ser { SER_REQUIRED = 1, NO_SER = 2 };
-> +enum exception { EXCP_CONTEXT = 1, NO_EXCP = 2 };
->  
->  static struct severity {
->  	u64 mask;
-> @@ -40,6 +41,7 @@ static struct severity {
->  	unsigned char mcgres;
->  	unsigned char ser;
->  	unsigned char context;
-> +	unsigned char excp;
->  	unsigned char covered;
->  	char *msg;
->  } severities[] = {
-> @@ -48,6 +50,8 @@ static struct severity {
->  #define  USER		.context = IN_USER
->  #define  SER		.ser = SER_REQUIRED
->  #define  NOSER		.ser = NO_SER
-> +#define  EXCP		.excp = EXCP_CONTEXT
-> +#define  ONEXCP	.excp = NO_EXCP
->  #define  BITCLR(x)	.mask = x, .result = 0
->  #define  BITSET(x)	.mask = x, .result = x
->  #define  MCGMASK(x, y)	.mcgmask = x, .mcgres = y
-> @@ -71,16 +75,20 @@ static struct severity {
->  	/* When MCIP is not set something is very confused */
->  	MCESEV(
->  		PANIC, "MCIP not set in MCA handler",
-> -		MCGMASK(MCG_STATUS_MCIP, 0)
-> +		EXCP, MCGMASK(MCG_STATUS_MCIP, 0)
->  		),
->  	/* Neither return not error IP -- no chance to recover -> PANIC */
->  	MCESEV(
->  		PANIC, "Neither restart nor error IP",
-> -		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
-> +		EXCP, MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
->  		),
->  	MCESEV(
->  		PANIC, "In kernel and no restart IP",
-> -		KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
-> +		EXCP, KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
-> +		),
-> +	MCESEV(
-> +		DEFERRED, "Deferred error",
-> +		NOSER, MASK(MCI_STATUS_UC|MCI_STATUS_DEFERRED|MCI_STATUS_POISON, MCI_STATUS_DEFERRED)
->  		),
->  	MCESEV(
->  		KEEP, "Corrected error",
-> @@ -89,7 +97,7 @@ static struct severity {
->  
->  	/* ignore OVER for UCNA */
->  	MCESEV(
-> -		KEEP, "Uncorrected no action required",
-> +		UCNA, "Uncorrected no action required",
->  		SER, MASK(MCI_UC_SAR, MCI_STATUS_UC)
->  		),
->  	MCESEV(
-> @@ -178,8 +186,9 @@ static int error_context(struct mce *m)
->  	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
->  }
->  
-> -int mce_severity(struct mce *m, int tolerant, char **msg)
-> +int mce_severity(struct mce *m, int tolerant, char **msg, bool is_excp)
-
-You're adding a function argument which is carrying redundant info which
-is already present in *m...
-
->  {
-> +	enum exception excp = (is_excp ? EXCP_CONTEXT : NO_EXCP);
-
-... and so this should be:
-
-	excp = ((m->mcg_status & MCG_STATUS_MCIP) ? EXCP_CONTEXT : NO_EXCP);
-
->  	enum context ctx = error_context(m);
->  	struct severity *s;
->  
-> @@ -194,6 +203,8 @@ int mce_severity(struct mce *m, int tolerant, char **msg)
->  			continue;
->  		if (s->context && ctx != s->context)
->  			continue;
-> +		if (s->excp && excp != s->excp)
-> +			continue;
->  		if (msg)
->  			*msg = s->msg;
->  		s->covered = 1;
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 61a9668ce..453e9bf 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -668,7 +668,8 @@ static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
->  			if (quirk_no_way_out)
->  				quirk_no_way_out(i, m, regs);
->  		}
-> -		if (mce_severity(m, mca_cfg.tolerant, msg) >= MCE_PANIC_SEVERITY)
-> +		if (mce_severity(m, mca_cfg.tolerant, msg, true) >=
-> +		    MCE_PANIC_SEVERITY)
->  			ret = 1;
->  	}
->  	return ret;
-> @@ -754,7 +755,7 @@ static void mce_reign(void)
->  	for_each_possible_cpu(cpu) {
->  		int severity = mce_severity(&per_cpu(mces_seen, cpu),
->  					    mca_cfg.tolerant,
-> -					    &nmsg);
-> +					    &nmsg, true);
->  		if (severity > global_worst) {
->  			msg = nmsg;
->  			global_worst = severity;
-> @@ -1095,13 +1096,14 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->  		 */
->  		add_taint(TAINT_MACHINE_CHECK, LOCKDEP_NOW_UNRELIABLE);
->  
-> -		severity = mce_severity(&m, cfg->tolerant, NULL);
-> +		severity = mce_severity(&m, cfg->tolerant, NULL, true);
->  
->  		/*
-> -		 * When machine check was for corrected handler don't touch,
-> -		 * unless we're panicing.
-> +		 * When machine check was for corrected/deferred handler don't
-> +		 * touch, unless we're panicing.
->  		 */
-> -		if (severity == MCE_KEEP_SEVERITY && !no_way_out)
-> +		if ((severity == MCE_KEEP_SEVERITY ||
-> +		     severity == MCE_UCNA_SEVERITY) && !no_way_out)
->  			continue;
->  		__set_bit(i, toclear);
->  		if (severity == MCE_NO_SEVERITY) {
-> -- 
-> 1.7.10.4
-> 
+> >>>Thanks
+> >>>Kishon
+> >>>>  1 file changed, 18 insertions(+)
+> >>>>  create mode 100644 include/dt-bindings/phy/phy.h
+> >>>>
+> >>>>diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+> >>>>new file mode 100644
+> >>>>index 0000000..e8c6a3f
+> >>>>--- /dev/null
+> >>>>+++ b/include/dt-bindings/phy/phy.h
+> >>>>@@ -0,0 +1,18 @@
+> >>>>+/*
+> >>>>+ *
+> >>>>+ * This header provides constants for the phy framework
+> >>>>+ *
+> >>>>+ * Copyright (C) 2014 STMicroelectronics
+> >>>>+ * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+> >>>>+ * License terms:  GNU General Public License (GPL), version 2
+> >>>>+ */
+> >>>>+
+> >>>>+#ifndef _DT_BINDINGS_PHY
+> >>>>+#define _DT_BINDINGS_PHY
+> >>>>+
+> >>>>+#define PHY_TYPE_SATA		1
+> >>>>+#define PHY_TYPE_PCIE		2
+> >>>>+#define PHY_TYPE_USB2		3
+> >>>>+#define PHY_TYPE_USB3		4
+> >>>>+
+> >>>>+#endif /* _DT_BINDINGS_PHY */
+> >>>>
 > 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
