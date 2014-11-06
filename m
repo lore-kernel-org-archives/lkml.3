@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaKFDZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:25:41 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45237 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaKFDZi (ORCPT
+	id S1751436AbaKFDZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:25:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57026 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750975AbaKFDZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:25:38 -0500
-Date: Thu, 6 Nov 2014 03:25:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org
-Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
-Message-ID: <20141106032533.GU7996@ZenIV.linux.org.uk>
-References: <20141105035536.GO7996@ZenIV.linux.org.uk>
- <20141105.155054.2198151263164321219.davem@davemloft.net>
- <20141105210745.GT7996@ZenIV.linux.org.uk>
- <20141105.165719.835728206041332333.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105.165719.835728206041332333.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Nov 2014 22:25:51 -0500
+Message-ID: <1415244343.3398.47.camel@decadent.org.uk>
+Subject: [PATCH 1/3] i2o: Fix DMA mapping leak in failure path of
+ i2o_cfg_passthru32()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Nov 2014 03:25:43 +0000
+In-Reply-To: <1415244281.3398.46.camel@decadent.org.uk>
+References: <1415244281.3398.46.camel@decadent.org.uk>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-zA3967wS7pRnXbLNFIcQ"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 04:57:19PM -0500, David Miller wrote:
-> From: Al Viro <viro@ZenIV.linux.org.uk>
-> Date: Wed, 5 Nov 2014 21:07:45 +0000
-> 
-> > Ping me when you put it there, OK?  I'll rebase the rest of old stuff on
-> > top of it (similar helpers, mostly).
-> 
-> I just pushed it into net-next, thanks Al.
 
-OK, I've taken the beginning of the old queue on top of net-next; it's
-in git://git.kernel.org//pub/scm/linux/kernel/git/viro/vfs.git iov_iter-net.
+--=-zA3967wS7pRnXbLNFIcQ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->From the quick look at the remaining ->msg_iov users:
+If i2o_dma_alloc() fails then we don't free any DMA mappings already
+allocated.  i2o_cfg_passthru() does not have this bug.
 
-	* I'll need to add several iov_iter primitives - counterparts of
-checksum.h stuff (copy_and_csum_{from,to}_iter(), maybe some more).  Not
-a big deal, I'll do that tomorrow.  That will give us a clean iov_iter-based
-counterpart of skb_copy_and_csum_datagram_iovec().
+Compile-tested only.
 
-	* a new helper: zerocopy_sg_from_iter().  I have it, actually,
-but I'd rather not step on Herbert's toes - it's too close to the areas
-his series will touch, so that's probably for when his series goes in.
-It will be needed for complete macvtap conversion...
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/message/i2o/i2o_config.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	* why doesn't verify_iovec() use rw_copy_check_uvector()?  The only
-real differences I see is that (a) you do allocation in callers (same as
-rw_copy_check_uvector() would've done), (b) you return EMSGSIZE in case of
-too long vector, while rw_copy_check_uvector() returns EINVAL in that case
-and (c) you don't do access_ok().  The last one is described as optimization,
-but for iov_iter primitives it's a serious PITA - for iovec-backed instances
-they are using __copy_from_user()/__copy_to_user(), etc.
-	It certainly would be nice to have the same code doing all copying
-of iovecs from userland - readv/writev/aio/sendmsg/recvmsg/etc.  Am I
-missing something subtle semantical difference in there?  EMSGSIZE vs EINVAL
-is trivial (we can lift that check into the callers, if nothing else), but
-I could miss something more interesting...
+diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_con=
+fig.c
+index 04bd3b6..274235d 100644
+--- a/drivers/message/i2o/i2o_config.c
++++ b/drivers/message/i2o/i2o_config.c
+@@ -630,7 +630,7 @@ static int i2o_cfg_passthru32(struct file *file, unsign=
+ed cmnd,
+ 				       "%s:Bad SG element %d - not simple (%x)\n",
+ 				       c->name, i, sg[i].flag_count);
+ 				rcode =3D -EINVAL;
+-				goto cleanup;
++				goto sg_list_cleanup;
+ 			}
+ 			sg_size =3D sg[i].flag_count & 0xffffff;
+ 			p =3D &(sg_list[sg_index]);
 
-	* various getfrag will need to grow iov_iter-based counterparts,
-but ip_append_output() needs no changes, AFAICS.
 
-	* crypto stuff will be easy to convert - iov_iter_get_pages()
-would suffice for a primitive
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
 
-	* there's some really weird stuff in there.  Just what is this
-static int raw_probe_proto_opt(struct flowi4 *fl4, struct msghdr *msg)
-{
-        struct iovec *iov;
-        u8 __user *type = NULL;
-        u8 __user *code = NULL;
-        int probed = 0;
-        unsigned int i;
+--=-zA3967wS7pRnXbLNFIcQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-        if (!msg->msg_iov)
-                return 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-        for (i = 0; i < msg->msg_iovlen; i++) {
-                iov = &msg->msg_iov[i];
-                if (!iov)
-                        continue;
-trying to do?  "If non-NULL pointer + i somehow happened to be NULL, skip it
-and try to use the same pointer + i + 1"?  Huh?  Had been that way since
-the function first went in back in 2004 ("[IPV4] XFRM: probe icmp type/code
-when sending packets via raw socket.", according to historical tree)...
+iQIVAwUAVFrqOOe/yOyVhhEJAQqUuQ/+MZ9RnBkiR8gutLi8xX8gLKIIgHSYw/KU
+FvI4zQIS/O2EaKzn3FJpkah+FWL49+6MGoil0LVMysqv3hlbzknZ0kt0nEKf8Luc
+844AW9YgPu/yalLFckKOf2n96R34WdXJNebdf89oxrvj9vSRX2F1YlBK7SWqidwp
+aH3m0u88GSyy3m7NOp51o8DyOX09Cmi3BLE60eF9o0+gMH7DiDC02uhhT69RrddL
+e/7HcoLzxUkrORQ1KSFL/QcVdKhl4HYo4Zt3H0CukvIiybCEENXI+K8PBS0dHfJV
+nvUMTZbboUIeguiM+AnPzrrmCIYofFtFlt8Nn2kXo/xcxFUPGzNO+ytJ5Ptf+/AE
+Y0kkIXoBJARrI9ssfNHTdtWT9w1YNkefIXZdK06sEf4AIUxNha17K5FRVIqnGU/t
+yYw9xs+upGj9nViXFAz80KFA9W5iUUNDZCiwBAHFcGQhxdJTbdcyCmlo8DSXZVyc
+YrC1WvQtUCUZG3QK5axrafmJazfo7+RxsyklXaw0XQe2sFNSqI72KAraQXt16ZfV
+S33wyo5vD4fXUuU1YwVCOESnq7ULpgk2oBuBDftPjB3CbGgYfvYnfPmBzclQbTzj
+PGBdSVCAjnVg2pju9N0jfTIfKKB84dp/8VM7WY+AatYR2yVREsbH/l2WMnq0KMOu
+CAKOkJ0lVmI=
+=vp0p
+-----END PGP SIGNATURE-----
 
-	* rds, bluetooth and vsock are doing something odd; need to RTFS some
-more.
-
-	* not sure I understand what TIPC is doing - does it prohibit too
-short first segment of ->msg_iov?  net/tipc/socket.c:dest_name_check() looks
-odd _and_ potentially racy - we read the same data twice and hope our checks
-still apply.  I asked TIPC folks about that race back in April, but it
-looks like that fell through the cracks...
-
-Overall, so far it looks more or less feasible - other than the missing csum
-primitives, current mm/iov_iter.c should suffice.  I have _not_ seriously
-looked into sendpage yet; that might very well require some more.
+--=-zA3967wS7pRnXbLNFIcQ--
