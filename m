@@ -1,159 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaKFQ5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:57:35 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56315 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348AbaKFQoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:37 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v5 24/48] power/reset: as3722-poweroff: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:43:08 -0800
-Message-Id: <1415292213-28652-25-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.545BA575.01BC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 139
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752959AbaKFQ5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:57:51 -0500
+Received: from mail-bn1on0143.outbound.protection.outlook.com ([157.56.110.143]:44592
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752610AbaKFQ5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:57:47 -0500
+X-WSS-ID: 0NEMN46-08-N5C-02
+X-M-MSG: 
+Message-ID: <545BA884.5040406@amd.com>
+Date: Thu, 6 Nov 2014 10:57:40 -0600
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@suse.de>
+CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
+        <acme@kernel.org>, <tglx@linutronix.de>, <hpa@zytor.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Jan Kiszka" <jan.kiszka@siemens.com>, Len Brown <len.brown@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH] perf, amd, ibs: Update IBS MSRs and feature definitions
+References: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141106163430.GB4737@pd.tnic>
+In-Reply-To: <20141106163430.GB4737@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(164054003)(377454003)(189002)(51704005)(479174003)(24454002)(65956001)(44976005)(47776003)(20776003)(64706001)(46102003)(36756003)(86362001)(87936001)(65816999)(65806001)(19580395003)(21056001)(76176999)(101416001)(54356999)(92726001)(50986999)(87266999)(31966008)(80316001)(84676001)(33656002)(92566001)(59896002)(83506001)(97736003)(68736004)(110136001)(4396001)(106466001)(23676002)(99396003)(64126003)(50466002)(77156002)(102836001)(62966003)(107046002)(95666004)(120916001)(105586002)(120886001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0387D64A71
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with low priority to reflect that the original code
-only sets pm_power_off if it was not already set.
+On 11/6/2014 10:34 AM, Borislav Petkov wrote:
+> On Thu, Nov 06, 2014 at 10:26:22AM -0600, Aravind Gopalakrishnan wrote:
+>> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+>> index e21331c..ba7b609 100644
+>> --- a/arch/x86/include/uapi/asm/msr-index.h
+>> +++ b/arch/x86/include/uapi/asm/msr-index.h
+>> @@ -206,6 +206,8 @@
+>>   #define MSR_AMD64_IBSOP_REG_MASK	((1UL<<MSR_AMD64_IBSOP_REG_COUNT)-1)
+>>   #define MSR_AMD64_IBSCTL		0xc001103a
+>>   #define MSR_AMD64_IBSBRTARGET		0xc001103b
+>> +#define MSR_AMD64_IBS_FETCH_EXTD_CTL	0xc001103c
+>> +#define MSR_AMD64_IBSOPDATA4		0xc001103d
+>>   #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
+>>   
+>>   /* Fam 16h MSRs */
+>> diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+>> index cbb1be3e..a61f5c6 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+>> @@ -565,6 +565,21 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
+>>   				       perf_ibs->offset_max,
+>>   				       offset + 1);
+>>   	} while (offset < offset_max);
+>> +	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
+>> +		/*
+>> +		 * Read IbsBrTarget and IbsOpData4 separately
+>> +		 * depending on their availability.
+>> +		 * Can't add to offset_max as they are staggered
+>> +		 */
+>> +		if (ibs_caps & IBS_CAPS_BRNTRGT) {
+>> +			rdmsrl(MSR_AMD64_IBSBRTARGET, *buf++);
+> Are those MSRs present on everything that supports IBS and if not, you
+> probably should do rdmsr_safe() here instead and handle the error case.
+> Or do something with f/m/s checking or so...
 
-Drop remove function since it is no longer needed.
+But Why?
+IBS_CAPS_BRNTRGT and IBS_CAPS_OPDATA4 indicate support for the 
+respective MSRs and
+I am only loading the MSR contents upon checking for their availability. 
+So it's not like an exception is
+generated for a rdmsr command on an unimplemented/reserved MSR.
 
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Acked-by: Sebastian Reichel <sre@kernel.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v5:
-- Rebase to v3.18-rc3
-v4:
-- Do not use notifiers but internal functions and data structures to manage
-  the list of power-off handlers. Drop unused parameters from callbacks, and
-  make the power-off function type void
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-v2:
-- Use define to specify poweroff handler priority
-- Use devm_register_power_off_handler
-- Drop remove function since it is no longer needed
+And the nice thing about the feature identifiers is that I don't have to 
+do f/m/s checks right?
+I mean, if some other future processor decides to implement it, then we 
+don't have to revisit the code
+to make a change to the f/m/s condition.
+And if they don't want to use those MSRs then it's still OK as the 
+feature bits are not going to be set..
 
- drivers/power/reset/as3722-poweroff.c | 35 +++++++++++------------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/power/reset/as3722-poweroff.c b/drivers/power/reset/as3722-poweroff.c
-index 6849711..bd4965b 100644
---- a/drivers/power/reset/as3722-poweroff.c
-+++ b/drivers/power/reset/as3722-poweroff.c
-@@ -20,28 +20,25 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
-+#include <linux/pm.h>
- #include <linux/slab.h>
- 
- struct as3722_poweroff {
- 	struct device *dev;
- 	struct as3722 *as3722;
-+	struct power_off_handler_block power_off_hb;
- };
- 
--static struct as3722_poweroff *as3722_pm_poweroff;
--
--static void as3722_pm_power_off(void)
-+static void as3722_power_off(struct power_off_handler_block *this)
- {
-+	struct as3722_poweroff *as3722_poweroff =
-+		container_of(this, struct as3722_poweroff, power_off_hb);
- 	int ret;
- 
--	if (!as3722_pm_poweroff) {
--		pr_err("AS3722 poweroff is not initialised\n");
--		return;
--	}
--
--	ret = as3722_update_bits(as3722_pm_poweroff->as3722,
-+	ret = as3722_update_bits(as3722_poweroff->as3722,
- 		AS3722_RESET_CONTROL_REG, AS3722_POWER_OFF, AS3722_POWER_OFF);
- 	if (ret < 0)
--		dev_err(as3722_pm_poweroff->dev,
-+		dev_err(as3722_poweroff->dev,
- 			"RESET_CONTROL_REG update failed, %d\n", ret);
- }
- 
-@@ -63,20 +60,11 @@ static int as3722_poweroff_probe(struct platform_device *pdev)
- 
- 	as3722_poweroff->as3722 = dev_get_drvdata(pdev->dev.parent);
- 	as3722_poweroff->dev = &pdev->dev;
--	as3722_pm_poweroff = as3722_poweroff;
--	if (!pm_power_off)
--		pm_power_off = as3722_pm_power_off;
--
--	return 0;
--}
--
--static int as3722_poweroff_remove(struct platform_device *pdev)
--{
--	if (pm_power_off == as3722_pm_power_off)
--		pm_power_off = NULL;
--	as3722_pm_poweroff = NULL;
-+	as3722_poweroff->power_off_hb.handler = as3722_power_off;
-+	as3722_poweroff->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
- 
--	return 0;
-+	return devm_register_power_off_handler(&pdev->dev,
-+					      &as3722_poweroff->power_off_hb);
- }
- 
- static struct platform_driver as3722_poweroff_driver = {
-@@ -85,7 +73,6 @@ static struct platform_driver as3722_poweroff_driver = {
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = as3722_poweroff_probe,
--	.remove = as3722_poweroff_remove,
- };
- 
- module_platform_driver(as3722_poweroff_driver);
--- 
-1.9.1
+Thanks,
+-Aravind.
+
+>> +			size++;
+>> +		}
+>> +		if (ibs_caps & IBS_CAPS_OPDATA4) {
+>> +			rdmsrl(MSR_AMD64_IBSOPDATA4, *buf++);
+>> +			size++;
+>> +		}
+>> +	}
+>>   	ibs_data.size = sizeof(u64) * size;
+>>   
+>>   	regs = *iregs;
+>> -- 
+>> 1.9.1
+>>
 
