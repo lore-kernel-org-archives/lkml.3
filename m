@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaKFWoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:44:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59118 "EHLO
+	id S1753395AbaKFWog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59169 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279AbaKFWoQ (ORCPT
+	with ESMTP id S1753353AbaKFWo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:16 -0500
+	Thu, 6 Nov 2014 17:44:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 023/162] hyperv: Fix a bug in netvsc_start_xmit()
-Date: Thu,  6 Nov 2014 14:34:47 -0800
-Message-Id: <1415313426-9622-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 075/162] drm/radeon: fix speaker allocation setup
+Date: Thu,  6 Nov 2014 14:35:39 -0800
+Message-Id: <1415313426-9622-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,47 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KY Srinivasan <kys@microsoft.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-[ Upstream commit dedb845ded56ded1c62f5398a94ffa8615d4592d ]
+commit 4910403836ded89803fab201d4b5caaa85de3a89 upstream.
 
-After the packet is successfully sent, we should not touch the skb
-as it may have been freed. This patch is based on the work done by
-Long Li <longli@microsoft.com>.
+If the sad_count is 0, set the hw to stereo and change
+the error message to a warn.  A lot of monitors don't
+set the speaker allocation block.
 
-In this version of the patch I have fixed issues pointed out by David.
-David, please queue this up for stable.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Long Li <longli@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ kamal: backport to 3.13-stable: no dce3_1_afmt.c in 3.13. ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/hyperv/netvsc_drv.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/dce6_afmt.c      | 6 +++---
+ drivers/gpu/drm/radeon/evergreen_hdmi.c | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 6ea06a8..f4aef42 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -147,6 +147,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	struct hv_netvsc_packet *packet;
- 	int ret;
- 	unsigned int i, num_pages, npg_data;
-+	u32 skb_length = skb->len;
+diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
+index ff0001c..3483828 100644
+--- a/drivers/gpu/drm/radeon/dce6_afmt.c
++++ b/drivers/gpu/drm/radeon/dce6_afmt.c
+@@ -174,9 +174,9 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	}
  
- 	/* Add multipages for skb->data and additional 2 for RNDIS */
- 	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
-@@ -217,7 +218,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	ret = rndis_filter_send(net_device_ctx->device_ctx,
- 				  packet);
- 	if (ret == 0) {
--		net->stats.tx_bytes += skb->len;
-+		net->stats.tx_bytes += skb_length;
- 		net->stats.tx_packets++;
- 	} else {
- 		kfree(packet);
+ 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
+-	if (sad_count <= 0) {
+-		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
+-		return;
++	if (sad_count < 0) {
++		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
++		sad_count = 0;
+ 	}
+ 
+ 	/* program the speaker allocation */
+diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+index 0c6d5ce..738c1ec 100644
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -118,9 +118,9 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	}
+ 
+ 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
+-	if (sad_count <= 0) {
+-		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
+-		return;
++	if (sad_count < 0) {
++		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
++		sad_count = 0;
+ 	}
+ 
+ 	/* program the speaker allocation */
 -- 
 1.9.1
 
