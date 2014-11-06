@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaKFXL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:11:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58733 "EHLO
+	id S1752504AbaKFWlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:41:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58701 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513AbaKFWlY (ORCPT
+	with ESMTP id S1752434AbaKFWlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:41:24 -0500
+	Thu, 6 Nov 2014 17:41:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 037/162] sparc64: Fix lockdep warnings on reboot on Ultra-5
-Date: Thu,  6 Nov 2014 14:35:01 -0800
-Message-Id: <1415313426-9622-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 049/162] sparc64: Use kernel page tables for vmemmap.
+Date: Thu,  6 Nov 2014 14:35:13 -0800
+Message-Id: <1415313426-9622-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -29,91 +29,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit bdcf81b658ebc4c2640c3c2c55c8b31c601b6996 ]
+[ Upstream commit c06240c7f5c39c83dfd7849c0770775562441b96 ]
 
-Inconsistently, the raw_* IRQ routines do not interact with and update
-the irqflags tracing and lockdep state, whereas the raw_* spinlock
-interfaces do.
+For sparse memory configurations, the vmemmap array behaves terribly
+and it takes up an inordinate amount of space in the BSS section of
+the kernel image unconditionally.
 
-This causes problems in p1275_cmd_direct() because we disable hardirqs
-by hand using raw_local_irq_restore() and then do a raw_spin_lock()
-which triggers a lockdep trace because the CPU's hw IRQ state doesn't
-match IRQ tracing's internal software copy of that state.
+Just build huge PMDs and look them up just like we do for TLB misses
+in the vmalloc area.
 
-The CPU's irqs are disabled, yet current->hardirqs_enabled is true.
+Kernel BSS shrinks by about 2MB.
 
-====================
-reboot: Restarting system
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at kernel/locking/lockdep.c:3536 check_flags+0x7c/0x240()
-DEBUG_LOCKS_WARN_ON(current->hardirqs_enabled)
-Modules linked in: openpromfs
-CPU: 0 PID: 1 Comm: systemd-shutdow Tainted: G        W      3.17.0-dirty #145
-Call Trace:
- [000000000045919c] warn_slowpath_common+0x5c/0xa0
- [0000000000459210] warn_slowpath_fmt+0x30/0x40
- [000000000048f41c] check_flags+0x7c/0x240
- [0000000000493280] lock_acquire+0x20/0x1c0
- [0000000000832b70] _raw_spin_lock+0x30/0x60
- [000000000068f2fc] p1275_cmd_direct+0x1c/0x60
- [000000000068ed28] prom_reboot+0x28/0x40
- [000000000043610c] machine_restart+0x4c/0x80
- [000000000047d2d4] kernel_restart+0x54/0x80
- [000000000047d618] SyS_reboot+0x138/0x200
- [00000000004060b4] linux_sparc_syscall32+0x34/0x60
----[ end trace 5c439fe81c05a100 ]---
-possible reason: unannotated irqs-off.
-irq event stamp: 2010267
-hardirqs last  enabled at (2010267): [<000000000049a358>] vprintk_emit+0x4b8/0x580
-hardirqs last disabled at (2010266): [<0000000000499f08>] vprintk_emit+0x68/0x580
-softirqs last  enabled at (2010046): [<000000000045d278>] __do_softirq+0x378/0x4a0
-softirqs last disabled at (2010039): [<000000000042bf08>] do_softirq_own_stack+0x28/0x40
-Resetting ...
-====================
-
-Use local_* variables of the hw IRQ interfaces so that IRQ tracing sees
-all of our changes.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/prom/p1275.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/ktlb.S |  9 ++----
+ arch/sparc/mm/init_64.c  | 72 +++++++++++++++++++++++-------------------------
+ arch/sparc/mm/init_64.h  | 11 --------
+ 3 files changed, 36 insertions(+), 56 deletions(-)
 
-diff --git a/arch/sparc/prom/p1275.c b/arch/sparc/prom/p1275.c
-index 04a4540..ea5b427 100644
---- a/arch/sparc/prom/p1275.c
-+++ b/arch/sparc/prom/p1275.c
-@@ -10,6 +10,7 @@
- #include <linux/smp.h>
- #include <linux/string.h>
- #include <linux/spinlock.h>
-+#include <linux/irqflags.h>
+diff --git a/arch/sparc/kernel/ktlb.S b/arch/sparc/kernel/ktlb.S
+index 94a1e66..2627a7f 100644
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -186,13 +186,8 @@ kvmap_dtlb_load:
  
- #include <asm/openprom.h>
- #include <asm/oplib.h>
-@@ -37,8 +38,8 @@ void p1275_cmd_direct(unsigned long *args)
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ kvmap_vmemmap:
+-	sub		%g4, %g5, %g5
+-	srlx		%g5, ILOG2_4MB, %g5
+-	sethi		%hi(vmemmap_table), %g1
+-	sllx		%g5, 3, %g5
+-	or		%g1, %lo(vmemmap_table), %g1
+-	ba,pt		%xcc, kvmap_dtlb_load
+-	 ldx		[%g1 + %g5], %g5
++	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_dtlb_longpath)
++	ba,a,pt		%xcc, kvmap_dtlb_load
+ #endif
+ 
+ kvmap_dtlb_nonlinear:
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 661a6383..75d26ee 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2254,18 +2254,9 @@ unsigned long _PAGE_CACHE __read_mostly;
+ EXPORT_SYMBOL(_PAGE_CACHE);
+ 
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+-unsigned long vmemmap_table[VMEMMAP_SIZE];
+-
+-static long __meminitdata addr_start, addr_end;
+-static int __meminitdata node_start;
+-
+ int __meminit vmemmap_populate(unsigned long vstart, unsigned long vend,
+ 			       int node)
  {
- 	unsigned long flags;
+-	unsigned long phys_start = (vstart - VMEMMAP_BASE);
+-	unsigned long phys_end = (vend - VMEMMAP_BASE);
+-	unsigned long addr = phys_start & VMEMMAP_CHUNK_MASK;
+-	unsigned long end = VMEMMAP_ALIGN(phys_end);
+ 	unsigned long pte_base;
  
--	raw_local_save_flags(flags);
--	raw_local_irq_restore((unsigned long)PIL_NMI);
-+	local_save_flags(flags);
-+	local_irq_restore((unsigned long)PIL_NMI);
- 	raw_spin_lock(&prom_entry_lock);
+ 	pte_base = (_PAGE_VALID | _PAGE_SZ4MB_4U |
+@@ -2276,47 +2267,52 @@ int __meminit vmemmap_populate(unsigned long vstart, unsigned long vend,
+ 			    _PAGE_CP_4V | _PAGE_CV_4V |
+ 			    _PAGE_P_4V | _PAGE_W_4V);
  
- 	prom_world(1);
-@@ -46,7 +47,7 @@ void p1275_cmd_direct(unsigned long *args)
- 	prom_world(0);
+-	for (; addr < end; addr += VMEMMAP_CHUNK) {
+-		unsigned long *vmem_pp =
+-			vmemmap_table + (addr >> VMEMMAP_CHUNK_SHIFT);
+-		void *block;
++	pte_base |= _PAGE_PMD_HUGE;
  
- 	raw_spin_unlock(&prom_entry_lock);
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
+-		if (!(*vmem_pp & _PAGE_VALID)) {
+-			block = vmemmap_alloc_block(1UL << ILOG2_4MB, node);
+-			if (!block)
++	vstart = vstart & PMD_MASK;
++	vend = ALIGN(vend, PMD_SIZE);
++	for (; vstart < vend; vstart += PMD_SIZE) {
++		pgd_t *pgd = pgd_offset_k(vstart);
++		unsigned long pte;
++		pud_t *pud;
++		pmd_t *pmd;
++
++		if (pgd_none(*pgd)) {
++			pud_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
++
++			if (!new)
+ 				return -ENOMEM;
++			pgd_populate(&init_mm, pgd, new);
++		}
+ 
+-			*vmem_pp = pte_base | __pa(block);
++		pud = pud_offset(pgd, vstart);
++		if (pud_none(*pud)) {
++			pmd_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
+ 
+-			/* check to see if we have contiguous blocks */
+-			if (addr_end != addr || node_start != node) {
+-				if (addr_start)
+-					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
+-					       addr_start, addr_end-1, node_start);
+-				addr_start = addr;
+-				node_start = node;
+-			}
+-			addr_end = addr + VMEMMAP_CHUNK;
++			if (!new)
++				return -ENOMEM;
++			pud_populate(&init_mm, pud, new);
+ 		}
+-	}
+-	return 0;
+-}
+ 
+-void __meminit vmemmap_populate_print_last(void)
+-{
+-	if (addr_start) {
+-		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
+-		       addr_start, addr_end-1, node_start);
+-		addr_start = 0;
+-		addr_end = 0;
+-		node_start = 0;
++		pmd = pmd_offset(pud, vstart);
++
++		pte = pmd_val(*pmd);
++		if (!(pte & _PAGE_VALID)) {
++			void *block = vmemmap_alloc_block(PMD_SIZE, node);
++
++			if (!block)
++				return -ENOMEM;
++
++			pmd_val(*pmd) = pte_base | __pa(block);
++		}
+ 	}
++
++	return 0;
  }
  
- void prom_cif_init(void *cif_handler, void *cif_stack)
+ void vmemmap_free(unsigned long start, unsigned long end)
+ {
+ }
+-
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+diff --git a/arch/sparc/mm/init_64.h b/arch/sparc/mm/init_64.h
+index 3ccbf92..ac49119 100644
+--- a/arch/sparc/mm/init_64.h
++++ b/arch/sparc/mm/init_64.h
+@@ -31,15 +31,4 @@ extern unsigned long kern_locked_tte_data;
+ 
+ extern void prom_world(int enter);
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-#define VMEMMAP_CHUNK_SHIFT	22
+-#define VMEMMAP_CHUNK		(1UL << VMEMMAP_CHUNK_SHIFT)
+-#define VMEMMAP_CHUNK_MASK	~(VMEMMAP_CHUNK - 1UL)
+-#define VMEMMAP_ALIGN(x)	(((x)+VMEMMAP_CHUNK-1UL)&VMEMMAP_CHUNK_MASK)
+-
+-#define VMEMMAP_SIZE	((((1UL << MAX_PHYSADDR_BITS) >> PAGE_SHIFT) * \
+-			  sizeof(struct page)) >> VMEMMAP_CHUNK_SHIFT)
+-extern unsigned long vmemmap_table[VMEMMAP_SIZE];
+-#endif
+-
+ #endif /* _SPARC64_MM_INIT_H */
 -- 
 1.9.1
 
