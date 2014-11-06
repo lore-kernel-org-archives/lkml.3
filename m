@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaKFWpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:45:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59196 "EHLO
+	id S1753456AbaKFWpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:45:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59195 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353AbaKFWon (ORCPT
+	with ESMTP id S1752024AbaKFWon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 17:44:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 022/162] gro: fix aggregation for skb using frag_list
-Date: Thu,  6 Nov 2014 14:34:46 -0800
-Message-Id: <1415313426-9622-23-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 062/162] ext4: fix mmap data corruption when blocksize < pagesize
+Date: Thu,  6 Nov 2014 14:35:26 -0800
+Message-Id: <1415313426-9622-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,44 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit 73d3fe6d1c6d840763ceafa9afae0aaafa18c4b5 ]
+commit d6320cbfc92910a3e5f10c42d98c231c98db4f60 upstream.
 
-In commit 8a29111c7ca6 ("net: gro: allow to build full sized skb")
-I added a regression for linear skb that traditionally force GRO
-to use the frag_list fallback.
+Use truncate_isize_extended() when hole is being created in a file so that
+->page_mkwrite() will get called for the partial tail page if it is
+mmaped (see the first patch in the series for details).
 
-Erez Shitrit found that at most two segments were aggregated and
-the "if (skb_gro_len(p) != pinfo->gso_size)" test was failing.
-
-This is because pinfo at this spot still points to the last skb in the
-chain, instead of the first one, where we find the correct gso_size
-information.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: 8a29111c7ca6 ("net: gro: allow to build full sized skb")
-Reported-by: Erez Shitrit <erezsh@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/skbuff.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/ext4/inode.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 808a270..ddbb949 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3043,6 +3043,9 @@ int skb_gro_receive(struct sk_buff **head, struct sk_buff *skb)
- 		NAPI_GRO_CB(skb)->free = NAPI_GRO_FREE_STOLEN_HEAD;
- 		goto done;
- 	}
-+	/* switch back to head shinfo */
-+	pinfo = skb_shinfo(p);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 2d782aa..fd6501e3 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4656,8 +4656,12 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
+ 				ext4_orphan_del(NULL, inode);
+ 				goto err_out;
+ 			}
+-		} else
++		} else {
++			loff_t oldsize = inode->i_size;
 +
- 	if (pinfo->frag_list)
- 		goto merge;
- 	if (skb_gro_len(p) != pinfo->gso_size)
+ 			i_size_write(inode, attr->ia_size);
++			pagecache_isize_extended(inode, oldsize, inode->i_size);
++		}
+ 
+ 		/*
+ 		 * Blocks are going to be removed from the inode. Wait
 -- 
 1.9.1
 
