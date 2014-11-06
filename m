@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaKFQvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:51:51 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56393 "EHLO
+	id S1752830AbaKFQv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:51:56 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56387 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaKFQox (ORCPT
+	with ESMTP id S1752161AbaKFQov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:53 -0500
+	Thu, 6 Nov 2014 11:44:51 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jiri Kosina <jkosina@suse.cz>,
-        x86@kernel.org
-Subject: [PATCH v5 31/48] x86: apm: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:43:15 -0800
-Message-Id: <1415292213-28652-32-git-send-email-linux@roeck-us.net>
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v5 30/48] x86: iris: Register with kernel power-off handler
+Date: Thu,  6 Nov 2014 08:43:14 -0800
+Message-Id: <1415292213-28652-31-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.545BA585.0087,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.545BA583.0027,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 171
+X-CTCH-SenderID-TotalMessages: 166
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -58,9 +57,7 @@ overwrites existing power-off handlers.
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
 Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v5:
@@ -75,60 +72,66 @@ v3:
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
 - Use define to specify poweroff handler priority
+- Use devm_register_power_off_handler
 
- arch/x86/kernel/apm_32.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ arch/x86/platform/iris/iris.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 5848744..04910de 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -981,7 +981,7 @@ recalc:
-  *	on their first cpu.
-  */
+diff --git a/arch/x86/platform/iris/iris.c b/arch/x86/platform/iris/iris.c
+index 4d171e8..7152814 100644
+--- a/arch/x86/platform/iris/iris.c
++++ b/arch/x86/platform/iris/iris.c
+@@ -47,15 +47,18 @@ static bool force;
+ module_param(force, bool, 0);
+ MODULE_PARM_DESC(force, "Set to one to force poweroff handler installation.");
  
--static void apm_power_off(void)
-+static void apm_power_off(struct power_off_handler_block *this)
+-static void (*old_pm_power_off)(void);
+-
+-static void iris_power_off(void)
++static void iris_power_off(struct power_off_handler_block *this)
  {
- 	/* Some bioses don't like being called from CPU != 0 */
- 	if (apm_info.realmode_power_off) {
-@@ -992,6 +992,11 @@ static void apm_power_off(void)
- 	}
+ 	outb(IRIS_GIO_PULSE, IRIS_GIO_OUTPUT);
+ 	msleep(850);
+ 	outb(IRIS_GIO_REST, IRIS_GIO_OUTPUT);
  }
  
-+static struct power_off_handler_block apm_power_off_hb = {
-+	.handler = apm_power_off,
++static struct power_off_handler_block iris_power_off_hb = {
++	.handler = iris_power_off,
 +	.priority = POWER_OFF_PRIORITY_HIGH,
 +};
 +
- #ifdef CONFIG_APM_DO_ENABLE
- 
- /**
-@@ -1847,8 +1852,11 @@ static int apm(void *unused)
+ /*
+  * Before installing the power_off handler, try to make sure the OS is
+  * running on an Iris.  Since Iris does not support DMI, this is done
+@@ -65,20 +68,25 @@ static void iris_power_off(void)
+ static int iris_probe(struct platform_device *pdev)
+ {
+ 	unsigned char status = inb(IRIS_GIO_INPUT);
++	int ret;
++
+ 	if (status == IRIS_GIO_NODEV) {
+ 		printk(KERN_ERR "This machine does not seem to be an Iris. "
+ 			"Power off handler not installed.\n");
+ 		return -ENODEV;
  	}
- 
- 	/* Install our power off handler.. */
--	if (power_off)
--		pm_power_off = apm_power_off;
-+	if (power_off) {
-+		error = register_power_off_handler(&apm_power_off_hb);
-+		if (error)
-+			pr_warn("apm: Failed to register power-off handler\n");
+-	old_pm_power_off = pm_power_off;
+-	pm_power_off = &iris_power_off;
++
++	ret = devm_register_power_off_handler(&pdev->dev, &iris_power_off_hb);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to register power-off handler\n");
++		return ret;
 +	}
+ 	printk(KERN_INFO "Iris power_off handler installed.\n");
+ 	return 0;
+ }
  
- 	if (num_online_cpus() == 1 || smp) {
- #if defined(CONFIG_APM_DISPLAY_BLANK) && defined(CONFIG_VT)
-@@ -2408,9 +2416,8 @@ static void __exit apm_exit(void)
- 			apm_error("disengage power management", error);
- 	}
- 	misc_deregister(&apm_device);
-+	unregister_power_off_handler(&apm_power_off_hb);
- 	remove_proc_entry("apm", NULL);
--	if (power_off)
--		pm_power_off = NULL;
- 	if (kapmd_task) {
- 		kthread_stop(kapmd_task);
- 		kapmd_task = NULL;
+ static int iris_remove(struct platform_device *pdev)
+ {
+-	pm_power_off = old_pm_power_off;
+ 	printk(KERN_INFO "Iris power_off handler uninstalled.\n");
+ 	return 0;
+ }
 -- 
 1.9.1
 
