@@ -1,49 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215AbaKFLvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 06:51:04 -0500
-Received: from mga14.intel.com ([192.55.52.115]:64677 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaKFLvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 06:51:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,325,1413270000"; 
-   d="scan'208";a="618149082"
-Date: Thu, 6 Nov 2014 13:50:32 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bryan Wu <cooloney@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] leds: leds-gpio: Fix legacy GPIO number case
-Message-ID: <20141106115032.GN1618@lahna.fi.intel.com>
-References: <1415273003-27674-1-git-send-email-geert+renesas@glider.be>
+	id S1751305AbaKFLwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 06:52:44 -0500
+Received: from antispam.ahnlab.com ([210.121.169.55]:57445 "EHLO
+	antispam.ahnlab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaKFLwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 06:52:41 -0500
+X-Original-SENDERIP: 172.16.11.209
+X-Original-MAILFROM: suhyun.park@ahnlab.com
+From: =?utf-8?B?67CV7IiY7ZiE?= <suhyun.park@ahnlab.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "bridge@lists.linux-foundation.org" 
+	<bridge@lists.linux-foundation.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] bridge: missing null bridge device check causing null
+ pointer dereference (bugfix)
+Thread-Topic: [PATCH] bridge: missing null bridge device check causing null
+ pointer dereference (bugfix)
+Thread-Index: AQHP+YqrhNePGBbJkEOg7Nz1l90pj5xSlqaAgACjdfD//6digIAAmgCg
+Date: Thu, 6 Nov 2014 11:52:33 +0000
+Message-ID: <8D1F1238A24CE743B8F3CED0F137C69E408AA143@EXMB02.ahnbang.ahnlab.com>
+References: <1415255192-13584-1-git-send-email-suhyun.park@ahnlab.com>
+	 <545B1E27.3080302@lab.ntt.co.jp>
+	 <8D1F1238A24CE743B8F3CED0F137C69E408AA087@EXMB02.ahnbang.ahnlab.com>
+ <1415273711.13896.67.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1415273711.13896.67.camel@edumazet-glaptop2.roam.corp.google.com>
+Accept-Language: ko-KR, en-US
+Content-Language: ko-KR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.20.32.26]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415273003-27674-1-git-send-email-geert+renesas@glider.be>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA6BqnKx002537
 
-On Thu, Nov 06, 2014 at 12:23:23PM +0100, Geert Uytterhoeven wrote:
-> In the legacy case, led_dat->gpiod is initialized correctly, but
-> overwritten later by template->gpiod, which is NULL, causing leds-gpio
-> to fail with:
-> 
->     gpiod_direction_output: invalid GPIO
->     leds-gpio: probe of leds-gpio failed with error -22
-> 
-> Move the initialization of led_dat->gpiod from template->gpiod up, and
-> always use led_dat->gpiod later, to fix this.
-> 
-> Fixes: 5c51277a9ababfa4 ("leds: leds-gpio: Add support for GPIO descriptors")
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+My appologies,
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+I was working on kernel 3.2.30 when I hit the crash. I only looked at the up-to-date kernel for br_handle_frame function where I still found "p->state" reference.
+
+Please disregard my patch.
+
+Thanks,
+Su-Hyun Park
+
+-----Original Message-----
+From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
+Sent: Thursday, November 06, 2014 8:35 PM
+To: ë°•ìˆ˜í˜„
+Cc: Toshiaki Makita; Stephen Hemminger; David S. Miller; bridge@lists.linux-foundation.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bridge: missing null bridge device check causing null pointer dereference (bugfix)
+
+On Thu, 2014-11-06 at 07:58 +0000, ë°•ìˆ˜í˜„ wrote:
+> >-----Original Message-----
+> >From: Toshiaki Makita [mailto:makita.toshiaki@lab.ntt.co.jp]
+> >Sent: Thursday, November 06, 2014 4:07 PM
+> >To: ë°•ìˆ˜í˜„; Stephen Hemminger; David S. Miller
+> >Cc: bridge@lists.linux-foundation.org; netdev@vger.kernel.org; linux- 
+> >kernel@vger.kernel.org
+> >Subject: Re: [PATCH] bridge: missing null bridge device check causing 
+> >null pointer dereference (bugfix)
+> >
+> >On 2014/11/06 15:26, Su-Hyun Park wrote:
+> >> the bridge device can be null if the bridge is being deleted while 
+> >> processing the packet, which causes the null pointer dereference in
+> >switch statement.
+> >
+> >How can this happen??
+> >It is guarded by rcu.
+> >netdev_rx_handler_unregister() ensures rx_handler_data is non NULL.
+> >
+> 
+> The RCU protect rx_handler_data, not the bridge member port. It can be NULL according to below code.
+> 
+
+Where do you find this 'below code' ?
+
+Are you sending a patch for an old linux kernel ?
+
+> static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev) {
+> 	struct net_bridge_port *port = rcu_dereference(dev->rx_handler_data);
+> 	return br_port_exists(dev) ? port : NULL; }
+
+Actual code is :
+
+static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev) {
+	return rcu_dereference(dev->rx_handler_data);
+}
+
+
+> 
+> The crash happens at the below switch statement in br_handle_frame, where p is NULL.
+> 
+> 	switch (p->state)
+
+Is your tree really including the fix we already did to fix this issue ?
+
+(commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2 )
+bridge: fix NULL pointer deref of br_port_get_rcu
+
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
