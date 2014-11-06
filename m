@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaKFWn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:43:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59059 "EHLO
+	id S1753234AbaKFWoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59077 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198AbaKFWn4 (ORCPT
+	with ESMTP id S1752471AbaKFWoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:56 -0500
+	Thu, 6 Nov 2014 17:44:01 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Victor Kamensky <victor.kamensky@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Vlad Catoi <vladcatoi@gmail.com>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 083/162] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
-Date: Thu,  6 Nov 2014 14:35:47 -0800
-Message-Id: <1415313426-9622-84-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 081/162] ALSA: usb-audio: Add support for Steinberg UR22 USB interface
+Date: Thu,  6 Nov 2014 14:35:45 -0800
+Message-Id: <1415313426-9622-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,41 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Victor Kamensky <victor.kamensky@linaro.org>
+From: Vlad Catoi <vladcatoi@gmail.com>
 
-commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
+commit f0b127fbfdc8756eba7437ab668f3169280bd358 upstream.
 
-The compat_elf_prpsinfo structure does not match the arch/arm struct
-elf_pspsinfo definition. As result NT_PRPSINFO note in core file
-created by arm64 kernel for aarch32 (compat) process has wrong size.
-So gdb cannot display command that caused process crash.
+Adding support for Steinberg UR22 USB interface via quirks table patch
 
-Fix is to change size of __compat_uid_t, __compat_gid_t so it would
-match size of similar fields in arch/arm case.
+See Ubuntu bug report:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
+Also see threads:
+http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
+http://www.steinberg.net/forums/viewtopic.php?t=62290
 
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested by at least 4 people judging by the threads.
+Did not test MIDI interface, but audio output and capture both are
+functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
+Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
+
+Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/include/asm/compat.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/usb/quirks-table.h | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
-index fda2704..e72289a 100644
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -37,8 +37,8 @@ typedef s32		compat_ssize_t;
- typedef s32		compat_time_t;
- typedef s32		compat_clock_t;
- typedef s32		compat_pid_t;
--typedef u32		__compat_uid_t;
--typedef u32		__compat_gid_t;
-+typedef u16		__compat_uid_t;
-+typedef u16		__compat_gid_t;
- typedef u16		__compat_uid16_t;
- typedef u16		__compat_gid16_t;
- typedef u32		__compat_uid32_t;
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index 0e52836..8590a32 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -386,6 +386,36 @@ YAMAHA_DEVICE(0x105d, NULL),
+ 	}
+ },
+ {
++	USB_DEVICE(0x0499, 0x1509),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		/* .vendor_name = "Yamaha", */
++		/* .product_name = "Steinberg UR22", */
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = (const struct snd_usb_audio_quirk[]) {
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 3,
++				.type = QUIRK_MIDI_YAMAHA
++			},
++			{
++				.ifnum = 4,
++				.type = QUIRK_IGNORE_INTERFACE
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
++{
+ 	USB_DEVICE(0x0499, 0x150a),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+ 		/* .vendor_name = "Yamaha", */
 -- 
 1.9.1
 
