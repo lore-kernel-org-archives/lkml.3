@@ -1,271 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288AbaKFB7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 20:59:05 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36936 "EHLO
+	id S1751369AbaKFCA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:00:29 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40226 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaKFB7B (ORCPT
+	with ESMTP id S1751033AbaKFCA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 20:59:01 -0500
-Message-ID: <545AD5B3.60009@huawei.com>
-Date: Thu, 6 Nov 2014 09:58:11 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 5 Nov 2014 21:00:26 -0500
+Message-ID: <545AD5FC.1030600@huawei.com>
+Date: Thu, 6 Nov 2014 09:59:24 +0800
+From: Shannon Zhao <zhaoshenglong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "Matthias Brugger" <matthias.bgg@gmail.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
- hierarchy irqdomain
-References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com> <20141105230952.GH6168@google.com>
-In-Reply-To: <20141105230952.GH6168@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Eric Auger <eric.auger@linaro.org>, Li Liu <john.liuli@huawei.com>,
+        "Peter Maydell" <peter.maydell@linaro.org>
+CC: Joel Schopp <joel.schopp@amd.com>,
+        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, <remy.gauguey@cea.fr>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "lkml - Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
+        QEMU Developers <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "eric.auger@st.com" <eric.auger@st.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
+ vhost-net based on virtio-mmio
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>	<CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com> <544E2B18.8010702@huawei.com> <5459E343.6030907@linaro.org>
+In-Reply-To: <5459E343.6030907@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
+X-Originating-IP: [10.177.16.142]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>  
->> @@ -1098,3 +1099,128 @@ int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
->>  	return nvec;
->>  }
->>  EXPORT_SYMBOL(pci_enable_msix_range);
->> +
->> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
-> 
-> Space, not tab.
-> 
->> +static inline irq_hw_number_t
->> +msi_get_hwirq(struct pci_dev *pdev, struct msi_desc *msidesc)
-> 
-> The convention in this file is "struct pci_dev *dev".  And "struct msi_desc
-> *desc" (or maybe "*entry").  Try to converge things, not diverge them.
-> 
->> +{
->> +	return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
->> +		PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
->> +		(pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
-> 
-> Where does this bit layout come from?  Is this defined in the spec
-> somewhere?  A reference would help.
 
-Currently, more and more Non-PCI device use MSI(or similar MSI mechanism), like DMAR fault irq
-and HPET FSB irq. And we have to add additional code to support the MSI capability.
-So I hope we can decouple MSI code and PCI code, then we can unify all MSI(or Message Based interrupt)
-in one framework.
 
-Thanks!
-Yijing.
-
-> 
->> +}
->> +
->> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
->> +			    unsigned int nr_irqs, void *arg)
->> +{
->> +	int i, ret;
->> +	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
->> +
->> +	if (irq_find_mapping(domain, hwirq) > 0)
->> +		return -EEXIST;
->> +
->> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
->> +	if (ret >= 0)
-> 
-> 	if (ret < 0)
-> 		return ret;
-> 
-> and un-indent the mainline code below.  Then it's obvious that this is the
-> normal case, not the error case.
-> 
->> +		for (i = 0; i < nr_irqs; i++) {
->> +			irq_domain_set_hwirq_and_chip(domain, virq + i,
->> +					hwirq + i, &msi_chip, (void *)(long)i);
->> +			__irq_set_handler(virq + i, handle_edge_irq, 0, "edge");
->> +		}
->> +
->> +	return ret;
->> +}
->> +
->> +static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
->> +			    unsigned int nr_irqs)
->> +{
->> +	int i;
->> +
->> +	for (i = 0; i < nr_irqs; i++) {
->> +		struct msi_desc *msidesc = irq_get_msi_desc(virq);
->> +
->> +		if (msidesc)
->> +			msidesc->irq = 0;
->> +	}
->> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
->> +}
->> +
->> +static int msi_domain_activate(struct irq_domain *domain,
->> +			       struct irq_data *irq_data)
->> +{
->> +	int ret = 0;
->> +	struct msi_msg msg;
->> +
->> +	/*
->> +	 * irq_data->chip_data is MSI/MSIx offset.
-> 
-> "MSI-X", as you wrote on the next line.
-> 
->> +	 * MSI-X message is written per-IRQ, the offset is always 0.
->> +	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
->> +	 */
->> +	if (!irq_data->chip_data) {
-> 
-> 	if (irq_data->chip_data)
-> 		return 0;
-> 
-> and un-indent the mainline code below, and drop the "ret = 0" init above.
-> 
->> +		ret = irq_chip_compose_msi_msg(irq_data, &msg);
->> +		if (ret == 0)
-> 
-> 	if (ret)
-> 		return ret;
-> 
->> +			write_msi_msg(irq_data->irq, &msg);
->> +	}
->> +
->> +	return ret;
-> 	return 0;
->> +}
->> +
->> +static int msi_domain_deactivate(struct irq_domain *domain,
->> +				 struct irq_data *irq_data)
->> +{
->> +	struct msi_msg msg;
->> +
->> +	if (irq_data->chip_data) {
->> +		memset(&msg, 0, sizeof(msg));
->> +		write_msi_msg(irq_data->irq, &msg);
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static struct irq_domain_ops msi_domain_ops = {
->> +	.alloc = msi_domain_alloc,
->> +	.free = msi_domain_free,
->> +	.activate = msi_domain_activate,
->> +	.deactivate = msi_domain_deactivate,
->> +};
->> +
->> +struct irq_domain *msi_create_irq_domain(struct irq_domain *parent)
->> +{
->> +	struct irq_domain *domain;
->> +
->> +	domain = irq_domain_add_tree(NULL, &msi_domain_ops, NULL);
->> +	if (domain)
-> 
-> 	if (!domain)
-> 		return NULL;
-> 
-> and un-indent this:
-> 
->> +		domain->parent = parent;
->> +
->> +	return domain;
->> +}
->> +
->> +int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
->> +			      struct pci_dev *dev, void *arg)
->> +{
->> +	int i, virq;
->> +	struct msi_desc *msidesc;
->> +	int node = dev_to_node(&dev->dev);
->> +
->> +	list_for_each_entry(msidesc, &dev->msi_list, list) {
->> +		arch_msi_irq_domain_set_hwirq(arg, msi_get_hwirq(dev, msidesc));
->> +		virq = irq_domain_alloc_irqs(domain, msidesc->nvec_used,
->> +					     node, arg);
->> +		if (virq < 0) {
->> +			/* Special handling for pci_enable_msi_range(). */
->> +			return (type == PCI_CAP_ID_MSI &&
->> +				msidesc->nvec_used > 1) ?  1 : -ENOSPC;	
-> 
-> I think "if" would be easier to read than this ternary expression.
-> 
->> +		}
->> +		for (i = 0; i < msidesc->nvec_used; i++)
->> +			irq_set_msi_desc_off(virq + i, i, msidesc);
->> +	}
->> +
->> +	list_for_each_entry(msidesc, &dev->msi_list, list)
->> +		if (msidesc->nvec_used == 1)
->> +			dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", virq);
->> +		else
->> +			dev_dbg(&dev->dev, "irq [%d-%d] for MSI/MSI-X\n",
->> +				virq, virq + msidesc->nvec_used - 1);
->> +
->> +	return 0;
->> +}
->> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
->> diff --git a/include/linux/msi.h b/include/linux/msi.h
->> index 44f4746d033b..05dcd425f82b 100644
->> --- a/include/linux/msi.h
->> +++ b/include/linux/msi.h
->> @@ -75,4 +75,15 @@ struct msi_chip {
->>  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
->>  };
->>  
->> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
-> 
-> Use a space here, not a tab.
-> 
->> +extern struct irq_chip msi_chip;
-> 
-> I don't think "msi_chip" is a good name.  "Chip" only hints that it's a
-> semiconductor integrated circuit; it doesn't say anything about what it
-> does.  I've suggested "msi_controller" elsewhere.
-> 
-> Why does this need to be exported?  And why should there be only one in a
-> system?
-> 
->> +extern struct irq_domain *msi_create_irq_domain(struct irq_domain *parent);
->> +extern int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
->> +				     struct pci_dev *dev, void *arg);
->> +
->> +extern irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg);
->> +extern void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq);
-> 
-> Look at the rest of the file and notice that the existing code does not use
-> "extern" on function declarations.
-> 
->> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
-> 
-> Use a space here (not a tab), like the #endif just below.
-> 
->>  #endif /* LINUX_MSI_H */
->> -- 
->> 1.7.10.4
+On 2014/11/5 16:43, Eric Auger wrote:
+> On 10/27/2014 12:23 PM, Li Liu wrote:
 >>
+>>
+>> On 2014/10/27 17:37, Peter Maydell wrote:
+>>> On 25 October 2014 09:24, john.liuli <john.liuli@huawei.com> wrote:
+>>>> To get the interrupt reason to support such VIRTIO_NET_F_STATUS
+>>>> features I add a new register offset VIRTIO_MMIO_ISRMEM which
+>>>> will help to establish a shared memory region between qemu and
+>>>> virtio-mmio device. Then the interrupt reason can be accessed by
+>>>> guest driver through this region. At the same time, the virtio-mmio
+>>>> dirver check this region to see irqfd is supported or not during
+>>>> the irq handler registration, and different handler will be assigned.
+>>>
+>>> If you want to add a new register you should probably propose
+>>> an update to the virtio spec. However, it seems to me it would
+>>> be better to get generic PCI/PCIe working on the ARM virt
+>>> board instead; then we can let virtio-mmio quietly fade away.
+>>> This has been on the todo list for ages (and there have been
+>>> RFC patches posted for plain PCI), it's just nobody's had time
+>>> to work on it.
+>>>
+>>> thanks
+>>> -- PMM
+>>>
+>>
+>> So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
+>> If so, let this patch go with the wind:). Thx.
 > 
-> .
+> Hi,
 > 
+> As a fix of current situation where ISR is only partially updated when
+> vhost-irqfd handles standard IRQ and waiting for PCI emuluation,
+> wouldn't it make sense to store ISR content on vhost driver side and
+> introduce ioctls to read/write it. When using vhost BE, virtio QEMU
+> device would use those ioctl to read/update the ISR content. On top of
+> that we would update the ISR in vhost before triggering the irqfd. If I
+> do not miss anything this would at least make things functional with irqfd.
+> 
+> As a second step, we could try to introduce in-kernel emulation of
+> ISR/ACK to fix the performance issue related to going to user-side each
+> time ISR/ACK accesses are done.
+> 
+> Do you think it is worth investigating this direction?
+> 
+Hi,
 
+About this problem I have a talk with Li Liu. As MST said, we could use
+multiple GSI to support vhost-net with irqfd. And we have figured out a way
+to solve this problem. The method is as same as virtio-pci which is to assign
+multiple irqs for virtio-mmio. Also it can support multiqueue virtio-net on arm.
 
--- 
-Thanks!
-Yijing
+Would you have a look at this method? Thank you very much.
+
+- virtio-mmio: support for multiple irqs
+http://www.spinics.net/lists/kernel/msg1858860.html
+
+Thanks,
+Shannon
+
+> Thank you in advance
+> 
+> Best Regards
+> 
+> Eric
+> 
+> 
+>>
+>> Li.
+>>> .
+>>>
 
