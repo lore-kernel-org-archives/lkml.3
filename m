@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299AbaKFFlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 00:41:18 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:62313 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKFFlP convert rfc822-to-8bit (ORCPT
+	id S1751345AbaKFFmC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 00:42:02 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43943 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaKFFmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 00:41:15 -0500
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Joe Perches <joe@perches.com>
-CC: "Larry.Finger@lwfinger.net" <Larry.Finger@lwfinger.net>,
-        "Jes.Sorensen@redhat.com" <Jes.Sorensen@redhat.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] staging:rtl8723au: core: Fix error reported by
- checkpatch.
-Thread-Topic: [PATCH v2] staging:rtl8723au: core: Fix error reported by
- checkpatch.
-Thread-Index: AQHP+OyQ45rVFLm8n0O8xH8v1tFygZxSRm6AgADP3dA=
-Date: Thu, 6 Nov 2014 05:41:10 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE950E8B3A0@EU-MBX-02.mgc.mentorg.com>
-References: <wrfjy4rxzk5b.fsf@redhat.com>
-	 <1415187303-28541-1-git-send-email-sanjeev_sharma@mentor.com>
- <1415207747.6634.15.camel@perches.com>
-In-Reply-To: <1415207747.6634.15.camel@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 6 Nov 2014 00:42:01 -0500
+From: Minfei Huang <mnfhuang@gmail.com>
+To: tglx@linutronix.de, mingo@redhat.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Minfei Huang <mnfhuang@gmail.com>
+Subject: [PATCH] x86/mm: Give the correct initail value to the pmd_idx
+Date: Thu,  6 Nov 2014 13:41:53 +0800
+Message-Id: <1415252513-6453-1-git-send-email-mnfhuang@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: Joe Perches [mailto:joe@perches.com] 
-Sent: Wednesday, November 05, 2014 10:46 PM
-To: Sharma, Sanjeev
-Cc: Larry.Finger@lwfinger.net; Jes.Sorensen@redhat.com; gregkh@linuxfoundation.org; linux-wireless@vger.kernel.org; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging:rtl8723au: core: Fix error reported by checkpatch.
+The variable value is undefined from the stack eara. So it makes sense to
+init the variable to run process correctly.
 
-On Wed, 2014-11-05 at 17:05 +0530, Sanjeev Sharma wrote:
-> This is a patch to the rtw_cmd.c file that fixes Error reported by 
-> checkpatch.
+If the variable pmd_idx inits the value more than PTRS_PER_PMD, the
+count may be smaller than the correct value, and the allocated page may
+be not enough for pte entry.
 
-Please run your patches through checkpatch before sending them.
+The kernel may panic cause by the undefine variable which is allocated
+from stack.
 
-In this patch I am fixing error reported by check patch since Error has higher priority. 
+Signed-off-by: Minfei Huang <mnfhuang@gmail.com>
+---
+ arch/x86/mm/init_32.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-WARNING: suspect code indent for conditional statements (24, 24)
-#178: FILE: drivers/staging/rtl8723au/core/rtw_cmd.c:1025:
-+			if (check_fwstate(pmlmepriv, _FW_LINKED))
- 			LPS_Leave23a(padapter);
-
-Also, there are a couple of different things you changing here.
-
-This should be 2 separate patches.
-
-Ok I will come up with 2 patch separately.
-
-One to use the temporary for:
-+	struct rt_link_detect *ldi = &pmlmepriv->LinkDetectInfo;
-
-(and that bit has a defect here:
-
-
-+	} else {
- 		LPS_Leave23a(padapter);
-+		}
-
-where the indentation for the last close brace is wrong)
-
-and another for the whitespace only changes
-
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index c8140e1..c23ab1e 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -137,6 +137,7 @@ page_table_range_init_count(unsigned long start, unsigned long end)
+ 
+ 	vaddr = start;
+ 	pgd_idx = pgd_index(vaddr);
++	pmd_idx = pmd_index(vaddr);
+ 
+ 	for ( ; (pgd_idx < PTRS_PER_PGD) && (vaddr != end); pgd_idx++) {
+ 		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
+-- 
+1.8.3.1
 
