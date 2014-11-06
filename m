@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054AbaKFAX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 19:23:29 -0500
-Received: from mail-bl2on0118.outbound.protection.outlook.com ([65.55.169.118]:56864
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750844AbaKFAXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 19:23:25 -0500
-X-WSS-ID: 0NELD2U-07-Q7U-02
-X-M-MSG: 
-Message-ID: <545ABF6C.1000308@amd.com>
-Date: Wed, 5 Nov 2014 18:23:08 -0600
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751184AbaKFAej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 19:34:39 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6063 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750970AbaKFAei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 19:34:38 -0500
+Date: Wed, 5 Nov 2014 19:34:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] trace: Replace seq_printf by simpler equivalents
+Message-ID: <20141105193435.4f620acb@gandalf.local.home>
+In-Reply-To: <87tx2de08u.fsf@rasmusvillemoes.dk>
+References: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
+	<1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
+	<20141105173454.7aa47289@gandalf.local.home>
+	<87tx2de08u.fsf@rasmusvillemoes.dk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, <marc.zyngier@arm.com>,
-        <mark.rutland@arm.com>, <jason@lakedaemon.net>, <tglx@linutronix.de>
-CC: <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>, <liviu.dudau@arm.com>,
-        <Harish.Kasiviswanathan@amd.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [V10 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
- MSI(-X)
-References: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1415052977-26036-3-git-send-email-suravee.suthikulpanit@amd.com>
- <5458CE31.3040404@linux.intel.com> <545ABB4C.8010103@amd.com>
-In-Reply-To: <545ABB4C.8010103@amd.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(479174003)(377454003)(189002)(164054003)(24454002)(199003)(65816999)(47776003)(31966008)(87936001)(87266999)(92566001)(50986999)(21056001)(54356999)(92726001)(84676001)(65956001)(44976005)(99396003)(76176999)(106466001)(95666004)(2201001)(97736003)(4396001)(93886004)(33656002)(120886001)(101416001)(80316001)(120916001)(68736004)(46102003)(59896002)(36756003)(102836001)(65806001)(107046002)(23746002)(50466002)(83506001)(20776003)(105586002)(86362001)(62966003)(64126003)(77156002)(64706001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB205;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0387D64A71
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/5/2014 6:05 PM, Suravee Suthikulanit wrote:
-> - Overall, it seems that msi_domain_alloc() could be quite different
-> across architectures. Would it be possible to declare this function as
-> weak, and allow arch to override (similar to arch_setup_msi_irq)?
+On Wed, 05 Nov 2014 23:44:17 +0100
+Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
 
-Actually, declaring "msi_domain_ops" as non-static, and allow other code 
-to override the .alloc and .free?
+> On Wed, Nov 05 2014, Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > On Fri, 12 Sep 2014 11:25:52 +0200
+> > Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+> >
+> >> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> >> index 5916a8e..7b9ce28 100644
+> >> --- a/kernel/trace/ftrace.c
+> >> +++ b/kernel/trace/ftrace.c
+> >> @@ -556,13 +556,13 @@ static int function_stat_cmp(void *p1, void *p2)
+> >>  static int function_stat_headers(struct seq_file *m)
+> >>  {
+> >>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> >> -	seq_printf(m, "  Function                               "
+> >> -		   "Hit    Time            Avg             s^2\n"
+> >> -		      "  --------                               "
+> >> -		   "---    ----            ---             ---\n");
+> >> +	seq_puts(m,
+> >> +		 "  Function                               " "Hit    Time            Avg             s^2\n"
+> >> +		 "  --------                               " "---    ----            ---             ---\n");
+> >
+> > Please keep the original format. I know that it's considered bad form
+> > to split strings like this, but I consider this one of the exceptions
+> > to the rule.
+> 
+> OK. Want me to resend?
 
-Thanks,
-
-Suravee
+Yeah, can you.
 
 
+> 
+> >> @@ -3250,7 +3250,7 @@ static int t_show(struct seq_file *m, void *v)
+> >>  	if (!t)
+> >>  		return 0;
+> >>  
+> >> -	seq_printf(m, "%s", t->name);
+> >> +	seq_puts(m, t->name);
+> >
+> > This is wrong and dangerous.
+> >
+> > What happens if "t->name" contains "%d" or "%s"?
+> 
+> Then those characters will be printed to the seq_file, just as they
+> would previously? puts doesn't interpret its string argument in any
+> way...
+> 
+> >> --- a/kernel/trace/trace_events_trigger.c
+> >> +++ b/kernel/trace/trace_events_trigger.c
+> >> @@ -373,7 +373,7 @@ event_trigger_print(const char *name, struct seq_file *m,
+> >>  {
+> >>  	long count = (long)data;
+> >>  
+> >> -	seq_printf(m, "%s", name);
+> >> +	seq_puts(m, name);
+> >
+> > Again, this is wrong and dangerous.
+> 
+> I'm pretty sure it's neither :-)
+
+Ah you're correct. I was thinking of it as a printf and not a puts.
+
+Never mind ;-) /me needs to work on only 3 different projects at once,
+not 4. :-p
+
+-- Steve
 
