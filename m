@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaKFDMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:12:43 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53577 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaKFDMl (ORCPT
+	id S1751660AbaKFDM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:12:59 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:40153 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121AbaKFDM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:12:41 -0500
-Message-ID: <545AE723.8000900@hitachi.com>
-Date: Thu, 06 Nov 2014 12:12:35 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 5 Nov 2014 22:12:58 -0500
+Message-ID: <545AE8AA.1030705@gmail.com>
+Date: Thu, 06 Nov 2014 11:19:06 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/3] ftracetest: Clear trace buffer after running kprobe
- testcases
-References: <1415239470-28705-1-git-send-email-namhyung@kernel.org> <1415239470-28705-2-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1415239470-28705-2-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Paul Moore <paul@paul-moore.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com,
+        linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] include/linux/audit.h: Move dummy audit_file() from !AUDIT
+ area to !AUDITSYSCALL area
+References: <5458EC40.5020807@gmail.com> <283051037.h5QtGpv3rn@sifl>
+In-Reply-To: <283051037.h5QtGpv3rn@sifl>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/06 11:04), Namhyung Kim wrote:
-> The kprobe testcases create, use and delete dynamic events during the
-> test but didn't clear the trace buffer so it'll leave the result after
-> it finishes.
+On 11/6/14 4:43, Paul Moore wrote:
+> On Tuesday, November 04, 2014 11:09:52 PM Chen Gang wrote:
+>> audit_file() is related with AUDITSYSCALL, not related with AUDIT, so
+>> need move dummy one from !AUDIT area to !AUDITSYSCALL area. Or it will
+>> cause issue if CONFIG_AUDIT with !CONFIG_AUDITSYSCALL.
+>>
+>> The related error (with allmodconfig under tile):
+>>
+>>     CC      fs/open.o
+>>   fs/open.c: In function 'SYSC_fchmod':
+>>   fs/open.c:530:3: error: implicit declaration of function 'audit_file'
+>> [-Werror=implicit-function-declaration] audit_file(f.file);
+>>      ^
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  include/linux/audit.h | 5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
->   # ./ftracetest
->   ...
-> 
->   # cat trace
->   # tracer: nop
->   #
->   # entries-in-buffer/entries-written: 2/2   #P:12
->   #
->   #                              _-----=> irqs-off
->   #                             / _----=> need-resched
->   #                            | / _---=> hardirq/softirq
->   #                            || / _--=> preempt-depth
->   #                            ||| /     delay
->   #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->   #              | |       |   ||||       |         |
->         ftracetest-26474 [009] d..1 79417.143782: Unknown type 1099
->         ftracetest-26498 [009] d..1 79417.208034: Unknown type 1101
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
-
-> ---
->  tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc | 1 +
->  tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc     | 1 +
->  tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc    | 1 +
->  tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc | 1 +
->  4 files changed, 4 insertions(+)
-> 
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-> index 1b8b665ab2b3..a5a426211129 100644
-> --- a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-> @@ -9,3 +9,4 @@ echo p:myevent do_fork > kprobe_events
->  grep myevent kprobe_events
->  test -d events/kprobes/myevent
->  echo > kprobe_events
-> +clear_trace
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-> index b55c84003587..d8c7bb6581fe 100644
-> --- a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-> @@ -11,3 +11,4 @@ echo 1 > events/kprobes/myevent/enable
->  echo > kprobe_events && exit 1 # this must fail
->  echo 0 > events/kprobes/myevent/enable
->  echo > kprobe_events # this must succeed
-> +clear_trace
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-> index a603d3f8db7b..c45ee2761354 100644
-> --- a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-> @@ -12,5 +12,6 @@ echo 1 > events/kprobes/testprobe/enable
->  ( echo "forked")
->  echo 0 > events/kprobes/testprobe/enable
->  echo "-:testprobe" >> kprobe_events
-> +clear_trace
->  test -d events/kprobes/testprobe && exit 1 || exit 0
->  
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-> index 283c29e7f7c4..31717985acc7 100644
-> --- a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-> @@ -12,4 +12,5 @@ echo 1 > events/kprobes/testprobe2/enable
->  ( echo "forked")
->  echo 0 > events/kprobes/testprobe2/enable
->  echo '-:testprobe2' >> kprobe_events
-> +clear_trace
->  test -d events/kprobes/testprobe2 && exit 1 || exit 0
+> What version of the kernel source are you looking at?  I don't see the 
+> audit_file() function anywhere ...
 > 
 
+It is for next tree. Sorry for not marking it in subject, originally.
+
+Thanks.
+
+>> diff --git a/include/linux/audit.h b/include/linux/audit.h
+>> index 295ae1c..7b1d0d1 100644
+>> --- a/include/linux/audit.h
+>> +++ b/include/linux/audit.h
+>> @@ -363,6 +363,8 @@ static inline void audit_inode(struct filename *name,
+>>  				const struct dentry *dentry,
+>>  				unsigned int parent)
+>>  { }
+>> +static inline void audit_file(struct file *file)
+>> +{ }
+>>  static inline void audit_inode_parent_hidden(struct filename *name,
+>>  				const struct dentry *dentry)
+>>  { }
+>> @@ -538,9 +540,6 @@ static inline void audit_log_task_info(struct
+>> audit_buffer *ab, struct task_struct *tsk)
+>>  { }
+>>  #define audit_enabled 0
+>> -static inline void audit_file(struct file *file)
+>> -{
+>> -}
+>>  #endif /* CONFIG_AUDIT */
+>>  static inline void audit_log_string(struct audit_buffer *ab, const char
+>> *buf) {
+> 
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Chen Gang
 
-
+Open, share, and attitude like air, water, and life which God blessed
