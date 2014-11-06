@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109AbaKFWnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:43:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58977 "EHLO
+	id S1753127AbaKFWna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:43:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58983 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063AbaKFWnT (ORCPT
+	with ESMTP id S1751547AbaKFWnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:19 -0500
+	Thu, 6 Nov 2014 17:43:23 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, Michal Hocko <mhocko@suse.cz>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 094/162] intel_pstate: Correct BYT VID values.
-Date: Thu,  6 Nov 2014 14:35:58 -0800
-Message-Id: <1415313426-9622-95-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 084/162] freezer: Do not freeze tasks killed by OOM killer
+Date: Thu,  6 Nov 2014 14:35:48 -0800
+Message-Id: <1415313426-9622-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,57 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
-commit d022a65ed2473fac4a600e3424503dc571160a3e upstream.
+commit 51fae6da640edf9d266c94f36bc806c63c301991 upstream.
 
-Using a VID value that is not high enough for the requested P state can
-cause machine checks. Add a ceiling function to ensure calulated VIDs
-with fractional values are set to the next highest integer VID value.
+Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
+before deferring) OOM killer relies on being able to thaw a frozen task
+to handle OOM situation but a3201227f803 (freezer: make freezing() test
+freeze conditions in effect instead of TIF_FREEZE) has reorganized the
+code and stopped clearing freeze flag in __thaw_task. This means that
+the target task only wakes up and goes into the fridge again because the
+freezing condition hasn't changed for it. This reintroduces the bug
+fixed by f660daac474c6f.
 
-The algorythm for calculating the non-trubo VID from the BIOS writers
-guide is:
- vid_ratio = (vid_max - vid_min) / (max_pstate - min_pstate)
- vid = ceiling(vid_min + (req_pstate - min_pstate) * vid_ratio)
+Fix the issue by checking for TIF_MEMDIE thread flag in
+freezing_slow_path and exclude the task from freezing completely. If a
+task was already frozen it would get woken by __thaw_task from OOM killer
+and get out of freezer after rechecking freezing().
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Changes since v1
+- put TIF_MEMDIE check into freezing_slowpath rather than in __refrigerator
+  as per Oleg
+- return __thaw_task into oom_scan_process_thread because
+  oom_kill_process will not wake task in the fridge because it is
+  sleeping uninterruptible
+
+[mhocko@suse.cz: rewrote the changelog]
+Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ kernel/freezer.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 2cb7028..4e8949d 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -54,6 +54,17 @@ static inline int32_t div_fp(int32_t x, int32_t y)
- 	return div_s64((int64_t)x << FRAC_BITS, (int64_t)y);
- }
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index aa6a8aa..8f9279b 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -42,6 +42,9 @@ bool freezing_slow_path(struct task_struct *p)
+ 	if (p->flags & (PF_NOFREEZE | PF_SUSPEND_TASK))
+ 		return false;
  
-+static inline int ceiling_fp(int32_t x)
-+{
-+	int mask, ret;
++	if (test_thread_flag(TIF_MEMDIE))
++		return false;
 +
-+	ret = fp_toint(x);
-+	mask = (1 << FRAC_BITS) - 1;
-+	if (x & mask)
-+		ret += 1;
-+	return ret;
-+}
-+
- struct sample {
- 	int32_t core_pct_busy;
- 	u64 aperf;
-@@ -428,7 +439,7 @@ static void byt_set_pstate(struct cpudata *cpudata, int pstate)
- 		cpudata->vid.ratio);
+ 	if (pm_nosig_freezing || cgroup_freezing(p))
+ 		return true;
  
- 	vid_fp = clamp_t(int32_t, vid_fp, cpudata->vid.min, cpudata->vid.max);
--	vid = fp_toint(vid_fp);
-+	vid = ceiling_fp(vid_fp);
- 
- 	if (pstate > cpudata->pstate.max_pstate)
- 		vid = cpudata->vid.turbo;
 -- 
 1.9.1
 
