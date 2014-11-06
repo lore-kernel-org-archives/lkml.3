@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaKFJIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:08:16 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:60554 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaKFJIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:08:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <545B062E.2040508@nvidia.com>
-References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
- <1414599796-30597-4-git-send-email-tomeu.vizoso@collabora.com> <545B062E.2040508@nvidia.com>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Thu, 6 Nov 2014 10:07:41 +0100
-X-Google-Sender-Auth: FoCMyrxwwY650m68urq4POB_yqc
-Message-ID: <CAAObsKCCXdmxuzCVpE6P4M3KLV+MyN-xaVUU40hhY2fv6u_2Pw@mail.gmail.com>
-Subject: Re: [PATCH v3 03/13] soc/tegra: Add ram code reader helper
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752186AbaKFJKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:10:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43080 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173AbaKFJKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 04:10:07 -0500
+Message-ID: <1415264981.15424.3.camel@linux-t7sj.site>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 06 Nov 2014 01:09:41 -0800
+In-Reply-To: <20141106164444.2123e6d5@canb.auug.org.au>
+References: <20141106164444.2123e6d5@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 November 2014 06:25, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
->>
->> From: Mikko Perttunen <mperttunen@nvidia.com>
->>
->> Needed for the EMC and MC drivers to know what timings from the DT to use.
->>
->> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
->> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->> ---
->>   drivers/soc/tegra/fuse/tegra-apbmisc.c | 19 +++++++++++++++++++
->>   include/soc/tegra/fuse.h               |  1 +
->>   2 files changed, 20 insertions(+)
->>
->> diff --git a/drivers/soc/tegra/fuse/tegra-apbmisc.c
->> b/drivers/soc/tegra/fuse/tegra-apbmisc.c
->> index 3bf5aba..e580892 100644
->> --- a/drivers/soc/tegra/fuse/tegra-apbmisc.c
->> +++ b/drivers/soc/tegra/fuse/tegra-apbmisc.c
->> @@ -28,8 +28,13 @@
->>   #define APBMISC_SIZE  0x64
->>   #define FUSE_SKU_INFO 0x10
->>
->> +#define PMC_STRAPPING_OPT_A_RAM_CODE_MASK_LONG (0xf << 4)
->> +#define PMC_STRAPPING_OPT_A_RAM_CODE_MASK_SHORT        (0x3 << 4)
->
->
-> Shouldn't these two shifts also use PMC_STRAPPING_OPT_A_RAM_CODE_SHIFT
-> defined right after?
+On Thu, 2014-11-06 at 16:44 +1100, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> After merging the akpm-current tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> mm/fremap.c: In function 'SYSC_remap_file_pages':
+> mm/fremap.c:241:22: error: 'struct address_space' has no member named 'i_mmap_mutex'
+>    mutex_lock(&mapping->i_mmap_mutex);
+>                       ^
+> mm/fremap.c:247:24: error: 'struct address_space' has no member named 'i_mmap_mutex'
+>    mutex_unlock(&mapping->i_mmap_mutex);
+>                         ^
+> 
+> Caused by commit 1f8c97e79f66 ("mm: convert i_mmap_mutex to rwsem").
+> 
+> I applied this patch for today (not sure if there is a better way):
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 6 Nov 2014 16:26:41 +1100
+> Subject: [PATCH] mm: convert i_mmap_mutex to rwsem fix
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  mm/fremap.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/fremap.c b/mm/fremap.c
+> index 9129013732d7..2805d71cf476 100644
+> --- a/mm/fremap.c
+> +++ b/mm/fremap.c
+> @@ -238,13 +238,13 @@ get_write_lock:
+>  			}
+>  			goto out_freed;
+>  		}
+> -		mutex_lock(&mapping->i_mmap_mutex);
+> +		i_mmap_lock_write(mapping);
 
-Good point.
+That's the correct fix, thanks. However, I had particularly dropped that
+modification because linux-next no longer even has mm/fremap.c so I'm
+not sure what went wrong here...
 
-Thanks,
-
-Tomeu
-
->> +#define PMC_STRAPPING_OPT_A_RAM_CODE_SHIFT     4
->> +
->>   static void __iomem *apbmisc_base;
->>   static void __iomem *strapping_base;
->> +static bool          long_ram_code;
->>
->>   u32 tegra_read_chipid(void)
->>   {
->> @@ -54,6 +59,18 @@ u32 tegra_read_straps(void)
->>                 return 0;
->>   }
->>
->> +u32 tegra_read_ram_code(void)
->> +{
->> +       u32 straps = tegra_read_straps();
->> +
->> +       if (long_ram_code)
->> +               straps &= PMC_STRAPPING_OPT_A_RAM_CODE_MASK_LONG;
->> +       else
->> +               straps &= PMC_STRAPPING_OPT_A_RAM_CODE_MASK_SHORT;
->> +
->> +       return straps >> PMC_STRAPPING_OPT_A_RAM_CODE_SHIFT;
->
->
-> ... this is what triggered my remark above, since it seems like you want to
-> return the ram_code field.
->
->> +}
->> +
->>   static const struct of_device_id apbmisc_match[] __initconst = {
->>         { .compatible = "nvidia,tegra20-apbmisc", },
->>         {},
->> @@ -112,4 +129,6 @@ void __init tegra_init_apbmisc(void)
->>         strapping_base = of_iomap(np, 1);
->>         if (!strapping_base)
->>                 pr_err("ioremap tegra strapping_base failed\n");
->> +
->> +       long_ram_code = of_property_read_bool(np, "nvidia,long-ram-code");
->>   }
->> diff --git a/include/soc/tegra/fuse.h b/include/soc/tegra/fuse.h
->> index 8e12494..4ad6fd9 100644
->> --- a/include/soc/tegra/fuse.h
->> +++ b/include/soc/tegra/fuse.h
->> @@ -55,6 +55,7 @@ struct tegra_sku_info {
->>   };
->>
->>   u32 tegra_read_straps(void);
->> +u32 tegra_read_ram_code(void);
->>   u32 tegra_read_chipid(void);
->>   int tegra_fuse_readl(unsigned long offset, u32 *value);
->>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
