@@ -1,178 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbaKFMc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:32:28 -0500
-Received: from 8bytes.org ([81.169.241.247]:48947 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915AbaKFMcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:32:25 -0500
-Date: Thu, 6 Nov 2014 13:32:23 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, Arnd Bergmann <arnd@arndb.de>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: [PATCH] powerpc/iommu: Rename iommu_[un]map_sg functions
-Message-ID: <20141106123223.GL10744@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751430AbaKFMdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:33:39 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:33948 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaKFMdh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:33:37 -0500
+Subject: Re: [PATCH 3/5] of: Only call notifiers when node is attached
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20141105213925.3790BC41C40@trevor.secretlab.ca>
+Date: Thu, 6 Nov 2014 14:33:29 +0200
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <EE6F3801-A76A-4D95-B841-A7935FA7FCF9@konsulko.com>
+References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com> <1414528433-9650-4-git-send-email-pantelis.antoniou@konsulko.com> <20141105213925.3790BC41C40@trevor.secretlab.ca>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Grant,
 
-here is a patch that fixes a compile failure on powerpc with the recent
-iommu tree. If this patch is okay with you guys I'd like to carry it in
-the iommu tree too.
+> On Nov 5, 2014, at 23:39 , Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+> On Tue, 28 Oct 2014 22:33:51 +0200
+> , Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+> wrote:
+>> Make sure we call notifier only when the node is attached.
+>> When a detatched tree is being constructed we do not want the
+>> notifiers to fire at all.
+> 
+> The description does not match what the patch does. The patch moves the
+> test into of_{add,remove,update}_property() and out of
+> of_property_notify() itself. That leaves one other caller of
+> of_property_notify(); __of_changeset_entry_notify(). The effect of this
+> patch is that applying a changeset will cause notifiers to be fired for
+> each property modified in a changeset. The comment says nothing about
+> the change in behaviour and it sounds like it is a bug fix when it
+> doesn't actually change the behaviour at all for the
+> of_{add,remove,update}_property() paths.
+> 
+> This needs a better changelog. It needs to describe what the effects of
+> the patch are and why the change is being made. When someone is
+> bisecting a problem and they land on this change, the changelog needs to
+> give them a good idea about what is going on and why.
+> 
 
-Thanks,
+Valid points. In fact I performed some tests and with this reverted things
+still work.
 
-	Joerg
+The rationale behind this is for when nodes/properties are removed in the overlay,
+but since we don’t support this for now, we never hit the case where it was
+needed.
 
->From ff39a0301d01ad24f7097718b4ec8215eb0c1141 Mon Sep 17 00:00:00 2001
-From: Joerg Roedel <jroedel@suse.de>
-Date: Wed, 5 Nov 2014 15:28:30 +0100
-Subject: [PATCH] powerpc/iommu: Rename iommu_[un]map_sg functions
+Please remove from the patch series, I’ll revisit this when I add the removal
+functionality.
 
-The IOMMU-API gained support for a new iommu_map_sg
-function. This causes compile failures on powerpc because
-the function name is already globally used there.
-This patch renames adds a ppc_ prefix to these functions to
-solve the compile problem.
+> g.
+> 
 
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
----
- arch/powerpc/include/asm/iommu.h    | 17 ++++++++++-------
- arch/powerpc/kernel/dma-iommu.c     |  8 ++++----
- arch/powerpc/kernel/iommu.c         | 16 ++++++++--------
- arch/powerpc/platforms/cell/iommu.c |  9 +++++----
- 4 files changed, 27 insertions(+), 23 deletions(-)
+Regards
 
-diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-index 42632c7..9cfa370 100644
---- a/arch/powerpc/include/asm/iommu.h
-+++ b/arch/powerpc/include/asm/iommu.h
-@@ -137,13 +137,16 @@ static inline void set_iommu_table_base_and_group(struct device *dev,
- 	iommu_add_device(dev);
- }
- 
--extern int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
--			struct scatterlist *sglist, int nelems,
--			unsigned long mask, enum dma_data_direction direction,
--			struct dma_attrs *attrs);
--extern void iommu_unmap_sg(struct iommu_table *tbl, struct scatterlist *sglist,
--			   int nelems, enum dma_data_direction direction,
--			   struct dma_attrs *attrs);
-+extern int ppc_iommu_map_sg(struct device *dev, struct iommu_table *tbl,
-+			    struct scatterlist *sglist, int nelems,
-+			    unsigned long mask,
-+			    enum dma_data_direction direction,
-+			    struct dma_attrs *attrs);
-+extern void ppc_iommu_unmap_sg(struct iommu_table *tbl,
-+			       struct scatterlist *sglist,
-+			       int nelems,
-+			       enum dma_data_direction direction,
-+			       struct dma_attrs *attrs);
- 
- extern void *iommu_alloc_coherent(struct device *dev, struct iommu_table *tbl,
- 				  size_t size, dma_addr_t *dma_handle,
-diff --git a/arch/powerpc/kernel/dma-iommu.c b/arch/powerpc/kernel/dma-iommu.c
-index 54d0116..4c68bfe 100644
---- a/arch/powerpc/kernel/dma-iommu.c
-+++ b/arch/powerpc/kernel/dma-iommu.c
-@@ -60,16 +60,16 @@ static int dma_iommu_map_sg(struct device *dev, struct scatterlist *sglist,
- 			    int nelems, enum dma_data_direction direction,
- 			    struct dma_attrs *attrs)
- {
--	return iommu_map_sg(dev, get_iommu_table_base(dev), sglist, nelems,
--			    device_to_mask(dev), direction, attrs);
-+	return ppc_iommu_map_sg(dev, get_iommu_table_base(dev), sglist, nelems,
-+				device_to_mask(dev), direction, attrs);
- }
- 
- static void dma_iommu_unmap_sg(struct device *dev, struct scatterlist *sglist,
- 		int nelems, enum dma_data_direction direction,
- 		struct dma_attrs *attrs)
- {
--	iommu_unmap_sg(get_iommu_table_base(dev), sglist, nelems, direction,
--		       attrs);
-+	ppc_iommu_unmap_sg(get_iommu_table_base(dev), sglist, nelems,
-+			   direction, attrs);
- }
- 
- /* We support DMA to/from any memory page via the iommu */
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index a10642a..a83cf5e 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -428,10 +428,10 @@ static void iommu_free(struct iommu_table *tbl, dma_addr_t dma_addr,
- 		ppc_md.tce_flush(tbl);
- }
- 
--int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
--		 struct scatterlist *sglist, int nelems,
--		 unsigned long mask, enum dma_data_direction direction,
--		 struct dma_attrs *attrs)
-+int ppc_iommu_map_sg(struct device *dev, struct iommu_table *tbl,
-+		     struct scatterlist *sglist, int nelems,
-+		     unsigned long mask, enum dma_data_direction direction,
-+		     struct dma_attrs *attrs)
- {
- 	dma_addr_t dma_next = 0, dma_addr;
- 	struct scatterlist *s, *outs, *segstart;
-@@ -539,7 +539,7 @@ int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
- 
- 	DBG("mapped %d elements:\n", outcount);
- 
--	/* For the sake of iommu_unmap_sg, we clear out the length in the
-+	/* For the sake of ppc_iommu_unmap_sg, we clear out the length in the
- 	 * next entry of the sglist if we didn't fill the list completely
- 	 */
- 	if (outcount < incount) {
-@@ -572,9 +572,9 @@ int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
- }
- 
- 
--void iommu_unmap_sg(struct iommu_table *tbl, struct scatterlist *sglist,
--		int nelems, enum dma_data_direction direction,
--		struct dma_attrs *attrs)
-+void ppc_iommu_unmap_sg(struct iommu_table *tbl, struct scatterlist *sglist,
-+			int nelems, enum dma_data_direction direction,
-+			struct dma_attrs *attrs)
- {
- 	struct scatterlist *sg;
- 
-diff --git a/arch/powerpc/platforms/cell/iommu.c b/arch/powerpc/platforms/cell/iommu.c
-index 2b90ff8..c7c8720 100644
---- a/arch/powerpc/platforms/cell/iommu.c
-+++ b/arch/powerpc/platforms/cell/iommu.c
-@@ -621,8 +621,9 @@ static int dma_fixed_map_sg(struct device *dev, struct scatterlist *sg,
- 	if (iommu_fixed_is_weak == dma_get_attr(DMA_ATTR_WEAK_ORDERING, attrs))
- 		return dma_direct_ops.map_sg(dev, sg, nents, direction, attrs);
- 	else
--		return iommu_map_sg(dev, cell_get_iommu_table(dev), sg, nents,
--				    device_to_mask(dev), direction, attrs);
-+		return ppc_iommu_map_sg(dev, cell_get_iommu_table(dev), sg,
-+					nents, device_to_mask(dev),
-+					direction, attrs);
- }
- 
- static void dma_fixed_unmap_sg(struct device *dev, struct scatterlist *sg,
-@@ -632,8 +633,8 @@ static void dma_fixed_unmap_sg(struct device *dev, struct scatterlist *sg,
- 	if (iommu_fixed_is_weak == dma_get_attr(DMA_ATTR_WEAK_ORDERING, attrs))
- 		dma_direct_ops.unmap_sg(dev, sg, nents, direction, attrs);
- 	else
--		iommu_unmap_sg(cell_get_iommu_table(dev), sg, nents, direction,
--			       attrs);
-+		ppc_iommu_unmap_sg(cell_get_iommu_table(dev), sg, nents,
-+				   direction, attrs);
- }
- 
- static int dma_fixed_dma_supported(struct device *dev, u64 mask)
--- 
-1.8.4.5
+— Pantelis
+
+>> 
+>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+>> ---
+>> drivers/of/base.c    | 9 ++++++---
+>> drivers/of/dynamic.c | 5 +----
+>> 2 files changed, 7 insertions(+), 7 deletions(-)
+>> 
+>> diff --git a/drivers/of/base.c b/drivers/of/base.c
+>> index 2305dc0..a79d4ee 100644
+>> --- a/drivers/of/base.c
+>> +++ b/drivers/of/base.c
+>> @@ -1695,7 +1695,8 @@ int of_add_property(struct device_node *np, struct property *prop)
+>> 
+>> 	mutex_unlock(&of_mutex);
+>> 
+>> -	if (!rc)
+>> +	/* only call notifiers if the node is attached and no error occurred */
+>> +	if (of_node_is_attached(np) && !rc)
+>> 		of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop, NULL);
+>> 
+>> 	return rc;
+>> @@ -1754,7 +1755,8 @@ int of_remove_property(struct device_node *np, struct property *prop)
+>> 
+>> 	mutex_unlock(&of_mutex);
+>> 
+>> -	if (!rc)
+>> +	/* only call notifiers if the node is attached and no error occurred */
+>> +	if (of_node_is_attached(np) && !rc)
+>> 		of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop, NULL);
+>> 
+>> 	return rc;
+>> @@ -1830,7 +1832,8 @@ int of_update_property(struct device_node *np, struct property *newprop)
+>> 
+>> 	mutex_unlock(&of_mutex);
+>> 
+>> -	if (!rc)
+>> +	/* only call notifiers if the node is attached and no error occurred */
+>> +	if (of_node_is_attached(np) && !rc)
+>> 		of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop, oldprop);
+>> 
+>> 	return rc;
+>> diff --git a/drivers/of/dynamic.c b/drivers/of/dynamic.c
+>> index f297891..8e8b614 100644
+>> --- a/drivers/of/dynamic.c
+>> +++ b/drivers/of/dynamic.c
+>> @@ -90,10 +90,6 @@ int of_property_notify(int action, struct device_node *np,
+>> {
+>> 	struct of_prop_reconfig pr;
+>> 
+>> -	/* only call notifiers if the node is attached */
+>> -	if (!of_node_is_attached(np))
+>> -		return 0;
+>> -
+>> 	pr.dn = np;
+>> 	pr.prop = prop;
+>> 	pr.old_prop = oldprop;
+>> @@ -138,6 +134,7 @@ int of_attach_node(struct device_node *np)
+>> 	__of_attach_node_sysfs(np);
+>> 	mutex_unlock(&of_mutex);
+>> 
+>> +	/* node is guaranteed to be attached at this point */
+>> 	of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
+>> 
+>> 	return 0;
+>> -- 
+>> 1.7.12
+>> 
+> 
 
