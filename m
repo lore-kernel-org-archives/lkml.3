@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbaKFPPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:15:43 -0500
+	id S1752279AbaKFPPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:15:46 -0500
 Received: from mga11.intel.com ([192.55.52.93]:37539 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546AbaKFPJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:09:44 -0500
+	id S1751545AbaKFPJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:09:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="627701884"
+   d="scan'208";a="627701864"
 From: Kan Liang <kan.liang@intel.com>
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, jolsa@redhat.com, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 07/14] perf, x86: allocate space for storing LBR stack
-Date: Thu,  6 Nov 2014 09:54:24 -0500
-Message-Id: <1415285671-16894-8-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V8 06/14] perf, core: always switch pmu specific data during context switch
+Date: Thu,  6 Nov 2014 09:54:23 -0500
+Message-Id: <1415285671-16894-7-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
 References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
@@ -26,59 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yan, Zheng <zheng.z.yan@intel.com>
 
-When the LBR call stack is enabled, it is necessary to save/restore
-the LBR stack on context switch. We can use pmu specific data to
-store LBR stack when task is scheduled out. This patch adds code
-that allocates the pmu specific data.
+If two tasks were both forked from the same parent task, Events in
+their perf task contexts can be the same. Perf core may leave out
+switching the perf event contexts.
+
+Previous patch inroduces pmu specific data. The data is for saving
+the LBR stack, it is task specific. So we need to switch the data
+even when context switch is optimized out.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Kan Liang <kan.liang@intel.com>
-Reviewed-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 4 ++++
- arch/x86/kernel/cpu/perf_event.h | 7 +++++++
- 2 files changed, 11 insertions(+)
+ kernel/events/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e37adf0..1fd9492 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -428,6 +428,9 @@ int x86_pmu_hw_config(struct perf_event *event)
- 		}
- 	}
- 
-+	if (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK)
-+		event->attach_state |= PERF_ATTACH_TASK_DATA;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 08d6671..4360c95 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2420,6 +2420,9 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+ 			next->perf_event_ctxp[ctxn] = ctx;
+ 			ctx->task = next;
+ 			next_ctx->task = task;
 +
- 	/*
- 	 * Generate PMC IRQs:
- 	 * (keep 'enabled' bit clear for now)
-@@ -1912,6 +1915,7 @@ static struct pmu pmu = {
- 
- 	.event_idx		= x86_pmu_event_idx,
- 	.sched_task		= x86_pmu_sched_task,
-+	.task_ctx_size          = sizeof(struct x86_perf_task_context),
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 13464e4..b4568e5 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -510,6 +510,13 @@ struct x86_pmu {
- 	struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
- };
- 
-+struct x86_perf_task_context {
-+	u64 lbr_from[MAX_LBR_ENTRIES];
-+	u64 lbr_to[MAX_LBR_ENTRIES];
-+	int lbr_callstack_users;
-+	int lbr_stack_state;
-+};
++			swap(ctx->task_ctx_data, next_ctx->task_ctx_data);
 +
- enum {
- 	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
- 	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
+ 			do_switch = 0;
+ 
+ 			perf_event_sync_stat(ctx, next_ctx);
 -- 
 1.8.3.2
 
