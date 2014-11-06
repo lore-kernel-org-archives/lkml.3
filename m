@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaKFWnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:43:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58947 "EHLO
+	id S1753065AbaKFWnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:43:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58952 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaKFWnC (ORCPT
+	with ESMTP id S1751647AbaKFWnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:02 -0500
+	Thu, 6 Nov 2014 17:43:06 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 102/162] kvm: x86: don't kill guest on unknown exit reason
-Date: Thu,  6 Nov 2014 14:36:06 -0800
-Message-Id: <1415313426-9622-103-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 096/162] KVM: x86: Check non-canonical addresses upon WRMSR
+Date: Thu,  6 Nov 2014 14:36:00 -0800
+Message-Id: <1415313426-9622-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,57 +27,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 2bc19dc3754fc066c43799659f0d848631c44cfe upstream.
+commit 854e8bb1aa06c578c2c9145fa6bfe3680ef63b23 upstream.
 
-KVM_EXIT_UNKNOWN is a kvm bug, we don't really know whether it was
-triggered by a priveledged application.  Let's not kill the guest: WARN
-and inject #UD instead.
+Upon WRMSR, the CPU should inject #GP if a non-canonical value (address) is
+written to certain MSRs. The behavior is "almost" identical for AMD and Intel
+(ignoring MSRs that are not implemented in either architecture since they would
+anyhow #GP). However, IA32_SYSENTER_ESP and IA32_SYSENTER_EIP cause #GP if
+non-canonical address is written on Intel but not on AMD (which ignores the top
+32-bits).
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Accordingly, this patch injects a #GP on the MSRs which behave identically on
+Intel and AMD.  To eliminate the differences between the architecutres, the
+value which is written to IA32_SYSENTER_ESP and IA32_SYSENTER_EIP is turned to
+canonical value before writing instead of injecting a #GP.
+
+Some references from Intel and AMD manuals:
+
+According to Intel SDM description of WRMSR instruction #GP is expected on
+WRMSR "If the source register contains a non-canonical address and ECX
+specifies one of the following MSRs: IA32_DS_AREA, IA32_FS_BASE, IA32_GS_BASE,
+IA32_KERNEL_GS_BASE, IA32_LSTAR, IA32_SYSENTER_EIP, IA32_SYSENTER_ESP."
+
+According to AMD manual instruction manual:
+LSTAR/CSTAR (SYSCALL): "The WRMSR instruction loads the target RIP into the
+LSTAR and CSTAR registers.  If an RIP written by WRMSR is not in canonical
+form, a general-protection exception (#GP) occurs."
+IA32_GS_BASE and IA32_FS_BASE (WRFSBASE/WRGSBASE): "The address written to the
+base field must be in canonical form or a #GP fault will occur."
+IA32_KERNEL_GS_BASE (SWAPGS): "The address stored in the KernelGSbase MSR must
+be in canonical form."
+
+This patch fixes CVE-2014-3610.
+
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kvm/svm.c | 6 +++---
- arch/x86/kvm/vmx.c | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/kvm_host.h | 14 ++++++++++++++
+ arch/x86/kvm/svm.c              |  2 +-
+ arch/x86/kvm/vmx.c              |  2 +-
+ arch/x86/kvm/x86.c              | 27 ++++++++++++++++++++++++++-
+ 4 files changed, 42 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 121bd0d..1f5faa5 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3482,9 +3482,9 @@ static int handle_exit(struct kvm_vcpu *vcpu)
- 
- 	if (exit_code >= ARRAY_SIZE(svm_exit_handlers)
- 	    || !svm_exit_handlers[exit_code]) {
--		kvm_run->exit_reason = KVM_EXIT_UNKNOWN;
--		kvm_run->hw.hardware_exit_reason = exit_code;
--		return 0;
-+		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_code);
-+		kvm_queue_exception(vcpu, UD_VECTOR);
-+		return 1;
- 	}
- 
- 	return svm_exit_handlers[exit_code](svm);
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 6e4b08b..f5c384c 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6854,10 +6854,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
- 	    && kvm_vmx_exit_handlers[exit_reason])
- 		return kvm_vmx_exit_handlers[exit_reason](vcpu);
- 	else {
--		vcpu->run->exit_reason = KVM_EXIT_UNKNOWN;
--		vcpu->run->hw.hardware_exit_reason = exit_reason;
-+		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_reason);
-+		kvm_queue_exception(vcpu, UD_VECTOR);
-+		return 1;
- 	}
--	return 0;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 1ee50a4..7b39dfd 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -981,6 +981,20 @@ static inline void kvm_inject_gp(struct kvm_vcpu *vcpu, u32 error_code)
+ 	kvm_queue_exception_e(vcpu, GP_VECTOR, error_code);
  }
  
- static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
++static inline u64 get_canonical(u64 la)
++{
++	return ((int64_t)la << 16) >> 16;
++}
++
++static inline bool is_noncanonical_address(u64 la)
++{
++#ifdef CONFIG_X86_64
++	return get_canonical(la) != la;
++#else
++	return false;
++#endif
++}
++
+ #define TSS_IOPB_BASE_OFFSET 0x66
+ #define TSS_BASE_SIZE 0x68
+ #define TSS_IOPB_SIZE (65536 / 8)
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 532add1..121bd0d 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3200,7 +3200,7 @@ static int wrmsr_interception(struct vcpu_svm *svm)
+ 	msr.host_initiated = false;
+ 
+ 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 2;
+-	if (svm_set_msr(&svm->vcpu, &msr)) {
++	if (kvm_set_msr(&svm->vcpu, &msr)) {
+ 		trace_kvm_msr_write_ex(ecx, data);
+ 		kvm_inject_gp(&svm->vcpu, 0);
+ 	} else {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index c11b1ad..21cacdc 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5135,7 +5135,7 @@ static int handle_wrmsr(struct kvm_vcpu *vcpu)
+ 	msr.data = data;
+ 	msr.index = ecx;
+ 	msr.host_initiated = false;
+-	if (vmx_set_msr(vcpu, &msr) != 0) {
++	if (kvm_set_msr(vcpu, &msr) != 0) {
+ 		trace_kvm_msr_write_ex(ecx, data);
+ 		kvm_inject_gp(vcpu, 0);
+ 		return 1;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 4e33b85..f435e75 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -919,7 +919,6 @@ void kvm_enable_efer_bits(u64 mask)
+ }
+ EXPORT_SYMBOL_GPL(kvm_enable_efer_bits);
+ 
+-
+ /*
+  * Writes msr value into into the appropriate "register".
+  * Returns 0 on success, non-0 otherwise.
+@@ -927,8 +926,34 @@ EXPORT_SYMBOL_GPL(kvm_enable_efer_bits);
+  */
+ int kvm_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr)
+ {
++	switch (msr->index) {
++	case MSR_FS_BASE:
++	case MSR_GS_BASE:
++	case MSR_KERNEL_GS_BASE:
++	case MSR_CSTAR:
++	case MSR_LSTAR:
++		if (is_noncanonical_address(msr->data))
++			return 1;
++		break;
++	case MSR_IA32_SYSENTER_EIP:
++	case MSR_IA32_SYSENTER_ESP:
++		/*
++		 * IA32_SYSENTER_ESP and IA32_SYSENTER_EIP cause #GP if
++		 * non-canonical address is written on Intel but not on
++		 * AMD (which ignores the top 32-bits, because it does
++		 * not implement 64-bit SYSENTER).
++		 *
++		 * 64-bit code should hence be able to write a non-canonical
++		 * value on AMD.  Making the address canonical ensures that
++		 * vmentry does not fail on Intel after writing a non-canonical
++		 * value, and that something deterministic happens if the guest
++		 * invokes 64-bit SYSENTER.
++		 */
++		msr->data = get_canonical(msr->data);
++	}
+ 	return kvm_x86_ops->set_msr(vcpu, msr);
+ }
++EXPORT_SYMBOL_GPL(kvm_set_msr);
+ 
+ /*
+  * Adapt set_msr() to msr_io()'s calling convention
 -- 
 1.9.1
 
