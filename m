@@ -1,76 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaKFRla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:41:30 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:45174 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaKFRk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:40:58 -0500
-From: dirk.brandewie@gmail.com
-X-Google-Original-From: dirk.j.brandewie@intel.com
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: rjw@rjwysocki.net, dirk.brandweie@gmail.com, robert.a.kasten@intel.com,
-        charles.d.prestopine@intel.com, x86@kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH 1/2] x86: Add support for Intel HWP feature detection.
-Date: Thu,  6 Nov 2014 09:40:46 -0800
-Message-Id: <1415295647-4063-2-git-send-email-dirk.j.brandewie@intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415295647-4063-1-git-send-email-dirk.j.brandewie@intel.com>
-References: <1415295647-4063-1-git-send-email-dirk.j.brandewie@intel.com>
+	id S1752069AbaKFRmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:42:17 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59406 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365AbaKFRmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:42:15 -0500
+Date: Thu, 6 Nov 2014 11:40:11 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Romain Perier <romain.perier@gmail.com>
+CC: Kever Yang <kever.yang@rock-chips.com>,
+        Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Heiko Stuebner <heiko@sntech.de>, <dianders@chromium.org>,
+        <sonnyrao@chromium.org>, <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, <xjq@rock-chips.com>,
+        <hj@rock-chips.com>, <dkl@rock-chips.com>, <huangtao@rock-chips.com>,
+        <linux-rockchip@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
+Message-ID: <20141106174011.GI16896@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
+ <CABgxDo+9aZJ8BP3h=3sUUbSBD5R_FQmWF9f8kbzDbZrVG01n1A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xQR6quUbZ63TTuTU"
+Content-Disposition: inline
+In-Reply-To: <CABgxDo+9aZJ8BP3h=3sUUbSBD5R_FQmWF9f8kbzDbZrVG01n1A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+--xQR6quUbZ63TTuTU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add support of Hardware Managed Performance States (HWP) described in Volume 3
-section 14.4 of the SDM.
+On Thu, Nov 06, 2014 at 06:21:42PM +0100, Romain Perier wrote:
+> Hi Kever,
+>=20
+>=20
+> 2014-11-06 2:30 GMT+01:00 Kever Yang <kever.yang@rock-chips.com>:
+> >
+> > +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
+> > +{
+> > +       struct dwc2_hsotg *hsotg =3D dwc2_hcd_to_hsotg(hcd);
+> > +       u32 hprt0;
+> > +
+> > +       if (!((hsotg->op_state =3D=3D OTG_STATE_B_HOST) ||
+> > +               (hsotg->op_state =3D=3D OTG_STATE_A_HOST)))
+> > +               return 0;
+> > +
+> > +       if (hsotg->lx_state !=3D DWC2_L0)
+> > +               return 0;
+> > +
+> > +       hprt0 =3D dwc2_read_hprt0(hsotg);
+> > +       if (hprt0 & HPRT0_CONNSTS)
+> > +               dwc2_port_suspend(hsotg, 1);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
+> > +{
+> > +       struct dwc2_hsotg *hsotg =3D dwc2_hcd_to_hsotg(hcd);
+> > +       u32 hprt0;
+> > +
+> > +       if (!((hsotg->op_state =3D=3D OTG_STATE_B_HOST) ||
+> > +               (hsotg->op_state =3D=3D OTG_STATE_A_HOST)))
+> > +               return 0;
+> > +
+> > +       if (hsotg->lx_state !=3D DWC2_L2)
+> > +               return 0;
+> > +
+> > +       hprt0 =3D dwc2_read_hprt0(hsotg);
+> > +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
+> > +               dwc2_port_resume(hsotg);
+> > +
+> > +       return 0;
+> > +}
+>=20
+> Could you also define these functions under #ifdef CONFIG_PM ?
 
-One bit CPUID.06H:EAX[bit 7] expresses the presence of the HWP feature on
-the processor. The remaining bits CPUID.06H:EAX[bit 8-11] denote the
-presense of various HWP features.
+please don't. I'm actually considering ripping all ifdefs from all these
+drivers and also stop using SIMPLE_DEV_PM_OPS or any of its friends.
 
-Cc: x86@kernel.org
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- arch/x86/include/asm/cpufeature.h | 5 +++++
- arch/x86/kernel/cpu/scattered.c   | 5 +++++
- 2 files changed, 10 insertions(+)
+There's really nobody today would would build a kernel with CONFIG_PM.
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 0bb1335..aede2c3 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -189,6 +189,11 @@
- #define X86_FEATURE_DTHERM	( 7*32+ 7) /* Digital Thermal Sensor */
- #define X86_FEATURE_HW_PSTATE	( 7*32+ 8) /* AMD HW-PState */
- #define X86_FEATURE_PROC_FEEDBACK ( 7*32+ 9) /* AMD ProcFeedbackInterface */
-+#define X86_FEATURE_HWP		( 7*32+ 10) /* "hwp" Intel HWP */
-+#define X86_FEATURE_HWP_NOITFY	( 7*32+ 11) /* Intel HWP_NOTIFY */
-+#define X86_FEATURE_HWP_ACT_WINDOW ( 7*32+ 12) /* Intel HWP_ACT_WINDOW */
-+#define X86_FEATURE_HWP_EPP	( 7*32+13) /* Intel HWP_EPP */
-+#define X86_FEATURE_HWP_PKG_REQ ( 7*32+14) /* Intel HWP_PKG_REQ */
- 
- /* Virtualization flags: Linux defined, word 8 */
- #define X86_FEATURE_TPR_SHADOW  ( 8*32+ 0) /* Intel TPR Shadow */
-diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
-index 4a8013d..6063909 100644
---- a/arch/x86/kernel/cpu/scattered.c
-+++ b/arch/x86/kernel/cpu/scattered.c
-@@ -36,6 +36,11 @@ void init_scattered_cpuid_features(struct cpuinfo_x86 *c)
- 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
- 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
- 		{ X86_FEATURE_PTS,		CR_EAX, 6, 0x00000006, 0 },
-+		{ X86_FEATURE_HWP,		CR_EAX, 7, 0x00000006, 0 },
-+		{ X86_FEATURE_HWP_NOITFY,	CR_EAX, 8, 0x00000006, 0 },
-+		{ X86_FEATURE_HWP_ACT_WINDOW,	CR_EAX, 9, 0x00000006, 0 },
-+		{ X86_FEATURE_HWP_EPP,		CR_EAX,10, 0x00000006, 0 },
-+		{ X86_FEATURE_HWP_PKG_REQ,	CR_EAX,11, 0x00000006, 0 },
- 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
- 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
- 		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
--- 
-1.9.3
+--=20
+balbi
 
+--xQR6quUbZ63TTuTU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUW7J7AAoJEIaOsuA1yqREPnsP/1dzwCbl5u+y960EcQXbaUFn
+WfXvA/5MQtjSHkqvN7nE4n7ScbaeoKk+DwC+rmHgNe9iIMhq6WEpv9adEZMtQvBs
+jALSlSBlz1sPafLLoFhBvGfwQALemzgZQxR+QAlUY5wUcZi/Zzb6QhYuojfCRnSM
+aE9vWikyB2jH34fNb5Nmm+SeVHIzDd3CmozGxGGO73MrxaDr3cv0NBD7qv+2ge7P
+lwnmIUckYTV3XBaw7WvCP0+YzfjRbFeVBg91+KuXtFVg7TADpbBTkvXD+qEegeb3
+Xz2lH7oY5myDqGJXv0T/0jDXFD06hJI30OU9XghP9YM80m9u/IXAYUJeaPf42phw
+bwixMYuepdRX4A24P2RaqeBA5ldjxb6HxGi6vY2NH5vCsLcBF87qzkTbmXryhNPM
+Nnenb3KA6tpmmLF9Ebeo9DCMEurk7qRterifadSCJm/1Wrwvh6ANmqtqSzMP33Hb
+Nt08GEOcxtGVaoaep2SMVUQddHR1aAxZm2FCjoH3Gu6NlPdBdOS9gJAW5cOdqm2f
+9v5Rirz5PUg6+d4+5lr8kzXS/imu5ze6zA9WGh7+ubpGbDiBbBWHqvH0rQ8+fu6m
+5QqpnoH1aPTcoE6RLd9joB7d3haxRfnfttjahweDLyDxzf/SGsUOcVprQ/KqPDRT
+z830tsWuZuywoyYjHVyt
+=xggn
+-----END PGP SIGNATURE-----
+
+--xQR6quUbZ63TTuTU--
