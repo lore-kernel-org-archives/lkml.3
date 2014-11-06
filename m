@@ -1,130 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836AbaKFWyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:54:22 -0500
-Received: from unicorn.mansr.com ([81.2.72.234]:51139 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753820AbaKFWyQ convert rfc822-to-8bit (ORCPT
+	id S1753853AbaKFWy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:54:29 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:65016 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820AbaKFWyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:54:16 -0500
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Christian Riesch <christian.riesch@omicron.at>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in receive path
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
-	<20141106203832.GB30170@kroah.com>
-	<yw1xwq78jbr6.fsf@unicorn.mansr.com>
-	<20141106205644.GA31435@kroah.com>
-	<yw1xsihwjb67.fsf@unicorn.mansr.com>
-	<20141106211754.GA32000@kroah.com>
-	<yw1xoaskj9fw.fsf@unicorn.mansr.com> <20141106220249.GA952@kroah.com>
-	<yw1xk338j7vd.fsf@unicorn.mansr.com> <20141106223114.GA1701@kroah.com>
-Date: Thu, 06 Nov 2014 22:54:13 +0000
-In-Reply-To: <20141106223114.GA1701@kroah.com> (Greg Kroah-Hartman's message
-	of "Thu, 6 Nov 2014 14:31:14 -0800")
-Message-ID: <yw1xfvdwj5yi.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	Thu, 6 Nov 2014 17:54:25 -0500
+Message-ID: <545BFBB4.3040005@gmail.com>
+Date: Thu, 06 Nov 2014 20:52:36 -0200
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
+Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
+References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>	 <5451BED0.2060906@lwfinger.net> <1415178975.5402.66.camel@marge.simpson.net> <545A6894.7040506@lwfinger.net> <545B5E19.7030704@gmail.com>
+In-Reply-To: <545B5E19.7030704@gmail.com>
+In-Reply-To: 545B5E19.7030704@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+On 11/06/2014 09:40 AM, Murilo Opsfelder Araujo wrote:
+> On 11/05/2014 04:12 PM, Larry Finger wrote:
+>> On 11/05/2014 03:16 AM, Mike Galbraith wrote:
+>>> On Wed, 2014-10-29 at 23:30 -0500, Larry Finger wrote:
+>>>> On 10/29/2014 06:28 PM, Murilo Opsfelder Araujo wrote:
+>>>>> This is a complement of commit 08054200117a95afc14c3d2ed3a38bf4e345bf78
+>>>>> "rtlwifi: Add check for get_btc_status callback".
+>>>>>
+>>>>> With this patch, next-20141029 at least does not panic with rtl8192se
+>>>>> device.
+>>>>>
+>>>>
+>>>> This patch is OK, but as noted it is not complete.
+>>>>
+>>>> I have patches to fix all the kernel panics for rtl8192se AND
+>>>> rtl8192ce. There
+>>>> are missing parts, but I would prefer submitting mine, which would
+>>>> conflict with
+>>>> this one. For that reason, NACK for this one, and please apply the
+>>>> set I am
+>>>> submitting now.
+>>>
+>>> It's all in there now, but my RTL8191SEvB is still dead.  Squabbling
+>>> with it isn't going all that well either.
+>>>
+>>> As soon as 38506ece rtlwifi: rtl_pci: Start modification for new drivers
+>>> is applied, explosions appear.  Subsequently applying...
+>>>
+>>> 08054200 rtlwifi: Add check for get_btc_status callback
+>>> c0386f15 rtlwifi: rtl8192ce: rtl8192de: rtl8192se: Fix handling for
+>>> missing get_btc_status
+>>> 50147969 rtlwifi: rtl8192se: Fix duplicate calls to
+>>> ieee80211_register_hw()
+>>> 30c5ccc6 rtlwifi: rtl8192se: Add missing section to read descriptor
+>>> setting
+>>> 75a916e1 rtlwifi: rtl8192se: Fix firmware loading
+>>>
+>>> ...fixes that mess up, but leaves the interface dead in the same manner
+>>> as if nothing has been reverted.  So it _seems_ the bustage lurks in
+>>> 38506ece somewhere.  Too bad it's non-dinky, and written in wifi-ese :)
+>>
+>> Yes, I am aware that rtl8192se is failing, and now that I am back from
+>> vacation, I am working on the problem. If you want to use the driver
+>> with kernel 3.18, clone the repo at
+>> http://github.com/lwfinger/rtlwifi_new.git and build and install either
+>> the master or kernel_version branches. Both work.
+>>
+>> I am in the process of trying to find what the crucial difference is
+>> between that repo and the kernel version.
+>>
+>> Larry
+>>
+>>
+> I'm sending to everyone so others can jump in as well.
+> 
+> Here are the steps I've followed.
+> 
+> Installed and booted my kernel:
+> 
+> $ sudo dpkg -i linux-image-3.18.0-rc3-next-20141105-panda_3.18.0-rc3-next-20141105-panda-1_amd64.deb linux-headers-3.18.0-rc3-next-20141105-panda_3.18.0-rc3-next-20141105-panda-1_amd64.deb
+> 
+> Built modules from Larry's github repository.
+> 
+> $ cd rtlwifi_new
+> $ make
+> $ sudo make install
+> 
+> $ sudo modprobe -rv rtl8192se
+> rmmod rtl8192se
+> rmmod rtl_pci
+> rmmod rtlwifi
+> rmmod mac80211
+> rmmod cfg80211
+> 
+> The module does not load:
+> 
+> $ sudo modprobe -v rtl8192se
+> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/net/wireless/cfg80211.ko
+> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/net/mac80211/mac80211.ko
+> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/drivers/net/wireless/rtlwifi/rtlwifi.ko
+> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/kernel/drivers/net/wireless/rtlwifi/rtl_pci.ko
+> insmod /lib/modules/3.18.0-rc3-next-20141105-panda/extra/rtl8192se.ko
+> ERROR: could not insert 'rtl8192se': Invalid argument
+> 
+> And /var/log/messages showed:
+> 
+> Nov  5 22:28:01 laptop kernel: [  301.276806] rtl8192se: disagrees about version of symbol rtl_process_phyinfo
+> Nov  5 22:28:01 laptop kernel: [  301.276812] rtl8192se: Unknown symbol rtl_process_phyinfo (err -22)
+> Nov  5 22:28:01 laptop kernel: [  301.276864] rtl8192se: disagrees about version of symbol rtl_get_tcb_desc
+> Nov  5 22:28:01 laptop kernel: [  301.276866] rtl8192se: Unknown symbol rtl_get_tcb_desc (err -22)
+> 
 
-> On Thu, Nov 06, 2014 at 10:12:54PM +0000, Måns Rullgård wrote:
->> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> 
->> > On Thu, Nov 06, 2014 at 09:38:59PM +0000, Måns Rullgård wrote:
->> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> >> 
->> >> > On Thu, Nov 06, 2014 at 09:01:36PM +0000, Måns Rullgård wrote:
->> >> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> >> >> 
->> >> >> > On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
->> >> >> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> >> >> >> 
->> >> >> >> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
->> >> >> >> >> The current implementation of put_tty_queue() causes a race condition
->> >> >> >> >> when re-arranged by the compiler.
->> >> >> >> >> 
->> >> >> >> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
->> >> >> >> >> 
->> >> >> >> >> 	*read_buf_addr(ldata, ldata->read_head++) = c;
->> >> >> >> >> 
->> >> >> >> >> was re-arranged by the compiler to something like
->> >> >> >> >> 
->> >> >> >> >> 	x = ldata->read_head
->> >> >> >> >> 	ldata->read_head++
->> >> >> >> >> 	*read_buf_addr(ldata, x) = c;
->> >> >> >> >> 
->> >> >> >> >> which causes a race condition. Invalid data is read if data is read
->> >> >> >> >> before it is actually written to the read buffer.
->> >> >> >> >
->> >> >> >> > Really?  A compiler can rearange things like that and expect things to
->> >> >> >> > actually work?  How is that valid?
->> >> >> >> 
->> >> >> >> This is actually required by the C spec.  There is a sequence point
->> >> >> >> before a function call, after the arguments have been evaluated.  Thus
->> >> >> >> all side-effects, such as the post-increment, must be complete before
->> >> >> >> the function is called, just like in the example.
->> >> >> >> 
->> >> >> >> There is no "re-arranging" here.  The code is simply wrong.
->> >> >> >
->> >> >> > Ah, ok, time to dig out the C spec...
->> >> >> >
->> >> >> > Anyway, because of this, no need for the wmb() calls, just rearrange the
->> >> >> > logic and all should be good, right?  Christian, can you test that
->> >> >> > instead?
->> >> >> 
->> >> >> Weakly ordered SMP systems probably need some kind of barrier.  I didn't
->> >> >> look at it carefully.
->> >> >
->> >> > It shouldn't need a barier, as it is a sequence point with the function
->> >> > call.  Well, it's an inline function, but that "shouldn't" matter here,
->> >> > right?
->> >> 
->> >> Sequence points say nothing about the order in which stores become
->> >> visible to other CPUs.  That's why there are barrier instructions.
->> >
->> > Yes, but "order" matters.
->> >
->> > If I write code that does:
->> >
->> > 100	x = ldata->read_head;
->> > 101	&ldata->read_head[x & SOME_VALUE] = y;
->> > 102	ldata->read_head++;
->> >
->> > the compiler can not reorder lines 102 and 101 just because it feels
->> > like it, right?  Or is it time to go spend some reading of the C spec
->> > again...
->> 
->> The compiler can't.  The hardware can.  All the hardware promises is
->> that at some unspecified time in the future, both memory locations will
->> have the correct values.  Another CPU might see 'read_head' updated
->> before it sees the corresponding data value.  A wmb() between the writes
->> forces the CPU to complete preceding stores before it begins subsequent
->> ones.
->
-> Yes, sorry, I'm not talking about other CPUs and what they see, I'm
-> talking about the local one.  I'm not assuming that this is SMP "safe"
-> at all.  If it is supposed to be, then yes, we do have problems, but
-> there should be a lock _somewhere_ protecting this.
+Here is what I did in order to get the rtl8192se from Larry's repo to
+work:
 
-Within the confines of a single CPU + memory, barriers are never needed.
-The moment another CPU or master-capable peripheral enters the mix,
-proper ordering must be enforced somehow.
+$ cd rtlwifi_new
+$ make
 
-If the buffer is already protected by a lock of some kind, this will
-provide the necessary barriers, so nothing further is necessary.  If
-it's a lock-less design, there will need to be barriers somewhere.
+$ sudo modprobe -rv rtl8192se
+rmmod rtl8192se
+rmmod rtl_pci
+rmmod rtlwifi
+rmmod mac80211
+rmmod cfg80211
 
->From the patch context, I can't tell which category this case falls
-into, and I'm far too lazy to read the entire file.
+$ sudo modprobe -v cfg80211
+insmod /lib/modules/3.18.0-rc3-next-20141106-panda/kernel/net/wireless/cfg80211.ko
+
+$ sudo modprobe -v mac80211
+insmod /lib/modules/3.18.0-rc3-next-20141106-panda/kernel/net/mac80211/mac80211.ko
+
+$ sudo insmod ./rtlwifi.ko
+$ sudo insmod ./rtl_pci.ko
+$ sudo insmod ./rtl8192se/rtl8192se.ko
+
+Cascardo helped me to investigate this and the issue was that modprobe
+was loading the core rtl drivers from the next-20141105 and the
+rtl8192se from Larry's repo.  Thus, rtl8192se didn't have all its
+required symbols at loading time.
+
+Loading the drivers in reverse order using insmod did the trick.
+
+Larry, your rtl8192se from rtlwifi_new repository is working pretty
+fine on my hardware.  I'm looking forward to see that code landing
+linux 3.18.
+
+Thanks everyone for the help and support.  At least now, I have a
+workaround.
+
+Apreciated!
 
 -- 
-Måns Rullgård
-mans@mansr.com
+Murilo
