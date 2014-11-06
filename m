@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaKFSMa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:12:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:34656 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaKFSM2 (ORCPT
+	id S1751500AbaKFSMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:12:49 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56068 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750970AbaKFSMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:12:28 -0500
-To: Chris Friesen <chris.friesen@windriver.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
-	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>
-Date: Thu, 06 Nov 2014 13:12:17 -0500
-In-Reply-To: <545BB3AB.8070409@windriver.com> (Chris Friesen's message of
-	"Thu, 6 Nov 2014 11:45:15 -0600")
-Message-ID: <yq1fvdwb3lq.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 6 Nov 2014 13:12:46 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19DJHS3rNP1pXrr5pDkOSRc
+Date: Thu, 6 Nov 2014 10:11:49 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, nm@ti.com
+Subject: Re: [PATCH/v2] ARM: OMAP2: Remove unnecessary KERN_* in
+ omap_phy_internal.c
+Message-ID: <20141106181149.GA31454@atomide.com>
+References: <20141006162151.GA21908@kahuna>
+ <1412691376-7895-1-git-send-email-standby24x7@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412691376-7895-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+* Masanari Iida <standby24x7@gmail.com> [141007 07:17]:
+> This patch remove unnecessary KERN_INFO and KERN_ERR from omap_phy_internal.c.
+> Add pr_fmt. 
 
-Chris> That'd work, but is it the best way to go?  I mean, I found one
-Chris> report of a similar problem on an SSD (model number unknown).  In
-Chris> that case it was a near-UINT_MAX value as well.
+Applying into omap-for-v3.19/fixes-not-urgent thanks.
 
-My concern is still the same. Namely that this particular drive happens
-to be returning UINT_MAX but it might as well be a value that's entirely
-random. Or even a value that is small and innocuous looking but
-completely wrong.
-
-Chris> The problem with the blacklist is that until someone patches it,
-Chris> the drive is broken.  And then it stays blacklisted even if the
-Chris> firmware gets fixed.
-
-Well, you can manually blacklist in /proc/scsi/device_info.
-
-Chris> I'm wondering if it might not be better to just ignore all values
-Chris> larger than X (where X is whatever we think is the largest
-Chris> conceivable reasonable value).
-
-The problem is that finding that is not easy and it too will be a moving
-target.
-
-I'm willing to entertain the following, however...
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 95bfb7bfbb9d..75cc51a01860 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2593,7 +2593,8 @@ static void sd_read_block_limits(struct scsi_disk *sdkp)
- 	blk_queue_io_min(sdkp->disk->queue,
- 			 get_unaligned_be16(&buffer[6]) * sector_sz);
- 	blk_queue_io_opt(sdkp->disk->queue,
--			 get_unaligned_be32(&buffer[12]) * sector_sz);
-+			 min_t(u32, get_unaligned_be32(&buffer[12]),
-+			       sdkp->capacity) * sector_sz);
- 
- 	if (buffer[3] == 0x3c) {
- 		unsigned int lba_count, desc_count;
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Tony
