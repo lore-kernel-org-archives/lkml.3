@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaKFEss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 23:48:48 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:53500 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaKFEsP (ORCPT
+	id S1751650AbaKFEs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 23:48:57 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58225 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaKFEsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 23:48:15 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sA64mAxE012742, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 3/3] r8152: remove the definitions of the PID
-Date: Thu, 6 Nov 2014 12:47:40 +0800
-Message-ID: <1394712342-15778-87-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-84-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-84-Taiwan-albertk@realtek.com>
+	Wed, 5 Nov 2014 23:48:53 -0500
+Message-ID: <545AFDB1.80008@wwwdotorg.org>
+Date: Wed, 05 Nov 2014 21:48:49 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+To: Scott Branden <sbranden@broadcom.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Chris Ball <chris@printf.net>, Piotr Krol <pietrushnic@gmail.com>
+CC: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, linux-rpi-kernel@lists.infradead.org,
+        Ray Jui <rjui@broadcom.com>, bcm-kernel-feedback-list@broadcom.com
+Subject: Re: [PATCHv2 3/5] mmc: shdci-bcm2835: add efficient back-to-back
+ write workaround
+References: <Scott Branden <sbranden@broadcom.com> <1414651017-3545-1-git-send-email-sbranden@broadcom.com> <1414651017-3545-4-git-send-email-sbranden@broadcom.com> <5459AE2C.2050401@wwwdotorg.org> <5459C9C8.9070800@broadcom.com>
+In-Reply-To: <5459C9C8.9070800@broadcom.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PIDs are only used in the id table, so the definitions are
-unnacessary. Remove them wouldn't have confusion.
+On 11/04/2014 11:55 PM, Scott Branden wrote:
+> On 14-11-04 08:57 PM, Stephen Warren wrote:
+>> On 10/30/2014 12:36 AM, Scott Branden wrote:
+>>> The bcm2835 has clock domain issues when back to back writes to certain
+>>> registers are written.  The existing driver works around this issue with
+>>> udelay.  A more efficient method is to store the 8 and 16 bit writes
+>>> to the registers affected and then write them as 32 bits at the
+>>> appropriate
+>>> time.
+>>
+>>> diff --git a/drivers/mmc/host/sdhci-bcm2835.c
+>>> b/drivers/mmc/host/sdhci-bcm2835.c
+>>
+>>>   static void bcm2835_sdhci_writew(struct sdhci_host *host, u16 val,
+>>> int reg)
+>>>   {
+>>>       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+>>> -    struct bcm2835_sdhci *bcm2835_host = pltfm_host->priv;
+>>> -    u32 oldval = (reg == SDHCI_COMMAND) ? bcm2835_host->shadow :
+>>> -        bcm2835_sdhci_readl(host, reg & ~3);
+>>> +    struct bcm2835_sdhci_host *bcm2835_host = pltfm_host->priv;
+>>
+>> Is that type change for bcm2835_host really correct?
+>
+> Yes - at the top of the patch the structure has been expanded and named
+> appropriately.
+> 
+> -struct bcm2835_sdhci {
+> -    u32 shadow;
+> +struct bcm2835_sdhci_host {
+> +    u32 shadow_cmd;
+> +    u32 shadow_blk;
+>  };
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+Ah yes, sorry for missing that.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index cf1b8a7..66b139a 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -461,11 +461,7 @@ enum rtl8152_flags {
- 
- /* Define these values to match your device */
- #define VENDOR_ID_REALTEK		0x0bda
--#define PRODUCT_ID_RTL8152		0x8152
--#define PRODUCT_ID_RTL8153		0x8153
--
- #define VENDOR_ID_SAMSUNG		0x04e8
--#define PRODUCT_ID_SAMSUNG		0xa101
- 
- #define MCU_TYPE_PLA			0x0100
- #define MCU_TYPE_USB			0x0000
-@@ -3898,9 +3894,9 @@ static void rtl8152_disconnect(struct usb_interface *intf)
- 
- /* table of devices that work with this driver */
- static struct usb_device_id rtl8152_table[] = {
--	{USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8152)},
--	{USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8153)},
--	{USB_DEVICE(VENDOR_ID_SAMSUNG, PRODUCT_ID_SAMSUNG)},
-+	{USB_DEVICE(VENDOR_ID_REALTEK, 0x8152)},
-+	{USB_DEVICE(VENDOR_ID_REALTEK, 0x8153)},
-+	{USB_DEVICE(VENDOR_ID_SAMSUNG, 0xa101)},
- 	{}
- };
- 
--- 
-1.9.3
+>>> +    } else {
+>>> +        /* Read reg, all other registers are not shadowed */
+>>> +        oldval = readl(host->ioaddr + (reg & ~3));
+>>
+>> Is there any reason to use readl() directly here rather than calling
+>> bcm2835_readl()? ...
+>
+> Yes, bcm2835_readl does not need to be called in read-modify-write and
+> shadow register situations and just adds overhead.  All that needs to be
+> called is readl.  bcm2835_readl has some existing ugly code in it to
+> modify the capabilities register on a read function.  This info never
+> needs to be for write as you can't overwrite the capabilities register.
 
+To be honest, it seems better to do all the read/write through
+consistent functions. One advantage of bcm2835_readl() is that it
+consistently adds on the base address internally so you don't have to
+write it out every time manually. Still, the code ought to work fine
+after this change, so I guess it's OK.
+
+> I hope to get rid of the capabilities hack in a future patch as this
+> should never have been acceptable in upstreamed code to begin with.  The
+> capabilities override should have been passed in through a device tree
+> entry.
+
+It's a pretty common technique with precedent. I certainly don't agree
+that it should be configured by DT. Arguably, DT makes sense to describe
+board-to-board variations, but there's almost zero point putting data
+into DT that is SoC description rather than board description; just put
+it into the driver to avoid continually parsing the same data over and
+over from DT just to get back to the same data that could have been
+encoded into the driver. If the data varies between similar controllers,
+an of_match table can easily be used to parameterize it based on
+compatible value.
