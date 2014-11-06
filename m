@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373AbaKFKan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:30:43 -0500
-Received: from mga03.intel.com ([134.134.136.65]:8802 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344AbaKFKak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:30:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,325,1413270000"; 
-   d="scan'208";a="603363217"
-Date: Thu, 6 Nov 2014 12:30:33 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH] leds: leds-gpio: Convert gpio_blink_set() to use GPIO
- descriptors
-Message-ID: <20141106103033.GK1618@lahna.fi.intel.com>
-References: <1414755658-96293-1-git-send-email-mika.westerberg@linux.intel.com>
- <545843B1.3020101@nvidia.com>
- <2455157.3p7mHhT8im@vostro.rjw.lan>
- <CAMuHMdXn9W2S7N+YGfjDxQozMtRZCVdTzzdDps6YfOv2FqVBmw@mail.gmail.com>
+	id S1752424AbaKFKbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:31:40 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41843 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaKFKbh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 05:31:37 -0500
+Date: Thu, 6 Nov 2014 11:30:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
+ hierarchy irqdomain
+In-Reply-To: <alpine.DEB.2.11.1411061023400.24960@nanos>
+Message-ID: <alpine.DEB.2.11.1411061110550.24960@nanos>
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.11.1411061023400.24960@nanos>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXn9W2S7N+YGfjDxQozMtRZCVdTzzdDps6YfOv2FqVBmw@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 10:52:35AM +0100, Geert Uytterhoeven wrote:
-> Hi Mika, Rafael,
+On Thu, 6 Nov 2014, Thomas Gleixner wrote:
+> On Tue, 4 Nov 2014, Jiang Liu wrote:
+> > +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
+> > +static inline irq_hw_number_t
+> > +msi_get_hwirq(struct pci_dev *pdev, struct msi_desc *msidesc)
+> > +{
+> > +	return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
+> > +		PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
+> > +		(pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
+> > +}
+> > +
+> > +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
+> > +			    unsigned int nr_irqs, void *arg)
+> > +{
+> > +	int i, ret;
+> > +	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
+> > +
+> > +	if (irq_find_mapping(domain, hwirq) > 0)
+> > +		return -EEXIST;
+> > +
+> > +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
+> > +	if (ret >= 0)
+> > +		for (i = 0; i < nr_irqs; i++) {
+> > +			irq_domain_set_hwirq_and_chip(domain, virq + i,
+> > +					hwirq + i, &msi_chip, (void *)(long)i);
 > 
-> On Tue, Nov 4, 2014 at 11:50 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, November 04, 2014 12:10:41 PM Alexandre Courbot wrote:
-> >> On 10/31/2014 08:40 PM, Mika Westerberg wrote:
-> >> > Commit 21f2aae91e902aad ("leds: leds-gpio: Add support for GPIO
-> >> > descriptors") already converted most of the driver to use GPIO descriptors.
-> >> > What is still missing is the platform specific hook gpio_blink_set() and
-> >> > board files which pass legacy GPIO numbers to this driver in platform data.
-> >> >
-> >> > In this patch we handle the former and convert gpio_blink_set() to take
-> >> > GPIO descriptor instead. In order to do this we convert the existing four
-> >> > users to accept GPIO descriptor and translate it to legacy GPIO number in
-> >> > the platform code. This effectively "pushes" legacy GPIO number usage from
-> >> > the driver to platforms.
-> >> >
-> >> > Also add comment to the remaining block describing that it is legacy code
-> >> > path and we are getting rid of it eventually.
-> >> >
-> >> > Suggested-by: Linus Walleij <linus.walleij@linaro.org>
-> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >>
-> >> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-> >
-> > Patch applied, thanks everyone!
+> I think msi_chip being a global unique thing is problematic. It does
+> not allow multi platform kernels to select a chip at boot time and it
+> does not allow per domain chip implementations when you have multiple
+> msi domains. Aside of that msi_chip is a pretty bad name for a global.
 > 
-> "leds: leds-gpio: Add support for GPIO descriptors" broke leds-gpio on
-> non-DT platforms for me:
+> The solution is rather simple and msi is wide spread enough to justify
+> that.
 > 
->     gpiod_direction_output: invalid GPIO
->     leds-gpio: probe of leds-gpio failed with error -22
+> struct irqdomain_msi_data {
+>        struct irq_chip       *irq_chip;
+> };
 > 
-> (desc is NULL in gpiod_direction_output()).
-> 
-> DT shmobile reference/multi-platform are fine.
-> 
-> I noticed the hard way, as I wanted to add some LEDs to a new platform,
-> but couldn't get it work. It turned out it also had stopped working on
-> r8a7740/armadillo-legacy, so I started bisecting...
+> We make that a struct so we can accomodate for other special things
+> which might be domain rather than architecture specific. One
+> obvious use case would be to hold the arch_msi_irq_domain_get/set_hwirq
+> callbacks.
 
-Which board file that is?
+That needs to hand in the domain as an argument as well.
 
-There is a bug that gpio_to_desc() returns NULL instead if ERR_PTR() in
-that patch but I wonder why gpio_is_valid() and devm_gpio_request_one()
-do not complain about that prior.
+Thanks,
+
+	tglx
