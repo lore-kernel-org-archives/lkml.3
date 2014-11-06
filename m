@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405AbaKFHBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 02:01:32 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:38443 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaKFHB3 (ORCPT
+	id S1751451AbaKFHCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 02:02:33 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:58310 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaKFHC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 02:01:29 -0500
+	Thu, 6 Nov 2014 02:02:29 -0500
+Date: Wed, 5 Nov 2014 23:02:25 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Christoph Hellwig <hch@infradead.org>, Ewan Milne <emilne@redhat.com>,
+        Robert Elliott <elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] libata: use __scsi_format_command()
+Message-ID: <20141106070225.GB19721@infradead.org>
+References: <1415088409-46590-1-git-send-email-hare@suse.de>
+ <1415088409-46590-5-git-send-email-hare@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <10546062.ah0Qvxpsuh@wuerfel>
-References: <1413377405-7503-1-git-send-email-dbaryshkov@gmail.com>
-	<10546062.ah0Qvxpsuh@wuerfel>
-Date: Thu, 6 Nov 2014 11:01:29 +0400
-Message-ID: <CALT56yOKFcRLZpTHiy-3n8+e=0GY=d_Y9r4ghe_bn5B2vYv+yQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clocksource: enable pxa_timer for SA-1100 platform
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415088409-46590-5-git-send-email-hare@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 04, 2014 at 09:06:43AM +0100, Hannes Reinecke wrote:
+> libata already uses an internal buffer, so we should be using
+> __scsi_format_command() here.
 
-2014-10-20 23:07 GMT+04:00 Arnd Bergmann <arnd@arndb.de>:
-> On Wednesday 15 October 2014 16:50:04 Dmitry Eremin-Solenikov wrote:
->> SA-11x0 platform used the same IP block as was used on PXA. Consequently
->> it makes sense to have only one driver. Enable pxa_timer clocksource for
->> StrongARM platform.
->>
->> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
->
-> Both patches look good to me.
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
->
-> Should we merge them through arm-soc or through the clocksource tree?
+Looks good,
 
-
-Thomas added his blessing (and an ack) to merge these patches through arm-soc.
-Should I gather any additional Acks before it cn hit arm-soc/for-next?
-
--- 
-With best wishes
-Dmitry
+Reviewed-by: Christoph Hellwig <hch@lst.de>
