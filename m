@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaKFCyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:54:05 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:52442 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaKFCyB (ORCPT
+	id S1751261AbaKFC5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:57:40 -0500
+Received: from mailout.micron.com ([137.201.242.129]:38042 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKFC5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:54:01 -0500
-Message-ID: <545AE2C8.3070705@gmail.com>
-Date: Wed, 05 Nov 2014 18:54:00 -0800
-From: Alexander Duyck <alexander.duyck@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 5 Nov 2014 21:57:39 -0500
+From: bpqw <bpqw@micron.com>
+To: Brian Norris <computersforpeace@gmail.com>, bpqw <bpqw@micron.com>
+CC: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1 v4] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+Thread-Topic: [PATCH 1/1 v4] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+Thread-Index: AQHP+OyDxaNK6v1UTk6KxHoL3znnipxS5hNw
+Date: Thu, 6 Nov 2014 02:56:53 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315EA23A@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+ <201409251211.57183.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+ <201409261046.07132.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315E9B48@NTXXIAMBX02.xacn.micron.com>
+ <20141105112633.GK22361@norris-Latitude-E6410>
+In-Reply-To: <20141105112633.GK22361@norris-Latitude-E6410>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21078.003
+X-TM-AS-Result: No--2.986200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joe Stringer <joestringer@nicira.com>, netdev@vger.kernel.org
-CC: sathya.perla@emulex.com, jeffrey.t.kirsher@intel.com, linux.nics@intel.com,
-        amirv@mellanox.com, shahed.shaikh@qlogic.com,
-        Dept-GELinuxNICDev@qlogic.com, therbert@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 3/5] fm10k: Implement ndo_gso_check()
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com> <1415138202-1197-4-git-send-email-joestringer@nicira.com>
-In-Reply-To: <1415138202-1197-4-git-send-email-joestringer@nicira.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2014 01:56 PM, Joe Stringer wrote:
-> ndo_gso_check() was recently introduced to allow NICs to report the
-> offloading support that they have on a per-skb basis. Add an
-> implementation for this driver which checks for something that looks
-> like VXLAN.
->
-> Implementation shamelessly stolen from Tom Herbert:
-> http://thread.gmane.org/gmane.linux.network/332428/focus=333111
->
-> Signed-off-by: Joe Stringer <joestringer@nicira.com>
-> ---
-> Should this driver report support for GSO on packets with tunnel headers
-> up to 64B like the i40e driver does?
-> ---
->  drivers/net/ethernet/intel/fm10k/fm10k_netdev.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
->
-> diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c b/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-> index 8811364..b9ef622 100644
-> --- a/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-> +++ b/drivers/net/ethernet/intel/fm10k/fm10k_netdev.c
-> @@ -1350,6 +1350,17 @@ static void fm10k_dfwd_del_station(struct net_device *dev, void *priv)
->  	}
->  }
->  
-> +static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)
-> +{
-> +	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
-> +	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
-> +	     skb->inner_protocol != htons(ETH_P_TEB) ||
-> +	     skb_inner_mac_header(skb) - skb_transport_header(skb) != 16))
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
->  static const struct net_device_ops fm10k_netdev_ops = {
->  	.ndo_open		= fm10k_open,
->  	.ndo_stop		= fm10k_close,
-> @@ -1372,6 +1383,7 @@ static const struct net_device_ops fm10k_netdev_ops = {
->  	.ndo_do_ioctl		= fm10k_ioctl,
->  	.ndo_dfwd_add_station	= fm10k_dfwd_add_station,
->  	.ndo_dfwd_del_station	= fm10k_dfwd_del_station,
-> +	.ndo_gso_check		= fm10k_gso_check,
->  };
->  
->  #define DEFAULT_DEBUG_LEVEL_SHIFT 3
+>> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
 
-I'm thinking this check is far too simplistic.  If you look the fm10k
-driver already has fm10k_tx_encap_offload() in the TSO function for
-verifying if it can support offloading tunnels or not.  I would
-recommend starting there or possibly even just adapting that function to
-suit your purpose.
+>Also, your patch is still corrupt and cannot be applied as-is. 
+>Please double-check your mailer settings and resend once you have something I can apply.
 
-Thanks,
+>Brian
 
-Alex
+Hi,Brian
+
+Thanks your patience.this maybe linux kernel has been updated again.
+My patch based linux kernel is old. I will rebuild a new patch based
+on latest linux-mtd,and submit it today.
+This patch has been waiting for your reply too long time.I really hope
+that this patch to be accepted as soon as possible, otherwise I will
+rebuild it again,and one by one.
