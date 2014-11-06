@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaKFJ6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:58:32 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48494 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752157AbaKFJ5X (ORCPT
+	id S1752575AbaKFKBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:01:13 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41786 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752324AbaKFKBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:57:23 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 10/10] [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the kernel
-Date: Thu,  6 Nov 2014 10:57:08 +0100
-Message-Id: <1415267829-4177-11-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 6 Nov 2014 05:01:07 -0500
+Date: Thu, 6 Nov 2014 10:01:04 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Riku Voipio <riku.voipio@iki.fi>
+Cc: "Stam, Michel [FINT]" <M.Stam@fugro.nl>, freddy@asix.com.tw,
+        davem@davemloft.net, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
+	arndale platform
+Message-ID: <20141106100104.GS23178@opensource.wolfsonmicro.com>
+References: <20141104072236.GA559@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <C89EFD3CD56F64468D3D206D683A8D22039FFC5F@ldam-msx2.fugro-nl.local> <20141105150258.GR23178@opensource.wolfsonmicro.com> <20141106090651.GA19109@afflict.kos.to>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106090651.GA19109@afflict.kos.to>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Place v4l2_mbus_pixelcode in a #ifndef __KERNEL__ section so that kernel
-users don't have access to these definitions.
+On Thu, Nov 06, 2014 at 11:06:51AM +0200, Riku Voipio wrote:
+> On Wed, Nov 05, 2014 at 03:02:58PM +0000, Charles Keepax wrote:
+> > On Wed, Nov 05, 2014 at 01:04:37PM +0100, Stam, Michel [FINT] wrote:
+> > > Hello Charles,
+> > > 
+> > > After looking around I found the reset value for the 8772 chip, which
+> > > seems to be 0x1E1 (ANAR register).
+> > > 
+> > > This equates to (according to include/uapi/linux/mii.h)
+> > > ADVERTISE_ALL | ADVERTISE_CSMA.
+> > > 
+> > > The register only seems to become 0 if the software reset fails.
+>  
+> > Odd it definitely reads back as zero on Arndale. I am guessing
+> > that the root of the problem here is that for some reason Arndale
+> > POR of the ethernet is pants and it needs a full software reset
+> > before it will work and the patch removes the full reset
+> > callback.
+> 
+> The asix on arndale comes semi-configured from u-boot, which I guess is
+> not the state kernel expects it to come in. At least in my case where
+> I use tftp from u-boot to load my kernel.
+> 
+> So probably the full reset is needed here to make the asix chip come
+> to a truly pristine state.
+> 
+> The commit that Michel partially reverted (by returning to use
+> ax88772_link_reset instead of ax88772_reset), indicates that a strong reset
+> is needed for suspend/resume as well:
 
-We have to keep this definition for user-space users even though they're
-encouraged to move to the new media_bus_format enum.
+Ok I think I have cracked this one. I am pretty sure you are
+right that the USB comes to us in a strange state and needs
+a full reset, but that only needs to happen once when the driver
+is bound in. So there is some code in ax88772_bind that appears
+to try to reset the device but does a lot less than ax88772_reset
+and I think that must be the problem. Applying the following on
+top of the patch we have been debating I think will make
+everything work for all of us:
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- include/uapi/linux/media-bus-format.h | 5 +++++
- include/uapi/linux/v4l2-mediabus.h    | 2 ++
- 2 files changed, 7 insertions(+)
+--- a/drivers/net/usb/asix_devices.c
++++ b/drivers/net/usb/asix_devices.c
+@@ -465,19 +465,7 @@ static int ax88772_bind(struct usbnet *dev,
+struct usb_interface *in
+                return ret;
+        }
 
-diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
-index 251a902..d7f9ea2 100644
---- a/include/uapi/linux/media-bus-format.h
-+++ b/include/uapi/linux/media-bus-format.h
-@@ -31,9 +31,14 @@
-  * new pixel codes.
-  */
- 
-+#ifdef __KERNEL__
-+#define MEDIA_BUS_FMT_ENTRY(name, val)	MEDIA_BUS_FMT_ ## name = val
-+#else
-+/* Keep V4L2_MBUS_FMT for backwards compatibility */
- #define MEDIA_BUS_FMT_ENTRY(name, val)	\
- 	MEDIA_BUS_FMT_ ## name = val,	\
- 	V4L2_MBUS_FMT_ ## name = val
-+#endif
- 
- enum media_bus_format {
- 	MEDIA_BUS_FMT_ENTRY(FIXED, 0x0001),
-diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
-index d30526c..8759002 100644
---- a/include/uapi/linux/v4l2-mediabus.h
-+++ b/include/uapi/linux/v4l2-mediabus.h
-@@ -15,7 +15,9 @@
- #include <linux/videodev2.h>
- #include <linux/media-bus-format.h>
- 
-+#ifndef __KERNEL__
- #define v4l2_mbus_pixelcode media_bus_format
-+#endif
- 
- /**
-  * struct v4l2_mbus_framefmt - frame format on the media bus
--- 
-1.9.1
+-       ret = asix_sw_reset(dev, AX_SWRESET_IPPD | AX_SWRESET_PRL);
+-       if (ret < 0)
+-               return ret;
+-
+-       msleep(150);
+-
+-       ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
+-       if (ret < 0)
+-               return ret;
+-
+-       msleep(150);
+-
+-       ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL : AX_SWRESET_PRTE);
++       ax88772_reset(dev);
 
+If you guys could test that and let me know how you get on I will
+send in a proper patch if it looks good.
+
+Thanks,
+Charles
