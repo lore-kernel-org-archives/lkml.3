@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaKFVHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:07:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43309 "EHLO mail.kernel.org"
+	id S1752075AbaKFVIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:08:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43130 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788AbaKFVFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:05:50 -0500
+	id S1751631AbaKFVFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:05:13 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/18] perf record: Do not save pathname in ./debug/.build-id directory for vmlinux
-Date: Thu,  6 Nov 2014 18:04:33 -0300
-Message-Id: <1415307879-912-13-git-send-email-acme@kernel.org>
+Subject: [PATCH 05/18] perf tools: Add call information to the database export API
+Date: Thu,  6 Nov 2014 18:04:26 -0300
+Message-Id: <1415307879-912-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415307879-912-1-git-send-email-acme@kernel.org>
 References: <1415307879-912-1-git-send-email-acme@kernel.org>
@@ -25,119 +25,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-When perf record finishes a session, it pre-processes samples in order
-to write build-id info from DSOs that had samples.
+Make it possible for the database export API to use the enhanced thread
+stack and export detailed information about paired calls and returns.
 
-During this process it'll call map__load() for the kernel map, and it
-ends up calling dso__load_vmlinux_path() which replaces dso->long_name.
-
-But this function checks kernel's build-id before searching vmlinux path
-so it'll end up with a cryptic name, the pathname for the entry in the
-~/.debug cache, which can be confusing to users.
-
-This patch adds a flag to skip the build-id check during record, so
-that it'll have the original vmlinux path for the kernel dso->long_name,
-not the entry in the ~/.debug cache.
-
-Before:
-  # perf record -va sleep 3
-  mmap size 528384B
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.196 MB perf.data (~8545 samples) ]
-  Looking at the vmlinux_path (7 entries long)
-  Using /home/namhyung/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551 for symbols
-
-After:
-  # perf record -va sleep 3
-  mmap size 528384B
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.193 MB perf.data (~8432 samples) ]
-  Looking at the vmlinux_path (7 entries long)
-  Using /lib/modules/3.16.4-1-ARCH/build/vmlinux for symbols
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1415063674-17206-7-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1414678188-14946-6-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 11 +++++++++++
- tools/perf/util/symbol.c    | 11 ++++++-----
- tools/perf/util/symbol.h    |  1 +
- 3 files changed, 18 insertions(+), 5 deletions(-)
+ tools/perf/util/db-export.c | 52 ++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/db-export.h | 12 +++++++++++
+ 2 files changed, 63 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5091a27e6d28..582c4da155ea 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -200,6 +200,17 @@ static int process_buildids(struct record *rec)
- 	if (size == 0)
- 		return 0;
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index bccb83120971..017ecbb0ec05 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -21,6 +21,7 @@
+ #include "comm.h"
+ #include "symbol.h"
+ #include "event.h"
++#include "thread-stack.h"
+ #include "db-export.h"
  
-+	/*
-+	 * During this process, it'll load kernel map and replace the
-+	 * dso->long_name to a real pathname it found.  In this case
-+	 * we prefer the vmlinux path like
-+	 *   /lib/modules/3.16.4/build/vmlinux
-+	 *
-+	 * rather than build-id path (in debug directory).
-+	 *   $HOME/.debug/.build-id/f0/6e17aa50adf4d00b88925e03775de107611551
-+	 */
-+	symbol_conf.ignore_vmlinux_buildid = true;
-+
- 	return __perf_session__process_events(session, start,
- 					      size - start,
- 					      size, &build_id__mark_dso_hit_ops);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c69915c9d5bc..c24c5b83156c 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1511,12 +1511,10 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
- 			   symbol_filter_t filter)
+ int db_export__init(struct db_export *dbe)
+@@ -29,8 +30,10 @@ int db_export__init(struct db_export *dbe)
+ 	return 0;
+ }
+ 
+-void db_export__exit(struct db_export *dbe __maybe_unused)
++void db_export__exit(struct db_export *dbe)
  {
- 	int i, err = 0;
--	char *filename;
-+	char *filename = NULL;
++	call_return_processor__free(dbe->crp);
++	dbe->crp = NULL;
+ }
  
--	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
--		 vmlinux_path__nr_entries + 1);
--
--	filename = dso__build_id_filename(dso, NULL, 0);
-+	if (!symbol_conf.ignore_vmlinux_buildid)
-+		filename = dso__build_id_filename(dso, NULL, 0);
- 	if (filename != NULL) {
- 		err = dso__load_vmlinux(dso, map, filename, true, filter);
- 		if (err > 0)
-@@ -1524,6 +1522,9 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
- 		free(filename);
+ int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
+@@ -270,6 +273,13 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 				     &es.addr_sym_db_id, &es.addr_offset);
+ 		if (err)
+ 			return err;
++		if (dbe->crp) {
++			err = thread_stack__process(thread, comm, sample, al,
++						    &addr_al, es.db_id,
++						    dbe->crp);
++			if (err)
++				return err;
++		}
  	}
  
-+	pr_debug("Looking at the vmlinux_path (%d entries long)\n",
-+		 vmlinux_path__nr_entries + 1);
+ 	if (dbe->export_sample)
+@@ -316,3 +326,43 @@ int db_export__branch_types(struct db_export *dbe)
+ 	}
+ 	return err;
+ }
 +
- 	for (i = 0; i < vmlinux_path__nr_entries; ++i) {
- 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], false, filter);
- 		if (err > 0)
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index eb2c19bf8d90..ded3ca7266de 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -105,6 +105,7 @@ struct symbol_conf {
- 	unsigned short	nr_events;
- 	bool		try_vmlinux_path,
- 			ignore_vmlinux,
-+			ignore_vmlinux_buildid,
- 			show_kernel_path,
- 			use_modules,
- 			sort_by_name,
++int db_export__call_path(struct db_export *dbe, struct call_path *cp)
++{
++	int err;
++
++	if (cp->db_id)
++		return 0;
++
++	if (cp->parent) {
++		err = db_export__call_path(dbe, cp->parent);
++		if (err)
++			return err;
++	}
++
++	cp->db_id = ++dbe->call_path_last_db_id;
++
++	if (dbe->export_call_path)
++		return dbe->export_call_path(dbe, cp);
++
++	return 0;
++}
++
++int db_export__call_return(struct db_export *dbe, struct call_return *cr)
++{
++	int err;
++
++	if (cr->db_id)
++		return 0;
++
++	err = db_export__call_path(dbe, cr->cp);
++	if (err)
++		return err;
++
++	cr->db_id = ++dbe->call_return_last_db_id;
++
++	if (dbe->export_call_return)
++		return dbe->export_call_return(dbe, cr);
++
++	return 0;
++}
+diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
+index e4baa45ead70..dd5ac2ae97d4 100644
+--- a/tools/perf/util/db-export.h
++++ b/tools/perf/util/db-export.h
+@@ -25,6 +25,9 @@ struct comm;
+ struct dso;
+ struct perf_sample;
+ struct addr_location;
++struct call_return_processor;
++struct call_path;
++struct call_return;
+ 
+ struct export_sample {
+ 	union perf_event	*event;
+@@ -57,6 +60,10 @@ struct db_export {
+ 	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
+ 				  const char *name);
+ 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
++	int (*export_call_path)(struct db_export *dbe, struct call_path *cp);
++	int (*export_call_return)(struct db_export *dbe,
++				  struct call_return *cr);
++	struct call_return_processor *crp;
+ 	u64 evsel_last_db_id;
+ 	u64 machine_last_db_id;
+ 	u64 thread_last_db_id;
+@@ -65,6 +72,8 @@ struct db_export {
+ 	u64 dso_last_db_id;
+ 	u64 symbol_last_db_id;
+ 	u64 sample_last_db_id;
++	u64 call_path_last_db_id;
++	u64 call_return_last_db_id;
+ };
+ 
+ int db_export__init(struct db_export *dbe);
+@@ -89,4 +98,7 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 
+ int db_export__branch_types(struct db_export *dbe);
+ 
++int db_export__call_path(struct db_export *dbe, struct call_path *cp);
++int db_export__call_return(struct db_export *dbe, struct call_return *cr);
++
+ #endif
 -- 
 1.9.3
 
