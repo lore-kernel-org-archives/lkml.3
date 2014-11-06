@@ -1,149 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaKFQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:33:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57088 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115AbaKFQd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:33:57 -0500
-Date: Thu, 6 Nov 2014 17:33:54 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in trace_seq
-Message-ID: <20141106163352.GJ2001@dhcp128.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
- <20141104160221.864997179@goodmis.org>
- <20141105142222.GC4570@pathway.suse.cz>
- <20141105134147.226a23ef@gandalf.local.home>
- <20141105150007.1c543b9e@gandalf.local.home>
- <20141105161720.71abdbdb@gandalf.local.home>
- <20141105162146.6edc1567@gandalf.local.home>
+	id S1751739AbaKFQeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:34:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48620 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaKFQeR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:34:17 -0500
+Message-ID: <545BA301.8000709@arm.com>
+Date: Thu, 06 Nov 2014 16:34:09 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105162146.6edc1567@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [V10 PATCH 2/2] irqchip: gicv2m: Add supports for ARM GICv2m
+ MSI(-X)
+References: <1415052977-26036-1-git-send-email-suravee.suthikulpanit@amd.com> <1415052977-26036-3-git-send-email-suravee.suthikulpanit@amd.com> <5458CE31.3040404@linux.intel.com> <545ABB4C.8010103@amd.com> <545ABF6C.1000308@amd.com> <alpine.DEB.2.11.1411060146050.24960@nanos> <alpine.DEB.2.11.1411061131330.24960@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411061131330.24960@nanos>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 06 Nov 2014 16:34:10.0696 (UTC) FILETIME=[7E2D6080:01CFF9DF]
+X-MC-Unique: 114110616341209101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-11-05 16:21:46, Steven Rostedt wrote:
-> On Wed, 5 Nov 2014 16:17:20 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+Hi Thomas,
+
+On 06/11/14 10:42, Thomas Gleixner wrote:
+> On Thu, 6 Nov 2014, Thomas Gleixner wrote:
+>> On Wed, 5 Nov 2014, Suravee Suthikulanit wrote:
+>>> On 11/5/2014 6:05 PM, Suravee Suthikulanit wrote:
+>>>> - Overall, it seems that msi_domain_alloc() could be quite different
+>>>> across architectures. Would it be possible to declare this function as
+>>>> weak, and allow arch to override (similar to arch_setup_msi_irq)?
+>>>
+>>> Actually, declaring "msi_domain_ops" as non-static, and allow other code to
+>>> override the .alloc and .free?
+>>
+>> Why do you want to do that?
 > 
-> > On Wed, 5 Nov 2014 15:00:07 -0500
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > On Wed, 5 Nov 2014 13:41:47 -0500
-> > > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > 
-> > > > > 
-> > > > > > + */
-> > > > > > +int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-> > > > > > +		    int nmaskbits)
-> > > > > > +{
-> > > > > > +	unsigned int len = SEQ_BUF_LEFT(s);
-> > > > > >
-> > > > > > +	int ret;
-> > > > > > +
-> > > > > > +	WARN_ON(s->size == 0);
-> > > > > > +
-> > > > > > +	if (s->len < s->size) {
-> > > > > > +		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-> > > > > 
-> > > > > It writes to the beginning of the buffer. It should be
-> > > > > 
-> > > > > 		ret = bitmap_scnprintf(s->buffer + s->len, len,
-> > > > > 				       maskp, nmaskbits);
-> > > > >
-> > > > 
-> > > > Yep thanks. Luckily its only user didn't care.
-> > > > 
-> > > > Will fix.
-> > > >  
-> > > > > 
-> > > > > > +		if (s->len + ret < s->size) {
-> > > > > 
-> > > > > This will always happen because bitmap_scnprintf() is limited by SEQ_BUF_LEFT(s)
-> > > > > and it currently returns the remaining size - len - 1.
-> > > > 
-> > > > Hmm, that's correct, as bitmap_scnprintf() returns the amount written
-> > > > instead of the amount that it would write like snprintf() would.
-> > > > 
-> > > > 
-> > > > > 
-> > > > > You might want to use "s->size - s->len" instead of SEQ_BUF_LEFT(s).
-> > > > 
-> > > > That wont help when we make overflow len > size.
-> > > > 
-> > > > Probably should see if ret == the amount of bits required for the
-> > > > bitmask.
-> > > 
-> > > Here's the new version:
-> > > 
-> > 
-> > Take 2:
-> > 
-> > int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-> > 		    int nmaskbits)
-> > {
-> > 	unsigned int len = seq_buf_buffer_left(s);
+> I know why. Because you want to spare a level of hierarchy. But thats
+> wrong simply because MSI itself is an interrupt chip at the device
+> level.
 > 
-> Bah, I need to make this: len = s->size - s->len.
+> [ MSI ] ---> [ GIC-MSI ] ---> [ GIC ]
 > 
-> As this would work for both cases of what a overflowed buffer is.
+> So the MSI level only cares about the allocation of the virq
+> space. GIC-MSI allocates out of the bitmap which handles the hard
+> wired range of MSI capable GIC interrupts and GIC handles the
+> underlying functionality.
+> 
+> And this makes a lot of sense, if you think about interrupt
+> remapping. If ARM ever grows that you simply insert it into the chain:
+> 
+> [ MSI ] ---> [ Remap] ---> [ GIC-MSI ] ---> [ GIC ]
 
-Hmm, this would produce -1 (UNIT_MAX) when the overflow is
-(s->len = s->size + 1). I would keep seq_buf_buffer_left(s);
+I think ARM has reached that stage with the ITS block in GICv3:
+- Each device gets programmed with a set of  "event IDs" ranging from 0
+to N-1, with N being the number of MSI vectors used by the device
+- the ITS uses both the device ID (basically the PCI requester ID) and
+the event ID to parse a set of software-managed tables (think page
+tables for interrupts).
 
+The x86 remapping thing looks quite similar to that, by reading a couple
+of pages from the VT-D document.
 
-> > 	int ret;
-> > 
-> > 	WARN_ON(s->size == 0);
-> > 
-> > 	if (s->len < s->size) {
+So the way I understand the layout (and please correct me if I'm wrong,
+which is certainly the case) is that the MSI domain is entirely generic,
+allocates the virq, uses Remap as a parent, and uses
+irq_chip_compose_msi_msg to call into the parent and generate whatever
+goes into the MSI message.
 
-It does not make sense to try if there is only one byte left. I would do:
+I'm still struggling a bit to see how the remapping layer can access the
+requester ID. x86 uses the irq_alloc_info to store that (the result of
+an msi_get_hwirq call), but we don't have an equivalent structure on
+arm/arm64.
 
-	if (len > 1)
+I'll try to hack something with my current ITS driver and come back with
+the results.
 
-together with the change below.
+Thanks,
 
-> > 		ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-> > 		/*
-> > 		 * Note, because bitmap_scnprintf() only returns the
-> > 		 * number of bytes written and not the number that
-> > 		 * would be written, we use the last byte of the buffer
-> > 		 * to let us know if we overflowed. There's a small
-> > 		 * chance that the bitmap could have fit exactly inside
-> > 		 * the buffer, but it's not that critical if that does
-> > 		 * happen.
-> > 		 */
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-This is great explanation. You might want to move it above the
-"if (len > 1)" if you agree with it.
-
-> > 		if (s->len + ret < s->size) {
-
-This should work with both variants of the overflow if "len" is really
-the space left.
-
-		if (ret < len)
-
-I mean that we fail if we wrote the buffer until the last possible byte.
-
-> > 			s->len += ret;
-> > 			return 0;
-> > 		}
-> > 	}
-> > 	seq_buf_set_overflow(s);
-> > 	return -1;
-> > }
-
-
-Best Regards,
-Petr
