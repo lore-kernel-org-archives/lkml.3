@@ -1,102 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaKFWvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:51:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59094 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaKFWoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:07 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 073/162] ARC: Update order of registers in KGDB to match GDB 7.5
-Date: Thu,  6 Nov 2014 14:35:37 -0800
-Message-Id: <1415313426-9622-74-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1753649AbaKFWvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:51:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753627AbaKFWvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 17:51:40 -0500
+Message-ID: <545BFB55.603@redhat.com>
+Date: Thu, 06 Nov 2014 17:51:01 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v8] kernel, add panic_on_warn
+References: <1415187736-16242-1-git-send-email-prarit@redhat.com> <alpine.DEB.2.10.1411051357050.31575@chino.kir.corp.google.com> <545B733C.6080903@redhat.com> <alpine.DEB.2.10.1411061352440.1526@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.10.1411061352440.1526@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Anton Kolesov <Anton.Kolesov@synopsys.com>
+On 11/06/2014 04:57 PM, David Rientjes wrote:
+> On Thu, 6 Nov 2014, Prarit Bhargava wrote:
+> 
+>>>> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+>>>> index 6c0b9f2..bc4bd5a 100644
+>>>> --- a/Documentation/kdump/kdump.txt
+>>>> +++ b/Documentation/kdump/kdump.txt
+>>>> @@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
+>>>>  
+>>>>     http://people.redhat.com/~anderson/
+>>>>  
+>>>> +Trigger Kdump on WARN()
+>>>> +=======================
+>>>> +
+>>>> +The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
+>>>> +will cause a kdump to occur at the panic() call.  In cases where a user wants
+>>>> +to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
+>>>> +to achieve the same behaviour.
+>>>>  
+>>>>  Contact
+>>>>  =======
+>>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>>> index 4c81a86..ea5d57c 100644
+>>>> --- a/Documentation/kernel-parameters.txt
+>>>> +++ b/Documentation/kernel-parameters.txt
+>>>> @@ -2509,6 +2509,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>>  			timeout < 0: reboot immediately
+>>>>  			Format: <timeout>
+>>>>  
+>>>> +	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
+>>>> +			on a WARN().
+>>>> +
+>>>>  	crash_kexec_post_notifiers
+>>>>  			Run kdump after running panic-notifiers and dumping
+>>>>  			kmsg. This only for the users who doubt kdump always
+>>>> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+>>>> index 57baff5..b5d0c85 100644
+>>>> --- a/Documentation/sysctl/kernel.txt
+>>>> +++ b/Documentation/sysctl/kernel.txt
+>>>> @@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
+>>>>  - overflowuid
+>>>>  - panic
+>>>>  - panic_on_oops
+>>>> -- panic_on_unrecovered_nmi
+>>>>  - panic_on_stackoverflow
+>>>> +- panic_on_unrecovered_nmi
+>>>> +- panic_on_warn
+>>>>  - pid_max
+>>>>  - powersave-nap               [ PPC only ]
+>>>>  - printk
+>>>> @@ -527,19 +528,6 @@ the recommended setting is 60.
+>>>>  
+>>>>  ==============================================================
+>>>>  
+>>>> -panic_on_unrecovered_nmi:
+>>>> -
+>>>> -The default Linux behaviour on an NMI of either memory or unknown is
+>>>> -to continue operation. For many environments such as scientific
+>>>> -computing it is preferable that the box is taken out and the error
+>>>> -dealt with than an uncorrected parity/ECC error get propagated.
+>>>> -
+>>>> -A small number of systems do generate NMI's for bizarre random reasons
+>>>> -such as power management so the default is off. That sysctl works like
+>>>> -the existing panic controls already in that directory.
+>>>> -
+>>>> -==============================================================
+>>>> -
+>>>>  panic_on_oops:
+>>>>  
+>>>>  Controls the kernel's behaviour when an oops or BUG is encountered.
+>>>> @@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+>>>>  
+>>>>  ==============================================================
+>>>>  
+>>>> +panic_on_unrecovered_nmi:
+>>>> +
+>>>> +The default Linux behaviour on an NMI of either memory or unknown is
+>>>> +to continue operation. For many environments such as scientific
+>>>> +computing it is preferable that the box is taken out and the error
+>>>> +dealt with than an uncorrected parity/ECC error get propagated.
+>>>> +
+>>>> +A small number of systems do generate NMI's for bizarre random reasons
+>>>> +such as power management so the default is off. That sysctl works like
+>>>> +the existing panic controls already in that directory.
+>>>> +
+>>>> +==============================================================
+>>>> +
+>>>> +panic_on_warn:
+>>>> +
+>>>> +Calls panic() in the WARN() path when set to 1.  This is useful to avoid
+>>>> +a kernel rebuild when attempting to kdump at the location of a WARN().
+>>>> +
+>>>> +0: only WARN(), default behaviour.
+>>>> +
+>>>> +1: call panic() after printing out WARN() location.
+>>>> +
+>>>> +==============================================================
+>>>> +
+>>>>  perf_cpu_time_max_percent:
+>>>>  
+>>>>  Hints to the kernel how much CPU time it should be allowed to
+>>>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>>>> index 3d770f55..d60d31d 100644
+>>>> --- a/include/linux/kernel.h
+>>>> +++ b/include/linux/kernel.h
+>>>> @@ -422,6 +422,7 @@ extern int panic_timeout;
+>>>>  extern int panic_on_oops;
+>>>>  extern int panic_on_unrecovered_nmi;
+>>>>  extern int panic_on_io_nmi;
+>>>> +extern int panic_on_warn;
+>>>>  extern int sysctl_panic_on_stackoverflow;
+>>>>  /*
+>>>>   * Only to be used by arch init code. If the user over-wrote the default
+>>>> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
+>>>> index 43aaba1..0956373 100644
+>>>> --- a/include/uapi/linux/sysctl.h
+>>>> +++ b/include/uapi/linux/sysctl.h
+>>>> @@ -153,6 +153,7 @@ enum
+>>>>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>>>>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>>>>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+>>>> +	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
+>>>>  };
+>>>>  
+>>>>  
+>>>> diff --git a/kernel/panic.c b/kernel/panic.c
+>>>> index d09dc5c..c6a7723 100644
+>>>> --- a/kernel/panic.c
+>>>> +++ b/kernel/panic.c
+>>>> @@ -33,6 +33,7 @@ static int pause_on_oops;
+>>>>  static int pause_on_oops_flag;
+>>>>  static DEFINE_SPINLOCK(pause_on_oops_lock);
+>>>>  static bool crash_kexec_post_notifiers;
+>>>> +int panic_on_warn __read_mostly;
+>>>>  
+>>>>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
+>>>>  EXPORT_SYMBOL_GPL(panic_timeout);
+>>>> @@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+>>>>  {
+>>>>  	disable_trace_on_warning();
+>>>>  
+>>>> -	pr_warn("------------[ cut here ]------------\n");
+>>>> +	if (!panic_on_warn)
+>>>> +		pr_warn("------------[ cut here ]------------\n");
+>>>
+>>> Is this really necessary?
+>>
+>> Yes IMO.  The WARN() prints out the line and it looks "weird" when we're doing a
+>> panic because the finishing "end" doesn't print out.  I'm specifically
+>> targetting this kernel option at end users and I think the way it looks matters.
+>>
+> 
+> I disagree, I think it gives bug reporters guidance on what needs to be 
+> reported and what doesn't need to be reported.  The trailing "end" isn't 
+> needed if the system is going to panic.
 
-commit ebc0c74e76cec9c4dd860eb0ca1c0b39dc63c482 upstream.
+True ... I'm not really here-or-there on it.  I can put it back.
 
-Order of registers has changed in GDB moving from 6.8 to 7.5. This patch
-updates KGDB to work properly with GDB 7.5, though makes it incompatible
-with 6.8.
+> 
+>>>
+>>>>  	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
+>>>>  		raw_smp_processor_id(), current->pid, file, line, caller);
+>>>>  
+>>>>  	if (args)
+>>>>  		vprintk(args->fmt, args->args);
+>>>>  
+>>>> +	if (panic_on_warn) {
+>>>> +		/*
+>>>> +		 * A flood of WARN()s may occur.  Prevent further WARN()s
+>>>> +		 * from panicking the system.
+>>>> +		 */
+>>>
+>>> What synchronization is preventing this race and further WARN()s panicking 
+>>> the system?
+>>
+>> Now that I re-read it, the flood comment is definitely misleading.
+>> It should read "The panic path may lead to additional WARN()s.  Prevent
+>> additional WARN()s from panicking the system."  I'll change that in the next
+>> version.
+>>
+>> Your question spurred me to write a simple module that did this on a 160-core
+>> system:
+>>
+>> static void warn_this_cpu(void *arg)
+>> {
+>>         WARN(1, "cpu = %d\n", smp_processor_id());
+>> }
+>>
+>> static int init_dummy(void)
+>> {
+>>         on_each_cpu(warn_this_cpu, NULL, 1);
+>>         return 0;
+>> }
+>>
+>> to see if I could hit any races in this code.  While the WARN()s output overlap
+>> each other I always see a single:
+>>
+> 
+> You see that doing
+> 
+> 	if (panic_on_warn) {
+> 		panic_on_warn = 0;
+> 		panic(...);
+> 	}
+> 
+> is racy, I hope.  
 
-Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/arc/include/asm/kgdb.h | 32 ++++++++++++++++++--------------
- 1 file changed, 18 insertions(+), 14 deletions(-)
+Yes and no.  Yes, I agree that panic_no_warn setting & panic() could race
+leading to multiple threads hitting the function panic(),  but (see below)
 
-diff --git a/arch/arc/include/asm/kgdb.h b/arch/arc/include/asm/kgdb.h
-index b65fca7..fea9316 100644
---- a/arch/arc/include/asm/kgdb.h
-+++ b/arch/arc/include/asm/kgdb.h
-@@ -19,7 +19,7 @@
-  * register API yet */
- #undef DBG_MAX_REG_NUM
- 
--#define GDB_MAX_REGS		39
-+#define GDB_MAX_REGS		87
- 
- #define BREAK_INSTR_SIZE	2
- #define CACHE_FLUSH_IS_SAFE	1
-@@ -33,23 +33,27 @@ static inline void arch_kgdb_breakpoint(void)
- 
- extern void kgdb_trap(struct pt_regs *regs);
- 
--enum arc700_linux_regnums {
-+/* This is the numbering of registers according to the GDB. See GDB's
-+ * arc-tdep.h for details.
-+ *
-+ * Registers are ordered for GDB 7.5. It is incompatible with GDB 6.8. */
-+enum arc_linux_regnums {
- 	_R0		= 0,
- 	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
- 	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
- 	_R25, _R26,
--	_BTA		= 27,
--	_LP_START	= 28,
--	_LP_END		= 29,
--	_LP_COUNT	= 30,
--	_STATUS32	= 31,
--	_BLINK		= 32,
--	_FP		= 33,
--	__SP		= 34,
--	_EFA		= 35,
--	_RET		= 36,
--	_ORIG_R8	= 37,
--	_STOP_PC	= 38
-+	_FP		= 27,
-+	__SP		= 28,
-+	_R30		= 30,
-+	_BLINK		= 31,
-+	_LP_COUNT	= 60,
-+	_STOP_PC	= 64,
-+	_RET		= 64,
-+	_LP_START	= 65,
-+	_LP_END		= 66,
-+	_STATUS32	= 67,
-+	_ECR		= 76,
-+	_BTA		= 82,
- };
- 
- #else
--- 
-1.9.1
+>If two threads WARN() at the same time, then there's
+> nothing preventing a double panic() because WARN() itself is not 
+> serialized against anything.  So both the current comment and your 
+> suggested revision comment are bogus.
 
+panic(), after disabling local interrupts does spin_trylock(&panic_lock) so
+your multiple thread panic cannot occur.  The stack trace on the other threads
+will still be intact (this is no different from other situations where
+multiple threads have panicked).  So no, I don't see the situation you describe
+where multiple threads hitting that panic() can cause a problem here.
+
+> 
+>> Another issue: Are multiple WARN()s supposed to overlap output like that?  Do we
+>> want them to?  AFAICT there is no way to distinguish the output from one WARN()
+>> from another ...
+>>
+> 
+> Usually one thread is encountering a path that spurs many WARN()s to 
+> trigger so they don't interleave in the kernel log, your test case is 
+> causing warnings on different cpus, some simultaneously.  To prevent the 
+> interleaving of the stacks, it would need the same serialization that 
+> doing
+> 
+> 	if (panic_on_warn) {
+> 		panic_on_warn = 0;
+> 		panic(...);
+> 	}
+> 
+
+spin_lock(&warn_lock) or something around the whole thing.  In any case it is a
+really contrived situation so I'm not worried about it [unless someone has seen
+it in a real world scenario].
+
+P.
+
+> needs.
+> 
