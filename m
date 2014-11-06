@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaKFPFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:05:55 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:60693 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaKFPFy convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Thu, 6 Nov 2014 10:05:54 -0500
-Message-Id: <545B9C5F020000780004561B@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Thu, 06 Nov 2014 15:05:51 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen-pciback: drop SR-IOV VFs when PF driver unloads
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751160AbaKFPJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:09:33 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:35079 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaKFPJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 10:09:31 -0500
+Date: Thu, 6 Nov 2014 10:09:27 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Message-ID: <20141106150927.GB25642@htj.dyndns.org>
+References: <20141105130247.GA14386@htj.dyndns.org>
+ <20141105133100.GC4527@dhcp22.suse.cz>
+ <20141105134219.GD4527@dhcp22.suse.cz>
+ <20141105154436.GB14386@htj.dyndns.org>
+ <20141105160115.GA28226@dhcp22.suse.cz>
+ <20141105162929.GD14386@htj.dyndns.org>
+ <20141105163956.GD28226@dhcp22.suse.cz>
+ <20141105165428.GF14386@htj.dyndns.org>
+ <20141105170111.GG14386@htj.dyndns.org>
+ <20141106130543.GE7202@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141106130543.GE7202@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a PF driver unloads, it may find it necessary to leave the VFs
-around simply because of pciback having marked them as assigned to a
-guest. Utilize a suitable notification to let go of the VFs, thus
-allowing the PF to go back into the state it was before its driver
-loaded (which in particular allows the driver to be loaded again with
-it being able to create the VFs anew, but which also allows to then
-pass through the PF instead of the VFs).
+On Thu, Nov 06, 2014 at 02:05:43PM +0100, Michal Hocko wrote:
+> But this is nothing new. Suspend hasn't been checking for fatal signals
+> nor for TIF_MEMDIE since the OOM disabling was introduced and I suppose
+> even before.
+> 
+> This is not harmful though. The previous OOM kill attempt would kick the
+> current TASK and mark it with TIF_MEMDIE and retry the allocation. After
+> OOM is disabled the allocation simply fails. The current will die on its
+> way out of the kernel. Definitely worth fixing. In a separate patch.
 
-Don't do this however for any VFs currently in active use by a guest.
+Hah?  Isn't this a new outright A-B B-A deadlock involving the rwsem
+you added?
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
----
- drivers/xen/xen-pciback/pci_stub.c |   46 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+> > disable() call must be able to fail.
+> 
+> This would be a way to do it without requiring caller to check for
+> TIF_MEMDIE explicitly. The fewer of them we have the better.
 
---- 3.18-rc3/drivers/xen/xen-pciback/pci_stub.c
-+++ 3.18-rc3-pciback-release-VFs/drivers/xen/xen-pciback/pci_stub.c
-@@ -1502,6 +1502,45 @@ parse_error:
- fs_initcall(pcistub_init);
- #endif
- 
-+#ifdef CONFIG_PCI_IOV
-+static int pci_stub_notifier(struct notifier_block *nb,
-+			     unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+	const struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	switch (action) {
-+	case BUS_NOTIFY_UNBIND_DRIVER:
-+		if (!pdev->is_physfn)
-+			break;
-+		for (;;) {
-+			struct pcistub_device *psdev;
-+			unsigned long flags;
-+			bool found = false;
-+
-+			spin_lock_irqsave(&pcistub_devices_lock, flags);
-+			list_for_each_entry(psdev, &pcistub_devices, dev_list)
-+				if (!psdev->pdev && psdev->dev != pdev
-+				    && pci_physfn(psdev->dev) == pdev) {
-+					found = true;
-+					break;
-+				}
-+			spin_unlock_irqrestore(&pcistub_devices_lock, flags);
-+			if (!found)
-+				break;
-+			device_release_driver(&psdev->dev->dev);
-+		}
-+		break;
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block pci_stub_nb = {
-+	.notifier_call = pci_stub_notifier,
-+};
-+#endif
-+
- static int __init xen_pcibk_init(void)
- {
- 	int err;
-@@ -1523,12 +1562,19 @@ static int __init xen_pcibk_init(void)
- 	err = xen_pcibk_xenbus_register();
- 	if (err)
- 		pcistub_exit();
-+#ifdef CONFIG_PCI_IOV
-+	else
-+		bus_register_notifier(&pci_bus_type, &pci_stub_nb);
-+#endif
- 
- 	return err;
- }
- 
- static void __exit xen_pcibk_cleanup(void)
- {
-+#ifdef CONFIG_PCI_IOV
-+	bus_unregister_notifier(&pci_bus_type, &pci_stub_nb);
-+#endif
- 	xen_pcibk_xenbus_unregister();
- 	pcistub_exit();
- }
+Why the hell would the caller ever even KNOW about this?  This is
+something which must be encapsulated in the OOM killer disable/enable
+interface.
 
+> +bool oom_killer_disable(void)
+>  {
+> +	bool ret = true;
+> +
+>  	down_write(&oom_sem);
 
+How would this task pass the above down_write() if the OOM killer is
+already read locking oom_sem?  Or is the OOM killer guaranteed to make
+forward progress even if the killed task can't make forward progress?
+But, if so, what are we talking about in this thread?
 
+> +
+> +	/* We might have been killed while waiting for the oom_sem. */
+> +	if (fatal_signal_pending(current) || test_thread_flag(TIF_MEMDIE)) {
+> +		up_write(&oom_sem);
+> +		ret = false;
+> +	}
+
+This is pointless.  What does the above do?
+
+-- 
+tejun
