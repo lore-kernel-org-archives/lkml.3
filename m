@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaKFMqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:46:39 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:51651 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaKFMqg (ORCPT
+	id S1751613AbaKFMq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:46:58 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42089 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751240AbaKFMq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:46:36 -0500
+	Thu, 6 Nov 2014 07:46:56 -0500
+Date: Thu, 6 Nov 2014 12:46:53 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
+Cc: Riku Voipio <riku.voipio@iki.fi>, freddy@asix.com.tw, davem@davemloft.net,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
+	arndale platform
+Message-ID: <20141106124653.GV23178@opensource.wolfsonmicro.com>
+References: <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <C89EFD3CD56F64468D3D206D683A8D22039FFC5F@ldam-msx2.fugro-nl.local> <20141105150258.GR23178@opensource.wolfsonmicro.com> <20141106090651.GA19109@afflict.kos.to> <20141106100104.GS23178@opensource.wolfsonmicro.com> <20141106120416.GA20162@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D22039FFE16@ldam-msx2.fugro-nl.local>
 MIME-Version: 1.0
-In-Reply-To: <E0B33C12-EBD6-465C-813C-7FD8553A3CB8@konsulko.com>
-References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
- <1414528433-9650-5-git-send-email-pantelis.antoniou@konsulko.com>
- <20141105200129.B4438C41C40@trevor.secretlab.ca> <E0B33C12-EBD6-465C-813C-7FD8553A3CB8@konsulko.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 6 Nov 2014 12:46:15 +0000
-X-Google-Sender-Auth: Rr386xwgNM0-OjnoOJtqJBV07rM
-Message-ID: <CACxGe6tvRJP3J=7ccmH-CtjwSaZVx23KnkcMb6zgzG-pOkanXA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] of: Add old prop argument on OF_RECONFIG_UPDATE_PROPERTY
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C89EFD3CD56F64468D3D206D683A8D22039FFE16@ldam-msx2.fugro-nl.local>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 8:08 PM, Pantelis Antoniou
-<pantelis.antoniou@konsulko.com> wrote:
-> Hi Grant,
->
->> On Nov 5, 2014, at 22:01 , Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> On Tue, 28 Oct 2014 22:33:52 +0200
->> , Pantelis Antoniou <pantelis.antoniou@konsulko.com>
->> wrote:
->>> The notifier now includes the old_prop argument when updating
->>> properties, propagate this API to changeset internals while
->>> also retaining the old behaviour of retrieving the old_property
->>> when NULL is passed.
->>>
->>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
->>
->> I'm still fuzzy on the need for this patch. Is this just an optimization
->> so that the property doesn't get looked up twice? Or is there a reason
->> when the oldprop really needs to be passed in explicitly?
->>
->
-> In the case of overlay's applying a property change the old property has
-> been already retrieved. Passing it as an argument saves us a traversal of the
-> property list.
->
-> On the original series were removal was supported, the old property was required
-> since you can't find the old property anymore on the node (it was on another list).
->
-> When we go back to revisit the removal case, that API is useful.
+On Thu, Nov 06, 2014 at 01:39:07PM +0100, Stam, Michel [FINT] wrote:
+> Hello Riku and Charles,
+> 
+> I tried this with my original patch and the suggested patch applied,
+> this seems to work for me too.
+> 
+> One thing that bothers me, is the suspend / resume situation; usbnet.c
+> seems to call the bind( ) on probe( ). Suspend / resume do not seem to
+> call bind( ) directly.
+> 
+> As Riku pointed out, the original patch I reverted was because of
+> suspend/resume issues. I wonder if this will still work? 
 
-Since we're not doing removal anymore, lets drop this patch.
+I seem to remember I had a few issues with Arndale suspend and
+resume last time I tried it anyways, so not sure I will be able
+to test for that. But I will have a go. But in either case I
+guess a fix for that is probably orthogonal to my suggested fix
+here, as it looks pretty clear we intended to fully reset the
+device in bind and were appartently not doing that. So this
+patch is probably a needed fix anyway. Even if there are
+seperate issues relating to suspend and resume.
 
-g.
+Thanks,
+Charles
