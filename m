@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaKFQ1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:27:19 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56922 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaKFQ1S (ORCPT
+	id S1751430AbaKFQ24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:28:56 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:41763 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaKFQ2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:27:18 -0500
-Date: Thu, 6 Nov 2014 16:27:13 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, Vikas Shivappa <vikas.shivappa@intel.com>,
-        "Auld, Will" <will.auld@intel.com>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141106162713.GI3592@console-pimps.org>
-References: <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
- <20141030124333.GA29540@htj.dyndns.org>
- <20141030131845.GI3337@twins.programming.kicks-ass.net>
- <20141030170331.GB378@htj.dyndns.org>
- <20141030214353.GB12706@worktop.programming.kicks-ass.net>
- <20141030222236.GD378@htj.dyndns.org>
- <20141030224740.GC12706@worktop.programming.kicks-ass.net>
+	Thu, 6 Nov 2014 11:28:49 -0500
+Date: Thu, 6 Nov 2014 11:28:45 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Message-ID: <20141106162845.GD25642@htj.dyndns.org>
+References: <20141105154436.GB14386@htj.dyndns.org>
+ <20141105160115.GA28226@dhcp22.suse.cz>
+ <20141105162929.GD14386@htj.dyndns.org>
+ <20141105163956.GD28226@dhcp22.suse.cz>
+ <20141105165428.GF14386@htj.dyndns.org>
+ <20141105174609.GE28226@dhcp22.suse.cz>
+ <20141105175527.GH14386@htj.dyndns.org>
+ <20141106124953.GD7202@dhcp22.suse.cz>
+ <20141106150121.GA25642@htj.dyndns.org>
+ <20141106160223.GJ7202@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141030224740.GC12706@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141106160223.GJ7202@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Oct, at 11:47:40PM, Peter Zijlstra wrote:
+On Thu, Nov 06, 2014 at 05:02:23PM +0100, Michal Hocko wrote:
+> > Why would PM freezing make OOM killing fail?  That doesn't make much
+> > sense.  Sure, it can block it for a finite duration for sync purposes
+> > but making OOM killing fail seems the wrong way around.  
 > 
-> Let me reply to just this one, I'll do the rest tomorrow, need sleeps.
+> We cannot block in the allocation path because the request might come
+> from the freezer path itself (e.g. when suspending devices etc.).
+> At least this is my understanding why the original oom disable approach
+> was implemented.
+
+I was saying that it could temporarily block either direction to
+implement proper synchronization while guaranteeing forward progress.
+
+> > We're doing one thing for non-PM freezing and the other way around for
+> > PM freezing, which indicates one of the two directions is wrong.
 > 
-> On Thu, Oct 30, 2014 at 06:22:36PM -0400, Tejun Heo wrote:
+> Because those two paths are quite different in their requirements. The
+> cgroup freezer only cares about freezing tasks and it doesn't have to
+> care about tasks accessing a possibly half suspended device on their way
+> out.
+
+I don't think the fundamental relationship between freezing and oom
+killing are different between the two and the failure to recognize
+that is what's leading to these weird issues.
+
+> > Shouldn't it be that OOM killing happening while PM freezing is in
+> > progress cancels PM freezing rather than the other way around?  Find a
+> > point in PM suspend/hibernation operation where everything must be
+> > stable, disable OOM killing there and check whether OOM killing
+> > happened inbetween and if so back out. 
 > 
-> > > > This controller might not even require the distinction between
-> > > > configured and effective tho?  Can't a new child just inherit the
-> > > > parent's configuration and never allow the config to become completely
-> > > > empty? 
-> > > 
-> > > It can do that. But that still has a problem, there is a mapping in
-> > > hardware which restricts the number of active configurations. The total
-> > > configuration space is larger than the supported active configurations.
-> > > 
-> > > So _something_ must fail. The initial proposal was mkdir failing when
-> > > there were more than the hardware supported active config cgroup
-> > > directories. The alternative was on-demand activation where we only
-> > > allocate the hardware resource when the first task gets moved into the
-> > > group -- which then clearly can fail.
+> This is freeze_processes AFAIU. I might be wrong of course but this is
+> the time since when nobody should be waking processes up because they
+> could access half suspended devices.
+
+No, you're doing it before freezing starts.  The system is in no way
+in a quiescent state at that point.
+
+> > It seems rather obvious to me that OOM killing has to have precedence
+> > over PM freezing.
 > > 
-> > Hmmm... why can't it just refuse creating a different configuration
-> > when its config space is full?  Make children inherit the parent's
-> > configuration and refuse config writes which require it to create a
-> > new one if the config space is full.  Seems pretty straight-forward.
-> > What am I missing?
+> > Sure, once the system reaches a point where the whole system must be
+> > in a stable state for snapshotting or whatever, disabling OOM killing
+> > is fine but at that point the system is in a very limited execution
+> > mode and sure won't be processing page faults from userland for
+> > example and we can actually disable OOM killing knowing that anything
+> > afterwards is ready to handle memory allocation failures.
 > 
-> We could do that I suppose, there is the one corner case that would not
-> allow, intermediate directories with a restricted config that also have
-> priv restrictions but no actual tasks. Not sure that makes sense though.
- 
-Could you elaborate on this configuration?
+> I am really confused now. This is basically what the final patch does
+> actually.  Here is the what I have currently just to make the further
+> discussion easier.
 
-> Are there any other cases I might have missed?
-
-I don't think so.
-
-So, for the specific CAT case what you're proposing is make the failure
-case happen when writing to the cache bitmask file instead of failing
-mkdir() or echo $tid > tasks ?
-
-I think that's OK. If we've run out of CLOS ids I would expect to see
--ENOSPC returned, whereas if we try and set an invalid bitmask we'd get
--EINVAL.
-
-Vikas, Will?
+Please see above.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+tejun
