@@ -1,171 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643AbaKFSiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:38:21 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54150 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaKFSiS (ORCPT
+	id S1751810AbaKFSjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:39:47 -0500
+Received: from smtp103.biz.mail.bf1.yahoo.com ([98.139.221.62]:28190 "EHLO
+	smtp103.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751295AbaKFSjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:38:18 -0500
-Date: Thu, 6 Nov 2014 18:38:08 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-Message-ID: <20141106183808.GH19702@e104818-lin.cambridge.arm.com>
-References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
- <1414496662-25202-2-git-send-email-will.deacon@arm.com>
- <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
- <CA+55aFwpOCeXdThX3zB64AU4hFwufD6UdJDi2tkD8Q7yEV2pOA@mail.gmail.com>
- <20141029194738.GA29911@arm.com>
- <20141104142955.GA24816@e104818-lin.cambridge.arm.com>
- <CA+55aFzBggoXtNXQeng5d_mRoDnaMBE5Y+URs+PHR67nUpMtaw@mail.gmail.com>
- <20141106135740.GC19702@e104818-lin.cambridge.arm.com>
- <CA+55aFzQM-yvvXYENiviLBm0=jiZoO7xPmz5mLowuTb-Pb8e6Q@mail.gmail.com>
+	Thu, 6 Nov 2014 13:39:43 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: RdA_gLsVM1mz__8FUOijCtond1wZYLxgWjHknGp9jA5JoaC
+ 5O_FIW.2og7rXtTpOJOnrzEyz4uJ4fxo.bJt7xEXV_h6Kc4PXfs.lv6zapAN
+ BaXXCbdWIOgewEKcSC467bG_U5z.M8QNe0D.rJ8EQwJfa.n3rXGHJdeyPF6i
+ ANZSkpCZmNVrX.tcNsDKukMd9JSDQx3yRWtHnajNvfaz83VBdO4ZpQ0FJJX3
+ YpINw8M89p.kXtWtxYQwCWL.buwR3WZ1ju3wM8Pa220P4IfccsC2zI2CVsb5
+ n_pqM.PbiwNT5NJJIIgEwG1qUfCqyb2tMfYAmprvU3fGq7iVu7QOc_FndFIW
+ qeDbdQZZ2LiQaeF9iRUlWnyqRLynCDWO0W08wVfeLhXo2OGZptKQur58xQto
+ 0ekkfTTboqCVQz0sL12TjDFsaYGT3pQGkahhLPjRq9KvoFF.TsZtSS1k4kzT
+ 4Dq9fK45GWmOyExdOGOiDzg7GukXPRtEKRRGwd6o36TcSFpJLog2yyY.ZtJg
+ mE4bglA8UZQYsmlSFwk2X8SMW9el0Dwa6lEcdtIku.4Xl63tnkr4W7fSWIcO
+ gjavZuYE5PERqwOBZzf9pasQU
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <545BC088.6080306@schaufler-ca.com>
+Date: Thu, 06 Nov 2014 10:40:08 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzQM-yvvXYENiviLBm0=jiZoO7xPmz5mLowuTb-Pb8e6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Howells <dhowells@redhat.com>
+CC: linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 0/7] Security: Provide unioned file support
+References: <545BB147.4000100@schaufler-ca.com> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <6108.1415296719@warthog.procyon.org.uk>
+In-Reply-To: <6108.1415296719@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 05:53:58PM +0000, Linus Torvalds wrote:
-> On Thu, Nov 6, 2014 at 5:57 AM, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >
-> > Anyway, even without special "leaf" operations, it would be useful to
-> > make the distinction between unmap_vmas() and free_pgtables() with
-> > regards to the ranges tracked by mmu_gather. For the former, tlb_flush()
-> > needs to flush the range in PAGE_SIZE increments (assuming a mix of
-> > small and huge pages). For the latter, PMD_SIZE increments would be
-> > enough.
-> 
-> Why woyuld you *ever* care about the increments?
+On 11/6/2014 9:58 AM, David Howells wrote:
 
-Sorry, I wasn't clear enough about the "increments" part. I agreed with
-not using end = start + PMD_SIZE/PAGE_SIZE from your previous email
-already.
+> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>
+>> I am going to have to look at this very carefully for the
+>> Smack implications. I cannot have a review done for several
+>> days. I do have some immediate comments below.
+> Note that Smack and Tomoyo won't compile with the patches as they are because
+> some changes will need to be made.  I haven't made them yet as I want to work
+> out the changes for SELinux first.
 
-The flush_tlb_range() implementation on ARM(64) uses a loop that goes
-over the given range in PAGE_SIZE increments. This is fine and even
-optimal when we flush the PTEs. But it could be even faster when we go
-over the same range again and only need to flush the page table cache
-(PMD/PUD/PGD). A new flush_tlb_table_range() function could loop in
-PMD_SIZE increments. That's an arm64-only implementation of the TLB
-range flushing, I'm not suggesting the PAGE_SIZE/PMD_SIZE increments
-when setting mmu_gather.end at all.
+There are going to be lots of implications. Please look at the
+bigger picture.
 
-> Quite frankly, I think even the PAGE_SIZE thing is just (a) stupid and
-> (b) misleading.
-> 
-> It might actually be better to instead of
-> 
->     tlb->end = max(tlb->end, address + PAGE_SIZE);
-> 
-> it might as well be a simpler
-> 
->     tlb->end = max(tlb->end, address+1)
 
-I fully agree.
+>
+>>>  (1) The docker source (ie. the lower layer) will all be under a single
+>>>  label.
+>> What does this mean? Is the "lower layer" the "real" file, or something else?
+>> What is a "docker source"? What "single label" are you talking about, and
+>> where does it come from? What about LSMs that have multiple labels on a file?
+> Firstly, docker: https://www.docker.com/
+>
+> What we're dealing with is unioning two filesystems.  The way it works is that
+> you start off with a "lower" filesystem that contains the basic files you want
+> to appear and you overlay on top of that another filesystem such that the
+> files and directories in the lower filesystem can be accessed through the
+> overlay (the overlay redirects queries to the lower fs).
+>
+> So, say the lower fs is mounted on /foo and you mount an overlay on /bar that
+> points to /foo as its lower layer.  If you access /bar/bin/ls, the overlay
+> will pass that down, giving you a file referring to /foo/bin/ls.
+>
+> The clever bit comes when you try altering /bar/bin/ls.  At that point
+> /foo/bin/ls is "copied up" to the overlay - to /bar/bin/ls becomes a real
+> file.  The writes are then made to the file in the overlay - and these files
+> are persistent.
+>
+> In theory, any further access to /bar/bin/ls will then serve up the contents
+> of /bar/bin/ls and ignore /foo/bin/ls.  In practice, as things stand, if you
+> have a read-only fd already referring to /foo/bin/ls through /bar/bin/ls, this
+> will be unaffected by the copy up.
+>
+> Docker uses containers and chroots to provide not-virtual-machines, using an
+> overlay to manage the root filesystem.  Indeed, you can provide several
+> overlays using the same lower fs.
+>
+> So to answer your questions:
+>
+>> What does this mean?
+> It has been decided that for the purposes of docker, all files within the
+> docker root fs will have the same label.  We'd have to provide policy
+> namespacing otherwise (I think).
 
-One minor drawback is that the TLB invalidation instructions on ARM work
-on pfn and end >> PAGE_SHIFT would make it equal to start. It can be
-fixed in the arch code though.
+That's just insane. "It has been decided" by who? Obviously not people
+who care about security policies. Maybe it's good enough for your
+particular use case, but labeling of files has to be up to the security
+module. That's what the modules are for.
 
-> So what matters for the non-leaf operations is not size. Not AT ALL.
-> It's a totally different operation, and you'd need not a different
-> size, but a different flag entirely - the same way we already have a
-> different flag for the "full_mm" case. And it's actually for exactly
-> the same reason as "full_mm": you do the flush itself differently,
-> it's not that the range is different. If it was just about the range,
-> then "full_mm" would just initialize the range to the whole VM. But it
-> *isn't* about the range. It's about the fact that a full-MM tear-down
-> can fundamentally do different operations, knowing that there are no
-> other threads using that VM any more.
-> 
-> So I really really object to playing games with PMD_SIZE or other
-> idiocies, because it fundamentally mis-states the whole problem.
+>
+>> Is the "lower layer" the "real" file, or something else?
+> The lower layer is a filesystem, though it contains real files.  In the case
+> of unionmount (an alternative to overlayfs), there may be multiple ordered
+> lower layers.
+>
+>> What is a "docker source"?
+> The lower layer contains the "source" files for your docker image.
+>
+>> What "single label" are you talking about, and where does it come from?
+> The label you set on the lower layer files.
+>
+>> What about LSMs that have multiple labels on a file?
+> Setting policy is something I'll have to leave to the docker people and the
+> administrators of systems that use docker.
 
-That's not what I suggesting (though I agree I wasn't clear).
+What does that mean? If the underlying mechanism can't do the job,
+how the dickens is the administrator supposed to make it happen?
 
-The use of PMD_SIZE steps in a new flush_tlb_table_range() loop is
-entirely and arch-specific optimisation. Only that the arch code doesn't
-currently know which tlb_flush() it should use because need_flush is set
-for both PTEs and page table tear down. We just need different flags
-here to be able to optimise the arch code further.
+>
+> But all I'm proposing is a way to give the LSM access to both the file in the
+> overlay and the file in the lower fs that is leeching through into the
+> overlay.
 
-> If ARM64 wants to make the "lead vs non-leaf" TLB operation, then you
-> need to add a new flag, and you just set that flag when you tear down
-> a page table (as opposed to just a PTE).
+But your mechanisms are simultaneously incomplete and over specified.
 
-Indeed. Actually we could use need_flag only for PTEs and ignore it for
-page table tear-down. With Will's patch, we can already check tlb->end
-for what need_flush is currently doing and use need_flush in an
-arch-specific way (and we could give a new name as well).
+>
+>>>  (2) The docker root (ie. the overlay/union layer) will all be under a
+>>>      single, but different label set on the overlay mount (and each docker
+>>>      root may be under its own label).
+>> No. Sorry, but this is the one notion that doesn't work. A layer should
+>> either be label transparent or restricted by some sort of range concept.
+>> Giving it a label just makes it necessary to grant everyone access to objects
+>> with that label.
+> The problem is that we're not using a virtual machine.  Labels on the docker
+> chroot and labels on the master root filesystem are under the same policy.
+>
+> Further, we may have several docker instances that have separate overlays on
+> the same lower layer but should perhaps have separate labels.
 
-> > With RCU_TABLE_FREE, I think checking tlb->local.next would do the trick
-> > but for x86 we can keep mmu_gather.need_flush only for pte clearing
-> > and remove need_flush = 1 from p*_free_tlb() functions.
-> 
-> This is more confusion about what is going on.
+Your proposal is a cop out. It may work in a limited set of cases.
+It is not a general solution.
 
-Yes, and if we do this we may no longer understand the code in few weeks
-time.
+>
+>>>  (3) Inodes in the overlayfs upper layer will be given the overlay label.
+>> Could you explain your terminology? I have no idea what the "overlay label"
+>> might be. Is it the real one on the real filesystem? What about attributes
+>> other than the access label? Smack has execution labels and a transmute
+>> attribute as well as the access label.
+> The overlay label is the label on the inode in the overlay layer (overlayfs)
+> or that would be on the inode if it existed (unionmount).
+>
+>>>  (6) An extra label slot will be placed in struct file_security_struct to
+>>>      hold the overlay label.
+>> Are you assuming a single overlay layer? 
+> There can only be only overlay at the top.  It may have lower layers that are
+> also overlays, but we really want the top label.
+>
+> David
+>
 
-> I'd actually really really prefer to have the "need_flush = 1" for the
-> page table tear-down case even for x86. No, if you never removed any
-> PTE at all, it is possible that it's not actually needed because an
-> x86 CPU isn't supposed to cache non-present page table entries (so if
-> you could tear down the page tables because there were no entries,
-> there should be no TLB entries, and there *hopefully* should be no
-> caches of mid-level page tables either that need a TLB invalidate).
-
-On ARM, as long as an intermediate page table entry is valid, even
-though the full translation (PTE) is not, the CPU can go and cache it.
-What's worse (and we've hit it before) is that it may even end up
-reading something that looks like a valid PTE (of the PTE page has been
-freed before the TLB invalidation) and it will stick around as a full
-translation. So we need to flush the page table cache before freeing the
-page table pages.
-
-> But in practice, I'd not take that chance. If you tear down a page
-> table, you should flush the TLB in that range (and note how I say *in*
-> that range - an invalidate anywhere in the range should be sufficient,
-> not "over the whole range"!), because quite frankly, from an
-> implementation standpoint, I really think it's the sane and safe thing
-> to do.
-
-A single TLB is indeed enough for a single page table page removed. If
-we queue multiple page table pages freeing, we accumulate the range via
-pmd_free_tlb() etc. and we would eventually need multiple TLB
-invalidations, at most one every PMD_SIZE (that's when !fullmm).
-
-> So I would suggest you think of the x86 invlpg instruction as your
-> "non-leaf invalidate". The same way you'd want to do non-leaf
-> invalidate whenever you tear down a page table, you'd do "invlpg" on
-> x86.
-
-I need to dig some more in the x86 code, I'm not familiar with it. We
-could do the page table cache invalidation non-lazily every time
-pmd_free_tlb() is called, though it's not as optimal as we need a heavy
-DSB barrier on ARM after each TLB invalidate.
-
-> And no, we should *not* play games with "tlb->local.next". That just
-> sounds completely and utterly insane. That's a hack, it's unclear,
-> it's stupid, and it's connected to a totally irrelevant implementation
-> detail, namely that random RCU freeing.
-> 
-> Set a flag, for chrissake. Just say "when you free a pmd/pud/pgd, set
-> tlb->need_flush_inner to let the flusher know" (probably in *addition*
-> to "tlb->need_flush", just to maintain that rule). Make it explicit,
-> and make it obvious, and don't play games.
-
-I agree.
-
--- 
-Catalin
