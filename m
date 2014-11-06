@@ -1,66 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaKFIXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:23:33 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:54818 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaKFIXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:23:30 -0500
+	id S1751815AbaKFIXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:23:46 -0500
+Received: from bes.se.axis.com ([195.60.68.10]:46760 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757AbaKFIXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 03:23:41 -0500
+Date: Thu, 6 Nov 2014 09:23:34 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>
+Subject: Re: [PATCH -next 6/9] cris: Remove obsolete ASYNC_SPLIT_TERMIOS
+ behavior
+Message-ID: <20141106082334.GL30087@axis.com>
+References: <1415208392-16189-1-git-send-email-peter@hurleysoftware.com>
+ <1415208392-16189-7-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
-References: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
-	<20141105.163825.1433973842938441546.davem@davemloft.net>
-	<20141106010501.GA18339@gmail.com>
-	<20141105.211558.969082848816106943.davem@davemloft.net>
-	<CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
-Date: Thu, 6 Nov 2014 10:23:30 +0200
-Message-ID: <CAJ3xEMi8bGS2ez0aLsyF0z1Ag18b8YtAH23uCdjHtP1Kxp-7hg@mail.gmail.com>
-Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
-From: Or Gerlitz <gerlitz.or@gmail.com>
-To: Tom Herbert <therbert@google.com>
-Cc: David Miller <davem@davemloft.net>, Joe Stringer <joestringer@nicira.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        Sathya Perla <sathya.perla@emulex.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "linux.nics" <linux.nics@intel.com>, Amir Vadai <amirv@mellanox.com>,
-        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
-        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415208392-16189-7-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 4:44 AM, Tom Herbert <therbert@google.com> wrote:
-> On Wed, Nov 5, 2014 at 6:15 PM, David Miller <davem@davemloft.net> wrote:
->> From: Joe Stringer <joestringer@nicira.com>
->> Date: Wed, 5 Nov 2014 17:06:46 -0800
->>
->>> My impression was that the changes are more likely to be
->>> hardware-specific (like the i40e changes) rather than software-specific,
->>> like changes that might be integrated into the helper.
->>
->> I think there is more commonality amongst hardware capabilities,
->> and this is why I want the helper to play itself out.
->>
->>> That said, I can rework for one helper. The way I see it would be the
->>> same code as these patches, as "vxlan_gso_check(struct sk_buff *)" in
->>> drivers/net/vxlan.c which would be called from each driver. Is that what
->>> you had in mind?
->>
->> Yes.
->
-> Note that this code is not VXLAN specific, it will also accept NVGRE
-> and GRE/UDP with keyid and TEB. I imagine all these cases should be
-> indistinguishable to the hardware so they probably just work (which
-> would be cool!). It might be better to name and locate the helper
-> function to reflect that.
+On Wed, Nov 05, 2014 at 06:26:29PM +0100, Peter Hurley wrote:
+> ASYNC_SPLIT_TERMIOS behavior is a remnant of the long-dead /dev/cuaXX
+> callout device. Split termios handling was removed tree-wide in v2.5.71 by:
+> 
+> commit 99a21edebbfd8c29e39ee7fcc8a1ffa423657290
+> Author: Alexander Viro <viro@www.linux.org.uk>
+> Date:   Wed Jun 11 07:41:28 2003 -0700
+> 
+>     [PATCH] tty_driver refcounting
+> 
+>     killed the last remnants of callout stuff - we don't need to mess with
+>     storing termios privately anymore.
+> 
+> which pre-dated the re-introduction into the cris serial driver
+> in v2.6.7 by:
+> 
+> commit 311a5ffeda8ccb3f1f3840069f37234e043092d4
+> Author: Andrew Morton <akpm@osdl.org>
+> Date:   Mon May 31 18:52:29 2004 -0700
+> 
+>     [PATCH] CRIS architecture update
+> 
+>     From: "Mikael Starvik" <mikael.starvik@axis.com>
+> 
+>     - Lots of fixes from 2.4.
+> 
+>     - Updated for 2.6.6.
+> 
+>     - Added IDE driver
+> 
+> Cc: Mikael Starvik <starvik@axis.com>
 
-Unlike the VXLAN case, currently there's no indication from the
-network stack towards the driver that an NVGRE tunnel was set, so in
-our case we're not arming the HW offloads for NVGRE. I'll look into
-that, maybe we can make them work always. Also re the math there to be
-the same for VXLAN/NVGRE  -- skb_inner_mac_header(skb) -
-skb_transport_header(skb) is exactly 8 (sizeof struct gre_base_hdr),
-isn't that?
+Agreed.
+
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/serial/crisv10.c | 12 ------------
+>  drivers/tty/serial/crisv10.h |  1 -
+>  2 files changed, 13 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+> index 58e6f61..0c1825b 100644
+> --- a/drivers/tty/serial/crisv10.c
+> +++ b/drivers/tty/serial/crisv10.c
+> @@ -3676,12 +3676,6 @@ rs_close(struct tty_struct *tty, struct file * filp)
+>  	}
+>  	info->port.flags |= ASYNC_CLOSING;
+>  	/*
+> -	 * Save the termios structure, since this port may have
+> -	 * separate termios for callout and dialin.
+> -	 */
+> -	if (info->port.flags & ASYNC_NORMAL_ACTIVE)
+> -		info->normal_termios = tty->termios;
+> -	/*
+>  	 * Now we wait for the transmit buffer to clear; and we notify
+>  	 * the line discipline to only process XON/XOFF characters.
+>  	 */
+> @@ -4076,11 +4070,6 @@ rs_open(struct tty_struct *tty, struct file * filp)
+>  		return retval;
+>  	}
+>  
+> -	if ((info->port.count == 1) && (info->port.flags & ASYNC_SPLIT_TERMIOS)) {
+> -		tty->termios = info->normal_termios;
+> -		change_speed(info);
+> -	}
+> -
+>  #ifdef SERIAL_DEBUG_OPEN
+>  	printk("rs_open ttyS%d successful...\n", info->line);
+>  #endif
+> @@ -4327,7 +4316,6 @@ static int __init rs_init(void)
+>  		info->custom_divisor = 0;
+>  		info->x_char = 0;
+>  		info->event = 0;
+> -		info->normal_termios = driver->init_termios;
+>  		info->xmit.buf = NULL;
+>  		info->xmit.tail = info->xmit.head = 0;
+>  		info->first_recv_buffer = info->last_recv_buffer = NULL;
+> diff --git a/drivers/tty/serial/crisv10.h b/drivers/tty/serial/crisv10.h
+> index 7599014..15a52ee 100644
+> --- a/drivers/tty/serial/crisv10.h
+> +++ b/drivers/tty/serial/crisv10.h
+> @@ -98,7 +98,6 @@ struct e100_serial {
+>  
+>  	struct work_struct	work;
+>  	struct async_icount	icount;   /* error-statistics etc.*/
+> -	struct ktermios		normal_termios;
+>  
+>  	unsigned long char_time_usec;       /* The time for 1 char, in usecs */
+>  	unsigned long flush_time_usec;      /* How often we should flush */
+> -- 
+> 2.1.3
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
