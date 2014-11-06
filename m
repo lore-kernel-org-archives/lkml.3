@@ -1,160 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaKFBaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 20:30:21 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59245 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070AbaKFBaT (ORCPT
+	id S1751316AbaKFBcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 20:32:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56479 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750970AbaKFBcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 20:30:19 -0500
-From: Kever Yang <kever.yang@rock-chips.com>
-To: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>
-Cc: Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
-        Heiko Stuebner <heiko@sntech.de>, dianders@chromium.org,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        xjq@rock-chips.com, hj@rock-chips.com, dkl@rock-chips.com,
-        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
-Date: Thu,  6 Nov 2014 09:30:02 +0800
-Message-Id: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 5 Nov 2014 20:32:50 -0500
+Message-ID: <1415237557.3398.41.camel@decadent.org.uk>
+Subject: [PATCH] rtsx_usb_ms: Use msleep_interruptible() in polling loop
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Date: Thu, 06 Nov 2014 01:32:37 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Qz5YfK2anvlGSsg8QY9o"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hcd controller needs bus_suspend/resume, dwc2 controller make
-root hub generate suspend/resume signal with hprt0 register
-when work in host mode.
-After the root hub enter suspend, we can make controller enter
-low power state with PCGCTL register.
 
-We also update the lx_state for hsotg state.
+--=-Qz5YfK2anvlGSsg8QY9o
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch has tested on rk3288 with suspend/resume.
+rtsx_usb_ms creates a task that mostly sleeps, but tasks in
+uninterruptible sleep still contribute to the load average (for
+bug-compatibility with Unix).  A load average of ~1 on a system that
+should be idle is somewhat alarming.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+Change the sleep to be interruptible, but still ignore signals.
+
+A better fix might be to replace this loop with a delayed work item.
+
+References: https://bugs.debian.org/765717
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
+Re-sent without the typo in linux-kernel address.
 
-Changes in v2:
-- update commit message
-- make dwc2 suspend/resume sourcecode work
+Ben.
 
- drivers/usb/dwc2/hcd.c | 78 +++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 67 insertions(+), 11 deletions(-)
+ drivers/memstick/host/rtsx_usb_ms.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-index 0a0e6f0..01a415b 100644
---- a/drivers/usb/dwc2/hcd.c
-+++ b/drivers/usb/dwc2/hcd.c
-@@ -1471,6 +1471,30 @@ static void dwc2_port_suspend(struct dwc2_hsotg *hsotg, u16 windex)
- 	}
- }
- 
-+static void dwc2_port_resume(struct dwc2_hsotg *hsotg)
-+{
-+	u32 hprt0;
-+
-+	/* After clear the Stop PHY clock bit, we should wait for a moment
-+	 * for PLL work stable with clock output.
-+	 */
-+	writel(0, hsotg->regs + PCGCTL);
-+	usleep_range(2000, 4000);
-+
-+	hprt0 = dwc2_read_hprt0(hsotg);
-+	hprt0 |= HPRT0_RES;
-+	writel(hprt0, hsotg->regs + HPRT0);
-+	hprt0 &= ~HPRT0_SUSP;
-+	/* according to USB2.0 Spec 7.1.7.7, the host must send the resume
-+	 * signal for at least 20ms
-+	 */
-+	usleep_range(20000, 25000);
-+
-+	hprt0 &= ~HPRT0_RES;
-+	writel(hprt0, hsotg->regs + HPRT0);
-+	hsotg->lx_state = DWC2_L0;
-+}
-+
- /* Handles hub class-specific requests */
- static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
- 				u16 wvalue, u16 windex, char *buf, u16 wlength)
-@@ -1516,17 +1540,7 @@ static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
- 		case USB_PORT_FEAT_SUSPEND:
- 			dev_dbg(hsotg->dev,
- 				"ClearPortFeature USB_PORT_FEAT_SUSPEND\n");
--			writel(0, hsotg->regs + PCGCTL);
--			usleep_range(20000, 40000);
--
--			hprt0 = dwc2_read_hprt0(hsotg);
--			hprt0 |= HPRT0_RES;
--			writel(hprt0, hsotg->regs + HPRT0);
--			hprt0 &= ~HPRT0_SUSP;
--			usleep_range(100000, 150000);
--
--			hprt0 &= ~HPRT0_RES;
--			writel(hprt0, hsotg->regs + HPRT0);
-+			dwc2_port_resume(hsotg);
+diff --git a/drivers/memstick/host/rtsx_usb_ms.c b/drivers/memstick/host/rt=
+sx_usb_ms.c
+index a7282b7..7356780 100644
+--- a/drivers/memstick/host/rtsx_usb_ms.c
++++ b/drivers/memstick/host/rtsx_usb_ms.c
+@@ -706,7 +706,8 @@ poll_again:
+ 		if (host->eject)
  			break;
- 
- 		case USB_PORT_FEAT_POWER:
-@@ -2299,6 +2313,44 @@ static void _dwc2_hcd_stop(struct usb_hcd *hcd)
- 	usleep_range(1000, 3000);
- }
- 
-+static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
-+{
-+	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
-+	u32 hprt0;
-+
-+	if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
-+		(hsotg->op_state == OTG_STATE_A_HOST)))
-+		return 0;
-+
-+	if (hsotg->lx_state != DWC2_L0)
-+		return 0;
-+
-+	hprt0 = dwc2_read_hprt0(hsotg);
-+	if (hprt0 & HPRT0_CONNSTS)
-+		dwc2_port_suspend(hsotg, 1);
-+
-+	return 0;
-+}
-+
-+static int _dwc2_hcd_resume(struct usb_hcd *hcd)
-+{
-+	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
-+	u32 hprt0;
-+
-+	if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
-+		(hsotg->op_state == OTG_STATE_A_HOST)))
-+		return 0;
-+
-+	if (hsotg->lx_state != DWC2_L2)
-+		return 0;
-+
-+	hprt0 = dwc2_read_hprt0(hsotg);
-+	if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
-+		dwc2_port_resume(hsotg);
-+
-+	return 0;
-+}
-+
- /* Returns the current frame number */
- static int _dwc2_hcd_get_frame_number(struct usb_hcd *hcd)
- {
-@@ -2669,6 +2721,10 @@ static struct hc_driver dwc2_hc_driver = {
- 	.hub_status_data = _dwc2_hcd_hub_status_data,
- 	.hub_control = _dwc2_hcd_hub_control,
- 	.clear_tt_buffer_complete = _dwc2_hcd_clear_tt_buffer_complete,
-+#ifdef CONFIG_PM
-+	.bus_suspend = _dwc2_hcd_suspend,
-+	.bus_resume = _dwc2_hcd_resume,
-+#endif
- };
- 
- /*
--- 
-1.9.1
+=20
+-		msleep(1000);
++		if (msleep_interruptible(1000))
++			flush_signals(current);
+ 	}
+=20
+ 	complete(&host->detect_ms_exit);
 
+
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
+
+--=-Qz5YfK2anvlGSsg8QY9o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVFrPu+e/yOyVhhEJAQrduw//dLRp5mbnzx1r3t+Fq2CnsW3dyUXBfq+5
+87wVGKEVm83SV7DClh2X1ysb8BHTKNcXZxujNqH6bX7ZhIWTp9/ErKsKWMzLx9Ty
+n6u84lyouJs0BVlLgNCJz2PkBWeX/RWZynMiowBOHwcmXRig8iT5Vyh6ORCvX5bD
+Z+V5bvom5MoFBlYvuExQRdubwyb+BP/ROcwS3DYHhoWSCvAsA3xcMpUbTtHb8wx9
+ZK7HNhmQMvyE01fPCrVlQSf15E1/jPB6gaYEAo0SHjjYCgNZseX10oVQYGHndfr2
+Tiy3MxEu9GKAVeSZHc9Yuf2oxTCUEKSaiTTdRIAaLFBk7+fLNpHBTHApt34/nQNI
+lR5eiqnZ8rjqLRRLMKxPQHdWs5o2hYG9v/y/Fpb8lvBHGkTWKXuxKVC7BezsWODa
+VsKhbVJ+ofp2/3SEex91JYbOHfne/nKIZw7RSdiI8MzeXm51HDv15Cl9n4tK4DG5
+4XwUuqxIqECRevivYG98+J5WR8WYGLM2gOf2ryYS94DXM9AQPMXuVC6LcVK6gsHY
+AgPOsbIeRXpZCYD9clcCxLmK2FNuJI0gkqyQ7uSO+cHel6SD4PMHhHlORAEY+B/4
+wywUg+fw7L5tP2QskZjAzphy2vI7MmqXYearIUIP2QTEbmJCW2V6pFAIFwTOb3Jy
+FX7Q75qmiE0=
+=ElTO
+-----END PGP SIGNATURE-----
+
+--=-Qz5YfK2anvlGSsg8QY9o--
