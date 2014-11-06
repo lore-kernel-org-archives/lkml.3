@@ -1,53 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaKFNTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 08:19:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbaKFNTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 08:19:36 -0500
-Message-ID: <545B755D.4090900@draigBrady.com>
-Date: Thu, 06 Nov 2014 14:19:25 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751421AbaKFNUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 08:20:10 -0500
+Received: from regular1.263xmail.com ([211.150.99.138]:38241 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaKFNUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 08:20:06 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: jack.dai@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <b8e2c855dc28130eefbe8ca33f440d1f>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <545B757C.2060307@rock-chips.com>
+Date: Thu, 06 Nov 2014 21:19:56 +0800
+From: Caesar Wang <caesar.wang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Martin Tournoij <martin@arp242.net>
-CC: "Theodore Ts'o" <tytso@mit.edu>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] The SIGINFO signal from BSD
-References: <1415200663.3247743.187387481.75CE9317@webmail.messagingengine.com> <545A7B00.1040309@gmail.com> <20141105201404.GH27083@thunk.org> <1415225591.3444747.187568145.134CEE91@webmail.messagingengine.com>
-In-Reply-To: <1415225591.3444747.187568145.134CEE91@webmail.messagingengine.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kever Yang <kever.yang@rock-chips.com>, linus.walleij@linaro.org,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        fzf@rock-chips.com, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, cf@rock-chips.com,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: Re: [PATCH v8 3/3] ARM: dts: add rk3288 power-domain node
+References: <1415254961-5746-1-git-send-email-caesar.wang@rock-chips.com> <1415254961-5746-4-git-send-email-caesar.wang@rock-chips.com> <545B3518.2090409@rock-chips.com>
+In-Reply-To: <545B3518.2090409@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2014 11:13 PM, Martin Tournoij wrote:
-> On Wed, Nov 5, 2014, at 20:31, Austin S Hemmelgarn wrote:
->> The people to talk to about that for the core 
->> utilities on Linux would be the maintainers of the GNU coreutils, or 
->> whatever your distribution might use in their place (I think it's very 
->> unlikely that busybox or toybox would implement it however).
-> 
-> Well, if the kernel doesn't provide the feature, then we can be sure it
-> will never be implemented :-)
-> I thought this was a good place to start asking,, and even if GNU
-> coreutils opt to not implement this for whatever reasons, other
-> applications still can (mine will!)
 
-GNU coreutils dd will already support SIGINFO if available
-(and if dd is recompiled with appropriate headers).
-dd currently emulates that using SIGUSR1 though as you say
-that's awkward to support robustly, and there has been
-a recent GNU coreutils change in relation to that:
-http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commit;h=27d2c738
+在 2014年11月06日 16:45, Kever Yang 写道:
+> Hi Caesar,
+>
+> On 11/06/2014 02:22 PM, Caesar Wang wrote:
+>> Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
+>> Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
+>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> pls detail the reason why you need to add all the clocks into 
+> power-controller node.
 
-I like the idea of making SIGINFO generally available
-and GNU coreutils at least would add extra handling
-to cp etc. if that was the case.
+OK, I will fix in next patch v9 if there is no other problems in 1-2 days.
 
-thanks,
-P�draig.
+>> ---
+>>
+>> Changes in v8:
+>>      - DTS go back to v2
+>>
+>> Changes in v7: None
+>> Changes in v6: None
+>> Changes in v5: None
+>> Changes in v4: None
+>> Changes in v3:
+>>      - Decomposition power-controller, changed to multiple controller
+>>      (gpu-power-controller, hevc-power-controller)
+>>
+>> Changes in v2:
+>>      - make pd_vio clocks all one entry per line and alphabetize.
+>>      - power: power-controller move back to pinctrl: pinctrl.
+>>
+>>   arch/arm/boot/dts/rk3288.dtsi | 66 
+>> +++++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 66 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/rk3288.dtsi 
+>> b/arch/arm/boot/dts/rk3288.dtsi
+>> index cb18bb4..9cd269a 100644
+>> --- a/arch/arm/boot/dts/rk3288.dtsi
+>> +++ b/arch/arm/boot/dts/rk3288.dtsi
+>> @@ -989,4 +989,70 @@
+>>               };
+>>           };
+>>       };
+>> +
+>> +    power: power-controller {
+>> +        compatible = "rockchip,rk3288-power-controller";
+>> +        #power-domain-cells = <1>;
+>> +        rockchip,pmu = <&pmu>;
+>> +        #address-cells = <1>;
+>> +        #size-cells = <0>;
+>> +
+>> +        pd_gpu {
+>> +            reg = <RK3288_PD_GPU>;
+>> +            clocks = <&cru ACLK_GPU>;
+>> +        };
+>> +
+>> +        pd_hevc {
+>> +            reg = <RK3288_PD_HEVC>;
+>> +            clocks = <&cru ACLK_HEVC>,
+>> +                 <&cru SCLK_HEVC_CABAC>,
+>> +                 <&cru SCLK_HEVC_CORE>,
+>> +                 <&cru HCLK_HEVC>;
+>> +        };
+>> +
+>> +        pd_vio {
+>> +            reg = <RK3288_PD_VIO>;
+>> +            clocks = <&cru ACLK_IEP>,
+>> +                 <&cru ACLK_ISP>,
+>> +                 <&cru ACLK_RGA_NIU>,
+>> +                 <&cru ACLK_RGA>,
+>> +                 <&cru ACLK_VIO0_NIU>,
+>> +                 <&cru ACLK_VIO1_NIU>,
+>> +                 <&cru ACLK_VIP>,
+>> +                 <&cru ACLK_VOP0>,
+>> +                 <&cru ACLK_VOP1>,
+>> +                 <&cru DCLK_VOP0>,
+>> +                 <&cru DCLK_VOP1>,
+>> +                 <&cru HCLK_IEP>,
+>> +                 <&cru HCLK_ISP>,
+>> +                 <&cru HCLK_RGA>,
+>> +                 <&cru HCLK_VIO_AHB_ARBI>,
+>> +                 <&cru HCLK_VIO_NIU>,
+>> +                 <&cru HCLK_VIO2_H2P>,
+>> +                 <&cru HCLK_VIP>,
+>> +                 <&cru HCLK_VOP0>,
+>> +                 <&cru HCLK_VOP1>,
+>> +                 <&cru PCLK_EDP_CTRL>,
+>> +                 <&cru PCLK_HDMI_CTRL>,
+>> +                 <&cru PCLK_LVDS_PHY>,
+>> +                 <&cru PCLK_MIPI_CSI>,
+>> +                 <&cru PCLK_MIPI_DSI0>,
+>> +                 <&cru PCLK_MIPI_DSI1>,
+>> +                 <&cru PCLK_VIO2_H2P>,
+>> +                 <&cru SCLK_EDP_24M>,
+>> +                 <&cru SCLK_EDP>,
+>> +                 <&cru SCLK_HDMI_CEC>,
+>> +                 <&cru SCLK_HDMI_HDCP>,
+>> +                 <&cru SCLK_ISP_JPE>,
+>> +                 <&cru SCLK_ISP>,
+>> +                 <&cru SCLK_RGA>;
+>> +        };
+>> +
+>> +        pd_video {
+>> +            reg = <RK3288_PD_VIDEO>;
+>> +            /* FIXME: add clocks */
+> remove the 'FIXME'.
+
+Fixed.
+
+>> +            clocks = <&cru ACLK_VCODEC>,
+>> +                 <&cru HCLK_VCODEC>;
+>> +        };
+>> +    };
+>>   };
+>
+>
+>
+>
+
+-- 
+Best regards,
+Caesar
+
+
