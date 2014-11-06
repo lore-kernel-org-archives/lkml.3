@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083AbaKFXY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:24:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58443 "EHLO
+	id S1754522AbaKFXYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:24:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58426 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaKFWha (ORCPT
+	with ESMTP id S1751306AbaKFWh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:37:30 -0500
+	Thu, 6 Nov 2014 17:37:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gerhard Stenzel <gerhard.stenzel@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 010/162] vxlan: fix incorrect initializer in union vxlan_addr
-Date: Thu,  6 Nov 2014 14:34:34 -0800
-Message-Id: <1415313426-9622-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 019/162] xfrm: Generate queueing routes only from route lookup functions
+Date: Thu,  6 Nov 2014 14:34:43 -0800
+Message-Id: <1415313426-9622-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,77 +27,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerhard Stenzel <gstenzel@linux.vnet.ibm.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit a45e92a599e77ee6a850eabdd0141633fde03915 ]
+[ Upstream commit b8c203b2d2fc961bafd53b41d5396bbcdec55998 ]
 
-The first initializer in the following
+Currently we genarate a queueing route if we have matching policies
+but can not resolve the states and the sysctl xfrm_larval_drop is
+disabled. Here we assume that dst_output() is called to kill the
+queued packets. Unfortunately this assumption is not true in all
+cases, so it is possible that these packets leave the system unwanted.
 
-        union vxlan_addr ipa = {
-            .sin.sin_addr.s_addr = tip,
-            .sa.sa_family = AF_INET,
-        };
+We fix this by generating queueing routes only from the
+route lookup functions, here we can guarantee a call to
+dst_output() afterwards.
 
-is optimised away by the compiler, due to the second initializer,
-therefore initialising .sin.sin_addr.s_addr always to 0.
-This results in netlink messages indicating a L3 miss never contain the
-missed IP address. This was observed with GCC 4.8 and 4.9. I do not know about previous versions.
-The problem affects user space programs relying on an IP address being
-sent as part of a netlink message indicating a L3 miss.
-
-Changing
-            .sa.sa_family = AF_INET,
-to
-            .sin.sin_family = AF_INET,
-fixes the problem.
-
-Signed-off-by: Gerhard Stenzel <gerhard.stenzel@de.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: a0073fe18e71 ("xfrm: Add a state resolution packet queue")
+Reported-by: Konstantinos Kolelis <k.kolelis@sirrix.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/vxlan.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/net/dst.h      |  1 +
+ net/xfrm/xfrm_policy.c | 32 ++++++++++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index 7e748a1..5543eb1 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1224,7 +1224,7 @@ static int arp_reduce(struct net_device *dev, struct sk_buff *skb)
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
- 		union vxlan_addr ipa = {
- 			.sin.sin_addr.s_addr = tip,
--			.sa.sa_family = AF_INET,
-+			.sin.sin_family = AF_INET,
- 		};
+diff --git a/include/net/dst.h b/include/net/dst.h
+index 8211e32..4b368ae 100644
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -467,6 +467,7 @@ void dst_init(void);
+ /* Flags for xfrm_lookup flags argument. */
+ enum {
+ 	XFRM_LOOKUP_ICMP = 1 << 0,
++	XFRM_LOOKUP_QUEUE = 1 << 1,
+ };
  
- 		vxlan_ip_miss(dev, &ipa);
-@@ -1385,7 +1385,7 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
- 		union vxlan_addr ipa = {
- 			.sin6.sin6_addr = msg->target,
--			.sa.sa_family = AF_INET6,
-+			.sin6.sin6_family = AF_INET6,
- 		};
+ struct flowi;
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index eb918d3..0ee05f0 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -46,6 +46,11 @@ static DEFINE_SPINLOCK(xfrm_policy_sk_bundle_lock);
+ static struct dst_entry *xfrm_policy_sk_bundles;
+ static DEFINE_RWLOCK(xfrm_policy_lock);
  
- 		vxlan_ip_miss(dev, &ipa);
-@@ -1418,7 +1418,7 @@ static bool route_shortcircuit(struct net_device *dev, struct sk_buff *skb)
- 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
- 			union vxlan_addr ipa = {
- 				.sin.sin_addr.s_addr = pip->daddr,
--				.sa.sa_family = AF_INET,
-+				.sin.sin_family = AF_INET,
- 			};
++struct xfrm_flo {
++	struct dst_entry *dst_orig;
++	u8 flags;
++};
++
+ static DEFINE_SPINLOCK(xfrm_policy_afinfo_lock);
+ static struct xfrm_policy_afinfo __rcu *xfrm_policy_afinfo[NPROTO]
+ 						__read_mostly;
+@@ -1882,13 +1887,14 @@ static int xdst_queue_output(struct sk_buff *skb)
+ }
  
- 			vxlan_ip_miss(dev, &ipa);
-@@ -1439,7 +1439,7 @@ static bool route_shortcircuit(struct net_device *dev, struct sk_buff *skb)
- 		if (!n && (vxlan->flags & VXLAN_F_L3MISS)) {
- 			union vxlan_addr ipa = {
- 				.sin6.sin6_addr = pip6->daddr,
--				.sa.sa_family = AF_INET6,
-+				.sin6.sin6_family = AF_INET6,
- 			};
+ static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
+-						 struct dst_entry *dst,
++						 struct xfrm_flo *xflo,
+ 						 const struct flowi *fl,
+ 						 int num_xfrms,
+ 						 u16 family)
+ {
+ 	int err;
+ 	struct net_device *dev;
++	struct dst_entry *dst;
+ 	struct dst_entry *dst1;
+ 	struct xfrm_dst *xdst;
  
- 			vxlan_ip_miss(dev, &ipa);
+@@ -1896,10 +1902,13 @@ static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
+ 	if (IS_ERR(xdst))
+ 		return xdst;
+ 
+-	if (net->xfrm.sysctl_larval_drop || num_xfrms <= 0 ||
++	if (!(xflo->flags & XFRM_LOOKUP_QUEUE) ||
++	    net->xfrm.sysctl_larval_drop ||
++	    num_xfrms <= 0 ||
+ 	    (fl->flowi_flags & FLOWI_FLAG_CAN_SLEEP))
+ 		return xdst;
+ 
++	dst = xflo->dst_orig;
+ 	dst1 = &xdst->u.dst;
+ 	dst_hold(dst);
+ 	xdst->route = dst;
+@@ -1941,7 +1950,7 @@ static struct flow_cache_object *
+ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
+ 		   struct flow_cache_object *oldflo, void *ctx)
+ {
+-	struct dst_entry *dst_orig = (struct dst_entry *)ctx;
++	struct xfrm_flo *xflo = (struct xfrm_flo *)ctx;
+ 	struct xfrm_policy *pols[XFRM_POLICY_TYPE_MAX];
+ 	struct xfrm_dst *xdst, *new_xdst;
+ 	int num_pols = 0, num_xfrms = 0, i, err, pol_dead;
+@@ -1982,7 +1991,8 @@ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
+ 			goto make_dummy_bundle;
+ 	}
+ 
+-	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family, dst_orig);
++	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family,
++						  xflo->dst_orig);
+ 	if (IS_ERR(new_xdst)) {
+ 		err = PTR_ERR(new_xdst);
+ 		if (err != -EAGAIN)
+@@ -2016,7 +2026,7 @@ make_dummy_bundle:
+ 	/* We found policies, but there's no bundles to instantiate:
+ 	 * either because the policy blocks, has no transformations or
+ 	 * we could not build template (no xfrm_states).*/
+-	xdst = xfrm_create_dummy_bundle(net, dst_orig, fl, num_xfrms, family);
++	xdst = xfrm_create_dummy_bundle(net, xflo, fl, num_xfrms, family);
+ 	if (IS_ERR(xdst)) {
+ 		xfrm_pols_put(pols, num_pols);
+ 		return ERR_CAST(xdst);
+@@ -2116,13 +2126,18 @@ restart:
+ 	}
+ 
+ 	if (xdst == NULL) {
++		struct xfrm_flo xflo;
++
++		xflo.dst_orig = dst_orig;
++		xflo.flags = flags;
++
+ 		/* To accelerate a bit...  */
+ 		if ((dst_orig->flags & DST_NOXFRM) ||
+ 		    !net->xfrm.policy_count[XFRM_POLICY_OUT])
+ 			goto nopol;
+ 
+ 		flo = flow_cache_lookup(net, fl, family, dir,
+-					xfrm_bundle_lookup, dst_orig);
++					xfrm_bundle_lookup, &xflo);
+ 		if (flo == NULL)
+ 			goto nopol;
+ 		if (IS_ERR(flo)) {
+@@ -2229,7 +2244,8 @@ struct dst_entry *xfrm_lookup_route(struct net *net, struct dst_entry *dst_orig,
+ 				    const struct flowi *fl,
+ 				    struct sock *sk, int flags)
+ {
+-	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk, flags);
++	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk,
++					    flags | XFRM_LOOKUP_QUEUE);
+ 
+ 	if (IS_ERR(dst) && PTR_ERR(dst) == -EREMOTE)
+ 		return make_blackhole(net, dst_orig->ops->family, dst_orig);
+@@ -2503,7 +2519,7 @@ int __xfrm_route_forward(struct sk_buff *skb, unsigned short family)
+ 
+ 	skb_dst_force(skb);
+ 
+-	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, 0);
++	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, XFRM_LOOKUP_QUEUE);
+ 	if (IS_ERR(dst)) {
+ 		res = 0;
+ 		dst = NULL;
 -- 
 1.9.1
 
