@@ -1,115 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaKFRNU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:13:20 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:37649 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaKFRNQ (ORCPT
+	id S1751371AbaKFRO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:14:28 -0500
+Received: from icebox.esperi.org.uk ([81.187.191.129]:60759 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaKFRO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:13:16 -0500
-From: Johan Hovold <johan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, Nix <nix@esperi.org.uk>,
-        Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
-        Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>, stable <stable@vger.kernel.org>
-Subject: [PATCH] USB: cdc-acm: add quirk for control-line state requests
-Date: Thu,  6 Nov 2014 18:08:33 +0100
-Message-Id: <1415293713-3051-1-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20141106170456.GC26196@localhost>
-References: <20141106170456.GC26196@localhost>
+	Thu, 6 Nov 2014 12:14:27 -0500
+From: Nix <nix@esperi.org.uk>
+To: Johan Hovold <johan@kernel.org>
+Cc: Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
+        Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+References: <20141014083432.GB7958@localhost>
+	<871tq04fiy.fsf@spindle.srvr.nix> <20141022101458.GK2113@localhost>
+	<87y4s8yv38.fsf@spindle.srvr.nix> <20141024111442.GA19377@localhost>
+	<87d298i3y9.fsf@spindle.srvr.nix> <20141105115643.GR31358@localhost>
+	<87vbmtbrx2.fsf@spindle.srvr.nix> <20141105181454.GW31358@localhost>
+	<877fz8bfs6.fsf@spindle.srvr.nix> <20141106170456.GC26196@localhost>
+Emacs: Lovecraft was an optimist.
+Date: Thu, 06 Nov 2014 17:14:11 +0000
+In-Reply-To: <20141106170456.GC26196@localhost> (Johan Hovold's message of
+	"Thu, 6 Nov 2014 18:04:56 +0100")
+Message-ID: <87bnok8d5o.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=7 Fuz1=7 Fuz2=7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new quirk for devices that cannot handle control-line state
-requests.
+On 6 Nov 2014, Johan Hovold said:
 
-Note that we currently send these requests to all devices, regardless of
-whether they claim to support it, but that errors are only logged if
-support is claimed.
+> On Thu, Nov 06, 2014 at 01:49:13PM +0000, Nix wrote:
+>> On 5 Nov 2014, Johan Hovold told this:
+>> > On Wed, Nov 05, 2014 at 03:14:49PM +0000, Nix wrote:
+>
+>> > Could you try two more things (too make sure line control is really the
+>> > culprit):
+>> >
+>> > 1. If you clear HUPCL in ekeyd so that the lines are never lowered, does
+>> > that fix the stability issue?
+>> 
+>> Definitely not. I got a hang after the first reboot out of an afflicted
+>> kernel, when using a HUPCLless ekeyd. Weird. (I guess they're lowered on
+>> reboot anyway?)
+>
+> It's actually only the timings related to the control-lines being raised
+> on open that has changed, so this would seem consistent with that.
 
-Since commit 0943d8ead30e ("USB: cdc-acm: use tty-port dtr_rts"), which
-only changed the timings for these requests slightly, this has been
-reported to cause occasional firmware crashes on Simtec Electronics
-Entropy Key devices after re-enumeration. Enable the quirk for this
-device.
+Urgh. No wonder it was intermittent.
 
-Reported-by: Nix <nix@esperi.org.uk>
-Tested-by: Nix <nix@esperi.org.uk>
-Cc: stable <stable@vger.kernel.org>	# v3.16
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
+> Thanks for tracking this down. That bisect cannot have been fun given
+> the low failure rate (sometimes only one in ten reboots?).
 
-Greg, 
+It often failed quite fast, but yes, the negative case was hard to
+prove: I had to rewind twice. I counted reboots because I'm a flaming
+aspie pedant. 173 reboots that took... thank goodness it replicated on
+the machine of mine that's fastest to reboot!
 
-I believe this should into v3.18 as it fixes a reported regression with
-these devices.
-
-Johan
-
-
- drivers/usb/class/cdc-acm.c | 14 ++++++++++++--
- drivers/usb/class/cdc-acm.h |  2 ++
- 2 files changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 9d6495424b06..077d58ac3dcb 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -148,8 +148,15 @@ static int acm_ctrl_msg(struct acm *acm, int request, int value,
- /* devices aren't required to support these requests.
-  * the cdc acm descriptor tells whether they do...
-  */
--#define acm_set_control(acm, control) \
--	acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE, control, NULL, 0)
-+static inline int acm_set_control(struct acm *acm, int control)
-+{
-+	if (acm->quirks & QUIRK_CONTROL_LINE_STATE)
-+		return -EOPNOTSUPP;
-+
-+	return acm_ctrl_msg(acm, USB_CDC_REQ_SET_CONTROL_LINE_STATE,
-+			control, NULL, 0);
-+}
-+
- #define acm_set_line(acm, line) \
- 	acm_ctrl_msg(acm, USB_CDC_REQ_SET_LINE_CODING, 0, line, sizeof *(line))
- #define acm_send_break(acm, ms) \
-@@ -1320,6 +1327,7 @@ made_compressed_probe:
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
- 	init_usb_anchor(&acm->delayed);
-+	acm->quirks = quirks;
- 
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1687,6 +1695,8 @@ static const struct usb_device_id acm_ids[] = {
- 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
-+	{ USB_DEVICE(0x20df, 0x0001), /* Simtec Electronics Entropy Key */
-+	.driver_info = QUIRK_CONTROL_LINE_STATE, },
- 	{ USB_DEVICE(0x2184, 0x001c) },	/* GW Instek AFG-2225 */
- 	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
- 	},
-diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
-index fc75651afe1c..d3251ebd09e2 100644
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -121,6 +121,7 @@ struct acm {
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
- 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
-+	unsigned long quirks;
- };
- 
- #define CDC_DATA_INTERFACE_TYPE	0x0a
-@@ -132,3 +133,4 @@ struct acm {
- #define NOT_A_MODEM			BIT(3)
- #define NO_DATA_INTERFACE		BIT(4)
- #define IGNORE_DEVICE			BIT(5)
-+#define QUIRK_CONTROL_LINE_STATE	BIT(6)
 -- 
-2.0.4
-
+NULL && (void)
