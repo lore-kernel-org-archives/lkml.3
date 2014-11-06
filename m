@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaKFW7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:59:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58965 "EHLO
+	id S1753954AbaKFW7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:59:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58958 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaKFWnM (ORCPT
+	with ESMTP id S1753028AbaKFWnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:43:12 -0500
+	Thu, 6 Nov 2014 17:43:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 091/162] cpufreq: intel_pstate: Reflect current no_turbo state correctly
-Date: Thu,  6 Nov 2014 14:35:55 -0800
-Message-Id: <1415313426-9622-92-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 097/162] KVM: x86: Prevent host from panicking on shared MSR writes.
+Date: Thu,  6 Nov 2014 14:36:01 -0800
+Message-Id: <1415313426-9622-98-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -29,151 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 4521e1a0ce173daa23dfef8312d09051e057ff8e upstream.
+commit 8b3c3104c3f4f706e99365c3e0d2aa61b95f969f upstream.
 
-Some BIOSes modify the state of MSR_IA32_MISC_ENABLE_TURBO_DISABLE
-based on the current power source for the system battery AC vs
-battery. Reflect the correct current state and ability to modify the
-no_turbo sysfs file based on current state of
-MSR_IA32_MISC_ENABLE_TURBO_DISABLE.
+The previous patch blocked invalid writes directly when the MSR
+is written.  As a precaution, prevent future similar mistakes by
+gracefulling handle GPs caused by writes to shared MSRs.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=83151
-Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+[Remove parts obsoleted by Nadav's patch. - Paolo]
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 49 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 37 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/kvm_host.h |  2 +-
+ arch/x86/kvm/vmx.c              |  7 +++++--
+ arch/x86/kvm/x86.c              | 11 ++++++++---
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index d21cd02..7d622cd 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -143,6 +143,7 @@ struct perf_limits {
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 7b39dfd..dba6f79 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -1053,7 +1053,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v);
+ void kvm_vcpu_reset(struct kvm_vcpu *vcpu);
  
- static struct perf_limits limits = {
- 	.no_turbo = 0,
-+	.turbo_disabled = 0,
- 	.max_perf_pct = 100,
- 	.max_perf = int_tofp(1),
- 	.min_perf_pct = 0,
-@@ -227,6 +228,18 @@ static inline void intel_pstate_reset_all_pid(void)
- 	}
+ void kvm_define_shared_msr(unsigned index, u32 msr);
+-void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
++int kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
+ 
+ bool kvm_is_linear_rip(struct kvm_vcpu *vcpu, unsigned long linear_rip);
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 21cacdc..4dd0201 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2546,12 +2546,15 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 			break;
+ 		msr = find_msr_entry(vmx, msr_index);
+ 		if (msr) {
++			u64 old_msr_data = msr->data;
+ 			msr->data = data;
+ 			if (msr - vmx->guest_msrs < vmx->save_nmsrs) {
+ 				preempt_disable();
+-				kvm_set_shared_msr(msr->index, msr->data,
+-						   msr->mask);
++				ret = kvm_set_shared_msr(msr->index, msr->data,
++							 msr->mask);
+ 				preempt_enable();
++				if (ret)
++					msr->data = old_msr_data;
+ 			}
+ 			break;
+ 		}
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f435e75..450c5c5 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -225,20 +225,25 @@ static void kvm_shared_msr_cpu_online(void)
+ 		shared_msr_update(i, shared_msrs_global.msrs[i]);
  }
  
-+static inline void update_turbo_state(void)
-+{
-+	u64 misc_en;
-+	struct cpudata *cpu;
-+
-+	cpu = all_cpu_data[0];
-+	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
-+	limits.turbo_disabled =
-+		(misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
-+		 cpu->pstate.max_pstate == cpu->pstate.turbo_pstate);
-+}
-+
- /************************** debugfs begin ************************/
- static int pid_param_set(void *data, u64 val)
+-void kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
++int kvm_set_shared_msr(unsigned slot, u64 value, u64 mask)
  {
-@@ -283,6 +296,20 @@ static void intel_pstate_debug_expose_params(void)
- 		return sprintf(buf, "%u\n", limits.object);		\
- 	}
+ 	unsigned int cpu = smp_processor_id();
+ 	struct kvm_shared_msrs *smsr = per_cpu_ptr(shared_msrs, cpu);
++	int err;
  
-+static ssize_t show_no_turbo(struct kobject *kobj,
-+			     struct attribute *attr, char *buf)
-+{
-+	ssize_t ret;
+ 	if (((value ^ smsr->values[slot].curr) & mask) == 0)
+-		return;
++		return 0;
+ 	smsr->values[slot].curr = value;
+-	wrmsrl(shared_msrs_global.msrs[slot], value);
++	err = wrmsrl_safe(shared_msrs_global.msrs[slot], value);
++	if (err)
++		return 1;
 +
-+	update_turbo_state();
-+	if (limits.turbo_disabled)
-+		ret = sprintf(buf, "%u\n", limits.turbo_disabled);
-+	else
-+		ret = sprintf(buf, "%u\n", limits.no_turbo);
-+
-+	return ret;
-+}
-+
- static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
- 				const char *buf, size_t count)
- {
-@@ -291,11 +318,14 @@ static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
- 	ret = sscanf(buf, "%u", &input);
- 	if (ret != 1)
- 		return -EINVAL;
--	limits.no_turbo = clamp_t(int, input, 0 , 1);
-+
-+	update_turbo_state();
- 	if (limits.turbo_disabled) {
- 		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
--		limits.no_turbo = limits.turbo_disabled;
-+		return -EPERM;
+ 	if (!smsr->registered) {
+ 		smsr->urn.on_user_return = kvm_on_user_return;
+ 		user_return_notifier_register(&smsr->urn);
+ 		smsr->registered = true;
  	}
-+	limits.no_turbo = clamp_t(int, input, 0, 1);
-+
- 	return count;
++	return 0;
  }
+ EXPORT_SYMBOL_GPL(kvm_set_shared_msr);
  
-@@ -328,7 +358,6 @@ static ssize_t store_min_perf_pct(struct kobject *a, struct attribute *b,
- 	return count;
- }
- 
--show_one(no_turbo, no_turbo);
- show_one(max_perf_pct, max_perf_pct);
- show_one(min_perf_pct, min_perf_pct);
- 
-@@ -503,7 +532,8 @@ static void intel_pstate_get_min_max(struct cpudata *cpu, int *min, int *max)
- 	int max_perf = cpu->pstate.turbo_pstate;
- 	int max_perf_adj;
- 	int min_perf;
--	if (limits.no_turbo)
-+
-+	if (limits.no_turbo || limits.turbo_disabled)
- 		max_perf = cpu->pstate.max_pstate;
- 
- 	max_perf_adj = fp_toint(mul_fp(int_tofp(max_perf), limits.max_perf));
-@@ -519,6 +549,8 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
- {
- 	int max_perf, min_perf;
- 
-+	update_turbo_state();
-+
- 	intel_pstate_get_min_max(cpu, &min_perf, &max_perf);
- 
- 	pstate = clamp_t(int, pstate, min_perf, max_perf);
-@@ -736,7 +768,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
- 		limits.max_policy_pct = 100;
- 		limits.max_perf_pct = 100;
- 		limits.max_perf = int_tofp(1);
--		limits.no_turbo = limits.turbo_disabled;
-+		limits.no_turbo = 0;
- 		return 0;
- 	}
- 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
-@@ -776,7 +808,6 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- {
- 	struct cpudata *cpu;
- 	int rc;
--	u64 misc_en;
- 
- 	rc = intel_pstate_init_cpu(policy->cpu);
- 	if (rc)
-@@ -784,12 +815,6 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- 
- 	cpu = all_cpu_data[policy->cpu];
- 
--	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
--	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
--		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
--		limits.turbo_disabled = 1;
--		limits.no_turbo = 1;
--	}
- 	if (limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
- 		policy->policy = CPUFREQ_POLICY_PERFORMANCE;
- 	else
 -- 
 1.9.1
 
