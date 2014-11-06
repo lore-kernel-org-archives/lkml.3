@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaKFV71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:59:27 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:51388 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaKFV7Z (ORCPT
+	id S1751303AbaKFWCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:02:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55343 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaKFWCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:59:25 -0500
-Date: Thu, 6 Nov 2014 13:59:22 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2] mm: slub: fix format mismatches in slab_err()
- callers
-In-Reply-To: <1415261817-5283-1-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.DEB.2.10.1411061359060.1526@chino.kir.corp.google.com>
-References: <alpine.DEB.2.10.1411051344490.31575@chino.kir.corp.google.com> <1415261817-5283-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 6 Nov 2014 17:02:50 -0500
+Date: Thu, 6 Nov 2014 14:02:49 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+Cc: Christian Riesch <christian.riesch@omicron.at>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in
+ receive path
+Message-ID: <20141106220249.GA952@kroah.com>
+References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
+ <20141106203832.GB30170@kroah.com>
+ <yw1xwq78jbr6.fsf@unicorn.mansr.com>
+ <20141106205644.GA31435@kroah.com>
+ <yw1xsihwjb67.fsf@unicorn.mansr.com>
+ <20141106211754.GA32000@kroah.com>
+ <yw1xoaskj9fw.fsf@unicorn.mansr.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1184225831-1415311163=:1526"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <yw1xoaskj9fw.fsf@unicorn.mansr.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---531381512-1184225831-1415311163=:1526
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 6 Nov 2014, Andrey Ryabinin wrote:
-
-> Adding __printf(3, 4) to slab_err exposed following:
+On Thu, Nov 06, 2014 at 09:38:59PM +0000, M�ns Rullg�rd wrote:
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 > 
-> mm/slub.c: In function ‘check_slab’:
-> mm/slub.c:852:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
->     s->name, page->objects, maxobj);
->     ^
-> mm/slub.c:852:4: warning: too many arguments for format [-Wformat-extra-args]
-> mm/slub.c:857:4: warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 4 has type ‘const char *’ [-Wformat=]
->     s->name, page->inuse, page->objects);
->     ^
-> mm/slub.c:857:4: warning: too many arguments for format [-Wformat-extra-args]
+> > On Thu, Nov 06, 2014 at 09:01:36PM +0000, M�ns Rullg�rd wrote:
+> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> >> 
+> >> > On Thu, Nov 06, 2014 at 08:49:01PM +0000, M�ns Rullg�rd wrote:
+> >> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> >> >> 
+> >> >> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
+> >> >> >> The current implementation of put_tty_queue() causes a race condition
+> >> >> >> when re-arranged by the compiler.
+> >> >> >> 
+> >> >> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
+> >> >> >> 
+> >> >> >> 	*read_buf_addr(ldata, ldata->read_head++) = c;
+> >> >> >> 
+> >> >> >> was re-arranged by the compiler to something like
+> >> >> >> 
+> >> >> >> 	x = ldata->read_head
+> >> >> >> 	ldata->read_head++
+> >> >> >> 	*read_buf_addr(ldata, x) = c;
+> >> >> >> 
+> >> >> >> which causes a race condition. Invalid data is read if data is read
+> >> >> >> before it is actually written to the read buffer.
+> >> >> >
+> >> >> > Really?  A compiler can rearange things like that and expect things to
+> >> >> > actually work?  How is that valid?
+> >> >> 
+> >> >> This is actually required by the C spec.  There is a sequence point
+> >> >> before a function call, after the arguments have been evaluated.  Thus
+> >> >> all side-effects, such as the post-increment, must be complete before
+> >> >> the function is called, just like in the example.
+> >> >> 
+> >> >> There is no "re-arranging" here.  The code is simply wrong.
+> >> >
+> >> > Ah, ok, time to dig out the C spec...
+> >> >
+> >> > Anyway, because of this, no need for the wmb() calls, just rearrange the
+> >> > logic and all should be good, right?  Christian, can you test that
+> >> > instead?
+> >> 
+> >> Weakly ordered SMP systems probably need some kind of barrier.  I didn't
+> >> look at it carefully.
+> >
+> > It shouldn't need a barier, as it is a sequence point with the function
+> > call.  Well, it's an inline function, but that "shouldn't" matter here,
+> > right?
 > 
-> mm/slub.c: In function ‘on_freelist’:
-> mm/slub.c:905:4: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘long unsigned int’ [-Wformat=]
->     "should be %d", page->objects, max_objects);
-> 
-> Fix first two warnings by removing redundant s->name.
-> Fix the last by changing type of max_object from unsigned long to int.
-> 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Sequence points say nothing about the order in which stores become
+> visible to other CPUs.  That's why there are barrier instructions.
 
-Acked-by: David Rientjes <rientjes@google.com>
---531381512-1184225831-1415311163=:1526--
+Yes, but "order" matters.
+
+If I write code that does:
+
+100	x = ldata->read_head;
+101	&ldata->read_head[x & SOME_VALUE] = y;
+102	ldata->read_head++;
+
+the compiler can not reorder lines 102 and 101 just because it feels
+like it, right?  Or is it time to go spend some reading of the C spec
+again...
+
+thanks,
+
+greg k-h
