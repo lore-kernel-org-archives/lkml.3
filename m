@@ -1,54 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751115AbaKFB7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 20:59:00 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:56040 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaKFB66 (ORCPT
+	id S1751288AbaKFB7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 20:59:05 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36936 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaKFB7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 20:58:58 -0500
+	Wed, 5 Nov 2014 20:59:01 -0500
+Message-ID: <545AD5B3.60009@huawei.com>
+Date: Thu, 6 Nov 2014 09:58:11 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <20141105180521.1e12b87e@gandalf.local.home>
-References: <20141104152845.521858531@goodmis.org> <20141104153028.602754370@goodmis.org>
- <87zjc6ulry.fsf@sejong.aot.lge.com> <5459E2AB.8020009@hitachi.com> <20141105180521.1e12b87e@gandalf.local.home>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 6 Nov 2014 10:58:37 +0900
-X-Google-Sender-Auth: dxlhcpJ5oFQq0xjz2v6GP4MJbA0
-Message-ID: <CAM9d7ch0OYOZ8Q5ruhvNPVQOwAWUY5XRjSgkW70CnDcra3MPbQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v4] ftracetest: Add a couple of ftrace test cases
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        "Matthias Brugger" <matthias.bgg@gmail.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
+ hierarchy irqdomain
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com> <20141105230952.GH6168@google.com>
+In-Reply-To: <20141105230952.GH6168@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+>>  
+>> @@ -1098,3 +1099,128 @@ int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
+>>  	return nvec;
+>>  }
+>>  EXPORT_SYMBOL(pci_enable_msix_range);
+>> +
+>> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
+> 
+> Space, not tab.
+> 
+>> +static inline irq_hw_number_t
+>> +msi_get_hwirq(struct pci_dev *pdev, struct msi_desc *msidesc)
+> 
+> The convention in this file is "struct pci_dev *dev".  And "struct msi_desc
+> *desc" (or maybe "*entry").  Try to converge things, not diverge them.
+> 
+>> +{
+>> +	return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
+>> +		PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
+>> +		(pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
+> 
+> Where does this bit layout come from?  Is this defined in the spec
+> somewhere?  A reference would help.
 
-On Thu, Nov 6, 2014 at 8:05 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Added three test cases to get the feel of adding tests to ftracetest.
-> The three cases are:
->
->   function profiling test, to make sure function profiling still works
->    with function tracing (was a regression)
->
->   function graph filter test to make sure that function graph filtering works.
->
->   function graph filter with stack tracing test to make sure that the function
->    graph filter does filter and also continues to filter when another function tracer
->    is running (like the stack tracer)
->
-> Link: http://lkml.kernel.org/r/20141103212737.696365174@goodmis.org
->
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Currently, more and more Non-PCI device use MSI(or similar MSI mechanism), like DMAR fault irq
+and HPET FSB irq. And we have to add additional code to support the MSI capability.
+So I hope we can decouple MSI code and PCI code, then we can unify all MSI(or Message Based interrupt)
+in one framework.
 
-For this and previous patch 1/2,
+Thanks!
+Yijing.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+> 
+>> +}
+>> +
+>> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
+>> +			    unsigned int nr_irqs, void *arg)
+>> +{
+>> +	int i, ret;
+>> +	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
+>> +
+>> +	if (irq_find_mapping(domain, hwirq) > 0)
+>> +		return -EEXIST;
+>> +
+>> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
+>> +	if (ret >= 0)
+> 
+> 	if (ret < 0)
+> 		return ret;
+> 
+> and un-indent the mainline code below.  Then it's obvious that this is the
+> normal case, not the error case.
+> 
+>> +		for (i = 0; i < nr_irqs; i++) {
+>> +			irq_domain_set_hwirq_and_chip(domain, virq + i,
+>> +					hwirq + i, &msi_chip, (void *)(long)i);
+>> +			__irq_set_handler(virq + i, handle_edge_irq, 0, "edge");
+>> +		}
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
+>> +			    unsigned int nr_irqs)
+>> +{
+>> +	int i;
+>> +
+>> +	for (i = 0; i < nr_irqs; i++) {
+>> +		struct msi_desc *msidesc = irq_get_msi_desc(virq);
+>> +
+>> +		if (msidesc)
+>> +			msidesc->irq = 0;
+>> +	}
+>> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
+>> +}
+>> +
+>> +static int msi_domain_activate(struct irq_domain *domain,
+>> +			       struct irq_data *irq_data)
+>> +{
+>> +	int ret = 0;
+>> +	struct msi_msg msg;
+>> +
+>> +	/*
+>> +	 * irq_data->chip_data is MSI/MSIx offset.
+> 
+> "MSI-X", as you wrote on the next line.
+> 
+>> +	 * MSI-X message is written per-IRQ, the offset is always 0.
+>> +	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
+>> +	 */
+>> +	if (!irq_data->chip_data) {
+> 
+> 	if (irq_data->chip_data)
+> 		return 0;
+> 
+> and un-indent the mainline code below, and drop the "ret = 0" init above.
+> 
+>> +		ret = irq_chip_compose_msi_msg(irq_data, &msg);
+>> +		if (ret == 0)
+> 
+> 	if (ret)
+> 		return ret;
+> 
+>> +			write_msi_msg(irq_data->irq, &msg);
+>> +	}
+>> +
+>> +	return ret;
+> 	return 0;
+>> +}
+>> +
+>> +static int msi_domain_deactivate(struct irq_domain *domain,
+>> +				 struct irq_data *irq_data)
+>> +{
+>> +	struct msi_msg msg;
+>> +
+>> +	if (irq_data->chip_data) {
+>> +		memset(&msg, 0, sizeof(msg));
+>> +		write_msi_msg(irq_data->irq, &msg);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static struct irq_domain_ops msi_domain_ops = {
+>> +	.alloc = msi_domain_alloc,
+>> +	.free = msi_domain_free,
+>> +	.activate = msi_domain_activate,
+>> +	.deactivate = msi_domain_deactivate,
+>> +};
+>> +
+>> +struct irq_domain *msi_create_irq_domain(struct irq_domain *parent)
+>> +{
+>> +	struct irq_domain *domain;
+>> +
+>> +	domain = irq_domain_add_tree(NULL, &msi_domain_ops, NULL);
+>> +	if (domain)
+> 
+> 	if (!domain)
+> 		return NULL;
+> 
+> and un-indent this:
+> 
+>> +		domain->parent = parent;
+>> +
+>> +	return domain;
+>> +}
+>> +
+>> +int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
+>> +			      struct pci_dev *dev, void *arg)
+>> +{
+>> +	int i, virq;
+>> +	struct msi_desc *msidesc;
+>> +	int node = dev_to_node(&dev->dev);
+>> +
+>> +	list_for_each_entry(msidesc, &dev->msi_list, list) {
+>> +		arch_msi_irq_domain_set_hwirq(arg, msi_get_hwirq(dev, msidesc));
+>> +		virq = irq_domain_alloc_irqs(domain, msidesc->nvec_used,
+>> +					     node, arg);
+>> +		if (virq < 0) {
+>> +			/* Special handling for pci_enable_msi_range(). */
+>> +			return (type == PCI_CAP_ID_MSI &&
+>> +				msidesc->nvec_used > 1) ?  1 : -ENOSPC;	
+> 
+> I think "if" would be easier to read than this ternary expression.
+> 
+>> +		}
+>> +		for (i = 0; i < msidesc->nvec_used; i++)
+>> +			irq_set_msi_desc_off(virq + i, i, msidesc);
+>> +	}
+>> +
+>> +	list_for_each_entry(msidesc, &dev->msi_list, list)
+>> +		if (msidesc->nvec_used == 1)
+>> +			dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", virq);
+>> +		else
+>> +			dev_dbg(&dev->dev, "irq [%d-%d] for MSI/MSI-X\n",
+>> +				virq, virq + msidesc->nvec_used - 1);
+>> +
+>> +	return 0;
+>> +}
+>> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
+>> diff --git a/include/linux/msi.h b/include/linux/msi.h
+>> index 44f4746d033b..05dcd425f82b 100644
+>> --- a/include/linux/msi.h
+>> +++ b/include/linux/msi.h
+>> @@ -75,4 +75,15 @@ struct msi_chip {
+>>  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
+>>  };
+>>  
+>> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
+> 
+> Use a space here, not a tab.
+> 
+>> +extern struct irq_chip msi_chip;
+> 
+> I don't think "msi_chip" is a good name.  "Chip" only hints that it's a
+> semiconductor integrated circuit; it doesn't say anything about what it
+> does.  I've suggested "msi_controller" elsewhere.
+> 
+> Why does this need to be exported?  And why should there be only one in a
+> system?
+> 
+>> +extern struct irq_domain *msi_create_irq_domain(struct irq_domain *parent);
+>> +extern int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
+>> +				     struct pci_dev *dev, void *arg);
+>> +
+>> +extern irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg);
+>> +extern void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq);
+> 
+> Look at the rest of the file and notice that the existing code does not use
+> "extern" on function declarations.
+> 
+>> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
+> 
+> Use a space here (not a tab), like the #endif just below.
+> 
+>>  #endif /* LINUX_MSI_H */
+>> -- 
+>> 1.7.10.4
+>>
+> 
+> .
+> 
 
-Thanks,
-Namhyung
+
+-- 
+Thanks!
+Yijing
+
