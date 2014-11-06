@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaKFRVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:21:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808AbaKFRVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:21:36 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Drivers: hv: vss: Introduce timeout for communication with userspace
-Date: Thu,  6 Nov 2014 18:21:24 +0100
-Message-Id: <1415294485-23945-2-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1415294485-23945-1-git-send-email-vkuznets@redhat.com>
-References: <1415294485-23945-1-git-send-email-vkuznets@redhat.com>
+	id S1752126AbaKFRVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:21:47 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:33443 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaKFRVn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:21:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
+References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
+Date: Thu, 6 Nov 2014 18:21:42 +0100
+Message-ID: <CABgxDo+9aZJ8BP3h=3sUUbSBD5R_FQmWF9f8kbzDbZrVG01n1A@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
+From: Romain Perier <romain.perier@gmail.com>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Heiko Stuebner <heiko@sntech.de>, dianders@chromium.org,
+        sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        Eddie Cai <cf@rock-chips.com>, xjq@rock-chips.com, hj@rock-chips.com,
+        dkl@rock-chips.com, huangtao@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In contrast with KVP there is no timeout when communicating with
-userspace VSS daemon. In case it gets stuck performing freeze/thaw
-operation no message will be sent to the host so it will take very
-long (around 10 minutes) before backup fails. Introduce 10 second
-timeout using schedule_delayed_work().
+Hi Kever,
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- drivers/hv/hv_snapshot.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hv/hv_snapshot.c b/drivers/hv/hv_snapshot.c
-index 34f14fd..21e51be 100644
---- a/drivers/hv/hv_snapshot.c
-+++ b/drivers/hv/hv_snapshot.c
-@@ -28,7 +28,7 @@
- #define VSS_MINOR  0
- #define VSS_VERSION    (VSS_MAJOR << 16 | VSS_MINOR)
- 
--
-+#define VSS_USERSPACE_TIMEOUT (msecs_to_jiffies(10 * 1000))
- 
- /*
-  * Global state maintained for transaction that is being processed.
-@@ -55,12 +55,24 @@ static const char vss_name[] = "vss_kernel_module";
- static __u8 *recv_buffer;
- 
- static void vss_send_op(struct work_struct *dummy);
-+static void vss_timeout_func(struct work_struct *dummy);
-+
-+static DECLARE_DELAYED_WORK(vss_timeout_work, vss_timeout_func);
- static DECLARE_WORK(vss_send_op_work, vss_send_op);
- 
- /*
-  * Callback when data is received from user mode.
-  */
- 
-+static void vss_timeout_func(struct work_struct *dummy)
-+{
-+	/*
-+	 * Timeout waiting for userspace component to reply happened.
-+	 */
-+	pr_warn("VSS: timeout waiting for daemon to reply\n");
-+	vss_respond_to_host(HV_E_FAIL);
-+}
-+
- static void
- vss_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- {
-@@ -76,7 +88,8 @@ vss_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 		return;
- 
- 	}
--	vss_respond_to_host(vss_msg->error);
-+	if (cancel_delayed_work_sync(&vss_timeout_work))
-+		vss_respond_to_host(vss_msg->error);
- }
- 
- 
-@@ -223,6 +236,8 @@ void hv_vss_onchannelcallback(void *context)
- 			case VSS_OP_FREEZE:
- 			case VSS_OP_THAW:
- 				schedule_work(&vss_send_op_work);
-+				schedule_delayed_work(&vss_timeout_work,
-+						      VSS_USERSPACE_TIMEOUT);
- 				return;
- 
- 			case VSS_OP_HOT_BACKUP:
-@@ -277,5 +292,6 @@ hv_vss_init(struct hv_util_service *srv)
- void hv_vss_deinit(void)
- {
- 	cn_del_callback(&vss_id);
-+	cancel_delayed_work_sync(&vss_timeout_work);
- 	cancel_work_sync(&vss_send_op_work);
- }
--- 
-1.9.3
+2014-11-06 2:30 GMT+01:00 Kever Yang <kever.yang@rock-chips.com>:
+>
+> +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
+> +{
+> +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
+> +       u32 hprt0;
+> +
+> +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
+> +               (hsotg->op_state == OTG_STATE_A_HOST)))
+> +               return 0;
+> +
+> +       if (hsotg->lx_state != DWC2_L0)
+> +               return 0;
+> +
+> +       hprt0 = dwc2_read_hprt0(hsotg);
+> +       if (hprt0 & HPRT0_CONNSTS)
+> +               dwc2_port_suspend(hsotg, 1);
+> +
+> +       return 0;
+> +}
+> +
+> +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
+> +{
+> +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
+> +       u32 hprt0;
+> +
+> +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
+> +               (hsotg->op_state == OTG_STATE_A_HOST)))
+> +               return 0;
+> +
+> +       if (hsotg->lx_state != DWC2_L2)
+> +               return 0;
+> +
+> +       hprt0 = dwc2_read_hprt0(hsotg);
+> +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
+> +               dwc2_port_resume(hsotg);
+> +
+> +       return 0;
+> +}
 
+Could you also define these functions under #ifdef CONFIG_PM ?
+
+Thanks.
