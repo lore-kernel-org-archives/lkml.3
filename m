@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaKFM6Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:58:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39012 "EHLO mga09.intel.com"
+	id S1751292AbaKFNAu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 08:00:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45152 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbaKFM6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:58:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,325,1413270000"; 
-   d="scan'208";a="632603260"
-Date: Thu, 6 Nov 2014 18:28:52 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andrew Jackson <Andrew.Jackson@arm.com>
-Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] dmaengine: pl330: Correct device assignment.
-Message-ID: <20141106125852.GB1870@intel.com>
-References: <545B5E03.3040809@arm.com>
+	id S1751021AbaKFNAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 08:00:47 -0500
+Date: Thu, 6 Nov 2014 14:00:13 +0100
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: "billbonaparte" <programme110@gmail.com>
+Cc: <fw@strlen.de>, <linux-kernel@vger.kernel.org>,
+        "Pablo Neira Ayuso" <pablo@netfilter.org>,
+        "Patrick McHardy" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
+        <davem@davemloft.net>, "Changli Gao" <xiaosuo@gmail.com>,
+        "Andrey Vagin" <avagin@openvz.org>, brouer@redhat.com,
+        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: netfilter: nf_conntrack: there maybe a bug in
+ __nf_conntrack_confirm, when it race against get_next_corpse
+Message-ID: <20141106140013.5110dd6e@redhat.com>
+In-Reply-To: <012601cff7d1$7ce2d620$76a88260$@gmail.com>
+References: <012601cff7d1$7ce2d620$76a88260$@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545B5E03.3040809@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 11:39:47AM +0000, Andrew Jackson wrote:
-> Commit f6f2421c0a1c removed pl330_info structure by embedding it into
-> pl330_dmac structure, but did not ensure that the dmac->ddma.dev
-> pointer gets initialised before use. When dma_alloc_coherent() gets
-> called on arm64 a WARN() gets triggered due to dev being NULL.
+On Tue, 4 Nov 2014 09:48:32 +0800
+"billbonaparte" <programme110@gmail.com> wrote:
 
-Applied, thanks
+> (sorry to send this e-mail again, last mail is rejected by server due to
+> non-acceptable content)
+
+There is several issues with your submission.  I'll take care of
+resubmitting a patch in your name (so you will get credit in the git
+log).
+
+If you care to know, issues are:
+ 1. you are not sending to the appropriate mailing lists,
+ 2. patch is as an attachment (should be inlined),
+ 3. the patch have style and white-space issues.
+
+
+> Florian Westphal [mailto:fw@strlen.de] wrote:
+> >Correct.  This is broken since the central spin lock removal, since 
+> >nf_conntrack_lock no longer protects both get_next_corpse and 
+> >conntrack_confirm.
+> > 
+> >Please send a patch, moving dying check after removal of conntrack from 
+> >the percpu list,
+>
+> Since unconfirmed conntrack is stored in unconfirmed-list which is per-cpu
+> list and protected by per-cpu spin-lock, we can remove it from
+> uncomfirmed-list and insert it into ct-hash-table separately. that is to
+> say, we can remove it from uncomfirmed-list without holding corresponding
+> hash-lock, then check if it is dying.
+> if it is dying, we add it to the dying-list, then quit
+> __nf_conntrack_confirm. we do this to follow the rules that the conntrack
+> must alternatively at unconfirmed-list or dying-list when it is abort to be
+> destroyed.
+
+In the resubmit. I'll take a slightly more conservative approach, by
+keeping the DYING check under the hash-lock, as it is currently.  I
+guess we could do it without holding the hash-lock, but I want to keep
+the fix as simple as possible.
+
+
+> >> 	2. operation on ct->status should be atomic, because it race aginst 
+> >> get_next_corpse.
+[...]
+> if there is a race at operating ct->status, there will be in alternative
+> case:
+> 1) IPS_DYING bit which set in get_next_corpse override other bits (e.g.
+> IPS_SRC_NAT_DONE_BIT), or
+> 2) other bits (e.g. IPS_SRC_NAT_DONE_BIT) which set in nf_nat_setup_info
+> override IPS_DYING bit.
+
+Notice the set_bit() is atomic, so we don't have these issues (of bits
+getting overridden).
 
 -- 
-~Vinod
-
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
