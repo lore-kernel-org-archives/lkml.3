@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaKFWmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:42:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58802 "EHLO
+	id S1752759AbaKFWmL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:42:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58826 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaKFWl4 (ORCPT
+	with ESMTP id S1752733AbaKFWmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:41:56 -0500
+	Thu, 6 Nov 2014 17:42:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 039/162] sparc64: Do not define thread fpregs save area as zero-length array.
-Date: Thu,  6 Nov 2014 14:35:03 -0800
-Message-Id: <1415313426-9622-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 111/162] iio: adc: mxs-lradc: Disable the clock on probe failure
+Date: Thu,  6 Nov 2014 14:36:15 -0800
+Message-Id: <1415313426-9622-112-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,48 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-[ Upstream commit e2653143d7d79a49f1a961aeae1d82612838b12c ]
+commit 75d7ed3b9e7cb79a3b0e1f417fb674d54b4fc668 upstream.
 
-This breaks the stack end corruption detection facility.
+We should disable lradc->clk in the case of errors in the probe function.
 
-What that facility does it write a magic value to "end_of_stack()"
-and checking to see if it gets overwritten.
-
-"end_of_stack()" is "task_thread_info(p) + 1", which for sparc64 is
-the beginning of the FPU register save area.
-
-So once the user uses the FPU, the magic value is overwritten and the
-debug checks trigger.
-
-Fix this by making the size explicit.
-
-Due to the size we use for the fpsaved[], gsr[], and xfsr[] arrays we
-are limited to 7 levels of FPU state saves.  So each FPU register set
-is 256 bytes, allocate 256 * 7 for the fpregs area.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Reviewed-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/include/asm/thread_info_64.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/iio/adc/mxs-lradc.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/sparc/include/asm/thread_info_64.h b/arch/sparc/include/asm/thread_info_64.h
-index f85dc85..cc6275c 100644
---- a/arch/sparc/include/asm/thread_info_64.h
-+++ b/arch/sparc/include/asm/thread_info_64.h
-@@ -63,7 +63,8 @@ struct thread_info {
- 	struct pt_regs		*kern_una_regs;
- 	unsigned int		kern_una_insn;
+diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
+index cef5dde..da4f0b1 100644
+--- a/drivers/staging/iio/adc/mxs-lradc.c
++++ b/drivers/staging/iio/adc/mxs-lradc.c
+@@ -1307,14 +1307,16 @@ static int mxs_lradc_probe(struct platform_device *pdev)
+ 	/* Grab all IRQ sources */
+ 	for (i = 0; i < of_cfg->irq_count; i++) {
+ 		lradc->irq[i] = platform_get_irq(pdev, i);
+-		if (lradc->irq[i] < 0)
+-			return lradc->irq[i];
++		if (lradc->irq[i] < 0) {
++			ret = lradc->irq[i];
++			goto err_clk;
++		}
  
--	unsigned long		fpregs[0] __attribute__ ((aligned(64)));
-+	unsigned long		fpregs[(7 * 256) / sizeof(unsigned long)]
-+		__attribute__ ((aligned(64)));
- };
+ 		ret = devm_request_irq(dev, lradc->irq[i],
+ 					mxs_lradc_handle_irq, 0,
+ 					of_cfg->irq_name[i], iio);
+ 		if (ret)
+-			return ret;
++			goto err_clk;
+ 	}
  
- #endif /* !(__ASSEMBLY__) */
+ 	platform_set_drvdata(pdev, iio);
+@@ -1334,7 +1336,7 @@ static int mxs_lradc_probe(struct platform_device *pdev)
+ 				&mxs_lradc_trigger_handler,
+ 				&mxs_lradc_buffer_ops);
+ 	if (ret)
+-		return ret;
++		goto err_clk;
+ 
+ 	ret = mxs_lradc_trigger_init(iio);
+ 	if (ret)
+@@ -1369,6 +1371,8 @@ err_dev:
+ 	mxs_lradc_trigger_remove(iio);
+ err_trig:
+ 	iio_triggered_buffer_cleanup(iio);
++err_clk:
++	clk_disable_unprepare(lradc->clk);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
