@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaKFMor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:44:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2520 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232AbaKFMop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:44:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,325,1413270000"; 
-   d="scan'208";a="632598204"
-Date: Thu, 6 Nov 2014 18:15:12 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v10 4/5] dmaengine: pl330: add Power Management support
-Message-ID: <20141106124512.GA1870@intel.com>
-References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
- <1415263010-7992-5-git-send-email-k.kozlowski@samsung.com>
+	id S1751535AbaKFMqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:46:39 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:51651 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaKFMqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:46:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415263010-7992-5-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <E0B33C12-EBD6-465C-813C-7FD8553A3CB8@konsulko.com>
+References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
+ <1414528433-9650-5-git-send-email-pantelis.antoniou@konsulko.com>
+ <20141105200129.B4438C41C40@trevor.secretlab.ca> <E0B33C12-EBD6-465C-813C-7FD8553A3CB8@konsulko.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 6 Nov 2014 12:46:15 +0000
+X-Google-Sender-Auth: Rr386xwgNM0-OjnoOJtqJBV07rM
+Message-ID: <CACxGe6tvRJP3J=7ccmH-CtjwSaZVx23KnkcMb6zgzG-pOkanXA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] of: Add old prop argument on OF_RECONFIG_UPDATE_PROPERTY
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 09:36:49AM +0100, Krzysztof Kozlowski wrote:
-> This patch adds both normal PM suspend/resume support and runtime PM
-> support to pl330 DMA engine driver.
-> 
-> The runtime power management for pl330 DMA driver allows gating of AMBA
-> clock (PDMA) in FSYS clock domain, when the device is not processing any
-> requests. This is necessary to enter low power modes on Exynos SoCs
-> (e.g. LPA on Exynos4x12 or W-AFTR on Exynos3250).
-> 
-> Runtime PM resuming of the device may happen in atomic context (during
-> call device_issue_pending()) so pm_runtime_irq_safe() is used. This will
-> lead only to disabling/enabling of the clock but this is sufficient for
-> gating the clock and for reducing energy usage.
-> 
-> During system sleep the AMBA bus clock is also unprepared.
+On Wed, Nov 5, 2014 at 8:08 PM, Pantelis Antoniou
+<pantelis.antoniou@konsulko.com> wrote:
+> Hi Grant,
+>
+>> On Nov 5, 2014, at 22:01 , Grant Likely <grant.likely@secretlab.ca> wrote:
+>>
+>> On Tue, 28 Oct 2014 22:33:52 +0200
+>> , Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+>> wrote:
+>>> The notifier now includes the old_prop argument when updating
+>>> properties, propagate this API to changeset internals while
+>>> also retaining the old behaviour of retrieving the old_property
+>>> when NULL is passed.
+>>>
+>>> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+>>
+>> I'm still fuzzy on the need for this patch. Is this just an optimization
+>> so that the property doesn't get looked up twice? Or is there a reason
+>> when the oldprop really needs to be passed in explicitly?
+>>
+>
+> In the case of overlay's applying a property change the old property has
+> been already retrieved. Passing it as an argument saves us a traversal of the
+> property list.
+>
+> On the original series were removal was supported, the old property was required
+> since you can't find the old property anymore on the node (it was on another list).
+>
+> When we go back to revisit the removal case, that API is useful.
 
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+Since we're not doing removal anymore, lets drop this patch.
 
--- 
-~Vinod
-
+g.
