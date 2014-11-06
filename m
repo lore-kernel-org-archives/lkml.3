@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaKFQwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:52:18 -0500
-Received: from sub4.mail.dreamhost.com ([69.163.253.135]:50390 "EHLO
-	homiemail-a108.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752504AbaKFQwO (ORCPT
+	id S1752474AbaKFQwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:52:39 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:35801 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaKFQwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:52:14 -0500
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Nov 2014 11:52:14 EST
-From: "Gerald Coley" <gerald@granddesignsgroup.com>
-To: "'Tony Lindgren'" <tony@atomide.com>, "'Nishanth Menon'" <nm@ti.com>
-Cc: "'Tom Rini'" <trini@ti.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
-        <beagleboard@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        <fcooper@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-References: <1415290702-11353-1-git-send-email-nm@ti.com> <20141106163207.GF16896@saruman> <545BA3E6.90105@ti.com> <545BA513.2090907@ti.com> <20141106164843.GY31454@atomide.com>
-In-Reply-To: <20141106164843.GY31454@atomide.com>
-Subject: RE: [PATCH] ARM: dts: Add am57xx-beagle-x15
-Date: Thu, 6 Nov 2014 10:51:04 -0600
-Message-ID: <006701cff9e1$dc0cfbf0$9426f3d0$@granddesignsgroup.com>
+	Thu, 6 Nov 2014 11:52:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQJ5YymWdDQwubU8pfQPSxvpkvgedgHJv6/0AndAuUsCKD3UZAGQewkVmsEvXzA=
-Content-Language: en-us
+In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B80F3A9@PGSMSX102.gar.corp.intel.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-4-git-send-email-hock.leong.kweh@intel.com>
+ <20141104043247.GA23418@kroah.com> <CALCETrXjJju+cMWJfB6W5kSD=Ox5y+Hj_AfmbbbOTOh8CV8eaQ@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80EAE4@PGSMSX102.gar.corp.intel.com>
+ <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
+ <1415110688.26277.36.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CALCETrW1UaOCcb-32SOUhi_Zh5vLzV+VwyffThVvso23z04SHA@mail.gmail.com>
+ <20141104154017.GA28113@kroah.com> <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80F3A9@PGSMSX102.gar.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 6 Nov 2014 08:52:13 -0800
+Message-ID: <CALCETrUi0ssZbOpHyVmh6jx68Oj=0h4BwfM0uLio8Qbaeu9gJw@mail.gmail.com>
+Subject: RE: [PATCH v2 3/3] efi: Capsule update with user helper interface
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Cc: Sam Protsenko <semen.protsenko@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert 12V to 5V and 3.3V. 5V supplies are too expensive at the required
-wattage level.
+On Nov 6, 2014 4:56 AM, "Kweh, Hock Leong" <hock.leong.kweh@intel.com> wrote:
+>
+> > -----Original Message-----
+> > From: Andy Lutomirski [mailto:luto@amacapital.net]
+> > Sent: Wednesday, November 05, 2014 12:36 AM
+> >
+> > Am I missing something here?  The current proposal is missing the
+> > success/failure part, unless you count the loaded count (in a different sysfs
+> > directory) as a useful interface for that.
+>
+> Here is my sample shell script which allow me to do multi capsule binaries upload
+> and obtain error message if error occur:
+>
+> #!/bin/sh
+>
+> old=$(cat /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+>
+> for arg in "$@"
+> do
+>         if [ -f $arg ]
+>         then
+>                 echo 1 > /sys/class/firmware/efi-capsule-file/loading
+>                 cat $arg > /sys/class/firmware/efi-capsule-file/data
+>                 echo 0 > /sys/class/firmware/efi-capsule-file/loading
 
-Gerald
+I think you have a race.  Try putting msleep(1000) after the
+request_firmware_nowait call, and I bet this will fail on the second
+try.
+
+>
+>                 oldtime=$(date +%S)
+>                 oldtime=$(((time + 2) % 60))
+>                 until [ -f /sys/class/firmware/efi-capsule-file/loading ]
+>                 do
+>                         newtime=$(date +%S)
+>                         if [ $newtime -eq $oldtime ]
+>                         then
+>                                 break
+>                         fi
+>                 done
+>
+>                 old=$((old + 1))
+>                 new=$(cat /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+
+I think that firmware_class doesn't call the callback until after
+loading is closed for the second time.  If so, then this is racy.  Try
+inserting msleep(1000) at the beginning of your callback and uploading
+a capsule that should load successfully -- this will report failure,
+but a future upload may get very confused.  Also, what does the
+firmware class do when simultaneous uploads of the same file with
+different contents are in flight?  Is that possible?
 
 
------Original Message-----
-From: Tony Lindgren [mailto:tony@atomide.com] 
-Sent: Thursday, November 6, 2014 10:49 AM
-To: Nishanth Menon
-Cc: Tom Rini; balbi@ti.com; devicetree@vger.kernel.org;
-beagleboard@googlegroups.com; linux-kernel@vger.kernel.org;
-gerald@granddesignsgroup.com; fcooper@ti.com; linux-omap@vger.kernel.org;
-linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: dts: Add am57xx-beagle-x15
-
-* Nishanth Menon <nm@ti.com> [141106 08:44]:
-> On 11/06/2014 10:37 AM, Tom Rini wrote:
-> 
-> >>> device_type = "memory"; +		reg = <0x80000000 0x40000000>; /*
-1GB
-> >>> to start. Target 2GB */
-> >>
-> >> 1GiB ? Why would you put this here btw ? u-boot fills this one up.
-> > 
-> > Yes, it should either be the full and correct value or 0x0 (like a 
-> > number of PowerPC platforms do) so it's clear something else gives 
-> > us the right value here.
-> 
-> Honest mistake, my bad.. I thought I cleaned up the patch! Sigh!!! i 
-> will repost with proper 2GB. it is better that way in case being used 
-> with "other bootloaders" which are not exactly too good like u-boot.
-
-Can you also describe why all the always-on regulators are needed?
-
-Regards,
-
-Tony
-
+--Andy
