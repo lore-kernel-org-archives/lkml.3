@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbaKFWoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:44:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59098 "EHLO
+	id S1753334AbaKFWo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59132 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246AbaKFWoJ (ORCPT
+	with ESMTP id S1753304AbaKFWoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:09 -0500
+	Thu, 6 Nov 2014 17:44:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 029/162] sparc64: Fix pcr_ops initialization and usage bugs.
-Date: Thu,  6 Nov 2014 14:34:53 -0800
-Message-Id: <1415313426-9622-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 031/162] sparc64: sun4v TLB error power off events
+Date: Thu,  6 Nov 2014 14:34:55 -0800
+Message-Id: <1415313426-9622-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,92 +28,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: bob picco <bpicco@meloft.net>
 
-[ Upstream commit 8bccf5b313180faefce38e0d1140f76e0f327d28 ]
+[ Upstream commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ]
 
-Christopher reports that perf_event_print_debug() can crash in uniprocessor
-builds.  The crash is due to pcr_ops being NULL.
+We've witnessed a few TLB events causing the machine to power off because
+of prom_halt. In one case it was some nfs related area during rmmod. Another
+was an mmapper of /dev/mem. A more recent one is an ITLB issue with
+a bad pagesize which could be a hardware bug. Bugs happen but we should
+attempt to not power off the machine and/or hang it when possible.
 
-This happens because pcr_arch_init() is only invoked by smp_cpus_done() which
-only executes in SMP builds.
+This is a DTLB error from an mmapper of /dev/mem:
+[root@sparcie ~]# SUN4V-DTLB: Error at TPC[fffff80100903e6c], tl 1
+SUN4V-DTLB: TPC<0xfffff80100903e6c>
+SUN4V-DTLB: O7[fffff801081979d0]
+SUN4V-DTLB: O7<0xfffff801081979d0>
+SUN4V-DTLB: vaddr[fffff80100000000] ctx[1250] pte[98000000000f0610] error[2]
+.
 
-init_hw_perf_events() is closely intertwined with pcr_ops being setup properly,
-therefore:
+This is recent mainline for ITLB:
+[ 3708.179864] SUN4V-ITLB: TPC<0xfffffc010071cefc>
+[ 3708.188866] SUN4V-ITLB: O7[fffffc010071cee8]
+[ 3708.197377] SUN4V-ITLB: O7<0xfffffc010071cee8>
+[ 3708.206539] SUN4V-ITLB: vaddr[e0003] ctx[1a3c] pte[2900000dcc800eeb] error[4]
+.
 
-1) Call pcr_arch_init() early on from init_hw_perf_events(), instead of
-   from smp_cpus_done().
+Normally sun4v_itlb_error_report() and sun4v_dtlb_error_report() would call
+prom_halt() and drop us to OF command prompt "ok". This isn't the case for
+LDOMs and the machine powers off.
 
-2) Do not hook up a PMU type if pcr_ops is NULL after pcr_arch_init().
+For the HV reported error of HV_ENORADDR for HV HV_MMU_MAP_ADDR_TRAP we cause
+a SIGBUS error by qualifying it within do_sparc64_fault() for fault code mask
+of FAULT_CODE_BAD_RA. This is done when trap level (%tl) is less or equal
+one("1"). Otherwise, for %tl > 1,  we proceed eventually to die_if_kernel().
 
-3) Move init_hw_perf_events to a later initcall so that it we will be
-   sure to invoke pcr_arch_init() after all cpus are brought up.
+The logic of this patch was partially inspired by David Miller's feedback.
 
-Finally, guard the one naked sequence of pcr_ops dereferences in
-__global_pmu_self() with an appropriate NULL check.
+Power off of large sparc64 machines is painful. Plus die_if_kernel provides
+more context. A reset sequence isn't a brief period on large sparc64 but
+better than power-off/power-on sequence.
 
-Reported-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/kernel/perf_event.c | 7 +++++--
- arch/sparc/kernel/process_64.c | 3 +++
- arch/sparc/kernel/smp_64.c     | 1 -
- 3 files changed, 8 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/thread_info_64.h |  1 +
+ arch/sparc/kernel/sun4v_tlb_miss.S      | 35 ++++++++++++++++++++-------------
+ arch/sparc/kernel/traps_64.c            | 15 ++++++++------
+ arch/sparc/mm/fault_64.c                |  3 +++
+ 4 files changed, 34 insertions(+), 20 deletions(-)
 
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index b5c38fa..857baca 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1671,9 +1671,12 @@ static bool __init supported_pmu(void)
+diff --git a/arch/sparc/include/asm/thread_info_64.h b/arch/sparc/include/asm/thread_info_64.h
+index a5f01ac..f85dc85 100644
+--- a/arch/sparc/include/asm/thread_info_64.h
++++ b/arch/sparc/include/asm/thread_info_64.h
+@@ -102,6 +102,7 @@ struct thread_info {
+ #define FAULT_CODE_ITLB		0x04	/* Miss happened in I-TLB	   */
+ #define FAULT_CODE_WINFIXUP	0x08	/* Miss happened during spill/fill */
+ #define FAULT_CODE_BLKCOMMIT	0x10	/* Use blk-commit ASI in copy_page */
++#define	FAULT_CODE_BAD_RA	0x20	/* Bad RA for sun4v		   */
  
- int __init init_hw_perf_events(void)
- {
-+	int err;
+ #if PAGE_SHIFT == 13
+ #define THREAD_SIZE (2*PAGE_SIZE)
+diff --git a/arch/sparc/kernel/sun4v_tlb_miss.S b/arch/sparc/kernel/sun4v_tlb_miss.S
+index e0c09bf8..6179e19 100644
+--- a/arch/sparc/kernel/sun4v_tlb_miss.S
++++ b/arch/sparc/kernel/sun4v_tlb_miss.S
+@@ -195,6 +195,11 @@ sun4v_tsb_miss_common:
+ 	 ldx	[%g2 + TRAP_PER_CPU_PGD_PADDR], %g7
+ 
+ sun4v_itlb_error:
++	rdpr	%tl, %g1
++	cmp	%g1, 1
++	ble,pt	%icc, sun4v_bad_ra
++	 or	%g0, FAULT_CODE_BAD_RA | FAULT_CODE_ITLB, %g1
 +
- 	pr_info("Performance events: ");
+ 	sethi	%hi(sun4v_err_itlb_vaddr), %g1
+ 	stx	%g4, [%g1 + %lo(sun4v_err_itlb_vaddr)]
+ 	sethi	%hi(sun4v_err_itlb_ctx), %g1
+@@ -206,15 +211,10 @@ sun4v_itlb_error:
+ 	sethi	%hi(sun4v_err_itlb_error), %g1
+ 	stx	%o0, [%g1 + %lo(sun4v_err_itlb_error)]
  
--	if (!supported_pmu()) {
-+	err = pcr_arch_init();
-+	if (err || !supported_pmu()) {
- 		pr_cont("No support for PMU type '%s'\n", sparc_pmu_type);
- 		return 0;
++	sethi	%hi(1f), %g7
+ 	rdpr	%tl, %g4
+-	cmp	%g4, 1
+-	ble,pt	%icc, 1f
+-	 sethi	%hi(2f), %g7
+ 	ba,pt	%xcc, etraptl1
+-	 or	%g7, %lo(2f), %g7
+-
+-1:	ba,pt	%xcc, etrap
+-2:	 or	%g7, %lo(2b), %g7
++1:	 or	%g7, %lo(1f), %g7
+ 	mov	%l4, %o1
+ 	call	sun4v_itlb_error_report
+ 	 add	%sp, PTREGS_OFF, %o0
+@@ -222,6 +222,11 @@ sun4v_itlb_error:
+ 	/* NOTREACHED */
+ 
+ sun4v_dtlb_error:
++	rdpr	%tl, %g1
++	cmp	%g1, 1
++	ble,pt	%icc, sun4v_bad_ra
++	 or	%g0, FAULT_CODE_BAD_RA | FAULT_CODE_DTLB, %g1
++
+ 	sethi	%hi(sun4v_err_dtlb_vaddr), %g1
+ 	stx	%g4, [%g1 + %lo(sun4v_err_dtlb_vaddr)]
+ 	sethi	%hi(sun4v_err_dtlb_ctx), %g1
+@@ -233,21 +238,23 @@ sun4v_dtlb_error:
+ 	sethi	%hi(sun4v_err_dtlb_error), %g1
+ 	stx	%o0, [%g1 + %lo(sun4v_err_dtlb_error)]
+ 
++	sethi	%hi(1f), %g7
+ 	rdpr	%tl, %g4
+-	cmp	%g4, 1
+-	ble,pt	%icc, 1f
+-	 sethi	%hi(2f), %g7
+ 	ba,pt	%xcc, etraptl1
+-	 or	%g7, %lo(2f), %g7
+-
+-1:	ba,pt	%xcc, etrap
+-2:	 or	%g7, %lo(2b), %g7
++1:	 or	%g7, %lo(1f), %g7
+ 	mov	%l4, %o1
+ 	call	sun4v_dtlb_error_report
+ 	 add	%sp, PTREGS_OFF, %o0
+ 
+ 	/* NOTREACHED */
+ 
++sun4v_bad_ra:
++	or	%g0, %g4, %g5
++	ba,pt	%xcc, sparc64_realfault_common
++	 or	%g1, %g0, %g4
++
++	/* NOTREACHED */
++
+ 	/* Instruction Access Exception, tl0. */
+ sun4v_iacc:
+ 	ldxa	[%g0] ASI_SCRATCHPAD, %g2
+diff --git a/arch/sparc/kernel/traps_64.c b/arch/sparc/kernel/traps_64.c
+index 4ced92f..25d0c7e 100644
+--- a/arch/sparc/kernel/traps_64.c
++++ b/arch/sparc/kernel/traps_64.c
+@@ -2102,6 +2102,11 @@ void sun4v_nonresum_overflow(struct pt_regs *regs)
+ 	atomic_inc(&sun4v_nonresum_oflow_cnt);
+ }
+ 
++static void sun4v_tlb_error(struct pt_regs *regs)
++{
++	die_if_kernel("TLB/TSB error", regs);
++}
++
+ unsigned long sun4v_err_itlb_vaddr;
+ unsigned long sun4v_err_itlb_ctx;
+ unsigned long sun4v_err_itlb_pte;
+@@ -2109,8 +2114,7 @@ unsigned long sun4v_err_itlb_error;
+ 
+ void sun4v_itlb_error_report(struct pt_regs *regs, int tl)
+ {
+-	if (tl > 1)
+-		dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
++	dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
+ 
+ 	printk(KERN_EMERG "SUN4V-ITLB: Error at TPC[%lx], tl %d\n",
+ 	       regs->tpc, tl);
+@@ -2123,7 +2127,7 @@ void sun4v_itlb_error_report(struct pt_regs *regs, int tl)
+ 	       sun4v_err_itlb_vaddr, sun4v_err_itlb_ctx,
+ 	       sun4v_err_itlb_pte, sun4v_err_itlb_error);
+ 
+-	prom_halt();
++	sun4v_tlb_error(regs);
+ }
+ 
+ unsigned long sun4v_err_dtlb_vaddr;
+@@ -2133,8 +2137,7 @@ unsigned long sun4v_err_dtlb_error;
+ 
+ void sun4v_dtlb_error_report(struct pt_regs *regs, int tl)
+ {
+-	if (tl > 1)
+-		dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
++	dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
+ 
+ 	printk(KERN_EMERG "SUN4V-DTLB: Error at TPC[%lx], tl %d\n",
+ 	       regs->tpc, tl);
+@@ -2147,7 +2150,7 @@ void sun4v_dtlb_error_report(struct pt_regs *regs, int tl)
+ 	       sun4v_err_dtlb_vaddr, sun4v_err_dtlb_ctx,
+ 	       sun4v_err_dtlb_pte, sun4v_err_dtlb_error);
+ 
+-	prom_halt();
++	sun4v_tlb_error(regs);
+ }
+ 
+ void hypervisor_tlbop_error(unsigned long err, unsigned long op)
+diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
+index 4ced3fc..45a413e 100644
+--- a/arch/sparc/mm/fault_64.c
++++ b/arch/sparc/mm/fault_64.c
+@@ -348,6 +348,9 @@ retry:
+ 		down_read(&mm->mmap_sem);
  	}
-@@ -1685,7 +1688,7 @@ int __init init_hw_perf_events(void)
  
- 	return 0;
- }
--early_initcall(init_hw_perf_events);
-+pure_initcall(init_hw_perf_events);
- 
- void perf_callchain_kernel(struct perf_callchain_entry *entry,
- 			   struct pt_regs *regs)
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index d7b4967..c6f7113 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -306,6 +306,9 @@ static void __global_pmu_self(int this_cpu)
- 	struct global_pmu_snapshot *pp;
- 	int i, num;
- 
-+	if (!pcr_ops)
-+		return;
++	if (fault_code & FAULT_CODE_BAD_RA)
++		goto do_sigbus;
 +
- 	pp = &global_cpu_snapshot[this_cpu].pmu;
- 
- 	num = 1;
-diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-index 8416d7f..8311f3d 100644
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -1395,7 +1395,6 @@ void __cpu_die(unsigned int cpu)
- 
- void __init smp_cpus_done(unsigned int max_cpus)
- {
--	pcr_arch_init();
- }
- 
- void smp_send_reschedule(int cpu)
+ 	vma = find_vma(mm, address);
+ 	if (!vma)
+ 		goto bad_area;
 -- 
 1.9.1
 
