@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbaKFCSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:18:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38972 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaKFCSQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:18:16 -0500
-Date: Wed, 5 Nov 2014 18:18:15 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] core: Add generic object registry implementation
-Message-ID: <20141106021815.GA17253@kroah.com>
-References: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
- <20141104163845.GA369@kroah.com>
- <20141105091351.GA12033@ulmo>
+	id S1751647AbaKFCSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:18:47 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62333 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052AbaKFCSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 21:18:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,323,1413270000"; 
+   d="scan'208";a="627384823"
+Message-ID: <545ADA1D.1000800@linux.intel.com>
+Date: Thu, 06 Nov 2014 10:17:01 +0800
+From: "Lu, Baolu" <baolu.lu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141105091351.GA12033@ulmo>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] usb: xhci: This reworks ff8cbf250b448aac35589f6075082c3fcad8a8fe
+References: <Pine.LNX.4.44L0.1411051621280.1531-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1411051621280.1531-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 10:13:53AM +0100, Thierry Reding wrote:
-> On Tue, Nov 04, 2014 at 08:38:45AM -0800, Greg Kroah-Hartman wrote:
-> > On Tue, Nov 04, 2014 at 05:29:27PM +0100, Thierry Reding wrote:
-> [...]
-> > > diff --git a/drivers/base/registry.c b/drivers/base/registry.c
-> [...]
-> > > +/**
-> > > + * registry_record_ref - reference on the registry record
-> > > + * @record: record to reference
-> > > + *
-> > > + * Increases the reference count on the record and returns a pointer to it.
-> > > + *
-> > > + * Return: A pointer to the record on success or NULL on failure.
-> > > + */
-> > > +struct registry_record *registry_record_ref(struct registry_record *record)
-> > > +{
-> > > +	if (!record)
-> > > +		return NULL;
-> > > +
-> > > +	/*
-> > > +	 * Refuse to give out any more references if the module owning the
-> > > +	 * record is being removed.
-> > > +	 */
-> > > +	if (!try_module_get(record->owner))
-> > > +		return NULL;
-> > > +
-> > > +	kref_get(&record->kref);
-> > 
-> > You "protect" from a module being removed, but not from someone else
-> > releasing the kref at the same time.  Where is the lock that prevents
-> > this from happening?
-> 
-> You're right, we need a record lock to serialize ref/unref.
-> 
-> > And do we really care about module reference counts here?
-> 
-> We need this so that the code of the .release() callback stays in
-> memory as long as there are any references.
-> 
-> Also we need the module reference count for registries because they
-> would typically be statically allocated and go away along with a module
-> when it is unloaded.
 
-Never use a 'static' variable as a dynamic one with a kref, that's just
-asking for trouble.
+On 11/6/2014 5:24 AM, Alan Stern wrote:
+> On Wed, 5 Nov 2014, Lu Baolu wrote:
+>
+>> xhci: clear root port wake on bits if controller isn't allowed to do wakeup
+>>
+>> When system is being suspended, if host device is not allowed to do wakeup,
+>> xhci_suspend() needs to clear all root port wake on bits. Otherwise, some
+>> platforms may generate spurious wakeup, even if PCI PME# is disabled.
+>>
+>> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+>> Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+> This looks pretty good now.
+>
+>> +static void xhci_disable_port_wake_on_bits(struct xhci_hcd *xhci)
+>> +{
+>> +	int port_index;
+>> +	__le32 __iomem **port_array;
+>> +	unsigned long flags;
+>> +	u32 t1, t2;
+>> +
+>> +	spin_lock_irqsave(&xhci->lock, flags);
+>> +
+>> +	/* disble usb3 ports Wake bits*/
+>> +	port_index = xhci->num_usb3_ports;
+>> +	port_array = xhci->usb3_ports;
+>> +	while (port_index--) {
+>> +		t1 = readl(port_array[port_index]);
+>> +		t2 = xhci_port_state_to_neutral(t1);
+>> +		t2 &= ~PORT_WAKE_BITS;
+>> +		t1 = xhci_port_state_to_neutral(t1);
+>> +		if (t1 != t2)
+>> +			writel(t2, port_array[port_index]);
+> Why not just do:
+>
+> 		t1 = readl(port_array[port_index]);
+> 		t1 = xhci_port_state_to_neutral(t1);
+> 		t2 = t1 & ~PORT_WAKE_BITS;
+> 		if (t1 != t2) ...
+Right, this looks better. I will test and resend the patches with this 
+change.
 
-> > > +/**
-> > > + * registry_add - add a record to a registry
-> > > + * @registry: registry to add the record to
-> > > + * @record: record to add
-> > > + *
-> > > + * Tries to increase the reference count of the module owning the registry. If
-> > > + * successful adds the new record to the registry.
-> > > + *
-> > > + * Return: 0 on success or a negative error code on failure.
-> > > + */
-> > > +int registry_add(struct registry *registry, struct registry_record *record)
-> > > +{
-> > > +	if (!try_module_get(registry->owner))
-> > > +		return -ENODEV;
-> > > +
-> > > +	mutex_lock(&registry->lock);
-> > > +	list_add_tail(&record->list, &registry->list);
-> > > +	mutex_unlock(&registry->lock);
-> > 
-> > No incrementing of the reference of the record at all?
-> 
-> I'm not sure if we really need one. Drivers will have to remove the
-> record from the registry before dropping their reference. I guess we
-> could throw in another kref_get() here (and a kref_put() in
-> registry_remove()) for good measure to prevent breakage with buggy
-> drivers.
+>
+> Apart from that minor point,
+>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>
+> Alan Stern
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Or at least warn people that they need to clean stuff up properly if
-they do not, otherwise they will get it wrong.  You need to make it very
-hard to get wrong.
-
-> > You seem to be using 2 reference counts for the record / registry, a
-> > module count, and a kref count, which can cause confusion...
-> 
-> There is one reference count (kref actually) per registry record and one
-> module count for the record owner and the registry owner.
-
-But both counts are in the same structure, which is a mess.
-
-> Can you elaborate what you think is confusing? Perhaps I can add more
-> kerneldoc to clarify.
-
-You have 2 references in the same structure, with different lifecycles,
-causing confusion, and odds are, bugs...
-
-Sure, document it better if you want, but I think something needs to be
-done differently if at all possible.
-
-thanks,
-
-greg k-h
