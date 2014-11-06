@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaKFWhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:37:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58462 "EHLO
+	id S1751574AbaKFWhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:37:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58460 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaKFWhc (ORCPT
+	with ESMTP id S1751424AbaKFWhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 17:37:32 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Pavel Emelyanov <xemul@parallels.com>,
+Cc: Vladislav Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Andrey Vagin <avagin@openvz.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 004/162] tcp: don't use timestamp from repaired skb-s to calculate RTT (v2)
-Date: Thu,  6 Nov 2014 14:34:28 -0800
-Message-Id: <1415313426-9622-5-git-send-email-kamal@canonical.com>
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 013/162] bridge: Check if vlan filtering is enabled only once.
+Date: Thu,  6 Nov 2014 14:34:37 -0800
+Message-Id: <1415313426-9622-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,123 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 9d186cac7ffb1831e9f34cb4a3a8b22abb9dd9d4 ]
+[ Upstream commit 20adfa1a81af00bf2027644507ad4fa9cd2849cf ]
 
-We don't know right timestamp for repaired skb-s. Wrong RTT estimations
-isn't good, because some congestion modules heavily depends on it.
+The bridge code checks if vlan filtering is enabled on both
+ingress and egress.   When the state flip happens, it
+is possible for the bridge to currently be forwarding packets
+and forwarding behavior becomes non-deterministic.  Bridge
+may drop packets on some interfaces, but not others.
 
-This patch adds the TCPCB_REPAIRED flag, which is included in
-TCPCB_RETRANS.
+This patch solves this by caching the filtered state of the
+packet into skb_cb on ingress.  The skb_cb is guaranteed to
+not be over-written between the time packet entres bridge
+forwarding path and the time it leaves it.  On egress, we
+can then check the cached state to see if we need to
+apply filtering information.
 
-Thanks to Eric for the advice how to fix this issue.
-
-This patch fixes the warning:
-[  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
-[  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
-[  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
-[  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
-[  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
-[  879.569982] Call Trace:
-[  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
-[  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
-[  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
-[  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
-[  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
-[  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
-[  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
-[  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
-[  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
-[  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
-[  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
-[  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
-[  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
-[  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
-
-v2: moving setting of skb->when for repaired skb-s in tcp_write_xmit,
-    where it's set for other skb-s.
-
-Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
-Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Vladislav Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/tcp.h     |  4 +++-
- net/ipv4/tcp.c        | 14 +++++++-------
- net/ipv4/tcp_output.c |  5 ++++-
- 3 files changed, 14 insertions(+), 9 deletions(-)
+ net/bridge/br_private.h |  3 +++
+ net/bridge/br_vlan.c    | 15 +++++++++++----
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 920fc2e..0a00e7c 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -720,8 +720,10 @@ struct tcp_skb_cb {
- #define TCPCB_SACKED_RETRANS	0x02	/* SKB retransmitted		*/
- #define TCPCB_LOST		0x04	/* SKB is lost			*/
- #define TCPCB_TAGBITS		0x07	/* All tag bits			*/
-+#define TCPCB_REPAIRED		0x10	/* SKB repaired (no skb_mstamp)	*/
- #define TCPCB_EVER_RETRANS	0x80	/* Ever retransmitted frame	*/
--#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
-+#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
-+				TCPCB_REPAIRED)
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 280f601..cd37763 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -309,6 +309,9 @@ struct br_input_skb_cb {
+ 	int igmp;
+ 	int mrouters_only;
+ #endif
++#ifdef CONFIG_BRIDGE_VLAN_FILTERING
++	bool vlan_filtered;
++#endif
+ };
  
- 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
- 	/* 1 byte hole */
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index e7a02d8..e06e1df 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1132,13 +1132,6 @@ new_segment:
- 					goto wait_for_memory;
+ #define BR_INPUT_SKB_CB(__skb)	((struct br_input_skb_cb *)(__skb)->cb)
+diff --git a/net/bridge/br_vlan.c b/net/bridge/br_vlan.c
+index 4f5341a..f71b4d8 100644
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -141,7 +141,8 @@ struct sk_buff *br_handle_vlan(struct net_bridge *br,
+ {
+ 	u16 vid;
  
- 				/*
--				 * All packets are restored as if they have
--				 * already been sent.
--				 */
--				if (tp->repair)
--					TCP_SKB_CB(skb)->when = tcp_time_stamp;
--
--				/*
- 				 * Check whether we can use HW checksum.
- 				 */
- 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
-@@ -1147,6 +1140,13 @@ new_segment:
- 				skb_entail(sk, skb);
- 				copy = size_goal;
- 				max = size_goal;
+-	if (!br->vlan_enabled)
++	/* If this packet was not filtered at input, let it pass */
++	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
+ 		goto out;
+ 
+ 	/* At this point, we know that the frame was filtered and contains
+@@ -186,8 +187,10 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
+ 	/* If VLAN filtering is disabled on the bridge, all packets are
+ 	 * permitted.
+ 	 */
+-	if (!br->vlan_enabled)
++	if (!br->vlan_enabled) {
++		BR_INPUT_SKB_CB(skb)->vlan_filtered = false;
+ 		return true;
++	}
+ 
+ 	/* If there are no vlan in the permitted list, all packets are
+ 	 * rejected.
+@@ -195,6 +198,8 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
+ 	if (!v)
+ 		goto drop;
+ 
++	BR_INPUT_SKB_CB(skb)->vlan_filtered = true;
 +
-+				/* All packets are restored as if they have
-+				 * already been sent. skb_mstamp isn't set to
-+				 * avoid wrong rtt estimation.
-+				 */
-+				if (tp->repair)
-+					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
- 			}
+ 	err = br_vlan_get_tag(skb, vid);
+ 	if (!*vid) {
+ 		u16 pvid = br_get_pvid(v);
+@@ -239,7 +244,8 @@ bool br_allowed_egress(struct net_bridge *br,
+ {
+ 	u16 vid;
  
- 			/* Try to append data to the end of skb. */
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index e3688a4..fa5b391 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1856,8 +1856,11 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
- 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
- 		BUG_ON(!tso_segs);
+-	if (!br->vlan_enabled)
++	/* If this packet was not filtered at input, let it pass */
++	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
+ 		return true;
  
--		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
-+		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE) {
-+			/* "when" is used as a start point for the retransmit timer */
-+			TCP_SKB_CB(skb)->when = tcp_time_stamp;
- 			goto repair; /* Skip network transmission */
-+		}
+ 	if (!v)
+@@ -258,7 +264,8 @@ bool br_should_learn(struct net_bridge_port *p, struct sk_buff *skb, u16 *vid)
+ 	struct net_bridge *br = p->br;
+ 	struct net_port_vlans *v;
  
- 		cwnd_quota = tcp_cwnd_test(tp, skb);
- 		if (!cwnd_quota) {
+-	if (!br->vlan_enabled)
++	/* If filtering was disabled at input, let it pass. */
++	if (!BR_INPUT_SKB_CB(skb)->vlan_filtered)
+ 		return true;
+ 
+ 	v = rcu_dereference(p->vlan_info);
 -- 
 1.9.1
 
