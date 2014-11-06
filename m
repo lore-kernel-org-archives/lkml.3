@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaKFRD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:03:56 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57613 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517AbaKFRDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:03:50 -0500
-Message-ID: <545BA9EE.1040905@ti.com>
-Date: Thu, 6 Nov 2014 22:33:42 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: <balbi@ti.com>, Nishanth Menon <nm@ti.com>
-CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Add DRA7xx CPSW Ethernet support in Device Tree
-References: <1413885661-4850-1-git-send-email-mugunthanvnm@ti.com> <54463063.80207@ti.com> <20141021172223.GA12943@kahuna> <20141103162722.GN27425@saruman>
-In-Reply-To: <20141103162722.GN27425@saruman>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1751728AbaKFQnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:43:47 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56057 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbaKFQnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 11:43:43 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>
+Subject: [PATCH v5 02/48] memory: emif: Use API function to determine power-off capability
+Date: Thu,  6 Nov 2014 08:42:46 -0800
+Message-Id: <1415292213-28652-3-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.545BA53F.021E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony
+Use have_kernel_power_off() to determine if the kernel is able
+to power off the system.
 
-On Monday 03 November 2014 09:57 PM, Felipe Balbi wrote:
-> On Tue, Oct 21, 2014 at 12:22:23PM -0500, Nishanth Menon wrote:
->> On 15:37-20141021, Mugunthan V N wrote:
->>> Nishanth
->>>
->>> On Tuesday 21 October 2014 03:30 PM, Mugunthan V N wrote:
->>>> Adding device tree entry for CPSW to make it work in Dual EMAC mode.
->>>> These patches were tested with DRA7 hwmod patches on top of linux-next.
->>>> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pushed
->>>> my tree to [2].
->>>>
->>>> Did a boot test with CPSW and ping test with suspend/resume, the boot logs
->>>> on DRA7xx EVM are posted at [3]
->>>>
->>>> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
->>>> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git v3.17/dra7-evm-cpsw-v3
->>>> [3] http://pastebin.ubuntu.com/8613072/
->>>>
->>>> Changes from v2:
->>>> * Changed pinctrl comments to hold mode0-name.mode-selected-name
->>>> * Changes slave numbers in the pinctrl comments
->>>> * Added cpsw and cpts clocks
->>>>
->>>
->>> I have not added support for dra72x-evm as it has only slave no 2 pinned
->>> out and having issues with bringing up the interface, need some more
->>> time to submit the patch, in the mean time I have submitted dra7-evm
->>> support only so that people can use dra7-evm on linux-next.
->>
->> Quickly tested as well:
->> http://slexy.org/raw/s2vISJxYrR
->>
->> Please feel free to add:
->> Tested-by: Nishanth Menon <nm@ti.com>
->> Acked-by: Nishanth Menon <nm@ti.com>
-> 
-> I've used these patches with X15 (DRA7xx-based yet-to-be-released board)
-> with v3.18-rc2.
-> 
-> Tested-by: Felipe Balbi <balbi@ti.com>
-> 
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v5:
+- Rebase to v3.18-rc3
+v4:
+- No change
+v3:
+- Replace poweroff in all newly introduced variables and in text
+  with power_off or power-off as appropriate
+v2:
+- poweroff -> power_off
 
-Ping on this
+ drivers/memory/emif.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Regards
-Mugunthan V N
+diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
+index 04644e7..317d49f 100644
+--- a/drivers/memory/emif.c
++++ b/drivers/memory/emif.c
+@@ -1053,10 +1053,10 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
+ 		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
+ 
+ 		/* If we have Power OFF ability, use it, else try restarting */
+-		if (pm_power_off) {
++		if (have_kernel_power_off()) {
+ 			kernel_power_off();
+ 		} else {
+-			WARN(1, "FIXME: NO pm_power_off!!! trying restart\n");
++			WARN(1, "FIXME: NO kernel power-off capability!!! trying restart\n");
+ 			kernel_restart("SDRAM Over-temp Emergency restart");
+ 		}
+ 		return IRQ_HANDLED;
+-- 
+1.9.1
+
