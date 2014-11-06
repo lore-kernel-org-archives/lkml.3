@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaKFMXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:23:49 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:63136 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaKFMXl (ORCPT
+	id S1751395AbaKFMXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:23:40 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:42041 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaKFMXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:23:41 -0500
+	Thu, 6 Nov 2014 07:23:37 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -15,11 +15,11 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
         Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 06/11] x86: Add support for Intel Cache QoS Monitoring (CQM) detection
-Date: Thu,  6 Nov 2014 12:23:17 +0000
-Message-Id: <1415276602-10337-7-git-send-email-matt@console-pimps.org>
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/11] perf: Add ->count() function to read per-package counters
+Date: Thu,  6 Nov 2014 12:23:15 +0000
+Message-Id: <1415276602-10337-5-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
 References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
@@ -27,142 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-This patch adds support for the new Cache QoS Monitoring (CQM)
-feature found in future Intel Xeon processors.  It includes the
-new values to track CQM resources to the cpuinfo_x86 structure,
-plus the CPUID detection routines for CQM.
+For PMU drivers that record per-package counters, the ->count variable
+cannot be used to record an accurate aggregated value, since it's not
+possible to perform SMP cross-calls to cpus on other packages from the
+context in which we update ->count.
 
-CQM allows a process, or set of processes, to be tracked by the CPU
-to determine the cache usage of that task group.  Using this data
-from the CPU, software can be written to extract this data and
-report cache usage and occupancy for a particular process, or
-group of processes.
+Introduce a new optional ->count() accessor function that can be used to
+customize how values are collected. If a PMU driver doesn't provide a
+->count() function, we fallback to the existing code.
 
-More information about Cache QoS Monitoring can be found in the
-Intel (R) x86 Architecture Software Developer Manual, section 17.14.
+There is necessarily a window of staleness with this approach because
+the task that generated the counter value may not have been scheduled by
+the cpu recently.
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+An alternative and more complex approach would be to use a hrtimer to
+periodically refresh the values from a more permissive scheduling
+context. So, we're trading off complexity for accuracy.
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/include/asm/cpufeature.h |  9 ++++++++-
- arch/x86/include/asm/processor.h  |  3 +++
- arch/x86/kernel/cpu/common.c      | 39 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 50 insertions(+), 1 deletion(-)
+ include/linux/perf_event.h | 10 ++++++++++
+ kernel/events/core.c       |  5 ++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 0bb1335313b2..a57d98b3e5dd 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -12,7 +12,7 @@
- #include <asm/disabled-features.h>
- #endif
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1a4e2846d6fb..1bf06b6fd5dc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -264,6 +264,11 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
++
++	/*
++	 * Return the count value for a counter.
++	 */
++	u64 (*count)			(struct perf_event *event); /*optional*/
+ };
  
--#define NCAPINTS	11	/* N 32-bit words worth of info */
-+#define NCAPINTS	13	/* N 32-bit words worth of info */
- #define NBUGINTS	1	/* N 32-bit bug flags */
- 
- /*
-@@ -220,6 +220,7 @@
- #define X86_FEATURE_ERMS	( 9*32+ 9) /* Enhanced REP MOVSB/STOSB */
- #define X86_FEATURE_INVPCID	( 9*32+10) /* Invalidate Processor Context ID */
- #define X86_FEATURE_RTM		( 9*32+11) /* Restricted Transactional Memory */
-+#define X86_FEATURE_CQM		( 9*32+12) /* Cache QoS Monitoring */
- #define X86_FEATURE_MPX		( 9*32+14) /* Memory Protection Extension */
- #define X86_FEATURE_AVX512F	( 9*32+16) /* AVX-512 Foundation */
- #define X86_FEATURE_RDSEED	( 9*32+18) /* The RDSEED instruction */
-@@ -236,6 +237,12 @@
- #define X86_FEATURE_XGETBV1	(10*32+ 2) /* XGETBV with ECX = 1 */
- #define X86_FEATURE_XSAVES	(10*32+ 3) /* XSAVES/XRSTORS */
- 
-+/* Intel-defined CPU QoS Sub-leaf, CPUID level 0x0000000F:0 (edx), word 11 */
-+#define X86_FEATURE_CQM_LLC	(11*32+ 1) /* LLC QoS if 1 */
-+
-+/* Intel-defined CPU QoS Sub-leaf, CPUID level 0x0000000F:1 (edx), word 12 */
-+#define X86_FEATURE_CQM_OCCUP_LLC (12*32+ 0) /* LLC occupancy monitoring if 1 */
-+
- /*
-  * BUG word(s)
-  */
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index eb71ec794732..2c3a46af3334 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -109,6 +109,9 @@ struct cpuinfo_x86 {
- 	/* in KB - valid for CPUS which support this call: */
- 	int			x86_cache_size;
- 	int			x86_cache_alignment;	/* In bytes */
-+	/* Cache QoS architectural values: */
-+	int			x86_cache_max_rmid;	/* max index */
-+	int			x86_cache_occ_scale;	/* scale to bytes */
- 	int			x86_power;
- 	unsigned long		loops_per_jiffy;
- 	/* cpuid returned max cores value: */
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 4b4f78c9ba19..4230745fdcf8 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -642,6 +642,30 @@ void get_cpu_cap(struct cpuinfo_x86 *c)
- 		c->x86_capability[10] = eax;
- 	}
- 
-+	/* Additional Intel-defined flags: level 0x0000000F */
-+	if (c->cpuid_level >= 0x0000000F) {
-+		u32 eax, ebx, ecx, edx;
-+
-+		/* QoS sub-leaf, EAX=0Fh, ECX=0 */
-+		cpuid_count(0x0000000F, 0, &eax, &ebx, &ecx, &edx);
-+		c->x86_capability[11] = edx;
-+		if (cpu_has(c, X86_FEATURE_CQM_LLC)) {
-+			/* will be overridden if occupancy monitoring exists */
-+			c->x86_cache_max_rmid = ebx;
-+
-+			/* QoS sub-leaf, EAX=0Fh, ECX=1 */
-+			cpuid_count(0x0000000F, 1, &eax, &ebx, &ecx, &edx);
-+			c->x86_capability[12] = edx;
-+			if (cpu_has(c, X86_FEATURE_CQM_OCCUP_LLC)) {
-+				c->x86_cache_max_rmid = ecx;
-+				c->x86_cache_occ_scale = ebx;
-+			}
-+		} else {
-+			c->x86_cache_max_rmid = -1;
-+			c->x86_cache_occ_scale = -1;
-+		}
-+	}
-+
- 	/* AMD-defined flags: level 0x80000001 */
- 	xlvl = cpuid_eax(0x80000000);
- 	c->extended_cpuid_level = xlvl;
-@@ -830,6 +854,20 @@ static void generic_identify(struct cpuinfo_x86 *c)
- 	detect_nopl(c);
+ /**
+@@ -743,6 +748,11 @@ static inline void perf_event_task_sched_out(struct task_struct *prev,
+ 		__perf_event_task_sched_out(prev, next);
  }
  
-+static void x86_init_cache_qos(struct cpuinfo_x86 *c)
++static inline u64 __perf_event_count(struct perf_event *event)
 +{
-+	/*
-+	 * The heavy lifting of max_rmid and cache_occ_scale are handled
-+	 * in get_cpu_cap().  Here we just set the max_rmid for the boot_cpu
-+	 * in case CQM bits really aren't there in this CPU.
-+	 */
-+	if (c != &boot_cpu_data) {
-+		boot_cpu_data.x86_cache_max_rmid =
-+			min(boot_cpu_data.x86_cache_max_rmid,
-+			    c->x86_cache_max_rmid);
-+	}
++	return local64_read(&event->count) + atomic64_read(&event->child_count);
 +}
 +
- /*
-  * This does the hard work of actually picking apart the CPU stuff...
-  */
-@@ -919,6 +957,7 @@ static void identify_cpu(struct cpuinfo_x86 *c)
+ extern void perf_event_mmap(struct vm_area_struct *vma);
+ extern struct perf_guest_info_callbacks *perf_guest_cbs;
+ extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a65f4c47eb56..a2ea4a52dbbf 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3074,7 +3074,10 @@ static void __perf_event_read(void *info)
  
- 	init_hypervisor(c);
- 	x86_init_rdrand(c);
-+	x86_init_cache_qos(c);
+ static inline u64 perf_event_count(struct perf_event *event)
+ {
+-	return local64_read(&event->count) + atomic64_read(&event->child_count);
++	if (event->pmu->count)
++		return event->pmu->count(event);
++
++	return __perf_event_count(event);
+ }
  
- 	/*
- 	 * Clear/Set all flags overriden by options, need do it
+ static u64 perf_event_read(struct perf_event *event)
 -- 
 1.9.3
 
