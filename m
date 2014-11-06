@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaKFQDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:03:15 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:36854 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaKFQCy (ORCPT
+	id S1751401AbaKFQGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:06:11 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:44133 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaKFQGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:02:54 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RESEND PATCH 3.18-rc3 3/3] kdb: Const qualifier for kdb_getstr's prompt argument
-Date: Thu,  6 Nov 2014 16:02:26 +0000
-Message-Id: <1415289746-30917-4-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415289746-30917-1-git-send-email-daniel.thompson@linaro.org>
-References: <1410438579-7839-1-git-send-email-daniel.thompson@linaro.org>
- <1415289746-30917-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 6 Nov 2014 11:06:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <CF9D1877D81D214CB0CA0669EFAE020C68CC79EF@CMEXMB1.ad.emulex.com>
+References: <CAJ3xEMhxabp1EKbFPfvoZEFt=CQKFNcNrURGMX=7miDwmK9Y-A@mail.gmail.com>
+	<20141105.163825.1433973842938441546.davem@davemloft.net>
+	<20141106010501.GA18339@gmail.com>
+	<20141105.211558.969082848816106943.davem@davemloft.net>
+	<CA+mtBx-Js62X3BpfjQkcsh=w=-cgvSyM5ueCpufGVv0uu1nphw@mail.gmail.com>
+	<CF9D1877D81D214CB0CA0669EFAE020C68CC79EF@CMEXMB1.ad.emulex.com>
+Date: Thu, 6 Nov 2014 08:06:06 -0800
+Message-ID: <CA+mtBx87o1Lo2zpMyUGC_P+7+DmXnZyA2NF0-GYCEWiRh6VJQg@mail.gmail.com>
+Subject: Re: [PATCH net 0/5] Implement ndo_gso_check() for vxlan nics
+From: Tom Herbert <therbert@google.com>
+To: Sathya Perla <Sathya.Perla@emulex.com>
+Cc: David Miller <davem@davemloft.net>, Joe Stringer <joestringer@nicira.com>,
+        Or Gerlitz <gerlitz.or@gmail.com>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Amir Vadai <amirv@mellanox.com>,
+        "shahed.shaikh" <shahed.shaikh@qlogic.com>,
+        dept-gelinuxnicdev <Dept-GELinuxNICDev@qlogic.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All current callers of kdb_getstr() can pass constant pointers via the
-prompt argument. This patch adds a const qualification to make explicit
-the fact that this is safe.
+The inner headers are reset in iptunnel_handle_offloads. This called
+in the xmit encapsulation function (GRE, fou, VXLAN, etc.) before
+added in encapsulation headers, so the inner headers will point to the
+encapsulation payload, i.e. the encapsulated packet. The headers are
+only on the first encapsulation, so with nested tunnels the inner
+headers point to encapsulated packet. Since VXLAN and NVGRE have same
+size of encapsulation (8 UDP + 8 header),   skb_inner_mac_header(skb)
+- skb_transport_header(skb) should always be 16.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- kernel/debug/kdb/kdb_io.c      | 2 +-
- kernel/debug/kdb/kdb_private.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-index 70e0f49..59a6071 100644
---- a/kernel/debug/kdb/kdb_io.c
-+++ b/kernel/debug/kdb/kdb_io.c
-@@ -439,7 +439,7 @@ poll_again:
-  *	substituted for %d, %x or %o in the prompt.
-  */
- 
--char *kdb_getstr(char *buffer, size_t bufsize, char *prompt)
-+char *kdb_getstr(char *buffer, size_t bufsize, const char *prompt)
- {
- 	if (prompt && kdb_prompt_str != prompt)
- 		strncpy(kdb_prompt_str, prompt, CMD_BUFLEN);
-diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 30ed4f3..aa90a6a 100644
---- a/kernel/debug/kdb/kdb_private.h
-+++ b/kernel/debug/kdb/kdb_private.h
-@@ -212,7 +212,7 @@ extern void kdb_ps1(const struct task_struct *p);
- extern void kdb_print_nameval(const char *name, unsigned long val);
- extern void kdb_send_sig_info(struct task_struct *p, struct siginfo *info);
- extern void kdb_meminfo_proc_show(void);
--extern char *kdb_getstr(char *, size_t, char *);
-+extern char *kdb_getstr(char *, size_t, const char *);
- extern void kdb_gdb_state_pass(char *buf);
- 
- /* Defines for kdb_symbol_print */
--- 
-1.9.3
+On Wed, Nov 5, 2014 at 10:16 PM, Sathya Perla <Sathya.Perla@emulex.com> wrote:
+>> -----Original Message-----
+>> From: Tom Herbert [mailto:therbert@google.com]
+>>
+>> On Wed, Nov 5, 2014 at 6:15 PM, David Miller <davem@davemloft.net>
+>> wrote:
+>> > From: Joe Stringer <joestringer@nicira.com>
+>> > Date: Wed, 5 Nov 2014 17:06:46 -0800
+>> >
+>> >> My impression was that the changes are more likely to be
+>> >> hardware-specific (like the i40e changes) rather than software-specific,
+>> >> like changes that might be integrated into the helper.
+>> >
+>> > I think there is more commonality amongst hardware capabilities,
+>> > and this is why I want the helper to play itself out.
+>> >
+>> >> That said, I can rework for one helper. The way I see it would be the
+>> >> same code as these patches, as "vxlan_gso_check(struct sk_buff *)" in
+>> >> drivers/net/vxlan.c which would be called from each driver. Is that what
+>> >> you had in mind?
+>> >
+>> > Yes.
+>>
+>> Note that this code is not VXLAN specific, it will also accept NVGRE
+>> and GRE/UDP with keyid and TEB. I imagine all these cases should be
+>> indistinguishable to the hardware so they probably just work (which
+>> would be cool!). It might be better to name and locate the helper
+>> function to reflect that.
+>
+> Tom, I'm confused as to how the value of (skb_inner_mac_header(skb) - skb_transport_header(skb))
+> would be the same for VxLAN and NVGRE encapsulated packets. Wouldn't this value be 16 for VxLAN
+> and 8 for NVGRE?
+>
+The inner headers are reset in iptunnel_handle_offloads. This is
+called in the xmit encapsulation functions (GRE, fou, VXLAN, etc.)
+before adding in encapsulation headers (skb_push), so the
+mac_inner_header will point to the encapsulation payload, i.e. the
+encapsulated packet. This should not change after being set, although
+inner network and inner transport can. The headers are only set on the
+first encapsulation, so with nested tunnels the inner headers point to
+the innermost encapsulated packet. Since VXLAN and NVGRE have same
+size of encapsulation (8 UDP + 8 header),   skb_inner_mac_header(skb)
+- skb_transport_header(skb) should always be 16.
 
+Tom
+
+> thks,
+> -Sathya
