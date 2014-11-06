@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaKFSgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:36:03 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:58187 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbaKFSgA convert rfc822-to-8bit (ORCPT
+	id S1751746AbaKFSgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:36:50 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60727 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259AbaKFSgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:36:00 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>, Romain Perier <romain.perier@gmail.com>
-CC: Kever Yang <kever.yang@rock-chips.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "dkl@rock-chips.com" <dkl@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
-Thread-Topic: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
-Thread-Index: AQHP+WE66t1Wym4ZZ0eZMEU7TpKE25xUX50AgAAFKoD//4fjQA==
-Date: Thu, 6 Nov 2014 18:35:53 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E9C67@US01WEMBX2.internal.synopsys.com>
-References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com>
- <CABgxDo+9aZJ8BP3h=3sUUbSBD5R_FQmWF9f8kbzDbZrVG01n1A@mail.gmail.com>
- <20141106174011.GI16896@saruman>
-In-Reply-To: <20141106174011.GI16896@saruman>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Nov 2014 13:36:49 -0500
+Date: Thu, 6 Nov 2014 22:36:39 +0400
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Peter Chen <Peter.Chen@freescale.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: imx: refactor mxc_iomux_mode()
+Message-ID: <20141106183639.GA17308@ubuntuvm>
+References: <1413902151-20255-1-git-send-email-voytikd@gmail.com>
+ <20141027142054.GB14033@voytthpd>
+ <54dc2a9edf554125b2158a1f9edd8adb@BN1PR0301MB0772.namprd03.prod.outlook.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54dc2a9edf554125b2158a1f9edd8adb@BN1PR0301MB0772.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Thursday, November 06, 2014 9:40 AM
-> 
-> On Thu, Nov 06, 2014 at 06:21:42PM +0100, Romain Perier wrote:
-> >
-> > 2014-11-06 2:30 GMT+01:00 Kever Yang <kever.yang@rock-chips.com>:
+Hi Peter,
+
+On Tue, Nov 04, 2014 at 12:21:55PM +0000, Peter Chen wrote:
+
+> > > -int mxc_iomux_mode(unsigned int pin_mode)
+> > > +void mxc_iomux_mode(unsigned int pin_mode)
+> > >  {
+> > > -	u32 field, l, mode, ret = 0;
+> > > +	u32 field;
+> > > +	u32 l;
+> > > +	u32 mode;
+> > >  	void __iomem *reg;
 > > >
-> > > +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
-> > > +{
-> > > +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
-> > > +       u32 hprt0;
-> > > +
-> > > +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
-> > > +               (hsotg->op_state == OTG_STATE_A_HOST)))
-> > > +               return 0;
-> > > +
-> > > +       if (hsotg->lx_state != DWC2_L0)
-> > > +               return 0;
-> > > +
-> > > +       hprt0 = dwc2_read_hprt0(hsotg);
-> > > +       if (hprt0 & HPRT0_CONNSTS)
-> > > +               dwc2_port_suspend(hsotg, 1);
-> > > +
-> > > +       return 0;
-> > > +}
-> > > +
-> > > +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
-> > > +{
-> > > +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
-> > > +       u32 hprt0;
-> > > +
-> > > +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
-> > > +               (hsotg->op_state == OTG_STATE_A_HOST)))
-> > > +               return 0;
-> > > +
-> > > +       if (hsotg->lx_state != DWC2_L2)
-> > > +               return 0;
-> > > +
-> > > +       hprt0 = dwc2_read_hprt0(hsotg);
-> > > +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
-> > > +               dwc2_port_resume(hsotg);
-> > > +
-> > > +       return 0;
-> > > +}
-> >
-> > Could you also define these functions under #ifdef CONFIG_PM ?
 > 
-> please don't. I'm actually considering ripping all ifdefs from all these
-> drivers and also stop using SIMPLE_DEV_PM_OPS or any of its friends.
-> 
-> There's really nobody today would would build a kernel with CONFIG_PM.
+> Why you use three lines to define it, it makes the function longer.
 
-I'm sure Felipe meant *without* CONFIG_PM.
+You're right but there is a recommendation in coding style to declare
+variables on separate lines (see Documentation/CodingStyle,
+line 469), which improves readability, imho. By the way I saw many
+times, that maintainers asked to declare variables separately.
 
-Kever, in that case you should remove the #ifdef CONFIG_PM around the
-.bus_suspend and .bus_resume assignments also, otherwise there will be
-compiler warnings when built without CONFIG_PM. After that, you can
-add my acked-by.
+> Besides, Shawn's email changes to : <shawn.guo@linaro.org>
 
--- 
-Paul
+Oops, didn't see that. Thanks!
 
+WBR.
