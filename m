@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaKFPB5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:01:57 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54955 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaKFPBz (ORCPT
+	id S1751506AbaKFPDj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:03:39 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:56991 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaKFPDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:01:55 -0500
-Date: Thu, 6 Nov 2014 16:01:50 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Subbaraman Narayanamurthy <subbaram@codeaurora.org>, daniel@numascale.com,
-        yuyang.du@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: hotplug thread issues
-Message-ID: <20141106150150.GT10501@worktop.programming.kicks-ass.net>
+	Thu, 6 Nov 2014 10:03:33 -0500
+Date: Thu, 6 Nov 2014 23:03:26 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
+Cc: linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org,
+        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Subject: Re: [PATCH 9/9] Disable ccm and ccm4309 in fips mod
+Message-ID: <20141106150326.GC3300@gondor.apana.org.au>
+References: <20141028175146.GA18467@bluepex.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20141028175146.GA18467@bluepex.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Tue, Oct 28, 2014 at 03:51:54PM -0200, Leonidas S. Barbosa wrote:
+> NX CCM has not support to keys larger than 128 neither our hardware.
+> In cases where a system is running in fips mode enabled a tcrypt test will
+> crash the system in a kernel panic call.
+> This patch disable, for now, CCM's algorithms in fips mode to avoid this.
+> 
+> Signed-off-by: Leonidas S. Barbosa <leosilva@linux.vnet.ibm.com>
 
-So there have been some reports on hitting:
+For cases like this you should be using a software fallback rather
+than just failing.  See padlock-sha for an example.
 
-  BUG_ON(td->cpu != smp_processor_id());
-
-in smpboot_thread_fn.
-
-Now I've been staring at this for a wee bit today and I've found two
-issues, but I'm not sure either are enough to explain the observed.
-
-1) smpboot_register_percpu_thread() seems to lack serialization against
-   hotplug. It has a for_each_online() loop, but no get_online_cpus() --
-   unlike smpboot_unregister_percpu_thread, which does.
-
-   Typical usage like spawn_ksoftirqd() should be fine, they're early
-   init calls and those run before we bring up the other CPUs. Therefore
-   this does not explain the observation that its ksoftirqd/n triggering
-   the BUG.
-
-   However, the usage in proc_dowatchdog() is susceptible to this race
-   and its entirely possible to go wrong there.
-
-
-2) the usage of __set_current_state(TASK_PARKED) in __kthread_parkme()
-   is wrong AFAICT, one should always use set_current_state() for
-   setting !TASK_RUNNING state. The comment with set_current_state()
-   explains why.
-
-   This would've allowed the test_bit(KTHREAD_SHOULD_PARK) load to have
-   been satisfied before the store of TASK_PARKED.
-
-
-In any case, I'm not sure either of these are enough, I'll go stare at
-it a bit more I suppose.
-
----
- kernel/kthread.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 10e489c448fe..9787244d43ec 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -156,12 +156,12 @@ void *probe_kthread_data(struct task_struct *task)
- 
- static void __kthread_parkme(struct kthread *self)
- {
--	__set_current_state(TASK_PARKED);
-+	set_current_state(TASK_PARKED);
- 	while (test_bit(KTHREAD_SHOULD_PARK, &self->flags)) {
- 		if (!test_and_set_bit(KTHREAD_IS_PARKED, &self->flags))
- 			complete(&self->parked);
- 		schedule();
--		__set_current_state(TASK_PARKED);
-+		set_current_state(TASK_PARKED);
- 	}
- 	clear_bit(KTHREAD_IS_PARKED, &self->flags);
- 	__set_current_state(TASK_RUNNING);
-
-
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
