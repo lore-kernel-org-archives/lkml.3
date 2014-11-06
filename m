@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKFV2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:28:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59084 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaKFV2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:28:12 -0500
-Date: Thu, 06 Nov 2014 16:28:08 -0500 (EST)
-Message-Id: <20141106.162808.1546139916210194279.davem@davemloft.net>
-To: herbert@gondor.apana.org.au
-Cc: viro@ZenIV.linux.org.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org, nakam@linux-ipv6.org,
-        yoshfuji@linux-ipv6.org
-Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141106064629.GA29321@gondor.apana.org.au>
-References: <20141106055023.GA28865@gondor.apana.org.au>
-	<20141106064318.GW7996@ZenIV.linux.org.uk>
-	<20141106064629.GA29321@gondor.apana.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 06 Nov 2014 13:28:11 -0800 (PST)
+	id S1751555AbaKFV2a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:28:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196AbaKFV21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 16:28:27 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Aristeu Rozanski <arozansk@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fabian Frederick <fabf@skynet.be>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>, Thomas Graf <tgraf@suug.ch>,
+        Ying Xue <ying.xue@windriver.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] lib/rhashtable: make build optional
+Date: Thu,  6 Nov 2014 16:27:43 -0500
+Message-Id: <1415309263-13063-1-git-send-email-aris@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 6 Nov 2014 14:46:29 +0800
+From: Aristeu Rozanski <arozansk@redhat.com>
 
-> On Thu, Nov 06, 2014 at 06:43:18AM +0000, Al Viro wrote:
->> On Thu, Nov 06, 2014 at 01:50:23PM +0800, Herbert Xu wrote:
->> > +	/* We only need the first two bytes. */
->> > +	err = memcpy_fromiovecend((void *)&icmph, msg->msg_iov, 0, 2);
->> > +	if (err)
->> > +		return err;
->> > +
->> > +	fl4->fl4_icmp_type = icmph.type;
->> > +	fl4->fl4_icmp_code = icmph.code;
->> 
->> That's more readable, but that exposes another problem in there - we read
->> the same piece of userland data twice, with no promise whatsoever that we'll
->> get the same value both times...
-> 
-> Sure, but you have to be root anyway to write to raw sockets.
-> 
-> Patches are welcome :)
+rhashtable currently is built unconditionally:
+	text    data     bss     dec     hex filename
+	9158    2008    5264   16430    402e lib/rhashtable.o
+	9158    2008    5264   16430    402e (TOTALS)
 
-I'd agree with this root-only argument maybe 15 years ago, but with
-containers and stuff like that we want to prevent root X from messing
-up the machine for root Y.
+and it's used by netlink (which currently can't be optionally built if
+CONFIG_NET is enabled) and netfilter_hash. This patch is useful for
+situations in which memory footprint is a concern and networking is not
+enabled.
 
-This is a recurring topic, and I'd strongly like to avoid adding new
-ways that these kinds of problems can happen.
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Fabian Frederick <fabf@skynet.be>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Ying Xue <ying.xue@windriver.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+---
+ lib/Kconfig  | 6 ++++++
+ lib/Makefile | 4 +++-
+ net/Kconfig  | 1 +
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
-For example, I'm still on the hook to address the AF_NETLINK mmap TX
-code, which has a similarly abusable issue.
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 108196c..d6b8879 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -369,6 +369,12 @@ config ASSOCIATIVE_ARRAY
+ 
+ 	  for more information.
+ 
++config RHASH_TABLE
++	bool "Resizable hash table"
++	default y
++	help
++	  Resizable, scalable and concurrent hash table implementation.
++
+ config HAS_IOMEM
+ 	boolean
+ 	depends on !NO_IOMEM
+diff --git a/lib/Makefile b/lib/Makefile
+index 53fd120..43d29ff 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -26,7 +26,7 @@ obj-y += bcd.o div64.o sort.o parser.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+ 	 gcd.o lcm.o list_sort.o uuid.o iovec.o clz_ctz.o \
+ 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
+-	 percpu-refcount.o percpu_ida.o hash.o rhashtable.o
++	 percpu-refcount.o percpu_ida.o hash.o
+ obj-y += string_helpers.o
+ obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+ obj-y += kstrtox.o
+@@ -155,6 +155,8 @@ obj-$(CONFIG_GENERIC_NET_UTILS) += net_utils.o
+ 
+ obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
+ 
++obj-$(CONFIG_RHASH_TABLE) += rhashtable.o
++
+ libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o \
+ 	       fdt_empty_tree.o
+ $(foreach file, $(libfdt_files), \
+diff --git a/net/Kconfig b/net/Kconfig
+index 99815b5..d376630 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -7,6 +7,7 @@ menuconfig NET
+ 	select NLATTR
+ 	select GENERIC_NET_UTILS
+ 	select BPF
++	select RHASH_TABLE
+ 	---help---
+ 	  Unless you really know what you are doing, you should say Y here.
+ 	  The reason is that some programs need kernel networking support even
+-- 
+1.8.3.1
+
