@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538AbaKFWto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:49:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59113 "EHLO
+	id S1751209AbaKFWoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59089 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaKFWoO (ORCPT
+	with ESMTP id S1753225AbaKFWoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:14 -0500
+	Thu, 6 Nov 2014 17:44:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Joe Lawrence <joe.lawrence@stratus.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 061/162] vfs: fix data corruption when blocksize < pagesize for mmaped data
-Date: Thu,  6 Nov 2014 14:35:25 -0800
-Message-Id: <1415313426-9622-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 025/162] team: avoid race condition in scheduling delayed work
+Date: Thu,  6 Nov 2014 14:34:49 -0800
+Message-Id: <1415313426-9622-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,159 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Joe Lawrence <Joe.Lawrence@stratus.com>
 
-commit 90a8020278c1598fafd071736a0846b38510309c upstream.
+[ Upstream commit 47549650abd13d873fd2e5fc218db19e21031074 ]
 
-->page_mkwrite() is used by filesystems to allocate blocks under a page
-which is becoming writeably mmapped in some process' address space. This
-allows a filesystem to return a page fault if there is not enough space
-available, user exceeds quota or similar problem happens, rather than
-silently discarding data later when writepage is called.
+When team_notify_peers and team_mcast_rejoin are called, they both reset
+their respective .count_pending atomic variable. Then when the actual
+worker function is executed, the variable is atomically decremented.
+This pattern introduces a potential race condition where the
+.count_pending rolls over and the worker function keeps rescheduling
+until .count_pending decrements to zero again:
 
-However VFS fails to call ->page_mkwrite() in all the cases where
-filesystems need it when blocksize < pagesize. For example when
-blocksize = 1024, pagesize = 4096 the following is problematic:
-  ftruncate(fd, 0);
-  pwrite(fd, buf, 1024, 0);
-  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
-  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
-  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
-  mremap(map, 1024, 10000, 0);
-  map[4095] = 'a';    ----> no page_mkwrite() called
+THREAD 1                           THREAD 2
 
-At the moment ->page_mkwrite() is called, filesystem can allocate only
-one block for the page because i_size == 1024. Otherwise it would create
-blocks beyond i_size which is generally undesirable. But later at
-->writepage() time, we also need to store data at offset 4095 but we
-don't have block allocated for it.
+========                           ========
+team_notify_peers(teamX)
+  atomic_set count_pending = 1
+  schedule_delayed_work
+                                   team_notify_peers(teamX)
+                                   atomic_set count_pending = 1
+team_notify_peers_work
+  atomic_dec_and_test
+    count_pending = 0
+  (return)
+                                   schedule_delayed_work
+                                   team_notify_peers_work
+                                   atomic_dec_and_test
+                                     count_pending = -1
+                                   schedule_delayed_work
+                                   (repeat until count_pending = 0)
 
-This patch introduces a helper function filesystems can use to have
-->page_mkwrite() called at all the necessary moments.
+Instead of assigning a new value to .count_pending, use atomic_add to
+tack-on the additional desired worker function invocations.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Jiri Pirko <jiri@resnulli.us>
+Fixes: fc423ff00df3a19554414ee ("team: add peer notification")
+Fixes: 492b200efdd20b8fcfdac87 ("team: add support for sending multicast rejoins")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/buffer.c        |  3 +++
- include/linux/mm.h |  1 +
- mm/truncate.c      | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+)
+ drivers/net/team/team.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 4252d82..948aae2 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2077,6 +2077,7 @@ int generic_write_end(struct file *file, struct address_space *mapping,
- 			struct page *page, void *fsdata)
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 99500d1..2898c2a 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -647,7 +647,7 @@ static void team_notify_peers(struct team *team)
  {
- 	struct inode *inode = mapping->host;
-+	loff_t old_size = inode->i_size;
- 	int i_size_changed = 0;
- 
- 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
-@@ -2096,6 +2097,8 @@ int generic_write_end(struct file *file, struct address_space *mapping,
- 	unlock_page(page);
- 	page_cache_release(page);
- 
-+	if (old_size < pos)
-+		pagecache_isize_extended(inode, old_size, pos);
- 	/*
- 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
- 	 * makes the holding time of page lock longer. Second, it forces lock
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4506b84..6a47519 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1087,6 +1087,7 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
- 
- extern void truncate_pagecache(struct inode *inode, loff_t new);
- extern void truncate_setsize(struct inode *inode, loff_t newsize);
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
- void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
- int truncate_inode_page(struct address_space *mapping, struct page *page);
- int generic_error_remove_page(struct address_space *mapping, struct page *page);
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 353b683..855c38c 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -20,6 +20,7 @@
- #include <linux/buffer_head.h>	/* grr. try_to_release_page,
- 				   do_invalidatepage */
- #include <linux/cleancache.h>
-+#include <linux/rmap.h>
- #include "internal.h"
- 
- 
-@@ -613,12 +614,68 @@ EXPORT_SYMBOL(truncate_pagecache);
-  */
- void truncate_setsize(struct inode *inode, loff_t newsize)
- {
-+	loff_t oldsize = inode->i_size;
-+
- 	i_size_write(inode, newsize);
-+	if (newsize > oldsize)
-+		pagecache_isize_extended(inode, oldsize, newsize);
- 	truncate_pagecache(inode, newsize);
+ 	if (!team->notify_peers.count || !netif_running(team->dev))
+ 		return;
+-	atomic_set(&team->notify_peers.count_pending, team->notify_peers.count);
++	atomic_add(team->notify_peers.count, &team->notify_peers.count_pending);
+ 	schedule_delayed_work(&team->notify_peers.dw, 0);
  }
- EXPORT_SYMBOL(truncate_setsize);
  
- /**
-+ * pagecache_isize_extended - update pagecache after extension of i_size
-+ * @inode:	inode for which i_size was extended
-+ * @from:	original inode size
-+ * @to:		new inode size
-+ *
-+ * Handle extension of inode size either caused by extending truncate or by
-+ * write starting after current i_size. We mark the page straddling current
-+ * i_size RO so that page_mkwrite() is called on the nearest write access to
-+ * the page.  This way filesystem can be sure that page_mkwrite() is called on
-+ * the page before user writes to the page via mmap after the i_size has been
-+ * changed.
-+ *
-+ * The function must be called after i_size is updated so that page fault
-+ * coming after we unlock the page will already see the new i_size.
-+ * The function must be called while we still hold i_mutex - this not only
-+ * makes sure i_size is stable but also that userspace cannot observe new
-+ * i_size value before we are prepared to store mmap writes at new inode size.
-+ */
-+void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
-+{
-+	int bsize = 1 << inode->i_blkbits;
-+	loff_t rounded_from;
-+	struct page *page;
-+	pgoff_t index;
-+
-+	WARN_ON(!mutex_is_locked(&inode->i_mutex));
-+	WARN_ON(to > inode->i_size);
-+
-+	if (from >= to || bsize == PAGE_CACHE_SIZE)
-+		return;
-+	/* Page straddling @from will not have any hole block created? */
-+	rounded_from = round_up(from, bsize);
-+	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
-+		return;
-+
-+	index = from >> PAGE_CACHE_SHIFT;
-+	page = find_lock_page(inode->i_mapping, index);
-+	/* Page not cached? Nothing to do */
-+	if (!page)
-+		return;
-+	/*
-+	 * See clear_page_dirty_for_io() for details why set_page_dirty()
-+	 * is needed.
-+	 */
-+	if (page_mkclean(page))
-+		set_page_dirty(page);
-+	unlock_page(page);
-+	page_cache_release(page);
-+}
-+EXPORT_SYMBOL(pagecache_isize_extended);
-+
-+/**
-  * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
-  * @inode: inode
-  * @lstart: offset of beginning of hole
+@@ -687,7 +687,7 @@ static void team_mcast_rejoin(struct team *team)
+ {
+ 	if (!team->mcast_rejoin.count || !netif_running(team->dev))
+ 		return;
+-	atomic_set(&team->mcast_rejoin.count_pending, team->mcast_rejoin.count);
++	atomic_add(team->mcast_rejoin.count, &team->mcast_rejoin.count_pending);
+ 	schedule_delayed_work(&team->mcast_rejoin.dw, 0);
+ }
+ 
 -- 
 1.9.1
 
