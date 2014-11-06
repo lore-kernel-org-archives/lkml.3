@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751232AbaKFBzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 20:55:40 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58412 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaKFBzh (ORCPT
+	id S1751115AbaKFB7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 20:59:00 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:56040 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaKFB66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 20:55:37 -0500
-Message-ID: <1415238859.2840.22.camel@debian>
-Subject: Re: [PATCH 1/2 v2] x86, mce, severity: extend the the mce_severity
-From: Chen Yucong <slaoub@gmail.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Andi Kleen <ak@linux.intel.com>,
-        aravind.gopalakrishnan@amd.com,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+8MBb+72pZfDke3ZVfY+Vtjqd63wx4qnccKP6H8UiSQrORJSA@mail.gmail.com>
-References: <1415162873-1874-1-git-send-email-slaoub@gmail.com>
-	 <1415162873-1874-2-git-send-email-slaoub@gmail.com>
-	 <CA+8MBb+72pZfDke3ZVfY+Vtjqd63wx4qnccKP6H8UiSQrORJSA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Nov 2014 09:54:19 +0800
-Mime-Version: 1.0
-X-Mailer: Evolution 3.4.4-3 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Nov 2014 20:58:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141105180521.1e12b87e@gandalf.local.home>
+References: <20141104152845.521858531@goodmis.org> <20141104153028.602754370@goodmis.org>
+ <87zjc6ulry.fsf@sejong.aot.lge.com> <5459E2AB.8020009@hitachi.com> <20141105180521.1e12b87e@gandalf.local.home>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 6 Nov 2014 10:58:37 +0900
+X-Google-Sender-Auth: dxlhcpJ5oFQq0xjz2v6GP4MJbA0
+Message-ID: <CAM9d7ch0OYOZ8Q5ruhvNPVQOwAWUY5XRjSgkW70CnDcra3MPbQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v4] ftracetest: Add a couple of ftrace test cases
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-05 at 10:27 -0800, Tony Luck wrote:
-> > +#define  ONEXCP        .excp = NO_EXCP
-> 
-I'm sorry, this is a typing error. Thanks!
+Hi Steve,
 
-> Shouldn't this be named "NOEXCP" and used in the initializations
-> for the deferred and UCNA table entries?
-> 
-In fact, "NOEXCP" can be used in the initialization for the deferred
-and UCNA table entries. But it may affect the following snippet in
-do_machine_check().
+On Thu, Nov 6, 2014 at 8:05 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> Added three test cases to get the feel of adding tests to ftracetest.
+> The three cases are:
+>
+>   function profiling test, to make sure function profiling still works
+>    with function tracing (was a regression)
+>
+>   function graph filter test to make sure that function graph filtering works.
+>
+>   function graph filter with stack tracing test to make sure that the function
+>    graph filter does filter and also continues to filter when another function tracer
+>    is running (like the stack tracer)
+>
+> Link: http://lkml.kernel.org/r/20141103212737.696365174@goodmis.org
+>
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-     /*
-      * When machine check was for corrected/deferred handler don't
-      * touch, unless we're panicing.
-      */
-     if ((severity == MCE_KEEP_SEVERITY ||
-          severity == MCE_UCNA_SEVERITY) && !no_way_out)
-              continue;
+For this and previous patch 1/2,
 
-If `no_way_out' equals 1, we may need to dump/decode corrected/deferred 
-error information. So if we use "NOEXCP" to initialize the deferred and
-UCNA table entries, do_machine_check will skip checking deferred/UCNA
-entry when `no_way_out' is set to 1.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-thx!
-cyc
-
+Thanks,
+Namhyung
