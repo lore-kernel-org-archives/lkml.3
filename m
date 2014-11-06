@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaKFJw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:52:58 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:41967 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaKFJwh (ORCPT
+	id S1751806AbaKFJzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:55:16 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:34298 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751054AbaKFJzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:52:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <2455157.3p7mHhT8im@vostro.rjw.lan>
-References: <1414755658-96293-1-git-send-email-mika.westerberg@linux.intel.com>
-	<545843B1.3020101@nvidia.com>
-	<2455157.3p7mHhT8im@vostro.rjw.lan>
-Date: Thu, 6 Nov 2014 10:52:35 +0100
-X-Google-Sender-Auth: 2V9qRkQxsE9UioGAawStv7Q3FCU
-Message-ID: <CAMuHMdXn9W2S7N+YGfjDxQozMtRZCVdTzzdDps6YfOv2FqVBmw@mail.gmail.com>
-Subject: Re: [PATCH] leds: leds-gpio: Convert gpio_blink_set() to use GPIO descriptors
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Nov 2014 04:55:12 -0500
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: linux@rasmusvillemoes.dk, gong.chen@linux.intel.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        " Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: kernel@stlinux.com, maxime.coquelin@st.com, eric.paire@st.com
+Subject: [PATCH v4] bitops: Fix shift overflow in GENMASK macros
+Date: Thu,  6 Nov 2014 10:54:19 +0100
+Message-Id: <1415267659-10563-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-06_04:2014-11-05,2014-11-06,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika, Rafael,
+On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
+instead of the expected ~0UL.
 
-On Tue, Nov 4, 2014 at 11:50 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, November 04, 2014 12:10:41 PM Alexandre Courbot wrote:
->> On 10/31/2014 08:40 PM, Mika Westerberg wrote:
->> > Commit 21f2aae91e902aad ("leds: leds-gpio: Add support for GPIO
->> > descriptors") already converted most of the driver to use GPIO descriptors.
->> > What is still missing is the platform specific hook gpio_blink_set() and
->> > board files which pass legacy GPIO numbers to this driver in platform data.
->> >
->> > In this patch we handle the former and convert gpio_blink_set() to take
->> > GPIO descriptor instead. In order to do this we convert the existing four
->> > users to accept GPIO descriptor and translate it to legacy GPIO number in
->> > the platform code. This effectively "pushes" legacy GPIO number usage from
->> > the driver to platforms.
->> >
->> > Also add comment to the remaining block describing that it is legacy code
->> > path and we are getting rid of it eventually.
->> >
->> > Suggested-by: Linus Walleij <linus.walleij@linaro.org>
->> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>
->> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
->
-> Patch applied, thanks everyone!
+This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
 
-"leds: leds-gpio: Add support for GPIO descriptors" broke leds-gpio on
-non-DT platforms for me:
+This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
+1 << 64 for GENMASK_ULL.
 
-    gpiod_direction_output: invalid GPIO
-    leds-gpio: probe of leds-gpio failed with error -22
+Fixes: 10ef6b0dffe404bcc54e94cb2ca1a5b18445a66b
+Cc: <stable@vger.kernel.org> #v3.13+
+Reported-by: Eric Paire <eric.paire@st.com>
+Suggested-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ include/linux/bitops.h | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-(desc is NULL in gpiod_direction_output()).
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index be5fd38..5d858e0 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -18,8 +18,11 @@
+  * position @h. For example
+  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
+  */
+-#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
+-#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
++#define GENMASK(h, l) \
++	(((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
++
++#define GENMASK_ULL(h, l) \
++	(((~0ULL) << (l)) & (~0ULL >> (BITS_PER_LONG_LONG - 1 - (h))))
+ 
+ extern unsigned int __sw_hweight8(unsigned int w);
+ extern unsigned int __sw_hweight16(unsigned int w);
+-- 
+1.9.1
 
-DT shmobile reference/multi-platform are fine.
-
-I noticed the hard way, as I wanted to add some LEDs to a new platform,
-but couldn't get it work. It turned out it also had stopped working on
-r8a7740/armadillo-legacy, so I started bisecting...
-
-Unfortunately the offending patch can't just be reverted.
-Reverting all three of these on pm/linux-next fixed the issue, though:
-c673a2b400810352 leds: leds-gpio: Convert gpio_blink_set() to use GPIO descripto
-a43f2cbbb009f962 leds: leds-gpio: Make use of device property API
-5c51277a9ababfa4 leds: leds-gpio: Add support for GPIO descriptors
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
