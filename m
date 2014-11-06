@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaKFMq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:46:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42089 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751240AbaKFMq4 (ORCPT
+	id S1751698AbaKFMrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:47:17 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58352 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaKFMrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:46:56 -0500
-Date: Thu, 6 Nov 2014 12:46:53 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
-Cc: Riku Voipio <riku.voipio@iki.fi>, freddy@asix.com.tw, davem@davemloft.net,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net on
-	arndale platform
-Message-ID: <20141106124653.GV23178@opensource.wolfsonmicro.com>
-References: <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <C89EFD3CD56F64468D3D206D683A8D22039FFC5F@ldam-msx2.fugro-nl.local> <20141105150258.GR23178@opensource.wolfsonmicro.com> <20141106090651.GA19109@afflict.kos.to> <20141106100104.GS23178@opensource.wolfsonmicro.com> <20141106120416.GA20162@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D22039FFE16@ldam-msx2.fugro-nl.local>
+	Thu, 6 Nov 2014 07:47:13 -0500
+Date: Thu, 6 Nov 2014 13:47:11 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg
+Subject: Re: N900 modem support in 3.18-rc1
+Message-ID: <20141106124711.GA26944@amd>
+References: <20141104205117.GA17606@amd>
+ <201411052137.31452@pali>
+ <20141105203918.GA29199@amd>
+ <201411052206.05379@pali>
+ <20141105220359.GA32052@amd>
+ <20141105234555.GA7097@earth.universe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C89EFD3CD56F64468D3D206D683A8D22039FFE16@ldam-msx2.fugro-nl.local>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20141105234555.GA7097@earth.universe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 01:39:07PM +0100, Stam, Michel [FINT] wrote:
-> Hello Riku and Charles,
-> 
-> I tried this with my original patch and the suggested patch applied,
-> this seems to work for me too.
-> 
-> One thing that bothers me, is the suspend / resume situation; usbnet.c
-> seems to call the bind( ) on probe( ). Suspend / resume do not seem to
-> call bind( ) directly.
-> 
-> As Riku pointed out, the original patch I reverted was because of
-> suspend/resume issues. I wonder if this will still work? 
+Hi!
 
-I seem to remember I had a few issues with Arndale suspend and
-resume last time I tried it anyways, so not sure I will be able
-to test for that. But I will have a go. But in either case I
-guess a fix for that is probably orthogonal to my suggested fix
-here, as it looks pretty clear we intended to fully reset the
-device in bind and were appartently not doing that. So this
-patch is probably a needed fix anyway. Even if there are
-seperate issues relating to suspend and resume.
+> On Wed, Nov 05, 2014 at 11:03:59PM +0100, Pavel Machek wrote:
+> > > Maybe you need to enable modem?
+> > > 
+> > > This is n900 init sequence from script: nokia-n900-configs.sh
+> > 
+> > From the dts, it looks like this should somehow work without this.
+> 
+> Right :) The n900-modem driver will take care of this if the "pm"
+> parameter is set to 1 (which should be the default).
 
-Thanks,
-Charles
+I actually had pm=0 on the command line, but I removed it now, and no
+change:
+
+root@n900:~# find /sys/bus/hsi/devices/n900-modem/
+/sys/bus/hsi/devices/n900-modem/
+/sys/bus/hsi/devices/n900-modem/power
+/sys/bus/hsi/devices/n900-modem/power/control
+/sys/bus/hsi/devices/n900-modem/power/runtime_active_time
+/sys/bus/hsi/devices/n900-modem/power/autosuspend_delay_ms
+/sys/bus/hsi/devices/n900-modem/power/runtime_status
+/sys/bus/hsi/devices/n900-modem/power/runtime_suspended_time
+/sys/bus/hsi/devices/n900-modem/modalias
+/sys/bus/hsi/devices/n900-modem/driver
+/sys/bus/hsi/devices/n900-modem/subsystem
+/sys/bus/hsi/devices/n900-modem/uevent
+root@n900:~# cat /proc/cmdline 
+root=/dev/nfs nfsroot=192.168.1.6:/srv/nfs/n900 rw
+ip=192.168.1.8::192.168.1.6:255.255.255.192::usb0:  no-omap-wd
+no-ext-wd console=tty0
+root@n900:~# 
+
+Let me try with explicit =1. .. aha, that helps. Thanks!
+
+Do you have an example client that can talk to ofonod?
+
+What is needed to get voice calls to work?
+
+Best regards,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
