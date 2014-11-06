@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaKFMrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:47:42 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:50741 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaKFMrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:47:40 -0500
+	id S1751626AbaKFMt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:49:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49505 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133AbaKFMt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:49:56 -0500
+Date: Thu, 6 Nov 2014 13:49:53 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] OOM, PM: OOM killed task shouldn't escape PM suspend
+Message-ID: <20141106124953.GD7202@dhcp22.suse.cz>
+References: <20141105130247.GA14386@htj.dyndns.org>
+ <20141105133100.GC4527@dhcp22.suse.cz>
+ <20141105134219.GD4527@dhcp22.suse.cz>
+ <20141105154436.GB14386@htj.dyndns.org>
+ <20141105160115.GA28226@dhcp22.suse.cz>
+ <20141105162929.GD14386@htj.dyndns.org>
+ <20141105163956.GD28226@dhcp22.suse.cz>
+ <20141105165428.GF14386@htj.dyndns.org>
+ <20141105174609.GE28226@dhcp22.suse.cz>
+ <20141105175527.GH14386@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <EE6F3801-A76A-4D95-B841-A7935FA7FCF9@konsulko.com>
-References: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
- <1414528433-9650-4-git-send-email-pantelis.antoniou@konsulko.com>
- <20141105213925.3790BC41C40@trevor.secretlab.ca> <EE6F3801-A76A-4D95-B841-A7935FA7FCF9@konsulko.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 6 Nov 2014 12:47:19 +0000
-X-Google-Sender-Auth: 7DYaVCCnq6-ikJ2dXJ0kiMRJO6Y
-Message-ID: <CACxGe6vaPBcU++_JWJYVcD5r-Z2c2ZjxWfrmo4Qmetbg+E-3oA@mail.gmail.com>
-Subject: Re: [PATCH 3/5] of: Only call notifiers when node is attached
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141105175527.GH14386@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 12:33 PM, Pantelis Antoniou
-<pantelis.antoniou@konsulko.com> wrote:
-> Hi Grant,
->
->> On Nov 5, 2014, at 23:39 , Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> On Tue, 28 Oct 2014 22:33:51 +0200
->> , Pantelis Antoniou <pantelis.antoniou@konsulko.com>
->> wrote:
->>> Make sure we call notifier only when the node is attached.
->>> When a detatched tree is being constructed we do not want the
->>> notifiers to fire at all.
->>
->> The description does not match what the patch does. The patch moves the
->> test into of_{add,remove,update}_property() and out of
->> of_property_notify() itself. That leaves one other caller of
->> of_property_notify(); __of_changeset_entry_notify(). The effect of this
->> patch is that applying a changeset will cause notifiers to be fired for
->> each property modified in a changeset. The comment says nothing about
->> the change in behaviour and it sounds like it is a bug fix when it
->> doesn't actually change the behaviour at all for the
->> of_{add,remove,update}_property() paths.
->>
->> This needs a better changelog. It needs to describe what the effects of
->> the patch are and why the change is being made. When someone is
->> bisecting a problem and they land on this change, the changelog needs to
->> give them a good idea about what is going on and why.
->>
->
-> Valid points. In fact I performed some tests and with this reverted things
-> still work.
->
-> The rationale behind this is for when nodes/properties are removed in the overlay,
-> but since we don't support this for now, we never hit the case where it was
-> needed.
->
-> Please remove from the patch series, I'll revisit this when I add the removal
-> functionality.
+On Wed 05-11-14 12:55:27, Tejun Heo wrote:
+> On Wed, Nov 05, 2014 at 06:46:09PM +0100, Michal Hocko wrote:
+> > Because out_of_memory can be called from mutliple paths. And
+> > the only interesting one should be the page allocation path.
+> > pagefault_out_of_memory is not interesting because it cannot happen for
+> > the frozen task.
+> 
+> Hmmm.... wouldn't that be broken by definition tho?  So, if the oom
+> killer is invoked from somewhere else than page allocation path, it
+> would proceed ignoring the disabled setting and would race against PM
+> freeze path all the same. 
 
-Cool, thanks.
+Not really because try_to_freeze_tasks doesn't finish until _all_ tasks
+are frozen and a task in the page fault path cannot be frozen, can it?
 
-g.
+I mean there shouldn't be any problem to not invoke OOM killer under
+from the page fault path as well but that might lead to looping in the
+page fault path without any progress until freezer enables OOM killer on
+the failure path because the said task cannot be frozen.
+
+Is this preferable?
+-- 
+Michal Hocko
+SUSE Labs
