@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268AbaKFMgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:36:36 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:57583 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750974AbaKFMgf (ORCPT
+	id S1751298AbaKFMjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:39:12 -0500
+Received: from dovecot.logic.tuwien.ac.at ([128.130.175.61]:41035 "EHLO
+	mail.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaKFMjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:36:35 -0500
-Message-ID: <1415277392.4390.29.camel@x220>
-Subject: Re: [PATCH] kconfig: Fix warning
- =?UTF-8?Q?=22=E2=80=98jump=E2=80=99?= may be used uninitialized"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Peter =?ISO-8859-1?Q?K=FCmmel?= <syntheticpp@gmx.net>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 06 Nov 2014 13:36:32 +0100
-In-Reply-To: <1415275383-15301-1-git-send-email-syntheticpp@gmx.net>
-References: <1415275383-15301-1-git-send-email-syntheticpp@gmx.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 06 Nov 2014 12:36:33.0669 (UTC) FILETIME=[4C53B350:01CFF9BE]
-X-RcptDomain: vger.kernel.org
+	Thu, 6 Nov 2014 07:39:08 -0500
+Date: Thu, 6 Nov 2014 21:39:04 +0900
+From: Norbert Preining <preining@logic.at>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: khugepaged / firefox going wild in 3.18-rc
+Message-ID: <20141106123904.GU11838@auth.logic.tuwien.ac.at>
+References: <20141104232027.GO13232@auth.logic.tuwien.ac.at>
+ <alpine.DEB.2.10.1411041559170.2720@chino.kir.corp.google.com>
+ <20141105001026.GQ13232@auth.logic.tuwien.ac.at>
+ <20141105001243.GR13232@auth.logic.tuwien.ac.at>
+ <alpine.DEB.2.10.1411041615270.5391@chino.kir.corp.google.com>
+ <545B68C9.2060107@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545B68C9.2060107@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-06 at 13:03 +0100, Peter Kümmel wrote:
-> Warning:
-> In file included from scripts/kconfig/zconf.tab.c:2537:0:
-> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->      jump->offset = strlen(r->s);
-> 
-> Simplifies the test logic because (head && local) means (jump != 0)
-> and makes GCC happy when checking if the jump pointer was initialized.
-> 
-> Signed-off-by: Peter Kümmel <syntheticpp@gmx.net>
-> ---
+Hi Vlastimil
 
-Is this patch and the three others patches you just sent identical (or
-not) to the four patches you sent yesterday and the day before yesterday
-to linux-kbuild and Yann Morin? Either way, why are you posting them to
-lkml now?
+thanks for your answer.
 
->  scripts/kconfig/menu.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-> index a26cc5d..72c9dba 100644
-> --- a/scripts/kconfig/menu.c
-> +++ b/scripts/kconfig/menu.c
-> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
->  {
->  	int i, j;
->  	struct menu *submenu[8], *menu, *location = NULL;
-> -	struct jump_key *jump;
-> +	struct jump_key *jump = NULL;
->  
->  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
->  	menu = prop->menu->parent;
-> @@ -586,7 +586,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
->  		str_printf(r, _("  Location:\n"));
->  		for (j = 4; --i >= 0; j += 2) {
->  			menu = submenu[i];
-> -			if (head && location && menu == location)
-> +			if (jump && menu == location)
->  				jump->offset = strlen(r->s);
->  			str_printf(r, "%*c-> %s", j, ' ',
->  				   _(menu_get_prompt(menu)));
+In the meantime I have tried rc3, too, with the same effects.
 
+Interestingly, once it goes into a bad state, every future approach
+does the same. I started shotwell (photo organizer) and it went into the
+same state (khugepaged / shotwell each using about 100% of CPu time).
 
+On Thu, 06 Nov 2014, Vlastimil Babka wrote:
+> Could be that another task holds the mmap_sem during THP allocation attempt on
+> its own page fault, and compaction goes in some kind of infinite loop. There are
+
+My feeling somehow is about the plugin-container in firefox ...
+(flashplayer or something similar, but I might be wrong!). With shotwell,
+I have no idea why.
+
+> I suggested testing a commit revert in one thread, and a possible fix in the
+> other. If you can reproduce this well, that would be very useful.
+
+Which commit are you talking about? I can easily revert some/all of what you
+want and do test runs.
+
+> khugepaged using CPU also points to either the address space scanning, or
+> compaction going wrong. Since 8b1645685ac it shouldn't hold mmap_sem during
+> compaction, but that still leaves page faulters to possibly hold it.
+
+So, do you mean I should try reverting 8b1645685ac?
+
+> So yeah we would need the stacks of processes that do hog the CPU's, not those
+> that sleep. As David suggested, a /proc/pid/stack could work. Also can you
+> please provide /proc/zoneinfo ?
+
+Again, as I mentioned, I don't have /proc/pid/stack for any "pid", is
+this depending on some specific kerenl option?
+
+/proc/zoneinfo I have and can send you the next time.
+
+Thanks a lot and all the best
+
+Norbert
+
+------------------------------------------------------------------------
+PREINING, Norbert                               http://www.preining.info
+JAIST, Japan                                 TeX Live & Debian Developer
+GPG: 0x860CDC13   fp: F7D8 A928 26E3 16A1 9FA0  ACF0 6CAC A448 860C DC13
+------------------------------------------------------------------------
