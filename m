@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaKFG0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 01:26:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23866 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaKFG0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 01:26:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,324,1413270000"; 
-   d="scan'208";a="632425766"
-Date: Thu, 6 Nov 2014 11:56:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: swarren@wwwdotorg.org, dan.j.williams@intel.com, ldewangan@nvidia.com,
-        thierry.reding@gmail.com, dmaengine@vger.kernel.org,
-        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, kiran.padwal21@gmail.com
-Subject: Re: [PATCH 2/5] DMA: Remove .owner field for driver
-Message-ID: <20141106062657.GU1870@intel.com>
-References: <1411540764-27571-1-git-send-email-kiran.padwal@smartplayin.com>
+	id S1751385AbaKFGdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 01:33:43 -0500
+Received: from antispam.ahnlab.com ([210.121.169.55]:59415 "EHLO
+	antispam.ahnlab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbaKFGdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 01:33:42 -0500
+X-Original-SENDERIP: 172.16.11.209
+X-Original-MAILFROM: suhyun.park@ahnlab.com
+From: Su-Hyun Park <suhyun.park@ahnlab.com>
+To: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <bridge@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Su-Hyun Park <suhyun.park@ahnlab.com>
+Subject: [PATCH] bridge: missing null bridge device check causing null pointer dereference (bugfix)
+Date: Thu, 6 Nov 2014 15:26:32 +0900
+Message-ID: <1415255192-13584-1-git-send-email-suhyun.park@ahnlab.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411540764-27571-1-git-send-email-kiran.padwal@smartplayin.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Originating-IP: [172.20.32.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:09:23PM +0530, Kiran Padwal wrote:
-> There is no need to init .owner field.
-> 
-> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-> "mmc: remove .owner field for drivers using module_platform_driver"
-> 
-> This patch removes the superflous .owner field for drivers which
-> use the module_platform_driver API, as this is overriden in
-> platform_driver_register anyway."
+the bridge device can be null if the bridge is being deleted while processing 
+the packet, which causes the null pointer dereference in switch statement.
 
-Please make sure you use right subsytem name in patches
+crash dump snippet:
 
-Applied with name fix
+<1>BUG: unable to handle kernel NULL pointer dereference at 0000000000000021
+<1>IP: [<ffffffff814179f6>] br_handle_frame+0xe6/0x270
 
+<0>Code: 4c 0f 44 f0 89 f8 66 33 15 32 52 24 00 66 33 05 29 52 24 00 09 c2 89 
+f0 66 33 05 22 52 24 00 80 e4 f0 66 09 c2 0f 84 eb 00 00 00 <41> 0f b6 46 21 
+3c 02 74 61 3c 03 74 1d 48 89 df e8 d5 bc f0 ff
+---
+ net/bridge/br_input.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
+index 6fd5522..7e899ca 100644
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -176,6 +176,8 @@ rx_handler_result_t br_handle_frame(struct sk_buff **pskb)
+ 		return RX_HANDLER_CONSUMED;
+ 
+ 	p = br_port_get_rcu(skb->dev);
++	if (!p)
++		goto drop;
+ 
+ 	if (unlikely(is_link_local_ether_addr(dest))) {
+ 		u16 fwd_mask = p->br->group_fwd_mask_required;
 -- 
-~Vinod
+1.8.1.4
+
