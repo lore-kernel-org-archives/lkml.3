@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaKFQoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 11:44:32 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56223 "EHLO
+	id S1752083AbaKFQoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 11:44:39 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56248 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714AbaKFQoT (ORCPT
+	with ESMTP id S1751993AbaKFQo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:19 -0500
+	Thu, 6 Nov 2014 11:44:26 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH v5 16/48] mfd: tps6586x: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:43:00 -0800
-Message-Id: <1415292213-28652-17-git-send-email-linux@roeck-us.net>
+        Chris Zhong <zyw@rock-chips.com>,
+        Zhang Qing <zhangqing@rock-chips.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v5 19/48] mfd: rk808: Register power-off handler with kernel power-off handler
+Date: Thu,  6 Nov 2014 08:43:03 -0800
+Message-Id: <1415292213-28652-20-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
 References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA562.0360,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020205.545BA569.0291,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 100
+X-CTCH-SenderID-TotalMessages: 115
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -54,9 +55,8 @@ Register with kernel power-off handler instead of setting pm_power_off
 directly. Register with low priority to reflect that the original code
 only sets pm_power_off if it was not already set.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: linux-omap@vger.kernel.org
+Cc: Chris Zhong <zyw@rock-chips.com>
+Cc: Zhang Qing <zhangqing@rock-chips.com>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
@@ -71,79 +71,96 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
-- Use dev_warn instead of dev_err
+- New patch
 
- drivers/mfd/tps6586x.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ drivers/mfd/rk808.c       | 26 ++++++++++++--------------
+ include/linux/mfd/rk808.h |  2 ++
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 8e1dbc4..f11165f 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/i2c.h>
- #include <linux/platform_device.h>
+diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
+index bd02150..93ffcf0 100644
+--- a/drivers/mfd/rk808.c
++++ b/drivers/mfd/rk808.c
+@@ -21,6 +21,7 @@
+ #include <linux/mfd/rk808.h>
+ #include <linux/mfd/core.h>
+ #include <linux/module.h>
 +#include <linux/pm.h>
  #include <linux/regmap.h>
- #include <linux/of.h>
  
-@@ -133,6 +134,8 @@ struct tps6586x {
- 	u32			irq_en;
- 	u8			mask_reg[5];
- 	struct irq_domain	*irq_domain;
-+
-+	struct power_off_handler_block power_off_hb;
+ struct rk808_reg_data {
+@@ -147,23 +148,16 @@ static struct regmap_irq_chip rk808_irq_chip = {
+ 	.init_ack_masked = true,
  };
  
- static inline struct tps6586x *dev_to_tps6586x(struct device *dev)
-@@ -472,13 +475,15 @@ static const struct regmap_config tps6586x_regmap_config = {
- 	.cache_type = REGCACHE_RBTREE,
- };
- 
--static struct device *tps6586x_dev;
--static void tps6586x_power_off(void)
-+static void tps6586x_power_off(struct power_off_handler_block *this)
+-static struct i2c_client *rk808_i2c_client;
+-static void rk808_device_shutdown(void)
++static void rk808_device_shutdown(struct power_off_handler_block *this)
  {
--	if (tps6586x_clr_bits(tps6586x_dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
-+	struct tps6586x *tps6586x = container_of(this, struct tps6586x,
-+						 power_off_hb);
-+
-+	if (tps6586x_clr_bits(tps6586x->dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
- 		return;
++	struct rk808 *rk808 = container_of(this, struct rk808, power_off_hb);
+ 	int ret;
+-	struct rk808 *rk808 = i2c_get_clientdata(rk808_i2c_client);
+-
+-	if (!rk808) {
+-		dev_warn(&rk808_i2c_client->dev,
+-			 "have no rk808, so do nothing here\n");
+-		return;
+-	}
  
--	tps6586x_set_bits(tps6586x_dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
-+	tps6586x_set_bits(tps6586x->dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
+ 	ret = regmap_update_bits(rk808->regmap,
+ 				 RK808_DEVCTRL_REG,
+ 				 DEV_OFF_RST, DEV_OFF_RST);
+ 	if (ret)
+-		dev_err(&rk808_i2c_client->dev, "power off error!\n");
++		dev_err(&rk808->i2c->dev, "power off error!\n");
  }
  
- static void tps6586x_print_version(struct i2c_client *client, int version)
-@@ -575,9 +580,13 @@ static int tps6586x_i2c_probe(struct i2c_client *client,
- 		goto err_add_devs;
- 	}
+ static int rk808_probe(struct i2c_client *client,
+@@ -222,9 +216,14 @@ static int rk808_probe(struct i2c_client *client,
  
--	if (pdata->pm_off && !pm_power_off) {
--		tps6586x_dev = &client->dev;
--		pm_power_off = tps6586x_power_off;
-+	if (pdata->pm_off) {
-+		tps6586x->power_off_hb.handler = tps6586x_power_off;
-+		tps6586x->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
-+		ret = register_power_off_handler(&tps6586x->power_off_hb);
+ 	pm_off = of_property_read_bool(np,
+ 				"rockchip,system-power-controller");
+-	if (pm_off && !pm_power_off) {
+-		rk808_i2c_client = client;
+-		pm_power_off = rk808_device_shutdown;
++	if (pm_off) {
++		rk808->power_off_hb.handler = rk808_device_shutdown;
++		rk808->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
++		ret = devm_register_power_off_handler(&client->dev,
++						      &rk808->power_off_hb);
 +		if (ret)
 +			dev_warn(&client->dev,
-+				 "failed to register power-off handler\n");
++				 "Failed to register power-off handler\n");
  	}
  
  	return 0;
-@@ -594,6 +603,8 @@ static int tps6586x_i2c_remove(struct i2c_client *client)
- {
- 	struct tps6586x *tps6586x = i2c_get_clientdata(client);
+@@ -240,7 +239,6 @@ static int rk808_remove(struct i2c_client *client)
  
-+	unregister_power_off_handler(&tps6586x->power_off_hb);
-+
- 	tps6586x_remove_subdevs(tps6586x);
- 	mfd_remove_devices(tps6586x->dev);
- 	if (client->irq)
+ 	regmap_del_irq_chip(client->irq, rk808->irq_data);
+ 	mfd_remove_devices(&client->dev);
+-	pm_power_off = NULL;
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/rk808.h b/include/linux/mfd/rk808.h
+index fb09312..a6619f2 100644
+--- a/include/linux/mfd/rk808.h
++++ b/include/linux/mfd/rk808.h
+@@ -19,6 +19,7 @@
+ #ifndef __LINUX_REGULATOR_rk808_H
+ #define __LINUX_REGULATOR_rk808_H
+ 
++#include <linux/pm.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regmap.h>
+ 
+@@ -192,5 +193,6 @@ struct rk808 {
+ 	struct i2c_client *i2c;
+ 	struct regmap_irq_chip_data *irq_data;
+ 	struct regmap *regmap;
++	struct power_off_handler_block power_off_hb;
+ };
+ #endif /* __LINUX_REGULATOR_rk808_H */
 -- 
 1.9.1
 
