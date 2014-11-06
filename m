@@ -1,34 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaKFFEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 00:04:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45338 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaKFFEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 00:04:09 -0500
-Date: Thu, 6 Nov 2014 05:04:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs.git fixes
-Message-ID: <20141106050407.GV7996@ZenIV.linux.org.uk>
+	id S1751301AbaKFFGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 00:06:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31767 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051AbaKFFGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 00:06:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="484954527"
+Message-ID: <545B01DC.5060107@linux.intel.com>
+Date: Thu, 06 Nov 2014 13:06:36 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch Part2 v4 21/31] PCI/MSI: enhance PCI MSI core to support
+ hierarchy irqdomain
+References: <1415102525-9898-1-git-send-email-jiang.liu@linux.intel.com> <1415102525-9898-22-git-send-email-jiang.liu@linux.intel.com> <20141105230952.GH6168@google.com> <545AD5B3.60009@huawei.com>
+In-Reply-To: <545AD5B3.60009@huawei.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	A fix for embarrassing braino in o2net_send_tcp_msg().  -stable
-fodder...  Please, pull from the usual place -
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+On 2014/11/6 9:58, Yijing Wang wrote:
+>>>  
+>>> @@ -1098,3 +1099,128 @@ int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
+>>>  	return nvec;
+>>>  }
+>>>  EXPORT_SYMBOL(pci_enable_msix_range);
+>>> +
+>>> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
+>>
+>> Space, not tab.
+>>
+>>> +static inline irq_hw_number_t
+>>> +msi_get_hwirq(struct pci_dev *pdev, struct msi_desc *msidesc)
+>>
+>> The convention in this file is "struct pci_dev *dev".  And "struct msi_desc
+>> *desc" (or maybe "*entry").  Try to converge things, not diverge them.
+>>
+>>> +{
+>>> +	return (irq_hw_number_t)msidesc->msi_attrib.entry_nr |
+>>> +		PCI_DEVID(pdev->bus->number, pdev->devfn) << 11 |
+>>> +		(pci_domain_nr(pdev->bus) & 0xFFFFFFFF) << 27;
+>>
+>> Where does this bit layout come from?  Is this defined in the spec
+>> somewhere?  A reference would help.
+> 
+> Currently, more and more Non-PCI device use MSI(or similar MSI mechanism), like DMAR fault irq
+> and HPET FSB irq. And we have to add additional code to support the MSI capability.
+> So I hope we can decouple MSI code and PCI code, then we can unify all MSI(or Message Based interrupt)
+> in one framework.
+Hi Yijing,
+	I have a following patch to share more code among MSI/DMAR/HPET,
+which is one step forward as you suggested. Will send out that patch set
+soon.
+Regards!
+Gerry
 
-Shortlog:
-Al Viro (1):
-      fix breakage in o2net_send_tcp_msg()
-
-Diffstat:
- fs/ocfs2/cluster/tcp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Thanks!
+> Yijing.
+> 
+>>
+>>> +}
+>>> +
+>>> +static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
+>>> +			    unsigned int nr_irqs, void *arg)
+>>> +{
+>>> +	int i, ret;
+>>> +	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
+>>> +
+>>> +	if (irq_find_mapping(domain, hwirq) > 0)
+>>> +		return -EEXIST;
+>>> +
+>>> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
+>>> +	if (ret >= 0)
+>>
+>> 	if (ret < 0)
+>> 		return ret;
+>>
+>> and un-indent the mainline code below.  Then it's obvious that this is the
+>> normal case, not the error case.
+>>
+>>> +		for (i = 0; i < nr_irqs; i++) {
+>>> +			irq_domain_set_hwirq_and_chip(domain, virq + i,
+>>> +					hwirq + i, &msi_chip, (void *)(long)i);
+>>> +			__irq_set_handler(virq + i, handle_edge_irq, 0, "edge");
+>>> +		}
+>>> +
+>>> +	return ret;
+>>> +}
+>>> +
+>>> +static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
+>>> +			    unsigned int nr_irqs)
+>>> +{
+>>> +	int i;
+>>> +
+>>> +	for (i = 0; i < nr_irqs; i++) {
+>>> +		struct msi_desc *msidesc = irq_get_msi_desc(virq);
+>>> +
+>>> +		if (msidesc)
+>>> +			msidesc->irq = 0;
+>>> +	}
+>>> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
+>>> +}
+>>> +
+>>> +static int msi_domain_activate(struct irq_domain *domain,
+>>> +			       struct irq_data *irq_data)
+>>> +{
+>>> +	int ret = 0;
+>>> +	struct msi_msg msg;
+>>> +
+>>> +	/*
+>>> +	 * irq_data->chip_data is MSI/MSIx offset.
+>>
+>> "MSI-X", as you wrote on the next line.
+>>
+>>> +	 * MSI-X message is written per-IRQ, the offset is always 0.
+>>> +	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
+>>> +	 */
+>>> +	if (!irq_data->chip_data) {
+>>
+>> 	if (irq_data->chip_data)
+>> 		return 0;
+>>
+>> and un-indent the mainline code below, and drop the "ret = 0" init above.
+>>
+>>> +		ret = irq_chip_compose_msi_msg(irq_data, &msg);
+>>> +		if (ret == 0)
+>>
+>> 	if (ret)
+>> 		return ret;
+>>
+>>> +			write_msi_msg(irq_data->irq, &msg);
+>>> +	}
+>>> +
+>>> +	return ret;
+>> 	return 0;
+>>> +}
+>>> +
+>>> +static int msi_domain_deactivate(struct irq_domain *domain,
+>>> +				 struct irq_data *irq_data)
+>>> +{
+>>> +	struct msi_msg msg;
+>>> +
+>>> +	if (irq_data->chip_data) {
+>>> +		memset(&msg, 0, sizeof(msg));
+>>> +		write_msi_msg(irq_data->irq, &msg);
+>>> +	}
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +static struct irq_domain_ops msi_domain_ops = {
+>>> +	.alloc = msi_domain_alloc,
+>>> +	.free = msi_domain_free,
+>>> +	.activate = msi_domain_activate,
+>>> +	.deactivate = msi_domain_deactivate,
+>>> +};
+>>> +
+>>> +struct irq_domain *msi_create_irq_domain(struct irq_domain *parent)
+>>> +{
+>>> +	struct irq_domain *domain;
+>>> +
+>>> +	domain = irq_domain_add_tree(NULL, &msi_domain_ops, NULL);
+>>> +	if (domain)
+>>
+>> 	if (!domain)
+>> 		return NULL;
+>>
+>> and un-indent this:
+>>
+>>> +		domain->parent = parent;
+>>> +
+>>> +	return domain;
+>>> +}
+>>> +
+>>> +int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
+>>> +			      struct pci_dev *dev, void *arg)
+>>> +{
+>>> +	int i, virq;
+>>> +	struct msi_desc *msidesc;
+>>> +	int node = dev_to_node(&dev->dev);
+>>> +
+>>> +	list_for_each_entry(msidesc, &dev->msi_list, list) {
+>>> +		arch_msi_irq_domain_set_hwirq(arg, msi_get_hwirq(dev, msidesc));
+>>> +		virq = irq_domain_alloc_irqs(domain, msidesc->nvec_used,
+>>> +					     node, arg);
+>>> +		if (virq < 0) {
+>>> +			/* Special handling for pci_enable_msi_range(). */
+>>> +			return (type == PCI_CAP_ID_MSI &&
+>>> +				msidesc->nvec_used > 1) ?  1 : -ENOSPC;	
+>>
+>> I think "if" would be easier to read than this ternary expression.
+>>
+>>> +		}
+>>> +		for (i = 0; i < msidesc->nvec_used; i++)
+>>> +			irq_set_msi_desc_off(virq + i, i, msidesc);
+>>> +	}
+>>> +
+>>> +	list_for_each_entry(msidesc, &dev->msi_list, list)
+>>> +		if (msidesc->nvec_used == 1)
+>>> +			dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", virq);
+>>> +		else
+>>> +			dev_dbg(&dev->dev, "irq [%d-%d] for MSI/MSI-X\n",
+>>> +				virq, virq + msidesc->nvec_used - 1);
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
+>>> diff --git a/include/linux/msi.h b/include/linux/msi.h
+>>> index 44f4746d033b..05dcd425f82b 100644
+>>> --- a/include/linux/msi.h
+>>> +++ b/include/linux/msi.h
+>>> @@ -75,4 +75,15 @@ struct msi_chip {
+>>>  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
+>>>  };
+>>>  
+>>> +#ifdef	CONFIG_PCI_MSI_IRQ_DOMAIN
+>>
+>> Use a space here, not a tab.
+>>
+>>> +extern struct irq_chip msi_chip;
+>>
+>> I don't think "msi_chip" is a good name.  "Chip" only hints that it's a
+>> semiconductor integrated circuit; it doesn't say anything about what it
+>> does.  I've suggested "msi_controller" elsewhere.
+>>
+>> Why does this need to be exported?  And why should there be only one in a
+>> system?
+>>
+>>> +extern struct irq_domain *msi_create_irq_domain(struct irq_domain *parent);
+>>> +extern int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
+>>> +				     struct pci_dev *dev, void *arg);
+>>> +
+>>> +extern irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg);
+>>> +extern void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq);
+>>
+>> Look at the rest of the file and notice that the existing code does not use
+>> "extern" on function declarations.
+>>
+>>> +#endif	/* CONFIG_PCI_MSI_IRQ_DOMAIN */
+>>
+>> Use a space here (not a tab), like the #endif just below.
+>>
+>>>  #endif /* LINUX_MSI_H */
+>>> -- 
+>>> 1.7.10.4
+>>>
+>>
+>> .
+>>
+> 
+> 
