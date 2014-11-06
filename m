@@ -1,160 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaKFSjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:39:47 -0500
-Received: from smtp103.biz.mail.bf1.yahoo.com ([98.139.221.62]:28190 "EHLO
-	smtp103.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751295AbaKFSjn (ORCPT
+	id S1751652AbaKFSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:40:57 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47143 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaKFSkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:39:43 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: RdA_gLsVM1mz__8FUOijCtond1wZYLxgWjHknGp9jA5JoaC
- 5O_FIW.2og7rXtTpOJOnrzEyz4uJ4fxo.bJt7xEXV_h6Kc4PXfs.lv6zapAN
- BaXXCbdWIOgewEKcSC467bG_U5z.M8QNe0D.rJ8EQwJfa.n3rXGHJdeyPF6i
- ANZSkpCZmNVrX.tcNsDKukMd9JSDQx3yRWtHnajNvfaz83VBdO4ZpQ0FJJX3
- YpINw8M89p.kXtWtxYQwCWL.buwR3WZ1ju3wM8Pa220P4IfccsC2zI2CVsb5
- n_pqM.PbiwNT5NJJIIgEwG1qUfCqyb2tMfYAmprvU3fGq7iVu7QOc_FndFIW
- qeDbdQZZ2LiQaeF9iRUlWnyqRLynCDWO0W08wVfeLhXo2OGZptKQur58xQto
- 0ekkfTTboqCVQz0sL12TjDFsaYGT3pQGkahhLPjRq9KvoFF.TsZtSS1k4kzT
- 4Dq9fK45GWmOyExdOGOiDzg7GukXPRtEKRRGwd6o36TcSFpJLog2yyY.ZtJg
- mE4bglA8UZQYsmlSFwk2X8SMW9el0Dwa6lEcdtIku.4Xl63tnkr4W7fSWIcO
- gjavZuYE5PERqwOBZzf9pasQU
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <545BC088.6080306@schaufler-ca.com>
-Date: Thu, 06 Nov 2014 10:40:08 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 6 Nov 2014 13:40:53 -0500
+Message-ID: <545BC091.9000503@gmail.com>
+Date: Thu, 06 Nov 2014 10:40:17 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 0/7] Security: Provide unioned file support
-References: <545BB147.4000100@schaufler-ca.com> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <6108.1415296719@warthog.procyon.org.uk>
-In-Reply-To: <6108.1415296719@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jslaby@suse.cz,
+        devicetree@vger.kernel.org, jingchang.lu@freescale.com,
+        gregory.0xf0@gmail.com
+Subject: Re: [PATCH] serial: of-serial: zero-out struct of_serial_info
+References: <1414703913-1343-1-git-send-email-f.fainelli@gmail.com> <5481851.EJfv4DSzbT@wuerfel> <545919B5.9020905@gmail.com> <20141106183334.GB24232@kroah.com>
+In-Reply-To: <20141106183334.GB24232@kroah.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/2014 9:58 AM, David Howells wrote:
+On 11/06/2014 10:33 AM, Greg KH wrote:
+> On Tue, Nov 04, 2014 at 10:23:49AM -0800, Florian Fainelli wrote:
+>> On 10/30/2014 02:55 PM, Arnd Bergmann wrote:
+>>> On Thursday 30 October 2014 14:18:33 Florian Fainelli wrote:
+>>>> of_platform_serial_probe() invokes of_platform_serial_setup() with a
+>>>> kmalloc'd struct of_serial_info cookie, which is not much of a problem
+>>>> for most of the struct of_serial_info fields we access but info->clk.
+>>>>
+>>>> On platforms which do not provide a clock phandle for their UART nodes
+>>>> but do provide a 'clock-frequency' property, we basically leave the
+>>>> info->clk variable uninitialized, and this craps out during
+>>>> suspend/resume with oopses, crashes or warnings in the clock code.
+>>>>
+>>>> Fix this by using kzalloc() which also zeroes-out the structure and
+>>>> provides an initialized info->clk member set to NULL.
+>>>>
+>>>> Fixes: 2dea53bf57783 ("serial: of-serial: add PM suspend/resume support")
+>>>> Fixes: e34b9c94b6e8d ("[POWERPC] of_serial: add port type checking")
+>>>> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+>>>>
+>>>
+>>> I thought I'd acked this patch before, maybe someone else sent the same
+>>> one. This is definitely required, so
+>>>
+>>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>>
+>>
+>> Thanks, so who's taking that patch? Let me know if I need to resubmit
+>> targeting a specific tree.
+> 
+> Someone else sent this before you did, and I took that version instead,
+> sorry.
 
-> Casey Schaufler <casey@schaufler-ca.com> wrote:
->
->> I am going to have to look at this very carefully for the
->> Smack implications. I cannot have a review done for several
->> days. I do have some immediate comments below.
-> Note that Smack and Tomoyo won't compile with the patches as they are because
-> some changes will need to be made.  I haven't made them yet as I want to work
-> out the changes for SELinux first.
+Not a problem, my message contained much more explanations, but the end
+result is the same.
 
-There are going to be lots of implications. Please look at the
-bigger picture.
-
-
->
->>>  (1) The docker source (ie. the lower layer) will all be under a single
->>>  label.
->> What does this mean? Is the "lower layer" the "real" file, or something else?
->> What is a "docker source"? What "single label" are you talking about, and
->> where does it come from? What about LSMs that have multiple labels on a file?
-> Firstly, docker: https://www.docker.com/
->
-> What we're dealing with is unioning two filesystems.  The way it works is that
-> you start off with a "lower" filesystem that contains the basic files you want
-> to appear and you overlay on top of that another filesystem such that the
-> files and directories in the lower filesystem can be accessed through the
-> overlay (the overlay redirects queries to the lower fs).
->
-> So, say the lower fs is mounted on /foo and you mount an overlay on /bar that
-> points to /foo as its lower layer.  If you access /bar/bin/ls, the overlay
-> will pass that down, giving you a file referring to /foo/bin/ls.
->
-> The clever bit comes when you try altering /bar/bin/ls.  At that point
-> /foo/bin/ls is "copied up" to the overlay - to /bar/bin/ls becomes a real
-> file.  The writes are then made to the file in the overlay - and these files
-> are persistent.
->
-> In theory, any further access to /bar/bin/ls will then serve up the contents
-> of /bar/bin/ls and ignore /foo/bin/ls.  In practice, as things stand, if you
-> have a read-only fd already referring to /foo/bin/ls through /bar/bin/ls, this
-> will be unaffected by the copy up.
->
-> Docker uses containers and chroots to provide not-virtual-machines, using an
-> overlay to manage the root filesystem.  Indeed, you can provide several
-> overlays using the same lower fs.
->
-> So to answer your questions:
->
->> What does this mean?
-> It has been decided that for the purposes of docker, all files within the
-> docker root fs will have the same label.  We'd have to provide policy
-> namespacing otherwise (I think).
-
-That's just insane. "It has been decided" by who? Obviously not people
-who care about security policies. Maybe it's good enough for your
-particular use case, but labeling of files has to be up to the security
-module. That's what the modules are for.
-
->
->> Is the "lower layer" the "real" file, or something else?
-> The lower layer is a filesystem, though it contains real files.  In the case
-> of unionmount (an alternative to overlayfs), there may be multiple ordered
-> lower layers.
->
->> What is a "docker source"?
-> The lower layer contains the "source" files for your docker image.
->
->> What "single label" are you talking about, and where does it come from?
-> The label you set on the lower layer files.
->
->> What about LSMs that have multiple labels on a file?
-> Setting policy is something I'll have to leave to the docker people and the
-> administrators of systems that use docker.
-
-What does that mean? If the underlying mechanism can't do the job,
-how the dickens is the administrator supposed to make it happen?
-
->
-> But all I'm proposing is a way to give the LSM access to both the file in the
-> overlay and the file in the lower fs that is leeching through into the
-> overlay.
-
-But your mechanisms are simultaneously incomplete and over specified.
-
->
->>>  (2) The docker root (ie. the overlay/union layer) will all be under a
->>>      single, but different label set on the overlay mount (and each docker
->>>      root may be under its own label).
->> No. Sorry, but this is the one notion that doesn't work. A layer should
->> either be label transparent or restricted by some sort of range concept.
->> Giving it a label just makes it necessary to grant everyone access to objects
->> with that label.
-> The problem is that we're not using a virtual machine.  Labels on the docker
-> chroot and labels on the master root filesystem are under the same policy.
->
-> Further, we may have several docker instances that have separate overlays on
-> the same lower layer but should perhaps have separate labels.
-
-Your proposal is a cop out. It may work in a limited set of cases.
-It is not a general solution.
-
->
->>>  (3) Inodes in the overlayfs upper layer will be given the overlay label.
->> Could you explain your terminology? I have no idea what the "overlay label"
->> might be. Is it the real one on the real filesystem? What about attributes
->> other than the access label? Smack has execution labels and a transmute
->> attribute as well as the access label.
-> The overlay label is the label on the inode in the overlay layer (overlayfs)
-> or that would be on the inode if it existed (unionmount).
->
->>>  (6) An extra label slot will be placed in struct file_security_struct to
->>>      hold the overlay label.
->> Are you assuming a single overlay layer? 
-> There can only be only overlay at the top.  It may have lower layers that are
-> also overlays, but we really want the top label.
->
-> David
->
-
+Thanks!
+--
+Florian
