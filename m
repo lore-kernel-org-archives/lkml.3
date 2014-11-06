@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaKFSKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 13:10:04 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:56283 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaKFSKC (ORCPT
+	id S1751365AbaKFSMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 13:12:30 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:34656 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaKFSM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 13:10:02 -0500
-Date: Thu, 6 Nov 2014 10:09:56 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        khilman@linaro.org, linux-pm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: Re: [RFC PATCH v4 3/3] PM / clock_ops: add and enable clocks always
- if !CONFIG_PM_RUNTIME
-Message-ID: <20141106180956.GE34214@dtor-ws>
-References: <1415281862-23764-1-git-send-email-grygorii.strashko@ti.com>
- <1415281862-23764-4-git-send-email-grygorii.strashko@ti.com>
+	Thu, 6 Nov 2014 13:12:28 -0500
+To: Chris Friesen <chris.friesen@windriver.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
+	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>
+Date: Thu, 06 Nov 2014 13:12:17 -0500
+In-Reply-To: <545BB3AB.8070409@windriver.com> (Chris Friesen's message of
+	"Thu, 6 Nov 2014 11:45:15 -0600")
+Message-ID: <yq1fvdwb3lq.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415281862-23764-4-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 03:51:02PM +0200, Grygorii Strashko wrote:
-> Device's clocks need to be enabled always at probing time
-> if !CONFIG_PM_RUNTIME - in that way, device will become accesible
-> and, later, its clocks can be disabled/enabled during system
-> suspend/resume by using pm_clk_suspend/pm_clk_resume APIs.
-> 
-> But now, the clocks management code doesn't enable clocks when
-> clocks are being registered per-device by using pm_clk_add/_clk().
-> So, update pm_clk_acquire(), which is called from pm_clk_add/_clk(),
-> to enable clock always if !CONFIG_PM_RUNTIME.
-> 
-> Also, Platform PM domains drivers will not have to add code like below
-> each time they need to handle the case when !CONFIG_PM_RUNTIME [1 - 3]:
-> 
->        if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
->                ret = pm_clk_resume(dev);
->                if (ret) {
->                        dev_err(dev, "pm_clk_resume failed %d\n", ret);
->                        goto clk_err;
->                };
->        }
-> 
-> [1] https://lkml.org/lkml/2014/10/3/306
-> [2] https://lkml.org/lkml/2014/10/16/305
-> [3] https://lkml.org/lkml/2014/10/20/249
-> 
-> CC: Santosh Shilimkar <ssantosh@kernel.org>
-> CC: Kevin Hilman <khilman@linaro.org>
-> CC: Ulf Hansson <ulf.hansson@linaro.org>
-> CC: Geert Uytterhoeven <geert@linux-m68k.org>
-> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> CC: Philipp Zabel <p.zabel@pengutronix.de>
-> CC: Caesar Wang <caesar.wang@rock-chips.com>
-> 
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
-> Hi,
-> 
-> I marked it as RFC, because:
->   Generic clock manipulation PM callbacks can be used for any device
->   for which list of clocks need to be maintained - and it doesn't mean
->   that this framework need to be always connected to GPD/Runtime PM or
->   used during suspend resume. Also, for DT-use case - it doesn't perform
->   any actions (except clk_prepare) on clocks by itself and only
->   by request from framework's consumer.
-> 
->  For example, it can be reused by Power domain/controller drivers like:
->  - Rockchip RK3288 PM Domain (https://lkml.org/lkml/2014/11/6/30)
->  - IMX.6 PU power domain (http://www.spinics.net/lists/arm-kernel/msg360709.html)
-> 
->  to maintain list of clocks for GPD itself and these clocks should not
->  be enabled by default, because they are used to power on/off Power domain
->  in a specific way:
->      - enable all clocks assigned to PD
->      - power on/off PD
->      - disable all clocks assigned to PD.
->  After this patch it will be impossible to reuse Generic clock manipulation PM
->  callbacks in cases described above.
+>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
 
-I'd rather keep it separate and concentrate on making pm_clk* code
-working with the power management core. Individual drivers can easily
-keep list of their clocks for whatever additional purpose they need
-without involving pm_clk* API.
+Chris> That'd work, but is it the best way to go?  I mean, I found one
+Chris> report of a similar problem on an SSD (model number unknown).  In
+Chris> that case it was a near-UINT_MAX value as well.
 
-Thanks.
+My concern is still the same. Namely that this particular drive happens
+to be returning UINT_MAX but it might as well be a value that's entirely
+random. Or even a value that is small and innocuous looking but
+completely wrong.
+
+Chris> The problem with the blacklist is that until someone patches it,
+Chris> the drive is broken.  And then it stays blacklisted even if the
+Chris> firmware gets fixed.
+
+Well, you can manually blacklist in /proc/scsi/device_info.
+
+Chris> I'm wondering if it might not be better to just ignore all values
+Chris> larger than X (where X is whatever we think is the largest
+Chris> conceivable reasonable value).
+
+The problem is that finding that is not easy and it too will be a moving
+target.
+
+I'm willing to entertain the following, however...
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 95bfb7bfbb9d..75cc51a01860 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2593,7 +2593,8 @@ static void sd_read_block_limits(struct scsi_disk *sdkp)
+ 	blk_queue_io_min(sdkp->disk->queue,
+ 			 get_unaligned_be16(&buffer[6]) * sector_sz);
+ 	blk_queue_io_opt(sdkp->disk->queue,
+-			 get_unaligned_be32(&buffer[12]) * sector_sz);
++			 min_t(u32, get_unaligned_be32(&buffer[12]),
++			       sdkp->capacity) * sector_sz);
+ 
+ 	if (buffer[3] == 0x3c) {
+ 		unsigned int lba_count, desc_count;
 
 -- 
-Dmitry
+Martin K. Petersen	Oracle Linux Engineering
