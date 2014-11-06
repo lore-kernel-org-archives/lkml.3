@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaKFMDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 07:03:40 -0500
-Received: from mout.gmx.net ([212.227.17.20]:59556 "EHLO mout.gmx.net"
+	id S1751550AbaKFMDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 07:03:44 -0500
+Received: from mout.gmx.net ([212.227.17.22]:49220 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450AbaKFMDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 07:03:37 -0500
+	id S1751484AbaKFMDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 07:03:41 -0500
 From: =?UTF-8?q?Peter=20K=C3=BCmmel?= <syntheticpp@gmx.net>
 To: linux-kernel@vger.kernel.org
 Cc: =?UTF-8?q?Peter=20K=C3=BCmmel?= <syntheticpp@gmx.net>
-Subject: [PATCH] xconfig: Set configuration strings on focus lost
-Date: Thu,  6 Nov 2014 13:03:02 +0100
-Message-Id: <1415275383-15301-3-git-send-email-syntheticpp@gmx.net>
+Subject: [PATCH] xconfig: Set keyboard focus to line edit whenever the search dialog opens
+Date: Thu,  6 Nov 2014 13:03:03 +0100
+Message-Id: <1415275383-15301-4-git-send-email-syntheticpp@gmx.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415275383-15301-1-git-send-email-syntheticpp@gmx.net>
 References: <1415275383-15301-1-git-send-email-syntheticpp@gmx.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:2g6MkcFj0ycolszz2Q41IwCFhig9gqo/iwwDQyGqWQJ5CiUebCf
- T4E+HVmLM/q1TbQYBUojhhAc0Xg/oYdAVoxLLnEdML1JgOxdSoXc6+WhE5bKvpJZoUfxsqh
- AePakj7e16tgFADgUQBbwvmDW1nAfXlEnE+jjKH5lnt2MVgLFpuwkR45ZO95YbstIreqz8P
- 5RIi0trOZ8e/PfftXNZUg==
+X-Provags-ID: V03:K0:BUyY+ZWNJ6rIhqy+E+l6qy7OxIeSx5ydJ4qCPB6utc51nTeiIeQ
+ yCv3r+xBPr6H+JcPjehoepG+SJN1aj24gsod/ySm0pdXMIILW0V0SR28TppibX2OiJBkLDw
+ k63iROFTDweW9T9gwFI6qilXQij5L255hl0Vc+wiP6FNB4imjht6I9y/j6yJD9M1oxu+nzM
+ IBf8kgRqQOTkMYbPl2Yxw==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A change to a string configuration is currently only
-recogniized by pressing enter/return. When you just
-click to another entry after the string was edited
-the change is not set. Additionally when you come
-back to the string configuration your changes are lost.
-With this patch the string changes are automatically set
-when the focus leaves the edit field. There is still
-the possibility to drop any changes by pressing ESC.
+When after a search on a result is clicked the focus jumps to
+the result list. So after closing and reopening the dialog the
+field does not have the focus any more. This is annoying when
+you press Ctrl-F and start typing for a new search because
+the text shows not up in the edit field but gets lost. You
+have to click additionally into the edit field to move the
+focus to this field. With this patch the focus is always set
+to the edit field when the dialog opens.
 
 Signed-off-by: Peter Kümmel <syntheticpp@gmx.net>
 ---
- scripts/kconfig/qconf.cc | 23 +++++++++++++++++++----
- scripts/kconfig/qconf.h  |  2 ++
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ scripts/kconfig/qconf.cc | 6 ++++++
+ scripts/kconfig/qconf.h  | 1 +
+ 2 files changed, 7 insertions(+)
 
 diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-index 9d3b04b..f08472e 100644
+index 9d3b04b..7ef498d 100644
 --- a/scripts/kconfig/qconf.cc
 +++ b/scripts/kconfig/qconf.cc
-@@ -302,13 +302,18 @@ ConfigLineEdit::ConfigLineEdit(ConfigView* parent)
- 	connect(this, SIGNAL(lostFocus()), SLOT(hide()));
+@@ -1235,6 +1235,11 @@ ConfigSearchWindow::ConfigSearchWindow(ConfigMainWindow* parent, const char *nam
+ 	}
  }
  
--void ConfigLineEdit::show(ConfigItem* i)
-+void ConfigLineEdit::updateLineEditText(ConfigItem* i)
- {
--	item = i;
--	if (sym_get_string_value(item->menu->sym))
--		setText(QString::fromLocal8Bit(sym_get_string_value(item->menu->sym)));
-+	if (sym_get_string_value(i->menu->sym))
-+		setText(QString::fromLocal8Bit(sym_get_string_value(i->menu->sym)));
- 	else
- 		setText(QString::null);
++void ConfigSearchWindow::setFocusOnLineEdit()
++{
++	editField->setFocus(Qt::OtherFocusReason);
 +}
 +
-+void ConfigLineEdit::show(ConfigItem* i)
-+{
-+	item = i;
-+	updateLineEditText(item);
- 	Parent::show();
- 	setFocus();
- }
-@@ -317,6 +322,7 @@ void ConfigLineEdit::keyPressEvent(QKeyEvent* e)
+ void ConfigSearchWindow::saveSettings(void)
  {
- 	switch (e->key()) {
- 	case Qt::Key_Escape:
-+		updateLineEditText(item);
- 		break;
- 	case Qt::Key_Return:
- 	case Qt::Key_Enter:
-@@ -332,6 +338,15 @@ void ConfigLineEdit::keyPressEvent(QKeyEvent* e)
- 	hide();
+ 	if (name()) {
+@@ -1506,6 +1511,7 @@ void ConfigMainWindow::searchConfig(void)
+ 	if (!searchWindow)
+ 		searchWindow = new ConfigSearchWindow(this, "search");
+ 	searchWindow->show();
++	searchWindow->setFocusOnLineEdit();
  }
  
-+void ConfigLineEdit::focusOutEvent(QFocusEvent *e)
-+{
-+	if (e->lostFocus()) {
-+		sym_set_string_value(item->menu->sym, text().latin1());
-+		parent()->updateList(item);
-+	}
-+	Parent::focusOutEvent(e);
-+}
-+
- ConfigList::ConfigList(ConfigView* p, const char *name)
- 	: Parent(p, name),
- 	  updateAll(false),
+ void ConfigMainWindow::changeMenu(struct menu *menu)
 diff --git a/scripts/kconfig/qconf.h b/scripts/kconfig/qconf.h
-index bde0c6b..11efb71 100644
+index bde0c6b..6f2c4d6 100644
 --- a/scripts/kconfig/qconf.h
 +++ b/scripts/kconfig/qconf.h
-@@ -209,8 +209,10 @@ public:
- 	{
- 		return (ConfigView*)Parent::parent();
- 	}
-+	void updateLineEditText(ConfigItem *i);
- 	void show(ConfigItem *i);
- 	void keyPressEvent(QKeyEvent *e);
-+	void focusOutEvent(QFocusEvent *e);
+@@ -288,6 +288,7 @@ public:
+ public slots:
+ 	void saveSettings(void);
+ 	void search(void);
++	void setFocusOnLineEdit(void);
  
- public:
- 	ConfigItem *item;
+ protected:
+ 	QLineEdit* editField;
 -- 
 1.9.1
 
