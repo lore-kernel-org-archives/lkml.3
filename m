@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaKFN1l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 08:27:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:17978 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751229AbaKFN1k (ORCPT
+	id S1751391AbaKFN1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 08:27:53 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40666 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaKFN1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 08:27:40 -0500
-Date: Thu, 6 Nov 2014 08:27:28 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Ingo Molnar <mingo@redhat.com>, kgdb-bugreport@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH RESEND 3.18-rc3 v2 0/2] trace: kdb: Bug fixes for ftdump
-Message-ID: <20141106082728.5d4b7161@gandalf.local.home>
-In-Reply-To: <1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
-References: <1411554781-16751-1-git-send-email-daniel.thompson@linaro.org>
-	<1415277716-19419-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 6 Nov 2014 08:27:50 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH] crypto: ux500/cryp: Silence compiler warning for !CONFIG_PM
+Date: Thu,  6 Nov 2014 14:27:35 +0100
+Message-Id: <1415280455-14056-1-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  6 Nov 2014 12:41:54 +0000
-Daniel Thompson <daniel.thompson@linaro.org> wrote:
+The system PM functions were unused when CONFIG_PM is unset. Let's move
+them inside CONFIG_PM_SLEEP to silence the compiler warning.
 
-> This patchset makes it possible to use kdb's ftdump command without
-> panicing, crashing or livelocking. The ftdump command cannot be used
-> at all without these changes.
-> 
-> IIRC this patches are still pending Jason's ack.
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ drivers/crypto/ux500/cryp/cryp_core.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I haven't heard from Jason in a long time. Is he still active?
-
--- Steve
-
-
-> 
-> Changes since v1:
-> 
-> * Fixed use-after-free problems in v1 by adding logic to NULL out
->   buffer_iter during free operations.
-> 
-> * Introduced a second patch to fix a live lock when trying to display
->   an empty trace buffer.
-> 
-> 
-> Daniel Thompson (2):
->   trace: kdb: Fix kernel panic during ftdump
->   trace: kdb: Fix kernel livelock with empty buffers
-> 
->  kernel/trace/trace_kdb.c | 21 +++++++++++++--------
->  1 file changed, 13 insertions(+), 8 deletions(-)
-> 
-> --
-> 1.9.3
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index 92105f3..83811aa 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -1688,6 +1688,7 @@ static void ux500_cryp_shutdown(struct platform_device *pdev)
+ 
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int ux500_cryp_suspend(struct device *dev)
+ {
+ 	int ret;
+@@ -1768,6 +1769,7 @@ static int ux500_cryp_resume(struct device *dev)
+ 
+ 	return ret;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(ux500_cryp_pm, ux500_cryp_suspend, ux500_cryp_resume);
+ 
+-- 
+1.9.1
 
