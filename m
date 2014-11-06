@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaKFGqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 01:46:39 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:41995 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKFGqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 01:46:38 -0500
-Date: Thu, 6 Nov 2014 14:46:29 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org,
-        Masahide Nakamura <nakam@linux-ipv6.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
-Message-ID: <20141106064629.GA29321@gondor.apana.org.au>
-References: <20141105035536.GO7996@ZenIV.linux.org.uk>
- <20141105.155054.2198151263164321219.davem@davemloft.net>
- <20141105210745.GT7996@ZenIV.linux.org.uk>
- <20141105.165719.835728206041332333.davem@davemloft.net>
- <20141106032533.GU7996@ZenIV.linux.org.uk>
- <20141106055023.GA28865@gondor.apana.org.au>
- <20141106064318.GW7996@ZenIV.linux.org.uk>
+	id S1751193AbaKFHAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 02:00:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55427 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883AbaKFHAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 02:00:39 -0500
+Message-ID: <545B1C53.9010406@ti.com>
+Date: Thu, 6 Nov 2014 12:29:31 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106064318.GW7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x Driver
+ defines
+References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org> <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 06:43:18AM +0000, Al Viro wrote:
-> On Thu, Nov 06, 2014 at 01:50:23PM +0800, Herbert Xu wrote:
-> > +	/* We only need the first two bytes. */
-> > +	err = memcpy_fromiovecend((void *)&icmph, msg->msg_iov, 0, 2);
-> > +	if (err)
-> > +		return err;
-> > +
-> > +	fl4->fl4_icmp_type = icmph.type;
-> > +	fl4->fl4_icmp_code = icmph.code;
+Hi,
+
+On Tuesday 04 November 2014 04:21 PM, Gabriel FERNANDEZ wrote:
+> This provides the shared header file which will be reference from both
+> PHY driver and its associated Device Tree node(s).
 > 
-> That's more readable, but that exposes another problem in there - we read
-> the same piece of userland data twice, with no promise whatsoever that we'll
-> get the same value both times...
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>  include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
 
-Sure, but you have to be root anyway to write to raw sockets.
+I don't see this being used in device tree file. Are you planning to add this
+after -rc1 is tagged. Or else I have to create a separate branch for this file
+which will be merged by both me and the dt maintainer. Let me know.
 
-Patches are welcome :)
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thanks
+Kishon
+>  1 file changed, 18 insertions(+)
+>  create mode 100644 include/dt-bindings/phy/phy.h
+> 
+> diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+> new file mode 100644
+> index 0000000..e8c6a3f
+> --- /dev/null
+> +++ b/include/dt-bindings/phy/phy.h
+> @@ -0,0 +1,18 @@
+> +/*
+> + *
+> + * This header provides constants for the phy framework
+> + *
+> + * Copyright (C) 2014 STMicroelectronics
+> + * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+> + * License terms:  GNU General Public License (GPL), version 2
+> + */
+> +
+> +#ifndef _DT_BINDINGS_PHY
+> +#define _DT_BINDINGS_PHY
+> +
+> +#define PHY_TYPE_SATA		1
+> +#define PHY_TYPE_PCIE		2
+> +#define PHY_TYPE_USB2		3
+> +#define PHY_TYPE_USB3		4
+> +
+> +#endif /* _DT_BINDINGS_PHY */
+> 
