@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaKFPog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 10:44:36 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:62396 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558AbaKFPob (ORCPT
+	id S1751681AbaKFPo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 10:44:57 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:32960 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567AbaKFPod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 10:44:31 -0500
+	Thu, 6 Nov 2014 10:44:33 -0500
 From: Milosz Tanski <milosz@adfin.com>
 To: linux-kernel@vger.kernel.org
 Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
@@ -15,157 +15,54 @@ Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
         Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
-Subject: [PATCH v2 1/2] Add preadv2/pwritev2 documentation.
-Date: Thu,  6 Nov 2014 10:44:26 -0500
-Message-Id: <d2cbc4795f774b521e13ac448d07a1156c6aa04d.1415288353.git.milosz@adfin.com>
+Subject: [PATCH v2 2/2] RWF_ODSYNC flag for pwritev2
+Date: Thu,  6 Nov 2014 10:44:27 -0500
+Message-Id: <ee4674ce06aaabf8bee50b4f0168af8729bc2ef1.1415288353.git.milosz@adfin.com>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <cover.1415220890.git.milosz@adfin.com>
+In-Reply-To: <d2cbc4795f774b521e13ac448d07a1156c6aa04d.1415288353.git.milosz@adfin.com>
 References: <cover.1415220890.git.milosz@adfin.com>
+ <d2cbc4795f774b521e13ac448d07a1156c6aa04d.1415288353.git.milosz@adfin.com>
+In-Reply-To: <d2cbc4795f774b521e13ac448d07a1156c6aa04d.1415288353.git.milosz@adfin.com>
+References: <d2cbc4795f774b521e13ac448d07a1156c6aa04d.1415288353.git.milosz@adfin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New syscalls that are a variation on the preadv/pwritev but support an extra
-flag argument.
+Document RWF_ODSYNC flag for pwritev2 as implemented by Christoph Hellwig.
 
 Signed-off-by: Milosz Tanski <milosz@adfin.com>
-Suggested-by: Jeff Moyer <jmoyer@redhat.com>
-Fixes: Jeff Moyer <jmoyer@redhat.com>
 ---
- man2/readv.2 | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 61 insertions(+), 10 deletions(-)
+ man2/readv.2 | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/man2/readv.2 b/man2/readv.2
-index 8748efa..31b3870 100644
+index 31b3870..ff1405c 100644
 --- a/man2/readv.2
 +++ b/man2/readv.2
-@@ -45,6 +45,12 @@ readv, writev, preadv, pwritev \- read or write data into multiple buffers
- .sp
- .BI "ssize_t pwritev(int " fd ", const struct iovec *" iov ", int " iovcnt ,
- .BI "                off_t " offset );
-+.sp
-+.BI "ssize_t preadv2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
-+.BI "                off_t " offset ", int " flags );
-+.sp
-+.BI "ssize_t pwritev2(int " fd ", const struct iovec *" iov ", int " iovcnt ,
-+.BI "                 off_t " offset ", int " flags );
- .fi
- .sp
- .in -4n
-@@ -162,9 +168,9 @@ The
- system call combines the functionality of
- .BR writev ()
- and
--.BR pwrite (2).
-+.BR pwrite (2) "."
- It performs the same task as
--.BR writev (),
-+.BR writev () ","
- but adds a fourth argument,
- .IR offset ,
- which specifies the file offset at which the output operation
-@@ -174,15 +180,41 @@ The file offset is not changed by these system calls.
- The file referred to by
- .I fd
- must be capable of seeking.
-+.SS preadv2() and pwritev2()
-+
-+This pair of system calls has similar functionality to the
-+.BR preadv ()
-+and
-+.BR pwritev ()
-+calls, but adds a fifth argument, \fIflags\fP, which modifies the behavior on a per call basis.
-+
-+Like the
-+.BR preadv ()
-+and
-+.BR pwritev ()
-+calls, they accept an \fIoffset\fP argument. Unlike those calls, if the \fIoffset\fP argument is set to -1 then the current file offset is used and updated.
-+
-+The \fIflags\fP arguments to
-+.BR preadv2 ()
-+and
-+.BR pwritev2 ()
-+contains a bitwise OR of one or more of the following flags:
+@@ -203,6 +203,15 @@ contains a bitwise OR of one or more of the following flags:
+ .BR RWF_NONBLOCK " (only " preadv2() " since Linux 3.19)"
+ Performs a non-blocking operation for regular files (not sockets) opened in buffered mode (not
+ .BR O_DIRECT ")."
 +.TP
-+.BR RWF_NONBLOCK " (only " preadv2() " since Linux 3.19)"
-+Performs a non-blocking operation for regular files (not sockets) opened in buffered mode (not
-+.BR O_DIRECT ")."
-+
++.BR RWF_DSYNC " (only " pwritev2() " since Linux 3.19)"
++Write operation will complete according to the requirements of synchronized I/O
++.I data
++integrity completion. This has the same effect on the operation as if the file handle was created by
++.BR open(2)
++with the
++.BR O_DSYNC
++flag.
+ 
  .SH RETURN VALUE
  On success,
--.BR readv ()
--and
-+.BR readv () ","
- .BR preadv ()
--return the number of bytes read;
--.BR writev ()
- and
-+.BR preadv2 ()
-+return the number of bytes read;
-+.BR writev () ","
- .BR pwritev ()
-+and
-+.BR pwritev2 ()
- return the number of bytes written.
- On error, \-1 is returned, and \fIerrno\fP is set appropriately.
- .SH ERRORS
-@@ -191,12 +223,22 @@ The errors are as given for
- and
- .BR write (2).
- Furthermore,
--.BR preadv ()
--and
-+.BR preadv () ","
-+.BR preadv2 () ","
- .BR pwritev ()
-+and
-+.BR pwritev2 ()
- can also fail for the same reasons as
- .BR lseek (2).
--Additionally, the following error is defined:
-+Additionally, the following errors are defined:
-+.TP
-+.B EAGAIN
-+The operation would block. This is possible if the file descriptor \fIfd\fP refers to a socket and has been marked nonblocking
-+.RB ( O_NONBLOCK ),
-+or the operation is a
-+.BR preadv2
-+and the \fIflags\fP argument is set to
-+.BR RWF_NONBLOCK.
- .TP
- .B EINVAL
- The sum of the
-@@ -205,12 +247,17 @@ values overflows an
- .I ssize_t
- value.
- Or, the vector count \fIiovcnt\fP is less than zero or greater than the
--permitted maximum.
-+permitted maximum. Or, an unknown flag is specified in \fIflags\fP.
- .SH VERSIONS
- .BR preadv ()
- and
- .BR pwritev ()
- first appeared in Linux 2.6.30; library support was added in glibc 2.10.
-+.sp
-+.BR preadv2 ()
-+and
-+.BR pwritev2 ()
-+first appeared in Linux 3.19 (if we're lucky);
- .SH CONFORMING TO
- .BR readv (),
- .BR writev ():
-@@ -223,6 +270,10 @@ first appeared in Linux 2.6.30; library support was added in glibc 2.10.
- .BR preadv (),
- .BR pwritev ():
- nonstandard, but present also on the modern BSDs.
-+.sp
-+.BR preadv2 (),
-+.BR pwritev2 ():
-+nonstandard, Linux extension.
- .SH NOTES
- .SS C library/kernel ABI differences
- POSIX.1-2001 allows an implementation to place a limit on
+@@ -333,6 +342,7 @@ nwritten = writev(STDOUT_FILENO, iov, 2);
+ .fi
+ .in
+ .SH SEE ALSO
++.BR open(2),
+ .BR pread (2),
+ .BR read (2),
+ .BR write (2)
 -- 
 1.9.1
 
