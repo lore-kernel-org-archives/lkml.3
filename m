@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaKFWus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:50:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59105 "EHLO
+	id S1753252AbaKFWoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:44:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaKFWoL (ORCPT
+	with ESMTP id S1752505AbaKFWoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:44:11 -0500
+	Thu, 6 Nov 2014 17:44:01 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Quinn Tran <quinn.tran@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 032/162] sparc64: Fix corrupted thread fault code.
-Date: Thu,  6 Nov 2014 14:34:56 -0800
-Message-Id: <1415313426-9622-33-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 060/162] target: Fix queue full status NULL pointer for SCF_TRANSPORT_TASK_SENSE
+Date: Thu,  6 Nov 2014 14:35:24 -0800
+Message-Id: <1415313426-9622-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,81 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Quinn Tran <quinn.tran@qlogic.com>
 
-[ Upstream commit 84bd6d8b9c0f06b3f188efb479c77e20f05e9a8a ]
+commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
 
-Every path that ends up at do_sparc64_fault() must install a valid
-FAULT_CODE_* bitmask in the per-thread fault code byte.
+During temporary resource starvation at lower transport layer, command
+is placed on queue full retry path, which expose this problem.  The TCM
+queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
+cmd twice to lower layer.  The 1st time led to cmd normal free path.
+The 2nd time cause Null pointer access.
 
-Two paths leading to the label winfix_trampoline (which expects the
-FAULT_CODE_* mask in register %g4) were not doing so:
+This regression bug was originally introduced v3.1-rc code in the
+following commit:
 
-1) For pre-hypervisor TLB protection violation traps, if we took
-   the 'winfix_trampoline' path we wouldn't have %g4 initialized
-   with the FAULT_CODE_* value yet.  Resulting in using the
-   TLB_TAG_ACCESS register address value instead.
+commit e057f53308a5f071556ee80586b99ee755bf07f5
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Mon Oct 17 13:56:41 2011 -0400
 
-2) In the TSB miss path, when we notice that we are going to use a
-   hugepage mapping, but we haven't allocated the hugepage TSB yet, we
-   still have to take the window fixup case into consideration and
-   in that particular path we leave %g4 not setup properly.
+    target: remove the transport_qf_callback se_cmd callback
 
-Errors on this sort were largely invisible previously, but after
-commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ("sparc64: sun4v TLB
-error power off events") we now have a fault_code mask bit
-(FAULT_CODE_BAD_RA) that triggers due to this bug.
-
-FAULT_CODE_BAD_RA triggers because this bit is set in TLB_TAG_ACCESS
-(see #1 above) and thus we get seemingly random bus errors triggered
-for user processes.
-
-Fixes: 4ccb9272892c ("sparc64: sun4v TLB error power off events")
-Reported-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/kernel/dtlb_prot.S | 6 +++---
- arch/sparc/kernel/tsb.S       | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/target/target_core_transport.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/sparc/kernel/dtlb_prot.S b/arch/sparc/kernel/dtlb_prot.S
-index b2c2c5b..d668ca14 100644
---- a/arch/sparc/kernel/dtlb_prot.S
-+++ b/arch/sparc/kernel/dtlb_prot.S
-@@ -24,11 +24,11 @@
- 	mov		TLB_TAG_ACCESS, %g4		! For reload of vaddr
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index ea545f4..3acb125 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1817,8 +1817,7 @@ static void transport_complete_qf(struct se_cmd *cmd)
+ 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
+ 		trace_target_cmd_complete(cmd);
+ 		ret = cmd->se_tfo->queue_status(cmd);
+-		if (ret)
+-			goto out;
++		goto out;
+ 	}
  
- /* PROT ** ICACHE line 2: More real fault processing */
-+	ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
- 	bgu,pn		%xcc, winfix_trampoline		! Yes, perform winfixup
--	 ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
--	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
- 	 mov		FAULT_CODE_DTLB | FAULT_CODE_WRITE, %g4
--	nop
-+	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
-+	 nop
- 	nop
- 	nop
- 	nop
-diff --git a/arch/sparc/kernel/tsb.S b/arch/sparc/kernel/tsb.S
-index 14158d4..be98685 100644
---- a/arch/sparc/kernel/tsb.S
-+++ b/arch/sparc/kernel/tsb.S
-@@ -162,10 +162,10 @@ tsb_miss_page_table_walk_sun4v_fastpath:
- 	nop
- 	.previous
- 
--	rdpr	%tl, %g3
--	cmp	%g3, 1
-+	rdpr	%tl, %g7
-+	cmp	%g7, 1
- 	bne,pn	%xcc, winfix_trampoline
--	 nop
-+	 mov	%g3, %g4
- 	ba,pt	%xcc, etrap
- 	 rd	%pc, %g7
- 	call	hugetlb_setup
+ 	switch (cmd->data_direction) {
 -- 
 1.9.1
 
