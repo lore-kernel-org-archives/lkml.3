@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaKFI6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:58:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:2943 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807AbaKFI6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:58:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,324,1413270000"; 
-   d="scan'208";a="618076372"
-Date: Thu, 6 Nov 2014 10:58:06 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v5 7/7] tpm: create TPM 2.0 devices using own device class
-Message-ID: <20141106085805.GA4988@intel.com>
-References: <1414832495-23609-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1414832495-23609-8-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141102213305.GB28519@obsidianresearch.com>
- <20141103054101.GA4795@intel.com>
- <20141103213826.GG8303@obsidianresearch.com>
- <1415101654.4115.22.camel@linux.intel.com>
- <20141104181433.GA28387@obsidianresearch.com>
- <20141105074029.GA16217@intel.com>
- <20141105174836.GA5296@obsidianresearch.com>
+	id S1751986AbaKFJEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:04:43 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:56033 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaKFJEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 04:04:32 -0500
+Date: Thu, 6 Nov 2014 09:04:24 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tc6393xb: prepare/unprepare clocks
+Message-ID: <20141106090424.GB26543@x1>
+References: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141105174836.GA5296@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 10:48:36AM -0700, Jason Gunthorpe wrote:
-> On Wed, Nov 05, 2014 at 09:40:29AM +0200, Jarkko Sakkinen wrote:
+On Thu, 06 Nov 2014, Dmitry Eremin-Solenikov wrote:
+
+> Change clk_enable/disable() calls to clk_prepare_enable() and
+> clk_disable_unrepapre().
 > 
-> > > I mean, if we have a patch that does:
-> > > 
-> > > struct tpm_chip {
-> > >    struct device cdev;  // the class device
-> > >    struct device *pdev; // the 'platform' device chip is bound too
-> > > 
-> > >    struct device *dev = pdev; // Temporary Compatability
-> > > [+ device_register/etc/etc]
-> > > 
-> > > Then both cdev and pdev should always be valid. We should not have cdev
-> > > be valid for TPM2 and invalid for TPM1, that is just a big mess.
-> 
-> > As a first patch I'll do a patch that does dev -> pdev rename and
-> > nothing else. IMHO it's clean and easy to review if no other changes
-> > are contained. One reason for this is obviously that I want to use
-> > cdev for struct cdev not for the class device.
-> 
-> Well, once you add cdev, pdev and dev, you want most uses of dev to
-> become cdev and some uses to become pdev.
+> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> ---
+>  drivers/mfd/tc6393xb.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 
-struct cdev uses variable name 'cdev' in my previous patch set so 
-this naming scheme doesn't work.
+Applied, thanks.
 
-I do not understand why dev -> pdev rename as the very first commit
-would be such a bad thing. It's anyway better variable name for it.
-After that variable name 'dev' is free to be used for class device.
+> diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+> index 48579e5..abcb4eb 100644
+> --- a/drivers/mfd/tc6393xb.c
+> +++ b/drivers/mfd/tc6393xb.c
+> @@ -665,7 +665,7 @@ static int tc6393xb_probe(struct platform_device *dev)
+>  		goto err_ioremap;
+>  	}
+>  
+> -	ret = clk_enable(tc6393xb->clk);
+> +	ret = clk_prepare_enable(tc6393xb->clk);
+>  	if (ret)
+>  		goto err_clk_enable;
+>  
+> @@ -728,7 +728,7 @@ err_gpio_add:
+>  		temp = gpiochip_remove(&tc6393xb->gpio);
+>  	tcpd->disable(dev);
+>  err_enable:
+> -	clk_disable(tc6393xb->clk);
+> +	clk_disable_unprepare(tc6393xb->clk);
+>  err_clk_enable:
+>  	iounmap(tc6393xb->scr);
+>  err_ioremap:
+> @@ -764,7 +764,7 @@ static int tc6393xb_remove(struct platform_device *dev)
+>  	}
+>  
+>  	ret = tcpd->disable(dev);
+> -	clk_disable(tc6393xb->clk);
+> +	clk_disable_unprepare(tc6393xb->clk);
+>  	iounmap(tc6393xb->scr);
+>  	release_resource(&tc6393xb->rscr);
+>  	clk_put(tc6393xb->clk);
+> @@ -792,7 +792,7 @@ static int tc6393xb_suspend(struct platform_device *dev, pm_message_t state)
+>  			ioread8(tc6393xb->scr + SCR_GPI_BCR(i));
+>  	}
+>  	ret = tcpd->suspend(dev);
+> -	clk_disable(tc6393xb->clk);
+> +	clk_disable_unprepare(tc6393xb->clk);
+>  
+>  	return ret;
+>  }
+> @@ -804,7 +804,7 @@ static int tc6393xb_resume(struct platform_device *dev)
+>  	int ret;
+>  	int i;
+>  
+> -	clk_enable(tc6393xb->clk);
+> +	clk_prepare_enable(tc6393xb->clk);
+>  
+>  	ret = tcpd->resume(dev);
+>  	if (ret)
 
-> Just bulk renaming dev -> pdev and then bulk renaming pdev -> cdev
-> seems like lots of churn...
-
-I'm not planning to do such thing. In the end there is:
-
-   struct device dev;
-   struct device *pdev;
-   struct cdev cdev;
-
-This will require only one "rename commit".
-
-What I'm going to take from your feedback is to make /dev/tpm0 special
-case when considering major:minor just like you proposed. It's very good
-idea.
-
-Other thing I'm going to do is to leave PPI sysfs interface to 
-tpmX/device/ppi at least for TPM1 devices.
-
-I'll bake the next patch set hopefully before the end of this week.
-Lets see after that if it stil need refinement or breaking up to 
-smaller patches.
-
-> Jason
-
-/Jarkko
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
