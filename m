@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaKFDBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:01:37 -0500
-Received: from mga03.intel.com ([134.134.136.65]:7591 "EHLO mga03.intel.com"
+	id S1751535AbaKFDB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:01:57 -0500
+Received: from mga03.intel.com ([134.134.136.65]:24796 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312AbaKFDBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:01:20 -0500
+	id S1751020AbaKFDBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 22:01:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="484936982"
+   d="scan'208";a="484936966"
 From: Lu Baolu <baolu.lu@linux.intel.com>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Alan Stern <stern@rowland.harvard.edu>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Lu Baolu <baolu.lu@linux.intel.com>
-Subject: [PATCH v4 3/3] usb: xhci: fix comment for PORT_DEV_REMOVE
-Date: Thu,  6 Nov 2014 10:50:53 +0800
-Message-Id: <1415242253-72501-4-git-send-email-baolu.lu@linux.intel.com>
+Subject: [PATCH v4 1/3] usb: xhci: Revert "xhci: clear root port wake on bits if controller isn't wake-up capable"
+Date: Thu,  6 Nov 2014 10:50:51 +0800
+Message-Id: <1415242253-72501-2-git-send-email-baolu.lu@linux.intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415242253-72501-1-git-send-email-baolu.lu@linux.intel.com>
 References: <1415242253-72501-1-git-send-email-baolu.lu@linux.intel.com>
@@ -25,28 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to xHCI specification, PORT_DEV_REMOVE(bit 30) in PORTSC
-true means "Device is non-removable".
+This reverts commit ff8cbf250b448aac35589f6075082c3fcad8a8fe.
+
+Commit ff8cbf250b448aac35589f6075082c3fcad8a8fe triggers the bug logged at
+
+https://bugzilla.kernel.org/show_bug.cgi?id=85701
 
 Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Reported-by: Juro Bystricky <jurobystricky@hotmail.com>
+Reported-by: Dmitry Nezhevenko <dion@inhex.net>
 ---
- drivers/usb/host/xhci.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-hub.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index d745715..ab36bbb 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -358,7 +358,7 @@ struct xhci_op_regs {
- /* wake on over-current (enable) */
- #define PORT_WKOC_E	(1 << 27)
- /* bits 28:29 reserved */
--/* true: device is removable - for USB 3.0 roothub emulation */
-+/* true: device is non-removable - for USB 3.0 roothub emulation */
- #define PORT_DEV_REMOVE	(1 << 30)
- /* Initiate a warm port reset - complete when PORT_WRC is '1' */
- #define PORT_WR		(1 << 31)
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 696160d..388cfd8 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -22,7 +22,6 @@
+ 
+ 
+ #include <linux/slab.h>
+-#include <linux/device.h>
+ #include <asm/unaligned.h>
+ 
+ #include "xhci.h"
+@@ -1149,9 +1148,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
+ 		 */
+-		if (hcd->self.root_hub->do_remote_wakeup
+-				&& device_may_wakeup(hcd->self.controller)) {
+-
++		if (hcd->self.root_hub->do_remote_wakeup) {
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 -- 
 1.9.1
 
