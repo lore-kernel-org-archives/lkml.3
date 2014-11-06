@@ -1,142 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaKFOUP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:20:15 -0500
-Received: from mga14.intel.com ([192.55.52.115]:50706 "EHLO mga14.intel.com"
+	id S1751892AbaKFOUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:20:10 -0500
+Received: from mga01.intel.com ([192.55.52.88]:27512 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865AbaKFOUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:20:08 -0500
+	id S1751866AbaKFOUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:20:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
-   d="scan'208";a="618222674"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
-        Joerg Roedel <joro@8bytes.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        iommu@lists.linux-foundation.org
-Subject: [Patch Part2 v5 12/31] x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
-Date: Thu,  6 Nov 2014 22:20:25 +0800
-Message-Id: <1415283644-2559-13-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+   d="scan'208";a="618220987"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: "acme@kernel.org" <acme@kernel.org>, "jolsa@kernel.org" <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: RE: [PATCH 1/1] perf tools: perf diff for different binaries
+Thread-Topic: [PATCH 1/1] perf tools: perf diff for different binaries
+Thread-Index: AQHP+MJIkXF1b6uO30GrqYg9DeXxZ5xSOZBAgAB2eACAAOjocA==
+Date: Thu, 6 Nov 2014 14:16:23 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016549DB@SHSMSX103.ccr.corp.intel.com>
+References: <1414757172-20064-1-git-send-email-kan.liang@intel.com>
+ <87tx2f5xpo.fsf@sejong.aot.lge.com>
+ <37D7C6CF3E00A74B8858931C1DB2F07701653813@SHSMSX103.ccr.corp.intel.com>
+ <87d292w41p.fsf@sejong.aot.lge.com>
+ <37D7C6CF3E00A74B8858931C1DB2F07701654561@SHSMSX103.ccr.corp.intel.com>
+ <CAM9d7cj2T4SrwsvZvCmZRh9xLBFvgeaUVqFtkUjakAD-WdL-JQ@mail.gmail.com>
+In-Reply-To: <CAM9d7cj2T4SrwsvZvCmZRh9xLBFvgeaUVqFtkUjakAD-WdL-JQ@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA6EKXxL003644
 
-Use new irqdomain interfaces to allocate/free IRQ for DMAR and interrupt
-remapping, so we could kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
+> Hi Kan,
+> 
+> On Thu, Nov 6, 2014 at 2:28 AM, Liang, Kan <kan.liang@intel.com> wrote:
+> >
+> >> Hi Kan,
+> >>
+> >> On Tue, 4 Nov 2014 17:07:43 +0000, Kan Liang wrote:
+> >> >> What about setting the
+> >> >> sort_sym.se_collapse in data_process() so that hists__match() can
+> >> >> use symbol names?
+> >> >
+> >> > Yes, we can set it if we only do function level diff. But I'd like
+> >> > to keep both. So I defined two sort keys.
+> >> > "symbol" means "symbol address executed at the time of sample "
+> >> > "symbol_name" means "name of function executed at the time of
+> >> sample"
+> >>
+> >> Hmm.. I don't think the symbol sort key provides the instruction
+> >> level diff that you want.  If it finds a symbol it just use the start
+> >> address of the symbol, not the exact address of the sample.  Am I
+> missing something?
+> >>
+> >
+> > No, the meaning of symbol in perf diff is different as in perf report.
+> > It uses the exact address of the sample.
+> 
+> Hmm.. are you sure?  I think it uses same code..
+> 
+Yes, they uses the same code except event_op mmap2.
+> 
+> >
+> > Here is current perf diff result and objdump fragment of the first binary.
+> > You can see the exact address of the sample in function f3 was used,
+> > not the start address.
+> > 33.55%                  [unknown]          [.] 0x0000000000400554
+> > 48.13%                  [unknown]          [.] 0x000000000040056b
+> 
+> But I think it's because it failed to find a symbol (f3) for some reason.  The
+> symbol sort key will use the ip address only if it didn't find a symbol for the
+> address.  Please see sort__sym_cmp (and _sort__sym_cmp too).
+> 
 
-The private definition of irq_alloc_hwirqs()/irq_free_hwirqs() are
-temporary solution, it will be removed once we have converted interrupt
-remapping driver to use irqdomain framework.
+The diff code doesn‚Äôt define event_op mmap2, so it fails to get the symbol.
+You are right, it‚Äôs ip address. The meaning of symbol for diff and report should
+be same.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/irq_remapping.h |    4 ++--
- arch/x86/kernel/apic/msi.c           |   10 ++++++++++
- drivers/iommu/irq_remapping.c        |   17 +++++++++++++++--
- 3 files changed, 27 insertions(+), 4 deletions(-)
+But I still think the author intends to compare the ip address. Low granularity is
+still useful for debugging the scaling issue. So we'd better keep both of them,
+and give ip address sorting a proper key name. 
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index b7747c4c2cf2..230dde9b695e 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -103,7 +103,7 @@ static inline bool setup_remapped_irq(int irq,
- }
- #endif /* CONFIG_IRQ_REMAP */
- 
--#define dmar_alloc_hwirq()	irq_alloc_hwirq(-1)
--#define dmar_free_hwirq		irq_free_hwirq
-+extern int dmar_alloc_hwirq(void);
-+extern void dmar_free_hwirq(int irq);
- 
- #endif /* __X86_IRQ_REMAPPING_H */
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index d5def489ca5b..328cf7fbbdc4 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -223,6 +223,16 @@ int arch_setup_dmar_msi(unsigned int irq)
- 				      "edge");
- 	return 0;
- }
+"ip" means "IP address executed at the time of sample "
+"symbol" means "name of function executed at the time of sample"
+
+What about the attached patch?
+
+Thanks,
+Kan
+
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 25114c9..3063fbd 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -357,6 +357,7 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ static struct perf_tool tool = {
+        .sample = diff__process_sample_event,
+        .mmap   = perf_event__process_mmap,
++       .mmap2  = perf_event__process_mmap2,
+        .comm   = perf_event__process_comm,
+        .exit   = perf_event__process_exit,
+        .fork   = perf_event__process_fork,
+@@ -743,7 +744,7 @@ static const struct option options[] = {
+        OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+                   "only consider these symbols"),
+        OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-                  "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline, ..."
++                  "sort by key(s): pid, comm, dso, symbol, ip, parent, cpu, srcline, ..."
+                   " Please refer the man page for the complete list."),
+        OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+                   "separator for columns, no spaces will be added between "
+@@ -1164,6 +1165,9 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+        if (setup_sorting() < 0)
+                usage_with_options(diff_usage, options);
+
++       if (sort__has_ip)
++               tool.mmap2 = NULL;
 +
-+int dmar_alloc_hwirq(void)
+        setup_pager();
+
+        sort__setup_elide(NULL);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 9402885..a59f389 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -20,6 +20,7 @@ int           have_ignore_callees = 0;
+ int            sort__need_collapse = 0;
+ int            sort__has_parent = 0;
+ int            sort__has_sym = 0;
++int            sort__has_ip = 0;
+ int            sort__has_dso = 0;
+ enum sort_mode sort__mode = SORT_MODE__NORMAL;
+
+@@ -272,9 +273,32 @@ static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
+                                         he->level, bf, size, width);
+ }
+
++static int64_t
++sort__sym_name_cmp(struct hist_entry *left, struct hist_entry *right)
 +{
-+	return irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
++       const char *sym_name_l, *sym_name_r;
++
++       if (!left->ms.sym || !right->ms.sym)
++               return cmp_null(right->ms.sym, left->ms.sym);
++
++       sym_name_l = left->ms.sym->name;
++       sym_name_r = right->ms.sym->name;
++
++       return strcmp(sym_name_l, sym_name_r);
 +}
 +
-+void dmar_free_hwirq(int irq)
-+{
-+	irq_domain_free_irqs(irq, 1);
-+}
- #endif
- 
- /*
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index e9fbd68db96e..63886bafed9f 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -6,6 +6,7 @@
- #include <linux/msi.h>
- #include <linux/irq.h>
- #include <linux/pci.h>
-+#include <linux/irqdomain.h>
- 
- #include <asm/hw_irq.h>
- #include <asm/irq_remapping.h>
-@@ -50,6 +51,18 @@ static void irq_remapping_disable_io_apic(void)
- 		disconnect_bsp_APIC(0);
- }
- 
-+#ifndef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
-+static unsigned int irq_alloc_hwirqs(int cnt, int node)
-+{
-+	return irq_domain_alloc_irqs(NULL, -1, cnt, node, NULL);
-+}
+ struct sort_entry sort_sym = {
+        .se_header      = "Symbol",
+        .se_cmp         = sort__sym_cmp,
++       .se_collapse    = sort__sym_name_cmp,
++       .se_sort        = sort__sym_sort,
++       .se_snprintf    = hist_entry__sym_snprintf,
++       .se_width_idx   = HISTC_SYMBOL,
++};
 +
-+static void irq_free_hwirqs(unsigned int from, int cnt)
-+{
-+	irq_domain_free_irqs(from, cnt);
-+}
-+#endif
-+
- static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
- {
- 	int ret, sub_handle, nvec_pow2, index = 0;
-@@ -113,7 +126,7 @@ static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
- 
- 	list_for_each_entry(msidesc, &dev->msi_list, list) {
- 
--		irq = irq_alloc_hwirq(node);
-+		irq = irq_alloc_hwirqs(1, node);
- 		if (irq == 0)
- 			return -1;
- 
-@@ -136,7 +149,7 @@ static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
- 	return 0;
- 
- error:
--	irq_free_hwirq(irq);
-+	irq_free_hwirqs(irq, 1);
- 	return ret;
- }
- 
--- 
-1.7.10.4
++struct sort_entry sort_ip = {
++       .se_header      = "IP address",
++       .se_cmp         = sort__sym_cmp,
+        .se_sort        = sort__sym_sort,
+        .se_snprintf    = hist_entry__sym_snprintf,
+        .se_width_idx   = HISTC_SYMBOL,
+@@ -1170,6 +1194,7 @@ static struct sort_dimension common_sort_dimensions[] = {
+        DIM(SORT_COMM, "comm", sort_comm),
+        DIM(SORT_DSO, "dso", sort_dso),
+        DIM(SORT_SYM, "symbol", sort_sym),
++       DIM(SORT_IP, "ip", sort_ip),
+        DIM(SORT_PARENT, "parent", sort_parent),
+        DIM(SORT_CPU, "cpu", sort_cpu),
+        DIM(SORT_SRCLINE, "srcline", sort_srcline),
+@@ -1430,6 +1455,8 @@ int sort_dimension__add(const char *tok)
+                        sort__has_parent = 1;
+                } else if (sd->entry == &sort_sym) {
+                        sort__has_sym = 1;
++               } else if (sd->entry == &sort_ip) {
++                       sort__has_ip = 1;
+                } else if (sd->entry == &sort_dso) {
+                        sort__has_dso = 1;
+                }
+@@ -1809,6 +1836,7 @@ void reset_output_field(void)
+        sort__need_collapse = 0;
+        sort__has_parent = 0;
+        sort__has_sym = 0;
++       sort__has_ip = 0;
+        sort__has_dso = 0;
 
+        field_order = NULL;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index c03e4ff..f00900a 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -34,10 +34,12 @@ extern int have_ignore_callees;
+ extern int sort__need_collapse;
+ extern int sort__has_parent;
+ extern int sort__has_sym;
++extern int sort__has_ip;
+ extern enum sort_mode sort__mode;
+ extern struct sort_entry sort_comm;
+ extern struct sort_entry sort_dso;
+ extern struct sort_entry sort_sym;
++extern struct sort_entry sort_ip;
+ extern struct sort_entry sort_parent;
+ extern struct sort_entry sort_dso_from;
+ extern struct sort_entry sort_dso_to;
+@@ -161,6 +163,7 @@ enum sort_type {
+        SORT_COMM,
+        SORT_DSO,
+        SORT_SYM,
++       SORT_IP,
+        SORT_PARENT,
+        SORT_CPU,
+        SORT_SRCLINE,
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
