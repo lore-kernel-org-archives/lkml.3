@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaKFN2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 08:28:11 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40525 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbaKFN2G (ORCPT
+	id S1751458AbaKFNay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 08:30:54 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:44439 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaKFNav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 08:28:06 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH] crypto: ux500/hash: Silence compiler warning for !CONFIG_PM
-Date: Thu,  6 Nov 2014 14:28:01 +0100
-Message-Id: <1415280481-14096-1-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 6 Nov 2014 08:30:51 -0500
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: MIPS: lantiq: use devm_iounmap instead of iounmap
+Date: Thu,  6 Nov 2014 19:00:42 +0530
+Message-Id: <1415280642-3761-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The system PM functions were unused when CONFIG_PM is unset. Let's move
-them inside CONFIG_PM_SLEEP to silence the compiler warning.
+port->membase was allocated using devm_ioremap_nocache, so ideally
+we should unmap it using devm_iounmap. but it was using iounmap.
 
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
 ---
- drivers/crypto/ux500/hash/hash_core.c | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 1c73f4f..5af53b5 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -1881,6 +1881,7 @@ static void ux500_hash_shutdown(struct platform_device *pdev)
- 			__func__);
+hi,
+just a small problem here.I could not build test this as I do not have a
+MIPS crosscompiler.I know i should not send without a minimum build test,
+but this change should not break the build (or maybe i am wrong)..
+
+ drivers/tty/serial/lantiq.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/lantiq.c b/drivers/tty/serial/lantiq.c
+index 4675fe1..18c3844 100644
+--- a/drivers/tty/serial/lantiq.c
++++ b/drivers/tty/serial/lantiq.c
+@@ -497,8 +497,10 @@ lqasc_type(struct uart_port *port)
+ static void
+ lqasc_release_port(struct uart_port *port)
+ {
++	struct platform_device *pdev = to_platform_device(port->dev);
++
+ 	if (port->flags & UPF_IOREMAP) {
+-		iounmap(port->membase);
++		devm_iounmap(&pdev->dev, port->membase);
+ 		port->membase = NULL;
+ 	}
  }
- 
-+#ifdef CONFIG_PM_SLEEP
- /**
-  * ux500_hash_suspend - Function that suspends the hash device.
-  * @dev:	Device to suspend.
-@@ -1949,6 +1950,7 @@ static int ux500_hash_resume(struct device *dev)
- 
- 	return ret;
- }
-+#endif
- 
- static SIMPLE_DEV_PM_OPS(ux500_hash_pm, ux500_hash_suspend, ux500_hash_resume);
- 
 -- 
-1.9.1
+1.8.1.2
 
