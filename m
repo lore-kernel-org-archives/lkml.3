@@ -1,256 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaKFV5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 16:57:44 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:40958 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaKFV5j (ORCPT
+	id S1751484AbaKFV61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 16:58:27 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47144 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaKFV60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 16:57:39 -0500
-Date: Thu, 6 Nov 2014 13:57:36 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Prarit Bhargava <prarit@redhat.com>
-cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v8] kernel, add panic_on_warn
-In-Reply-To: <545B733C.6080903@redhat.com>
-Message-ID: <alpine.DEB.2.10.1411061352440.1526@chino.kir.corp.google.com>
-References: <1415187736-16242-1-git-send-email-prarit@redhat.com> <alpine.DEB.2.10.1411051357050.31575@chino.kir.corp.google.com> <545B733C.6080903@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 6 Nov 2014 16:58:26 -0500
+Date: Thu, 6 Nov 2014 13:58:19 -0800
+From: josh@joshtriplett.org
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Aristeu Rozanski <arozansk@redhat.com>,
+        Changli Gao <xiaosuo@gmail.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Eric Paris <eparis@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Jesse Gross <jesse@nicira.com>, Jonathan Corbet <corbet@lwn.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pravin Shelar <pshelar@nicira.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] lib/flex_array: make build optional
+Message-ID: <20141106215819.GB7185@cloud>
+References: <1415309241-12971-1-git-send-email-aris@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415309241-12971-1-git-send-email-aris@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Nov 2014, Prarit Bhargava wrote:
-
-> >> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-> >> index 6c0b9f2..bc4bd5a 100644
-> >> --- a/Documentation/kdump/kdump.txt
-> >> +++ b/Documentation/kdump/kdump.txt
-> >> @@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
-> >>  
-> >>     http://people.redhat.com/~anderson/
-> >>  
-> >> +Trigger Kdump on WARN()
-> >> +=======================
-> >> +
-> >> +The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
-> >> +will cause a kdump to occur at the panic() call.  In cases where a user wants
-> >> +to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
-> >> +to achieve the same behaviour.
-> >>  
-> >>  Contact
-> >>  =======
-> >> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> >> index 4c81a86..ea5d57c 100644
-> >> --- a/Documentation/kernel-parameters.txt
-> >> +++ b/Documentation/kernel-parameters.txt
-> >> @@ -2509,6 +2509,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >>  			timeout < 0: reboot immediately
-> >>  			Format: <timeout>
-> >>  
-> >> +	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
-> >> +			on a WARN().
-> >> +
-> >>  	crash_kexec_post_notifiers
-> >>  			Run kdump after running panic-notifiers and dumping
-> >>  			kmsg. This only for the users who doubt kdump always
-> >> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> >> index 57baff5..b5d0c85 100644
-> >> --- a/Documentation/sysctl/kernel.txt
-> >> +++ b/Documentation/sysctl/kernel.txt
-> >> @@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
-> >>  - overflowuid
-> >>  - panic
-> >>  - panic_on_oops
-> >> -- panic_on_unrecovered_nmi
-> >>  - panic_on_stackoverflow
-> >> +- panic_on_unrecovered_nmi
-> >> +- panic_on_warn
-> >>  - pid_max
-> >>  - powersave-nap               [ PPC only ]
-> >>  - printk
-> >> @@ -527,19 +528,6 @@ the recommended setting is 60.
-> >>  
-> >>  ==============================================================
-> >>  
-> >> -panic_on_unrecovered_nmi:
-> >> -
-> >> -The default Linux behaviour on an NMI of either memory or unknown is
-> >> -to continue operation. For many environments such as scientific
-> >> -computing it is preferable that the box is taken out and the error
-> >> -dealt with than an uncorrected parity/ECC error get propagated.
-> >> -
-> >> -A small number of systems do generate NMI's for bizarre random reasons
-> >> -such as power management so the default is off. That sysctl works like
-> >> -the existing panic controls already in that directory.
-> >> -
-> >> -==============================================================
-> >> -
-> >>  panic_on_oops:
-> >>  
-> >>  Controls the kernel's behaviour when an oops or BUG is encountered.
-> >> @@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
-> >>  
-> >>  ==============================================================
-> >>  
-> >> +panic_on_unrecovered_nmi:
-> >> +
-> >> +The default Linux behaviour on an NMI of either memory or unknown is
-> >> +to continue operation. For many environments such as scientific
-> >> +computing it is preferable that the box is taken out and the error
-> >> +dealt with than an uncorrected parity/ECC error get propagated.
-> >> +
-> >> +A small number of systems do generate NMI's for bizarre random reasons
-> >> +such as power management so the default is off. That sysctl works like
-> >> +the existing panic controls already in that directory.
-> >> +
-> >> +==============================================================
-> >> +
-> >> +panic_on_warn:
-> >> +
-> >> +Calls panic() in the WARN() path when set to 1.  This is useful to avoid
-> >> +a kernel rebuild when attempting to kdump at the location of a WARN().
-> >> +
-> >> +0: only WARN(), default behaviour.
-> >> +
-> >> +1: call panic() after printing out WARN() location.
-> >> +
-> >> +==============================================================
-> >> +
-> >>  perf_cpu_time_max_percent:
-> >>  
-> >>  Hints to the kernel how much CPU time it should be allowed to
-> >> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> >> index 3d770f55..d60d31d 100644
-> >> --- a/include/linux/kernel.h
-> >> +++ b/include/linux/kernel.h
-> >> @@ -422,6 +422,7 @@ extern int panic_timeout;
-> >>  extern int panic_on_oops;
-> >>  extern int panic_on_unrecovered_nmi;
-> >>  extern int panic_on_io_nmi;
-> >> +extern int panic_on_warn;
-> >>  extern int sysctl_panic_on_stackoverflow;
-> >>  /*
-> >>   * Only to be used by arch init code. If the user over-wrote the default
-> >> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
-> >> index 43aaba1..0956373 100644
-> >> --- a/include/uapi/linux/sysctl.h
-> >> +++ b/include/uapi/linux/sysctl.h
-> >> @@ -153,6 +153,7 @@ enum
-> >>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
-> >>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
-> >>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-> >> +	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
-> >>  };
-> >>  
-> >>  
-> >> diff --git a/kernel/panic.c b/kernel/panic.c
-> >> index d09dc5c..c6a7723 100644
-> >> --- a/kernel/panic.c
-> >> +++ b/kernel/panic.c
-> >> @@ -33,6 +33,7 @@ static int pause_on_oops;
-> >>  static int pause_on_oops_flag;
-> >>  static DEFINE_SPINLOCK(pause_on_oops_lock);
-> >>  static bool crash_kexec_post_notifiers;
-> >> +int panic_on_warn __read_mostly;
-> >>  
-> >>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
-> >>  EXPORT_SYMBOL_GPL(panic_timeout);
-> >> @@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
-> >>  {
-> >>  	disable_trace_on_warning();
-> >>  
-> >> -	pr_warn("------------[ cut here ]------------\n");
-> >> +	if (!panic_on_warn)
-> >> +		pr_warn("------------[ cut here ]------------\n");
-> > 
-> > Is this really necessary?
+On Thu, Nov 06, 2014 at 04:27:21PM -0500, Aristeu Rozanski wrote:
+> From: Aristeu Rozanski <arozansk@redhat.com>
 > 
-> Yes IMO.  The WARN() prints out the line and it looks "weird" when we're doing a
-> panic because the finishing "end" doesn't print out.  I'm specifically
-> targetting this kernel option at end users and I think the way it looks matters.
+> flex_array currently is built unconditionally:
+> 	text    data     bss     dec     hex filename
+> 	2294    1008    1568    4870    1306 lib/flex_array.o
+> 	2294    1008    1568    4870    1306 (TOTALS)
 > 
-
-I disagree, I think it gives bug reporters guidance on what needs to be 
-reported and what doesn't need to be reported.  The trailing "end" isn't 
-needed if the system is going to panic.
-
-> > 
-> >>  	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
-> >>  		raw_smp_processor_id(), current->pid, file, line, caller);
-> >>  
-> >>  	if (args)
-> >>  		vprintk(args->fmt, args->args);
-> >>  
-> >> +	if (panic_on_warn) {
-> >> +		/*
-> >> +		 * A flood of WARN()s may occur.  Prevent further WARN()s
-> >> +		 * from panicking the system.
-> >> +		 */
-> > 
-> > What synchronization is preventing this race and further WARN()s panicking 
-> > the system?
+> and it's used by procfs, selinux and openvswitch. This patch is
+> useful for situations in which memory footprint is a concern and
+> those features aren't used.
 > 
-> Now that I re-read it, the flood comment is definitely misleading.
-> It should read "The panic path may lead to additional WARN()s.  Prevent
-> additional WARN()s from panicking the system."  I'll change that in the next
-> version.
+> Cc: Changli Gao <xiaosuo@gmail.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> Cc: Jesse Gross <jesse@nicira.com>
+> Cc: Jonathan Corbet <corbet@lwn.net>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Pravin Shelar <pshelar@nicira.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+
+I already have a patch for this sitting in the tiny tree (branch
+tiny/unflex-array) for the next merge window, and that patch hides the
+symbol from the user, just selecting it internally.
+
+I've updated the tinification project list to mark that and several
+other projects as "done" or "in progress".
+
+- Josh Triplett
+
+>  fs/proc/Kconfig          |  1 +
+>  lib/Kconfig              | 10 ++++++++++
+>  lib/Makefile             |  3 ++-
+>  net/openvswitch/Kconfig  |  1 +
+>  security/selinux/Kconfig |  1 +
+>  5 files changed, 15 insertions(+), 1 deletion(-)
 > 
-> Your question spurred me to write a simple module that did this on a 160-core
-> system:
+> diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+> index 2183fcf..2d624b7 100644
+> --- a/fs/proc/Kconfig
+> +++ b/fs/proc/Kconfig
+> @@ -1,6 +1,7 @@
+>  config PROC_FS
+>  	bool "/proc file system support" if EXPERT
+>  	default y
+> +	select FLEX_ARRAY
+>  	help
+>  	  This is a virtual file system providing information about the status
+>  	  of the system. "Virtual" means that it doesn't take up any space on
+> diff --git a/lib/Kconfig b/lib/Kconfig
+> index 54cf309..675920b 100644
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -432,6 +432,16 @@ config GLOB_SELFTEST
+>  	  module load) by a small amount, so you're welcome to play with
+>  	  it, but you probably don't need it.
+>  
+> +config FLEX_ARRAY
+> +	bool "Flexible array"
+> +	default n
+> +	help
+> +	  This option enables an implementation of flexible arrays which
+> +	  allows creating arrays of fixed size elements with an arbritrary
+> +	  size without requiring the single allocation of a contiguous area.
+> +
+> +	  See Documentation/flexible-arrays.txt
+> +
+>  #
+>  # Netlink attribute parsing support is select'ed if needed
+>  #
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 7512dc9..9c12cbc 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -24,7 +24,7 @@ obj-y	+= lockref.o
+>  
+>  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+>  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+> -	 gcd.o lcm.o list_sort.o uuid.o flex_array.o iovec.o clz_ctz.o \
+> +	 gcd.o lcm.o list_sort.o uuid.o iovec.o clz_ctz.o \
+>  	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
+>  	 percpu-refcount.o percpu_ida.o hash.o rhashtable.o
+>  obj-y += string_helpers.o
+> @@ -35,6 +35,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
+>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
+>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
+>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
+> +obj-$(CONFIG_FLEX_ARRAY) += flex_array.o
+>  
+>  ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+>  CFLAGS_kobject.o += -DDEBUG
+> diff --git a/net/openvswitch/Kconfig b/net/openvswitch/Kconfig
+> index ba3bb82..1d979ce 100644
+> --- a/net/openvswitch/Kconfig
+> +++ b/net/openvswitch/Kconfig
+> @@ -5,6 +5,7 @@
+>  config OPENVSWITCH
+>  	tristate "Open vSwitch"
+>  	select LIBCRC32C
+> +	select FLEX_ARRAY
+>  	---help---
+>  	  Open vSwitch is a multilayer Ethernet switch targeted at virtualized
+>  	  environments.  In addition to supporting a variety of features
+> diff --git a/security/selinux/Kconfig b/security/selinux/Kconfig
+> index bca1b74..cfcc7c1 100644
+> --- a/security/selinux/Kconfig
+> +++ b/security/selinux/Kconfig
+> @@ -2,6 +2,7 @@ config SECURITY_SELINUX
+>  	bool "NSA SELinux Support"
+>  	depends on SECURITY_NETWORK && AUDIT && NET && INET
+>  	select NETWORK_SECMARK
+> +	select FLEX_ARRAY
+>  	default n
+>  	help
+>  	  This selects NSA Security-Enhanced Linux (SELinux).
+> -- 
+> 1.8.3.1
 > 
-> static void warn_this_cpu(void *arg)
-> {
->         WARN(1, "cpu = %d\n", smp_processor_id());
-> }
-> 
-> static int init_dummy(void)
-> {
->         on_each_cpu(warn_this_cpu, NULL, 1);
->         return 0;
-> }
-> 
-> to see if I could hit any races in this code.  While the WARN()s output overlap
-> each other I always see a single:
-> 
-
-You see that doing
-
-	if (panic_on_warn) {
-		panic_on_warn = 0;
-		panic(...);
-	}
-
-is racy, I hope.  If two threads WARN() at the same time, then there's 
-nothing preventing a double panic() because WARN() itself is not 
-serialized against anything.  So both the current comment and your 
-suggested revision comment are bogus.
-
-> Another issue: Are multiple WARN()s supposed to overlap output like that?  Do we
-> want them to?  AFAICT there is no way to distinguish the output from one WARN()
-> from another ...
-> 
-
-Usually one thread is encountering a path that spurs many WARN()s to 
-trigger so they don't interleave in the kernel log, your test case is 
-causing warnings on different cpus, some simultaneously.  To prevent the 
-interleaving of the stacks, it would need the same serialization that 
-doing
-
-	if (panic_on_warn) {
-		panic_on_warn = 0;
-		panic(...);
-	}
-
-needs.
