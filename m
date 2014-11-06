@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaKFXCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:02:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58887 "EHLO
+	id S1754005AbaKFXCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:02:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58882 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbaKFWmf (ORCPT
+	with ESMTP id S1752845AbaKFWme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:35 -0500
+	Thu, 6 Nov 2014 17:42:34 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Rannaud <e@nanocritical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 158/162] fs: allow open(dir, O_TMPFILE|..., 0) with mode 0
-Date: Thu,  6 Nov 2014 14:37:02 -0800
-Message-Id: <1415313426-9622-159-git-send-email-kamal@canonical.com>
+Cc: Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 115/162] usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
+Date: Thu,  6 Nov 2014 14:36:19 -0800
+Message-Id: <1415313426-9622-116-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,89 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Rannaud <e@nanocritical.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 69a91c237ab0ebe4e9fdeaf6d0090c85275594ec upstream.
+commit 52ec49a5e56a27c5b6f8217708783eff39f24c16 upstream.
 
-The man page for open(2) indicates that when O_CREAT is specified, the
-'mode' argument applies only to future accesses to the file:
+During Halt Endpoint Test, our interrupt endpoint
+will be disabled, which will clear out ep->desc
+to NULL. Unless we call config_ep_by_speed() again,
+we will not be able to enable this endpoint which
+will make us fail that test.
 
-	Note that this mode applies only to future accesses of the newly
-	created file; the open() call that creates a read-only file
-	may well return a read/write file descriptor.
-
-The man page for open(2) implies that 'mode' is treated identically by
-O_CREAT and O_TMPFILE.
-
-O_TMPFILE, however, behaves differently:
-
-	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0);
-	assert(fd == -1);
-	assert(errno == EACCES);
-
-	int fd = open("/tmp", O_TMPFILE | O_RDWR, 0600);
-	assert(fd > 0);
-
-For O_CREAT, do_last() sets acc_mode to MAY_OPEN only:
-
-	if (*opened & FILE_CREATED) {
-		/* Don't check for write permission, don't truncate */
-		open_flag &= ~O_TRUNC;
-		will_truncate = false;
-		acc_mode = MAY_OPEN;
-		path_to_nameidata(path, nd);
-		goto finish_open_created;
-	}
-
-But for O_TMPFILE, do_tmpfile() passes the full op->acc_mode to
-may_open().
-
-This patch lines up the behavior of O_TMPFILE with O_CREAT. After the
-inode is created, may_open() is called with acc_mode = MAY_OPEN, in
-do_tmpfile().
-
-A different, but related glibc bug revealed the discrepancy:
-https://sourceware.org/bugzilla/show_bug.cgi?id=17523
-
-The glibc lazily loads the 'mode' argument of open() and openat() using
-va_arg() only if O_CREAT is present in 'flags' (to support both the 2
-argument and the 3 argument forms of open; same idea for openat()).
-However, the glibc ignores the 'mode' argument if O_TMPFILE is in
-'flags'.
-
-On x86_64, for open(), it magically works anyway, as 'mode' is in
-RDX when entering open(), and is still in RDX on SYSCALL, which is where
-the kernel looks for the 3rd argument of a syscall.
-
-But openat() is not quite so lucky: 'mode' is in RCX when entering the
-glibc wrapper for openat(), while the kernel looks for the 4th argument
-of a syscall in R10. Indeed, the syscall calling convention differs from
-the regular calling convention in this respect on x86_64. So the kernel
-sees mode = 0 when trying to use glibc openat() with O_TMPFILE, and
-fails with EACCES.
-
-Signed-off-by: Eric Rannaud <e@nanocritical.com>
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: f9c56cd (usb: gadget: Clear usb_endpoint_descriptor
+	inside the struct usb_ep on disable)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/namei.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/f_acm.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index eaabb52..ddb6721 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3128,7 +3128,8 @@ static int do_tmpfile(int dfd, struct filename *pathname,
- 	if (error)
- 		goto out2;
- 	audit_inode(pathname, nd->path.dentry, 0);
--	error = may_open(&nd->path, op->acc_mode, op->open_flag);
-+	/* Don't check for other permissions, the inode was just created */
-+	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
- 	if (error)
- 		goto out2;
- 	file->f_path.mnt = nd->path.mnt;
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index ab1065a..d3d7d1b 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -430,11 +430,12 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 		if (acm->notify->driver_data) {
+ 			VDBG(cdev, "reset acm control interface %d\n", intf);
+ 			usb_ep_disable(acm->notify);
+-		} else {
+-			VDBG(cdev, "init acm ctrl interface %d\n", intf);
++		}
++
++		if (acm->notify->desc)
+ 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
+ 				return -EINVAL;
+-		}
++
+ 		usb_ep_enable(acm->notify);
+ 		acm->notify->driver_data = acm;
+ 
 -- 
 1.9.1
 
