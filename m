@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbaKFXLZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:11:25 -0500
-Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:17046 "EHLO
-	blau.mirbsd.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753157AbaKFXLU (ORCPT
+	id S1752533AbaKFWlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:41:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58714 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459AbaKFWlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 18:11:20 -0500
-Message-Id: <201411062246.sA6Mkggp010153@blau.mirbsd.org>
-From: Thorsten Glaser <tg@mirbsd.org>
-To: linux-kernel@vger.kernel.org
-Date: Sun, 4 May 2014 01:37:54 +0200
-Subject: [PATCH] mount tmpfs-as-rootfs (initramfs) with -o
- nr_blocks=0,nr_inodes=0
+	Thu, 6 Nov 2014 17:41:17 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, Bob Picco <bob.picco@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 054/162] sparc64: Increase size of boot string to 1024 bytes
+Date: Thu,  6 Nov 2014 14:35:18 -0800
+Message-Id: <1415313426-9622-55-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would have preferred to write this patch to be able to pass
-rootflags=nr_blocks=0,nr_inodes=0 on the kernel command line,
-and then hand these rootflags over to the initramfs (tmpfs)
-mount in the same way the kernel hands them over to the block
-device rootfs mount. But at least the Debian/m68k initrd also
-parses $rootflags from the environment and adds it to the call
-to the user-space mount for the eventual root device, which
-would make the kernel command line rootflags option be used in
-both places (tmpfs and e.g. ext4) which is guaranteed to error
-out in at least one of them.
+3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
 
-This change is intended to aid people in a setup where the
-initrd is the final root filesystem, i.e. not mounted over.
-This is especially useful in automated tests running on qemu
-for boards with constrained memory (e.g. 64 MiB on sh4).
+------------------
 
-Considering that the initramfs is normally emptied out then
-overmounted, this change is probably safe for setups where
-initramfs just hosts early userspace, too, since the tmpfs
-backing it is not accessible any more later on, AFAICT.
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-Signed-off-by: Thorsten Glaser <tg@mirbsd.org>
+[ Upstream commit 1cef94c36bd4d79b5ae3a3df99ee0d76d6a4a6dc ]
+
+This is the longest boot string that silo supports.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Bob Picco <bob.picco@oracle.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- init/do_mounts.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/sparc/prom/bootstr_64.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 82f2288..55a4cfe 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -594,6 +594,7 @@ out:
- }
+diff --git a/arch/sparc/prom/bootstr_64.c b/arch/sparc/prom/bootstr_64.c
+index ab9ccc6..7149e77 100644
+--- a/arch/sparc/prom/bootstr_64.c
++++ b/arch/sparc/prom/bootstr_64.c
+@@ -14,7 +14,10 @@
+  *          the .bss section or it will break things.
+  */
  
- static bool is_tmpfs;
-+static char tmpfs_rootflags[] = "nr_blocks=0,nr_inodes=0";
- static struct dentry *rootfs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-@@ -606,6 +607,9 @@ static struct dentry *rootfs_mount(struct file_system_type *fs_type,
- 	if (IS_ENABLED(CONFIG_TMPFS) && is_tmpfs)
- 		fill = shmem_fill_super;
- 
-+	if (is_tmpfs)
-+		data = tmpfs_rootflags;
-+
- 	return mount_nodev(fs_type, flags, data, fill);
- }
- 
+-#define BARG_LEN  256
++/* We limit BARG_LEN to 1024 because this is the size of the
++ * 'barg_out' command line buffer in the SILO bootloader.
++ */
++#define BARG_LEN 1024
+ struct {
+ 	int bootstr_len;
+ 	int bootstr_valid;
 -- 
-2.0.0.rc0
+1.9.1
 
