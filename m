@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaKFDM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:12:59 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:40153 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaKFDM6 (ORCPT
+	id S1751703AbaKFDO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:14:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39590 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaKFDOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:12:58 -0500
-Message-ID: <545AE8AA.1030705@gmail.com>
-Date: Thu, 06 Nov 2014 11:19:06 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 5 Nov 2014 22:14:22 -0500
+Date: Wed, 5 Nov 2014 19:14:21 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com
+Subject: Re: [PATCH 00/13 v10] omap 8250 based UART + DMA
+Message-ID: <20141106031421.GA22185@kroah.com>
+References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com,
-        linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] include/linux/audit.h: Move dummy audit_file() from !AUDIT
- area to !AUDITSYSCALL area
-References: <5458EC40.5020807@gmail.com> <283051037.h5QtGpv3rn@sifl>
-In-Reply-To: <283051037.h5QtGpv3rn@sifl>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/14 4:43, Paul Moore wrote:
-> On Tuesday, November 04, 2014 11:09:52 PM Chen Gang wrote:
->> audit_file() is related with AUDITSYSCALL, not related with AUDIT, so
->> need move dummy one from !AUDIT area to !AUDITSYSCALL area. Or it will
->> cause issue if CONFIG_AUDIT with !CONFIG_AUDITSYSCALL.
->>
->> The related error (with allmodconfig under tile):
->>
->>     CC      fs/open.o
->>   fs/open.c: In function 'SYSC_fchmod':
->>   fs/open.c:530:3: error: implicit declaration of function 'audit_file'
->> [-Werror=implicit-function-declaration] audit_file(f.file);
->>      ^
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  include/linux/audit.h | 5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> What version of the kernel source are you looking at?  I don't see the 
-> audit_file() function anywhere ...
-> 
+On Mon, Sep 29, 2014 at 08:06:36PM +0200, Sebastian Andrzej Siewior wrote:
+> The queue is getting smaller. The highlights of v9…v10
+> - the DMA stall Frans Klaver reported which popped up in yocto is gone. It
+>   also seems that the "ack the err-irq even if nothing happened" in EDMA
+>   can be dropped.
+> - the RX- and TX-DMA callbacks are now OMAP-only and no "bugs" flags are
+>   introduced into the generic DMA code. This also means that there is
+>   custom IRQ routine in case of DMA.
 
-It is for next tree. Sorry for not marking it in subject, originally.
+I've now applied the patches here that I could, if I have missed any,
+please let me know and resend.
 
-Thanks.
+thanks,
 
->> diff --git a/include/linux/audit.h b/include/linux/audit.h
->> index 295ae1c..7b1d0d1 100644
->> --- a/include/linux/audit.h
->> +++ b/include/linux/audit.h
->> @@ -363,6 +363,8 @@ static inline void audit_inode(struct filename *name,
->>  				const struct dentry *dentry,
->>  				unsigned int parent)
->>  { }
->> +static inline void audit_file(struct file *file)
->> +{ }
->>  static inline void audit_inode_parent_hidden(struct filename *name,
->>  				const struct dentry *dentry)
->>  { }
->> @@ -538,9 +540,6 @@ static inline void audit_log_task_info(struct
->> audit_buffer *ab, struct task_struct *tsk)
->>  { }
->>  #define audit_enabled 0
->> -static inline void audit_file(struct file *file)
->> -{
->> -}
->>  #endif /* CONFIG_AUDIT */
->>  static inline void audit_log_string(struct audit_buffer *ab, const char
->> *buf) {
-> 
-
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+greg k-h
