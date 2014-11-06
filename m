@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288AbaKFAFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 19:05:43 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:44250 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaKFAFk (ORCPT
+	id S1751407AbaKFAF7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 19:05:59 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:53404 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaKFAFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 19:05:40 -0500
-Date: Wed, 5 Nov 2014 17:05:36 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, liviu.dudau@arm.com,
-        Suravee.Suthikulpanit@amd.com, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH RFC 1/2] drivers: pci: fix window allocation order wrt
- bus_range filtering
-Message-ID: <20141106000536.GL6168@google.com>
-References: <1414077787-20633-1-git-send-email-lorenzo.pieralisi@arm.com>
+	Wed, 5 Nov 2014 19:05:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
+Date: Thu, 06 Nov 2014 01:05:48 +0100
+Message-ID: <2659321.LYB03rL97X@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141105233921.GJ6168@google.com>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <2148776.X8NPqiYA6S@wuerfel> <20141105233921.GJ6168@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414077787-20633-1-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:WW2Gg33OZZLai5TPOZNHUB8C0qWqVIQ99jF+ea0j5D9
+ jK7OgC0VFcHSkuAbFyddH+COCcBHiSiDHPejPsYPa04c891sGC
+ ekCgEU3htu4zDpzSLUXp6ecxewBQiF/M7Yefs3yqiHOm4+ZEPE
+ LQfOF2iOI0m0grcBw3Yvr4eRSt+fQUW57O8nml/zM06fRIjByJ
+ 9tNX5RJcDQ0pvfGpqXPY23+LNEVWaAEwaz0CcTVBfDjerQm8oy
+ MNneuUlLRWsebILgh4RYqNDtlg4g+H8NSV9918nfBtNPF35iOU
+ duGP0Nwm9CfVx7VQhRtAgX9R7Fh3E4EOvsTfmTWR8q/Lk5JNyY
+ +TOQqBGeGsaNEI2puCk8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 04:23:06PM +0100, Lorenzo Pieralisi wrote:
-> The number of windows allocated for the host bridge depends on the
-> bus resource. Instead of first allocating the windows and then
-> limit the bus resource, this patch reshuffles the code so that if any
-> limitation is applied to the bus resource it is taken into account in
-> the windows allocation.
+On Wednesday 05 November 2014 16:39:21 Bjorn Helgaas wrote:
+> On Wed, Oct 22, 2014 at 10:52:19PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 22 October 2014 16:59:14 Lorenzo Pieralisi wrote:
+> > > On Wed, Oct 01, 2014 at 10:38:45AM +0100, Arnd Bergmann wrote:
+> > > 
+> > > [...]
+> > > 
+> > > > The arm32 implementations of pci_domain_nr/pci_proc_domain can probably be
+> > > > removed if we change the arm32 pcibios_init_hw function to call the new
+> > > > interfaces that set the domain number.
+> > > 
+> > > I wished, but it is a bit more complicated than I thought unfortunately,
+> > > mostly because some drivers, eg cns3xxx set the domain numbers
+> > > statically in pci_sys_data and this sets a chain of dependency that is
+> > > not easy to untangle. I think cns3xxx is the only legacy driver that "uses"
+> > > the domain number (in pci_sys_data) in a way that clashes with the
+> > > generic domain_nr implementation, I need to give it more thought.
+> > 
+> > Just had a look at that driver, shouldn't be too hard to change, see below.
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> This patch is in my patchwork, but it lacks a topic & changelog and I'm not
+> sure of its state, so I'm going to drop it for now.  Please post it again
+> if you want me to do something with it.  I guess it only touches arch/arm,
+> so it would probably be merged via your tree anyway.
 
-I applied these with Will's acks to pci/host-generic for v3.19, thanks!
+Lorenzo has posted an updated version as
 
-In my mind, posting patches to the list is implicitly a request for
-comments, so I usually don't pay too much attention to things explicitly
-marked "RFC" because I figure that's a hint that "this is work-in-progress,
-please comment if you see anything obviously broken."
+"arm: cns3xxx: pci: remove artificial dependency on pci_sys_data domain",
+and a second patch that depends on it. That is the version we should be
+merging, though I'm not sure through which tree.
 
-Bjorn
-
-> ---
->  drivers/pci/host/pci-host-generic.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
-> index 3d2076f..1e1a80f 100644
-> --- a/drivers/pci/host/pci-host-generic.c
-> +++ b/drivers/pci/host/pci-host-generic.c
-> @@ -276,17 +276,17 @@ static int gen_pci_parse_map_cfg_windows(struct gen_pci *pci)
->  		return err;
->  	}
->  
-> -	pci->cfg.win = devm_kcalloc(dev, resource_size(&pci->cfg.bus_range),
-> -				    sizeof(*pci->cfg.win), GFP_KERNEL);
-> -	if (!pci->cfg.win)
-> -		return -ENOMEM;
-> -
->  	/* Limit the bus-range to fit within reg */
->  	bus_max = pci->cfg.bus_range.start +
->  		  (resource_size(&pci->cfg.res) >> pci->cfg.ops->bus_shift) - 1;
->  	pci->cfg.bus_range.end = min_t(resource_size_t, pci->cfg.bus_range.end,
->  				       bus_max);
->  
-> +	pci->cfg.win = devm_kcalloc(dev, resource_size(&pci->cfg.bus_range),
-> +				    sizeof(*pci->cfg.win), GFP_KERNEL);
-> +	if (!pci->cfg.win)
-> +		return -ENOMEM;
-> +
->  	/* Map our Configuration Space windows */
->  	if (!devm_request_mem_region(dev, pci->cfg.res.start,
->  				     resource_size(&pci->cfg.res),
-> -- 
-> 2.1.2
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	Arnd
