@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaKFWnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:43:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58938 "EHLO
+	id S1753027AbaKFWnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:43:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58947 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976AbaKFWm5 (ORCPT
+	with ESMTP id S1751565AbaKFWnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:42:57 -0500
+	Thu, 6 Nov 2014 17:43:02 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 110/162] iio: mxs-lradc: Propagate the real error code on platform_get_irq() failure
-Date: Thu,  6 Nov 2014 14:36:14 -0800
-Message-Id: <1415313426-9622-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 102/162] kvm: x86: don't kill guest on unknown exit reason
+Date: Thu,  6 Nov 2014 14:36:06 -0800
+Message-Id: <1415313426-9622-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -28,37 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 9610e08e97370ca7780bea977b03355fa0261635 upstream.
+commit 2bc19dc3754fc066c43799659f0d848631c44cfe upstream.
 
-No need to return a 'fake' return value on platform_get_irq() failure.
+KVM_EXIT_UNKNOWN is a kvm bug, we don't really know whether it was
+triggered by a priveledged application.  Let's not kill the guest: WARN
+and inject #UD instead.
 
-Just return the error code itself instead.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Acked-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-[ kamal: 3.13-stable prereq for
-  75d7ed3 iio: adc: mxs-lradc: Disable the clock on probe failure ]
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/adc/mxs-lradc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/svm.c | 6 +++---
+ arch/x86/kvm/vmx.c | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index 558a76c..cef5dde 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -1308,7 +1308,7 @@ static int mxs_lradc_probe(struct platform_device *pdev)
- 	for (i = 0; i < of_cfg->irq_count; i++) {
- 		lradc->irq[i] = platform_get_irq(pdev, i);
- 		if (lradc->irq[i] < 0)
--			return -EINVAL;
-+			return lradc->irq[i];
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 121bd0d..1f5faa5 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3482,9 +3482,9 @@ static int handle_exit(struct kvm_vcpu *vcpu)
  
- 		ret = devm_request_irq(dev, lradc->irq[i],
- 					mxs_lradc_handle_irq, 0,
+ 	if (exit_code >= ARRAY_SIZE(svm_exit_handlers)
+ 	    || !svm_exit_handlers[exit_code]) {
+-		kvm_run->exit_reason = KVM_EXIT_UNKNOWN;
+-		kvm_run->hw.hardware_exit_reason = exit_code;
+-		return 0;
++		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_code);
++		kvm_queue_exception(vcpu, UD_VECTOR);
++		return 1;
+ 	}
+ 
+ 	return svm_exit_handlers[exit_code](svm);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6e4b08b..f5c384c 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6854,10 +6854,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ 	    && kvm_vmx_exit_handlers[exit_reason])
+ 		return kvm_vmx_exit_handlers[exit_reason](vcpu);
+ 	else {
+-		vcpu->run->exit_reason = KVM_EXIT_UNKNOWN;
+-		vcpu->run->hw.hardware_exit_reason = exit_reason;
++		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_reason);
++		kvm_queue_exception(vcpu, UD_VECTOR);
++		return 1;
+ 	}
+-	return 0;
+ }
+ 
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
 -- 
 1.9.1
 
