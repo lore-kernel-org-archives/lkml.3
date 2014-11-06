@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaKFXYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:24:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58426 "EHLO
+	id S1754504AbaKFXYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:24:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58427 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaKFWh3 (ORCPT
+	with ESMTP id S1751322AbaKFWh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Nov 2014 17:37:29 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 019/162] xfrm: Generate queueing routes only from route lookup functions
-Date: Thu,  6 Nov 2014 14:34:43 -0800
-Message-Id: <1415313426-9622-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 006/162] tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
+Date: Thu,  6 Nov 2014 14:34:30 -0800
+Message-Id: <1415313426-9622-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
 References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
@@ -27,155 +28,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit b8c203b2d2fc961bafd53b41d5396bbcdec55998 ]
+[ Upstream commit 4fab9071950c2021d846e18351e0f46a1cffd67b ]
 
-Currently we genarate a queueing route if we have matching policies
-but can not resolve the states and the sysctl xfrm_larval_drop is
-disabled. Here we assume that dst_output() is called to kill the
-queued packets. Unfortunately this assumption is not true in all
-cases, so it is possible that these packets leave the system unwanted.
+Make sure we use the correct address-family-specific function for
+handling MTU reductions from within tcp_release_cb().
 
-We fix this by generating queueing routes only from the
-route lookup functions, here we can guarantee a call to
-dst_output() afterwards.
+Previously AF_INET6 sockets were incorrectly always using the IPv6
+code path when sometimes they were handling IPv4 traffic and thus had
+an IPv4 dst.
 
-Fixes: a0073fe18e71 ("xfrm: Add a state resolution packet queue")
-Reported-by: Konstantinos Kolelis <k.kolelis@sirrix.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Diagnosed-by: Willem de Bruijn <willemb@google.com>
+Fixes: 563d34d057862 ("tcp: dont drop MTU reduction indications")
+Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/dst.h      |  1 +
- net/xfrm/xfrm_policy.c | 32 ++++++++++++++++++++++++--------
- 2 files changed, 25 insertions(+), 8 deletions(-)
+ include/net/inet_connection_sock.h | 1 +
+ include/net/sock.h                 | 1 -
+ include/net/tcp.h                  | 1 +
+ net/ipv4/tcp_ipv4.c                | 5 +++--
+ net/ipv4/tcp_output.c              | 2 +-
+ net/ipv6/tcp_ipv6.c                | 3 ++-
+ 6 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/include/net/dst.h b/include/net/dst.h
-index 8211e32..4b368ae 100644
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -467,6 +467,7 @@ void dst_init(void);
- /* Flags for xfrm_lookup flags argument. */
- enum {
- 	XFRM_LOOKUP_ICMP = 1 << 0,
-+	XFRM_LOOKUP_QUEUE = 1 << 1,
+diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
+index c55aeed..cf92728 100644
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -62,6 +62,7 @@ struct inet_connection_sock_af_ops {
+ 	void	    (*addr2sockaddr)(struct sock *sk, struct sockaddr *);
+ 	int	    (*bind_conflict)(const struct sock *sk,
+ 				     const struct inet_bind_bucket *tb, bool relax);
++	void	    (*mtu_reduced)(struct sock *sk);
  };
  
- struct flowi;
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index eb918d3..0ee05f0 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -46,6 +46,11 @@ static DEFINE_SPINLOCK(xfrm_policy_sk_bundle_lock);
- static struct dst_entry *xfrm_policy_sk_bundles;
- static DEFINE_RWLOCK(xfrm_policy_lock);
+ /** inet_connection_sock - INET connection oriented sock
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 749bad5..5db5b7f 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -950,7 +950,6 @@ struct proto {
+ 						struct sk_buff *skb);
  
-+struct xfrm_flo {
-+	struct dst_entry *dst_orig;
-+	u8 flags;
-+};
-+
- static DEFINE_SPINLOCK(xfrm_policy_afinfo_lock);
- static struct xfrm_policy_afinfo __rcu *xfrm_policy_afinfo[NPROTO]
- 						__read_mostly;
-@@ -1882,13 +1887,14 @@ static int xdst_queue_output(struct sk_buff *skb)
+ 	void		(*release_cb)(struct sock *sk);
+-	void		(*mtu_reduced)(struct sock *sk);
+ 
+ 	/* Keeping track of sk's, looking them up, and port selection methods. */
+ 	void			(*hash)(struct sock *sk);
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 0a00e7c..a9b7191 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -450,6 +450,7 @@ const u8 *tcp_parse_md5sig_option(const struct tcphdr *th);
+  */
+ 
+ void tcp_v4_send_check(struct sock *sk, struct sk_buff *skb);
++void tcp_v4_mtu_reduced(struct sock *sk);
+ int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb);
+ struct sock *tcp_create_openreq_child(struct sock *sk,
+ 				      struct request_sock *req,
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 77fe507..9b726c0 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -268,7 +268,7 @@ EXPORT_SYMBOL(tcp_v4_connect);
+  * It can be called through tcp_release_cb() if socket was owned by user
+  * at the time tcp_v4_err() was called to handle ICMP message.
+  */
+-static void tcp_v4_mtu_reduced(struct sock *sk)
++void tcp_v4_mtu_reduced(struct sock *sk)
+ {
+ 	struct dst_entry *dst;
+ 	struct inet_sock *inet = inet_sk(sk);
+@@ -299,6 +299,7 @@ static void tcp_v4_mtu_reduced(struct sock *sk)
+ 		tcp_simple_retransmit(sk);
+ 	} /* else let the usual retransmit timer handle it */
  }
++EXPORT_SYMBOL(tcp_v4_mtu_reduced);
  
- static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
--						 struct dst_entry *dst,
-+						 struct xfrm_flo *xflo,
- 						 const struct flowi *fl,
- 						 int num_xfrms,
- 						 u16 family)
+ static void do_redirect(struct sk_buff *skb, struct sock *sk)
  {
- 	int err;
- 	struct net_device *dev;
-+	struct dst_entry *dst;
- 	struct dst_entry *dst1;
- 	struct xfrm_dst *xdst;
+@@ -2107,6 +2108,7 @@ const struct inet_connection_sock_af_ops ipv4_specific = {
+ 	.compat_setsockopt = compat_ip_setsockopt,
+ 	.compat_getsockopt = compat_ip_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
+ EXPORT_SYMBOL(ipv4_specific);
  
-@@ -1896,10 +1902,13 @@ static struct xfrm_dst *xfrm_create_dummy_bundle(struct net *net,
- 	if (IS_ERR(xdst))
- 		return xdst;
- 
--	if (net->xfrm.sysctl_larval_drop || num_xfrms <= 0 ||
-+	if (!(xflo->flags & XFRM_LOOKUP_QUEUE) ||
-+	    net->xfrm.sysctl_larval_drop ||
-+	    num_xfrms <= 0 ||
- 	    (fl->flowi_flags & FLOWI_FLAG_CAN_SLEEP))
- 		return xdst;
- 
-+	dst = xflo->dst_orig;
- 	dst1 = &xdst->u.dst;
- 	dst_hold(dst);
- 	xdst->route = dst;
-@@ -1941,7 +1950,7 @@ static struct flow_cache_object *
- xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
- 		   struct flow_cache_object *oldflo, void *ctx)
- {
--	struct dst_entry *dst_orig = (struct dst_entry *)ctx;
-+	struct xfrm_flo *xflo = (struct xfrm_flo *)ctx;
- 	struct xfrm_policy *pols[XFRM_POLICY_TYPE_MAX];
- 	struct xfrm_dst *xdst, *new_xdst;
- 	int num_pols = 0, num_xfrms = 0, i, err, pol_dead;
-@@ -1982,7 +1991,8 @@ xfrm_bundle_lookup(struct net *net, const struct flowi *fl, u16 family, u8 dir,
- 			goto make_dummy_bundle;
+@@ -2721,7 +2723,6 @@ struct proto tcp_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v4_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v4_mtu_reduced,
+ 	.hash			= inet_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index fa5b391..f587e1c 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -785,7 +785,7 @@ void tcp_release_cb(struct sock *sk)
+ 		__sock_put(sk);
  	}
- 
--	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family, dst_orig);
-+	new_xdst = xfrm_resolve_and_create_bundle(pols, num_pols, fl, family,
-+						  xflo->dst_orig);
- 	if (IS_ERR(new_xdst)) {
- 		err = PTR_ERR(new_xdst);
- 		if (err != -EAGAIN)
-@@ -2016,7 +2026,7 @@ make_dummy_bundle:
- 	/* We found policies, but there's no bundles to instantiate:
- 	 * either because the policy blocks, has no transformations or
- 	 * we could not build template (no xfrm_states).*/
--	xdst = xfrm_create_dummy_bundle(net, dst_orig, fl, num_xfrms, family);
-+	xdst = xfrm_create_dummy_bundle(net, xflo, fl, num_xfrms, family);
- 	if (IS_ERR(xdst)) {
- 		xfrm_pols_put(pols, num_pols);
- 		return ERR_CAST(xdst);
-@@ -2116,13 +2126,18 @@ restart:
+ 	if (flags & (1UL << TCP_MTU_REDUCED_DEFERRED)) {
+-		sk->sk_prot->mtu_reduced(sk);
++		inet_csk(sk)->icsk_af_ops->mtu_reduced(sk);
+ 		__sock_put(sk);
  	}
+ }
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 282874b..d83045c 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1640,6 +1640,7 @@ static const struct inet_connection_sock_af_ops ipv6_specific = {
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v4_mtu_reduced,
+ };
  
- 	if (xdst == NULL) {
-+		struct xfrm_flo xflo;
-+
-+		xflo.dst_orig = dst_orig;
-+		xflo.flags = flags;
-+
- 		/* To accelerate a bit...  */
- 		if ((dst_orig->flags & DST_NOXFRM) ||
- 		    !net->xfrm.policy_count[XFRM_POLICY_OUT])
- 			goto nopol;
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1671,6 +1672,7 @@ static const struct inet_connection_sock_af_ops ipv6_mapped = {
+ 	.compat_setsockopt = compat_ipv6_setsockopt,
+ 	.compat_getsockopt = compat_ipv6_getsockopt,
+ #endif
++	.mtu_reduced	   = tcp_v6_mtu_reduced,
+ };
  
- 		flo = flow_cache_lookup(net, fl, family, dir,
--					xfrm_bundle_lookup, dst_orig);
-+					xfrm_bundle_lookup, &xflo);
- 		if (flo == NULL)
- 			goto nopol;
- 		if (IS_ERR(flo)) {
-@@ -2229,7 +2244,8 @@ struct dst_entry *xfrm_lookup_route(struct net *net, struct dst_entry *dst_orig,
- 				    const struct flowi *fl,
- 				    struct sock *sk, int flags)
- {
--	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk, flags);
-+	struct dst_entry *dst = xfrm_lookup(net, dst_orig, fl, sk,
-+					    flags | XFRM_LOOKUP_QUEUE);
- 
- 	if (IS_ERR(dst) && PTR_ERR(dst) == -EREMOTE)
- 		return make_blackhole(net, dst_orig->ops->family, dst_orig);
-@@ -2503,7 +2519,7 @@ int __xfrm_route_forward(struct sk_buff *skb, unsigned short family)
- 
- 	skb_dst_force(skb);
- 
--	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, 0);
-+	dst = xfrm_lookup(net, skb_dst(skb), &fl, NULL, XFRM_LOOKUP_QUEUE);
- 	if (IS_ERR(dst)) {
- 		res = 0;
- 		dst = NULL;
+ #ifdef CONFIG_TCP_MD5SIG
+@@ -1907,7 +1909,6 @@ struct proto tcpv6_prot = {
+ 	.sendpage		= tcp_sendpage,
+ 	.backlog_rcv		= tcp_v6_do_rcv,
+ 	.release_cb		= tcp_release_cb,
+-	.mtu_reduced		= tcp_v6_mtu_reduced,
+ 	.hash			= tcp_v6_hash,
+ 	.unhash			= inet_unhash,
+ 	.get_port		= inet_csk_get_port,
 -- 
 1.9.1
 
