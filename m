@@ -1,80 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaKFN5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 08:57:52 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:53891 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaKFN5v (ORCPT
+	id S1751288AbaKFOCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:02:04 -0500
+Received: from smtp.eu1.fugro.com ([46.34.88.151]:45618 "EHLO
+	smtp.eu1.fugro.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKFOCB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 08:57:51 -0500
-Date: Thu, 6 Nov 2014 13:57:40 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-Message-ID: <20141106135740.GC19702@e104818-lin.cambridge.arm.com>
-References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
- <1414496662-25202-2-git-send-email-will.deacon@arm.com>
- <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
- <CA+55aFwpOCeXdThX3zB64AU4hFwufD6UdJDi2tkD8Q7yEV2pOA@mail.gmail.com>
- <20141029194738.GA29911@arm.com>
- <20141104142955.GA24816@e104818-lin.cambridge.arm.com>
- <CA+55aFzBggoXtNXQeng5d_mRoDnaMBE5Y+URs+PHR67nUpMtaw@mail.gmail.com>
+	Thu, 6 Nov 2014 09:02:01 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq8EAC9+W1QKCmUW/2dsb2JhbABbhDvScwKBNAEBAQEBAXyEAgEBAQECATAKPwUHBAIBCA0BAwQBAQEKBhcBBgEeJwkIAQEEEwiIMM4EAQEBAQEBAQEBAQEBAQEBAQEBAQEBF41CgwEdMQcGgyeBHgWFHQONAwOTTEGEXowQgUVrgQYjgSIBAQE
+X-IPAS-Result: Aq8EAC9+W1QKCmUW/2dsb2JhbABbhDvScwKBNAEBAQEBAXyEAgEBAQECATAKPwUHBAIBCA0BAwQBAQEKBhcBBgEeJwkIAQEEEwiIMM4EAQEBAQEBAQEBAQEBAQEBAQEBAQEBF41CgwEdMQcGgyeBHgWFHQONAwOTTEGEXowQgUVrgQYjgSIBAQE
+X-IronPort-AV: E=Sophos;i="5.07,326,1413244800"; 
+   d="scan'208";a="43223460"
+X-IRP-Internal: 1
+X-IRP-FugroSender: 200661
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzBggoXtNXQeng5d_mRoDnaMBE5Y+URs+PHR67nUpMtaw@mail.gmail.com>
-Thread-Topic: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net onarndale platform
+Date: Thu, 6 Nov 2014 15:01:56 +0100
+Message-ID: <C89EFD3CD56F64468D3D206D683A8D22039FFE39@ldam-msx2.fugro-nl.local>
+In-Reply-To: <20141106124653.GV23178@opensource.wolfsonmicro.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net onarndale platform
+Thread-Index: Ac/5v76CQlLgK0NtTgSt8gCNAtLoUgACIMrQ
+References: <C89EFD3CD56F64468D3D206D683A8D2203985F49@ldam-msx2.fugro-nl.local> <20141104094336.GA3145@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D2203985FA9@ldam-msx2.fugro-nl.local> <20141104200914.GN23178@opensource.wolfsonmicro.com> <C89EFD3CD56F64468D3D206D683A8D22039FFC5F@ldam-msx2.fugro-nl.local> <20141105150258.GR23178@opensource.wolfsonmicro.com> <20141106090651.GA19109@afflict.kos.to> <20141106100104.GS23178@opensource.wolfsonmicro.com> <20141106120416.GA20162@afflict.kos.to> <C89EFD3CD56F64468D3D206D683A8D22039FFE16@ldam-msx2.fugro-nl.local> <20141106124653.GV23178@opensource.wolfsonmicro.com>
+From: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
+To: "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>
+Cc: "Riku Voipio" <riku.voipio@iki.fi>, <freddy@asix.com.tw>,
+        <davem@davemloft.net>, <linux-usb@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 04:08:27PM +0000, Linus Torvalds wrote:
-> On Tue, Nov 4, 2014 at 6:29 AM, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >
-> > This would work on arm64 but is the PAGE_SIZE range enough for all
-> > architectures even when we flush a huge page or a pmd/pud table entry?
+Hello Charles and Riku,
+
+I've quickly tested this on a 3.10 kernel i had around;
+I enabled CONFIG_PM, CONFIG_PM_RUNTIME, CONFIG_PM_AUTOSLEEP,
+CONFIG_SUSPEND, CONFIG_SUSPEND_FREEZER, CONFIG_FREEZER in the kernel (by
+default they are disabled for our setup, I enabled anything regarded to
+runtime powermanagement to be sure I would trigger suspend/resume).
+
+Then:
+cd /sys/bus/usb/devices/1-2/power
+echo auto > control
+echo 1 > autosuspend
+echo 0 > autosuspend_delay_ms
+echo enabled > wakeup
+
+# make sure there's no processes routing traffic over the eth1 interface
+
+ifconfig eth1 down
+sleep 4 # sleep some arbitrary long time
+ifconfig eth1 up
+
+check dmesg; it will reset back to 100 Mbps/full duplex.
+
+This confirms that the suspend / resume does not work well. So long as
+the suspend is not triggered, it does seem to work, though. I cannot say
+whether the original issue that triggered this is still around; the ASIX
+chip setup we use is soldered to the PCB and hooked up to a fixed device
+on-board. 
+I also tried to ping the device on the other side of the ASIX chip after
+the suspend/resume cycle, I could not ping it. I cannot conclusively say
+that this is due to the ASIX driver, as the device on the other side
+does not like switching PHY speeds (it may go into a non-responsive
+state). It is for this reason that we run it at half duplex/ 10Mbps at
+all times.
+
+As said; we are not using this kind of power management, so it does not
+raise any issues for us. I am merely pointing out that this may need
+work (in the future?).
+
+Kind regards,
+
+Michel Stam
+-----Original Message-----
+From: Charles Keepax [mailto:ckeepax@opensource.wolfsonmicro.com] 
+Sent: Thursday, November 06, 2014 13:47 PM
+To: Stam, Michel [FINT]
+Cc: Riku Voipio; freddy@asix.com.tw; davem@davemloft.net;
+linux-usb@vger.kernel.org; netdev@vger.kernel.org;
+linux-kernel@vger.kernel.org; linux-samsung-soc@vger.kernel.org
+Subject: Re: "asix: Don't reset PHY on if_up for ASIX 88772" breaks net
+onarndale platform
+
+On Thu, Nov 06, 2014 at 01:39:07PM +0100, Stam, Michel [FINT] wrote:
+> Hello Riku and Charles,
 > 
-> It pretty much had *better* be.
+> I tried this with my original patch and the suggested patch applied, 
+> this seems to work for me too.
+> 
+> One thing that bothers me, is the suspend / resume situation; usbnet.c
 
-Thanks for confirming.
+> seems to call the bind( ) on probe( ). Suspend / resume do not seem to
 
-> For things like page tables caches (ie caching addresses "inside" the
-> page tables, like x86 does), for legacy reasons, flushing an
-> individual page had better flush the page table caches behind it. This
-> is definitely how x86 works, for example. And if you have an
-> architected non-legacy page table cache (which I'm not aware of
-> anybody actually doing), you're going to have some architecturally
-> explicit flushing for that, likely *separate* from a regular TLB entry
-> flush, and thus you'd need more than just some range expansion..
+> call bind( ) directly.
+> 
+> As Riku pointed out, the original patch I reverted was because of 
+> suspend/resume issues. I wonder if this will still work?
 
-On arm64 we have two types of TLB invalidation instructions, the
-standard one which flushes a pte entry together with the corresponding
-upper level page table cache and a "leaf" operation only for the pte. We
-don't use the latter in Linux (yet) but in theory it's more efficient.
+I seem to remember I had a few issues with Arndale suspend and resume
+last time I tried it anyways, so not sure I will be able to test for
+that. But I will have a go. But in either case I guess a fix for that is
+probably orthogonal to my suggested fix here, as it looks pretty clear
+we intended to fully reset the device in bind and were appartently not
+doing that. So this patch is probably a needed fix anyway. Even if there
+are seperate issues relating to suspend and resume.
 
-Anyway, even without special "leaf" operations, it would be useful to
-make the distinction between unmap_vmas() and free_pgtables() with
-regards to the ranges tracked by mmu_gather. For the former, tlb_flush()
-needs to flush the range in PAGE_SIZE increments (assuming a mix of
-small and huge pages). For the latter, PMD_SIZE increments would be
-enough.
-
-With RCU_TABLE_FREE, I think checking tlb->local.next would do the trick
-but for x86 we can keep mmu_gather.need_flush only for pte clearing
-and remove need_flush = 1 from p*_free_tlb() functions. The arch
-specific tlb_flush() can take need_flush into account to change the
-range flushing increment or even ignore the second tlb_flush() triggered
-by tlb_finish_mmu() (after free_pgtables(), the ptes have been flushed
-via tlb_end_vma()).
-
--- 
-Catalin
+Thanks,
+Charles
