@@ -1,92 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaKFOXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 09:23:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49581 "EHLO arroyo.ext.ti.com"
+	id S1752199AbaKFOXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 09:23:23 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37616 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127AbaKFOXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 09:23:00 -0500
-Message-ID: <545B8438.1040100@ti.com>
-Date: Thu, 6 Nov 2014 16:22:48 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <ldv-project@linuxtesting.org>
-Subject: Re: [PATCH] m501fb: don't return zero on failure path in sm501fb_probe()
-References: <1414795247-14686-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1414795247-14686-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0"
+	id S1752153AbaKFOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 09:23:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,326,1413270000"; 
+   d="scan'208";a="618223987"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org
+Subject: [Patch Part2 v5 26/31] x86: irq_remapping: Clean up unused MSI related code
+Date: Thu,  6 Nov 2014 22:20:39 +0800
+Message-Id: <1415283644-2559-27-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Now MSI interrupt has been converted to new hierarchy irqdomain
+interfaces, so kill legacy MSI related code and interfaces.
 
-On 01/11/14 00:40, Alexey Khoroshilov wrote:
-> If no framebuffers found, sm501fb_probe() breaks off initialization,
-> deallocates sm501fb_info, but returns zero. As a result, use after free=
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/irq_remapping.h |   13 ---
+ arch/x86/include/asm/pci.h           |    5 --
+ arch/x86/kernel/x86_init.c           |    2 -
+ drivers/iommu/irq_remapping.c        |  151 ----------------------------------
+ drivers/iommu/irq_remapping.h        |   14 ----
+ 5 files changed, 185 deletions(-)
 
-> can happen in sm501fb_remove().
->=20
-> The patch adds -ENODEV as a return value in this case.
->=20
-> Found by Linux Driver Verification project (linuxtesting.org).
->=20
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/video/fbdev/sm501fb.c | 1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/drivers/video/fbdev/sm501fb.c b/drivers/video/fbdev/sm501f=
-b.c
-> index 9e74e8fbe074..8b98b011fc04 100644
-> --- a/drivers/video/fbdev/sm501fb.c
-> +++ b/drivers/video/fbdev/sm501fb.c
-> @@ -1988,6 +1988,7 @@ static int sm501fb_probe(struct platform_device *=
-pdev)
->  	if (info->fb[HEAD_PANEL] =3D=3D NULL &&
->  	    info->fb[HEAD_CRT] =3D=3D NULL) {
->  		dev_err(dev, "no framebuffers found\n");
-> +		ret =3D -ENODEV;
->  		goto err_alloc;
->  	}
-> =20
->=20
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index c4fa0d2291b8..61c50e6e28c8 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -50,10 +50,6 @@ extern int setup_ioapic_remapped_entry(int irq,
+ 				       int vector,
+ 				       struct io_apic_irq_attr *attr);
+ extern void free_remapped_irq(int irq);
+-extern void compose_remapped_msi_msg(struct pci_dev *pdev,
+-				     unsigned int irq, unsigned int dest,
+-				     struct msi_msg *msg, u8 hpet_id);
+-extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
+ extern void panic_if_irq_remap(const char *msg);
+ extern bool setup_remapped_irq(int irq,
+ 			       struct irq_cfg *cfg,
+@@ -98,15 +94,6 @@ static inline int setup_ioapic_remapped_entry(int irq,
+ 	return -ENODEV;
+ }
+ static inline void free_remapped_irq(int irq) { }
+-static inline void compose_remapped_msi_msg(struct pci_dev *pdev,
+-					    unsigned int irq, unsigned int dest,
+-					    struct msi_msg *msg, u8 hpet_id)
+-{
+-}
+-static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+-{
+-	return -ENODEV;
+-}
+ 
+ static inline void panic_if_irq_remap(const char *msg)
+ {
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 4e370a5d8117..d8c80ff32e8c 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -96,15 +96,10 @@ extern void pci_iommu_alloc(void);
+ #ifdef CONFIG_PCI_MSI
+ /* implemented in arch/x86/kernel/apic/io_apic. */
+ struct msi_desc;
+-void native_compose_msi_msg(struct pci_dev *pdev, unsigned int irq,
+-			    unsigned int dest, struct msi_msg *msg, u8 hpet_id);
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev);
+-int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-		  unsigned int irq_base, unsigned int irq_offset);
+ #else
+-#define native_compose_msi_msg		NULL
+ #define native_setup_msi_irqs		NULL
+ #define native_teardown_msi_irq		NULL
+ #endif
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index e48b674639cc..814fcbadaad1 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -111,11 +111,9 @@ EXPORT_SYMBOL_GPL(x86_platform);
+ #if defined(CONFIG_PCI_MSI)
+ struct x86_msi_ops x86_msi = {
+ 	.setup_msi_irqs		= native_setup_msi_irqs,
+-	.compose_msi_msg	= native_compose_msi_msg,
+ 	.teardown_msi_irq	= native_teardown_msi_irq,
+ 	.teardown_msi_irqs	= default_teardown_msi_irqs,
+ 	.restore_msi_irqs	= default_restore_msi_irqs,
+-	.setup_hpet_msi		= default_setup_hpet_msi,
+ 	.msi_mask_irq		= default_msi_mask_irq,
+ 	.msix_mask_irq		= default_msix_mask_irq,
+ };
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 414ab0cddbbc..782dea5e4233 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -26,9 +26,6 @@ int no_x2apic_optout;
+ 
+ static struct irq_remap_ops *remap_ops;
+ 
+-static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec);
+-static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle);
+ static int set_remapped_irq_affinity(struct irq_data *data,
+ 				     const struct cpumask *mask,
+ 				     bool force);
+@@ -51,109 +48,6 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
+ }
+ 
+-#ifndef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+-static unsigned int irq_alloc_hwirqs(int cnt, int node)
+-{
+-	return irq_domain_alloc_irqs(NULL, -1, cnt, node, NULL);
+-}
+-
+-static void irq_free_hwirqs(unsigned int from, int cnt)
+-{
+-	irq_domain_free_irqs(from, cnt);
+-}
+-#endif
+-
+-static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+-{
+-	int ret, sub_handle, nvec_pow2, index = 0;
+-	unsigned int irq;
+-	struct msi_desc *msidesc;
+-
+-	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+-
+-	irq = irq_alloc_hwirqs(nvec, dev_to_node(&dev->dev));
+-	if (irq == 0)
+-		return -ENOSPC;
+-
+-	nvec_pow2 = __roundup_pow_of_two(nvec);
+-	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
+-		if (!sub_handle) {
+-			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
+-			if (index < 0) {
+-				ret = index;
+-				goto error;
+-			}
+-		} else {
+-			ret = msi_setup_remapped_irq(dev, irq + sub_handle,
+-						     index, sub_handle);
+-			if (ret < 0)
+-				goto error;
+-		}
+-		ret = setup_msi_irq(dev, msidesc, irq, sub_handle);
+-		if (ret < 0)
+-			goto error;
+-	}
+-	return 0;
+-
+-error:
+-	irq_free_hwirqs(irq, nvec);
+-
+-	/*
+-	 * Restore altered MSI descriptor fields and prevent just destroyed
+-	 * IRQs from tearing down again in default_teardown_msi_irqs()
+-	 */
+-	msidesc->irq = 0;
+-
+-	return ret;
+-}
+-
+-static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
+-{
+-	int node, ret, sub_handle, index = 0;
+-	struct msi_desc *msidesc;
+-	unsigned int irq;
+-
+-	node		= dev_to_node(&dev->dev);
+-	sub_handle	= 0;
+-
+-	list_for_each_entry(msidesc, &dev->msi_list, list) {
+-
+-		irq = irq_alloc_hwirqs(1, node);
+-		if (irq == 0)
+-			return -1;
+-
+-		if (sub_handle == 0)
+-			ret = index = msi_alloc_remapped_irq(dev, irq, nvec);
+-		else
+-			ret = msi_setup_remapped_irq(dev, irq, index, sub_handle);
+-
+-		if (ret < 0)
+-			goto error;
+-
+-		ret = setup_msi_irq(dev, msidesc, irq, 0);
+-		if (ret < 0)
+-			goto error;
+-
+-		sub_handle += 1;
+-		irq        += 1;
+-	}
+-
+-	return 0;
+-
+-error:
+-	irq_free_hwirqs(irq, 1);
+-	return ret;
+-}
+-
+-static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
+-					int nvec, int type)
+-{
+-	if (type == PCI_CAP_ID_MSI)
+-		return do_setup_msi_irqs(dev, nvec);
+-	else
+-		return do_setup_msix_irqs(dev, nvec);
+-}
+-
+ static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
+ {
+ 	/*
+@@ -171,8 +65,6 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
+ 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
+ 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
+-	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+-	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
+ }
+ 
+ static __init int setup_nointremap(char *str)
+@@ -319,49 +211,6 @@ void free_remapped_irq(int irq)
+ 		remap_ops->free_irq(irq);
+ }
+ 
+-void compose_remapped_msi_msg(struct pci_dev *pdev,
+-			      unsigned int irq, unsigned int dest,
+-			      struct msi_msg *msg, u8 hpet_id)
+-{
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	if (!irq_remapped(cfg))
+-		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-	else if (remap_ops && remap_ops->compose_msi_msg)
+-		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-}
+-
+-static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+-{
+-	if (!remap_ops || !remap_ops->msi_alloc_irq)
+-		return -ENODEV;
+-
+-	return remap_ops->msi_alloc_irq(pdev, irq, nvec);
+-}
+-
+-static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle)
+-{
+-	if (!remap_ops || !remap_ops->msi_setup_irq)
+-		return -ENODEV;
+-
+-	return remap_ops->msi_setup_irq(pdev, irq, index, sub_handle);
+-}
+-
+-int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+-{
+-	int ret;
+-
+-	if (!remap_ops || !remap_ops->alloc_hpet_msi)
+-		return -ENODEV;
+-
+-	ret = remap_ops->alloc_hpet_msi(irq, id);
+-	if (ret)
+-		return -EINVAL;
+-
+-	return default_setup_hpet_msi(irq, id);
+-}
+-
+ void panic_if_irq_remap(const char *msg)
+ {
+ 	if (irq_remapping_enabled)
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index 8c159d6fac46..95b19a6ef16a 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -70,20 +70,6 @@ struct irq_remap_ops {
+ 	/* Free an IRQ */
+ 	int (*free_irq)(int);
+ 
+-	/* Create MSI msg to use for interrupt remapping */
+-	void (*compose_msi_msg)(struct pci_dev *,
+-				unsigned int, unsigned int,
+-				struct msi_msg *, u8);
+-
+-	/* Allocate remapping resources for MSI */
+-	int (*msi_alloc_irq)(struct pci_dev *, int, int);
+-
+-	/* Setup the remapped MSI irq */
+-	int (*msi_setup_irq)(struct pci_dev *, unsigned int, int, int);
+-
+-	/* Setup interrupt remapping for an HPET MSI */
+-	int (*alloc_hpet_msi)(unsigned int, unsigned int);
+-
+ 	/* Get the irqdomain associated the IOMMU device */
+ 	struct irq_domain *(*get_ir_irq_domain)(struct irq_alloc_info *);
+ 
+-- 
+1.7.10.4
 
-Thanks, queued for 3.19.
-
- Tomi
-
-
-
---2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUW4Q4AAoJEPo9qoy8lh714B4P/iELhDqNc+pIAaCzPVlTmEZy
-Wlqod20MmeDJsfqy6IQvLNt4kQDC2qP3vpp5SU8xBg3HvsCdDTLH9Tnjoevo8Bu7
-rfctqAByIPHwUpwuepH73zuBkkkC8RWovg680eGmXs6ve8KPIap88DcjnrVfJ2z4
-8b2oSDhAwHcgV0/aQBKNCxobNFTT1Ln4o0LfHUomZOIpP/l0H2gvTdnoPIlM1vh4
-OOPZ6YeE16rVNa2WoQajeXIoY735/qCCrVrmnwOiE/Ong6ujhRwuwluh2yEtyX5j
-AwxBnE+31IAXMiQvCrae87/EUFQl9PAmdliLRZF/hOlTONyUAtzhwSFASZMI7ByI
-QS8V72CN1v1/6w0pLcvHz+cvIRAm/tjEWsj3QMOsXl8vemBZYYeFNMH2TOoR1kJ/
-eS3cX90DopnjhAVjCe8KQ1AoY7dlLAf4tcv0J4zzhrj7ycB8+pFrA5eaMx/zszzi
-kv5ZmmBPuvuixwxMHLkc0lpAHoPG1alo/vEyvBk4CkhH+tjD791SnCDqIMOVd+6g
-Y+qF1SvnyABthf9AJ6EdkBZV2UzaKYXIKqBjCP4vFE5mfIcDdqrNNP0BoEYaAd1E
-AJotTzSVMVpHxRz5EC8EscKg+iARgvWc4EwzokCAV+lAbjB10QolS6GHfvx+atvX
-FtbQAnAzliRnP8XZh+Jt
-=qKma
------END PGP SIGNATURE-----
-
---2TfT7l2iXFNMCa7BKH7tKSmLMKsxWVmq0--
