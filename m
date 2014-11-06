@@ -1,109 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaKFKSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 05:18:53 -0500
-Received: from ozlabs.org ([103.22.144.67]:51996 "EHLO ozlabs.org"
+	id S1752045AbaKFKTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 05:19:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59637 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021AbaKFKSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 05:18:50 -0500
-Date: Thu, 6 Nov 2014 21:18:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20141106211843.6c23a5dd@canb.auug.org.au>
-In-Reply-To: <1415264981.15424.3.camel@linux-t7sj.site>
-References: <20141106164444.2123e6d5@canb.auug.org.au>
-	<1415264981.15424.3.camel@linux-t7sj.site>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751741AbaKFKTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 05:19:24 -0500
+Message-ID: <545B4B01.3080404@redhat.com>
+Date: Thu, 06 Nov 2014 10:18:41 +0000
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc"; protocol="application/pgp-signature"
+To: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org
+CC: linux-arch@vger.kernel.org, linux-aio@kvack.org,
+        Volker Lendecke <Volker.Lendecke@sernet.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-xfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-api@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, cluster-devel@redhat.com,
+        Mel Gorman <mgorman@suse.de>, linux-fsdevel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-ext4@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, linux-btrfs@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Andrew Price <anprice@redhat.com>
+Subject: Re: [Cluster-devel] [PATCH v5 6/7] fs: pass iocb to generic_write_sync
+References: <cover.1415220890.git.milosz@adfin.com> <5d53ede333de7cade713190e2b93e2dbadefa260.1415220890.git.milosz@adfin.com>
+In-Reply-To: <5d53ede333de7cade713190e2b93e2dbadefa260.1415220890.git.milosz@adfin.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
 
-On Thu, 06 Nov 2014 01:09:41 -0800 Davidlohr Bueso <dave@stgolabs.net> wrot=
-e:
+On 05/11/14 21:14, Milosz Tanski wrote:
+> From: Christoph Hellwig <hch@lst.de>
 >
-> On Thu, 2014-11-06 at 16:44 +1100, Stephen Rothwell wrote:
-> >=20
-> > After merging the akpm-current tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> >=20
-> > mm/fremap.c: In function 'SYSC_remap_file_pages':
-> > mm/fremap.c:241:22: error: 'struct address_space' has no member named '=
-i_mmap_mutex'
-> >    mutex_lock(&mapping->i_mmap_mutex);
-> >                       ^
-> > mm/fremap.c:247:24: error: 'struct address_space' has no member named '=
-i_mmap_mutex'
-> >    mutex_unlock(&mapping->i_mmap_mutex);
-> >                         ^
-> >=20
-> > Caused by commit 1f8c97e79f66 ("mm: convert i_mmap_mutex to rwsem").
-> >=20
-> > I applied this patch for today (not sure if there is a better way):
-> >=20
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Thu, 6 Nov 2014 16:26:41 +1100
-> > Subject: [PATCH] mm: convert i_mmap_mutex to rwsem fix
-> >=20
-> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > ---
-> >  mm/fremap.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >=20
-> > diff --git a/mm/fremap.c b/mm/fremap.c
-> > index 9129013732d7..2805d71cf476 100644
-> > --- a/mm/fremap.c
-> > +++ b/mm/fremap.c
-> > @@ -238,13 +238,13 @@ get_write_lock:
-> >  			}
-> >  			goto out_freed;
-> >  		}
-> > -		mutex_lock(&mapping->i_mmap_mutex);
-> > +		i_mmap_lock_write(mapping);
->=20
-> That's the correct fix, thanks. However, I had particularly dropped that
-> modification because linux-next no longer even has mm/fremap.c so I'm
-> not sure what went wrong here...
+> Clean up the generic_write_sync by just passing an iocb and a bytes
+> written / negative errno argument.  In addition to simplifying the
+> callers this also prepares for passing a per-operation O_DSYNC
+> flag.  Two callers didn't quite fit that scheme:
+>
+>   - dio_complete didn't both to update ki_pos as we don't need it
+>     on a iocb that is about to be freed, so we had to add it. Additionally
+>     it also synced out written data in the error case, which has been
+>     changed to operate like the other callers.
+>   - gfs2 also used generic_write_sync to implement a crude version
+>     of fallocate.  It has been switched to use an open coded variant
+>     instead.
+>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+GFS2 bits:
 
-Andrew's tree gets added in two sections and he put your patch in the
-first part but the patch that removes this file is in the second part,
-so all that really needs to happen is for the patches to be reordered.
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I know that Andy Price has some work in this area too, so in due course 
+we'll have to be careful not to create a merge conflict here. Copying in 
+Andy so he can see the changes,
 
---Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+Steve.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> ---
+>   fs/block_dev.c     |  8 +-------
+>   fs/btrfs/file.c    |  7 ++-----
+>   fs/cifs/file.c     |  8 +-------
+>   fs/direct-io.c     |  8 ++------
+>   fs/ext4/file.c     |  8 +-------
+>   fs/gfs2/file.c     |  9 +++++++--
+>   fs/ntfs/file.c     |  8 ++------
+>   fs/udf/file.c      | 11 ++---------
+>   fs/xfs/xfs_file.c  |  8 +-------
+>   include/linux/fs.h |  8 +-------
+>   mm/filemap.c       | 30 ++++++++++++++++++++----------
+>   11 files changed, 40 insertions(+), 73 deletions(-)
+>
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index cc9d411..c529b1c 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -1568,18 +1568,12 @@ static long block_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+>    */
+>   ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>   {
+> -	struct file *file = iocb->ki_filp;
+>   	struct blk_plug plug;
+>   	ssize_t ret;
+>   
+>   	blk_start_plug(&plug);
+>   	ret = __generic_file_write_iter(iocb, from);
+> -	if (ret > 0) {
+> -		ssize_t err;
+> -		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+> -		if (err < 0)
+> -			ret = err;
+> -	}
+> +	ret = generic_write_sync(iocb, ret);
+>   	blk_finish_plug(&plug);
+>   	return ret;
+>   }
+> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> index a18ceab..4f4a6f7 100644
+> --- a/fs/btrfs/file.c
+> +++ b/fs/btrfs/file.c
+> @@ -1820,11 +1820,8 @@ static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
+>   	 */
+>   	BTRFS_I(inode)->last_trans = root->fs_info->generation + 1;
+>   	BTRFS_I(inode)->last_sub_trans = root->log_transid;
+> -	if (num_written > 0) {
+> -		err = generic_write_sync(file, pos, num_written);
+> -		if (err < 0)
+> -			num_written = err;
+> -	}
+> +
+> +	num_written = generic_write_sync(iocb, num_written);
+>   
+>   	if (sync)
+>   		atomic_dec(&BTRFS_I(inode)->sync_writers);
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index c485afa..32359de 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -2706,13 +2706,7 @@ cifs_writev(struct kiocb *iocb, struct iov_iter *from)
+>   		rc = __generic_file_write_iter(iocb, from);
+>   		mutex_unlock(&inode->i_mutex);
+>   
+> -		if (rc > 0) {
+> -			ssize_t err;
+> -
+> -			err = generic_write_sync(file, iocb->ki_pos - rc, rc);
+> -			if (err < 0)
+> -				rc = err;
+> -		}
+> +		rc = generic_write_sync(iocb, rc);
+>   	} else {
+>   		mutex_unlock(&inode->i_mutex);
+>   	}
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index e181b6b..b72ac83 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -257,12 +257,8 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret,
+>   	inode_dio_done(dio->inode);
+>   	if (is_async) {
+>   		if (dio->rw & WRITE) {
+> -			int err;
+> -
+> -			err = generic_write_sync(dio->iocb->ki_filp, offset,
+> -						 transferred);
+> -			if (err < 0 && ret > 0)
+> -				ret = err;
+> +			dio->iocb->ki_pos = offset + transferred;
+> +			ret = generic_write_sync(dio->iocb, ret);
+>   		}
+>   
+>   		aio_complete(dio->iocb, ret, 0);
+> diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+> index aca7b24..79b000c 100644
+> --- a/fs/ext4/file.c
+> +++ b/fs/ext4/file.c
+> @@ -175,13 +175,7 @@ ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>   	ret = __generic_file_write_iter(iocb, from);
+>   	mutex_unlock(&inode->i_mutex);
+>   
+> -	if (ret > 0) {
+> -		ssize_t err;
+> -
+> -		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+> -		if (err < 0)
+> -			ret = err;
+> -	}
+> +	ret = generic_write_sync(iocb, ret);
+>   	if (o_direct)
+>   		blk_finish_plug(&plug);
+>   
+> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+> index 80dd44d..3fafeca 100644
+> --- a/fs/gfs2/file.c
+> +++ b/fs/gfs2/file.c
+> @@ -895,8 +895,13 @@ retry:
+>   		gfs2_quota_unlock(ip);
+>   	}
+>   
+> -	if (error == 0)
+> -		error = generic_write_sync(file, pos, count);
+> +	if (error)
+> +		goto out_unlock;
+> +
+> +	if ((file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host)) {
+> +		error = vfs_fsync_range(file, pos, pos + count - 1,
+> +			       (file->f_flags & __O_SYNC) ? 0 : 1);
+> +	}
+>   	goto out_unlock;
+>   
+>   out_trans_fail:
+> diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+> index 643faa4..4f3d664 100644
+> --- a/fs/ntfs/file.c
+> +++ b/fs/ntfs/file.c
+> @@ -2127,12 +2127,8 @@ static ssize_t ntfs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>   	mutex_lock(&inode->i_mutex);
+>   	ret = ntfs_file_aio_write_nolock(iocb, iov, nr_segs, &iocb->ki_pos);
+>   	mutex_unlock(&inode->i_mutex);
+> -	if (ret > 0) {
+> -		int err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+> -		if (err < 0)
+> -			ret = err;
+> -	}
+> -	return ret;
+> +
+> +	return generic_write_sync(iocb, ret);
+>   }
+>   
+>   /**
+> diff --git a/fs/udf/file.c b/fs/udf/file.c
+> index bb15771..1cdabd0 100644
+> --- a/fs/udf/file.c
+> +++ b/fs/udf/file.c
+> @@ -155,16 +155,9 @@ static ssize_t udf_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>   	retval = __generic_file_write_iter(iocb, from);
+>   	mutex_unlock(&inode->i_mutex);
+>   
+> -	if (retval > 0) {
+> -		ssize_t err;
+> -
+> +	if (retval > 0)
+>   		mark_inode_dirty(inode);
+> -		err = generic_write_sync(file, iocb->ki_pos - retval, retval);
+> -		if (err < 0)
+> -			retval = err;
+> -	}
+> -
+> -	return retval;
+> +	return generic_write_sync(iocb, retval);
+>   }
+>   
+>   long udf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index 0655915..a8cab66 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -792,14 +792,8 @@ xfs_file_write_iter(
+>   		ret = xfs_file_buffered_aio_write(iocb, from);
+>   
+>   	if (ret > 0) {
+> -		ssize_t err;
+> -
+>   		XFS_STATS_ADD(xs_write_bytes, ret);
+> -
+> -		/* Handle various SYNC-type writes */
+> -		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+> -		if (err < 0)
+> -			ret = err;
+> +		ret = generic_write_sync(iocb, ret);
+>   	}
+>   	return ret;
+>   }
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index eaebd99..7d0e116 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2242,13 +2242,7 @@ extern int filemap_fdatawrite_range(struct address_space *mapping,
+>   extern int vfs_fsync_range(struct file *file, loff_t start, loff_t end,
+>   			   int datasync);
+>   extern int vfs_fsync(struct file *file, int datasync);
+> -static inline int generic_write_sync(struct file *file, loff_t pos, loff_t count)
+> -{
+> -	if (!(file->f_flags & O_DSYNC) && !IS_SYNC(file->f_mapping->host))
+> -		return 0;
+> -	return vfs_fsync_range(file, pos, pos + count - 1,
+> -			       (file->f_flags & __O_SYNC) ? 0 : 1);
+> -}
+> +extern int generic_write_sync(struct kiocb *iocb, loff_t count);
+>   extern void emergency_sync(void);
+>   extern void emergency_remount(void);
+>   #ifdef CONFIG_BLOCK
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 09d3af3..6107058 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -2664,6 +2664,24 @@ out:
+>   }
+>   EXPORT_SYMBOL(__generic_file_write_iter);
+>   
+> +int generic_write_sync(struct kiocb *iocb, loff_t count)
+> +{
+> +	struct file *file = iocb->ki_filp;
+> +
+> +	if (count > 0 &&
+> +	    ((file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host))) {
+> +		bool fdatasync = !(file->f_flags & __O_SYNC);
+> +		ssize_t ret = 0;
+> +
+> +		ret = vfs_fsync_range(file, iocb->ki_pos - count,
+> +				iocb->ki_pos - 1, fdatasync);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +	return count;
+> +}
+> +EXPORT_SYMBOL(generic_write_sync);
+> +
+>   /**
+>    * generic_file_write_iter - write data to a file
+>    * @iocb:	IO state structure
+> @@ -2675,22 +2693,14 @@ EXPORT_SYMBOL(__generic_file_write_iter);
+>    */
+>   ssize_t generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+>   {
+> -	struct file *file = iocb->ki_filp;
+> -	struct inode *inode = file->f_mapping->host;
+> +	struct inode *inode = iocb->ki_filp->f_mapping->host;
+>   	ssize_t ret;
+>   
+>   	mutex_lock(&inode->i_mutex);
+>   	ret = __generic_file_write_iter(iocb, from);
+>   	mutex_unlock(&inode->i_mutex);
+>   
+> -	if (ret > 0) {
+> -		ssize_t err;
+> -
+> -		err = generic_write_sync(file, iocb->ki_pos - ret, ret);
+> -		if (err < 0)
+> -			ret = err;
+> -	}
+> -	return ret;
+> +	return generic_write_sync(iocb, ret);
+>   }
+>   EXPORT_SYMBOL(generic_file_write_iter);
+>   
 
-iQIcBAEBCAAGBQJUW0sIAAoJEMDTa8Ir7ZwVyEcP+wTkNEsOh5TDdXSKmXNA2iEU
-VbUYiZ+1tpcE/Z+G9L0wy9L8UvRJu3a9+V801XSYF7mGshuYISMjA9dnSc49ckC5
-Mr0oY2rHf9lHAKt0+SAnnp5TzL+OiWygFWY3B1hlMjlhWNu7D9feOtQVx6xB0gVn
-fTtHwoFv5XuhyUtnYYrmxMRkjh4ZfanBj7DBmCUkavspI1QAw/U+cI/l0eELNhUi
-RTGVVx5OankdgBkMEenlPha1dCSgHh1i+WgbxkAj9WFThN6qxZC0eORnZ6SJHv3r
-kUfDXAr5bQSA1kvCqV3fPHCOSCWL+jh9x0qk4tBoqo4r9ZiIzP070ysoMPeReowL
-2dokVwKjX3cIilwWqIh7lUBJQ0LE0qrfIR4J3ltbs0GZ+QkYI0t/0yMg/5dYPkeq
-WAp63VnCHYbKUuK9cTZ33kyV/NBb2svP1qfO6SPT9wAz+FJObNoG0EvNsK+B+uxy
-0gFX6J3xVEu30W15qH8Yjirv39umkGcxx4YWlfz4mSykis9UKNHDCojBTsXw29VJ
-Anqqo4I1zozvcsfT2I2Sbrr9soEc4syQY1syHrub3MiUTyA8wTcAEoSU2KLiV6mJ
-AZo/IfFuIPHDLIlMRDwi8fq7Y24z7ApgFpjwQkFc8NgjN3C1Wb3dwwfQhyNnzv2Z
-o94ua5GL+hzRgXHeWNjo
-=UQXK
------END PGP SIGNATURE-----
-
---Sig_/Kkj/ANRrFhC4QXuDt=Wq5bc--
