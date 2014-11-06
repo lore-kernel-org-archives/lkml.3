@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaKFJEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 04:04:43 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:56033 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaKFJEc (ORCPT
+	id S1752001AbaKFJGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 04:06:55 -0500
+Received: from regular1.263xmail.com ([211.150.99.131]:40609 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaKFJGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 04:04:32 -0500
-Date: Thu, 6 Nov 2014 09:04:24 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc6393xb: prepare/unprepare clocks
-Message-ID: <20141106090424.GB26543@x1>
-References: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
+	Thu, 6 Nov 2014 04:06:51 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: jack.dai@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <a518b95023ff4dc3055d176d9d0cb96d>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <545B3A18.9030405@rock-chips.com>
+Date: Thu, 06 Nov 2014 17:06:32 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Caesar Wang <caesar.wang@rock-chips.com>, linus.walleij@linaro.org,
+        linux-arm-kernel@lists.infradead.org, Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        fzf@rock-chips.com, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, cf@rock-chips.com,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: Re: [PATCH v8 1/3] power-domain: rockchip: add power domain drivers
+References: <1415254961-5746-1-git-send-email-caesar.wang@rock-chips.com> <1415254961-5746-2-git-send-email-caesar.wang@rock-chips.com>
+In-Reply-To: <1415254961-5746-2-git-send-email-caesar.wang@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Nov 2014, Dmitry Eremin-Solenikov wrote:
 
-> Change clk_enable/disable() calls to clk_prepare_enable() and
-> clk_disable_unrepapre().
-> 
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+On 11/06/2014 02:22 PM, Caesar Wang wrote:
+> In order to meet high performance and low power requirements, a power
+> management unit is designed or saving power when RK3288 in low power mode.
+> The RK3288 PMU is dedicated for managing the power ot the whole chip.
+>
+> Signed-off-by: Jack Dai<jack.dai@rock-chips.com>
+> Signed-off-by: jinkun.hong<jinkun.hong@rock-chips.com>
+> Signed-off-by: Caesar Wang<caesar.wang@rock-chips.com>
+>
 > ---
->  drivers/mfd/tc6393xb.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> Changes in v8:
+>      - This reconciles the v2 and v7 code so that we power domain have
+>      lists of clocks they toggle on and off during power transitions and
+>      independently from power domains clocks we attach clocks to devices
+>      comprising power domain and prepare them so they are turned on and off
+>      by runtime PM.
+There are more changes like the new rockchip_pm_add_one_domain.
+>
+> Changes in v7:
+>      - Delete unused variables
 
-Applied, thanks.
 
-> diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-> index 48579e5..abcb4eb 100644
-> --- a/drivers/mfd/tc6393xb.c
-> +++ b/drivers/mfd/tc6393xb.c
-> @@ -665,7 +665,7 @@ static int tc6393xb_probe(struct platform_device *dev)
->  		goto err_ioremap;
->  	}
->  
-> -	ret = clk_enable(tc6393xb->clk);
-> +	ret = clk_prepare_enable(tc6393xb->clk);
->  	if (ret)
->  		goto err_clk_enable;
->  
-> @@ -728,7 +728,7 @@ err_gpio_add:
->  		temp = gpiochip_remove(&tc6393xb->gpio);
->  	tcpd->disable(dev);
->  err_enable:
-> -	clk_disable(tc6393xb->clk);
-> +	clk_disable_unprepare(tc6393xb->clk);
->  err_clk_enable:
->  	iounmap(tc6393xb->scr);
->  err_ioremap:
-> @@ -764,7 +764,7 @@ static int tc6393xb_remove(struct platform_device *dev)
->  	}
->  
->  	ret = tcpd->disable(dev);
-> -	clk_disable(tc6393xb->clk);
-> +	clk_disable_unprepare(tc6393xb->clk);
->  	iounmap(tc6393xb->scr);
->  	release_resource(&tc6393xb->rscr);
->  	clk_put(tc6393xb->clk);
-> @@ -792,7 +792,7 @@ static int tc6393xb_suspend(struct platform_device *dev, pm_message_t state)
->  			ioread8(tc6393xb->scr + SCR_GPI_BCR(i));
->  	}
->  	ret = tcpd->suspend(dev);
-> -	clk_disable(tc6393xb->clk);
-> +	clk_disable_unprepare(tc6393xb->clk);
->  
->  	return ret;
->  }
-> @@ -804,7 +804,7 @@ static int tc6393xb_resume(struct platform_device *dev)
->  	int ret;
->  	int i;
->  
-> -	clk_enable(tc6393xb->clk);
-> +	clk_prepare_enable(tc6393xb->clk);
->  
->  	ret = tcpd->resume(dev);
->  	if (ret)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
