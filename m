@@ -1,50 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaKFCUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 21:20:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38978 "EHLO
+	id S1751125AbaKFCdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 21:33:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaKFCUL (ORCPT
+	with ESMTP id S1750905AbaKFCdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 21:20:11 -0500
-Date: Wed, 5 Nov 2014 18:20:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [char-misc-next V3] mei: add reference counting for me clients
-Message-ID: <20141106022010.GD17253@kroah.com>
-References: <1415004125-5467-1-git-send-email-tomas.winkler@intel.com>
- <20141103235439.GA26158@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1C493153@HASMSX106.ger.corp.intel.com>
+	Wed, 5 Nov 2014 21:33:11 -0500
+Date: Wed, 5 Nov 2014 18:33:10 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH -next v2 10/26] tty: Don't take tty_mutex for tty count
+ changes
+Message-ID: <20141106023310.GA5035@kroah.com>
+References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
+ <1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
+ <1415207589-15967-11-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1C493153@HASMSX106.ger.corp.intel.com>
+In-Reply-To: <1415207589-15967-11-git-send-email-peter@hurleysoftware.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 05:22:51AM +0000, Winkler, Tomas wrote:
-> > 
-> > On Mon, Nov 03, 2014 at 10:42:05AM +0200, Tomas Winkler wrote:
-> > > To support dynamic addition/remove we add reference
-> > > counter.
-> > 
-> > What is keeping two different threads / cpus from grabbing a reference
-> > at the same time the other one is dropping it?
-> > 
-> > You have a list here, with no locking, right?  You also don't have any
-> > locking for your kref, which isn't good at all...
-> > 
-> > Please audit and fix up.
+On Wed, Nov 05, 2014 at 12:12:53PM -0500, Peter Hurley wrote:
+> Holding tty_mutex is no longer required to serialize changes to
+> the tty_count or to prevent concurrent opens of closing ttys;
+> tty_lock() is sufficient.
 > 
-> Of course there is a lock, it wouldn't work at all. It is not explicit
-> but we run under device_lock mutex. 
+> Reviewed-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/tty_io.c | 6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index ea8c6cae8d12..e59de81c39a9 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>  	 * each iteration we avoid any problems.
+>  	 */
+>  	while (1) {
+> -		/* Guard against races with tty->count changes elsewhere and
+> -		   opens on /dev/tty */
+> -
+> -		mutex_lock(&tty_mutex);
+>  		tty_lock_pair(tty, o_tty);
+>  		tty_closing = tty->count <= 1;
+>  		o_tty_closing = o_tty &&
+> @@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
+>  		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
+>  				__func__, tty_name(tty, buf));
+>  		tty_unlock_pair(tty, o_tty);
+> -		mutex_unlock(&tty_mutex);
+>  		schedule();
+>  	}
+>  
 
-Please make it explicit :)
+The code in my tree in this section of tty_release() looks a bit
+different, so I had to hand-apply this patch.  I've included the version
+I used below, please verify I didn't mess it up.
 
 thanks,
 
 greg k-h
+
+
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index ea8c6cae8d12..e59de81c39a9 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1804,10 +1804,6 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	 * each iteration we avoid any problems.
+ 	 */
+ 	while (1) {
+-		/* Guard against races with tty->count changes elsewhere and
+-		   opens on /dev/tty */
+-
+-		mutex_lock(&tty_mutex);
+ 		tty_lock_pair(tty, o_tty);
+ 		tty_closing = tty->count <= 1;
+ 		o_tty_closing = o_tty &&
+@@ -1840,7 +1836,6 @@ int tty_release(struct inode *inode, struct file *filp)
+ 		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
+ 				__func__, tty_name(tty, buf));
+ 		tty_unlock_pair(tty, o_tty);
+-		mutex_unlock(&tty_mutex);
+ 		schedule();
+ 	}
+ 
+@@ -1891,7 +1886,6 @@ int tty_release(struct inode *inode, struct file *filp)
+ 		read_unlock(&tasklist_lock);
+ 	}
+ 
+-	mutex_unlock(&tty_mutex);
+ 	tty_unlock_pair(tty, o_tty);
+ 	/* At this point, the tty->count == 0 should ensure a dead tty
+ 	   cannot be re-opened by a racing opener */
