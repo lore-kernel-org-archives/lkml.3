@@ -1,78 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaKFIJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:09:56 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:14899 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaKFIJz (ORCPT
+	id S1751340AbaKFILS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:11:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:51704 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaKFILP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:09:55 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-0f-545b2cd1b97c
-From: Weijie Yang <weijie.yang@samsung.com>
-To: kamezawa.hiroyu@jp.fujitsu.com, "'Minchan Kim'" <minchan@kernel.org>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, mgorman@suse.de,
-        mina86@mina86.com, "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: [PATCH 2/2] mm: page_isolation: fix zone_freepage accounting
-Date: Thu, 06 Nov 2014 16:09:08 +0800
-Message-id: <000101cff999$09225070$1b66f150$%yang@samsung.com>
+	Thu, 6 Nov 2014 03:11:15 -0500
+X-AuditID: cbfee68d-f79296d000004278-b4-545b2d1dca70
+Message-id: <545B2D1D.6070306@samsung.com>
+Date: Thu, 06 Nov 2014 17:11:09 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
+To: Prabu Thangamuthu <Prabu.T@synopsys.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alim Akhtar <alim.akhtar@gmail.com>
+Cc: Manjunath M Bettegowda <Manjunath.MB@synopsys.com>
+Subject: Re: [PATCH V7] mmc: dw_mmc: Add IDMAC 64-bit address mode support
+References: <705D14B1C7978B40A723277C067CEDE21B3344F0@IN01WEMBXB.internal.synopsys.com>
+In-reply-to: <705D14B1C7978B40A723277C067CEDE21B3344F0@IN01WEMBXB.internal.synopsys.com>
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/5mNNMPGw6AOdSRUi8KMXwgDh7GA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t9jAd2LOtEhBsumGFnMWb+GzWLm7NlM
-	Fpd3zWGzuLfmP6vF5HfPGC0WHG9htVj29T27xZMT/1kcODx2zrrL7nHiySU2j02rOoHEp0lA
-	7ozfLB7r/rxi8th8utrj8ya5AI4oLpuU1JzMstQifbsErox5j7ewFUzjqlj8ZyprA+MMji5G
-	Tg4JAROJPTe2MELYYhIX7q1n62Lk4hASWMQocXzOc2YI5w+jxKV5u9lBqtgEtCXu9m9kBbFF
-	BNwkjuzdxwhSxCxwkVHi2PSLzCAJYQFXicnXG1hAbBYBVYnO3mdgcV4BO4kjy+6xQtiCEj8m
-	3wOq4QBqVpeYMiUXJMwsIC+xec1bZpCwBFD40V9diFV6Ej8OXGeBKBGX2HjkFssERoFZSAbN
-	Qhg0C8mgWUg6FjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjpBnUjsYVzZYHGIU4GBU
-	4uHdcTQqRIg1say4MvcQowQHs5IIb690dIgQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt1oFC
-	AumJJanZqakFqUUwWSYOTqkGxinPjxSEHNj+/szl41UH7Xlu3ZPftop9jrJoskbQp93/rTcu
-	nmr7NCgvJd3/nG/79mWrHjVLPPP+kxfSKlW8hG3Klv3HGON3lNbPiHzk3SQv6qiqd+0Ij6Zz
-	vvms61Ok9V+sVskNvqkrcvn47/I0+aTkyLLyT3G6OVftnK7YG9Vu5PfqXXPnmhJLcUaioRZz
-	UXEiABURjMCMAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsWyRsSkWFdJNzrEYKafxdJb1RYTLm9ntLi8
+	aw6bxZH//YwWK2bPZbOYsPU4q8WH+xeZLY6vDXfg8Ng56y67x51re9g8brxayOTRt2UVo8eW
+	/Z8ZPT5vkgtgi+KySUnNySxLLdK3S+DKmL5oNnPBmciKC5e3MTUwXnHtYuTkkBAwkZhx7Asj
+	hC0mceHeerYuRi4OIYGljBIPT69hgyk6du0PO0RiOqPExgfzoapeM0rc2LAfrJ1XQEvi5o7f
+	zCA2i4CqxOWdW8FsNgEdie3fjjOB2KICYRKH2uYxQdQLSvyYfI8FZJCIwD4miaOn1oIlmAXM
+	JJrOgKzj5BAW8JLYtnQt2CAhgUiJuUfvsIDYnAJREmvmv2WEqNeR2N86jQ3ClpfYvOYtM8hQ
+	CYFb7BI37t+HukhA4tvkQ0DNHEAJWYlNB5ghXpOUOLjiBssERrFZSG6ahWTsLCRjFzAyr2IU
+	TS1ILihOSi8y1CtOzC0uzUvXS87P3cQIjMTT/5717mC8fcD6EKMAB6MSD6/AiagQIdbEsuLK
+	3EOMpkBXTGSWEk3OB8Z7Xkm8obGZkYWpiamxkbmlmZI4r6LUz2AhgfTEktTs1NSC1KL4otKc
+	1OJDjEwcnFINjOv3ux7gvDXziIvekc/N3k3+CZlfl1o8OHJywk2bhzpnLsqp9jhNPX9n65L/
+	YuvKw/o+Bf5s6fsZqnvlR+edx58Z+F60vd17smKN9tpb4vp6er9zT0y9b2xuVSNjeWLFjylb
+	/9pfPlle1M19KEfw0pybnbLHORazP4peNnHZL1Pm2PU+649ohR9VYinOSDTUYi4qTgQAdvV5
+	sr8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jQV1Z3egQgwkvJSyW3qq2mHB5O6PF
+	5V1z2CyO/O9ntFgxey6bxYStx1ktPty/yGxxfG24A4fHzll32T3uXNvD5nHj1UImj74tqxg9
+	tuz/zOjxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2S
+	i0+ArltmDtA9SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM6YtmMxec
+	iay4cHkbUwPjFdcuRk4OCQETiWPX/rBD2GISF+6tZ+ti5OIQEpjOKLHxwXwo5zWjxI0N+xlB
+	qngFtCRu7vjNDGKzCKhKXN65FcxmE9CR2P7tOBOILSoQJnGobR4TRL2gxI/J91hABokI7GOS
+	OHpqLViCWcBMoukMxGphAS+JbUvXgg0SEoiUmHv0DguIzSkQJbFm/ltGiHodif2t09ggbHmJ
+	zWveMk9gFJiFZMcsJGWzkJQtYGRexSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc6c+kdzCu
+	arA4xCjAwajEw7vjaFSIEGtiWXFl7iFGCQ5mJRHeXunoECHelMTKqtSi/Pii0pzU4kOMpsAg
+	mMgsJZqcD0xCeSXxhsYmZkaWRuaGFkbG5krivAdbrQOFBNITS1KzU1MLUotg+pg4OKUaGAtN
+	NVzv63YE5m9R2fTxxOdEofQTmrGGTwWZnslvE9vFxDAh8esN3r/nT5akfrGvvPIsVGNHeN2O
+	cy0unzuu/Wif/qpMUO/nS9aIXd+Ee6c/FnunNNf/8OIb91mOJZdJXpaXfSE+0f33gtzWepG5
+	5kdrfhQt/P112faojXf9WxfmhS+9LL674Y0SS3FGoqEWc1FxIgA+8voNCgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If race between isolatation and allocation happens, we could need to move
-some freepages to MIGRATE_ISOLATE in __test_page_isolated_in_pageblock().
-The current code ignores the zone_freepage accounting after the move,
-which cause the zone NR_FREE_PAGES and NR_FREE_CMA_PAGES statistics incorrect.
+Hi,
 
-This patch fixes this rare issue.
+I have tested this patch with 32bit/64bit board.
+It's working fine. 
+After apply this patch, it can be upstream the codes related with exynos7.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- mm/page_isolation.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
 
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 3ddc8b3..15b51de 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -193,12 +193,15 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 			 * is MIGRATE_ISOLATE. Catch it and move the page into
- 			 * MIGRATE_ISOLATE list.
- 			 */
--			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
-+			int migratetype = get_freepage_migratetype(page);
-+			if (migratetype != MIGRATE_ISOLATE) {
- 				struct page *end_page;
- 
- 				end_page = page + (1 << page_order(page)) - 1;
- 				move_freepages(page_zone(page), page, end_page,
- 						MIGRATE_ISOLATE);
-+				__mod_zone_freepage_state(zone,
-+					-(1 << page_order(page)), migratetype);
- 			}
- 			pfn += 1 << page_order(page);
- 		}
--- 
-1.7.0.4
+Best Regards,
+Jaehoon Chung
 
+On 10/20/2014 04:12 PM, Prabu Thangamuthu wrote:
+> Synopsys DW_MMC IP core supports Internal DMA Controller with 64-bit address mode from IP version 2.70a onwards.
+> Updated the driver to support IDMAC 64-bit addressing mode.
+> 
+> Signed-off-by: Prabu Thangamuthu <prabu.t@synopsys.com>
+> ---
+> Change log v7:
+> 	- Initialized reserved fileds and buffer size filed to zero.
+> 	- Removed warnings.
+> 
+> Change log v6:
+> 	- Updated with review comment.
+> 
+> Change log v5:
+> 	- Recreated the patch against linux-next as this patch is required for another patch http://www.spinics.net/lists/arm-kernel/msg357985.html
+> 
+>  drivers/mmc/host/dw_mmc.c  |  199 +++++++++++++++++++++++++++++++++++---------
+>  drivers/mmc/host/dw_mmc.h  |   11 +++
+>  include/linux/mmc/dw_mmc.h |    2 +
+>  3 files changed, 174 insertions(+), 38 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 69f0cc6..b64393b 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -62,6 +62,24 @@
+>  				 SDMMC_IDMAC_INT_FBE | SDMMC_IDMAC_INT_RI | \
+>  				 SDMMC_IDMAC_INT_TI)
+>  
+> +struct idmac_desc_64addr {
+> +	u32		des0;	/* Control Descriptor */
+> +
+> +	u32		des1;	/* Reserved */
+> +
+> +	u32		des2;	/*Buffer sizes */
+> +#define IDMAC_64ADDR_SET_BUFFER1_SIZE(d, s) \
+> +	((d)->des2 = ((d)->des2 & 0x03ffe000) | ((s) & 0x1fff))
+> +
+> +	u32		des3;	/* Reserved */
+> +
+> +	u32		des4;	/* Lower 32-bits of Buffer Address Pointer 1*/
+> +	u32		des5;	/* Upper 32-bits of Buffer Address Pointer 1*/
+> +
+> +	u32		des6;	/* Lower 32-bits of Next Descriptor Address */
+> +	u32		des7;	/* Upper 32-bits of Next Descriptor Address */
+> +};
+> +
+>  struct idmac_desc {
+>  	u32		des0;	/* Control Descriptor */
+>  #define IDMAC_DES0_DIC	BIT(1)
+> @@ -414,30 +432,66 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
+>  				    unsigned int sg_len)
+>  {
+>  	int i;
+> -	struct idmac_desc *desc = host->sg_cpu;
+> +	if (host->dma_64bit_address == 1) {
+> +		struct idmac_desc_64addr *desc = host->sg_cpu;
+>  
+> -	for (i = 0; i < sg_len; i++, desc++) {
+> -		unsigned int length = sg_dma_len(&data->sg[i]);
+> -		u32 mem_addr = sg_dma_address(&data->sg[i]);
+> +		for (i = 0; i < sg_len; i++, desc++) {
+> +			unsigned int length = sg_dma_len(&data->sg[i]);
+> +			u64 mem_addr = sg_dma_address(&data->sg[i]);
+>  
+> -		/* Set the OWN bit and disable interrupts for this descriptor */
+> -		desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC | IDMAC_DES0_CH;
+> +			/*
+> +			 * Set the OWN bit and disable interrupts for this
+> +			 * descriptor
+> +			 */
+> +			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
+> +						IDMAC_DES0_CH;
+> +			/* Buffer length */
+> +			IDMAC_64ADDR_SET_BUFFER1_SIZE(desc, length);
+> +
+> +			/* Physical address to DMA to/from */
+> +			desc->des4 = mem_addr & 0xffffffff;
+> +			desc->des5 = mem_addr >> 32;
+> +		}
+>  
+> -		/* Buffer length */
+> -		IDMAC_SET_BUFFER1_SIZE(desc, length);
+> +		/* Set first descriptor */
+> +		desc = host->sg_cpu;
+> +		desc->des0 |= IDMAC_DES0_FD;
+>  
+> -		/* Physical address to DMA to/from */
+> -		desc->des2 = mem_addr;
+> -	}
+> +		/* Set last descriptor */
+> +		desc = host->sg_cpu + (i - 1) *
+> +				sizeof(struct idmac_desc_64addr);
+> +		desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
+> +		desc->des0 |= IDMAC_DES0_LD;
+> +
+> +	} else {
+> +		struct idmac_desc *desc = host->sg_cpu;
+> +
+> +		for (i = 0; i < sg_len; i++, desc++) {
+> +			unsigned int length = sg_dma_len(&data->sg[i]);
+> +			u32 mem_addr = sg_dma_address(&data->sg[i]);
+> +
+> +			/*
+> +			 * Set the OWN bit and disable interrupts for this
+> +			 * descriptor
+> +			 */
+> +			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
+> +						IDMAC_DES0_CH;
+> +			/* Buffer length */
+> +			IDMAC_SET_BUFFER1_SIZE(desc, length);
+> +
+> +			/* Physical address to DMA to/from */
+> +			desc->des2 = mem_addr;
+> +		}
+>  
+> -	/* Set first descriptor */
+> -	desc = host->sg_cpu;
+> -	desc->des0 |= IDMAC_DES0_FD;
+> +		/* Set first descriptor */
+> +		desc = host->sg_cpu;
+> +		desc->des0 |= IDMAC_DES0_FD;
+>  
+> -	/* Set last descriptor */
+> -	desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
+> -	desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
+> -	desc->des0 |= IDMAC_DES0_LD;
+> +		/* Set last descriptor */
+> +		desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
+> +		desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
+> +		desc->des0 |= IDMAC_DES0_LD;
+> +	}
+>  
+>  	wmb();
+>  }
+> @@ -466,29 +520,71 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
+>  
+>  static int dw_mci_idmac_init(struct dw_mci *host)
+>  {
+> -	struct idmac_desc *p;
+>  	int i;
+>  
+> -	/* Number of descriptors in the ring buffer */
+> -	host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
+> +	if (host->dma_64bit_address == 1) {
+> +		struct idmac_desc_64addr *p;
+> +		/* Number of descriptors in the ring buffer */
+> +		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc_64addr);
+> +
+> +		/* Forward link the descriptor list */
+> +		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1;
+> +								i++, p++) {
+> +			p->des6 = (host->sg_dma +
+> +					(sizeof(struct idmac_desc_64addr) *
+> +							(i + 1))) & 0xffffffff;
+> +
+> +			p->des7 = (u64)(host->sg_dma +
+> +					(sizeof(struct idmac_desc_64addr) *
+> +							(i + 1))) >> 32;
+> +			/* Initialize reserved and buffer size fields to "0" */
+> +			p->des1 = 0;
+> +			p->des2 = 0;
+> +			p->des3 = 0;
+> +		}
+> +
+> +		/* Set the last descriptor as the end-of-ring descriptor */
+> +		p->des6 = host->sg_dma & 0xffffffff;
+> +		p->des7 = (u64)host->sg_dma >> 32;
+> +		p->des0 = IDMAC_DES0_ER;
+> +
+> +	} else {
+> +		struct idmac_desc *p;
+> +		/* Number of descriptors in the ring buffer */
+> +		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
+>  
+> -	/* Forward link the descriptor list */
+> -	for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
+> -		p->des3 = host->sg_dma + (sizeof(struct idmac_desc) * (i + 1));
+> +		/* Forward link the descriptor list */
+> +		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
+> +			p->des3 = host->sg_dma + (sizeof(struct idmac_desc) *
+> +								(i + 1));
+>  
+> -	/* Set the last descriptor as the end-of-ring descriptor */
+> -	p->des3 = host->sg_dma;
+> -	p->des0 = IDMAC_DES0_ER;
+> +		/* Set the last descriptor as the end-of-ring descriptor */
+> +		p->des3 = host->sg_dma;
+> +		p->des0 = IDMAC_DES0_ER;
+> +	}
+>  
+>  	dw_mci_idmac_reset(host);
+>  
+> -	/* Mask out interrupts - get Tx & Rx complete only */
+> -	mci_writel(host, IDSTS, IDMAC_INT_CLR);
+> -	mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI | SDMMC_IDMAC_INT_RI |
+> -		   SDMMC_IDMAC_INT_TI);
+> +	if (host->dma_64bit_address == 1) {
+> +		/* Mask out interrupts - get Tx & Rx complete only */
+> +		mci_writel(host, IDSTS64, IDMAC_INT_CLR);
+> +		mci_writel(host, IDINTEN64, SDMMC_IDMAC_INT_NI |
+> +				SDMMC_IDMAC_INT_RI | SDMMC_IDMAC_INT_TI);
+> +
+> +		/* Set the descriptor base address */
+> +		mci_writel(host, DBADDRL, host->sg_dma & 0xffffffff);
+> +		mci_writel(host, DBADDRU, (u64)host->sg_dma >> 32);
+> +
+> +	} else {
+> +		/* Mask out interrupts - get Tx & Rx complete only */
+> +		mci_writel(host, IDSTS, IDMAC_INT_CLR);
+> +		mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI |
+> +				SDMMC_IDMAC_INT_RI | SDMMC_IDMAC_INT_TI);
+> +
+> +		/* Set the descriptor base address */
+> +		mci_writel(host, DBADDR, host->sg_dma);
+> +	}
+>  
+> -	/* Set the descriptor base address */
+> -	mci_writel(host, DBADDR, host->sg_dma);
+>  	return 0;
+>  }
+>  
+> @@ -2045,11 +2141,22 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>  
+>  #ifdef CONFIG_MMC_DW_IDMAC
+>  	/* Handle DMA interrupts */
+> -	pending = mci_readl(host, IDSTS);
+> -	if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
+> -		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
+> -		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
+> -		host->dma_ops->complete(host);
+> +	if (host->dma_64bit_address == 1) {
+> +		pending = mci_readl(host, IDSTS64);
+> +		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
+> +			mci_writel(host, IDSTS64, SDMMC_IDMAC_INT_TI |
+> +							SDMMC_IDMAC_INT_RI);
+> +			mci_writel(host, IDSTS64, SDMMC_IDMAC_INT_NI);
+> +			host->dma_ops->complete(host);
+> +		}
+> +	} else {
+> +		pending = mci_readl(host, IDSTS);
+> +		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
+> +			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI |
+> +							SDMMC_IDMAC_INT_RI);
+> +			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
+> +			host->dma_ops->complete(host);
+> +		}
+>  	}
+>  #endif
+>  
+> @@ -2309,6 +2416,22 @@ static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
+>  
+>  static void dw_mci_init_dma(struct dw_mci *host)
+>  {
+> +	int addr_config;
+> +	/* Check ADDR_CONFIG bit in HCON to find IDMAC address bus width */
+> +	addr_config = (mci_readl(host, HCON) >> 27) & 0x01;
+> +
+> +	if (addr_config == 1) {
+> +		/* host supports IDMAC in 64-bit address mode */
+> +		host->dma_64bit_address = 1;
+> +		dev_info(host->dev, "IDMAC supports 64-bit address mode.\n");
+> +		if (!dma_set_mask(host->dev, DMA_BIT_MASK(64)))
+> +			dma_set_coherent_mask(host->dev, DMA_BIT_MASK(64));
+> +	} else {
+> +		/* host supports IDMAC in 32-bit address mode */
+> +		host->dma_64bit_address = 0;
+> +		dev_info(host->dev, "IDMAC supports 32-bit address mode.\n");
+> +	}
+> +
+>  	/* Alloc memory for sg translation */
+>  	host->sg_cpu = dmam_alloc_coherent(host->dev, PAGE_SIZE,
+>  					  &host->sg_dma, GFP_KERNEL);
+> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+> index 01b99e8..64b04aa 100644
+> --- a/drivers/mmc/host/dw_mmc.h
+> +++ b/drivers/mmc/host/dw_mmc.h
+> @@ -55,6 +55,17 @@
+>  #define SDMMC_BUFADDR		0x098
+>  #define SDMMC_CDTHRCTL		0x100
+>  #define SDMMC_DATA(x)		(x)
+> +/*
+> +* Registers to support idmac 64-bit address mode
+> +*/
+> +#define SDMMC_DBADDRL		0x088
+> +#define SDMMC_DBADDRU		0x08c
+> +#define SDMMC_IDSTS64		0x090
+> +#define SDMMC_IDINTEN64		0x094
+> +#define SDMMC_DSCADDRL		0x098
+> +#define SDMMC_DSCADDRU		0x09c
+> +#define SDMMC_BUFADDRL		0x0A0
+> +#define SDMMC_BUFADDRU		0x0A4
+>  
+>  /*
+>   * Data offset is difference according to Version
+> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+> index 0013669..9e6eabb 100644
+> --- a/include/linux/mmc/dw_mmc.h
+> +++ b/include/linux/mmc/dw_mmc.h
+> @@ -54,6 +54,7 @@ struct mmc_data;
+>   *	transfer is in progress.
+>   * @use_dma: Whether DMA channel is initialized or not.
+>   * @using_dma: Whether DMA is in use for the current transfer.
+> + * @dma_64bit_address: Whether DMA supports 64-bit address mode or not.
+>   * @sg_dma: Bus address of DMA buffer.
+>   * @sg_cpu: Virtual address of DMA buffer.
+>   * @dma_ops: Pointer to platform-specific DMA callbacks.
+> @@ -140,6 +141,7 @@ struct dw_mci {
+>  	/* DMA interface members*/
+>  	int			use_dma;
+>  	int			using_dma;
+> +	int			dma_64bit_address;
+>  
+>  	dma_addr_t		sg_dma;
+>  	void			*sg_cpu;
+> 
 
