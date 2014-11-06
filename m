@@ -1,159 +1,557 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaKFRAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:00:37 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56230 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaKFQoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 11:44:21 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH v5 17/48] mfd: tps65910: Register with kernel power-off handler
-Date: Thu,  6 Nov 2014 08:43:01 -0800
-Message-Id: <1415292213-28652-18-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.545BA565.0106,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 104
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752785AbaKFRAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:00:46 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:56549 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751465AbaKFRAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 12:00:40 -0500
+Date: Thu, 6 Nov 2014 11:00:10 -0600
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Tom Rini <trini@ti.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <beagleboard@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        <gerald@granddesignsgroup.com>, <fcooper@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: dts: Add am57xx-beagle-x15
+Message-ID: <20141106170010.GA15274@kahuna>
+References: <1415290702-11353-1-git-send-email-nm@ti.com>
+ <20141106163207.GF16896@saruman>
+ <545BA3E6.90105@ti.com>
+ <545BA513.2090907@ti.com>
+ <20141106164843.GY31454@atomide.com>
+ <545BA77F.2080609@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <545BA77F.2080609@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with low priority to reflect that the original code
-only sets pm_power_off if it was not already set.
+On 10:53-20141106, Nishanth Menon wrote:
+> On 11/06/2014 10:48 AM, Tony Lindgren wrote:
+> > * Nishanth Menon <nm@ti.com> [141106 08:44]:
+> >> On 11/06/2014 10:37 AM, Tom Rini wrote:
+> >>
+> >>>>> device_type = "memory"; +		reg = <0x80000000 0x40000000>; /* 1GB
+> >>>>> to start. Target 2GB */
+> >>>>
+> >>>> 1GiB ? Why would you put this here btw ? u-boot fills this one up.
+> >>>
+> >>> Yes, it should either be the full and correct value or 0x0 (like a
+> >>> number of PowerPC platforms do) so it's clear something else gives us
+> >>> the right value here.
+> >>
+> >> Honest mistake, my bad.. I thought I cleaned up the patch! Sigh!!! i
+> >> will repost with proper 2GB. it is better that way in case being used
+> >> with "other bootloaders" which are not exactly too good like u-boot.
+> > 
+> > Can you also describe why all the always-on regulators are needed?
+> yep - will do that similar to
+> https://patchwork.kernel.org/patch/5125431/ - same rationale unless
+> there is any specific voltage rail that you are explicitly interested
+> in that needs additional explanation. Is there additional rails of
+> interest?
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: linux-omap@vger.kernel.org
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Here is what I have in mind: (updated with comments from Felipe/Tom and
+above) - would you like more details added - if you could point out
+areas of interest, I can help improve information provided here.
+
+8<---
+>From d73029bc01c9e2193fb769ce5cc6cc5abb14eba5 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Mon, 18 Aug 2014 12:14:08 -0500
+Subject: [PATCH V2] ARM: dts: Add am57xx-beagle-x15
+
+BeagleBoard-X15 is the next generation Open Source Hardware
+BeagleBoard based on TI's AM5728 SoC featuring dual core 1.5GHZ A15
+processor. The platform features 2GB DDR3L (w/dual 32bit busses),
+eSATA, 3 USB3.0 ports, integrated HDMI (1920x108@60), separate LCD
+port, video In port, 4GB eMMC, uSD, Analog audio in/out, dual 1G
+Ethernet.
+
+For more information, refer to:
+BeagleBoard-X15 Wiki:
+http://www.elinux.org/Beagleboard:BeagleBoard-X15
+
+AM5728 is part of the Sitara product family whose additional details
+will be available: http://www.ti.com/lsds/ti/arm/overview.page
+
+Technical Reference Manual for AM5728 is public domain at:
+http://www.ti.com/lit/spruhz6
+
+Just add basic support for the moment, the following updates are needed:
+  i)	Ethernet - depends on SoC dts fixes
+  ii)	USB Client (USB2) - depends on GPIO extcon
+  ii)	HDMI - additional driver fixes pending
+  iii)	Audio - additional driver fixes pending
+
+NOTE:
+AM5728 Data Manual (SPRS915L - August 2014) section 4.1.1 states: "All
+unused power supply balls must be supplied with the voltages specified
+in the Section 5.2, Recommended Operating Conditions". This implies
+that all unused voltage rails for AM5728 can never be switched off even
+if the hardware blocks inside that voltage domain is unused. Switching
+off these unused rails may result in stability issues on other domains
+and increased leakage and power-on-hour impacts.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
-v5:
-- Rebase to v3.18-rc3
-v4:
-- Do not use notifiers but internal functions and data structures to manage
-  the list of power-off handlers. Drop unused parameters from callbacks, and
-  make the power-off function type void
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-v2:
-- Use define to specify poweroff handler priority
-- Use dev_warn instead of dev_err
 
- drivers/mfd/tps65910.c       | 21 +++++++++++++--------
- include/linux/mfd/tps65910.h |  4 ++++
- 2 files changed, 17 insertions(+), 8 deletions(-)
+Changes in V2 since V1:
+	- Fix the missing squash of proper DDR size.
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 7612d89..b312b92 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -23,6 +23,7 @@
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
- #include <linux/mfd/core.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- #include <linux/mfd/tps65910.h>
- #include <linux/of.h>
-@@ -437,12 +438,10 @@ struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
- }
- #endif
- 
--static struct i2c_client *tps65910_i2c_client;
--static void tps65910_power_off(void)
-+static void tps65910_power_off(struct power_off_handler_block *this)
- {
--	struct tps65910 *tps65910;
--
--	tps65910 = dev_get_drvdata(&tps65910_i2c_client->dev);
-+	struct tps65910 *tps65910 = container_of(this, struct tps65910,
-+						 power_off_hb);
- 
- 	if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL,
- 			DEVCTRL_PWR_OFF_MASK) < 0)
-@@ -505,9 +504,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	tps65910_ck32k_init(tps65910, pmic_plat_data);
- 	tps65910_sleepinit(tps65910, pmic_plat_data);
- 
--	if (pmic_plat_data->pm_off && !pm_power_off) {
--		tps65910_i2c_client = i2c;
--		pm_power_off = tps65910_power_off;
-+	if (pmic_plat_data->pm_off) {
-+		tps65910->power_off_hb.handler = tps65910_power_off;
-+		tps65910->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
-+		ret = register_power_off_handler(&tps65910->power_off_hb);
-+		if (ret)
-+			dev_warn(&i2c->dev,
-+				 "failed to register power-off handler\n");
- 	}
- 
- 	ret = mfd_add_devices(tps65910->dev, -1,
-@@ -527,6 +530,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
- {
- 	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
- 
-+	unregister_power_off_handler(&tps65910->power_off_hb);
+V1: https://patchwork.kernel.org/patch/5244801/
+
+Additional references:
+	- Missing ethernet dtsi patch series: http://marc.info/?t=141388585300001&r=1&w=2
+	- Missing USB Client extcon patch series: http://marc.info/?t=141520160800004&r=1&w=2
+
+Tested with omap2plus_defconfig modified as: http://slexy.org/view/s2DRTzUwjj
+boot log: http://slexy.org/raw/s25Grf1uoo
+based on 3.18-rc1 tag.
+
+Support for u-boot has been posted as well: (series ending
+http://patchwork.ozlabs.org/patch/407552/ )
+
+Side note: this patch generates a few unrelated checkpatch warning for
+compatible which probably is part of appropriate driver documentation
+fixes (functionality is already present).
+
+ arch/arm/boot/dts/Makefile              |    1 +
+ arch/arm/boot/dts/am57xx-beagle-x15.dts |  405 +++++++++++++++++++++++++++++++
+ 2 files changed, 406 insertions(+)
+ create mode 100644 arch/arm/boot/dts/am57xx-beagle-x15.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 38c89ca..eee1e4f 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -347,6 +347,7 @@ dtb-$(CONFIG_SOC_OMAP5) += omap5-cm-t54.dtb \
+ 	omap5-sbc-t54.dtb \
+ 	omap5-uevm.dtb
+ dtb-$(CONFIG_SOC_DRA7XX) += dra7-evm.dtb \
++	am57xx-beagle-x15.dtb \
+ 	dra72-evm.dtb
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-d2-network.dtb \
+ 	orion5x-lacie-ethernet-disk-mini-v2.dtb \
+diff --git a/arch/arm/boot/dts/am57xx-beagle-x15.dts b/arch/arm/boot/dts/am57xx-beagle-x15.dts
+new file mode 100644
+index 0000000..1f1875b
+--- /dev/null
++++ b/arch/arm/boot/dts/am57xx-beagle-x15.dts
+@@ -0,0 +1,405 @@
++/*
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
 +
- 	tps65910_irq_exit(tps65910);
- 	mfd_remove_devices(tps65910->dev);
- 
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 6483a6f..a85ad0f 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -18,6 +18,7 @@
- #define __LINUX_MFD_TPS65910_H
- 
- #include <linux/gpio.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- 
- /* TPS chip id list */
-@@ -905,6 +906,9 @@ struct tps65910 {
- 	/* IRQ Handling */
- 	int chip_irq;
- 	struct regmap_irq_chip_data *irq_data;
++#include "dra74x.dtsi"
++#include <dt-bindings/clk/ti-dra7-atl.h>
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
 +
-+	/* Power-off handling */
-+	struct power_off_handler_block power_off_hb;
- };
- 
- struct tps65910_platform_data {
++/ {
++	model = "TI AM5728 BeagleBoard-X15";
++	compatible = "ti,am572x-beagle-x15", "ti,am5728", "ti,dra742", "ti,dra74", "ti,dra7";
++
++	aliases {
++		rtc0 = &mcp_rtc;
++		rtc1 = &tps659038_rtc;
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x80000000>;
++	};
++
++	vdd_3v3: fixedregulator-vdd_3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd_3v3";
++		vin-supply = <&regen1>;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++	};
++
++	vtt_fixed: fixedregulator-vtt {
++		/* TPS51200 */
++		compatible = "regulator-fixed";
++		regulator-name = "vtt_fixed";
++		vin-supply = <&smps3_reg>;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-always-on;
++		regulator-boot-on;
++		enable-active-high;
++		gpio = <&gpio7 11 GPIO_ACTIVE_HIGH>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&leds_pins_default>;
++
++		led@0 {
++			label = "beagle-x15:usr0";
++			gpios = <&gpio7 9 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		led@1 {
++			label = "beagle-x15:usr1";
++			gpios = <&gpio7 8 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "cpu0";
++			default-state = "off";
++		};
++
++		led@2 {
++			label = "beagle-x15:usr2";
++			gpios = <&gpio7 14 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "mmc0";
++			default-state = "off";
++		};
++
++		led@3 {
++			label = "beagle-x15:usr3";
++			gpios = <&gpio7 15 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "ide-disk";
++			default-state = "off";
++		};
++	};
++};
++
++&dra7_pmx_core {
++	leds_pins_default: leds_pins_default {
++		pinctrl-single,pins = <
++			0x3a8 (PIN_OUTPUT | MUX_MODE14)	/* spi1_d1.gpio7_8 */
++			0x3ac (PIN_OUTPUT | MUX_MODE14)	/* spi1_d0.gpio7_9 */
++			0x3c0 (PIN_OUTPUT | MUX_MODE14)	/* spi2_sclk.gpio7_14 */
++			0x3c4 (PIN_OUTPUT | MUX_MODE14)	/* spi2_d1.gpio7_15 */
++		>;
++	};
++
++	i2c1_pins_default: i2c1_pins_default {
++		pinctrl-single,pins = <
++			0x400 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_sda.sda */
++			0x404 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c1_scl.scl */
++		>;
++	};
++
++	i2c3_pins_default: i2c3_pins_default {
++		pinctrl-single,pins = <
++			0x2a4 (PIN_INPUT| MUX_MODE10)	/* mcasp1_aclkx.i2c3_sda */
++			0x2a8 (PIN_INPUT| MUX_MODE10)	/* mcasp1_fsx.i2c3_scl */
++		>;
++	};
++
++	uart3_pins_default: uart3_pins_default {
++		pinctrl-single,pins = <
++			0x248 (PIN_INPUT_SLEW | MUX_MODE0) /* uart3_rxd.rxd */
++			0x24c (PIN_INPUT_SLEW | MUX_MODE0) /* uart3_txd.txd */
++		>;
++	};
++
++	mmc1_pins_default: mmc1_pins_default {
++		pinctrl-single,pins = <
++			0x36c (PIN_INPUT | MUX_MODE14)	/* mmc1sdcd.gpio219 */
++			0x354 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_clk.clk */
++			0x358 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_cmd.cmd */
++			0x35c (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat0.dat0 */
++			0x360 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat1.dat1 */
++			0x364 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat2.dat2 */
++			0x368 (PIN_INPUT_PULLUP | MUX_MODE0) /* mmc1_dat3.dat3 */
++		>;
++	};
++
++	mmc2_pins_default: mmc2_pins_default {
++		pinctrl-single,pins = <
++			0x9c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a23.mmc2_clk */
++			0xb0 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_cs1.mmc2_cmd */
++			0xa0 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a24.mmc2_dat0 */
++			0xa4 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a25.mmc2_dat1 */
++			0xa8 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a26.mmc2_dat2 */
++			0xac (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a27.mmc2_dat3 */
++			0x8c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a19.mmc2_dat4 */
++			0x90 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a20.mmc2_dat5 */
++			0x94 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a21.mmc2_dat6 */
++			0x98 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_a22.mmc2_dat7 */
++		>;
++	};
++
++	tps659038_pins_default: tps659038_pins_default {
++		pinctrl-single,pins = <
++			0x418 (PIN_INPUT_PULLUP | MUX_MODE14)	/* wakeup0.gpio1_0 */
++		>;
++	};
++
++	tmp102_pins_default: tmp102_pins_default {
++		pinctrl-single,pins = <
++			0x3C8 (PIN_INPUT_PULLUP | MUX_MODE14)	/* spi2_d0.gpio7_16 */
++		>;
++	};
++
++	mcp79410_pins_default: mcp79410_pins_default {
++		pinctrl-single,pins = <
++			0x424 (PIN_INPUT_PULLUP | MUX_MODE1)	/* wakeup3.sys_nirq1 */
++		>;
++	};
++
++	usb1_pins: pinmux_usb1_pins {
++		pinctrl-single,pins = <
++			0x280 (PIN_INPUT_SLEW | MUX_MODE0) /* usb1_drvvbus */
++		>;
++	};
++
++};
++
++&i2c1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pins_default>;
++	clock-frequency = <400000>;
++
++	tps659038: tps659038@58 {
++		compatible = "ti,tps659038";
++		reg = <0x58>;
++		interrupt-parent = <&gpio1>;
++		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&tps659038_pins_default>;
++
++		#interrupt-cells = <2>;
++		interrupt-controller;
++
++		ti,system-power-controller;
++
++		tps659038_pmic {
++			compatible = "ti,tps659038-pmic";
++
++			regulators {
++				smps12_reg: smps12 {
++					/* VDD_MPU */
++					regulator-name = "smps12";
++					regulator-min-microvolt = < 850000>;
++					regulator-max-microvolt = <1250000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				smps3_reg: smps3 {
++					/* VDD_DDR */
++					regulator-name = "smps3";
++					regulator-min-microvolt = <1350000>;
++					regulator-max-microvolt = <1350000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				smps45_reg: smps45 {
++					/* VDD_DSPEVE, VDD_IVA, VDD_GPU */
++					regulator-name = "smps45";
++					regulator-min-microvolt = < 850000>;
++					regulator-max-microvolt = <1150000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				smps6_reg: smps6 {
++					/* VDD_CORE */
++					regulator-name = "smps6";
++					regulator-min-microvolt = <850000>;
++					regulator-max-microvolt = <1030000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				/* SMPS7 unused */
++
++				smps8_reg: smps8 {
++					/* VDD_1V8 */
++					regulator-name = "smps8";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				/* SMPS9 unused */
++
++				ldo1_reg: ldo1 {
++					/* VDD_SD  */
++					regulator-name = "ldo1";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-boot-on;
++				};
++
++				ldo2_reg: ldo2 {
++					/* VDD_SHV5 */
++					regulator-name = "ldo2";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo3_reg: ldo3 {
++					/* VDDA_1V8_PHY */
++					regulator-name = "ldo3";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo9_reg: ldo9 {
++					/* VDD_RTC */
++					regulator-name = "ldo9";
++					regulator-min-microvolt = <1050000>;
++					regulator-max-microvolt = <1050000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldoln_reg: ldoln {
++					/* VDDA_1V8_PLL */
++					regulator-name = "ldoln";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldousb_reg: ldousb {
++					/* VDDA_3V_USB: VDDA_USBHS33 */
++					regulator-name = "ldousb";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-boot-on;
++				};
++
++				regen1: regen1 {
++					/* VDD_3V3_ON */
++					regulator-name = "regen1";
++					regulator-boot-on;
++					regulator-always-on;
++				};
++			};
++		};
++
++		tps659038_rtc: tps659038_rtc {
++			compatible = "ti,palmas-rtc";
++			interrupt-parent = <&tps659038>;
++			interrupts = <8 IRQ_TYPE_NONE>;
++			wakeup-source;
++		};
++
++		tps659038_pwr_button: tps659038_pwr_button {
++			compatible = "ti,palmas-pwrbutton";
++			interrupt-parent = <&tps659038>;
++			interrupts = <1 IRQ_TYPE_NONE>;
++			wakeup-source;
++			ti,palmas-long-press-seconds = <12>;
++		};
++	};
++
++	tmp102: tmp102@48 {
++		compatible = "ti,tmp102";
++		reg = <0x48>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&tmp102_pins_default>;
++		interrupt-parent = <&gpio7>;
++		interrupts = <16 IRQ_TYPE_LEVEL_LOW>;
++	};
++};
++
++&i2c3 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c3_pins_default>;
++	clock-frequency = <400000>;
++
++	mcp_rtc: rtc@6f {
++		compatible = "microchip,mcp7941x";
++		reg = <0x6f>;
++		interrupt-parent = <&gic>;
++		interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_LOW>;  /* IRQ_SYS_1N */
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&mcp79410_pins_default>;
++
++		vcc-supply = <&vdd_3v3>;
++		wakeup-source;
++	};
++};
++
++&gpio7 {
++	ti,no-reset-on-init;
++	ti,no-idle-on-init;
++};
++
++&cpu0 {
++	cpu0-supply = <&smps12_reg>;
++	voltage-tolerance = <1>;
++};
++
++&uart3 {
++	status = "okay";
++	interrupts-extended = <&gic GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>,
++			      <&dra7_pmx_core 0x248>;
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart3_pins_default>;
++};
++
++&mmc1 {
++	status = "okay";
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc1_pins_default>;
++
++	vmmc-supply = <&ldo1_reg>;
++	vmmc_aux-supply = <&vdd_3v3>;
++	pbias-supply = <&pbias_mmc_reg>;
++	bus-width = <4>;
++	cd-gpios = <&gpio6 27 0>; /* gpio 219 */
++};
++
++&mmc2 {
++	status = "okay";
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_pins_default>;
++
++	vmmc-supply = <&vdd_3v3>;
++	bus-width = <8>;
++	ti,non-removable;
++	cap-mmc-dual-data-rate;
++};
++
++&sata {
++	status = "okay";
++};
++
++&usb2_phy1 {
++	phy-supply = <&ldousb_reg>;
++};
++
++&usb1 {
++	dr_mode = "host";
++	pinctrl-names = "default";
++	pinctrl-0 = <&usb1_pins>;
++};
 -- 
-1.9.1
+1.7.9.5
 
+-- 
+Regards,
+Nishanth Menon
