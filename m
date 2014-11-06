@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaKFDB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Nov 2014 22:01:57 -0500
-Received: from mga03.intel.com ([134.134.136.65]:24796 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020AbaKFDBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Nov 2014 22:01:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="484936966"
-From: Lu Baolu <baolu.lu@linux.intel.com>
-To: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lu Baolu <baolu.lu@linux.intel.com>
-Subject: [PATCH v4 1/3] usb: xhci: Revert "xhci: clear root port wake on bits if controller isn't wake-up capable"
-Date: Thu,  6 Nov 2014 10:50:51 +0800
-Message-Id: <1415242253-72501-2-git-send-email-baolu.lu@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415242253-72501-1-git-send-email-baolu.lu@linux.intel.com>
-References: <1415242253-72501-1-git-send-email-baolu.lu@linux.intel.com>
+	id S1751585AbaKFDEB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Nov 2014 22:04:01 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:65380 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaKFDD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Nov 2014 22:03:59 -0500
+Message-ID: <1415243033.5306.12.camel@marge.simpson.net>
+Subject: Re: [PATCH] rtlwifi: Add more checks for get_btc_status callback
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Thadeu Cascardo <cascardo@cascardo.eti.br>, troy_tan@realsil.com.cn
+Date: Thu, 06 Nov 2014 04:03:53 +0100
+In-Reply-To: <545A6894.7040506@lwfinger.net>
+References: <1414625302-3654-1-git-send-email-mopsfelder@gmail.com>
+	 <5451BED0.2060906@lwfinger.net>
+	 <1415178975.5402.66.camel@marge.simpson.net>
+	 <545A6894.7040506@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit ff8cbf250b448aac35589f6075082c3fcad8a8fe.
+On Wed, 2014-11-05 at 12:12 -0600, Larry Finger wrote:
 
-Commit ff8cbf250b448aac35589f6075082c3fcad8a8fe triggers the bug logged at
+> Yes, I am aware that rtl8192se is failing, and now that I am back from vacation, 
+> I am working on the problem. If you want to use the driver with kernel 3.18, 
+> clone the repo at http://github.com/lwfinger/rtlwifi_new.git and build and 
+> install either the master or kernel_version branches. Both work.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=85701
+Nah, no hurry.  My lappy is about to go on 4 weeks vacation, and has a
+bulging suitcase full of kernels to wear :)
 
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Reported-by: Dmitry Nezhevenko <dion@inhex.net>
----
- drivers/usb/host/xhci-hub.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 696160d..388cfd8 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -22,7 +22,6 @@
- 
- 
- #include <linux/slab.h>
--#include <linux/device.h>
- #include <asm/unaligned.h>
- 
- #include "xhci.h"
-@@ -1149,9 +1148,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
- 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
- 		 * is enabled, so also enable remote wake here.
- 		 */
--		if (hcd->self.root_hub->do_remote_wakeup
--				&& device_may_wakeup(hcd->self.controller)) {
--
-+		if (hcd->self.root_hub->do_remote_wakeup) {
- 			if (t1 & PORT_CONNECT) {
- 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
- 				t2 &= ~PORT_WKCONN_E;
--- 
-1.9.1
+-Mike
 
