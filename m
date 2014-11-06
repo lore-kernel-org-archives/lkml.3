@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaKFXSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 18:18:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58546 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaKFWjE (ORCPT
+	id S1754293AbaKFXTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 18:19:12 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60329 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921AbaKFXTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:39:04 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 131/162] nfsd4: fix crash on unknown operation number
-Date: Thu,  6 Nov 2014 14:36:35 -0800
-Message-Id: <1415313426-9622-132-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 6 Nov 2014 18:19:07 -0500
+Date: Fri, 7 Nov 2014 00:11:46 +0100
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: jslaby@suse.cz, cascardo@linux.vnet.ibm.com, markh@compro.net,
+        devel@driverdev.osuosl.org, lidza.louina@gmail.com,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/5] drivers: serial: jsm: Add the Classic board
+ implementation
+Message-ID: <20141106231146.GB29761@t400>
+References: <20141103093800.GK6879@mwanda>
+ <1415040760-12172-1-git-send-email-bergo.torino@gmail.com>
+ <1415040760-12172-2-git-send-email-bergo.torino@gmail.com>
+ <20141106191808.GA32427@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141106191808.GA32427@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
+On 11/06, Greg KH wrote:
+> On Mon, Nov 03, 2014 at 07:52:38PM +0100, Konrad Zapalowicz wrote:
+> > This commit adds the Digi Classic board implementation to the
+> > staging/jsm driver.
+> > 
+> > The code here is taken from the staging/dgnc driver and modified to
+> > match the serial/jsm state. This work is mostly based on the changes
+> > that has been done to the code handling the Digi Neo cards with the
+> > inspiration coming from the diff between staging/dgnc and serial/jsm
+> > as well as the LKML history for the jsm_neo.c
+> > 
+> > The code compiles now and has no sparse and checkpatch errors or
+> > warnings.
+> 
+> The compiler does give me one warning for this file:
+> 
+> > +/*
+> > + * cls_param()
+> > + * Send any/all changes to the line to the UART.
+> > + */
+> > +static void cls_param(struct jsm_channel *ch)
+> > +{
+> > +	u8 lcr = 0;
+> > +	u8 uart_lcr = 0;
+> > +	u8 ier = 0;
+> > +	u32 baud = 9600;
+> > +	int quot = 0;
+> > +	struct jsm_board *bd;
+> > +	int i;
+> > +	unsigned int cflag;
+> > +
+> > +	bd = ch->ch_bd;
+> > +	if (!bd)
+> > +		return;
+> > +
+> > +	/*
+> > +	 * If baud rate is zero, flush queues, and set mval to drop DTR.
+> > +	 */
+> > +	if ((ch->ch_c_cflag & (CBAUD)) == 0) {
+> > +		ch->ch_r_head = 0;
+> > +		ch->ch_r_tail = 0;
+> > +		ch->ch_e_head = 0;
+> > +		ch->ch_e_tail = 0;
+> > +
+> > +		cls_flush_uart_write(ch);
+> > +		cls_flush_uart_read(ch);
+> > +
+> > +		/* The baudrate is B0 so all modem lines are to be dropped. */
+> > +		ch->ch_flags |= (CH_BAUD0);
+> > +		ch->ch_mostat &= ~(UART_MCR_RTS | UART_MCR_DTR);
+> > +		cls_assert_modem_signals(ch);
+> > +		return;
+> > +	}
+> > +
+> > +	static struct {
+> > +		unsigned int rate;
+> > +		unsigned int cflag;
+> > +	} baud_rates[] = {
+> > +		{ 921600, B921600 },
+> > +		{ 460800, B460800 },
+> > +		{ 230400, B230400 },
+> > +		{ 115200, B115200 },
+> > +		{  57600, B57600  },
+> > +		{  38400, B38400  },
+> > +		{  19200, B19200  },
+> > +		{   9600, B9600   },
+> > +		{   4800, B4800   },
+> > +		{   2400, B2400   },
+> > +		{   1200, B1200   },
+> > +		{    600, B600    },
+> > +		{    300, B300    },
+> > +		{    200, B200    },
+> > +		{    150, B150    },
+> > +		{    134, B134    },
+> > +		{    110, B110    },
+> > +		{     75, B75     },
+> > +		{     50, B50     },
+> > +	};
+> 
+> baud_rates needs to be up above the code, as gcc tells me:
+> 
+> drivers/tty/serial/jsm/jsm_cls.c: In function ‘cls_param’:
+> drivers/tty/serial/jsm/jsm_cls.c:701:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+>   static struct {
+>   ^
+> 
+> Can you fix that up and resend the series?  I've taken the first patch in this
+> series, as that is an easy one to accept, so no need to resend that one.
 
-------------------
+Fixed and delivered. You may notice that the jsm_neo.c code is using
+the same structure to store the baud rates. If feels natural to change
+it there too however since the subject of this series is the support for
+Classic boards I decided not to refactor this now. I'll do it properly later
+plus I will fix some other things that I have spotted so far in this
+code.
 
-From: "J. Bruce Fields" <bfields@redhat.com>
-
-commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
-
-Unknown operation numbers are caught in nfsd4_decode_compound() which
-sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
-error causes the main loop in nfsd4_proc_compound() to skip most
-processing.  But nfsd4_proc_compound also peeks ahead at the next
-operation in one case and doesn't take similar precautions there.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/nfsd/nfs4proc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 08c8e02..25024d5 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1233,7 +1233,8 @@ static bool need_wrongsec_check(struct svc_rqst *rqstp)
- 	 */
- 	if (argp->opcnt == resp->opcnt)
- 		return false;
--
-+	if (next->opnum == OP_ILLEGAL)
-+		return false;
- 	nextd = OPDESC(next);
- 	/*
- 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
--- 
-1.9.1
-
+cheers,
+konrad
+ 
+> thanks,
+> 
+> greg k-h
