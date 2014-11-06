@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaKFHZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 02:25:50 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59003 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901AbaKFHZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 02:25:48 -0500
-Message-ID: <545B2273.2010709@ti.com>
-Date: Thu, 6 Nov 2014 12:55:39 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "balbi@ti.com" <balbi@ti.com>
-CC: Vivek Gautam <gautam.vivek@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <andrew.kim@intel.com>
-Subject: Re: [PATCHv4 6/6] usb: dwc3: host: convey the PHYs to xhci
-References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com> <1413556756-5050-7-git-send-email-heikki.krogerus@linux.intel.com>
-In-Reply-To: <1413556756-5050-7-git-send-email-heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1751481AbaKFH0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 02:26:53 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:62980 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaKFH0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 02:26:52 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-28-545b22b94f5c
+Message-id: <545B22B6.9050607@samsung.com>
+Date: Thu, 06 Nov 2014 08:26:46 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH] drm/panel: ld9040: Update calls to gpiod_get*()
+References: <1414052177-19978-1-git-send-email-acourbot@nvidia.com>
+ <5448CE4A.6010207@samsung.com>
+ <CAAVeFu+wiczN3zP-phsCy=-59pxJQcoyzeQpen4PNbywjymtFg@mail.gmail.com>
+In-reply-to: <CAAVeFu+wiczN3zP-phsCy=-59pxJQcoyzeQpen4PNbywjymtFg@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xK7o7laJDDK7uVbD4/vAUq8WVr+/Z
+	LM69esRicXnXHDaLn7vmsTiweuycdZfd4373cSaP3uZ3bB6fN8kFsERx2aSk5mSWpRbp2yVw
+	ZTxtX8RUsJG9YvWVG8wNjG1sXYwcHBICJhKbduZ1MXICmWISF+6tBwpzcQgJLGWUmPnyFBOE
+	84lR4tPeQ4wgVbwCWhJXV7Wzg9gsAqoSDS96weJsApoSfzffZAOxRQUiJK6smQNVLyjxY/I9
+	FpBlIgIaEo/WiYDMZBa4zShxo28/M0hcWMBF4vSnSohdq4F23XwKNodTIFhiwYFzYDXMAuoS
+	U6bkgoSZBeQlNq95yzyBUWAWkg2zEKpmIalawMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93
+	EyMkhL/uYFx6zOoQowAHoxIPbwR7dIgQa2JZcWXuIUYJDmYlEd5eaaAQb0piZVVqUX58UWlO
+	avEhRiYOTqkGxsbypUkP125atVpxRfVjxZizams2M4pEmp4s/5IZsstpcfmFl/+vflafrznP
+	Xbrswctelb82Se5JcYbr30reYd0UMuf5i9R98zyvr7zVt7aoxa17D7cnK8NT9bDL280+Okqo
+	buN62xvSGFF3v2OzTOv3+1kyG2t/BoabRk76u7Kfi+dC22uet0osxRmJhlrMRcWJAFLsq7g/	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On 11/06/2014 04:32 AM, Alexandre Courbot wrote:
+> On Thu, Oct 23, 2014 at 6:45 PM, Andrzej Hajda <a.hajda@samsung.com> wrote:
+>> On 10/23/2014 10:16 AM, Alexandre Courbot wrote:
+>>> Add the new flags argument to calls of (devm_)gpiod_get*() and
+>>> remove any direction setting code afterwards.
+>>>
+>>> Currently both forms (with or without the flags argument)
+>>> are valid thanks to transitional macros in
+>>> <linux/gpio/consumer.h>. These macros will be removed once
+>>> all consumers are updated and the flags argument will become
+>>> compulsary.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> It needs patch "gpio: Fix gpio direction flags not getting set" to work
+>> correctly. It is not yet present in drm-next. Beside this:
+>>
+>> Acked-by: Andrzej Hajda <a.hajda@samsung.com>
+> The required patch is now merged, can we go on with this patch?
+>
+Yes, for both panels. Thanks.
 
-On Friday 17 October 2014 08:09 PM, Heikki Krogerus wrote:
-> On some platforms a PHY may need to be handled also in the
-> host controller driver. Exynos5420 SoC requires some "PHY
-> tuning" based on the USB speed. This patch delivers dwc3's
-> PHYs to the xhci platform device when it's created.
-> 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
+Regards
+Andrzej
 
-Already see you acked-by, so I'm queueing this in my linux-phy tree.
-
-Thanks
-Kishon
-> ---
->  drivers/usb/dwc3/host.c | 22 ++++++++++++++++------
->  1 file changed, 16 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/usb/dwc3/host.c b/drivers/usb/dwc3/host.c
-> index dcb8ca0..12bfd3c 100644
-> --- a/drivers/usb/dwc3/host.c
-> +++ b/drivers/usb/dwc3/host.c
-> @@ -29,8 +29,7 @@ int dwc3_host_init(struct dwc3 *dwc)
->  	xhci = platform_device_alloc("xhci-hcd", PLATFORM_DEVID_AUTO);
->  	if (!xhci) {
->  		dev_err(dwc->dev, "couldn't allocate xHCI device\n");
-> -		ret = -ENOMEM;
-> -		goto err0;
-> +		return -ENOMEM;
->  	}
->  
->  	dma_set_coherent_mask(&xhci->dev, dwc->dev->coherent_dma_mask);
-> @@ -60,22 +59,33 @@ int dwc3_host_init(struct dwc3 *dwc)
->  		goto err1;
->  	}
->  
-> +	phy_create_lookup(dwc->usb2_generic_phy, "usb2-phy",
-> +			  dev_name(&xhci->dev));
-> +	phy_create_lookup(dwc->usb3_generic_phy, "usb3-phy",
-> +			  dev_name(&xhci->dev));
-> +
->  	ret = platform_device_add(xhci);
->  	if (ret) {
->  		dev_err(dwc->dev, "failed to register xHCI device\n");
-> -		goto err1;
-> +		goto err2;
->  	}
->  
->  	return 0;
-> -
-> +err2:
-> +	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
-> +			  dev_name(&xhci->dev));
-> +	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
-> +			  dev_name(&xhci->dev));
->  err1:
->  	platform_device_put(xhci);
-> -
-> -err0:
->  	return ret;
->  }
->  
->  void dwc3_host_exit(struct dwc3 *dwc)
->  {
-> +	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
-> +			  dev_name(&dwc->xhci->dev));
-> +	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
-> +			  dev_name(&dwc->xhci->dev));
->  	platform_device_unregister(dwc->xhci);
->  }
-> 
