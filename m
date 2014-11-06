@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaKFWNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 17:13:06 -0500
-Received: from unicorn.mansr.com ([81.2.72.234]:51008 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020AbaKFWND convert rfc822-to-8bit (ORCPT
+	id S1751218AbaKFWQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 17:16:18 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47672 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaKFWQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:13:03 -0500
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Christian Riesch <christian.riesch@omicron.at>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in receive path
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
-	<20141106203832.GB30170@kroah.com>
-	<yw1xwq78jbr6.fsf@unicorn.mansr.com>
-	<20141106205644.GA31435@kroah.com>
-	<yw1xsihwjb67.fsf@unicorn.mansr.com>
-	<20141106211754.GA32000@kroah.com>
-	<yw1xoaskj9fw.fsf@unicorn.mansr.com> <20141106220249.GA952@kroah.com>
-Date: Thu, 06 Nov 2014 22:12:54 +0000
-In-Reply-To: <20141106220249.GA952@kroah.com> (Greg Kroah-Hartman's message of
-	"Thu, 6 Nov 2014 14:02:49 -0800")
-Message-ID: <yw1xk338j7vd.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	Thu, 6 Nov 2014 17:16:15 -0500
+Date: Thu, 6 Nov 2014 22:16:08 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jon Maloy <jon.maloy@ericsson.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bcrl@kvack.org" <bcrl@kvack.org>,
+        Masahide Nakamura <nakam@linux-ipv6.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
+Message-ID: <20141106221608.GA7996@ZenIV.linux.org.uk>
+References: <20141105035536.GO7996@ZenIV.linux.org.uk>
+ <20141105.155054.2198151263164321219.davem@davemloft.net>
+ <20141105210745.GT7996@ZenIV.linux.org.uk>
+ <20141105.165719.835728206041332333.davem@davemloft.net>
+ <20141106032533.GU7996@ZenIV.linux.org.uk>
+ <20141106055023.GA28865@gondor.apana.org.au>
+ <20141106064318.GW7996@ZenIV.linux.org.uk>
+ <20141106064629.GA29321@gondor.apana.org.au>
+ <20141106071109.GX7996@ZenIV.linux.org.uk>
+ <A2BAEFC30C8FD34388F02C9B3121859D1C3087CA@eusaamb103.ericsson.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A2BAEFC30C8FD34388F02C9B3121859D1C3087CA@eusaamb103.ericsson.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+On Thu, Nov 06, 2014 at 09:55:31AM +0000, Jon Maloy wrote:
+> > Point, but that might very well be a pattern to watch for - there's at least one
+> > more instance in TIPC (also not exploitable, according to TIPC folks) and such
+> 
+> I don't recall this, and I can't see where it would be either. Can you please
+> point to where it is?
 
-> On Thu, Nov 06, 2014 at 09:38:59PM +0000, Måns Rullgård wrote:
->> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> 
->> > On Thu, Nov 06, 2014 at 09:01:36PM +0000, Måns Rullgård wrote:
->> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> >> 
->> >> > On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
->> >> >> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> >> >> 
->> >> >> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
->> >> >> >> The current implementation of put_tty_queue() causes a race condition
->> >> >> >> when re-arranged by the compiler.
->> >> >> >> 
->> >> >> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
->> >> >> >> 
->> >> >> >> 	*read_buf_addr(ldata, ldata->read_head++) = c;
->> >> >> >> 
->> >> >> >> was re-arranged by the compiler to something like
->> >> >> >> 
->> >> >> >> 	x = ldata->read_head
->> >> >> >> 	ldata->read_head++
->> >> >> >> 	*read_buf_addr(ldata, x) = c;
->> >> >> >> 
->> >> >> >> which causes a race condition. Invalid data is read if data is read
->> >> >> >> before it is actually written to the read buffer.
->> >> >> >
->> >> >> > Really?  A compiler can rearange things like that and expect things to
->> >> >> > actually work?  How is that valid?
->> >> >> 
->> >> >> This is actually required by the C spec.  There is a sequence point
->> >> >> before a function call, after the arguments have been evaluated.  Thus
->> >> >> all side-effects, such as the post-increment, must be complete before
->> >> >> the function is called, just like in the example.
->> >> >> 
->> >> >> There is no "re-arranging" here.  The code is simply wrong.
->> >> >
->> >> > Ah, ok, time to dig out the C spec...
->> >> >
->> >> > Anyway, because of this, no need for the wmb() calls, just rearrange the
->> >> > logic and all should be good, right?  Christian, can you test that
->> >> > instead?
->> >> 
->> >> Weakly ordered SMP systems probably need some kind of barrier.  I didn't
->> >> look at it carefully.
->> >
->> > It shouldn't need a barier, as it is a sequence point with the function
->> > call.  Well, it's an inline function, but that "shouldn't" matter here,
->> > right?
->> 
->> Sequence points say nothing about the order in which stores become
->> visible to other CPUs.  That's why there are barrier instructions.
->
-> Yes, but "order" matters.
->
-> If I write code that does:
->
-> 100	x = ldata->read_head;
-> 101	&ldata->read_head[x & SOME_VALUE] = y;
-> 102	ldata->read_head++;
->
-> the compiler can not reorder lines 102 and 101 just because it feels
-> like it, right?  Or is it time to go spend some reading of the C spec
-> again...
+The same dest_name_check() thing.  This
+        if (copy_from_user(&hdr, m->msg_iov[0].iov_base, sizeof(hdr)))
+                return -EFAULT;
+        if ((ntohs(hdr.tcm_type) & 0xC000) && (!capable(CAP_NET_ADMIN)))
+                return -EACCES;
+is easily bypassed.  Suppose you want to send a packet with these two
+bits in ->tcm_type not being 00, and you don't have CAP_NET_ADMIN.
+Not a problem - spawn two threads sharing memory, have one trying to
+call sendmsg() while another keeps flipping these two bits.  Sooner
+of later you'll get the timing right and have these bits observed as 00
+in dest_name_check() and 11 when it comes to memcpy_fromiovecend() actually
+copying the whole thing.  And considering that the interval between those
+two is much longer than the loop in the second thread would take on
+each iteration, I'd expect the odds around 25% per attempted sendmsg().
 
-The compiler can't.  The hardware can.  All the hardware promises is
-that at some unspecified time in the future, both memory locations will
-have the correct values.  Another CPU might see 'read_head' updated
-before it sees the corresponding data value.  A wmb() between the writes
-forces the CPU to complete preceding stores before it begins subsequent
-ones.
+IOW, this test is either pointless and can be removed completely, or there's
+an exploitable race.  As far as I understand from your replies both back then
+and in another branch of this thread, it's the former and the proper fix is
+to remove at least that part of dest_name_check().  So this case is also
+not something exploitable, but it certainly matches the same pattern.
 
-Documentation/memory-barriers.txt explains it all in detail.
-
--- 
-Måns Rullgård
-mans@mansr.com
+My point was simply that this pattern is worth watching for - recurrent bug
+classes like that have a good chance to spawn an instance that will be
+exploitable.
