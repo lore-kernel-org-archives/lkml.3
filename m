@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaKFRPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 12:15:04 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:52318 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaKFRPA (ORCPT
+	id S1751772AbaKFRRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 12:17:06 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36383 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaKFRRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 12:15:00 -0500
-Date: Thu, 6 Nov 2014 09:14:55 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] input: touchscreen: of: Register multitouch axes
-Message-ID: <20141106171455.GA34214@dtor-ws>
-References: <1415200070-19346-1-git-send-email-maxime.ripard@free-electrons.com>
- <1415200070-19346-3-git-send-email-maxime.ripard@free-electrons.com>
- <20141105175635.GA22754@dtor-ws>
- <20141106160621.GM2989@lukather>
+	Thu, 6 Nov 2014 12:17:03 -0500
+Message-ID: <545BAD05.3050800@windriver.com>
+Date: Thu, 6 Nov 2014 11:16:53 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106160621.GM2989@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+References: <545BA625.40308@windriver.com>
+In-Reply-To: <545BA625.40308@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.119.46]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 05:06:21PM +0100, Maxime Ripard wrote:
+On 11/06/2014 10:47 AM, Chris Friesen wrote:
 > Hi,
-> 
-> On Wed, Nov 05, 2014 at 09:56:35AM -0800, Dmitry Torokhov wrote:
-> > On Wed, Nov 05, 2014 at 04:07:49PM +0100, Maxime Ripard wrote:
-> > > So far, the DT parsing code was only setting up the regular input axes,
-> > > completely ignoring their multitouch counter parts.
-> > > 
-> > > Fill them with the same parameters than the regular axes.
-> > > 
-> > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > ---
-> > >  drivers/input/touchscreen/of_touchscreen.c | 12 +++++++++---
-> > >  1 file changed, 9 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/touchscreen/of_touchscreen.c b/drivers/input/touchscreen/of_touchscreen.c
-> > > index 74d6b0eb50ac..cf2a753edd96 100644
-> > > --- a/drivers/input/touchscreen/of_touchscreen.c
-> > > +++ b/drivers/input/touchscreen/of_touchscreen.c
-> > > @@ -42,17 +42,23 @@ void touchscreen_parse_of_params(struct input_dev *dev)
-> > >  
-> > >  	maximum = of_get_optional_u32(np, "touchscreen-size-x");
-> > >  	fuzz = of_get_optional_u32(np, "touchscreen-fuzz-x");
-> > > -	if (maximum || fuzz)
-> > > +	if (maximum || fuzz) {
-> > >  		input_set_abs_params(dev, ABS_X, 0, maximum, fuzz, 0);
-> > > +		input_set_abs_params(dev, ABS_MT_POSITION_X, 0, maximum, fuzz, 0);
-> > 
-> > Not all devices are multitouch so you shoudl not be setting multitouch
-> > bits unconditionally.
-> 
-> Hmmm, right.
-> 
-> > In I think we should rely on driver to set capability bits properly and
-> > then here test them and apply the readings. Probably also issue a
-> > warning if we see max/fuzz setting but neither ABS_<N>/ABS_MT_<N>
-> > capabilities.
-> 
-> What I was aiming at was to avoid DT parsing duplication for the
-> !multitouch and multitouch axis. I don't think there's a way to copy
-> the parameters.
-> 
-> The mt_init_slots might be a solution, but it does the copy the other
-> way around: from the multitouch to the !multitouch axis, and without
-> enabling it, which renders using both input_mt_init_slots and the
-> of_touchscreen code together impossible.
-> 
-> Is there a way to just enable an axis without calling
-> input_set_abs_params? Is __set_bit enough?
+>
+> I'm running a modified 3.4-stable on relatively recent X86 server-class
+> hardware.
+>
+> I recently installed a Seagate ST900MM0026 (900GB 2.5in 10K SAS drive)
+> and it's reporting a value of 4294966784 for optimal_io_size.  The other
+> parameters look normal though:
+>
+> /sys/block/sda/queue/hw_sector_size:512
+> /sys/block/sda/queue/logical_block_size:512
+> /sys/block/sda/queue/max_segment_size:65536
+> /sys/block/sda/queue/minimum_io_size:512
+> /sys/block/sda/queue/optimal_io_size:4294966784
 
-Hmm, not anymore I'm afraid as you still need absinfo being allocated,
-but there is input_set_capability() that is basically a fancy
-__set_bit(). If you set ABS_* with it that would mean that the device
-has unspecified min/max/fuzz.
+<snip>
 
-And then, in DT parsing code, I'd do:
+> According to the manual, the ST900MM0026 has a 512 byte physical sector
+> size.
+>
+> Is this a drive firmware bug?  Or a bug in the SAS driver?  Or is there
+> a valid reason for a single drive to report such a huge value?
+>
+> Would it make sense for the kernel to do some sort of sanity checking on
+> this value?
 
-	...read max and fuzz for an axis...
-	if (max || fuzz) {
-		if (!test_bit(ABS_N, dev->absbit) &&
-		    !test_bit(ABS_MT_N, dev->absbit)) {
-			dev_warn("... have parameters but axis not set up...");
-		} else {
-			if (test_bit(ABS_N...)
-				input_set_abs_params(dev, ABS_N...);
-			if (test_bit(ABS_MT_N...)
-				input_set_abs_params(dev, ABS_MT_N...);
-	}
+Looks like this sort of thing has been seen before, in other drives (one 
+of which is from the same family as my drive):
 
-Thanks.
+http://www.spinics.net/lists/linux-scsi/msg65292.html
 
--- 
-Dmitry
+http://iamlinux.technoyard.in/blog/why-is-my-ssd-disk-not-reconized-by-the-rhel6-anaconda-installer/
+
+Perhaps the ST900MM0026 should be blacklisted as well?
+
+Or maybe the SCSI code should do a variation on Mike Snitzer's original 
+patch and just ignore any values above some reasonable threshold?  (And 
+then we could remove the blacklist on the ST900MM0006.)
+
+Chris
