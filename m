@@ -1,66 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaKFIS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 03:18:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:6234 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303AbaKFIS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 03:18:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,324,1413270000"; 
-   d="scan'208";a="618060458"
-Message-ID: <1415261925.958.177.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH V5] mtd: ubi: Extend UBI layer debug/messaging
- capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: hujianyang <hujianyang@huawei.com>, ezequiel.garcia@free-electrons.com,
-        Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Thu, 06 Nov 2014 10:18:45 +0200
-In-Reply-To: <54566692.10504@codeaurora.org>
-References: <1413824221-31235-1-git-send-email-tlinder@codeaurora.org>
-	 <5449C870.7060509@huawei.com> <54566692.10504@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751415AbaKFIWF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 03:22:05 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:10689 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaKFIWC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 03:22:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 06 Nov 2014 00:22:47 -0800
+Message-ID: <545B2D6B.9030001@nvidia.com>
+Date: Thu, 6 Nov 2014 17:12:27 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, <linux-tegra@vger.kernel.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 05/13] of: Document timings subnode of nvidia,tegra-mc
+References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com> <1414599796-30597-6-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1414599796-30597-6-git-send-email-tomeu.vizoso@collabora.com>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: HKMAIL101.nvidia.com (10.18.16.10) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-02 at 19:14 +0200, Tanya Brokhman wrote:
-> >> +    ubi_err(ubi, "self-check failed for PEB %d", pnum);
-> >> +    ubi_msg(ubi, "hex dump of the %d-%d region",
-> >> +             offset, offset + len);
-> >>      print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 32, 1, buf,
-> len, 1);
-> >>      err = -EINVAL;
-> >>   error:
-> >
-> > Artem, I know you have tried to align the message code in different
-> lines, maybe
-> > you can check if you lose this one.
-> >
-> 
-> hmmm... not sure I understand what is wrong here....
+On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
+> The MC driver needs some timing-specific information to program the EMEM during
+> a rate change of the EMC clock.
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> ---
+>   .../memory-controllers/nvidia,tegra-mc.txt         | 46 +++++++++++++++++++++-
+>   1 file changed, 44 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
+> index f3db93c..8467b8c 100644
+> --- a/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
+> +++ b/Documentation/devicetree/bindings/memory-controllers/nvidia,tegra-mc.txt
+> @@ -15,9 +15,26 @@ Required properties:
+>   This device implements an IOMMU that complies with the generic IOMMU binding.
+>   See ../iommu/iommu.txt for details.
+>
+> -Example:
+> ---------
+> +The node should contain a "timings" subnode for each supported RAM type (see
+> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address being its
+> +RAM_CODE.
+>
+> +Required properties for "timings" nodes :
+> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set is used
+> +for.
+> +
+> +Each "timings" node should contain a "timing" subnode for every supported EMC
+> +clock rate. The "timing" subnodes should have the clock rate in Hz as their unit
+> +address.
 
-It is more of a nit-pick, but we try to be consistent. Here is how we
-align split messages:
+In patch 04, a similar sub-node is named "emc-timings". Shouldn't the 
+same name be used here for consistency?
 
-  ubi_msg(ubi, "blah",
-          XYZ)
+Also, it seems like there is a need for timing nodes in the MC to have 
+match timing nodes in the CAR. It would be nice to add that information 
+in all related bindings files.
 
-and not
+> +
+> +Required properties for "timing" nodes :
+> +- clock-frequency : Should contain the memory clock rate in Hz.
+> +- nvidia,emem-configuration : Values to be written to the EMEM register block,
+> +as specified by the board documentation.
 
-  ubi_msg(ubi, "blah",
-            XYZ)
+Could you add some more information about which range of registers we 
+are talking about, and whether they must all be specified or only part 
+of them?
 
-So we first use few tabs, and then some spaces to align. You use just
-tabs. Sometimes the second line is aligned, sometimes it goes a bit
-further.
+> +
+> +Example SoC include file:
+> +
+> +/ {
+>   	mc: memory-controller@0,70019000 {
+>   		compatible = "nvidia,tegra124-mc";
+>   		reg = <0x0 0x70019000 0x0 0x1000>;
+> @@ -34,3 +51,28 @@ Example:
+>   		...
+>   		iommus = <&mc TEGRA_SWGROUP_SDMMC1A>;
+>   	};
+> +};
+> +
+> +Example board file:
+> +
+> +/ {
+> +	memory-controller@0,70019000 {
+> +		timings@3 {
+> +			nvidia,ram-code = <3>;
+> +
+> +			timing@12750000 {
+> +				clock-frequency = <12750000>;
+> +
+> +				nvidia,emem-configuration = <
+> +					0x40040001 /* MC_EMEM_ARB_CFG */
+> +					0x8000000a /* MC_EMEM_ARB_OUTSTANDING_REQ */
+> +					0x00000001 /* MC_EMEM_ARB_TIMING_RCD */
+> +					0x00000001 /* MC_EMEM_ARB_TIMING_RP */
+> +					0x00000002 /* MC_EMEM_ARB_TIMING_RC */
+> +					0x00000000 /* MC_EMEM_ARB_TIMING_RAS */
+> +					0x00000002 /* MC_EMEM_ARB_TIMING_FAW */
+> +				>;
 
+Looking at the actual board files I suppose this example here is 
+incomplete. It would be nice to make this explicit, maybe by adding 
+"..." on a new line to indicate more registers are expected.
