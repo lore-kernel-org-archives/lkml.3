@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaKGQvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:51:43 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49395 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496AbaKGQvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:51:40 -0500
-Date: Fri, 7 Nov 2014 17:51:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dinh Nguyen <dinguyen@opensource.altera.com>
-Cc: Thor Thayer <tthayer@opensource.altera.com>, dougthompson@xmission.com,
-        m.chehab@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tthayer.linux@gmail.com
-Subject: Re: [PATCHv3 4/5] edac: altera: Add Altera L2 Cache and OCRAM EDAC
- Support
-Message-ID: <20141107165134.GA5139@pd.tnic>
-References: <1414683131-20786-1-git-send-email-tthayer@opensource.altera.com>
- <1414683131-20786-5-git-send-email-tthayer@opensource.altera.com>
- <20141104151214.GD9570@pd.tnic>
- <545959E8.2040005@opensource.altera.com>
- <20141106163134.GF4318@pd.tnic>
- <545CF3D8.1020500@opensource.altera.com>
+	id S1752680AbaKGQwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:52:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:53428 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751243AbaKGQw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 11:52:28 -0500
+Date: Fri, 7 Nov 2014 11:52:25 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: jslaby@suse.cz, linux@arm.linux.org.uk, mingo@redhat.com, nsekhar@ti.com,
+        stefano.stabellini@eu.citrix.com, christoffer.dall@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: ftrace: Adds support for ftrace operations
+Message-ID: <20141107115225.72bc6cbf@gandalf.local.home>
+In-Reply-To: <1415372352-15664-1-git-send-email-jjhiblot@traphandler.com>
+References: <1415372352-15664-1-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <545CF3D8.1020500@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 10:31:20AM -0600, Dinh Nguyen wrote:
-> If it's okay, can you please pick up this series, once everything is
-> cleaned up? I just checked to make sure that there aren't any merge
-> conflicts in the DTS files in this series against DTS patches that I
-> have queue up for 3.19, and there aren't.
+On Fri,  7 Nov 2014 15:59:11 +0100
+Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
 
-Sure, but I'd need ACKs from you/the relevant maintainers for 1/5, 2/5
-and 5/5 patches.
+> Hi all,
+> 
+> This patch adds support for ftrace operations on the ARM architecture.
+> This support is needed by kgraft and possibly other ftrace-based tools.
+> My goal is to have kgraft working on ARM and aarch64.
 
--- 
-Regards/Gruss,
-    Boris.
+Can you add this to the change log of the patch. As that would be what
+goes into git history. Because honestly, I had no idea what you meant
+by "ftrace operations". If I don't understand that term, how can you
+expect anyone else to?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> 
+> I tested this patch with a toy implementation of kgraft for ARM and basic
+> usage of function and function_graph tracers
+> It doesn't show any problem with the ftrace selftests and the tests found
+> today in branch ftrace/testing-mystuff of linux-trace repository
+> (git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git)
+
+Those tests are no where near what I have. Does this code work on the
+beagle bone white? If so, I can probably run my full suite on it.
+
+-- Steve
+
+> 
+> Jean-Jacques Hiblot (1):
+>   arm: ftrace: Adds support for ftrace operations
+> 
+>  arch/arm/Kconfig               |  2 ++
+>  arch/arm/include/asm/ftrace.h  |  3 ++
+>  arch/arm/kernel/entry-common.S | 68 +++++++++++++++++++++++++++++++++++++++++-
+>  arch/arm/kernel/ftrace.c       | 34 +++++++++++++++++++++
+>  4 files changed, 106 insertions(+), 1 deletion(-)
+> 
+
