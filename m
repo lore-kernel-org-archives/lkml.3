@@ -1,72 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaKGSEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:04:05 -0500
-Received: from sauhun.de ([89.238.76.85]:55887 "EHLO pokefinder.org"
+	id S1752715AbaKGSHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:07:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51301 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002AbaKGSEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:04:02 -0500
-Date: Fri, 7 Nov 2014 19:05:12 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH 3/3] i2c: core: Map OF IRQ at probe time
-Message-ID: <20141107180512.GI3656@katana>
-References: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <1414677578-27412-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	id S1751708AbaKGSHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:07:19 -0500
+Date: Fri, 7 Nov 2014 12:07:11 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: module notifier: was Re: [PATCH 2/2] kernel: add support for
+ live patching
+Message-ID: <20141107180711.GC2057@cerebellum.variantweb.net>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <20141107171307.GC1136@dhcp128.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0XMZdl/q8hSSmFeD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414677578-27412-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+In-Reply-To: <20141107171307.GC1136@dhcp128.suse.cz>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 07, 2014 at 06:13:07PM +0100, Petr Mladek wrote:
+> On Thu 2014-11-06 08:39:08, Seth Jennings wrote:
+> > This commit introduces code for the live patching core.  It implements
+> > an ftrace-based mechanism and kernel interface for doing live patching
+> > of kernel and kernel module functions.
+> > 
+> > It represents the greatest common functionality set between kpatch and
+> > kgraft and can accept patches built using either method.
+> > 
+> > This first version does not implement any consistency mechanism that
+> > ensures that old and new code do not run together.  In practice, ~90% of
+> > CVEs are safe to apply in this way, since they simply add a conditional
+> > check.  However, any function change that can not execute safely with
+> > the old version of the function can _not_ be safely applied in this
+> > version.
+> 
+> [...]
+>  
+> > +/******************************
+> > + * module notifier
+> > + *****************************/
+> > +
+> > +static int lp_module_notify(struct notifier_block *nb, unsigned long action,
+> > +			    void *data)
+> > +{
+> > +	struct module *mod = data;
+> > +	struct lpc_patch *patch;
+> > +	struct lpc_object *obj;
+> > +	int ret = 0;
+> > +
+> > +	if (action != MODULE_STATE_COMING)
+> > +		return 0;
+> 
+> IMHO, we should handle also MODULE_STATE_GOING. We should unregister
+> the ftrace handlers and update the state of the affected objects
+> (ENABLED -> DISABLED)
 
---0XMZdl/q8hSSmFeD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The mechanism we use to avoid this right now is taking a reference on
+patched module.  We only release that reference after the patch is
+disabled, which unregisters all the patched functions from ftrace.
 
-On Thu, Oct 30, 2014 at 03:59:38PM +0200, Laurent Pinchart wrote:
-> I2C clients instantiated from OF get their IRQ mapped at device
-> registration time. This leads to the IRQ being silently ignored if the
-> related irqchip hasn't been proved yet.
->=20
-> Fix this by moving IRQ mapping at probe time using of_get_irq(). The
-> function operates as irq_of_parse_and_map() but additionally returns
-> -EPROBE_DEFER if the irqchip isn't available, allowing us to defer I2C
-> client probing.
->=20
-> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.co=
-m>
+However, your comment reminded me of an idea I had to use
+MODULE_STATE_GOING and let the lpc_mutex protect against races.  I think
+it could be cleaner, but I haven't fleshed the idea out fully.
 
-Applied to for-next, thanks!
+> 
+> > +	down(&lpc_mutex);
+> > +
+> > +	list_for_each_entry(patch, &lpc_patches, list) {
+> > +		if (patch->state == DISABLED)
+> > +			continue;
+> > +		list_for_each_entry(obj, &patch->objs, list) {
+> > +			if (strcmp(obj->name, mod->name))
+> > +				continue;
+> > +			pr_notice("load of module '%s' detected, applying patch '%s'\n",
+> > +				  mod->name, patch->mod->name);
+> > +			obj->mod = mod;
+> > +			ret = lpc_enable_object(patch->mod, obj);
+> > +			if (ret)
+> > +				goto out;
+> > +			break;
+> > +		}
+> > +	}
+> > +
+> > +	up(&lpc_mutex);
+> > +	return 0;
+> > +out:
+> 
+> I would name this err_our or so to make it clear that it is used when
+> something fails.
 
+Just "err" good?
 
---0XMZdl/q8hSSmFeD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> > +	up(&lpc_mutex);
+> > +	WARN("failed to apply patch '%s' to module '%s'\n",
+> > +		patch->mod->name, mod->name);
+> > +	return 0;
+> > +}
+> > +
+> > +static struct notifier_block lp_module_nb = {
+> > +	.notifier_call = lp_module_notify,
+> > +	.priority = INT_MIN, /* called last */
+> 
+> The handler for MODULE_STATE_COMMING would need have higger priority,
+> if we want to cleanly unregister the ftrace handlers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Yes, we might need two handlers at different priorities if we decide to
+go that direction: one for MODULE_STATE_GOING at high/max and one for
+MODULE_STATE_COMING at low/min.
 
-iQIcBAEBAgAGBQJUXQnYAAoJEBQN5MwUoCm2g2cP/jW/N5+nMiPXmicY8QfSBbGy
-XKM5710nnjfAcSiJ/L6ZglTp5T+15MC6XTmUpsgOq+R4L976jeXbNqu4YLYftf+O
-NOf3eigmV6f15RDcSAxs7SgDmVMGAAIiYZBYmsJgkm4N5LoOtuQUUlDdZ5uQ//8M
-h238/QnZUy12F8n6RNaXJO1P7bszeugEABGtOVMkLX9pCRfj4zmiKYJEX8bwwS5b
-/WZz4uZxP3kRjEyuSLuJMYRPMTFeKyOjCmVrnKgV81OjpsjdYaPWi1fTb8tLEjBI
-G10K10kaWIsCgcNdwDzcJVEoxf417OqfWfaw7ejCCP2vQrwEPCHMNxhcQ9hVlt0t
-F8bLxtNM1CM4mhzCTjL+XoPcaDX5XPWbkgmLPUqjmJLtmyKjZ2jOZeoWX6KaFab8
-Dv5S7TVu5ojrTVcL45CMxi4eu/nQo1d4ZzdYSd1jUJTfUzNW7HYD47YmYS2R2YWM
-hqwXpHhBsgh3PzXAgcR5qyjEnxPZbjtZ2wX8zKtIV78tu6qhi+NXWnogS3x1L7ti
-VVzZvHn/fHRfRhR6nelR/zWdupQPyHNyy5IPsYWqEb5+pM14uKO8eWmQLQzygkl4
-jeOQ5mwvE86rM2pbSZnVG0u031vVfNgk5GxBR59ucKcWPEh51M7ygsT8o0Bzdz1q
-M0972iRYTlB7Ud97XLYB
-=xCTs
------END PGP SIGNATURE-----
+Thanks,
+Seth
 
---0XMZdl/q8hSSmFeD--
+> 
+> Best Regards,
+> Petr
