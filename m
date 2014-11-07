@@ -1,97 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaKGM2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:28:04 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18427 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaKGM17 (ORCPT
+	id S1752340AbaKGM2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:28:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34220 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaKGM2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:27:59 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18wTS5nWzr9sPEpRgKSG1ncszjNPJnR5RQ=
-X-DKIM: OpenDKIM Filter v2.0.1 titan A0F8261441E
-Date: Fri, 7 Nov 2014 07:27:45 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: tglx@linutronix.de, linux-sh@vger.kernel.org, arnd@arndb.de,
-        f.fainelli@gmail.com, ralf@linux-mips.org,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH V4 00/14] genirq endian fixes; bcm7120/brcmstb IRQ
- updates
-Message-ID: <20141107122745.GJ3698@titan.lakedaemon.net>
-References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
+	Fri, 7 Nov 2014 07:28:36 -0500
+Message-ID: <545CBAF1.4020207@canonical.com>
+Date: Fri, 07 Nov 2014 13:28:33 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Zoltan Kiss <zoltan.kiss@linaro.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+CC: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] BUG in xennet_make_frags with paged skb data
+References: <20141106214940.GD44162@ubuntu-hedt>	 <545C9013.1090406@linaro.org> <1415359320.13896.105.camel@edumazet-glaptop2.roam.corp.google.com> <545CB7FF.8080003@canonical.com> <545CB92E.9050106@linaro.org>
+In-Reply-To: <545CB92E.9050106@linaro.org>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="0ViuMnpe8U2G0Vr4XJacPpStuwjAKOr1S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--0ViuMnpe8U2G0Vr4XJacPpStuwjAKOr1S
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Nov 06, 2014 at 10:44:15PM -0800, Kevin Cernekee wrote:
-> V3->V4:
-> 
->  - Fix buildbot bisectability warning on patch 02/14 (missing include)
+On 07.11.2014 13:21, Zoltan Kiss wrote:
+>=20
+>=20
+> On 07/11/14 12:15, Stefan Bader wrote:
+>> On 07.11.2014 12:22, Eric Dumazet wrote:
+>>> On Fri, 2014-11-07 at 09:25 +0000, Zoltan Kiss wrote:
+>>>
+>>> Please do not top post.
+>>>
+>>>> Hi,
+>>>>
+>>>> AFAIK in this scenario your skb frag is wrong. The page pointer shou=
+ld
+>>>> point to the original compound page (not a member of it), and offset=
 
-Dammit.  :(  Even if I had created a topic branch for this series, I
-still would have put the genirq changes in /core, then based a brcm
-branch off of that.
+>>>> should be set accordingly.
+>>>> For example, if your compound page is 16K (4 page), then the page
+>>>> pointer should point to the first page, and if the data starts at th=
+e
+>>>> 3rd page, then offset should be >8K
+>>>
+>>> This is not accurate.
+>>>
+>>> This BUG_ON() is wrong.
+>>>
+>>> It should instead be :
+>>>
+>>> BUG_ON(len + offset > PAGE_SIZE<<compound_order(compound_head(page)))=
+;
+>>
+>> would that not have to be
+>>
+>> BUG_ON((page-compound_head(page)*PAGE_SIZE)+offset+len >
+>> PAGE_SIZE<<compound_order(compound_head(page)));
+>=20
+> There should be a parentheses around "page-compound_head(page)".
 
-I'm inclined to think I should just drop v3 and apply v4, as a revert
-commit wouldn't solve the bisectability issue.
+*sigh* before submitting anything I'll have to make sure I run it past th=
+e
+compiler at least. I never manager to type the beast without some error.
 
-thoughts?
+But you got the drift...
 
-thx,
+>>
+>> since offset is adjusted to start from the tail page in that case.
+>>>
+>>> splice() code can generate such cases.
+>>>
+>>>
+>>
+>>
 
-Jason.
 
-> 
->  - Add kernel-doc text for the new reg_{readl,writel} struct members and
->    IRQ_GC_BE_IO flag
-> 
-> 
-> Kevin Cernekee (14):
->   sh: Eliminate unused irq_reg_{readl,writel} accessors
->   genirq: Generic chip: Change irq_reg_{readl,writel} arguments
->   genirq: Generic chip: Allow irqchip drivers to override
->     irq_reg_{readl,writel}
->   genirq: Generic chip: Add big endian I/O accessors
->   irqchip: brcmstb-l2: Eliminate dependency on ARM code
->   irqchip: bcm7120-l2: Eliminate bad IRQ check
->   irqchip: bcm7120-l2, brcmstb-l2: Remove ARM Kconfig dependency
->   irqchip: bcm7120-l2: Make sure all register accesses use base+offset
->   irqchip: bcm7120-l2: Fix missing nibble in gc->unused mask
->   irqchip: bcm7120-l2: Use gc->mask_cache to simplify suspend/resume
->     functions
->   irqchip: bcm7120-l2: Extend driver to support 64+ bit controllers
->   irqchip: bcm7120-l2: Decouple driver from brcmstb-l2
->   irqchip: bcm7120-l2: Convert driver to use irq_reg_{readl,writel}
->   irqchip: brcmstb-l2: Convert driver to use irq_reg_{readl,writel}
-> 
->  .../interrupt-controller/brcm,bcm7120-l2-intc.txt  |  26 ++-
->  arch/arm/mach-bcm/Kconfig                          |   1 +
->  arch/sh/boards/mach-se/7343/irq.c                  |   3 -
->  arch/sh/boards/mach-se/7722/irq.c                  |   3 -
->  drivers/irqchip/Kconfig                            |   6 +-
->  drivers/irqchip/Makefile                           |   4 +-
->  drivers/irqchip/irq-atmel-aic.c                    |  40 ++---
->  drivers/irqchip/irq-atmel-aic5.c                   |  65 ++++----
->  drivers/irqchip/irq-bcm7120-l2.c                   | 174 +++++++++++++--------
->  drivers/irqchip/irq-brcmstb-l2.c                   |  41 +++--
->  drivers/irqchip/irq-sunxi-nmi.c                    |   4 +-
->  drivers/irqchip/irq-tb10x.c                        |   4 +-
->  include/linux/irq.h                                |  32 +++-
->  kernel/irq/generic-chip.c                          |  36 +++--
->  14 files changed, 263 insertions(+), 176 deletions(-)
-> 
-> -- 
-> 2.1.1
-> 
+
+--0ViuMnpe8U2G0Vr4XJacPpStuwjAKOr1S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUXLrxAAoJEOhnXe7L7s6jWHkQALuMGqlxHCK1CKo30aofmUP9
+hSqbVSEoqL8ahwPovgbA7aNsPfGgpoy1LM0xw1f/1nFWaGaN1YpMoS9MFqYOWK7n
+SYl9sNztzG14uyQtGFyzLHhDkwCopkDqeDPYwcPbHN0knQfvZaTs47pR4Rgy6+Q+
+bzvBN1aOe2wl1CC1h0Lbd8zkiXH29tGVJqgcWKnEo6Dwr/7SElujLCjXsAdm77AV
+jdvdl2jEz6X2K4aXuHyUFkUtZ1DKkoHDP+RPNDxS9qyuS7UrjCMWf8n8Q0ieCWnl
+0JLOA5mD79jj74md1N49XOieQMMivv/vjaJ9WrAN6u1SNpjM28ieqcXz85Yu9WXC
+vQ2EkxEEWMJ7rN+Cqhk1kkFjKwL5ZEytlmtAFJhkoJbqn9Xyz+bUjG/Xsizyu+rK
+JFgDYGqCd4iUl/JON4gPlk9Cclw2zeFb5yAD0rTv6tLakI3iJhnkP5z91cYPTICS
+qZF0zWfhJQkgtZPKCeilTT8zWtrfpeNMK8awWUL9EAPzQ64LeJEgV9P7vo4mQNfG
+XPGAbb/Rv4SKAsqTy7DYFNCnT0gEO/5Vr2LBD4/LXLtzpW9Lc1ZKzLs5IfYsYdGj
+Jh6kIcAm4wWekaZqX61TKIjfwFVZ5buuZoZssmIKAtqsvxQGD+TcCgp601biRGP/
+tcJMgLiZQiHGn6BCvZJl
+=FOiu
+-----END PGP SIGNATURE-----
+
+--0ViuMnpe8U2G0Vr4XJacPpStuwjAKOr1S--
