@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaKGGfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 01:35:34 -0500
-Received: from gate.crashing.org ([63.228.1.57]:39937 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553AbaKGGfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 01:35:31 -0500
-Message-ID: <1415342117.4925.29.camel@kernel.crashing.org>
-Subject: Re: [RFC] Add of_path property for all devices with a node
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: devicetree@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 07 Nov 2014 17:35:17 +1100
-In-Reply-To: <1415342031.4925.27.camel@kernel.crashing.org>
-References: <1415342031.4925.27.camel@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751884AbaKGGkI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 01:40:08 -0500
+Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:56366 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751661AbaKGGkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 01:40:05 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3867:3871:3874:5007:6261:10004:10400:10848:11658:11914:12517:12519:12555:13069:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: eyes56_3aa6b965dde13
+X-Filterd-Recvd-Size: 1563
+Message-ID: <1415342399.23530.6.camel@perches.com>
+Subject: [PATCH] checkpatch: Add test for consecutive string fragments
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Nov 2014 22:39:59 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.12.7-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -23,77 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 17:33 +1100, Benjamin Herrenschmidt wrote:
+Emit a warning when single line string coalescing occurs.
 
-> So I came up with this patch, 
+Code that uses compiler string concatenation on a single line like:
+	printk("foo" "bar");
+is generally better to read concatenated like:
+	printk("foobar");
 
-And here is the actual patch, which might help :-) It's pretty trivial
-and small...
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 20da3ad..dd0ee1b 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -26,6 +26,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/netdevice.h>
- #include <linux/sysfs.h>
-+#include <linux/of.h>
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 893cbd5..508037a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4462,6 +4462,12 @@ sub process {
+ 			    "Concatenated strings should use spaces between elements\n" . $herecurr);
+ 		}
  
- #include "base.h"
- #include "power/power.h"
-@@ -454,6 +455,23 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR_RW(online);
- 
-+#ifdef CONFIG_OF
++# uncoalesced string fragments
++		if ($line =~ /"X*"\s*"/) {
++			WARN("STRING_FRAGMENTS",
++			     "Consecutive strings are generally better as a single string\n" . $herecurr);
++		}
 +
-+static ssize_t of_path_show(struct device *dev, struct device_attribute *attr,
-+			    char *buf)
-+{
-+	ssize_t s = 0;
-+
-+	device_lock(dev);
-+	if (dev->of_node)
-+		s = sprintf(buf, "%s\n", dev->of_node->full_name);
-+	device_unlock(dev);
-+	return s;
-+}
-+static DEVICE_ATTR_RO(of_path);
-+
-+#endif /* CONFIG_OF */
-+
- int device_add_groups(struct device *dev, const struct attribute_group **groups)
- {
- 	return sysfs_create_groups(&dev->kobj, groups);
-@@ -487,15 +505,27 @@ static int device_add_attrs(struct device *dev)
- 	if (error)
- 		goto err_remove_type_groups;
- 
-+#ifdef CONFIG_OF
-+	if (dev->of_node) {
-+		error = device_create_file(dev, &dev_attr_of_path);
-+		if (error)
-+			goto err_remove_dev_groups;
-+	}
-+#endif /* CONFIG_OF */
-+
- 	if (device_supports_offline(dev) && !dev->offline_disabled) {
- 		error = device_create_file(dev, &dev_attr_online);
- 		if (error)
--			goto err_remove_dev_groups;
-+			goto err_remove_of_path;
- 	}
- 
- 	return 0;
- 
-+ err_remove_of_path:
-+#ifdef CONFIG_OF
-+	device_remove_file(dev, &dev_attr_of_path);
-  err_remove_dev_groups:
-+#endif
- 	device_remove_groups(dev, dev->groups);
-  err_remove_type_groups:
- 	if (type)
+ # warn about #if 0
+ 		if ($line =~ /^.\s*\#\s*if\s+0\b/) {
+ 			CHK("REDUNDANT_CODE",
 
 
