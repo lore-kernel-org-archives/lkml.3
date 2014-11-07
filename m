@@ -1,135 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaKGHd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 02:33:59 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57602 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaKGHdx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 02:33:53 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 2/2] mm/debug-pagealloc: cleanup page guard code
-Date: Fri,  7 Nov 2014 16:35:46 +0900
-Message-Id: <1415345746-16666-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1415345746-16666-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1415345746-16666-1-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1751328AbaKGHjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 02:39:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:3293 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993AbaKGHjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 02:39:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,330,1413270000"; 
+   d="scan'208";a="628174035"
+Date: Fri, 7 Nov 2014 15:37:20 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: LKP <lkp@01.org>, Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [LKP] [dmi] PANIC: early exception 0e rip 10:ffffffff81899e6b
+ error 9 cr2 ffffffffff240000
+Message-ID: <20141107073720.GB24745@yliu-dev.sh.intel.com>
+References: <20141107054741.GB30507@yliu-dev.sh.intel.com>
+ <CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page guard is used by debug-pagealloc feature. Currently,
-it is open-coded, but, I think that more abstraction of it makes
-core page allocator code more readable.
+On Fri, Nov 07, 2014 at 08:17:36AM +0100, Ard Biesheuvel wrote:
+> On 7 November 2014 06:47, LKP <lkp@01.org> wrote:
+> > FYI, we noticed the below changes on
+> >
+> > https://git.linaro.org/people/ard.biesheuvel/linux-arm efi-for-3.19
+> > commit aacdce6e880894acb57d71dcb2e3fc61b4ed4e96 ("dmi: add support for SMBIOS 3.0 64-bit entry point")
+> >
+> >
+> > +-----------------------+------------+------------+
+> > |                       | 2fa165a26c | aacdce6e88 |
+> > +-----------------------+------------+------------+
+> > | boot_successes        | 20         | 10         |
+> > | early-boot-hang       | 1          |            |
+> > | boot_failures         | 0          | 5          |
+> > | PANIC:early_exception | 0          | 5          |
+> > +-----------------------+------------+------------+
+> >
+> >
+> > [    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000036fffffff] usable
+> > [    0.000000] bootconsole [earlyser0] enabled
+> > [    0.000000] NX (Execute Disable) protection: active
+> > PANIC: early exception 0e rip 10:ffffffff81899e6b error 9 cr2 ffffffffff240000
+> > [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc2-gc5221e6 #1
+> > [    0.000000]  0000000000000000 ffffffff82203d30 ffffffff819f0a6e 00000000000003f8
+> > [    0.000000]  ffffffffff240000 ffffffff82203e18 ffffffff823701b0 ffffffff82511401
+> > [    0.000000]  0000000000000000 0000000000000ba3 0000000000000000 ffffffffff240000
+> > [    0.000000] Call Trace:
+> > [    0.000000]  [<ffffffff819f0a6e>] dump_stack+0x4e/0x68
+> > [    0.000000]  [<ffffffff823701b0>] early_idt_handler+0x90/0xb7
+> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
+> > [    0.000000]  [<ffffffff81899e6b>] ? dmi_table+0x3f/0x94
+> > [    0.000000]  [<ffffffff81899e42>] ? dmi_table+0x16/0x94
+> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
+> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
+> > [    0.000000]  [<ffffffff823c7eff>] dmi_walk_early+0x44/0x69
+> > [    0.000000]  [<ffffffff823c88a2>] dmi_present+0x180/0x1ff
+> > [    0.000000]  [<ffffffff823c8ab3>] dmi_scan_machine+0x144/0x191
+> > [    0.000000]  [<ffffffff82370702>] ? loglevel+0x31/0x31
+> > [    0.000000]  [<ffffffff82377f52>] setup_arch+0x490/0xc73
+> > [    0.000000]  [<ffffffff819eef73>] ? printk+0x4d/0x4f
+> > [    0.000000]  [<ffffffff82370b90>] start_kernel+0x9c/0x43f
+> > [    0.000000]  [<ffffffff82370120>] ? early_idt_handlers+0x120/0x120
+> > [    0.000000]  [<ffffffff823704a2>] x86_64_start_reservations+0x2a/0x2c
+> > [    0.000000]  [<ffffffff823705df>] x86_64_start_kernel+0x13b/0x14a
+> > [    0.000000] RIP 0x4
+> >
+> 
+> This is most puzzling. Could anyone decode the exception?
+> This looks like the non-EFI path through dmi_scan_machine(), which
+> calls dmi_present() /after/ calling dmi_smbios3_present(), which
+> apparently has not found the _SM3_ header tag. Or could the call stack
+> be inaccurate?
+> 
+> Anyway, it would be good to know the exact type of the platform,
 
-There is no functional difference.
+It's a Nehalem-EP machine, wht 16 CPU and 12G memory.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/page_alloc.c |   38 +++++++++++++++++++-------------------
- 1 file changed, 19 insertions(+), 19 deletions(-)
+> and
+> perhaps we could find out if there is an inadvertent _SM3_ tag
+> somewhere in the 0xF0000 - 0xFFFFF range?
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d673f64..c0dbede 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -440,18 +440,29 @@ static int __init debug_guardpage_minorder_setup(char *buf)
- }
- __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
- 
--static inline void set_page_guard_flag(struct page *page)
-+static inline void set_page_guard(struct zone *zone, struct page *page,
-+				unsigned int order, int migratetype)
- {
- 	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
-+	INIT_LIST_HEAD(&page->lru);
-+	set_page_private(page, order);
-+	/* Guard pages are not available for any usage */
-+	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
- }
- 
--static inline void clear_page_guard_flag(struct page *page)
-+static inline void clear_page_guard(struct zone *zone, struct page *page,
-+				unsigned int order, int migratetype)
- {
- 	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
-+	set_page_private(page, 0);
-+	if (!is_migrate_isolate(migratetype))
-+		__mod_zone_freepage_state(zone, (1 << order), migratetype);
- }
- #else
--static inline void set_page_guard_flag(struct page *page) { }
--static inline void clear_page_guard_flag(struct page *page) { }
-+static inline void set_page_guard(struct zone *zone, struct page *page,
-+				unsigned int order, int migratetype) {}
-+static inline void clear_page_guard(struct zone *zone, struct page *page,
-+				unsigned int order, int migratetype) {}
- #endif
- 
- static inline void set_page_order(struct page *page, unsigned int order)
-@@ -582,12 +593,7 @@ static inline void __free_one_page(struct page *page,
- 		 * merge with it and move up one order.
- 		 */
- 		if (page_is_guard(buddy)) {
--			clear_page_guard_flag(buddy);
--			set_page_private(buddy, 0);
--			if (!is_migrate_isolate(migratetype)) {
--				__mod_zone_freepage_state(zone, 1 << order,
--							  migratetype);
--			}
-+			clear_page_guard(zone, buddy, order, migratetype);
- 		} else {
- 			list_del(&buddy->lru);
- 			zone->free_area[order].nr_free--;
-@@ -862,23 +868,17 @@ static inline void expand(struct zone *zone, struct page *page,
- 		size >>= 1;
- 		VM_BUG_ON_PAGE(bad_range(zone, &page[size]), &page[size]);
- 
--#ifdef CONFIG_DEBUG_PAGEALLOC
--		if (high < debug_guardpage_minorder()) {
-+		if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC) &&
-+			high < debug_guardpage_minorder()) {
- 			/*
- 			 * Mark as guard pages (or page), that will allow to
- 			 * merge back to allocator when buddy will be freed.
- 			 * Corresponding page table entries will not be touched,
- 			 * pages will stay not present in virtual address space
- 			 */
--			INIT_LIST_HEAD(&page[size].lru);
--			set_page_guard_flag(&page[size]);
--			set_page_private(&page[size], high);
--			/* Guard pages are not available for any usage */
--			__mod_zone_freepage_state(zone, -(1 << high),
--						  migratetype);
-+			set_page_guard(zone, &page[size], high, migratetype);
- 			continue;
- 		}
--#endif
- 		list_add(&page[size].lru, &area->free_list[migratetype]);
- 		area->nr_free++;
- 		set_page_order(&page[size], high);
--- 
-1.7.9.5
+Sorry, how?
 
+	--yliu
