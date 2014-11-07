@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaKGTua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:50:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59930 "EHLO mga02.intel.com"
+	id S1753223AbaKGTwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:52:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58447 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134AbaKGTu1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:50:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,334,1413270000"; 
-   d="scan'208";a="633489400"
-From: "Vick, Matthew" <matthew.vick@intel.com>
-To: Joe Stringer <joestringer@nicira.com>
-CC: "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Dept-GELinuxNICDev@qlogic.com" <Dept-GELinuxNICDev@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sathya.perla@emulex.com" <sathya.perla@emulex.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Linux NICS <Linux-nics@intel.com>,
-        "amirv@mellanox.com" <amirv@mellanox.com>,
-        "shahed.shaikh@qlogic.com" <shahed.shaikh@qlogic.com>,
-        "therbert@google.com" <therbert@google.com>,
-        "Or Gerlitz" <gerlitz.or@gmail.com>
-Subject: Re: [PATCH net 3/5] fm10k: Implement ndo_gso_check()
-Thread-Topic: [PATCH net 3/5] fm10k: Implement ndo_gso_check()
-Thread-Index: AQHP+ic3qnzQVNwor0CgR3ZaX8Jh2ZxVIqWAgABw+IA=
-Date: Fri, 7 Nov 2014 19:49:38 +0000
-Message-ID: <D0825758.5EC90%matthew.vick@intel.com>
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com>
- <20141106211522.GA55313@gmail.com> <D0814FB9.5EA7E%matthew.vick@intel.com>
- <201411071805.18119.joestringer@nicira.com>
-In-Reply-To: <201411071805.18119.joestringer@nicira.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.4.4.140807
-x-originating-ip: [10.166.14.15]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <8E06E28C207F6F4E9947B547F6FCFBF5@intel.com>
-Content-Transfer-Encoding: 8BIT
+	id S1751459AbaKGTwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 14:52:40 -0500
+Date: Fri, 7 Nov 2014 13:52:33 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+Message-ID: <20141107195233.GF2057@cerebellum.variantweb.net>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <545D2036.9080205@amacapital.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545D2036.9080205@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/14, 9:05 PM, "Joe Stringer" <joestringer@nicira.com> wrote:
+On Fri, Nov 07, 2014 at 11:40:38AM -0800, Andy Lutomirski wrote:
+> On 11/06/2014 06:39 AM, Seth Jennings wrote:
+> > This commit introduces code for the live patching core.  It implements
+> > an ftrace-based mechanism and kernel interface for doing live patching
+> > of kernel and kernel module functions.
+> > 
+> > It represents the greatest common functionality set between kpatch and
+> > kgraft and can accept patches built using either method.
+> > 
+> > This first version does not implement any consistency mechanism that
+> > ensures that old and new code do not run together.  In practice, ~90% of
+> > CVEs are safe to apply in this way, since they simply add a conditional
+> > check.  However, any function change that can not execute safely with
+> > the old version of the function can _not_ be safely applied in this
+> > version.
+> > 
+> 
+> [...]
+> 
+> > +/********************************************
+> > + * Sysfs Interface
+> > + *******************************************/
+> > +/*
+> > + * /sys/kernel/livepatch
+> > + * /sys/kernel/livepatch/<patch>
+> > + * /sys/kernel/livepatch/<patch>/enabled
+> > + * /sys/kernel/livepatch/<patch>/<object>
+> > + * /sys/kernel/livepatch/<patch>/<object>/<func>
+> > + * /sys/kernel/livepatch/<patch>/<object>/<func>/new_addr
+> > + * /sys/kernel/livepatch/<patch>/<object>/<func>/old_addr
+> > + */
+> 
+> Letting anyone read new_addr and old_addr is a kASLR leak, and I would
+> argue that showing this information to non-root at all is probably a bad
+> idea.
 
->Let's merge both discussions into one thread (pick here or there). We
->have 
->this suggestion or the one which simply checks for tunnels and
->inner+outer 
->header lengths. Do you have a preference between them?
+Also worth noting that this live patching implementation currently
+doesn't support kASLR, as there is a method for the patch module to
+supply the old_addr, determined at generation time by pulling from
+vmlinux/System.map/etc, for a particular function to resolve symbol
+ambiguity in a kallsyms lookup.  Obviously, this old_addr would be wrong
+for a kernel using kASLR.
 
-Agreed with merging the thread--consider it merged!
+Thanks,
+Seth
 
-Reflecting on this some more, I prefer the latter option (checking tunnels
-and header lengths). I'm leaning towards pushing the header length check
-into fm10k_tx_encap_offload and then making fm10k_gso_check call that with
-the gso_type. So, it's really the most recent version of the patch you
-proposed:
-
-static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)
-{
-	if ((skb_shinfo(skb)->gso_type & (SKB_GSO_UDP_TUNNEL | SKB_GSO_GRE)) &&
-	    !fm10k_tx_encap_offload(skb))
-		return false;
-
-	return true;
-}
-
-
-plus the header length being checked in fm10k_tx_encap_offload. The only
-nit would be that I'd just return the conditional instead of having
-"return true" or "return false" lines.
-
-The tunnel length check really should be there in fm10k_tx_encap_offload
-anyway, so I'll get a patch together for that one.
-
->We could introduce an "skb_is_gso_encap()" or similar for this purpose.
->Checking for SKB_GSO_UDP_TUNNEL or SKB_GSO_GRE is pretty closely tied to
->what 
->fm10k_tx_encap_offload() checks for though; it might not even make sense
->to call 
->it if some of the other SKB_GSO_* flags are raised.
-
-A fair point. On the other hand, we have to check the header length both
-in the GSO and non-GSO cases anyway, so only having the check in
-fm10k_tx_encap_offload and calling it from fm10k_gso_check wouldn't be as
-duplicative. What do you think about that approach?
-
-As an aside: the more I think about this, the more I think Tom's right and
-that each driver really should have it's own ndo_gso_check() for this.
-With fm10k and i40e being different, we're already at 40% of the current
-drivers being different. I'll leave it to Or to comment on whether the
-other drivers could share the check in some manner.
-
-Cheers,
-Matthew
-
+> 
+> Can you make new_addr and old_addr have mode 0600 and
+> /sys/kernel/livepatch itself have mode 0500?  For the latter, an admin
+> who wants unprivileged users to be able to see it can easily chmod it.
+> 
+> --Andy
+> --
+> To unsubscribe from this list: send the line "unsubscribe live-patching" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
