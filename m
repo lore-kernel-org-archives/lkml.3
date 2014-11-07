@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaKGHxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 02:53:36 -0500
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:52435 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaKGHxf convert rfc822-to-8bit (ORCPT
+	id S1751408AbaKGH7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 02:59:31 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:63671 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaKGH72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 02:53:35 -0500
-X-Greylist: delayed 2890 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 02:51:26 EST
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Peter Feiner <pfeiner@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH -mm v7 04/13] smaps: remove mem_size_stats->vma and use
- walk_page_vma()
-Thread-Topic: [PATCH -mm v7 04/13] smaps: remove mem_size_stats->vma and use
- walk_page_vma()
-Thread-Index: AQHP+li4vt3VQDfqCE2B8aDGVnyIsg==
-Date: Fri, 7 Nov 2014 07:01:56 +0000
-Message-ID: <1415343692-6314-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.22]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 Nov 2014 02:59:28 -0500
 MIME-Version: 1.0
+In-Reply-To: <545BE1DE.6060900@linaro.org>
+References: <CAMuHMdXaaa2t6+sH2egGacVxkAPeTUkAgwdYsOnMnEPnuLdB5Q@mail.gmail.com>
+	<545BE1DE.6060900@linaro.org>
+Date: Fri, 7 Nov 2014 08:59:25 +0100
+X-Google-Sender-Auth: gUU8_dKScnKuyzpc4XQGEwRXu-o
+Message-ID: <CAMuHMdXQr65g4He0D0ZRN923OJ2A7WNgwbiTru_1dGWnvbvCJA@mail.gmail.com>
+Subject: Re: (bisected) Lock up on sh73a0/kzm9g on cpuidle initialization
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pagewalk.c can handle vma in itself, so we don't have to pass vma via
-walk->private. And show_smap() walks pages on vma basis, so using
-walk_page_vma() is preferable.
+Hi Daniel,
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- fs/proc/task_mmu.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+On Thu, Nov 6, 2014 at 10:02 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 11/06/2014 09:38 PM, Geert Uytterhoeven wrote:
+>> When CONFIG_CPU_IDLE=y, the kernel locks up during cpuidle initialization
+>> on Renesas sh73a0/kzm9g-reference, which has a dual-core Cortex-A9.
+>>
+>> Last message is:
+>>
+>>      DMA: preallocated 256 KiB pool for atomic coherent allocations
+>>
+>> After this it's supposed to print:
+>>
+>>      cpuidle: using governor ladder
+>>      cpuidle: using governor menu
+>>
+>> I've bisected this to commit 442bf3aaf55a91ebfec71da46a4ee10a3c905bcc
+>> ("sched: Let the scheduler see CPU idle states").
+>>
+>> Reverting that commit, and commit 83a0a96a5f26d974580fd7251043ff70c8f1823d
+>> ("sched/fair: Leverage the idle state info when choosing the "idlest"
+>> cpu") which
+>> depends on it, fixes the problem.
+>>
+>> I saw the discussion "lockdep splat in CPU hotplug", so I enabled lockdep
+>> debugging, but didn't see a lockdep splat.
+>
+> Did you try the fix attached ?
+>
+> https://lkml.org/lkml/2014/10/22/722
 
-diff --git mmotm-2014-11-05-16-01.orig/fs/proc/task_mmu.c mmotm-2014-11-05-16-01/fs/proc/task_mmu.c
-index 2ab200d429be..c1b937095625 100644
---- mmotm-2014-11-05-16-01.orig/fs/proc/task_mmu.c
-+++ mmotm-2014-11-05-16-01/fs/proc/task_mmu.c
-@@ -433,7 +433,6 @@ const struct file_operations proc_tid_maps_operations = {
- 
- #ifdef CONFIG_PROC_PAGE_MONITOR
- struct mem_size_stats {
--	struct vm_area_struct *vma;
- 	unsigned long resident;
- 	unsigned long shared_clean;
- 	unsigned long shared_dirty;
-@@ -480,7 +479,7 @@ static void smaps_pte_entry(pte_t *pte, unsigned long addr,
- 		struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	pgoff_t pgoff = linear_page_index(vma, addr);
- 	struct page *page = NULL;
- 
-@@ -512,7 +511,7 @@ static void smaps_pmd_entry(pmd_t *pmd, unsigned long addr,
- 		struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	struct page *page;
- 
- 	/* FOLL_DUMP will return -EFAULT on huge zero page */
-@@ -533,8 +532,7 @@ static void smaps_pmd_entry(pmd_t *pmd, unsigned long addr,
- static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 			   struct mm_walk *walk)
- {
--	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
-@@ -624,10 +622,8 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	};
- 
- 	memset(&mss, 0, sizeof mss);
--	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
--	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
--		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
-+	walk_page_vma(vma, &smaps_walk);
- 
- 	show_map_vma(m, vma, is_pid);
- 
--- 
-2.2.0.rc0.2.gf745acb
+Thanks, I didn't try that.
+
+However, this patch seems to be in v3.18-rc3, so I'm already using it.
+Hence it doesn't fix the problem for me.
+
+On another board, with a dual Cortex-A15, the problem doesn't show up.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
