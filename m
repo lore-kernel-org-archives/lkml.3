@@ -1,67 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbaKGDbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 22:31:19 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35846 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaKGDbQ (ORCPT
+	id S1751431AbaKGDhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 22:37:04 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:48717 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaKGDhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 22:31:16 -0500
-X-Originating-IP: 50.43.41.112
-Date: Thu, 6 Nov 2014 19:31:02 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
-        Changli Gao <xiaosuo@gmail.com>, David Rientjes <rientjes@google.com>,
-        Eric Paris <eparis@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Jesse Gross <jesse@nicira.com>, Jonathan Corbet <corbet@lwn.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] lib/flex_array: make build optional
-Message-ID: <20141107033102.GB7249@thin>
-References: <1415309241-12971-1-git-send-email-aris@redhat.com>
- <545BE927.9060208@sr71.net>
- <545BEBD6.4030803@sr71.net>
- <20141106215056.GK26472@redhat.com>
+	Thu, 6 Nov 2014 22:37:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106215056.GK26472@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141107024850.GA24200@kroah.com>
+References: <20141107005727.GA21923@localhost.localdomain>
+	<20141107024850.GA24200@kroah.com>
+Date: Thu, 6 Nov 2014 21:37:00 -0600
+Message-ID: <CAFGHVq3RVvYF=mKbSG8OsK-J_6_ifsBCBukmuhQ6JfQhGB-bxA@mail.gmail.com>
+Subject: Re: [PATCH] staging: slicoss.c: checkpatch warnings
+From: Jaime Arrocha <jarrocha27@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Lior Dotan <liodot@gmail.com>, charrer@alacritech.com,
+        matlackdavid@gmail.com, monamagarwal123@gmail.com, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 04:50:56PM -0500, Aristeu Rozanski wrote:
-> On Thu, Nov 06, 2014 at 01:44:54PM -0800, Dave Hansen wrote:
-> > On 11/06/2014 01:33 PM, Dave Hansen wrote:
-> > > On 11/06/2014 01:27 PM, Aristeu Rozanski wrote:
-> > >> +config FLEX_ARRAY
-> > >> +	bool "Flexible array"
-> > >> +	default n
-> > >> +	help
-> > >> +	  This option enables an implementation of flexible arrays which
-> > >> +	  allows creating arrays of fixed size elements with an arbritrary
-> > >> +	  size without requiring the single allocation of a contiguous area.
-> > >> +
-> > >> +	  See Documentation/flexible-arrays.txt
-> > > 
-> > > Is there any reason to expose this to the user via Kconfig?
-> > > 
-> > > No sane person would even turn it on if they don't need it.
-> > 
-> > IOW, I think you should just make it:
-> > 
-> > config FLEX_ARRAY
-> > 	def_bool n
-> 
-> Joe Pershes complained on a similar patch on making it default to 'n'.
-> Will rework the patches this way.
+Thanks for the feedback. I'll pay more attention.
 
-https://git.kernel.org/cgit/linux/kernel/git/josh/linux.git/commit/?h=tiny/unflex-array&id=6631d5fb4cf395ebd2dc0f2da05525b9d3436a3f
-
-Already done.
-
-- Josh Triplett
+On Thu, Nov 6, 2014 at 8:48 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Nov 06, 2014 at 06:57:27PM -0600, Jaime Arrocha wrote:
+>> Correction of warnings of lines with 80 plus character.
+>> The rest were left for better code readability
+>>
+>> Signed-off-by: Jaime Arrocha <jarrocha27@gmail.com>
+>> ---
+>>  drivers/staging/slicoss/slicoss.c | 27 ++++++++++++++++-----------
+>>  1 file changed, 16 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+>> index cff7cbe..d65fa92 100644
+>> --- a/drivers/staging/slicoss/slicoss.c
+>> +++ b/drivers/staging/slicoss/slicoss.c
+>> @@ -99,8 +99,8 @@
+>>  #include "slic.h"
+>>
+>>  static uint slic_first_init = 1;
+>> -static char *slic_banner = "Alacritech SLIC Technology(tm) Server "
+>> -             "and Storage Accelerator (Non-Accelerated)";
+>> +char *slic_banner = "Alacritech SLIC Technology(tm) Server and "
+>> +                     "Storage Accelerator (Non-Accelerated)";
+>
+> Why did you take away the 'static' marking here?  And make this one full
+> line please.
+>
+>
+>
+>>
+>>  static char *slic_proc_version = "2.0.351  2006/07/14 12:26:00";
+>>
+>> @@ -498,12 +498,14 @@ static int slic_card_download(struct adapter *adapter)
+>>                       slic_reg32_write(&slic_regs->slic_wcs,
+>>                                        baseaddress + codeaddr, FLUSH);
+>>                       /* Write out instruction to low addr */
+>> -                     slic_reg32_write(&slic_regs->slic_wcs, instruction, FLUSH);
+>> +                     slic_reg32_write(&slic_regs->slic_wcs,
+>> +                                      instruction, FLUSH);
+>>                       instruction = *(u32 *)(fw->data + index);
+>>                       index += 4;
+>>
+>>                       /* Write out instruction to high addr */
+>> -                     slic_reg32_write(&slic_regs->slic_wcs, instruction, FLUSH);
+>> +                     slic_reg32_write(&slic_regs->slic_wcs,
+>> +                                      instruction, FLUSH);
+>>                       instruction = *(u32 *)(fw->data + index);
+>>                       index += 4;
+>>               }
+>> @@ -1884,7 +1886,8 @@ static void slic_xmit_fail(struct adapter *adapter,
+>>                       break;
+>>               case XMIT_FAIL_HOSTCMD_FAIL:
+>>                       dev_err(&adapter->netdev->dev,
+>> -                             "xmit_start skb[%p] type[%x] No host commands available\n", skb, skb->pkt_type);
+>> +                             "xmit_start skb[%p] type[%x] No host commands available\n",
+>> +                             skb, skb->pkt_type);
+>>                       break;
+>>               }
+>>       }
+>> @@ -2096,11 +2099,10 @@ static void slic_interrupt_card_up(u32 isr, struct adapter *adapter,
+>>                               }
+>>                       } else if (isr & ISR_XDROP) {
+>>                               dev_err(&dev->dev,
+>> -                                             "isr & ISR_ERR [%x] ISR_XDROP\n", isr);
+>> +                                     "isr & ISR_ERR [%x] ISR_XDROP\n", isr);
+>>                       } else {
+>>                               dev_err(&dev->dev,
+>> -                                             "isr & ISR_ERR [%x]\n",
+>> -                                             isr);
+>> +                                     "isr & ISR_ERR [%x]\n", isr);
+>>                       }
+>>               }
+>>
+>> @@ -2340,7 +2342,8 @@ static int slic_if_init(struct adapter *adapter)
+>>                                SLIC_GET_ADDR_LOW(&pshmem->isr), FLUSH);
+>>  #else
+>>               slic_reg32_write(&slic_regs->slic_addr_upper, 0, DONT_FLUSH);
+>> -             slic_reg32_write(&slic_regs->slic_isp, (u32)&pshmem->isr, FLUSH);
+>> +             slic_reg32_write(&slic_regs->slic_isp,
+>> +                              (u32)&pshmem->isr, FLUSH);
+>>  #endif
+>>               spin_unlock_irqrestore(&adapter->bit64reglock.lock,
+>>                                       adapter->bit64reglock.flags);
+>> @@ -2555,7 +2558,8 @@ static int slic_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+>>
+>>                       if (copy_from_user(data, rq->ifr_data, 28)) {
+>>                               PRINT_ERROR
+>> -                                 ("slic: copy_from_user FAILED getting initial simba param\n");
+>> +                                 ("slic: copy_from_user FAILED getting"
+>> +                                  " initial simba param\n");
+>
+> Never break a string across a line.
+>
+>>                               return -EFAULT;
+>>                       }
+>>
+>> @@ -2570,7 +2574,8 @@ static int slic_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+>>                                  (tracemon_request ==
+>>                                   SLIC_DUMP_IN_PROGRESS)) {
+>>                               PRINT_ERROR
+>> -                                 ("ATK Diagnostic Trace Dump Requested but already in progress... ignore\n");
+>> +                                 ("ATK Diagnostic Trace Dump Requested"
+>> +                                  " but already in progress... ignore\n");
+>
+> Same here, never do this.
+>
+> If you fix up the PRINT_ERROR() macros, you will not get checkpatch
+> warnings.  But that's not a real issue, this driver has so many other
+> problems...
+>
+> thanks,
+>
+> greg k-h
