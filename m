@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930AbaKGQnr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:43:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43847 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555AbaKGQnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:43:45 -0500
-Date: Fri, 7 Nov 2014 17:43:37 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, namit@cs.technion.ac.il
-Subject: Re: [PATCH] KVM: x86: save a bit in the decoding flags
-Message-ID: <20141107164337.GA22459@potion.brq.redhat.com>
-References: <1415296011-15062-1-git-send-email-pbonzini@redhat.com>
+	id S1752151AbaKGQoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:44:20 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:60580 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899AbaKGQoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 11:44:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415296011-15062-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <6654405.Rf26mgoaDJ@wuerfel>
+References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
+	<353850534.aGkkrtTogX@wuerfel>
+	<20141107131129.GF18916@arm.com>
+	<6654405.Rf26mgoaDJ@wuerfel>
+Date: Fri, 7 Nov 2014 08:44:18 -0800
+X-Google-Sender-Auth: Gl3voHo5hglEcQWA9M_1p_yTuNk
+Message-ID: <CAGXu5jLBWiVieCkMFTboi5tEYw40O=-3_nH4jnMgKGQCrE6f1g@mail.gmail.com>
+Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
+From: Kees Cook <keescook@chromium.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "roland@hack.frob.com" <roland@hack.frob.com>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-06 18:46+0100, Paolo Bonzini:
-> AVX instructions are just tweaks of the operand length and the alignment
-> restrictions of SSE instructions, and in fact the Avx bit is just a
-> duplicate of Unaligned.  Drop it.
-> 
-> Suggested-by: Nadav Amit <namit@cs.technion.ac.il>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
+On Fri, Nov 7, 2014 at 6:30 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 07 November 2014 13:11:30 Will Deacon wrote:
+>>
+>> > It's not that I care strongly about the interface, my main point is
+>> > that the changelog doesn't describe why one interface was used instead
+>> > the other.
+>>
+>> I suspect the current approach was taken because it follows the same scheme
+>> as 32-bit ARM. If both methods are sufficient (Kees would have a better idea
+>> than me on that), then I don't have a strong preference.
+>
+> Using the regset would probably address Oleg's comment, and would keep the
+> implementation architecture specific. You could even share the NT_S390_SYSTEM_CALL
+> number, but I don't know if there any downsides to doing that.
 
-I think this forces our future AVX implementation to be very hacky,
-we couldn't tell explicitly (un)aligned SSE2/AVX apart.
+That's fine by me -- I only want an interface. :) I think it'd be nice
+to keep it the same between arm32 and arm64, but using a specific
+regset does seem to be the better approach.
 
->  arch/x86/kvm/emulate.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 9cc476f..87c9431 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -157,7 +157,7 @@
->  #define Mmx         ((u64)1 << 40)  /* MMX Vector instruction */
->  #define Aligned     ((u64)1 << 41)  /* Explicitly aligned (e.g. MOVDQA) */
->  #define Unaligned   ((u64)1 << 42)  /* Explicitly unaligned (e.g. MOVDQU) */
-> -#define Avx         ((u64)1 << 43)  /* Advanced Vector Extensions */
-> +#define No16        ((u64)1 << 43)  /* No 16 bit operand */
->  #define Fastop      ((u64)1 << 44)  /* Use opcode::u.fastop */
->  #define NoWrite     ((u64)1 << 45)  /* No writeback */
->  #define SrcWrite    ((u64)1 << 46)  /* Write back src operand */
-> @@ -167,7 +167,6 @@
->  #define NoBigReal   ((u64)1 << 50)  /* No big real mode */
->  #define PrivUD      ((u64)1 << 51)  /* #UD instead of #GP on CPL > 0 */
->  #define NearBranch  ((u64)1 << 52)  /* Near branches */
-> -#define No16	    ((u64)1 << 53)  /* No 16 bit operand */
->  
->  #define DstXacc     (DstAccLo | SrcAccHi | SrcWrite)
->  
-> @@ -646,8 +645,6 @@ static bool insn_aligned(struct x86_emulate_ctxt *ctxt, unsigned size)
->  		return true;
->  	else if (ctxt->d & Unaligned)
->  		return false;
-> -	else if (ctxt->d & Avx)
-> -		return false;
->  	else
->  		return true;
+-Kees
 
-(return !(ctxt->d & Unaligned);)
-
->  }
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Kees Cook
+Chrome OS Security
