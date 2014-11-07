@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532AbaKGI1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:27:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33491 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaKGI1b (ORCPT
+	id S1751462AbaKGI1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:27:32 -0500
+Received: from smtp.eu2.fugro.com ([46.34.88.152]:36197 "EHLO
+	smtp.eu2.fugro.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaKGI1a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:27:31 -0500
-Date: Fri, 7 Nov 2014 09:27:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on
- NO_LIBELF=1
-Message-ID: <20141107082723.GB23531@worktop.programming.kicks-ass.net>
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
+	Fri, 7 Nov 2014 03:27:30 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqsEAOaBXFQKCmUW/2dsb2JhbABbhDvTFwKBLwEBAQEBAXyEAgEBAQEDMAo/DAQCAQgNAQMEAQELBhcBBgEeAiUJCAEBBAESCIgkA8ggDYZZAQEBAQEBAQEBAQEBAQEBAQEBAQEBF45XggkxBwaDJ4EeBYY3i20DiVwBg0SDToJfQRKEToJrimprAYEFI4EiAQEB
+X-IPAS-Result: AqsEAOaBXFQKCmUW/2dsb2JhbABbhDvTFwKBLwEBAQEBAXyEAgEBAQEDMAo/DAQCAQgNAQMEAQELBhcBBgEeAiUJCAEBBAESCIgkA8ggDYZZAQEBAQEBAQEBAQEBAQEBAQEBAQEBF45XggkxBwaDJ4EeBYY3i20DiVwBg0SDToJfQRKEToJrimprAYEFI4EiAQEB
+X-IronPort-AV: E=Sophos;i="5.07,330,1413244800"; 
+   d="scan'208";a="20365331"
+X-IRP-Internal: 1
+X-IRP-FugroSender: 200661
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] asix: Do full reset during ax88772_bind
+Date: Fri, 7 Nov 2014 09:27:26 +0100
+Message-ID: <C89EFD3CD56F64468D3D206D683A8D22039FFEDE@ldam-msx2.fugro-nl.local>
+In-Reply-To: <1415288981-3862-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] asix: Do full reset during ax88772_bind
+Thread-Index: Ac/52lqdaJd1R/E0TLem8bL+OsPgHgAij0xw
+References: <1415288981-3862-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+From: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
+To: "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>,
+        <davem@davemloft.net>
+Cc: <jeffrey.t.kirsher@intel.com>, <emilgoode@gmail.com>,
+        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 02:20:04PM +0900, Namhyung Kim wrote:
-> When libelf is not used, perf cannot not show symbol names since it
-> doesn't access the ELF symbol table.  But kernel is different as it
-> can fallback to kallsyms.
-> 
-> It worked w/o libelf, but recent change to use vmlinux for kernel
-> symbols break it.
-> 
-> With this change, it now can show kernel symbols again:
-> 
->   # Overhead  Command  Shared Object      Symbol
->   # ........  .......  .................  ........................
->   #
->       34.51%  swapper  [kernel.kallsyms]  [k] intel_idle
->       12.54%  perf     [kernel.kallsyms]  [k] generic_exec_single
->       10.11%  swapper  [kernel.kallsyms]  [k] int_sqrt
->        9.83%  swapper  [kernel.kallsyms]  [k] hrtimer_interrupt
->        7.25%  emacs    [kernel.kallsyms]  [k] __switch_to
->        7.06%  sleep    [kernel.kallsyms]  [k] find_next_iomem_res
->        7.02%  swapper  [kernel.kallsyms]  [k] run_timer_softirq
->        2.55%  swapper  [kernel.kallsyms]  [k] _raw_spin_unlock_irq
->        1.90%  swapper  [kernel.kallsyms]  [k] lapic_next_deadline
->        1.75%  swapper  [kernel.kallsyms]  [k] native_sched_clock
->        1.49%  swapper  [kernel.kallsyms]  [k] __schedule
->        1.20%  swapper  [kernel.kallsyms]  [k] read_tsc
->        1.10%  sleep    [kernel.kallsyms]  [k] current_kernel_time
->        0.99%  swapper  [kernel.kallsyms]  [k] pick_next_task_rt
->        0.36%  swapper  [kernel.kallsyms]  [k] group_sched_in
->        0.24%  swapper  [kernel.kallsyms]  [k] x86_pmu_commit_txn
->        0.06%  swapper  [kernel.kallsyms]  [k] intel_pmu_enable_all
->        0.03%  perf     [kernel.kallsyms]  [k] intel_pmu_enable_all
-> 
-> Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/symbol-minimal.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-> index c9541fea9514..226cf41ed7e6 100644
-> --- a/tools/perf/util/symbol-minimal.c
-> +++ b/tools/perf/util/symbol-minimal.c
-> @@ -335,6 +335,9 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
->  	unsigned char *build_id[BUILD_ID_SIZE];
->  	int ret;
->  
-> +	if (dso->kernel)
-> +		return 0;  /* always use kallsyms */
-> +
->  	ret = fd__is_64_bit(ss->fd);
->  	if (ret >= 0)
->  		dso->is_64_bit = ret;
+Please add;
 
-Why does this live in the minimal implementation; should we not always
-discard ELF files with 0 symbols?
+Tested-by: Michel Stam  <m.stam@fugro.nl>
 
-Suppose I have a vmlinux but removed all symbols from it; I want it to
-fall back to kallsyms too.
+Kind regards,
+
+Michel Stam
+
+-----Original Message-----
+From: Charles Keepax [mailto:ckeepax@opensource.wolfsonmicro.com] 
+Sent: Thursday, November 06, 2014 16:50 PM
+To: davem@davemloft.net
+Cc: jeffrey.t.kirsher@intel.com; Stam, Michel [FINT];
+emilgoode@gmail.com; linux-usb@vger.kernel.org; netdev@vger.kernel.org;
+linux-kernel@vger.kernel.org
+Subject: [PATCH] asix: Do full reset during ax88772_bind
+
+commit 3cc81d85ee01 ("asix: Don't reset PHY on if_up for ASIX 88772")
+causes the ethernet on Arndale to no longer function. This appears to be
+because the Arndale ethernet requires a full reset before it will
+function correctly, however simply reverting the above patch causes
+problems with ethtool settings getting reset.
+
+It seems the problem is that the ethernet is not properly reset during
+bind, and indeed the code in ax88772_bind that resets the device is a
+very small subset of the actual ax88772_reset function. This patch uses
+ax88772_reset in place of the existing reset code in ax88772_bind which
+removes some code duplication and fixes the ethernet on Arndale.
+
+It is still possible that the original patch causes some issues with
+suspend and resume but that seems like a separate issue and I haven't
+had a chance to test that yet.
+
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Riku Voipio <riku.voipio@linaro.org>
+---
+
+Hi,
+
+I wasn't 100% sure which branch to base this off so I based it on Dave
+Miller's net-next branch, which seemed logical.
+
+Thanks,
+Charles
+
+ drivers/net/usb/asix_devices.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/usb/asix_devices.c
+b/drivers/net/usb/asix_devices.c index 2c05f6c..816d511 100644
+--- a/drivers/net/usb/asix_devices.c
++++ b/drivers/net/usb/asix_devices.c
+@@ -465,19 +465,7 @@ static int ax88772_bind(struct usbnet *dev, struct
+usb_interface *intf)
+ 		return ret;
+ 	}
+ 
+-	ret = asix_sw_reset(dev, AX_SWRESET_IPPD | AX_SWRESET_PRL);
+-	if (ret < 0)
+-		return ret;
+-
+-	msleep(150);
+-
+-	ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
+-	if (ret < 0)
+-		return ret;
+-
+-	msleep(150);
+-
+-	ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL :
+AX_SWRESET_PRTE);
++	ax88772_reset(dev);
+ 
+ 	/* Read PHYID register *AFTER* the PHY was reset properly */
+ 	phyid = asix_get_phyid(dev);
+--
+1.7.2.5
+
