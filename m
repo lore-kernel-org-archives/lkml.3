@@ -1,98 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaKGJRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:17:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23010 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaKGJRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:17:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,330,1413270000"; 
-   d="scan'208";a="628212515"
-Message-ID: <1415351762.14686.99.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [LKP] [dmi] PANIC: early exception 0e rip 10:ffffffff81899e6b
- error 9 cr2 ffffffffff240000
-From: Matt Fleming <matt.fleming@intel.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-CC: LKP <lkp@01.org>, Leif Lindholm <leif.lindholm@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Date: Fri, 7 Nov 2014 09:16:02 +0000
-In-Reply-To: <CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
-References: <20141107054741.GB30507@yliu-dev.sh.intel.com>
-	 <CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+	id S1751410AbaKGJS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:18:28 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:54300 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaKGJSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:18:22 -0500
+Date: Fri, 7 Nov 2014 12:18:11 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Dave Chinner <david@fromorbit.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [rfc patch] mm: vmscan: invoke slab shrinkers for each lruvec
+Message-ID: <20141107091811.GH4839@esperanza>
+References: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [163.33.239.180]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 08:17 +0100, Ard Biesheuvel wrote:
-> On 7 November 2014 06:47, LKP <lkp@01.org> wrote:
-> > FYI, we noticed the below changes on
-> >
-> > https://git.linaro.org/people/ard.biesheuvel/linux-arm efi-for-3.19
-> > commit aacdce6e880894acb57d71dcb2e3fc61b4ed4e96 ("dmi: add support for SMBIOS 3.0 64-bit entry point")
-> >
-> >
-> > +-----------------------+------------+------------+
-> > |                       | 2fa165a26c | aacdce6e88 |
-> > +-----------------------+------------+------------+
-> > | boot_successes        | 20         | 10         |
-> > | early-boot-hang       | 1          |            |
-> > | boot_failures         | 0          | 5          |
-> > | PANIC:early_exception | 0          | 5          |
-> > +-----------------------+------------+------------+
-> >
-> >
-> > [    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000036fffffff] usable
-> > [    0.000000] bootconsole [earlyser0] enabled
-> > [    0.000000] NX (Execute Disable) protection: active
-> > PANIC: early exception 0e rip 10:ffffffff81899e6b error 9 cr2 ffffffffff240000
-> > [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc2-gc5221e6 #1
-> > [    0.000000]  0000000000000000 ffffffff82203d30 ffffffff819f0a6e 00000000000003f8
-> > [    0.000000]  ffffffffff240000 ffffffff82203e18 ffffffff823701b0 ffffffff82511401
-> > [    0.000000]  0000000000000000 0000000000000ba3 0000000000000000 ffffffffff240000
-> > [    0.000000] Call Trace:
-> > [    0.000000]  [<ffffffff819f0a6e>] dump_stack+0x4e/0x68
-> > [    0.000000]  [<ffffffff823701b0>] early_idt_handler+0x90/0xb7
-> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> > [    0.000000]  [<ffffffff81899e6b>] ? dmi_table+0x3f/0x94
-> > [    0.000000]  [<ffffffff81899e42>] ? dmi_table+0x16/0x94
-> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> > [    0.000000]  [<ffffffff823c7eff>] dmi_walk_early+0x44/0x69
-> > [    0.000000]  [<ffffffff823c88a2>] dmi_present+0x180/0x1ff
-> > [    0.000000]  [<ffffffff823c8ab3>] dmi_scan_machine+0x144/0x191
-> > [    0.000000]  [<ffffffff82370702>] ? loglevel+0x31/0x31
-> > [    0.000000]  [<ffffffff82377f52>] setup_arch+0x490/0xc73
-> > [    0.000000]  [<ffffffff819eef73>] ? printk+0x4d/0x4f
-> > [    0.000000]  [<ffffffff82370b90>] start_kernel+0x9c/0x43f
-> > [    0.000000]  [<ffffffff82370120>] ? early_idt_handlers+0x120/0x120
-> > [    0.000000]  [<ffffffff823704a2>] x86_64_start_reservations+0x2a/0x2c
-> > [    0.000000]  [<ffffffff823705df>] x86_64_start_kernel+0x13b/0x14a
-> > [    0.000000] RIP 0x4
-> >
-> 
-> This is most puzzling. Could anyone decode the exception?
-> This looks like the non-EFI path through dmi_scan_machine(), which
-> calls dmi_present() /after/ calling dmi_smbios3_present(), which
-> apparently has not found the _SM3_ header tag. Or could the call stack
-> be inaccurate?
+Hi Johannes,
 
-The code triggered a page fault while trying to access
-0xffffffffff240000, caused because the reserved bit was set in the page
-table and no page was found. Looks like it jumped through a bogus
-pointer.
+The general idea sounds sane to me. A few comments inline.
 
-And yes, the callstack may definitely be wrong - the stack dumper is
-just scraping addresses from the stack, as indicated by the '?' symbol.
+On Thu, Nov 06, 2014 at 06:50:28PM -0500, Johannes Weiner wrote:
+[...]
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a384339bf718..6a9ab5adf118 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+[...]
+> @@ -1876,7 +1872,8 @@ enum scan_balance {
+>   * nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
+>   */
+>  static void get_scan_count(struct lruvec *lruvec, int swappiness,
+> -			   struct scan_control *sc, unsigned long *nr)
+> +			   struct scan_control *sc, unsigned long *nr,
+> +			   unsigned long *lru_pages)
+>  {
+>  	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
+>  	u64 fraction[2];
+> @@ -2022,39 +2019,34 @@ out:
+>  	some_scanned = false;
+>  	/* Only use force_scan on second pass. */
+>  	for (pass = 0; !some_scanned && pass < 2; pass++) {
+> +		*lru_pages = 0;
+>  		for_each_evictable_lru(lru) {
+>  			int file = is_file_lru(lru);
+>  			unsigned long size;
+>  			unsigned long scan;
+>  
+> +			/* Scan one type exclusively */
+> +			if ((scan_balance == SCAN_FILE) != file) {
+> +				nr[lru] = 0;
+> +				continue;
+> +			}
+> +
 
-Yuanhan, what symbol does 0xffffffff81899e6b (the faulting instruction)
-translate to?
+Why do you move this piece of code? AFAIU, we only want to accumulate
+the total number of evictable pages on the lruvec, so the patch for
+shrink_lruvec should look much simpler. Is it a kind of cleanup? If so,
+I guess it'd be better to submit it separately.
 
+Anyways, this hunk doesn't look right to me. With it applied, if
+scan_balance equals SCAN_EQUAL or SCAN_FRACT we won't scan file lists at
+all.
+
+>  			size = get_lru_size(lruvec, lru);
+> -			scan = size >> sc->priority;
+> +			*lru_pages += size;
+>  
+> +			scan = size >> sc->priority;
+>  			if (!scan && pass && force_scan)
+>  				scan = min(size, SWAP_CLUSTER_MAX);
+>  
+> -			switch (scan_balance) {
+> -			case SCAN_EQUAL:
+> -				/* Scan lists relative to size */
+> -				break;
+> -			case SCAN_FRACT:
+> +			if (scan_balance == SCAN_FRACT) {
+>  				/*
+>  				 * Scan types proportional to swappiness and
+>  				 * their relative recent reclaim efficiency.
+>  				 */
+>  				scan = div64_u64(scan * fraction[file],
+> -							denominator);
+> -				break;
+> -			case SCAN_FILE:
+> -			case SCAN_ANON:
+> -				/* Scan one type exclusively */
+> -				if ((scan_balance == SCAN_FILE) != file)
+> -					scan = 0;
+> -				break;
+> -			default:
+> -				/* Look ma, no brain */
+> -				BUG();
+> +						 denominator);
+>  			}
+> +
+>  			nr[lru] = scan;
+>  			/*
+>  			 * Skip the second pass and don't force_scan,
+> @@ -2077,10 +2069,17 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
+>  	enum lru_list lru;
+>  	unsigned long nr_reclaimed = 0;
+>  	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+> +	unsigned long nr_scanned = sc->nr_scanned;
+> +	unsigned long lru_pages;
+>  	struct blk_plug plug;
+>  	bool scan_adjusted;
+> +	struct shrink_control shrink = {
+> +		.gfp_mask = sc->gfp_mask,
+> +		.nid = zone_to_nid(lruvec_zone(lruvec)),
+> +	};
+> +	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  
+> -	get_scan_count(lruvec, swappiness, sc, nr);
+> +	get_scan_count(lruvec, swappiness, sc, nr, &lru_pages);
+>  
+>  	/* Record the original scan target for proportional adjustments later */
+>  	memcpy(targets, nr, sizeof(nr));
+> @@ -2173,6 +2172,23 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
+>  	sc->nr_reclaimed += nr_reclaimed;
+>  
+>  	/*
+> +	 * Shrink slab caches in the same proportion that the eligible
+> +	 * LRU pages were scanned.
+> +	 *
+> +	 * XXX: Skip memcg limit reclaim, as the slab shrinkers are
+> +	 * not cgroup-aware yet and we can't know if the objects in
+> +	 * the global lists contribute to the memcg limit.
+> +	 */
+> +	if (global_reclaim(sc) && lru_pages) {
+> +		nr_scanned = sc->nr_scanned - nr_scanned;
+> +		shrink_slab(&shrink, nr_scanned, lru_pages);
+
+I've a few concerns about slab-vs-pagecache reclaim proportion:
+
+If a node has > 1 zones, then we will scan slabs more aggressively than
+lru pages. Not sure, if it really matters, because on x86_64 most nodes
+have 1 zone.
+
+If there are > 1 nodes, NUMA-unaware shrinkers will get more pressure
+than NUMA-aware ones. However, we have the same behavior in kswapd at
+present. This might be an issue if there are many nodes.
+
+If there are > 1 memory cgroups, slab shrinkers will get significantly
+more pressure on global reclaim than they should. The introduction of
+memcg-aware shrinkers will help, but only for memcg-aware shrinkers.
+Other shrinkers (if there are any) will be treated unfairly. I think for
+memcg-unaware shrinkers (i.e. for all shrinkers right now) we should
+pass lru_pages=zone_reclaimable_pages.
+
+BTW, may be we'd better pass the scan priority for shrink_slab to
+calculate the pressure instead of messing with nr_scanned/lru_pages?
+
+> +		if (reclaim_state) {
+> +			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> +			reclaim_state->reclaimed_slab = 0;
+> +		}
+
+OFF TOPIC: I wonder why we need the reclaim_state. The main shrink
+candidates, dentries and inodes, are mostly freed by RCU, so they won't
+count there.
+
+> +	}
+> +
+> +	/*
+>  	 * Even if we did not try to evict anon pages at all, we want to
+>  	 * rebalance the anon lru active/inactive ratio.
+>  	 */
+[...]
+
+Thanks,
+Vladimir
