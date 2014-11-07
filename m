@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294AbaKGFf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:35:26 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33650 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847AbaKGFfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:35:20 -0500
-Message-ID: <545C59CD.3070707@ti.com>
-Date: Fri, 7 Nov 2014 11:04:05 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752237AbaKGFgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:36:16 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:43668 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830AbaKGFgO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 00:36:14 -0500
+Message-ID: <545C5A1B.9020206@windriver.com>
+Date: Thu, 6 Nov 2014 23:35:23 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <devicetree@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jan Kardell <jan.kardell@telliq.com>, <linux-iio@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        <linux-omap@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, Brad Griffis <bgriffis@ti.com>
-Subject: Re: [PATCH 1/4] input: touchscreen: ti_am335x_tsc Interchange touchscreen
- and ADC steps
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com> <1414408111-2631-2-git-send-email-vigneshr@ti.com> <20141106141916.GA17151@netboy>
-In-Reply-To: <20141106141916.GA17151@netboy>
-Content-Type: text/plain; charset="windows-1252"
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com> <yq1zjc3ai4h.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1zjc3ai4h.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.119.46]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/06/2014 07:56 PM, Martin K. Petersen wrote:
+>>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+>
+> Chris,
+>
+> Chris> For a RAID card I expect it would be related to chunk size or
+> Chris> stripe width or something...but even then I would expect to be
+> Chris> able to cap it at 100MB or so.  Or are there storage systems on
+> Chris> really fast interfaces that could legitimately want a hundred meg
+> Chris> of data at a time?
+>
+> Well, there are several devices that report their capacity to indicate
+> that they don't suffer any performance (RMW) penalties for large
+> commands regardless of size. I would personally prefer them to report 0
+> in that case.
+
+I got curious and looked at the spec at 
+"http://www.13thmonkey.org/documentation/SCSI/sbc3r25.pdf".  I'm now 
+wondering if maybe linux is misbehaving.
+
+I think there is actually some justification for putting a huge value in 
+the "optimal transfer length" field.  That field is described as "the 
+optimal transfer length in blocks for a single...command", but then 
+later it has "If a device server receives a request with a transfer 
+length exceeding this value, then a significant delay in processing the 
+request may be incurred."  As written, it is ambiguous.
+
+Looking at "ftp://ftp.t10.org/t10/document.03/03-028r2.pdf" it appears 
+that originally that field was the "optimal maximum transfer length", 
+not the "optimal transfer length".  It appears that the intent was that 
+the device was able to take requests up to the "maximum transfer 
+length", but there would be a performance penalty if you went over the 
+"optimum maximum transfer length".
+
+Section E.4 in "sbc3r25.pdf" talks about optimizing transfers.  They 
+suggest using a transfer length that is a multiple of "optimal transfer 
+length granularity", up to a max of either the max or optimal transfer 
+lengths depending on the size of the penalty if you exceed the optimal 
+transfer length.  This reinforces the idea that the "optimal transfer 
+length" is actually the optimal *maximum* length, but any multiple of 
+the optimal granularity is fine.
+
+Based on that, I think it would have been clearer if it had been called 
+"/sys/block/sdb/queue/optimal_max_io_size".
+
+Also, I think it's wrong for filesystems and userspace to use it for 
+alignment.  In E.4 and E.5 in the "sbc3r25.pdf" doc, it looks like they 
+use the optimal granularity field for alignment, not the optimal 
+transfer length.
 
 
-On Thursday 06 November 2014 07:49 PM, Richard Cochran wrote:
-> On Mon, Oct 27, 2014 at 04:38:28PM +0530, Vignesh R wrote:
-> 
-> ...
-> 
->> @@ -209,6 +214,7 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
->>  	unsigned int read, diff;
->>  	unsigned int i, channel;
->>  	unsigned int creads = ts_dev->coordinate_readouts;
->> +	unsigned int first_step = TOTAL_STEPS - (creads * 2 + 2);
->>  
->>  	*z1 = *z2 = 0;
->>  	if (fifocount % (creads * 2 + 2))
->> @@ -226,7 +232,7 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
->>  
->>  		channel = (read & 0xf0000) >> 16;
->>  		read &= 0xfff;
->> -		if (channel < creads) {
->> +		if (channel > first_step + creads + 2) {
->>  			diff = abs(read - prev_val_x);
->>  			if (diff < prev_diff_x) {
->>  				prev_diff_x = diff;
->> @@ -234,19 +240,19 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
->>  			}
->>  			prev_val_x = read;
->>  
->> -		} else if (channel < creads * 2) {
->> +		} else if (channel == first_step + creads + 1) {
->> +			*z1 = read;
->> +
->> +		} else if (channel == first_step + creads + 2) {
->> +			*z2 = read;
->> +
->> +		} else if (channel > first_step) {
->>  			diff = abs(read - prev_val_y);
->>  			if (diff < prev_diff_y) {
->>  				prev_diff_y = diff;
->>  				*y = read;
-> 
-> While you are at it, please get rid of the this "delta filter"
-> nonsense.
+So for the ST900MM0006, it had:
 
-Currently, there is too much noise in the TSC hardware that is being
-removed by delta filtering. I tested TSC unit by removing filtering
-logic, the performance was not at all satisfactory. The cursor jumps
-wayward and smooth circles cannot be drawn. Looks like delta filtering
-cannot be removed as of now. May be I will try and address it in future.
+# sg_inq --vpd --page=0xb0 /dev/sdb
+VPD INQUIRY: Block limits page (SBC)
+   Optimal transfer length granularity: 1 blocks
+   Maximum transfer length: 0 blocks
+   Optimal transfer length: 4294967295 blocks
 
-Regards
-Vignesh
+In this case I think the drive is trying to say that it doesn't require 
+any special granularity (can handle alignment on 512-byte blocks), and 
+that it can handle any size of transfer without performance penalty.
 
-> 
-> Thanks,
-> Richard
-> 
->>  			}
->>  			prev_val_y = read;
->> -
->> -		} else if (channel < creads * 2 + 1) {
->> -			*z1 = read;
->> -
->> -		} else if (channel < creads * 2 + 2) {
->> -			*z2 = read;
->>  		}
->>  	}
->>  }
->> -- 
->> 1.9.1
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Chris
