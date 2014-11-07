@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaKGJxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:53:46 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1751431AbaKGJx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:53:59 -0500
+Received: from mga03.intel.com ([134.134.136.65]:19749 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957AbaKGJxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:53:42 -0500
-Message-ID: <545C96A1.40304@nod.at>
-Date: Fri, 07 Nov 2014 10:53:37 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Christoph Hellwig <hch@infradead.org>, axboe@fb.com,
-        ezequiel.garcia@free-electrons.com, dwmw2@infradead.org,
-        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
+	id S1750974AbaKGJxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:53:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="485352119"
+Message-ID: <1415354030.958.304.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 0/4] UBIFS: add xattr support for security / SELinux
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ben Shelton <ben.shelton@ni.com>
+Cc: linux-mtd@lists.infradead.org, adrian.hunter@intel.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UBI: Block: Add blk-mq support
-References: <1414933255-3795-1-git-send-email-richard@nod.at>	 <20141103081821.GA5261@infradead.org> <54573B72.1060600@nod.at> <1415353596.958.302.camel@sauron.fi.intel.com>
-In-Reply-To: <1415353596.958.302.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=utf-8
+Date: Fri, 07 Nov 2014 11:53:50 +0200
+In-Reply-To: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.11.2014 um 10:46 schrieb Artem Bityutskiy:
-> On Mon, 2014-11-03 at 09:23 +0100, Richard Weinberger wrote:
->> Am 03.11.2014 um 09:18 schrieb Christoph Hellwig:
->>> On Sun, Nov 02, 2014 at 02:00:55PM +0100, Richard Weinberger wrote:
->>>> +#define UBIBLOCK_SG_COUNT 64
->>>
->>>
->>> Can you document why you choose this number? The default nr_request
->>> for the old code would be 128.
->>
->> Is 64 a problem? Beside of the fact that I forgot to set blk_queue_max_segments().
->> I used this number because 128 seemed a bit high and my goal was to
->> keep the memory footprint small.
->> This is also why I've set tag_set.queue_depth to 64.
+On Fri, 2014-10-31 at 13:50 -0500, Ben Shelton wrote:
+> I'm reposting the patch series for security xattr / SELinux support on UBIFS
+> from Subodh Nijsure and Marc Kleine-Budde [1] in order to restart the process
+> of getting this support upstream.
 > 
-> The request was to document, so lets' document the choice.
+> Notes:
+> 
+>  - I removed 'UBIFS: xattr: protect ui_size and data_len by ui_mutex' because
+>    after looking through the comments before the definition of struct
+>    ubifs_inode, I'm not sure what this was intended to fix.  It looks like
+>    i_size and data_len are not intended to be protected by ui_mutex, and I'm
+>    unclear on why ui->ui_size needs to be protected here by host_ui's ui_mutex.
+>    CCing Marc -- could you comment on how this is supposed to work?
 
-Of course I'll document it. But so far I had no time to do a
-v2 of this patch.
+Thanks, I'll be looking at this as time allows. I think the MTD web site
+mentioned somewhere that SELinux is not supported or something. In any
+case, once we support SELinux, we need to tell on the web site that we
+support it.
 
-Thanks,
-//richard
+Which reminds me that I need to update the web-site and tell there that
+I do not support the backport trees any longer...
+
