@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaKGMNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:13:24 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47344 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaKGMNW (ORCPT
+	id S1752294AbaKGMNi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:13:38 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:46793 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247AbaKGMNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:13:22 -0500
-Date: Fri, 7 Nov 2014 13:13:20 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v9 2/4] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
-Message-ID: <20141107121320.GA20419@amd>
-References: <1415105570-7871-1-git-send-email-k.kozlowski@samsung.com>
- <1415105570-7871-3-git-send-email-k.kozlowski@samsung.com>
- <20141104201834.GC15071@amd>
- <1415176978.15850.11.camel@AMDC1943>
+	Fri, 7 Nov 2014 07:13:31 -0500
+Date: Fri, 7 Nov 2014 13:13:25 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        David Airlie <airlied@linux.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>
+Subject: Re: [PATCH] drm/panel: update innolux n116bge timings
+Message-ID: <20141107121322.GA11084@ulmo.nvidia.com>
+References: <1409626606-15225-1-git-send-email-djkurtz@chromium.org>
+ <20140922083929.GG1470@ulmo>
+ <CAGS+omBFQi2BokDCV8DpRYwKs7DsGWKfxtDu8+7zJfKatL0SeA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
 Content-Disposition: inline
-In-Reply-To: <1415176978.15850.11.camel@AMDC1943>
+In-Reply-To: <CAGS+omBFQi2BokDCV8DpRYwKs7DsGWKfxtDu8+7zJfKatL0SeA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-11-05 09:42:58, Krzysztof Kozlowski wrote:
-> On wto, 2014-11-04 at 21:18 +0100, Pavel Machek wrote:
-> > On Tue 2014-11-04 13:52:48, Krzysztof Kozlowski wrote:
-> > > The AMBA bus driver defines runtime Power Management functions which
-> > > disable and unprepare AMBA bus clock. This is problematic for runtime PM
-> > > because unpreparing a clock might sleep so it is not interrupt safe.
-> > > 
-> > > However some drivers may want to implement runtime PM functions in
-> > > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-> > > bus driver should only disable/enable the clock in runtime suspend and
-> > > resume callbacks.
-> > 
-> > 
-> > 
-> > >  /*
-> > >   * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
-> > >   * enable/disable the bus clock at runtime PM suspend/resume as this
-> > > @@ -95,8 +102,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
-> > >  	struct amba_device *pcdev = to_amba_device(dev);
-> > >  	int ret = pm_generic_runtime_suspend(dev);
-> > >  
-> > > -	if (ret == 0 && dev->driver)
-> > > -		clk_disable_unprepare(pcdev->pclk);
-> > > +	if (ret == 0 && dev->driver) {
-> > > +		pcdev->irq_safe = get_pm_runtime_irq_safe(dev);
-> > > +
-> > > +		if (pcdev->irq_safe)
-> > > +			clk_disable(pcdev->pclk);
-> > > +		else
-> > > +			clk_disable_unprepare(pcdev->pclk);
-> > > +	}
-> > 
-> > So you can handle the case of !pcdev->irq_safe. What is the penalty
-> > for always assuming !pcdev->irq_safe?
-> 
-> The penalty (for pl330 driver) would be that the runtime resume/suspend
-> cannot happen from atomic context
->   => pm_runtime_get_sync() cannot be called from atomic context
->     => complete rework of runtime PM for pl330 DMA driver because now
->        one of pm_runtime_get_sync() calls is in device_issue_pending
->        callback which may not sleep. And by "rework" I also mean that
->        I do not know how to do this... yet.
 
-I still don't get it. You say that you don't know how to handle
-!pcdev->irq_safe case... Yet have code above that tries to handle it.
+--PEIAKu/WMn1b1Hv9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If that case can't be sanely handled, I'd expect
-BUG_ON(!pcdev->irq_safe).
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On Mon, Sep 22, 2014 at 06:12:41PM +0800, Daniel Kurtz wrote:
+> On Mon, Sep 22, 2014 at 4:39 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> >
+> > On Tue, Sep 02, 2014 at 10:56:46AM +0800, Daniel Kurtz wrote:
+> > > There are several different models of N116BGE.  According to the comm=
+it
+> > > that added innolux_n116bge_mode [0], this N116BGE is for the eDP vari=
+ety.
+> > >
+> > > [0] commit 0a2288c06aab73c966e82045c8f20b0e713baf2a
+> > >  Author: Thierry Reding <treding@nvidia.com>
+> > >  Date:   Thu Jul 3 14:02:59 2014 +0200
+> > >
+> > >    drm/panel: simple: Add Innolux N116BGE panel support
+> > >
+> > > The clock and htotal values from add by that patch are out of spec ac=
+cording to
+> > > the datasheets I have seen for the eDP N116BGE (-EA2 and -EB2).
+> >
+> > Does out of spec imply that these timings aren't working for you?
+>=20
+> No, I didn't even try with your values, actually.
+> Out of spec just means that the numbers do not fall between Min and
+> Max on the datasheet:
+>=20
+> 72.6 <=3D DCLK <=3D 80.24 vs. 71
+> 1506 <=3D htotal <=3D 1716 vs. 1500
+>=20
+> > > This patch changes the values to the "Typ" values on the datasheet.
+> >
+> > The original patch was based on -E42 of the datasheet. But I can run
+> > some tests to see if the timings in this patch work on the panel that I
+> > have. If so I guess the easiest would be to apply this.
+>=20
+> Thanks!
+
+Took me a while longer to test this than I had expected. Turns out the
+Tegra132 Norrin board that I have works with the timings you provide in
+this patch too, so I'm going to apply this patch.
+
+Thierry
+
+--PEIAKu/WMn1b1Hv9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUXLdiAAoJEN0jrNd/PrOh28gP/2zNeEtm+g+V6GPRTc6GaQrO
+q8hRSUlmpz3aKdoFl3+dYAJLbhKYsXEx8ye8q3Q6ag6jDHQrcrLmNsiXYy4OV3xV
+hYW4EA9sJ6RX4n9AV0dacFF4E8DRB2mcGIYuhxNc8dmqWvwmgRuFdqIALnrk8K4d
+97TscTDCghwTRC9qVzxCgCTYUvRezNrAeMh7LLfHywlIs6T5LvpLmjZ9f3p11Wts
+CpkuphdkHVAFkzg/OnHDrKoc4x6XPNQbOVb00qP5yrzaMA2ZGzxF29Rt2qgr4O0J
+zU/fX2Ob0JKAvCzKPd4hIWGn+bxQduQvNPCSnBh1vegPKHdpY+HHx4VbMDnJ8/sU
+Nml73AL8Vy/Lz9sHLOexiPjVbzCFESq4t/qg+d0zpJvrbvjDWfSUOamSuKk7Zcmx
+9cjwg+a52JB0cWfxxGc3+IGrPH87vOIsSO/93gA9Rny3HXOrYQtcJlBzekM0K3ZB
++Y2DNT6n+AukRmDsH/6D1/7AlysK+L4Byxe2Iqa2Xv8DnyTUzXaUX7EcqY7xCkYR
+kpJdYcWJZc0VG3fD2inruP5lR4CjCCTUkcFhGwsoPz03h44XXf//wQhKnCiSjcWT
+frmXZy/G5JbIHJyh5gR5tnUIYT9FZcTmulqFuIeRWA6dFvH6taawqnpcHI/UGJwC
+jHQaId8GmI7yhHPIMuDU
+=QPk0
+-----END PGP SIGNATURE-----
+
+--PEIAKu/WMn1b1Hv9--
