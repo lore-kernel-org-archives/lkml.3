@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaKGNLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:11:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54539 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaKGNLh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:11:37 -0500
-Date: Fri, 7 Nov 2014 13:11:30 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "roland@hack.frob.com" <roland@hack.frob.com>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-Message-ID: <20141107131129.GF18916@arm.com>
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
- <1678531.AUssrM9PAs@wuerfel>
- <20141107121119.GQ4042@n2100.arm.linux.org.uk>
- <353850534.aGkkrtTogX@wuerfel>
+	id S1752683AbaKGNMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:12:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751739AbaKGNMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 08:12:20 -0500
+Date: Fri, 7 Nov 2014 07:11:53 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel Live Patching
+Message-ID: <20141107131153.GD4071@treble.redhat.com>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <20141106184446.GA12779@infradead.org>
+ <20141106185157.GB29272@suse.cz>
+ <20141106185857.GA7106@infradead.org>
+ <20141106202423.GB2266@suse.cz>
+ <20141107074745.GC22703@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <353850534.aGkkrtTogX@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141107074745.GC22703@infradead.org>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 12:44:07PM +0000, Arnd Bergmann wrote:
-> On Friday 07 November 2014 12:11:19 Russell King - ARM Linux wrote:
-> > On Fri, Nov 07, 2014 at 01:03:00PM +0100, Arnd Bergmann wrote:
-> > > On Friday 07 November 2014 11:55:51 Will Deacon wrote:
-> > > > We need this for arm64 and, since all architectures seem to have a mechanism
-> > > > for setting a system call via ptrace, moving it to generic code should make
-> > > > sense for new architectures too, no?
-> > > 
-> > > It makes a little more sense now, but I still don't understand why you
-> > > need to set the system call number via ptrace. What is this used for,
-> > > and why doesn't any other architecture have this?
-> > 
-> > All other architectures have a way.  x86, for example, you set orig_eax
-> > (or orig_rax) to change the syscall number.  On ARM, that doesn't work
-> > because we don't always pass the syscall number in a register.
-> > 
+On Thu, Nov 06, 2014 at 11:47:45PM -0800, Christoph Hellwig wrote:
+> On Thu, Nov 06, 2014 at 09:24:23PM +0100, Vojtech Pavlik wrote:
+> > One reason is that there are currently at least two generators using
+> > very different methods of generation (in addition to the option of doing
+> > the patch module by hand), and neither of them are currently in a state
+> > where they would be ready for inclusion into the kernel (although the
+> > kpatch one is clearly closer to that).
 > 
-> Sorry for being slow today, but why can't we use the same interface that
-> s390 has on arm64:
-> 
-> static int s390_system_call_get(struct task_struct *target,
->                                 const struct user_regset *regset,
->                                 unsigned int pos, unsigned int count,
->                                 void *kbuf, void __user *ubuf)
-> {
->         unsigned int *data = &task_thread_info(target)->system_call;
->         return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
->                                    data, 0, sizeof(unsigned int));
-> }
-> 
-> static int s390_system_call_set(struct task_struct *target,
->                                 const struct user_regset *regset,
->                                 unsigned int pos, unsigned int count,
->                                 const void *kbuf, const void __user *ubuf)
-> {
->         unsigned int *data = &task_thread_info(target)->system_call;
->         return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
->                                   data, 0, sizeof(unsigned int));
-> }
-> 
-> static const struct user_regset s390_regsets[] = {
-> 	...
->         {
->                 .core_note_type = NT_S390_SYSTEM_CALL,
->                 .n = 1,
->                 .size = sizeof(unsigned int),
->                 .align = sizeof(unsigned int),
->                 .get = s390_system_call_get,
->                 .set = s390_system_call_set,
->         },
-> 	...
-> };
-> 
-> Is it just preference for being consistent with ARM32, or is there a
-> reason this won't work?
+> So agree on one method and get it into shape, just like we do for other
+> kernel subsystems.
 
-Interesting, I hadn't considered a unit-length regset.
+That's our goal (and it sounds like everybody's on board with that).
 
-> It's not that I care strongly about the interface, my main point is
-> that the changelog doesn't describe why one interface was used instead
-> the other.
+But we have two different implementations, all the way up the stack.  I
+think we have to work on combining and stabilizing one thing at a time.
+We want to do this in stages:
 
-I suspect the current approach was taken because it follows the same scheme
-as 32-bit ARM. If both methods are sufficient (Kees would have a better idea
-than me on that), then I don't have a strong preference.
+1. Define a common core module with an API that can be used by all three
+   approaches (manual, kpatch generator, kGraft generator)
 
-Will
+2. Add consistency model(s) (e.g. kpatch stop_machine, kGraft per-task
+   consistency, Masami's per task ref counting)
+
+3. Add combined patch module generation tool
+
+-- 
+Josh
