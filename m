@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaKGSt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:49:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708AbaKGSt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:49:57 -0500
-Message-ID: <545D1435.90505@redhat.com>
-Date: Fri, 07 Nov 2014 13:49:25 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, peterz@infradead.org,
-        mingo@redhat.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: core: fix out of bounds read in sched_init_numa()
-References: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1753192AbaKGSwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:52:03 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:36563 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaKGSwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:52:00 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: Propagate prepare and enable when reparenting orphans
+Date: Fri,  7 Nov 2014 10:51:52 -0800
+Message-Id: <1415386312-23741-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+With the existing code, if you find a parent for an orhpan that has
+already been prepared / enabled, you won't enable the parent.  That
+can cause later problems since the clock tree isn't in a consistent
+state.  Fix by propagating the prepare and enable.
 
-On 11/07/2014 09:53 AM, Andrey Ryabinin wrote:
+NOTE: this does bring up the question about whether the enable of the
+orphan actually made sense.  If the orphan's parent wasn't enabled by
+default (by the bootloader or the default state of the hardware) then
+the original enable of the orphan probably didn't do what the caller
+though it would.  Some users of the orphan might have preferred an
+EPROBE_DEFER be returned until we had a full path to a root clock.
+This patch doesn't address those concerns and really just syncs up the
+state.
 
-> Zero 'level' (e.g. on non-NUMA system) causing out of bounds
-> access in this line:
-> 
-> sched_max_numa_distance = sched_domains_numa_distance[level - 1];
-> 
-> Fix this by exiting from sched_init_numa() earlier.
-> 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com> Fixes:
-> 9942f79ba ("sched/numa: Export info needed for NUMA balancing on
-> complex topologies")
+Tested on rk3288-evb-rk808 by temporarily considering "sclk_tsadc" as
+a critical clock (to simulate a driver enabling it at bootup).
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Before:
 
-> Another option would be to not call sched_init_numa() if
-> nr_node_ids == 1, but I'm not sure that there is no such
-> configuration where nr_node_ids > 1 and node_distance(i, j) =
-> node_distance(0, 0) for any i and j.
+   clock                         enable_cnt  prepare_cnt        rate   accuracy   phase
+----------------------------------------------------------------------------------------
+ xin32k                                   0            0       32768          0 0
+    sclk_hdmi_cec                         0            0       32768          0 0
+    sclk_otg_adp                          0            0       32768          0 0
+    sclk_tsadc                            1            1         993          0 0
 
-When there is only one node, the distance from the node to itself
-will always be equal to node_distance(0, 0)
+After:
 
-I am somewhat surprised we go through all of sched_init_numa on
-a non-numa system, though :)
+   clock                         enable_cnt  prepare_cnt        rate   accuracy   phase
+----------------------------------------------------------------------------------------
+ xin32k                                   1            1       32768          0 0
+    sclk_hdmi_cec                         0            0       32768          0 0
+    sclk_otg_adp                          0            0       32768          0 0
+    sclk_tsadc                            1            1         993          0 0
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Note that xin32k on rk808 is a clock that cannot be disabled in
+hardware (it's an always on clock), so really all we needed to do was
+to sync up the state.
 
-iQEcBAEBAgAGBQJUXRQ1AAoJEM553pKExN6D+h4H/jWfrFnEJFJMIrZU/nK5EcHg
-CiUGVJH2f4jL6qCSRIIduxyyu9qggsQ5Qp7Ci5bfGm98Sj89DNnXUv4sarPWT3zA
-KIDM+BuKFjKSXfCjcwrCkBP6x8gIYgCLR3hSThmq/MPrbNULy+1SUslb77i3kmBK
-OhLrjSC0SQty5yvGkCfWYGGh7rRboRcfVyckvODRRdhwHtBP1p/seDNWHadAeX+d
-WRNqdqJkvwwJ+eW9e7e009+OqB2EmS9xKBjXGIc7zEehfgOaeROQZ8sL7exs2g3n
-6gtnWpn4firR15BSaHdK8kaEmsReWUZdrIebNVsUDmErN97O/AJ9UygJ5wUenzQ=
-=YPeU
------END PGP SIGNATURE-----
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/clk/clk.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4896ae9..a3d3d58 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1650,6 +1650,17 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ 	clk_reparent(clk, new_parent);
+ 	__clk_recalc_accuracies(clk);
+ 	__clk_recalc_rates(clk, POST_RATE_CHANGE);
++
++	if (clk->prepare_count) {
++		unsigned long flags;
++
++		__clk_prepare(new_parent);
++
++		flags = clk_enable_lock();
++		if (clk->enable_count)
++			__clk_enable(new_parent);
++		clk_enable_unlock(flags);
++	}
+ }
+ 
+ /**
+-- 
+2.1.0.rc2.206.gedb03e5
+
