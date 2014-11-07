@@ -1,124 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaKGRMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:12:13 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48179 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaKGRMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:12:09 -0500
-From: Torsten Fleischer <torfl6749@gmail.com>
-X-Google-Original-From: Torsten Fleischer
-To: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
+	id S1752923AbaKGRNM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:13:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53925 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317AbaKGRNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 12:13:10 -0500
+Date: Fri, 7 Nov 2014 18:13:07 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
         linux-kernel@vger.kernel.org
-Cc: Torsten Fleischer <torfl6749@gmail.com>
-Subject: [PATCH 1/1] spi: spi-gpio: Fix compiler warning when building for 64 bit systems
-Date: Fri,  7 Nov 2014 18:11:58 +0100
-Message-Id: <1415380318-2065-1-git-send-email-torfl6749@gmail.com>
-X-Mailer: git-send-email 1.8.4.5
+Subject: module notifier: was Re: [PATCH 2/2] kernel: add support for live
+ patching
+Message-ID: <20141107171307.GC1136@dhcp128.suse.cz>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Torsten Fleischer <torfl6749@gmail.com>
+On Thu 2014-11-06 08:39:08, Seth Jennings wrote:
+> This commit introduces code for the live patching core.  It implements
+> an ftrace-based mechanism and kernel interface for doing live patching
+> of kernel and kernel module functions.
+> 
+> It represents the greatest common functionality set between kpatch and
+> kgraft and can accept patches built using either method.
+> 
+> This first version does not implement any consistency mechanism that
+> ensures that old and new code do not run together.  In practice, ~90% of
+> CVEs are safe to apply in this way, since they simply add a conditional
+> check.  However, any function change that can not execute safely with
+> the old version of the function can _not_ be safely applied in this
+> version.
 
-The assignment of SPI_GPIO_NO_CHIPSELECT to cs_gpios[0] causes the following
-compiler warning, when building for 64 bit systems:
-"warning: overflow in implicit constant conversion [-Woverflow]".
+[...]
+ 
+> +/******************************
+> + * module notifier
+> + *****************************/
+> +
+> +static int lp_module_notify(struct notifier_block *nb, unsigned long action,
+> +			    void *data)
+> +{
+> +	struct module *mod = data;
+> +	struct lpc_patch *patch;
+> +	struct lpc_object *obj;
+> +	int ret = 0;
+> +
+> +	if (action != MODULE_STATE_COMING)
+> +		return 0;
 
-This is because the SPI_GPIO_NO_CHIPSELECT flag is a '-1' type casted to
-unsigned long and cs_gpios is of the type int.
+IMHO, we should handle also MODULE_STATE_GOING. We should unregister
+the ftrace handlers and update the state of the affected objects
+(ENABLED -> DISABLED)
 
-Furthermore the chip select's GPIO number is locally stored as unsigned int
-and compared with SPI_GPIO_NO_CHIPSELECT. Thus the result of the comparison
-is always false, if unsigned long and unsigned int have a different size.
+> +	down(&lpc_mutex);
+> +
+> +	list_for_each_entry(patch, &lpc_patches, list) {
+> +		if (patch->state == DISABLED)
+> +			continue;
+> +		list_for_each_entry(obj, &patch->objs, list) {
+> +			if (strcmp(obj->name, mod->name))
+> +				continue;
+> +			pr_notice("load of module '%s' detected, applying patch '%s'\n",
+> +				  mod->name, patch->mod->name);
+> +			obj->mod = mod;
+> +			ret = lpc_enable_object(patch->mod, obj);
+> +			if (ret)
+> +				goto out;
+> +			break;
+> +		}
+> +	}
+> +
+> +	up(&lpc_mutex);
+> +	return 0;
+> +out:
 
-As part of the fix this patch adds a check for the device tree's cs-gpios
-property.
+I would name this err_our or so to make it clear that it is used when
+something fails.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Torsten Fleischer <torfl6749@gmail.com>
----
- drivers/spi/spi-gpio.c | 24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+> +	up(&lpc_mutex);
+> +	WARN("failed to apply patch '%s' to module '%s'\n",
+> +		patch->mod->name, mod->name);
+> +	return 0;
+> +}
+> +
+> +static struct notifier_block lp_module_nb = {
+> +	.notifier_call = lp_module_notify,
+> +	.priority = INT_MIN, /* called last */
 
-diff --git a/drivers/spi/spi-gpio.c b/drivers/spi/spi-gpio.c
-index f0492c9..4b600d4 100644
---- a/drivers/spi/spi-gpio.c
-+++ b/drivers/spi/spi-gpio.c
-@@ -48,7 +48,7 @@ struct spi_gpio {
- 	struct spi_bitbang		bitbang;
- 	struct spi_gpio_platform_data	pdata;
- 	struct platform_device		*pdev;
--	int				cs_gpios[0];
-+	unsigned long			cs_gpios[0];
- };
- 
- /*----------------------------------------------------------------------*/
-@@ -220,7 +220,7 @@ static u32 spi_gpio_spec_txrx_word_mode3(struct spi_device *spi,
- static void spi_gpio_chipselect(struct spi_device *spi, int is_active)
- {
- 	struct spi_gpio *spi_gpio = spi_to_spi_gpio(spi);
--	unsigned int cs = spi_gpio->cs_gpios[spi->chip_select];
-+	unsigned long cs = spi_gpio->cs_gpios[spi->chip_select];
- 
- 	/* set initial clock polarity */
- 	if (is_active)
-@@ -234,7 +234,7 @@ static void spi_gpio_chipselect(struct spi_device *spi, int is_active)
- 
- static int spi_gpio_setup(struct spi_device *spi)
- {
--	unsigned int		cs;
-+	unsigned long		cs;
- 	int			status = 0;
- 	struct spi_gpio		*spi_gpio = spi_to_spi_gpio(spi);
- 	struct device_node	*np = spi->master->dev.of_node;
-@@ -249,7 +249,7 @@ static int spi_gpio_setup(struct spi_device *spi)
- 		/*
- 		 * ... otherwise, take it from spi->controller_data
- 		 */
--		cs = (unsigned int)(uintptr_t) spi->controller_data;
-+		cs = (uintptr_t) spi->controller_data;
- 	}
- 
- 	if (!spi->controller_state) {
-@@ -277,7 +277,7 @@ static int spi_gpio_setup(struct spi_device *spi)
- static void spi_gpio_cleanup(struct spi_device *spi)
- {
- 	struct spi_gpio *spi_gpio = spi_to_spi_gpio(spi);
--	unsigned int cs = spi_gpio->cs_gpios[spi->chip_select];
-+	unsigned long cs = spi_gpio->cs_gpios[spi->chip_select];
- 
- 	if (cs != SPI_GPIO_NO_CHIPSELECT)
- 		gpio_free(cs);
-@@ -437,7 +437,7 @@ static int spi_gpio_probe(struct platform_device *pdev)
- 		return status;
- 
- 	master = spi_alloc_master(&pdev->dev, sizeof(*spi_gpio) +
--					(sizeof(int) * num_devices));
-+					(sizeof(unsigned long) * num_devices));
- 	if (!master) {
- 		status = -ENOMEM;
- 		goto gpio_free;
-@@ -470,9 +470,15 @@ static int spi_gpio_probe(struct platform_device *pdev)
- 		if (!SPI_N_CHIPSEL)
- 			spi_gpio->cs_gpios[0] = SPI_GPIO_NO_CHIPSELECT;
- 		else
--			for (i = 0; i < SPI_N_CHIPSEL; i++)
--				spi_gpio->cs_gpios[i] =
--					of_get_named_gpio(np, "cs-gpios", i);
-+			for (i = 0; i < SPI_N_CHIPSEL; i++) {
-+				status = of_get_named_gpio(np, "cs-gpios", i);
-+				if (status < 0) {
-+					dev_err(&pdev->dev,
-+						"invalid cs-gpios property\n");
-+					goto gpio_free;
-+				}
-+				spi_gpio->cs_gpios[i] = status;
-+			}
- 	}
- #endif
- 
--- 
-1.8.4.5
+The handler for MODULE_STATE_COMMING would need have higger priority,
+if we want to cleanly unregister the ftrace handlers.
 
+Best Regards,
+Petr
