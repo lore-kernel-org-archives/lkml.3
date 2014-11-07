@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaKGI1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:27:53 -0500
+	id S1751613AbaKGI2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:28:08 -0500
 Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:55297 "EHLO
 	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345AbaKGI1u convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751164AbaKGI1w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:27:50 -0500
+	Fri, 7 Nov 2014 03:27:52 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
@@ -16,13 +16,13 @@ CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH -mm v7 13/13] mincore: apply page table walker on
- do_mincore()
-Thread-Topic: [PATCH -mm v7 13/13] mincore: apply page table walker on
- do_mincore()
-Thread-Index: AQHP+li91W5LhhxKZU+zFGNRZEie6A==
-Date: Fri, 7 Nov 2014 07:02:06 +0000
-Message-ID: <1415343692-6314-14-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH -mm v7 11/13] mempolicy: apply page table walker on
+ queue_pages_range()
+Thread-Topic: [PATCH -mm v7 11/13] mempolicy: apply page table walker on
+ queue_pages_range()
+Thread-Index: AQHP+li8VyS7zXagCECiSxirDK+i2g==
+Date: Fri, 7 Nov 2014 07:02:03 +0000
+Message-ID: <1415343692-6314-12-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Accept-Language: ja-JP, en-US
@@ -37,293 +37,319 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes do_mincore() use walk_page_vma(), which reduces many lines
-of code by using common page table walk code.
+queue_pages_range() does page table walking in its own way now, but there
+is some code duplicate. This patch applies page table walker to reduce
+lines of code.
+
+queue_pages_range() has to do some precheck to determine whether we really
+walk over the vma or just skip it. Now we have test_walk() callback in
+mm_walk for this purpose, so we can do this replacement cleanly.
+queue_pages_test_walk() depends on not only the current vma but also the
+previous one, so queue_pages->prev is introduced to remember it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
-ChangeLog v5:
-- fix buffer overflow
-
 ChangeLog v4:
-- remove redundant vma
-
-ChangeLog v3:
-- add NULL vma check in mincore_unmapped_range()
-- don't use pte_entry()
-
-ChangeLog v2:
-- change type of args of callbacks to void *
-- move definition of mincore_walk to the start of the function to fix compiler
-  warning
+- rebase to v3.16-rc3, where the return value of queue_pages_range()
+  becomes 0 in success instead of the first found vma, and use -EFAILT
+  instead of ERR_PTR() in failure.
 ---
- mm/huge_memory.c |  20 -------
- mm/mincore.c     | 169 +++++++++++++++++++------------------------------------
- 2 files changed, 59 insertions(+), 130 deletions(-)
+ mm/mempolicy.c | 228 +++++++++++++++++++++++----------------------------------
+ 1 file changed, 92 insertions(+), 136 deletions(-)
 
-diff --git mmotm-2014-11-05-16-01.orig/mm/huge_memory.c mmotm-2014-11-05-16-01/mm/huge_memory.c
-index ff1ecea8c0d7..a81a0b917068 100644
---- mmotm-2014-11-05-16-01.orig/mm/huge_memory.c
-+++ mmotm-2014-11-05-16-01/mm/huge_memory.c
-@@ -1422,26 +1422,6 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 	return ret;
- }
+diff --git mmotm-2014-11-05-16-01.orig/mm/mempolicy.c mmotm-2014-11-05-16-01/mm/mempolicy.c
+index e58725aff7e9..2c7c4e296386 100644
+--- mmotm-2014-11-05-16-01.orig/mm/mempolicy.c
++++ mmotm-2014-11-05-16-01/mm/mempolicy.c
+@@ -477,24 +477,34 @@ static const struct mempolicy_operations mpol_ops[MPOL_MAX] = {
+ static void migrate_page_add(struct page *page, struct list_head *pagelist,
+ 				unsigned long flags);
  
--int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
++struct queue_pages {
++	struct list_head *pagelist;
++	unsigned long flags;
++	nodemask_t *nmask;
++	struct vm_area_struct *prev;
++};
++
+ /*
+  * Scan through pages checking if pages follow certain conditions,
+  * and move them to the pagelist if they do.
+  */
+-static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
 -		unsigned long addr, unsigned long end,
--		unsigned char *vec)
--{
--	spinlock_t *ptl;
--	int ret = 0;
--
--	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
--		/*
--		 * All logical pages in the range are present
--		 * if backed by a huge page.
--		 */
--		spin_unlock(ptl);
--		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
--		ret = 1;
--	}
--
--	return ret;
--}
--
- int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
- 		  unsigned long old_addr,
- 		  unsigned long new_addr, unsigned long old_end,
-diff --git mmotm-2014-11-05-16-01.orig/mm/mincore.c mmotm-2014-11-05-16-01/mm/mincore.c
-index 725c80961048..0e548fbce19e 100644
---- mmotm-2014-11-05-16-01.orig/mm/mincore.c
-+++ mmotm-2014-11-05-16-01/mm/mincore.c
-@@ -19,38 +19,26 @@
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- 
--static void mincore_hugetlb_page_range(struct vm_area_struct *vma,
--				unsigned long addr, unsigned long end,
--				unsigned char *vec)
-+static int mincore_hugetlb(pte_t *pte, unsigned long hmask, unsigned long addr,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
++static int queue_pages_pte_range(pmd_t *pmd, unsigned long addr,
 +			unsigned long end, struct mm_walk *walk)
  {
-+	int err = 0;
- #ifdef CONFIG_HUGETLB_PAGE
--	struct hstate *h;
-+	unsigned char present;
-+	unsigned char *vec = walk->private;
- 
--	h = hstate_vma(vma);
--	while (1) {
--		unsigned char present;
--		pte_t *ptep;
--		/*
--		 * Huge pages are always in RAM for now, but
--		 * theoretically it needs to be checked.
--		 */
--		ptep = huge_pte_offset(current->mm,
--				       addr & huge_page_mask(h));
--		present = ptep && !huge_pte_none(huge_ptep_get(ptep));
--		while (1) {
--			*vec = present;
--			vec++;
--			addr += PAGE_SIZE;
--			if (addr == end)
--				return;
--			/* check hugepage border */
--			if (!(addr & ~huge_page_mask(h)))
--				break;
--		}
--	}
-+	/*
-+	 * Hugepages under user process are always in RAM and never
-+	 * swapped out, but theoretically it needs to be checked.
-+	 */
-+	present = pte && !huge_pte_none(huge_ptep_get(pte));
-+	for (; addr != end; vec++, addr += PAGE_SIZE)
-+		*vec = present;
-+	walk->private = vec;
- #else
- 	BUG();
- #endif
-+	return err;
- }
- 
- /*
-@@ -94,14 +82,15 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
- 	return present;
- }
- 
--static void mincore_unmapped_range(struct vm_area_struct *vma,
--				unsigned long addr, unsigned long end,
--				unsigned char *vec)
-+static int mincore_unmapped_range(unsigned long addr, unsigned long end,
-+				   struct mm_walk *walk)
- {
+-	pte_t *orig_pte;
 +	struct vm_area_struct *vma = walk->vma;
-+	unsigned char *vec = walk->private;
- 	unsigned long nr = (end - addr) >> PAGE_SHIFT;
- 	int i;
++	struct page *page;
++	struct queue_pages *qp = walk->private;
++	unsigned long flags = qp->flags;
++	int nid;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
  
--	if (vma->vm_file) {
-+	if (vma && vma->vm_file) {
- 		pgoff_t pgoff;
+-	orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	do {
+-		struct page *page;
+-		int nid;
++	split_huge_page_pmd(vma, addr, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
  
- 		pgoff = linear_page_index(vma, addr);
-@@ -111,25 +100,40 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
- 		for (i = 0; i < nr; i++)
- 			vec[i] = 0;
- 	}
-+	walk->private += nr;
++	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
++	for (; addr != end; pte++, addr += PAGE_SIZE) {
+ 		if (!pte_present(*pte))
+ 			continue;
+ 		page = vm_normal_page(vma, addr, *pte);
+@@ -507,114 +517,46 @@ static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		if (PageReserved(page))
+ 			continue;
+ 		nid = page_to_nid(page);
+-		if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
++		if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
+ 			continue;
+ 
+ 		if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
+-			migrate_page_add(page, private, flags);
+-		else
+-			break;
+-	} while (pte++, addr += PAGE_SIZE, addr != end);
+-	pte_unmap_unlock(orig_pte, ptl);
+-	return addr != end;
++			migrate_page_add(page, qp->pagelist, flags);
++	}
++	pte_unmap_unlock(pte - 1, ptl);
++	cond_resched();
 +	return 0;
  }
  
--static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
-+static int mincore_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
+-static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
+-		pmd_t *pmd, const nodemask_t *nodes, unsigned long flags,
+-				    void *private)
++static int queue_pages_hugetlb(pte_t *pte, unsigned long hmask,
++			       unsigned long addr, unsigned long end,
++			       struct mm_walk *walk)
  {
--	unsigned long next;
+ #ifdef CONFIG_HUGETLB_PAGE
++	struct queue_pages *qp = walk->private;
++	unsigned long flags = qp->flags;
+ 	int nid;
+ 	struct page *page;
  	spinlock_t *ptl;
-+	struct vm_area_struct *vma = walk->vma;
- 	pte_t *ptep;
+ 	pte_t entry;
  
--	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	do {
-+	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-+		memset(walk->private, 1, (end - addr) >> PAGE_SHIFT);
-+		walk->private += (end - addr) >> PAGE_SHIFT;
-+		spin_unlock(ptl);
-+		return 0;
-+	}
-+
-+	if (pmd_trans_unstable(pmd)) {
-+		mincore_unmapped_range(addr, end, walk);
-+		return 0;
-+	}
-+
-+	ptep = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-+	for (; addr != end; ptep++, addr += PAGE_SIZE) {
- 		pte_t pte = *ptep;
- 		pgoff_t pgoff;
-+		unsigned char *vec = walk->private;
- 
--		next = addr + PAGE_SIZE;
--		if (pte_none(pte))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else if (pte_present(pte))
-+		if (pte_none(pte)) {
-+			mincore_unmapped_range(addr, addr + PAGE_SIZE, walk);
-+			continue;
-+		}
-+		if (pte_present(pte))
- 			*vec = 1;
- 		else if (pte_file(pte)) {
- 			pgoff = pte_to_pgoff(pte);
-@@ -151,70 +155,11 @@ static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+-	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
+-	entry = huge_ptep_get((pte_t *)pmd);
++	ptl = huge_pte_lock(hstate_vma(walk->vma), walk->mm, pte);
++	entry = huge_ptep_get(pte);
+ 	if (!pte_present(entry))
+ 		goto unlock;
+ 	page = pte_page(entry);
+ 	nid = page_to_nid(page);
+-	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
++	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
+ 		goto unlock;
+ 	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
+ 	if (flags & (MPOL_MF_MOVE_ALL) ||
+ 	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
+-		isolate_huge_page(page, private);
++		isolate_huge_page(page, qp->pagelist);
+ unlock:
+ 	spin_unlock(ptl);
+ #else
+ 	BUG();
  #endif
- 			}
- 		}
--		vec++;
--	} while (ptep++, addr = next, addr != end);
-+		walk->private++;
-+	}
- 	pte_unmap_unlock(ptep - 1, ptl);
 -}
 -
--static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
+-static inline int queue_pages_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
 -{
--	unsigned long next;
 -	pmd_t *pmd;
+-	unsigned long next;
 -
 -	pmd = pmd_offset(pud, addr);
 -	do {
 -		next = pmd_addr_end(addr, end);
--		if (pmd_trans_huge(*pmd)) {
--			if (mincore_huge_pmd(vma, pmd, addr, next, vec)) {
--				vec += (next - addr) >> PAGE_SHIFT;
--				continue;
--			}
--			/* fall through */
+-		if (!pmd_present(*pmd))
+-			continue;
+-		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
+-			queue_pages_hugetlb_pmd_range(vma, pmd, nodes,
+-						flags, private);
+-			continue;
 -		}
+-		split_huge_page_pmd(vma, addr, pmd);
 -		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pte_range(vma, pmd, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
+-			continue;
+-		if (queue_pages_pte_range(vma, pmd, addr, next, nodes,
+-				    flags, private))
+-			return -EIO;
 -	} while (pmd++, addr = next, addr != end);
+-	return 0;
 -}
 -
--static void mincore_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
+-static inline int queue_pages_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
 -{
--	unsigned long next;
 -	pud_t *pud;
+-	unsigned long next;
 -
 -	pud = pud_offset(pgd, addr);
 -	do {
 -		next = pud_addr_end(addr, end);
+-		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
+-			continue;
 -		if (pud_none_or_clear_bad(pud))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pmd_range(vma, pud, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
+-			continue;
+-		if (queue_pages_pmd_range(vma, pud, addr, next, nodes,
+-				    flags, private))
+-			return -EIO;
 -	} while (pud++, addr = next, addr != end);
+-	return 0;
 -}
 -
--static void mincore_page_range(struct vm_area_struct *vma,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
+-static inline int queue_pages_pgd_range(struct vm_area_struct *vma,
+-		unsigned long addr, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags,
+-		void *private)
 -{
--	unsigned long next;
 -	pgd_t *pgd;
+-	unsigned long next;
 -
 -	pgd = pgd_offset(vma->vm_mm, addr);
 -	do {
 -		next = pgd_addr_end(addr, end);
 -		if (pgd_none_or_clear_bad(pgd))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pud_range(vma, pgd, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
+-			continue;
+-		if (queue_pages_pud_range(vma, pgd, addr, next, nodes,
+-				    flags, private))
+-			return -EIO;
 -	} while (pgd++, addr = next, addr != end);
-+	cond_resched();
-+	return 0;
+ 	return 0;
+ }
+ 
+@@ -647,6 +589,46 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
+ }
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
++static int queue_pages_test_walk(unsigned long start, unsigned long end,
++				struct mm_walk *walk)
++{
++	struct vm_area_struct *vma = walk->vma;
++	struct queue_pages *qp = walk->private;
++	unsigned long endvma = vma->vm_end;
++	unsigned long flags = qp->flags;
++
++	if (endvma > end)
++		endvma = end;
++	if (vma->vm_start > start)
++		start = vma->vm_start;
++
++	if (!(flags & MPOL_MF_DISCONTIG_OK)) {
++		if (!vma->vm_next && vma->vm_end < end)
++			return -EFAULT;
++		if (qp->prev && qp->prev->vm_end < vma->vm_start)
++			return -EFAULT;
++	}
++
++	qp->prev = vma;
++
++	if (vma->vm_flags & VM_PFNMAP)
++		return 1;
++
++	if (flags & MPOL_MF_LAZY) {
++		/* Similar to task_numa_work, skip inaccessible VMAs */
++		if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
++			change_prot_numa(vma, start, endvma);
++		return 1;
++	}
++
++	if ((flags & MPOL_MF_STRICT) ||
++	    ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
++	     vma_migratable(vma)))
++		/* queue pages from current vma */
++		return 0;
++	return 1;
++}
++
+ /*
+  * Walk through page tables and collect pages to be migrated.
+  *
+@@ -656,50 +638,24 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
+  */
+ static int
+ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+-		const nodemask_t *nodes, unsigned long flags, void *private)
+-{
+-	int err = 0;
+-	struct vm_area_struct *vma, *prev;
+-
+-	vma = find_vma(mm, start);
+-	if (!vma)
+-		return -EFAULT;
+-	prev = NULL;
+-	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
+-		unsigned long endvma = vma->vm_end;
+-
+-		if (endvma > end)
+-			endvma = end;
+-		if (vma->vm_start > start)
+-			start = vma->vm_start;
+-
+-		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
+-			if (!vma->vm_next && vma->vm_end < end)
+-				return -EFAULT;
+-			if (prev && prev->vm_end < vma->vm_start)
+-				return -EFAULT;
+-		}
+-
+-		if (flags & MPOL_MF_LAZY) {
+-			/* Similar to task_numa_work, skip inaccessible VMAs */
+-			if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
+-				change_prot_numa(vma, start, endvma);
+-			goto next;
+-		}
+-
+-		if ((flags & MPOL_MF_STRICT) ||
+-		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
+-		      vma_migratable(vma))) {
+-
+-			err = queue_pages_pgd_range(vma, start, endvma, nodes,
+-						flags, private);
+-			if (err)
+-				break;
+-		}
+-next:
+-		prev = vma;
+-	}
+-	return err;
++		nodemask_t *nodes, unsigned long flags,
++		struct list_head *pagelist)
++{
++	struct queue_pages qp = {
++		.pagelist = pagelist,
++		.flags = flags,
++		.nmask = nodes,
++		.prev = NULL,
++	};
++	struct mm_walk queue_pages_walk = {
++		.hugetlb_entry = queue_pages_hugetlb,
++		.pmd_entry = queue_pages_pte_range,
++		.test_walk = queue_pages_test_walk,
++		.mm = mm,
++		.private = &qp,
++	};
++
++	return walk_page_range(start, end, &queue_pages_walk);
  }
  
  /*
-@@ -226,18 +171,22 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
- {
- 	struct vm_area_struct *vma;
- 	unsigned long end;
-+	int err;
-+	struct mm_walk mincore_walk = {
-+		.pmd_entry = mincore_pte_range,
-+		.pte_hole = mincore_unmapped_range,
-+		.hugetlb_entry = mincore_hugetlb,
-+		.private = vec,
-+	};
- 
- 	vma = find_vma(current->mm, addr);
- 	if (!vma || addr < vma->vm_start)
- 		return -ENOMEM;
--
-+	mincore_walk.mm = vma->vm_mm;
- 	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
--
--	if (is_vm_hugetlb_page(vma))
--		mincore_hugetlb_page_range(vma, addr, end, vec);
--	else
--		mincore_page_range(vma, addr, end, vec);
--
-+	err = walk_page_range(addr, end, &mincore_walk);
-+	if (err < 0)
-+		return err;
- 	return (end - addr) >> PAGE_SHIFT;
- }
- 
 -- 
 2.2.0.rc0.2.gf745acb
