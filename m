@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaKGRuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:50:04 -0500
-Received: from sauhun.de ([89.238.76.85]:55768 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960AbaKGRuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:50:02 -0500
-Date: Fri, 7 Nov 2014 18:51:05 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, Nicolas Palix <nicolas.palix@imag.fr>,
-        cocci@systeme.lip6.fr
-Subject: Re: [Cocci] bugon.cocci: fix Options at the macro
-Message-ID: <20141107175105.GC3656@katana>
-References: <20141028151824.4b41986f@recife.lan>
+	id S1752918AbaKGRvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:51:50 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:40700 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858AbaKGRvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 12:51:49 -0500
+Message-ID: <545D06AC.7000606@windriver.com>
+Date: Fri, 7 Nov 2014 11:51:40 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1SQmhf2mF2YjsYvc"
-Content-Disposition: inline
-In-Reply-To: <20141028151824.4b41986f@recife.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com>	<yq1bnoj9dvu.fsf@sermon.lab.mkp.net> <yq1ioiq9abc.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1ioiq9abc.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.116.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/07/2014 11:42 AM, Martin K. Petersen wrote:
+>>>>>> "Martin" == Martin K Petersen <martin.petersen@oracle.com> writes:
+>
+> Martin> I know there was a bug open with Seagate. I assume it has been
+> Martin> fixed in their latest firmware.
+>
+> Seagate confirms that this issue was fixed about a year ago. Will
+> provide more data when I have it.
 
---1SQmhf2mF2YjsYvc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay, thanks for the clarification (for this and the spec itself).
 
-On Tue, Oct 28, 2014 at 03:18:24PM -0200, Mauro Carvalho Chehab wrote:
-> The comma after --no-includes makes coccinelle to not run the script:
->=20
-> /usr/bin/spatch -D report --very-quiet --no-show-diff --cocci-file ./scri=
-pts/coccinelle/misc/bugon.cocci --no-includes, --include-headers --patch . =
---dir drivers/media/platform/coda/ -I ./arch/x86/include -I arch/x86/includ=
-e/generated -I include -I ./arch/x86/include/uapi -I arch/x86/include/gener=
-ated/uapi -I ./include/uapi -I include/generated/uapi -I ./include/linux/kc=
-onfig.h
-> Usage: spatch.opt --sp-file <SP> <infile> [-o <outfile>] [--iso-file <iso=
->] [options]
-> Options are:
->   --sp-file                    <file> the semantic patch file
->   -o                           <file> the output file
->   --in-place                   do the modification on the file directly
->   --backup-suffix              suffix to use when making a backup for inp=
-lace
-> ...
->=20
-> At least with Fedora 20 coccinelle package:
-> 	coccinelle-1.0.0-0.rc20.1.fc21.x86_64
->=20
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Apparently there's a new firmware available, dated Oct 13 but with no 
+release notes.  We just tried updating the firmware on one of the drives 
+in question and it failed from two different versions of linux, while 
+Windows won't install because it doesn't like our SSD apparently.  Joy.
 
-Yay, with this my patch handling scripts finally work again as they used
-to! Please let it go into 3.18.
+Chris
 
-Tested-by: Wolfram Sang <wsa@the-dreams.de>
-
-
---1SQmhf2mF2YjsYvc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUXQaJAAoJEBQN5MwUoCm2mWQQAINtgQwJ9w9qsMizaDMjy6Cy
-8SBWgInzmBdc85hYNulKSPv8GPe9fLXiqB7ZbGV91Jq8tWOhZjPWukqmitNtDxOM
-w+rv+5+aBznKDGsZJPUe5qvR12IyS4Oud/06x/AEaZ3yTa1IqJMrzeAiqs0JKi6W
-NZU2FuqO/Y9pFZsuQ2F3XC+7wt3K2ZR6PpvZF9u1JTqfg/hfn5JgdAZbTHOFWwbj
-pTI4Wy8D/tLHjpDthTLRWrZ01IwI6dHsYD63MX0vO9kqrOGJa0aqBHZ68ammUJqL
-sIGnVAmitj408SXMjFl3odRcNioo98r0dgzORqiSWNxZKFg7NFZ9ZPWj1LnB12Zz
-Euw4Pn0oxT9F9vVTFMVBiIWV0byUvVfKFYHAqOebqTvQX1IJ0C4nnJDvFzf4QVM0
-cNnB6CAQUXKR9fQKKTK717U/znX5TtpN2Us7DNtBp06yC3ZQgxMBFl+bPwjST+Dz
-dqZj1GeuvDN2xo2QmMWqKaBgJb/4XE8EZJqk7alA6ZJNxeFbrw4atIq6DQ7d6B5d
-NcMbqp6ffc65ROaGaZMZJA8VkGNnEVnk815iHj8FKaGdQrdqmIpmr4gRD9+nKU13
-qYQCdskTIDkxQWuV5WbW+2tepZVyqWnPPCewMbJOLVk67IlQ0QJp/wQvdiZPJ0an
-Jny39TrqXIhz1Rzg93bl
-=BoY7
------END PGP SIGNATURE-----
-
---1SQmhf2mF2YjsYvc--
