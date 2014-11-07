@@ -1,129 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaKGINu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:13:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:36128 "EHLO mga01.intel.com"
+	id S1751435AbaKGIRX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:17:23 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40399 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292AbaKGINt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:13:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,330,1413270000"; 
-   d="scan'208";a="628187478"
-Date: Fri, 7 Nov 2014 16:13:44 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: LKP <lkp@01.org>, Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [LKP] [dmi] PANIC: early exception 0e rip 10:ffffffff81899e6b
- error 9 cr2 ffffffffff240000
-Message-ID: <20141107081344.GC24745@yliu-dev.sh.intel.com>
-References: <20141107054741.GB30507@yliu-dev.sh.intel.com>
- <CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
- <20141107073720.GB24745@yliu-dev.sh.intel.com>
- <CAKv+Gu-rRMmcP4LF3oo5=6hf8m7fjzkzV14hfkjBPbPn34OZGA@mail.gmail.com>
+	id S1750993AbaKGIRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 03:17:21 -0500
+Message-ID: <545C7FED.2000603@ti.com>
+Date: Fri, 7 Nov 2014 10:16:45 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu-rRMmcP4LF3oo5=6hf8m7fjzkzV14hfkjBPbPn34OZGA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Juergen Gross <jgross@suse.com>
+CC: <hpa@zytor.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <mingo@redhat.com>, <stefan.bader@canonical.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <ville.syrjala@linux.intel.com>,
+        <david.vrabel@citrix.com>, <jbeulich@suse.com>, <toshi.kani@hp.com>,
+        <plagnioj@jcrosoft.com>, <bhelgaas@google.com>
+Subject: Re: [PATCH V6 03/18] x86: Use new cache mode type in drivers/video/fbdev/gbefb.c
+References: <1415019724-4317-1-git-send-email-jgross@suse.com> <1415019724-4317-4-git-send-email-jgross@suse.com>
+In-Reply-To: <1415019724-4317-4-git-send-email-jgross@suse.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="vsnfs2fmdA24VkTavR0IxXnQcai39ueTb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 08:44:40AM +0100, Ard Biesheuvel wrote:
-> On 7 November 2014 08:37, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > On Fri, Nov 07, 2014 at 08:17:36AM +0100, Ard Biesheuvel wrote:
-> >> On 7 November 2014 06:47, LKP <lkp@01.org> wrote:
-> >> > FYI, we noticed the below changes on
-> >> >
-> >> > https://git.linaro.org/people/ard.biesheuvel/linux-arm efi-for-3.19
-> >> > commit aacdce6e880894acb57d71dcb2e3fc61b4ed4e96 ("dmi: add support for SMBIOS 3.0 64-bit entry point")
-> >> >
-> >> >
-> >> > +-----------------------+------------+------------+
-> >> > |                       | 2fa165a26c | aacdce6e88 |
-> >> > +-----------------------+------------+------------+
-> >> > | boot_successes        | 20         | 10         |
-> >> > | early-boot-hang       | 1          |            |
-> >> > | boot_failures         | 0          | 5          |
-> >> > | PANIC:early_exception | 0          | 5          |
-> >> > +-----------------------+------------+------------+
-> >> >
-> >> >
-> >> > [    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000036fffffff] usable
-> >> > [    0.000000] bootconsole [earlyser0] enabled
-> >> > [    0.000000] NX (Execute Disable) protection: active
-> >> > PANIC: early exception 0e rip 10:ffffffff81899e6b error 9 cr2 ffffffffff240000
-> >> > [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc2-gc5221e6 #1
-> >> > [    0.000000]  0000000000000000 ffffffff82203d30 ffffffff819f0a6e 00000000000003f8
-> >> > [    0.000000]  ffffffffff240000 ffffffff82203e18 ffffffff823701b0 ffffffff82511401
-> >> > [    0.000000]  0000000000000000 0000000000000ba3 0000000000000000 ffffffffff240000
-> >> > [    0.000000] Call Trace:
-> >> > [    0.000000]  [<ffffffff819f0a6e>] dump_stack+0x4e/0x68
-> >> > [    0.000000]  [<ffffffff823701b0>] early_idt_handler+0x90/0xb7
-> >> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> >> > [    0.000000]  [<ffffffff81899e6b>] ? dmi_table+0x3f/0x94
-> >> > [    0.000000]  [<ffffffff81899e42>] ? dmi_table+0x16/0x94
-> >> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> >> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> >> > [    0.000000]  [<ffffffff823c7eff>] dmi_walk_early+0x44/0x69
-> >> > [    0.000000]  [<ffffffff823c88a2>] dmi_present+0x180/0x1ff
-> >> > [    0.000000]  [<ffffffff823c8ab3>] dmi_scan_machine+0x144/0x191
-> >> > [    0.000000]  [<ffffffff82370702>] ? loglevel+0x31/0x31
-> >> > [    0.000000]  [<ffffffff82377f52>] setup_arch+0x490/0xc73
-> >> > [    0.000000]  [<ffffffff819eef73>] ? printk+0x4d/0x4f
-> >> > [    0.000000]  [<ffffffff82370b90>] start_kernel+0x9c/0x43f
-> >> > [    0.000000]  [<ffffffff82370120>] ? early_idt_handlers+0x120/0x120
-> >> > [    0.000000]  [<ffffffff823704a2>] x86_64_start_reservations+0x2a/0x2c
-> >> > [    0.000000]  [<ffffffff823705df>] x86_64_start_kernel+0x13b/0x14a
-> >> > [    0.000000] RIP 0x4
-> >> >
-> >>
-> >> This is most puzzling. Could anyone decode the exception?
-> >> This looks like the non-EFI path through dmi_scan_machine(), which
-> >> calls dmi_present() /after/ calling dmi_smbios3_present(), which
-> >> apparently has not found the _SM3_ header tag. Or could the call stack
-> >> be inaccurate?
-> >>
-> >> Anyway, it would be good to know the exact type of the platform,
-> >
-> > It's a Nehalem-EP machine, wht 16 CPU and 12G memory.
-> >
-> >> and
-> >> perhaps we could find out if there is an inadvertent _SM3_ tag
-> >> somewhere in the 0xF0000 - 0xFFFFF range?
-> >
-> > Sorry, how?
-> >
-> 
-> That's not a brand new machine, so I suppose there wouldn't be a
-> SMBIOS 3.0 header lurking in there.
-> 
-> Anyway, if you are in a position to try things, could you apply this
-> 
-> --- a/drivers/firmware/dmi_scan.c
-> +++ b/drivers/firmware/dmi_scan.c
-> @@ -617,7 +617,7 @@ void __init dmi_scan_machine(void)
->                 memset(buf, 0, 16);
->                 for (q = p; q < p + 0x10000; q += 16) {
->                         memcpy_fromio(buf + 16, q, 16);
-> -                       if (!dmi_smbios3_present(buf) || !dmi_present(buf)) {
-> +                       if (!dmi_present(buf)) {
->                                 dmi_available = 1;
->                                 dmi_early_unmap(p, 0x10000);
->                                 goto out;
-> 
-> and try again?
+--vsnfs2fmdA24VkTavR0IxXnQcai39ueTb
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-kernel boots perfectly with this patch applied.
+On 03/11/14 15:01, Juergen Gross wrote:
+> Instead of directly using the cache mode bits in the pte switch to
+> using the cache mode type.
+>=20
+> Based-on-patch-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Juergen Gross <jgross@suse.com>
+> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  drivers/video/fbdev/gbefb.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/fbdev/gbefb.c b/drivers/video/fbdev/gbefb.c
+> index 4aa56ba..6d9ef39 100644
+> --- a/drivers/video/fbdev/gbefb.c
+> +++ b/drivers/video/fbdev/gbefb.c
+> @@ -54,7 +54,8 @@ struct gbefb_par {
+>  #endif
+>  #endif
+>  #ifdef CONFIG_X86
+> -#define pgprot_fb(_prot) ((_prot) | _PAGE_PCD)
+> +#define pgprot_fb(_prot) (((_prot) & ~_PAGE_CACHE_MASK) |	\
+> +			  cachemode2protval(_PAGE_CACHE_MODE_UC_MINUS))
+>  #endif
+> =20
+>  /*
+>=20
 
-	--yliu
+For this and vermilion fb:
 
-> That is the only change that is relevant to the non-EFI
-> code path which this machine appears to take, so if this fixes things,
-> that would be valuable information even if it doesn't tell us exactly
-> what is going wrong.
-> 
-> Thanks,
-> Ard.
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+ Tomi
+
+
+
+--vsnfs2fmdA24VkTavR0IxXnQcai39ueTb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUXH/tAAoJEPo9qoy8lh71C00P/RaafIIgv9NRIVBW1APfzn6C
+3dpdWIgoG0gJAAc6XfDYjKd/+WtNSEPK62WALB82FjP/W4z8xoAPEHXN8HKhhM11
+PUGrnNRNqakaC7b0fmJRWWdvM4BYBD/r5es4PCHEVUeuUkJo0GEeBwaJBIUh62Qj
+CBL2LAjDwSv0YCWaRQNKCPnkDVMOxGirZMY6tIIL+jsEQ6T+VTATodQwHxXN5jau
+qT04+wHEEwN1/sQ9yLqDwW1lv1ja96hZgDpKDZnaJvdbRsDX5CZjKC3sRsx2M/iM
+Rd6ZGOPPmCTtcGUo1pNTtgwooKLI7n4iQ+m+psma4lgfvjrU4MgUPM2bGsdb0Gb8
+vo77EOIadWAPwiB6mLKiFd+52jZMEmA5lfsYQqE/+MuiZGkR5riM9M/pTfkI+8hB
+4al4yYhC2bUe0wjzdMB4BNsJ1PcC/HAqq840tE1H4RTxll+uo423Xwy9EnwHRYtU
+8Z9xuc0kWnm94CGUEc4BYxB4te8HbFHwOzbRHOS4RDdZZERY8yIjnvInrPSjJGaJ
+DJN3/h0uVBMMpNdPREcnJcdLlxRvav1YEH60uckGDeIM1YS7e7P+GWLlk3isBWHP
+vngArvlNt0XdAL39lDYJm2u5DXtIrqXxFRaxvf73OdMW68esgM+OscMzP5CNPeSU
+q/wqrTHW0AL2adUHgvdr
+=pT/u
+-----END PGP SIGNATURE-----
+
+--vsnfs2fmdA24VkTavR0IxXnQcai39ueTb--
