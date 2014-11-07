@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaKGEWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 23:22:31 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41975 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbaKGEWa (ORCPT
+	id S1751600AbaKGEXH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 23:23:07 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57315 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaKGEXE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 23:22:30 -0500
-Message-ID: <545C4904.1010402@wwwdotorg.org>
-Date: Thu, 06 Nov 2014 21:22:28 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Noralf Tronnes <notro@tronnes.org>,
-        Matthias Klein <matthias.klein@linux.com>,
-        linux-rpi-kernel@lists.infradead.org, lee@kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: bcm2835: add device tree for Raspberry Pi model
- B+
-References: <1415231123-920-1-git-send-email-matthias.klein@linux.com> <545BCDBE.9020200@tronnes.org>
-In-Reply-To: <545BCDBE.9020200@tronnes.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Nov 2014 23:23:04 -0500
+X-Cam-AntiVirus: found ScamNailer.Phish.viro_AT_zeniv.linux.org.uk
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH v5 7/7] add a flag for per-operation O_DSYNC semantics
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <x49r3xf28qn.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 7 Nov 2014 06:22:48 +0200
+Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-api@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        linux-arch@vger.kernel.org, ceph-devel@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-nfs@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BF30FAEC-D4D3-4079-9ECD-2743747279BD@cam.ac.uk>
+References: <cover.1415220890.git.milosz@adfin.com> <cover.1415220890.git.milosz@adfin.com> <c188b04ede700ce5f986b19de12fa617d158540f.1415220890.git.milosz@adfin.com> <x49r3xf28qn.fsf@segfault.boston.devel.redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 12:36 PM, Noralf Tronnes wrote:
-> Den 06.11.2014 00:45, skrev Matthias Klein:
->> The model B and B+ differ in the GPIO lines for ACT and PWR leds, and the
->> I2S interface.
->>
->> Signed-off-by: Matthias Klein <matthias.klein@linux.com>
->> ---
->> Changes in v2:
->> - move the common parts between the B and B+ model into the new
->> bcm2835-rpi.dtsi file
->>
->> - add the I2S signals to the B+ file which fix the problem that USB is
->> not working
->>    with the current bcm2835-rpi-b.dts file on the B+.
->> ---
-> <snip>
->> +&gpio {
->> +    pinctrl-names = "default";
->> +
->> +    gpioout: gpioout {
->> +        brcm,pins = <6>;
->> +        brcm,function = <1>; /* GPIO out */
->> +    };
->> +
->> +    alt0: alt0 {
->> +        brcm,pins = <0 1 2 3 4 5 7 8 9 10 11 14 15 40 45>;
->> +        brcm,function = <4>; /* alt0 */
->> +    };
->> +
->> +    alt3: alt3 {
->> +        brcm,pins = <48 49 50 51 52 53>;
->> +        brcm,function = <7>; /* alt3 */
->> +    };
->> +};
->
-> AFAIK these pins will always be configured regardless of whether they
-> are used by a driver or not.
+Hi Jeff,
 
-Yes.
+> On 7 Nov 2014, at 01:46, Jeff Moyer <jmoyer@redhat.com> wrote:
+> 
+> Milosz Tanski <milosz@adfin.com> writes:
+> 
+>> -		if (type == READ && (flags & RWF_NONBLOCK))
+>> -			return -EAGAIN;
+>> +		if (type == READ) {
+>> +			if (flags & RWF_NONBLOCK)
+>> +				return -EAGAIN;
+>> +		} else {
+>> +			if (flags & RWF_DSYNC)
+>> +				return -EINVAL;
+>> +		}
+> 
+> Minor nit, but I'd rather read something that looks like this:
+> 
+> 	if (type == READ && (flags & RWF_NONBLOCK))
+> 		return -EAGAIN;
+> 	else if (type == WRITE && (flags & RWF_DSYNC))
+> 		return -EINVAL;
 
-> Could we do something like this for SPI and I2C, configuring only when
-> needed?
-...
-> &spi {
->     pinctrl-names = "default";
->     pinctrl-0 = <&spi_pins>;
-> };
+But your version is less logically efficient for the case where "type == READ" is true and "flags & RWF_NONBLOCK" is false because your version then has to do the "if (type == WRITE" check before discovering it does not need to take that branch either, whilst the original version does not have to do such a test at all.
 
-It's certainly possible, but I don't really see any advantage. I'd much
-rather see the pinmux set up correctly all in one go as early as possible.
+Best regards,
 
->> +&i2c0 {
->> +    status = "okay";
->> +    clock-frequency = <100000>;
->> +};
->> +
->> +&i2c1 {
->> +    status = "okay";
->> +    clock-frequency = <100000>;
->> +};
->> +
->
-> Should the I2C busses be enabled by default?
+	Anton
 
-Yes, I think so. Whichever I2C controllers are actually connected to
-something (even bare pins on an IO connector) should be enabled by the
-DT, so that they're available for use.
+> I won't lose sleep over it, though.
+> 
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-> On Raspian, i2c is disabled
-> by blacklisting the module (/etc/modprobe.d/raspi-blacklist.conf).
-> At least i2c0 should be left disabled due to the HAT EEPROM and camera.
-> The bus number has also changed with revisions:
-> http://www.raspberrypi.org/forums/viewtopic.php?p=603950#p603950
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
 
-It sounds like for I2C-0 on the B+ should use the i2c-mux-pinctrl.c to
-switch the bus between the two destinations as required, although we'd
-have to confirm with Broadcom or the RPi Foundation that that would work
-with this SoC.
-
-There's certainly no reason to believe that the kernel wouldn't want to
-read the HAT EEPROM. After all, it has to identify what's connected there.
