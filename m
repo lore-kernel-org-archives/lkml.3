@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227AbaKGVlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 16:41:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44062 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaKGVlC (ORCPT
+	id S1752929AbaKGVoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 16:44:10 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:50245 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbaKGVoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 16:41:02 -0500
-Date: Fri, 7 Nov 2014 13:41:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, kernel-janitors@vger.kernel.org,
-        mgorman@suse.de, ddstreet@ieee.org, jeffrey.t.kirsher@intel.com,
-        yamada.m@jp.panasonic.com, kenhelias@firemail.de, oleg@redhat.com,
-        akpm@linux-foundation.org, shuah.kh@samsung.com,
-        valentina.manea.m@gmail.com, yann.morin.1998@free.fr,
-        laijs@cn.fujitsu.com, mathieu.desnoyers@efficios.com,
-        rostedt@goodmis.org, josh@joshtriplett.org, paulmck@linux.vnet.ibm.com,
-        m.chehab@samsung.com, awalls@md.metrocast.net, airlied@linux.ie,
-        christian.koenig@amd.com, alexander.deucher@amd.com
-Subject: Re: [PATCH] Replace mentions of "list_struct" to "list_head"
-Message-ID: <20141107214100.GA1640@kroah.com>
-References: <1415395128-7976-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	Fri, 7 Nov 2014 16:44:07 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] SELinux: Stub in copy-up handling
+Date: Fri, 07 Nov 2014 16:44:03 -0500
+Message-ID: <1791526.rYj1Ea3vWT@sifl>
+User-Agent: KMail/4.14.2 (Linux/3.16.7-gentoo; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141105154248.2555.15813.stgit@warthog.procyon.org.uk>
+References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154248.2555.15813.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415395128-7976-1-git-send-email-andrey.krieger.utkin@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 08, 2014 at 01:18:48AM +0400, Andrey Utkin wrote:
-> There's no such thing as "list_struct".
+On Wednesday, November 05, 2014 03:42:48 PM David Howells wrote:
+> Provide stubs for union/overlay copy-up handling.  The xattr copy up stub
+> discards lower SELinux xattrs rather than letting them be copied up so that
+> the security label on the copy doesn't get corrupted.
 > 
-> Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
 > ---
->  drivers/gpu/drm/radeon/mkregtable.c  | 24 ++++++++++++------------
->  drivers/media/pci/cx18/cx18-driver.h |  2 +-
->  include/linux/list.h                 | 34 +++++++++++++++++-----------------
->  include/linux/plist.h                | 10 +++++-----
->  include/linux/rculist.h              |  8 ++++----
->  scripts/kconfig/list.h               |  6 +++---
->  tools/usb/usbip/libsrc/list.h        |  2 +-
->  7 files changed, 43 insertions(+), 43 deletions(-)
+> 
+>  security/selinux/hooks.c |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index e66314138b38..f3fe7dbbf741 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -3142,6 +3142,19 @@ static void selinux_inode_getsecid(const struct inode
+> *inode, u32 *secid) *secid = isec->sid;
+>  }
+> 
+> +static int selinux_inode_copy_up(struct dentry *src, struct dentry *dst)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int selinux_inode_copy_up_xattr(struct dentry *src, struct dentry
+> ...*dst,
+> +				       const char *name, void *value, size_t *size)
+> +{
+> +	if (strcmp(name, XATTR_NAME_SELINUX) == 0)
+> +		return 1; /* Discard */
 
-Stuff like this should be sent to the trivial maintainer...
+I understand that this is just a stub, but I we need to discuss this at some 
+point and I figure better in this patch than elsewhere where it might get 
+lost.
+
+For the docker, context= mount use case (similar to SELinux/sVirt) dropping 
+the SELinux xattr is probably an okay behavior.  However, I would expect that 
+ultimately this is something we would want to control by policy and/or the 
+presence of a context= label.
+
+> +	return 0;
+> +}
+> +
+>  /* file security operations */
+> 
+>  static int selinux_revalidate_file_permission(struct file *file, int mask)
+> @@ -5868,6 +5881,8 @@ static struct security_operations selinux_ops = {
+>  	.inode_setsecurity =		selinux_inode_setsecurity,
+>  	.inode_listsecurity =		selinux_inode_listsecurity,
+>  	.inode_getsecid =		selinux_inode_getsecid,
+> +	.inode_copy_up =		selinux_inode_copy_up,
+> +	.inode_copy_up_xattr =		selinux_inode_copy_up_xattr,
+> 
+>  	.file_permission =		selinux_file_permission,
+>  	.file_alloc_security =		selinux_file_alloc_security,
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-security-module" in the body of a message to
+> majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+paul moore
+www.paul-moore.com
+
