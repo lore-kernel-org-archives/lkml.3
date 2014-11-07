@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaKGIBQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:01:16 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:53774 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaKGIBN (ORCPT
+	id S1751391AbaKGIGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:06:49 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:52182 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaKGIGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:01:13 -0500
-X-AuditID: cbfec7f5-b7f956d000005ed7-1d-545c7c46955c
-Message-id: <1415347269.8532.1.camel@AMDC1943>
-Subject: Re: [PATCH v10 3/5] amba: Don't unprepare the clocks if device driver
- wants IRQ safe runtime PM
+	Fri, 7 Nov 2014 03:06:47 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-ae-545c7d93108a
+Message-id: <1415347601.8532.7.camel@AMDC1943>
+Subject: Re: [PATCH v10 1/5] PM / Runtime: Allow accessing irq_safe if no
+ PM_RUNTIME
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
@@ -27,107 +27,97 @@ Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Fri, 07 Nov 2014 09:01:09 +0100
-In-reply-to: <3262760.d60MN56YDG@vostro.rjw.lan>
+Date: Fri, 07 Nov 2014 09:06:41 +0100
+In-reply-to: <2475860.cssHTQVJGf@vostro.rjw.lan>
 References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
- <1415263010-7992-4-git-send-email-k.kozlowski@samsung.com>
- <3262760.d60MN56YDG@vostro.rjw.lan>
+ <1415263010-7992-2-git-send-email-k.kozlowski@samsung.com>
+ <2475860.cssHTQVJGf@vostro.rjw.lan>
 Content-type: text/plain; charset=UTF-8
 X-Mailer: Evolution 3.10.4-0ubuntu2
 MIME-version: 1.0
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t/xq7puNTEhBjuXmFhsnLGe1WL61AuM
-	Fqun/mW1eLr5MZPF2aY37BZLJs9nteicuITdYtaUvUwWl3fNYbP43HuE0eL2ZV6LtUfuslu8
-	exlhcffUUTaLM6cvsVpM+H2BzeL42nCLl337WRyEPFqae9g8ZnfMZPVYvOclk8emVZ1sHneu
-	7WHzWPLmEKvHlqvtLB6z7/5g9OjbsorRY8Xq7+wenzfJeez9/JslgCeKyyYlNSezLLVI3y6B
-	K2PShIdMBR/FKtas2cbSwPhPsIuRk0NCwERi9b8eZghbTOLCvfVsILaQwFJGieaO5C5GLiD7
-	M6PEjaVLmUASvAJ6Eu0/5jOC2MICWRLPtp9jAbHZBIwlNi9fAtYsIqAtMbfnFDNIM7PAXFaJ
-	S9N3gxWxCKhK3GhZBVbEKWAgcXzhRlaIDSsZJW6dawXbwCygLjFp3iKgbg6gk5QlGvvdIBYL
-	SvyYfI8FokReYvOat8wTGAVmIemYhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNz
-	NzFCovLrDsalx6wOMQpwMCrx8D4QiQkRYk0sK67MPcQowcGsJMIrFQQU4k1JrKxKLcqPLyrN
-	SS0+xMjEwSnVwMgotk1CRaNW9fmeVOvMi1+mPXp9ospr+rqJHxuPStUfSuQL2qXK4P1i+pno
-	0NdLGVs4FS9kSvlpKrFs3OSkILJNuMl7wr8FTUvTa3PeZAQz9T8x1I+2YmC+/vX+u7kH2ZO3
-	pcR4L1VSXXnpBqfsp9xrqasszu1aVpYf0S/sujklXuCGJKPsYiWW4oxEQy3mouJEAAhVXlOo	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t/xK7qTa2NCDO5OMbTYOGM9q8X0qRcY
+	LVZP/ctq8XTzYyaLs01v2C2WTJ7PatE5cQm7xawpe5ksLu+aw2bxufcIo8Xty7wWa4/cZbd4
+	9zLC4u6po2wWZ05fYrWY8PsCm8XxteEWL/v2szgIebQ097B5zO6YyeqxeM9LJo9NqzrZPO5c
+	28PmseTNIVaPLVfbWTxm3/3B6NG3ZRWjx4rV39k9Pm+S89j7+TdLAE8Ul01Kak5mWWqRvl0C
+	V8b8VzfZC9aLV9yc9J+lgXGfUBcjJ4eEgInE1Jlf2CFsMYkL99azgdhCAksZJf789uhi5AKy
+	PzNKrFqyCKyIV0BP4vrVU6wgtrBAmETT0j0sIDabgLHE5uVLwJpFBLQl5vacYgZpZhaYyypx
+	afpusCIWAVWJhXdPgjVzChhIbLk0mRliw0pGiZ4tfWBFzALqEpPmLQJKcACdpCzR2O8GsVhQ
+	4sfke1Al8hKb17xlnsAoMAtJxywkZbOQlC1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJ
+	ERKVX3cwLj1mdYhRgINRiYf3gUhMiBBrYllxZe4hRgkOZiURXqkgoBBvSmJlVWpRfnxRaU5q
+	8SFGJg5OqQbGaJ82x8jFMgXaobIhZTef9X8LyFu9cl1H679t5nb75G7ErVt2OGVF8+Xu2RoP
+	9I86ZdRzdUj06R+erfcv+cWh4OYfv6ptW3L99suKFPyWO/7PaMaMjD8BpqcC4jZ7lZRP+fP4
+	T1XZ/++py03nHn0zz/H5DaelH9lNmbkOtlh4L5m+Q52zSd5ZiaU4I9FQi7moOBEAjRYBS6gC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-11-06 at 23:52 +0100, Rafael J. Wysocki wrote:
-> On Thursday, November 06, 2014 09:36:48 AM Krzysztof Kozlowski wrote:
-> > The AMBA bus driver defines runtime Power Management functions which
-> > disable and unprepare AMBA bus clock. This is problematic for runtime PM
-> > because unpreparing a clock might sleep so it is not interrupt safe.
+On czw, 2014-11-06 at 23:51 +0100, Rafael J. Wysocki wrote:
+> On Thursday, November 06, 2014 09:36:46 AM Krzysztof Kozlowski wrote:
+> > Some drivers (e.g. bus drivers) may want to check if power.irq_safe was
+> > called by child driver, regardless of CONFIG_PM_RUNTIME.
 > > 
-> > However some drivers may want to implement runtime PM functions in
-> > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-> > bus driver should only disable/enable the clock in runtime suspend and
-> > resume callbacks.
+> > An example scenario is amba/bus.c and dma/pl330.c drivers. The runtime
+> > suspend/resume callbacks in amba bus driver act differently if irq_safe
+> > was set by child driver (in irq_safe mode bus clock is only disabled).
 > > 
-> > Detect the device driver behavior during runtime suspend. During runtime
-> > resume deal with clocks according to stored value.
+> > The pl330 driver sets irq_safe and assumes that amba bus driver will
+> > only disable the clock in runtime PM. So in system sleep suspend
+> > callback the pl330 driver unprepares the clock after calling
+> > pm_runtime_force_suspend().
+> > 
+> > However inconsistency would appear if CONFIG_PM_RUNTIME is not set and
+> > child drivers do not want the irq_safe runtime PM. In such case amba bus
+> > driver still has to know whether child driver wanted irq_safe - by
+> > looking at dev->power.irq_safe field.
 > > 
 > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > > ---
-> >  drivers/amba/bus.c       | 17 +++++++++++++----
-> >  include/linux/amba/bus.h |  1 +
-> >  2 files changed, 14 insertions(+), 4 deletions(-)
+> >  include/linux/pm.h         | 2 +-
+> >  include/linux/pm_runtime.h | 5 ++++-
+> >  2 files changed, 5 insertions(+), 2 deletions(-)
 > > 
-> > diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-> > index 47bbdc1b5be3..356f906c6966 100644
-> > --- a/drivers/amba/bus.c
-> > +++ b/drivers/amba/bus.c
-> > @@ -95,8 +95,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
-> >  	struct amba_device *pcdev = to_amba_device(dev);
-> >  	int ret = pm_generic_runtime_suspend(dev);
-> >  
-> > -	if (ret == 0 && dev->driver)
-> > -		clk_disable_unprepare(pcdev->pclk);
-> > +	if (ret == 0 && dev->driver) {
-> > +		pcdev->irq_safe = dev->power.irq_safe;
-> > +
-> > +		if (pcdev->irq_safe)
-> > +			clk_disable(pcdev->pclk);
-> > +		else
-> > +			clk_disable_unprepare(pcdev->pclk);
-> > +	}
-> >  
-> >  	return ret;
-> >  }
-> > @@ -107,7 +113,10 @@ static int amba_pm_runtime_resume(struct device *dev)
-> >  	int ret;
-> >  
-> >  	if (dev->driver) {
-> > -		ret = clk_prepare_enable(pcdev->pclk);
-> > +		if (pcdev->irq_safe)
-> > +			ret = clk_enable(pcdev->pclk);
-> > +		else
-> > +			ret = clk_prepare_enable(pcdev->pclk);
-> >  		/* Failure is probably fatal to the system, but... */
-> >  		if (ret)
-> >  			return ret;
-> > @@ -115,7 +124,7 @@ static int amba_pm_runtime_resume(struct device *dev)
-> >  
-> >  	return pm_generic_runtime_resume(dev);
-> >  }
-> > -#endif
-> > +#endif /* CONFIG_PM */
-> >  
-> >  static const struct dev_pm_ops amba_pm = {
-> >  	.suspend	= pm_generic_suspend,
-> > diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> > index ac02f9bd63dc..c4bae79851fb 100644
-> > --- a/include/linux/amba/bus.h
-> > +++ b/include/linux/amba/bus.h
-> > @@ -32,6 +32,7 @@ struct amba_device {
-> >  	struct clk		*pclk;
-> >  	unsigned int		periphid;
-> >  	unsigned int		irq[AMBA_NR_IRQS];
-> > +	unsigned int		irq_safe:1;
+> > diff --git a/include/linux/pm.h b/include/linux/pm.h
+> > index 383fd68aaee1..b05fa954f50d 100644
+> > --- a/include/linux/pm.h
+> > +++ b/include/linux/pm.h
+> > @@ -566,6 +566,7 @@ struct dev_pm_info {
+> >  	bool			ignore_children:1;
+> >  	bool			early_init:1;	/* Owned by the PM core */
+> >  	bool			direct_complete:1;	/* Owned by the PM core */
+> > +	unsigned int		irq_safe:1;	/* PM runtime */
+> >  	spinlock_t		lock;
+> >  #ifdef CONFIG_PM_SLEEP
+> >  	struct list_head	entry;
+> > @@ -590,7 +591,6 @@ struct dev_pm_info {
+> >  	unsigned int		run_wake:1;
+> >  	unsigned int		runtime_auto:1;
+> >  	unsigned int		no_callbacks:1;
+> > -	unsigned int		irq_safe:1;
+> >  	unsigned int		use_autosuspend:1;
+> >  	unsigned int		timer_autosuspends:1;
+> >  	unsigned int		memalloc_noio:1;
 > 
-> Why do we need the new flag?  Seems redundant to me.
+> Well, that is a good reason to introduce a wrapper around power.irq_safe in my
+> view.
+> 
+> And define the wrapper so that it always returns false for CONFIG_PM_RUNTIME
+> unset.
+> 
+> This way not only you wouldn't need to move the flag from under the #ifdef,
+> but also you would make the compiler skip the relevant pieces of code
+> entiretly for CONFIG_PM_RUNTIME unset.
 
-Some poorly written driver could set irq_safe somewhere between suspend
-and resume (e.g. in suspend callback).
+Few days ago I would be happy with your opinion :), but know I think
+this is better solution than wrapper. Consider case:
+1. PM_RUNTIME unset.
+2. System suspends.
+3. The pl330 in its suspend callback calls force_runtime_suspend which
+leads us to amba/bus.
+4. The amba/bus.c in runtime suspend checks for irq_safe (it is FALSE),
+so it disables and unprepares the clock.
+5. The pl330 in probe requested irq_safe so it assumes amba/bus will
+only disable the clock. So the pl330 unprepares the clock. Again.
 
 Best regards,
 Krzysztof
