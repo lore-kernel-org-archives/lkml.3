@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaKGPFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 10:05:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38303 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaKGPFk (ORCPT
+	id S1751443AbaKGPMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 10:12:19 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:50944 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaKGPMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 10:05:40 -0500
-Message-ID: <1415372724.29873.7.camel@pengutronix.de>
-Subject: Re: [PATCH v3 09/10] gpu: ipu-v3: Make use of media_bus_format enum
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
-        linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Date: Fri, 07 Nov 2014 16:05:24 +0100
-In-Reply-To: <1415369269-5064-10-git-send-email-boris.brezillon@free-electrons.com>
-References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
-	 <1415369269-5064-10-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 7 Nov 2014 10:12:17 -0500
+Date: Fri, 7 Nov 2014 15:12:09 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Sam Protsenko <semen.protsenko@linaro.org>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>, hock.leong.kweh@intel.com,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] efi: Capsule update support
+Message-ID: <20141107151209.GL3592@console-pimps.org>
+References: <CAGBcZGfHX57jwCfw7CnvLgOJ58kd0KVJULOvhAsfi=3YBp5WsQ@mail.gmail.com>
+ <20141013095310.GZ14343@console-pimps.org>
+ <CAGBcZGe=HszCxQyx8bBDUEQcF4g+gcMyLfGiM4dVz4=TfxvLpg@mail.gmail.com>
+ <CAGBcZGfSdYa2yXW68RbywzCiC7mTxjAdGjUnwnhjWAwXZ0uqiQ@mail.gmail.com>
+ <20141016161507.GJ14343@console-pimps.org>
+ <CAGBcZGf5+OkF1QQOJocVHuSKFgC1+rjiNuSBK3Oo3nBfr5RXdw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGBcZGf5+OkF1QQOJocVHuSKFgC1+rjiNuSBK3Oo3nBfr5RXdw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 07.11.2014, 15:07 +0100 schrieb Boris Brezillon:
-> In order to have subsytem agnostic media bus format definitions we've
-> moved media bus definition to include/uapi/linux/media-bus-format.h and
-> prefixed enum values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
+On Tue, 04 Nov, at 03:56:22PM, Sam Protsenko wrote:
+> Matt,
 > 
-> Reference new definitions in the ipu-v3 driver.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> I've tested your patch with zero image size (no image passed, only headers)
+> and it crashes because there is no check for image size there.
+> This case (zero image size) seems to be legit according to specification
+> and also can be useful in real life. So I developed a little fix for your patch:
+ 
+[...]
 
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+> I'm planning to use your API for our UpdateCapsule test module so
+> it would be really helpful if you can include this fix to your patch.
 
-regards
-Philipp
+Sure, I'll include that snippet and post fixed up code next week.
 
+Thanks Sam.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
