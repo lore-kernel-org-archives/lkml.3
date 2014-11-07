@@ -1,370 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbaKGRau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:30:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35644 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389AbaKGRaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:30:17 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 163/165] net: sctp: fix skb_over_panic when receiving malformed ASCONF chunks
-Date: Fri,  7 Nov 2014 09:29:55 -0800
-Message-Id: <1415381397-21898-2-git-send-email-kamal@canonical.com>
+	id S1752496AbaKGRaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:30:05 -0500
+Received: from mga03.intel.com ([134.134.136.65]:16068 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138AbaKGR35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 12:29:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,333,1413270000"; 
+   d="scan'208";a="604238439"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Cc: Len Brown <len.brown@intel.com>,
+        Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>,
+        Noor U Mubeen <noor.u.mubeen@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v2 3/3] powercap/rapl: add new model ids
+Date: Fri,  7 Nov 2014 09:29:27 -0800
+Message-Id: <1415381367-16693-4-git-send-email-jacob.jun.pan@linux.intel.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+In-Reply-To: <1415381367-16693-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1415381367-16693-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Daniel Borkmann <dborkman@redhat.com>
-
-commit 9de7922bc709eee2f609cd01d98aaedc4cf5ea74 upstream.
-
-Commit 6f4c618ddb0 ("SCTP : Add paramters validity check for
-ASCONF chunk") added basic verification of ASCONF chunks, however,
-it is still possible to remotely crash a server by sending a
-special crafted ASCONF chunk, even up to pre 2.6.12 kernels:
-
-skb_over_panic: text:ffffffffa01ea1c3 len:31056 put:30768
- head:ffff88011bd81800 data:ffff88011bd81800 tail:0x7950
- end:0x440 dev:<NULL>
- ------------[ cut here ]------------
-kernel BUG at net/core/skbuff.c:129!
-[...]
-Call Trace:
- <IRQ>
- [<ffffffff8144fb1c>] skb_put+0x5c/0x70
- [<ffffffffa01ea1c3>] sctp_addto_chunk+0x63/0xd0 [sctp]
- [<ffffffffa01eadaf>] sctp_process_asconf+0x1af/0x540 [sctp]
- [<ffffffff8152d025>] ? _read_unlock_bh+0x15/0x20
- [<ffffffffa01e0038>] sctp_sf_do_asconf+0x168/0x240 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffff8147645d>] ? fib_rules_lookup+0xad/0xf0
- [<ffffffffa01e6b22>] ? sctp_cmp_addr_exact+0x32/0x40 [sctp]
- [<ffffffffa01e8393>] sctp_assoc_bh_rcv+0xd3/0x180 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff81496ded>] ip_local_deliver_finish+0xdd/0x2d0
- [<ffffffff81497078>] ip_local_deliver+0x98/0xa0
- [<ffffffff8149653d>] ip_rcv_finish+0x12d/0x440
- [<ffffffff81496ac5>] ip_rcv+0x275/0x350
- [<ffffffff8145c88b>] __netif_receive_skb+0x4ab/0x750
- [<ffffffff81460588>] netif_receive_skb+0x58/0x60
-
-This can be triggered e.g., through a simple scripted nmap
-connection scan injecting the chunk after the handshake, for
-example, ...
-
-  -------------- INIT[ASCONF; ASCONF_ACK] ------------->
-  <----------- INIT-ACK[ASCONF; ASCONF_ACK] ------------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
-  ------------------ ASCONF; UNKNOWN ------------------>
-
-... where ASCONF chunk of length 280 contains 2 parameters ...
-
-  1) Add IP address parameter (param length: 16)
-  2) Add/del IP address parameter (param length: 255)
-
-... followed by an UNKNOWN chunk of e.g. 4 bytes. Here, the
-Address Parameter in the ASCONF chunk is even missing, too.
-This is just an example and similarly-crafted ASCONF chunks
-could be used just as well.
-
-The ASCONF chunk passes through sctp_verify_asconf() as all
-parameters passed sanity checks, and after walking, we ended
-up successfully at the chunk end boundary, and thus may invoke
-sctp_process_asconf(). Parameter walking is done with
-WORD_ROUND() to take padding into account.
-
-In sctp_process_asconf()'s TLV processing, we may fail in
-sctp_process_asconf_param() e.g., due to removal of the IP
-address that is also the source address of the packet containing
-the ASCONF chunk, and thus we need to add all TLVs after the
-failure to our ASCONF response to remote via helper function
-sctp_add_asconf_response(), which basically invokes a
-sctp_addto_chunk() adding the error parameters to the given
-skb.
-
-When walking to the next parameter this time, we proceed
-with ...
-
-  length = ntohs(asconf_param->param_hdr.length);
-  asconf_param = (void *)asconf_param + length;
-
-... instead of the WORD_ROUND()'ed length, thus resulting here
-in an off-by-one that leads to reading the follow-up garbage
-parameter length of 12336, and thus throwing an skb_over_panic
-for the reply when trying to sctp_addto_chunk() next time,
-which implicitly calls the skb_put() with that length.
-
-Fix it by using sctp_walk_params() [ which is also used in
-INIT parameter processing ] macro in the verification *and*
-in ASCONF processing: it will make sure we don't spill over,
-that we walk parameters WORD_ROUND()'ed. Moreover, we're being
-more defensive and guard against unknown parameter types and
-missized addresses.
-
-Joint work with Vlad Yasevich.
-
-Fixes: b896b82be4ae ("[SCTP] ADDIP: Support for processing incoming ASCONF_ACK chunks.")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Reference: CVE-2014-3673
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 ---
- include/net/sctp/sm.h    |  6 +--
- net/sctp/sm_make_chunk.c | 99 +++++++++++++++++++++++++++---------------------
- net/sctp/sm_statefuns.c  | 18 +--------
- 3 files changed, 60 insertions(+), 63 deletions(-)
+ drivers/powercap/intel_rapl.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/net/sctp/sm.h b/include/net/sctp/sm.h
-index 4ef75af..c91b6f5 100644
---- a/include/net/sctp/sm.h
-+++ b/include/net/sctp/sm.h
-@@ -249,9 +249,9 @@ struct sctp_chunk *sctp_make_asconf_update_ip(struct sctp_association *,
- 					      int, __be16);
- struct sctp_chunk *sctp_make_asconf_set_prim(struct sctp_association *asoc,
- 					     union sctp_addr *addr);
--int sctp_verify_asconf(const struct sctp_association *asoc,
--		       struct sctp_paramhdr *param_hdr, void *chunk_end,
--		       struct sctp_paramhdr **errp);
-+bool sctp_verify_asconf(const struct sctp_association *asoc,
-+			struct sctp_chunk *chunk, bool addr_param_needed,
-+			struct sctp_paramhdr **errp);
- struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 				       struct sctp_chunk *asconf);
- int sctp_process_asconf_ack(struct sctp_association *asoc,
-diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
-index 1d71674..e45212e 100644
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -3110,50 +3110,63 @@ static __be16 sctp_process_asconf_param(struct sctp_association *asoc,
- 	return SCTP_ERROR_NO_ERROR;
- }
- 
--/* Verify the ASCONF packet before we process it.  */
--int sctp_verify_asconf(const struct sctp_association *asoc,
--		       struct sctp_paramhdr *param_hdr, void *chunk_end,
--		       struct sctp_paramhdr **errp) {
--	sctp_addip_param_t *asconf_param;
-+/* Verify the ASCONF packet before we process it. */
-+bool sctp_verify_asconf(const struct sctp_association *asoc,
-+			struct sctp_chunk *chunk, bool addr_param_needed,
-+			struct sctp_paramhdr **errp)
-+{
-+	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) chunk->chunk_hdr;
- 	union sctp_params param;
--	int length, plen;
--
--	param.v = (sctp_paramhdr_t *) param_hdr;
--	while (param.v <= chunk_end - sizeof(sctp_paramhdr_t)) {
--		length = ntohs(param.p->length);
--		*errp = param.p;
-+	bool addr_param_seen = false;
- 
--		if (param.v > chunk_end - length ||
--		    length < sizeof(sctp_paramhdr_t))
--			return 0;
-+	sctp_walk_params(param, addip, addip_hdr.params) {
-+		size_t length = ntohs(param.p->length);
- 
-+		*errp = param.p;
- 		switch (param.p->type) {
-+		case SCTP_PARAM_ERR_CAUSE:
-+			break;
-+		case SCTP_PARAM_IPV4_ADDRESS:
-+			if (length != sizeof(sctp_ipv4addr_param_t))
-+				return false;
-+			addr_param_seen = true;
-+			break;
-+		case SCTP_PARAM_IPV6_ADDRESS:
-+			if (length != sizeof(sctp_ipv6addr_param_t))
-+				return false;
-+			addr_param_seen = true;
-+			break;
- 		case SCTP_PARAM_ADD_IP:
- 		case SCTP_PARAM_DEL_IP:
- 		case SCTP_PARAM_SET_PRIMARY:
--			asconf_param = (sctp_addip_param_t *)param.v;
--			plen = ntohs(asconf_param->param_hdr.length);
--			if (plen < sizeof(sctp_addip_param_t) +
--			    sizeof(sctp_paramhdr_t))
--				return 0;
-+			/* In ASCONF chunks, these need to be first. */
-+			if (addr_param_needed && !addr_param_seen)
-+				return false;
-+			length = ntohs(param.addip->param_hdr.length);
-+			if (length < sizeof(sctp_addip_param_t) +
-+				     sizeof(sctp_paramhdr_t))
-+				return false;
- 			break;
- 		case SCTP_PARAM_SUCCESS_REPORT:
- 		case SCTP_PARAM_ADAPTATION_LAYER_IND:
- 			if (length != sizeof(sctp_addip_param_t))
--				return 0;
--
-+				return false;
- 			break;
- 		default:
--			break;
-+			/* This is unkown to us, reject! */
-+			return false;
- 		}
--
--		param.v += WORD_ROUND(length);
- 	}
- 
--	if (param.v != chunk_end)
--		return 0;
-+	/* Remaining sanity checks. */
-+	if (addr_param_needed && !addr_param_seen)
-+		return false;
-+	if (!addr_param_needed && addr_param_seen)
-+		return false;
-+	if (param.v != chunk->chunk_end)
-+		return false;
- 
--	return 1;
-+	return true;
- }
- 
- /* Process an incoming ASCONF chunk with the next expected serial no. and
-@@ -3162,16 +3175,17 @@ int sctp_verify_asconf(const struct sctp_association *asoc,
- struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 				       struct sctp_chunk *asconf)
- {
-+	sctp_addip_chunk_t *addip = (sctp_addip_chunk_t *) asconf->chunk_hdr;
-+	bool all_param_pass = true;
-+	union sctp_params param;
- 	sctp_addiphdr_t		*hdr;
- 	union sctp_addr_param	*addr_param;
- 	sctp_addip_param_t	*asconf_param;
- 	struct sctp_chunk	*asconf_ack;
--
- 	__be16	err_code;
- 	int	length = 0;
- 	int	chunk_len;
- 	__u32	serial;
--	int	all_param_pass = 1;
- 
- 	chunk_len = ntohs(asconf->chunk_hdr->length) - sizeof(sctp_chunkhdr_t);
- 	hdr = (sctp_addiphdr_t *)asconf->skb->data;
-@@ -3199,9 +3213,14 @@ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 		goto done;
- 
- 	/* Process the TLVs contained within the ASCONF chunk. */
--	while (chunk_len > 0) {
-+	sctp_walk_params(param, addip, addip_hdr.params) {
-+		/* Skip preceeding address parameters. */
-+		if (param.p->type == SCTP_PARAM_IPV4_ADDRESS ||
-+		    param.p->type == SCTP_PARAM_IPV6_ADDRESS)
-+			continue;
-+
- 		err_code = sctp_process_asconf_param(asoc, asconf,
--						     asconf_param);
-+						     param.addip);
- 		/* ADDIP 4.1 A7)
- 		 * If an error response is received for a TLV parameter,
- 		 * all TLVs with no response before the failed TLV are
-@@ -3209,28 +3228,20 @@ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
- 		 * the failed response are considered unsuccessful unless
- 		 * a specific success indication is present for the parameter.
- 		 */
--		if (SCTP_ERROR_NO_ERROR != err_code)
--			all_param_pass = 0;
--
-+		if (err_code != SCTP_ERROR_NO_ERROR)
-+			all_param_pass = false;
- 		if (!all_param_pass)
--			sctp_add_asconf_response(asconf_ack,
--						 asconf_param->crr_id, err_code,
--						 asconf_param);
-+			sctp_add_asconf_response(asconf_ack, param.addip->crr_id,
-+						 err_code, param.addip);
- 
- 		/* ADDIP 4.3 D11) When an endpoint receiving an ASCONF to add
- 		 * an IP address sends an 'Out of Resource' in its response, it
- 		 * MUST also fail any subsequent add or delete requests bundled
- 		 * in the ASCONF.
- 		 */
--		if (SCTP_ERROR_RSRC_LOW == err_code)
-+		if (err_code == SCTP_ERROR_RSRC_LOW)
- 			goto done;
--
--		/* Move to the next ASCONF param. */
--		length = ntohs(asconf_param->param_hdr.length);
--		asconf_param = (void *)asconf_param + length;
--		chunk_len -= length;
- 	}
--
- done:
- 	asoc->peer.addip_serial++;
- 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 4b549a3..bf97a83 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -3592,9 +3592,7 @@ sctp_disposition_t sctp_sf_do_asconf(struct net *net,
- 	struct sctp_chunk	*asconf_ack = NULL;
- 	struct sctp_paramhdr	*err_param = NULL;
- 	sctp_addiphdr_t		*hdr;
--	union sctp_addr_param	*addr_param;
- 	__u32			serial;
--	int			length;
- 
- 	if (!sctp_vtag_verify(chunk, asoc)) {
- 		sctp_add_cmd_sf(commands, SCTP_CMD_REPORT_BAD_TAG,
-@@ -3619,17 +3617,8 @@ sctp_disposition_t sctp_sf_do_asconf(struct net *net,
- 	hdr = (sctp_addiphdr_t *)chunk->skb->data;
- 	serial = ntohl(hdr->serial);
- 
--	addr_param = (union sctp_addr_param *)hdr->params;
--	length = ntohs(addr_param->p.length);
--	if (length < sizeof(sctp_paramhdr_t))
--		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
--			   (void *)addr_param, commands);
--
- 	/* Verify the ASCONF chunk before processing it. */
--	if (!sctp_verify_asconf(asoc,
--			    (sctp_paramhdr_t *)((void *)addr_param + length),
--			    (void *)chunk->chunk_end,
--			    &err_param))
-+	if (!sctp_verify_asconf(asoc, chunk, true, &err_param))
- 		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
- 						  (void *)err_param, commands);
- 
-@@ -3747,10 +3736,7 @@ sctp_disposition_t sctp_sf_do_asconf_ack(struct net *net,
- 	rcvd_serial = ntohl(addip_hdr->serial);
- 
- 	/* Verify the ASCONF-ACK chunk before processing it. */
--	if (!sctp_verify_asconf(asoc,
--	    (sctp_paramhdr_t *)addip_hdr->params,
--	    (void *)asconf_ack->chunk_end,
--	    &err_param))
-+	if (!sctp_verify_asconf(asoc, asconf_ack, false, &err_param))
- 		return sctp_sf_violation_paramlen(net, ep, asoc, type, arg,
- 			   (void *)err_param, commands);
- 
+diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+index 4631696..c71443c 100644
+--- a/drivers/powercap/intel_rapl.c
++++ b/drivers/powercap/intel_rapl.c
+@@ -1039,6 +1039,9 @@ static const struct x86_cpu_id rapl_ids[] = {
+ 	RAPL_CPU(0x3d, rapl_defaults_core),/* Broadwell */
+ 	RAPL_CPU(0x3f, rapl_defaults_core),/* Haswell */
+ 	RAPL_CPU(0x45, rapl_defaults_core),/* Haswell ULT */
++	RAPL_CPU(0x4C, rapl_defaults_atom),/* Braswell */
++	RAPL_CPU(0x4A, rapl_defaults_atom),/* Tangier */
++	RAPL_CPU(0x5A, rapl_defaults_atom),/* Annidale */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, rapl_ids);
 -- 
 1.9.1
 
