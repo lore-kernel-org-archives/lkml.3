@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930AbaKGXDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:03:11 -0500
-Received: from mga03.intel.com ([134.134.136.65]:62481 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751843AbaKGXDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:03:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,335,1413270000"; 
-   d="scan'208,223";a="633581030"
-Message-ID: <1415401367.1954.14.camel@localhost.localdomain>
-Subject: [PATCH 3/3] hda_intel: Add DeviceIDs for Sunrise Point-LP
-From: Devin Ryles <devin.ryles@intel.com>
-To: perex@perex.cz
-Cc: tiwai@suse.de, linux-kernel@vger.kernel.org, james.d.ralston@intel.com,
-        frank.riegel@intel.com, devin.ryles@intel.com
-Date: Fri, 07 Nov 2014 18:02:47 -0500
+	id S1752886AbaKGXJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:09:41 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41024 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaKGXJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 18:09:40 -0500
+Message-ID: <1415401776.2767.1.camel@localhost.localdomain>
+Subject: [PATCH] netfilter: fix compile of nft_reject_bridge
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sat, 08 Nov 2014 00:09:36 +0100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e02662c35ea1352ce711701a46f85e3547f842e1 Mon Sep 17 00:00:00 2001
-From: Devin Ryles <devin.ryles@intel.com>
-Date: Thu, 6 Nov 2014 12:35:25 -0500
-Subject: [PATCH 3/3] hda_intel: Add DeviceIDs for Sunrise Point-LP
-
-This patch adds DeviceIDs for Sunrise Point-LP
-
-Signed-off-by: Devin Ryles <devin.ryles@intel.com>
----
- sound/pci/hda/hda_intel.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 9ab1e63..16660f3 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -219,6 +219,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
- 			 "{Intel, LPT_LP},"
- 			 "{Intel, WPT_LP},"
- 			 "{Intel, SPT},"
-+			 "{Intel, SPT_LP},"
- 			 "{Intel, HPT},"
- 			 "{Intel, PBG},"
- 			 "{Intel, SCH},"
-@@ -2004,6 +2005,9 @@ static const struct pci_device_id azx_ids[] = {
- 	/* Sunrise Point */
- 	{ PCI_DEVICE(0x8086, 0xa170),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
-+	/* Sunrise Point-LP */
-+	{ PCI_DEVICE(0x8086, 0x9d70),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
- 	/* Haswell */
- 	{ PCI_DEVICE(0x8086, 0x0a0c),
- 	  .driver_data = AZX_DRIVER_HDMI | AZX_DCAPS_INTEL_HASWELL },
--- 
-1.9.3
-
+Von: Stephen Hemminger <stephen@networkplumber.org>
+> An: Thomas Meyer <thomas@m3y3r.de>
+> Betreff: Re: [PATCH] netfilter: fix compile of nft_reject_bridge
+> Datum: Mon, 3 Nov 2014 12:44:06 -0800
+> 
+> On Sat, 01 Nov 2014 16:21:39 +0100
+> Thomas Meyer <thomas@m3y3r.de> wrote:
+> 
+> > Module uses csum_ipv6_magic(), so include the correct header file.
+> > 
+> > Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> > ---
+> > 
+> > diff --git a/net/bridge/netfilter/nft_reject_bridge.c
+b/net/bridge/netfilter/nft_reject_bridge.c
+> > index 654c901..1123f2b 100644
+> > --- a/net/bridge/netfilter/nft_reject_bridge.c
+> > +++ b/net/bridge/netfilter/nft_reject_bridge.c
+> > @@ -16,6 +16,7 @@
+> >  #include <net/netfilter/nft_reject.h>
+> >  #include <net/netfilter/ipv4/nf_reject.h>
+> >  #include <net/netfilter/ipv6/nf_reject.h>
+> > +#include <net/ip6_checksum.h>
+> >  #include <linux/ip.h>
+> >  #include <net/ip.h>
+> >  #include <linux/netfilter_bridge.h>
+> > 
+> > 
+> 
+> Acked-by: Stephen Hemminger <stephen@networkplumber.org>
 
 
