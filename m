@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaKGQ1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:27:41 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48328 "EHLO
+	id S1752947AbaKGQ14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:27:56 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48336 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752736AbaKGQ1j (ORCPT
+	by vger.kernel.org with ESMTP id S1751425AbaKGQ1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:27:39 -0500
+	Fri, 7 Nov 2014 11:27:54 -0500
 From: Mark Rutland <mark.rutland@arm.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 11/11] arm: dts: vexpress: describe all PMUs in TC2 dts
-Date: Fri,  7 Nov 2014 16:25:36 +0000
-Message-Id: <1415377536-12841-12-git-send-email-mark.rutland@arm.com>
+Subject: [PATCH 10/11] arm: perf: remove singleton PMU restriction
+Date: Fri,  7 Nov 2014 16:25:35 +0000
+Message-Id: <1415377536-12841-11-git-send-email-mark.rutland@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
 References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
@@ -21,75 +21,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dts for the CoreTile Express A15x2 A7x3 (TC2) only describes the
-PMUs of the Cortex-A15 CPUs, and not the Cortex-A7 CPUs.
-
-Now that we have a mechanism for describing disparate PMUs and their
-interrupts in device tree, this patch makes use of these to describe the
-PMUs for all CPUs in the system.
+Now that we can describe PMUs in heterogeneous systems, the only item in
+the way of perf support for big.LITTLE is the singleton cpu_pmu variable
+used for OProfile compatibility.
 
 Signed-off-by: Mark Rutland <mark.rutland@arm.com>
 ---
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts | 36 +++++++++++++++++++++++++++++-
- 1 file changed, 35 insertions(+), 1 deletion(-)
+ arch/arm/kernel/perf_event_cpu.c | 27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-index 322fd15..52416f9 100644
---- a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-+++ b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-@@ -90,6 +90,28 @@
- 				min-residency-us = <2500>;
- 			};
- 		};
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index f09c8a0..09de0e6 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -34,7 +34,7 @@
+ #include <asm/pmu.h>
+ 
+ /* Set at runtime when we know what CPU type we are. */
+-static struct arm_pmu *cpu_pmu;
++static struct arm_pmu *__oprofile_cpu_pmu;
+ 
+ /*
+  * Despite the names, these two functions are CPU-specific and are used
+@@ -42,10 +42,10 @@ static struct arm_pmu *cpu_pmu;
+  */
+ const char *perf_pmu_name(void)
+ {
+-	if (!cpu_pmu)
++	if (!__oprofile_cpu_pmu)
+ 		return NULL;
+ 
+-	return cpu_pmu->name;
++	return __oprofile_cpu_pmu->name;
+ }
+ EXPORT_SYMBOL_GPL(perf_pmu_name);
+ 
+@@ -53,8 +53,8 @@ int perf_num_counters(void)
+ {
+ 	int max_events = 0;
+ 
+-	if (cpu_pmu != NULL)
+-		max_events = cpu_pmu->num_events;
++	if (__oprofile_cpu_pmu != NULL)
++		max_events = __oprofile_cpu_pmu->num_events;
+ 
+ 	return max_events;
+ }
+@@ -528,19 +528,16 @@ static int cpu_pmu_device_probe(struct platform_device *pdev)
+ 	struct arm_pmu *pmu;
+ 	int ret = -ENODEV;
+ 
+-	if (cpu_pmu) {
+-		pr_info("attempt to register multiple PMU devices!\n");
+-		return -ENOSPC;
+-	}
+-
+ 	pmu = kzalloc(sizeof(struct arm_pmu), GFP_KERNEL);
+ 	if (!pmu) {
+ 		pr_info("failed to allocate PMU device!\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	cpu_pmu = pmu;
+-	cpu_pmu->plat_device = pdev;
++	if (!__oprofile_cpu_pmu)
++		__oprofile_cpu_pmu = pmu;
 +
-+		cpu-map {
-+			cluster0 {
-+				core_0_0: core0 {
-+					cpu = <&cpu0>;
-+				};
-+				core_0_1: core1 {
-+					cpu = <&cpu1>;
-+				};
-+			};
-+			cluster1 {
-+				core_1_0: core0 {
-+					cpu = <&cpu2>;
-+				};
-+				core_1_1: core1 {
-+					cpu = <&cpu3>;
-+				};
-+				core_1_2: core2 {
-+					cpu = <&cpu4>;
-+				};
-+			};
-+		};
- 	};
++	pmu->plat_device = pdev;
  
- 	memory@80000000 {
-@@ -187,10 +209,22 @@
- 			     <1 10 0xf08>;
- 	};
+ 	ret = cpu_pmu_parse_interrupts(pmu);
+ 	if (ret)
+@@ -558,18 +555,18 @@ static int cpu_pmu_device_probe(struct platform_device *pdev)
+ 		goto out_free;
+ 	}
  
--	pmu {
-+	pmu_a15 {
- 		compatible = "arm,cortex-a15-pmu";
- 		interrupts = <0 68 4>,
- 			     <0 69 4>;
-+		interrupts-affinity = <&core_0_0>,
-+				      <&core_0_1>;
-+	};
-+
-+	pmu_a7 {
-+		compatible = "arm,cortex-a7-pmu";
-+		interrupts = <0 128 4>,
-+			     <0 129 4>,
-+			     <0 130 4>;
-+		interrupts-affinity = <&core_1_0>,
-+				      <&core_1_1>,
-+				      <&core_1_2>;
- 	};
+-	ret = cpu_pmu_init(cpu_pmu);
++	ret = cpu_pmu_init(pmu);
+ 	if (ret)
+ 		goto out_free;
  
- 	oscclk6a: oscclk6a {
+-	ret = armpmu_register(cpu_pmu, -1);
++	ret = armpmu_register(pmu, -1);
+ 	if (ret)
+ 		goto out_destroy;
+ 
+ 	return 0;
+ 
+ out_destroy:
+-	cpu_pmu_destroy(cpu_pmu);
++	cpu_pmu_destroy(pmu);
+ out_free:
+ 	kfree(pmu->irq_map);
+ out_free_pmu:
 -- 
 1.9.1
 
