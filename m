@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaKGQ1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:27:07 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48297 "EHLO
+	id S1752761AbaKGQ1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:27:16 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48311 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751667AbaKGQ1D (ORCPT
+	by vger.kernel.org with ESMTP id S1752729AbaKGQ1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:27:03 -0500
+	Fri, 7 Nov 2014 11:27:13 -0500
 From: Mark Rutland <mark.rutland@arm.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 05/11] arm: perf: reject multi-pmu groups
-Date: Fri,  7 Nov 2014 16:25:30 +0000
-Message-Id: <1415377536-12841-6-git-send-email-mark.rutland@arm.com>
+Subject: [PATCH 07/11] arm: perf: document PMU affinity binding
+Date: Fri,  7 Nov 2014 16:25:32 +0000
+Message-Id: <1415377536-12841-8-git-send-email-mark.rutland@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
 References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
@@ -21,82 +21,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An event group spanning multiple CPU PMUs can never be scheduled, as at
-least one event should always fail, and are therefore nonsensical.
-Additionally, groups spanning multiple PMUs would require additional
-validation logic throughout the driver to prevent CPU PMUs from stepping
-on each others' internal state. Given that such groups are nonsensical
-to begin with, the simple option is to reject such groups entirely.
-Groups consisting of software events and CPU PMU events are benign so
-long as the CPU PMU events only target a single CPU PMU.
+To describe the various ways CPU PMU interrupts might be wired up, we
+can refer to the topology information in the device tree.
 
-This patch ensures that we reject the creation of event groups which
-span multiple CPU PMUs, avoiding the issues described above. The
-addition of this_pmu to the validation logic made the fake_pmu more
-confusing than it already was; so this is renamed to the more accurate
-hw_events. As hw_events was being modified anyway, the initialisation of
-hw_events.used_mask is also simplified with the use of a designated
-initializer rather than the existing memset.
+This patch adds a new property to the PMU binding, interrupts-affinity,
+which describes the relationship between CPUs and interrupts. This
+information is necessary to handle systems with heterogeneous PMU
+implementations (e.g. big.LITTLE). Documentation is added describing the
+use of said property.
 
 Signed-off-by: Mark Rutland <mark.rutland@arm.com>
 ---
- arch/arm/kernel/perf_event.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ Documentation/devicetree/bindings/arm/pmu.txt | 104 +++++++++++++++++++++++++-
+ 1 file changed, 103 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index b00f6aa..41dcfc0 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -258,13 +258,17 @@ out:
- }
+diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
+index 75ef91d..23a0675 100644
+--- a/Documentation/devicetree/bindings/arm/pmu.txt
++++ b/Documentation/devicetree/bindings/arm/pmu.txt
+@@ -24,12 +24,114 @@ Required properties:
  
- static int
--validate_event(struct pmu_hw_events *hw_events,
-+validate_event(struct pmu *this_pmu,
-+	       struct pmu_hw_events *hw_events,
- 	       struct perf_event *event)
- {
- 	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
+ Optional properties:
  
- 	if (is_software_event(event))
- 		return 1;
-+	
-+	if (event->pmu != this_pmu)
-+		return 0;
++- interrupts-affinity : A list of phandles to topology nodes (see topology.txt) describing
++	     the set of CPUs associated with the interrupt at the same index.
+ - qcom,no-pc-write : Indicates that this PMU doesn't support the 0xc and 0xd
+                      events.
  
- 	if (event->state < PERF_EVENT_STATE_OFF)
- 		return 1;
-@@ -279,23 +283,20 @@ static int
- validate_group(struct perf_event *event)
- {
- 	struct perf_event *sibling, *leader = event->group_leader;
--	struct pmu_hw_events fake_pmu;
--
--	/*
--	 * Initialise the fake PMU. We only need to populate the
--	 * used_mask for the purposes of validation.
--	 */
--	memset(&fake_pmu.used_mask, 0, sizeof(fake_pmu.used_mask));
-+	struct pmu *this_pmu = event->pmu;
-+	struct pmu_hw_events hw_events = {
-+		.used_mask = { 0 },
+-Example:
++Example 1 (A single CPU):
+ 
+ pmu {
+         compatible = "arm,cortex-a9-pmu";
+         interrupts = <100 101>;
+ };
++
++Example 2 (Multiple clusters with single interrupts):
++
++cpus {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	CPU0: cpu@0 {
++		reg = <0x0>;
++		compatible = "arm,cortex-a15-pmu";
 +	};
- 
--	if (!validate_event(&fake_pmu, leader))
-+	if (!validate_event(this_pmu, &hw_events, leader))
- 		return -EINVAL;
- 
- 	list_for_each_entry(sibling, &leader->sibling_list, group_entry) {
--		if (!validate_event(&fake_pmu, sibling))
-+		if (!validate_event(this_pmu, &hw_events, sibling))
- 			return -EINVAL;
- 	}
- 
--	if (!validate_event(&fake_pmu, event))
-+	if (!validate_event(this_pmu, &hw_events, event))
- 		return -EINVAL;
- 
- 	return 0;
++
++	CPU1: cpu@1 {
++		reg = <0x1>;
++		compatible = "arm,cotex-a15-pmu";
++	};
++
++	CPU100: cpu@100 {
++		reg = <0x100>;
++		compatible = "arm,cortex-a7-pmu";
++	};
++
++	cpu-map {
++		cluster0 {
++			CORE_0_0: core0 {
++				cpu = <&CPU0>;
++			};
++			CORE_0_1: core1 {
++				cpu = <&CPU1>;
++			};
++		};
++		cluster1 {
++			CORE_1_0: core0 {
++				cpu = <&CPU100>;
++			};
++		};
++	};
++};
++
++pmu_a15 {
++	compatible = "arm,cortex-a15-pmu";
++	interrupts = <100>, <101>;
++	interrupts-affinity = <&CORE0>, <&CORE1>;
++};
++
++pmu_a7 {
++	compatible = "arm,cortex-a7-pmu";
++	interrupts = <105>;
++	interrupts-affinity = <&CORE_1_0>;
++};
++
++Example 3 (Multiple clusters with per-cpu interrupts):
++
++cpus {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	CPU0: cpu@0 {
++		reg = <0x0>;
++		compatible = "arm,cortex-a15-pmu";
++	};
++
++	CPU1: cpu@1 {
++		reg = <0x1>;
++		compatible = "arm,cotex-a15-pmu";
++	};
++
++	CPU100: cpu@100 {
++		reg = <0x100>;
++		compatible = "arm,cortex-a7-pmu";
++	};
++
++	cpu-map {
++		CLUSTER0: cluster0 {
++			core0 {
++				cpu = <&CPU0>;
++			};
++			core1 {
++				cpu = <&CPU1>;
++			};
++		};
++		CLUSTER1: cluster1 {
++			 core0 {
++				cpu = <&CPU100>;
++			};
++		};
++	};
++};
++
++pmu_a15 {
++	compatible = "arm,cortex-a15-pmu";
++	interrupts = <100>;
++	interrupts-affinity = <&CLUSTER0>;
++};
++
++pmu_a7 {
++	compatible = "arm,cortex-a7-pmu";
++	interrupts = <105>;
++	interrupts-affinity = <&CLUSTER1>;
++};
 -- 
 1.9.1
 
