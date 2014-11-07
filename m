@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaKGGmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 01:42:52 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:38212 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaKGGmu (ORCPT
+	id S1752140AbaKGGnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 01:43:37 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:56719 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaKGGne convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 01:42:50 -0500
-Message-ID: <545C69E7.6010909@gmail.com>
-Date: Thu, 06 Nov 2014 22:42:47 -0800
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: frowand.list@gmail.com
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <545C694D.1030204@gmail.com>
-In-Reply-To: <545C694D.1030204@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Nov 2014 01:43:34 -0500
+X-Greylist: delayed 8429 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 01:43:32 EST
+X-Cam-AntiVirus: found ScamNailer.Phish.viro_AT_zeniv.linux.org.uk
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [fuse-devel] [PATCH v5 7/7] add a flag for per-operation O_DSYNC semantics
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <CAFboF2y2skt=H4crv54shfnXOmz23W-shYWtHWekK8ZUDkfP=A@mail.gmail.com>
+Date: Fri, 7 Nov 2014 08:43:00 +0200
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-arch@vger.kernel.org,
+        linux-aio@kvack.org, linux-nfs@vger.kernel.org,
+        Volker Lendecke <Volker.Lendecke@sernet.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-mm@kvack.org,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        linux-api@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Milosz Tanski <milosz@adfin.com>, linux-fsdevel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, ceph-devel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, ocfs2-devel@oss.oracle.com,
+        Mel Gorman <mgorman@suse.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B92AEADD-B22C-4A4A-B64D-96E8869D3282@cam.ac.uk>
+References: <cover.1415220890.git.milosz@adfin.com> <c188b04ede700ce5f986b19de12fa617d158540f.1415220890.git.milosz@adfin.com> <x49r3xf28qn.fsf@segfault.boston.devel.redhat.com> <BF30FAEC-D4D3-4079-9ECD-2743747279BD@cam.ac.uk> <CAFboF2y2skt=H4crv54shfnXOmz23W-shYWtHWekK8ZUDkfP=A@mail.gmail.com>
+To: Anand Avati <avati@gluster.org>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/2014 10:40 PM, Frank Rowand wrote:
-> From: Frank Rowand <frank.rowand@sonymobile.com>
-> 
-> Update msm8974 dtsi for msm_serial to reflect msm_serial_probe()
-> getting line id from the serial alias.
-> 
-> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
-> ---
->  arch/arm/boot/dts/qcom-msm8974.dtsi |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> Index: b/arch/arm/boot/dts/qcom-msm8974.dtsi
-> ===================================================================
-> --- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-> +++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-> @@ -9,6 +9,10 @@
->  	compatible = "qcom,msm8974";
->  	interrupt-parent = <&intc>;
->  
-> +	aliases {
-> +		serial0 = &serial0;
-> +	};
-> +
->  	cpus {
->  		#address-cells = <1>;
->  		#size-cells = <0>;
-> @@ -189,7 +193,7 @@
->  			reg = <0xfd8c0000 0x6000>;
->  		};
->  
-> -		serial@f991e000 {
-> +		serial0: serial@f991e000 {
->  			compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
->  			reg = <0xf991e000 0x1000>;
->  			interrupts = <0 108 0x0>;
-> 
+Hi,
 
-This same change is also needed in:
+> On 7 Nov 2014, at 07:52, Anand Avati <avati@gluster.org> wrote:
+> On Thu, Nov 6, 2014 at 8:22 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+> > On 7 Nov 2014, at 01:46, Jeff Moyer <jmoyer@redhat.com> wrote:
+> > Minor nit, but I'd rather read something that looks like this:
+> >
+> >       if (type == READ && (flags & RWF_NONBLOCK))
+> >               return -EAGAIN;
+> >       else if (type == WRITE && (flags & RWF_DSYNC))
+> >               return -EINVAL;
+> 
+> But your version is less logically efficient for the case where "type == READ" is true and "flags & RWF_NONBLOCK" is false because your version then has to do the "if (type == WRITE" check before discovering it does not need to take that branch either, whilst the original version does not have to do such a test at all.
+> 
+> Seriously?
 
-  qcom-ipq8064.dtsi
-  qcom-msm8960.dtsi
-  qcom-apq8084.dtsi
-  qcom-apq8064.dtsi
-  qcom-msm8660.dtsi
+Of course seriously.
 
-but I did not want to just blindly apply those changes without testing.
+> Just focus on the code readability/maintainability which makes the code most easily understood/obvious to a new pair of eyes, and leave such micro-optimizations to the compiler..
 
--Frank
+The original version is more readable (IMO) and this is not a micro-optimization.  It is people like you who are responsible for the fact that we need faster and faster computers to cope with the inefficient/poor code being written more and more...
+
+And I really wouldn't hedge my bets on gcc optimizing something like that.  The amount of crap assembly produced from gcc that I have seen over the years suggests that it is quite likely it will make a hash of it instead...
+
+Best regards,
+
+	Anton
+
+> Thanks
+
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+
