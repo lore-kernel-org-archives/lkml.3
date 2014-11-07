@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaKGFbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:31:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57887 "EHLO
+	id S1751913AbaKGFab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:30:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57813 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772AbaKGFbq (ORCPT
+	with ESMTP id S1751608AbaKGFaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:31:46 -0500
-Date: Thu, 6 Nov 2014 21:31:28 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-96d78059d6d9da45d77078a219924304860497f2@git.kernel.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, eranian@google.com,
-        paulus@samba.org, namhyung@kernel.org, hpa@zytor.com,
-        namhyung.kim@lge.com, acme@redhat.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl
-Reply-To: adrian.hunter@intel.com, eranian@google.com, dsahern@gmail.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        hpa@zytor.com, namhyung.kim@lge.com, mingo@kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, paulus@samba.org, namhyung@kernel.org
-In-Reply-To: <1415063674-17206-9-git-send-email-namhyung@kernel.org>
-References: <1415063674-17206-9-git-send-email-namhyung@kernel.org>
+	Fri, 7 Nov 2014 00:30:17 -0500
+Date: Thu, 6 Nov 2014 21:29:20 -0800
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-6a70307ddcd9999598c399d55dc44c07816a575f@git.kernel.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        peterz@infradead.org, mingo@kernel.org, paulus@samba.org,
+        acme@redhat.com, adrian.hunter@intel.com, fweisbec@gmail.com,
+        dsahern@gmail.com, eranian@google.com, namhyung@gmail.com,
+        tglx@linutronix.de
+Reply-To: eranian@google.com, tglx@linutronix.de, namhyung@gmail.com,
+        adrian.hunter@intel.com, fweisbec@gmail.com, dsahern@gmail.com,
+        mingo@kernel.org, hpa@zytor.com, peterz@infradead.org, acme@redhat.com,
+        paulus@samba.org, jolsa@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1414678188-14946-7-git-send-email-adrian.hunter@intel.com>
+References: <1414678188-14946-7-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Make vmlinux short name more like kallsyms short name
-Git-Commit-ID: 96d78059d6d9da45d77078a219924304860497f2
+Subject: [tip:perf/core] perf tools: Add call information to Python export
+Git-Commit-ID: 6a70307ddcd9999598c399d55dc44c07816a575f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,72 +36,339 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  96d78059d6d9da45d77078a219924304860497f2
-Gitweb:     http://git.kernel.org/tip/96d78059d6d9da45d77078a219924304860497f2
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 4 Nov 2014 10:14:34 +0900
+Commit-ID:  6a70307ddcd9999598c399d55dc44c07816a575f
+Gitweb:     http://git.kernel.org/tip/6a70307ddcd9999598c399d55dc44c07816a575f
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Thu, 30 Oct 2014 16:09:47 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Nov 2014 10:14:09 -0300
+CommitDate: Mon, 3 Nov 2014 18:10:06 -0300
 
-perf tools: Make vmlinux short name more like kallsyms short name
+perf tools: Add call information to Python export
 
-The previous patch changed kernel dso name from '[kernel.kallsyms]' to
-vmlinux.  However it might add confusion to old users accustomed to the
-old name.  So change the short name to '[kernel.vmlinux]' to reduce such
-confusion.
+Add the ability to export detailed information about paired calls and
+returns to Python db export and the export-to-postgresql.py script.
 
-Before:
-  # Overhead  Command         Shared Object            Symbol
-  # ........  ..............  .......................  ...............................
-  #
-       9.83%  swapper         vmlinux                  [k] intel_idle
-       4.10%  awk             libc-2.20.so             [.] __strcmp_sse2
-       1.86%  sed             libc-2.20.so             [.] __strcmp_sse2
-       1.78%  netctl-auto     libc-2.20.so             [.] __strcmp_sse2
-       1.23%  netctl-auto     libc-2.20.so             [.] __mbrtowc
-       1.21%  firefox         libxul.so                [.] 0x00000000024b62bd
-       1.20%  swapper         vmlinux                  [k] cpuidle_enter_state
-       1.03%  sleep           vmlinux                  [k] copy_user_generic_unrolled
-
-After:
-  # Overhead  Command         Shared Object            Symbol
-  # ........  ..............  .......................  ...............................
-  #
-       9.83%  swapper         [kernel.vmlinux]         [k] intel_idle
-       4.10%  awk             libc-2.20.so             [.] __strcmp_sse2
-       1.86%  sed             libc-2.20.so             [.] __strcmp_sse2
-       1.78%  netctl-auto     libc-2.20.so             [.] __strcmp_sse2
-       1.23%  netctl-auto     libc-2.20.so             [.] __mbrtowc
-       1.21%  firefox         libxul.so                [.] 0x00000000024b62bd
-       1.20%  swapper         [kernel.vmlinux]         [k] cpuidle_enter_state
-       1.03%  sleep           [kernel.vmlinux]         [k] copy_user_generic_unrolled
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1415063674-17206-9-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1414678188-14946-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 3 +++
- 1 file changed, 3 insertions(+)
+ .../scripts/python/bin/export-to-postgresql-report | 15 ++--
+ tools/perf/scripts/python/export-to-postgresql.py  | 66 ++++++++++++++++-
+ .../util/scripting-engines/trace-event-python.c    | 84 +++++++++++++++++++++-
+ 3 files changed, 158 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 53f90e9..52e9490 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1106,6 +1106,9 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
- 		if (__machine__create_kernel_maps(machine, kernel) < 0)
- 			goto out_problem;
+diff --git a/tools/perf/scripts/python/bin/export-to-postgresql-report b/tools/perf/scripts/python/bin/export-to-postgresql-report
+index a8fdd15..cd335b6 100644
+--- a/tools/perf/scripts/python/bin/export-to-postgresql-report
++++ b/tools/perf/scripts/python/bin/export-to-postgresql-report
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ # description: export perf data to a postgresql database
+-# args: [database name] [columns]
++# args: [database name] [columns] [calls]
+ n_args=0
+ for i in "$@"
+ do
+@@ -9,11 +9,16 @@ do
+     fi
+     n_args=$(( $n_args + 1 ))
+ done
+-if [ "$n_args" -gt 2 ] ; then
+-    echo "usage: export-to-postgresql-report [database name] [columns]"
++if [ "$n_args" -gt 3 ] ; then
++    echo "usage: export-to-postgresql-report [database name] [columns] [calls]"
+     exit
+ fi
+-if [ "$n_args" -gt 1 ] ; then
++if [ "$n_args" -gt 2 ] ; then
++    dbname=$1
++    columns=$2
++    calls=$3
++    shift 3
++elif [ "$n_args" -gt 1 ] ; then
+     dbname=$1
+     columns=$2
+     shift 2
+@@ -21,4 +26,4 @@ elif [ "$n_args" -gt 0 ] ; then
+     dbname=$1
+     shift
+ fi
+-perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/export-to-postgresql.py $dbname $columns
++perf script $@ -s "$PERF_EXEC_PATH"/scripts/python/export-to-postgresql.py $dbname $columns $calls
+diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
+index bb79aec..4cdafd8 100644
+--- a/tools/perf/scripts/python/export-to-postgresql.py
++++ b/tools/perf/scripts/python/export-to-postgresql.py
+@@ -40,10 +40,12 @@ sys.path.append(os.environ['PERF_EXEC_PATH'] + \
+ #from Core import *
  
-+		if (strstr(dso->long_name, "vmlinux"))
-+			dso__set_short_name(dso, "[kernel.vmlinux]", false);
+ perf_db_export_mode = True
++perf_db_export_calls = False
+ 
+ def usage():
+-	print >> sys.stderr, "Usage is: export-to-postgresql.py <database name> [<columns>]"
++	print >> sys.stderr, "Usage is: export-to-postgresql.py <database name> [<columns>] [<calls>]"
+ 	print >> sys.stderr, "where:	columns		'all' or 'branches'"
++	print >> sys.stderr, "		calls		'calls' => create calls table"
+ 	raise Exception("Too few arguments")
+ 
+ if (len(sys.argv) < 2):
+@@ -61,6 +63,12 @@ if columns not in ("all", "branches"):
+ 
+ branches = (columns == "branches")
+ 
++if (len(sys.argv) >= 4):
++	if (sys.argv[3] == "calls"):
++		perf_db_export_calls = True
++	else:
++		usage()
 +
- 		machine__set_kernel_mmap_len(machine, event);
+ output_dir_name = os.getcwd() + "/" + dbname + "-perf-data"
+ os.mkdir(output_dir_name)
  
- 		/*
+@@ -170,6 +178,25 @@ else:
+ 		'branch_type	integer,'
+ 		'in_tx		boolean)')
+ 
++if perf_db_export_calls:
++	do_query(query, 'CREATE TABLE call_paths ('
++		'id		bigint		NOT NULL,'
++		'parent_id	bigint,'
++		'symbol_id	bigint,'
++		'ip		bigint)')
++	do_query(query, 'CREATE TABLE calls ('
++		'id		bigint		NOT NULL,'
++		'thread_id	bigint,'
++		'comm_id	bigint,'
++		'call_path_id	bigint,'
++		'call_time	bigint,'
++		'return_time	bigint,'
++		'branch_count	bigint,'
++		'call_id	bigint,'
++		'return_id	bigint,'
++		'parent_call_path_id	bigint,'
++		'flags		integer)')
++
+ do_query(query, 'CREATE VIEW samples_view AS '
+ 	'SELECT '
+ 		'id,'
+@@ -246,6 +273,9 @@ dso_file		= open_output_file("dso_table.bin")
+ symbol_file		= open_output_file("symbol_table.bin")
+ branch_type_file	= open_output_file("branch_type_table.bin")
+ sample_file		= open_output_file("sample_table.bin")
++if perf_db_export_calls:
++	call_path_file		= open_output_file("call_path_table.bin")
++	call_file		= open_output_file("call_table.bin")
+ 
+ def trace_begin():
+ 	print datetime.datetime.today(), "Writing to intermediate files..."
+@@ -256,6 +286,9 @@ def trace_begin():
+ 	comm_table(0, "unknown")
+ 	dso_table(0, 0, "unknown", "unknown", "")
+ 	symbol_table(0, 0, 0, 0, 0, "unknown")
++	sample_table(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
++	if perf_db_export_calls:
++		call_path_table(0, 0, 0, 0)
+ 
+ unhandled_count = 0
+ 
+@@ -270,6 +303,9 @@ def trace_end():
+ 	copy_output_file(symbol_file,		"symbols")
+ 	copy_output_file(branch_type_file,	"branch_types")
+ 	copy_output_file(sample_file,		"samples")
++	if perf_db_export_calls:
++		copy_output_file(call_path_file,	"call_paths")
++		copy_output_file(call_file,		"calls")
+ 
+ 	print datetime.datetime.today(), "Removing intermediate files..."
+ 	remove_output_file(evsel_file)
+@@ -281,6 +317,9 @@ def trace_end():
+ 	remove_output_file(symbol_file)
+ 	remove_output_file(branch_type_file)
+ 	remove_output_file(sample_file)
++	if perf_db_export_calls:
++		remove_output_file(call_path_file)
++		remove_output_file(call_file)
+ 	os.rmdir(output_dir_name)
+ 	print datetime.datetime.today(), "Adding primary keys"
+ 	do_query(query, 'ALTER TABLE selected_events ADD PRIMARY KEY (id)')
+@@ -292,6 +331,9 @@ def trace_end():
+ 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
+ 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
++	if perf_db_export_calls:
++		do_query(query, 'ALTER TABLE call_paths      ADD PRIMARY KEY (id)')
++		do_query(query, 'ALTER TABLE calls           ADD PRIMARY KEY (id)')
+ 
+ 	print datetime.datetime.today(), "Adding foreign keys"
+ 	do_query(query, 'ALTER TABLE threads '
+@@ -313,6 +355,18 @@ def trace_end():
+ 					'ADD CONSTRAINT symbolfk   FOREIGN KEY (symbol_id)    REFERENCES symbols    (id),'
+ 					'ADD CONSTRAINT todsofk    FOREIGN KEY (to_dso_id)    REFERENCES dsos       (id),'
+ 					'ADD CONSTRAINT tosymbolfk FOREIGN KEY (to_symbol_id) REFERENCES symbols    (id)')
++	if perf_db_export_calls:
++		do_query(query, 'ALTER TABLE call_paths '
++					'ADD CONSTRAINT parentfk    FOREIGN KEY (parent_id)    REFERENCES call_paths (id),'
++					'ADD CONSTRAINT symbolfk    FOREIGN KEY (symbol_id)    REFERENCES symbols    (id)')
++		do_query(query, 'ALTER TABLE calls '
++					'ADD CONSTRAINT threadfk    FOREIGN KEY (thread_id)    REFERENCES threads    (id),'
++					'ADD CONSTRAINT commfk      FOREIGN KEY (comm_id)      REFERENCES comms      (id),'
++					'ADD CONSTRAINT call_pathfk FOREIGN KEY (call_path_id) REFERENCES call_paths (id),'
++					'ADD CONSTRAINT callfk      FOREIGN KEY (call_id)      REFERENCES samples    (id),'
++					'ADD CONSTRAINT returnfk    FOREIGN KEY (return_id)    REFERENCES samples    (id),'
++					'ADD CONSTRAINT parent_call_pathfk FOREIGN KEY (parent_call_path_id) REFERENCES call_paths (id)')
++		do_query(query, 'CREATE INDEX pcpid_idx ON calls (parent_call_path_id)')
+ 
+ 	if (unhandled_count):
+ 		print datetime.datetime.today(), "Warning: ", unhandled_count, " unhandled events"
+@@ -378,3 +432,13 @@ def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, sy
+ 	else:
+ 		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
+ 	sample_file.write(value)
++
++def call_path_table(cp_id, parent_id, symbol_id, ip, *x):
++	fmt = "!hiqiqiqiq"
++	value = struct.pack(fmt, 4, 8, cp_id, 8, parent_id, 8, symbol_id, 8, ip)
++	call_path_file.write(value)
++
++def call_return_table(cr_id, thread_id, comm_id, call_path_id, call_time, return_time, branch_count, call_id, return_id, parent_call_path_id, flags, *x):
++	fmt = "!hiqiqiqiqiqiqiqiqiqiqii"
++	value = struct.pack(fmt, 11, 8, cr_id, 8, thread_id, 8, comm_id, 8, call_path_id, 8, call_time, 8, return_time, 8, branch_count, 8, call_id, 8, return_id, 8, parent_call_path_id, 4, flags)
++	call_file.write(value)
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index f3ca779..cb1d960 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -37,6 +37,7 @@
+ #include "../comm.h"
+ #include "../machine.h"
+ #include "../db-export.h"
++#include "../thread-stack.h"
+ #include "../trace-event.h"
+ #include "../machine.h"
+ 
+@@ -68,6 +69,8 @@ struct tables {
+ 	PyObject		*symbol_handler;
+ 	PyObject		*branch_type_handler;
+ 	PyObject		*sample_handler;
++	PyObject		*call_path_handler;
++	PyObject		*call_return_handler;
+ 	bool			db_export_mode;
+ };
+ 
+@@ -720,6 +723,64 @@ static int python_export_sample(struct db_export *dbe,
+ 	return 0;
+ }
+ 
++static int python_export_call_path(struct db_export *dbe, struct call_path *cp)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++	u64 parent_db_id, sym_db_id;
++
++	parent_db_id = cp->parent ? cp->parent->db_id : 0;
++	sym_db_id = cp->sym ? *(u64 *)symbol__priv(cp->sym) : 0;
++
++	t = tuple_new(4);
++
++	tuple_set_u64(t, 0, cp->db_id);
++	tuple_set_u64(t, 1, parent_db_id);
++	tuple_set_u64(t, 2, sym_db_id);
++	tuple_set_u64(t, 3, cp->ip);
++
++	call_object(tables->call_path_handler, t, "call_path_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_call_return(struct db_export *dbe,
++				     struct call_return *cr)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	u64 comm_db_id = cr->comm ? cr->comm->db_id : 0;
++	PyObject *t;
++
++	t = tuple_new(11);
++
++	tuple_set_u64(t, 0, cr->db_id);
++	tuple_set_u64(t, 1, cr->thread->db_id);
++	tuple_set_u64(t, 2, comm_db_id);
++	tuple_set_u64(t, 3, cr->cp->db_id);
++	tuple_set_u64(t, 4, cr->call_time);
++	tuple_set_u64(t, 5, cr->return_time);
++	tuple_set_u64(t, 6, cr->branch_count);
++	tuple_set_u64(t, 7, cr->call_ref);
++	tuple_set_u64(t, 8, cr->return_ref);
++	tuple_set_u64(t, 9, cr->cp->parent->db_id);
++	tuple_set_s32(t, 10, cr->flags);
++
++	call_object(tables->call_return_handler, t, "call_return_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_process_call_return(struct call_return *cr, void *data)
++{
++	struct db_export *dbe = data;
++
++	return db_export__call_return(dbe, cr);
++}
++
+ static void python_process_general_event(struct perf_sample *sample,
+ 					 struct perf_evsel *evsel,
+ 					 struct thread *thread,
+@@ -852,7 +913,9 @@ error:
+ static void set_table_handlers(struct tables *tables)
+ {
+ 	const char *perf_db_export_mode = "perf_db_export_mode";
+-	PyObject *db_export_mode;
++	const char *perf_db_export_calls = "perf_db_export_calls";
++	PyObject *db_export_mode, *db_export_calls;
++	bool export_calls = false;
+ 	int ret;
+ 
+ 	memset(tables, 0, sizeof(struct tables));
+@@ -869,6 +932,23 @@ static void set_table_handlers(struct tables *tables)
+ 	if (!ret)
+ 		return;
+ 
++	tables->dbe.crp = NULL;
++	db_export_calls = PyDict_GetItemString(main_dict, perf_db_export_calls);
++	if (db_export_calls) {
++		ret = PyObject_IsTrue(db_export_calls);
++		if (ret == -1)
++			handler_call_die(perf_db_export_calls);
++		export_calls = !!ret;
++	}
++
++	if (export_calls) {
++		tables->dbe.crp =
++			call_return_processor__new(python_process_call_return,
++						   &tables->dbe);
++		if (!tables->dbe.crp)
++			Py_FatalError("failed to create calls processor");
++	}
++
+ 	tables->db_export_mode = true;
+ 	/*
+ 	 * Reserve per symbol space for symbol->db_id via symbol__priv()
+@@ -884,6 +964,8 @@ static void set_table_handlers(struct tables *tables)
+ 	SET_TABLE_HANDLER(symbol);
+ 	SET_TABLE_HANDLER(branch_type);
+ 	SET_TABLE_HANDLER(sample);
++	SET_TABLE_HANDLER(call_path);
++	SET_TABLE_HANDLER(call_return);
+ }
+ 
+ /*
