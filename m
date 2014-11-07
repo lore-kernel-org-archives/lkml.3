@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaKGXgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:36:24 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59982 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751772AbaKGXgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:36:23 -0500
-Date: Fri, 7 Nov 2014 23:36:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: Propagate prepare and enable when reparenting
- orphans
-Message-ID: <20141107233607.GS4042@n2100.arm.linux.org.uk>
-References: <1415386312-23741-1-git-send-email-dianders@chromium.org>
- <20141107185844.GR4042@n2100.arm.linux.org.uk>
- <CAD=FV=WhWqMB=-ErD-59-z=y7OCZx4r7REkr3DpyYR=76SEJ6A@mail.gmail.com>
+	id S1753143AbaKGXhS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:37:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59443 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773AbaKGXhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 18:37:16 -0500
+Date: Sat, 8 Nov 2014 10:37:07 +1100
+From: NeilBrown <neilb@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        GTA04 owners <gta04-owner@goldelico.com>
+Subject: [PATCH] Input: gpio_keys: Make sure wake-up buttons work.
+Message-ID: <20141108103707.45bcc7e3@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=WhWqMB=-ErD-59-z=y7OCZx4r7REkr3DpyYR=76SEJ6A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/FGlCOKzFrFN6+74b4H00Z3S"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 02:52:38PM -0800, Doug Anderson wrote:
-> Russell,
-> 
-> On Fri, Nov 7, 2014 at 10:58 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Fri, Nov 07, 2014 at 10:51:52AM -0800, Doug Anderson wrote:
-> >> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> >> index 4896ae9..a3d3d58 100644
-> >> --- a/drivers/clk/clk.c
-> >> +++ b/drivers/clk/clk.c
-> >> @@ -1650,6 +1650,17 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
-> >>       clk_reparent(clk, new_parent);
-> >>       __clk_recalc_accuracies(clk);
-> >>       __clk_recalc_rates(clk, POST_RATE_CHANGE);
-> >> +
-> >> +     if (clk->prepare_count) {
-> >> +             unsigned long flags;
-> >> +
-> >> +             __clk_prepare(new_parent);
-> >> +
-> >> +             flags = clk_enable_lock();
-> >> +             if (clk->enable_count)
-> >> +                     __clk_enable(new_parent);
-> >> +             clk_enable_unlock(flags);
-> >> +     }
-> >
-> > I really don't understand why this isn't already done - I said this was
-> > necessary a /long/ time ago.
-> >
-> > However, the above isn't sufficient.  Think about the old parent - this
-> > should be disabled and unprepared if it was prepared and enabled by the
-> > child.
-> 
-> You may be referring of a different bug than I am addressing.  I can
-> think about the old parent, but it always a tear to my eyes since
-> these clocks are orphans and had no old parents (unless you count the
-> matron at the orphanage, but I doubt she was either prepared or
-> enabled).  ;)
-> 
-> Ah, but I see!  There are other users of this function that are not
-> part of "clk.c".  Doh!  Since this was a "__" function with no
-> documentation I assumed it was "static", but I see that it is not.  I
-> see two callers that are not part of the orphan code.
-> 
-> I'll happily move this code down so it's only called by the orphan
-> code and not touch the two callers of __clk_reparent(), assuming that
-> they don't need to deal with this scenario.
+--Sig_/FGlCOKzFrFN6+74b4H00Z3S
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-What I am saying is as follows.  Take this diagram - a mux.  clkc can
-be sourced from either clkp1 or clkp2.  Initially, it is set to clkp1:
 
-clkp1 -----o
-            \
-             o--------> clkc
 
-clkp2 -----o
+If a key is to be used for wake-up, we must not disable
+the interrupt during suspend.
 
-Let's assume that none of these clocks are requested, prepared or
-enabled.
+Signed-off-by: NeilBrown <neilb@suse.de>
 
-Now, if clkc is requested, and then prepared, clkp1 will be prepared,
-but not clkp2.
+diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gp=
+io_keys.c
+index 8c98e97f8e41..0b5e54ae343e 100644
+--- a/drivers/input/keyboard/gpio_keys.c
++++ b/drivers/input/keyboard/gpio_keys.c
+@@ -526,6 +526,8 @@ static int gpio_keys_setup_key(struct platform_device *=
+pdev,
+ 	 */
+ 	if (!button->can_disable)
+ 		irqflags |=3D IRQF_SHARED;
++	if (button->wakeup)
++		irqflags |=3D IRQF_NO_SUSPEND;
+=20
+ 	error =3D devm_request_any_context_irq(&pdev->dev, bdata->irq,
+ 					     isr, irqflags, desc, bdata);
 
-When clkc is re-parented to clkp2 in this state, there are three things
-which must happen:
+--Sig_/FGlCOKzFrFN6+74b4H00Z3S
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-1. clkp2 needs to be prepared.
-2. clkc needs to be switched from clkp1 to clkp2.
-3. clkp1 needs to be unprepared.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-(the order is debatable.)
+iQIVAwUBVF1XpDnsnt1WYoG5AQKQ0w/+J+ODAuwM5fY6vUE3rywVFgZsvDAnL3aq
+bcZWTY/h4n8D9QOl8uGRI5Wu1VjSayiyKti5UG9briX/CxkuGi3Pmphf8rb824+Y
+sWtaXiRm0WRUR+7d/CFwk7bc98CPAibHyzOS2bU9fT3AyqdV4btqfUbp30ZzYaYZ
+fNEH+QORGleK79nfJTc9LORlpNEOYw862Sr2fBJ1a2nlgyroIvKbJoPYtB2Fi7X3
+bQg2IJ+yeTIcusv2GRulZ9SfYPOQHTQOj0KOl28ScvcpXxGJSZjmK75dpbYim3g6
+S7hNn5u20vmGXCSIVrxhhqWUXrD3KArX5ETTKIWG98aunkjWjqjfmiJnY5WmljS/
+WRAHnqPL8fPXwsz+IwiD4jQb4o53DnQLCq0x9pQdAOzNP2eA9BNCJ9xZ0e2PrYpX
+GJeVxV1q8jTt/jPmEl2tSdJW/uIS14O8Y+JoZsf0Xoc+jJkRMvsmUV3lRmCtPWDn
+Z99FI6whPRENOUvdow3JoVNIxFfB7vKsGD3iv9JeimgUpOe+w52yf470Lq+sGXS+
+tJrZrnqLOstZmroCkPwJBnonWHFTk7BSel2SNMkO89XVS6c1gT593Gpfyjk7xdvX
+XLvu7D7tHQ8/ftrM4cf/5XCN9bffGEtMgK6ObgypGRq+DHlzlOpKskppccDQhWKA
+jYLV9SMxzL8=
+=bVxd
+-----END PGP SIGNATURE-----
 
-The reason for step 3 is because of what happens if we unprepare clkc,
-or switch back to clkp1.
-
-If we unprepare clkc, we _should_ end up with clkp1, clkp2 and clkc
-_all_ back in their initial states - in other words, all unprepared.
-clkp1 should not be left prepared by this sequence of events.
-
-If we switch back to clkp1, then the same three things need to happen
-(just with the appropriate parent clocks):
-
-1. clkp1 needs to be prepared.
-2. clkc needs to be switched from clkp2 to clkp1.
-3. clkp2 needs to be unprepared.
-
-And, having done that, we can see that we are in exactly the same state
-as we were when we first prepared clkc in the beginning.
-
-If we omit the unprepare stage, then at this point, we will have prepared
-clkp1 _twice_ and clkp2 _once_, which means when clkc is unprepared, both
-clkp1 and clkp2 are left with a preparation count of one - which is
-effectively a refcount leak.
-
-Fixing the lack of prepare may fix the "clock not running" problem, but
-without addressing the unprepare side, you are introducing a new bug
-while fixing an existing bug.  Both issues need to be resolved together.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+--Sig_/FGlCOKzFrFN6+74b4H00Z3S--
