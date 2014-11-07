@@ -1,273 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaKGTee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:34:34 -0500
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:52430 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214AbaKGTec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:34:32 -0500
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: swarren@wwwdotorg.org, daniel.lezcano@linaro.org, linux@arm.linux.org.uk,
-        tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        tony@atomide.com, thierry.reding@gmail.com, mark.rutland@arm.com,
-        Anatol Pomozov <anatol.pomozov@gmail.com>
-Subject: [PATCH] timekeeping: Move persistent clock registration code from ARM to kernel
-Date: Fri,  7 Nov 2014 11:34:15 -0800
-Message-Id: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1753266AbaKGTer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:34:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55925 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601AbaKGTeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 14:34:46 -0500
+Message-ID: <1415388857.12094.2.camel@linux-t7sj.site>
+Subject: [PATCH -next] mm/rmap: calculate page offset when needed
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dave@stgolabs.net>
+Date: Fri, 07 Nov 2014 11:34:17 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM timekeeping functionality allows to register persistent/boot clock dynamically.
-This code is arch-independent and can be useful on other plaforms as well.
+Call page_to_pgoff() to get the page offset once we are
+sure we actually need it, and any very obvious initial
+function checks have passed. Trivial micro-optimization,
+and potentially save some cycles.
 
-As a byproduct of this change, tegra20_timer becomes ARM64 compatible.
-
-Tested: backported the change to chromeos-3.14 kernel ran on tegra 64bit
-board, made sure high-resolution clock works.
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 ---
- arch/arm/include/asm/mach/time.h    |  5 -----
- arch/arm/kernel/time.c              | 36 -------------------------------
- arch/arm/plat-omap/counter_32k.c    |  9 +++++---
- drivers/clocksource/tegra20_timer.c | 10 +++++----
- include/linux/timekeeping.h         | 11 ++++++++++
- kernel/time/timekeeping.c           | 43 +++++++++++++++++++++++++++++++++----
- 6 files changed, 62 insertions(+), 52 deletions(-)
+ mm/rmap.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/time.h b/arch/arm/include/asm/mach/time.h
-index 90c12e1..3cbcafc 100644
---- a/arch/arm/include/asm/mach/time.h
-+++ b/arch/arm/include/asm/mach/time.h
-@@ -12,9 +12,4 @@
- 
- extern void timer_tick(void);
- 
--struct timespec;
--typedef void (*clock_access_fn)(struct timespec *);
--extern int register_persistent_clock(clock_access_fn read_boot,
--				     clock_access_fn read_persistent);
--
- #endif
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index 0cc7e58..0aa1dcd 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -76,42 +76,6 @@ void timer_tick(void)
- }
- #endif
- 
--static void dummy_clock_access(struct timespec *ts)
--{
--	ts->tv_sec = 0;
--	ts->tv_nsec = 0;
--}
--
--static clock_access_fn __read_persistent_clock = dummy_clock_access;
--static clock_access_fn __read_boot_clock = dummy_clock_access;;
--
--void read_persistent_clock(struct timespec *ts)
--{
--	__read_persistent_clock(ts);
--}
--
--void read_boot_clock(struct timespec *ts)
--{
--	__read_boot_clock(ts);
--}
--
--int __init register_persistent_clock(clock_access_fn read_boot,
--				     clock_access_fn read_persistent)
--{
--	/* Only allow the clockaccess functions to be registered once */
--	if (__read_persistent_clock == dummy_clock_access &&
--	    __read_boot_clock == dummy_clock_access) {
--		if (read_boot)
--			__read_boot_clock = read_boot;
--		if (read_persistent)
--			__read_persistent_clock = read_persistent;
--
--		return 0;
--	}
--
--	return -EINVAL;
--}
--
- void __init time_init(void)
+diff --git a/mm/rmap.c b/mm/rmap.c
+index a5e9cc6..e3354b2 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1633,7 +1633,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
+ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
  {
- 	if (machine_desc->init_time) {
-diff --git a/arch/arm/plat-omap/counter_32k.c b/arch/arm/plat-omap/counter_32k.c
-index 61b4d70..0dbfffd 100644
---- a/arch/arm/plat-omap/counter_32k.c
-+++ b/arch/arm/plat-omap/counter_32k.c
-@@ -18,10 +18,9 @@
- #include <linux/err.h>
- #include <linux/io.h>
- #include <linux/clocksource.h>
-+#include <linux/time.h>
- #include <linux/sched_clock.h>
+ 	struct anon_vma *anon_vma;
+-	pgoff_t pgoff = page_to_pgoff(page);
++	pgoff_t pgoff;
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
  
--#include <asm/mach/time.h>
--
- #include <plat/counter-32k.h>
+@@ -1641,6 +1641,7 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+ 	if (!anon_vma)
+ 		return ret;
  
- /* OMAP2_32KSYNCNT_CR_OFF: offset of 32ksync counter register */
-@@ -76,6 +75,10 @@ static void omap_read_persistent_clock(struct timespec *ts)
- 	spin_unlock_irqrestore(&read_persistent_clock_lock, flags);
- }
- 
-+static const struct persistent_clock_ops omap_persistent_clock = {
-+	.read = omap_read_persistent_clock
-+};
-+
- /**
-  * omap_init_clocksource_32k - setup and register counter 32k as a
-  * kernel clocksource
-@@ -116,7 +119,7 @@ int __init omap_init_clocksource_32k(void __iomem *vbase)
- 	}
- 
- 	sched_clock_register(omap_32k_read_sched_clock, 32, 32768);
--	register_persistent_clock(NULL, omap_read_persistent_clock);
-+	register_persistent_clock(&omap_persistent_clock);
- 	pr_info("OMAP clocksource: 32k_counter at 32768 Hz\n");
- 
- 	return 0;
-diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
-index d2616ef..210130e 100644
---- a/drivers/clocksource/tegra20_timer.c
-+++ b/drivers/clocksource/tegra20_timer.c
-@@ -28,9 +28,7 @@
- #include <linux/of_irq.h>
- #include <linux/sched_clock.h>
- #include <linux/delay.h>
--
--#include <asm/mach/time.h>
--#include <asm/smp_twd.h>
-+#include <linux/timekeeping.h>
- 
- #define RTC_SECONDS            0x08
- #define RTC_SHADOW_SECONDS     0x0c
-@@ -142,6 +140,10 @@ static void tegra_read_persistent_clock(struct timespec *ts)
- 	*ts = *tsp;
- }
- 
-+static const struct persistent_clock_ops tegra_persistent_clock = {
-+	.read = tegra_read_persistent_clock
-+};
-+
- static unsigned long tegra_delay_timer_read_counter_long(void)
++	pgoff = page_to_pgoff(page);
+ 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
+ 		struct vm_area_struct *vma = avc->vma;
+ 		unsigned long address = vma_address(page, vma);
+@@ -1674,7 +1675,7 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
  {
- 	return readl(timer_reg_base + TIMERUS_CNTR_1US);
-@@ -252,7 +254,7 @@ static void __init tegra20_init_rtc(struct device_node *np)
- 	else
- 		clk_prepare_enable(clk);
+ 	struct address_space *mapping = page->mapping;
+-	pgoff_t pgoff = page_to_pgoff(page);
++	pgoff_t pgoff;
+ 	struct vm_area_struct *vma;
+ 	int ret = SWAP_AGAIN;
  
--	register_persistent_clock(NULL, tegra_read_persistent_clock);
-+	register_persistent_clock(&tegra_persistent_clock);
- }
- CLOCKSOURCE_OF_DECLARE(tegra20_rtc, "nvidia,tegra20-rtc", tegra20_init_rtc);
+@@ -1689,6 +1690,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
+ 	if (!mapping)
+ 		return ret;
  
-diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
-index 1caa6b0..02023f7 100644
---- a/include/linux/timekeeping.h
-+++ b/include/linux/timekeeping.h
-@@ -201,6 +201,17 @@ static inline bool has_persistent_clock(void)
- 	return persistent_clock_exist;
- }
- 
-+struct persistent_clock_ops {
-+	void (*read)(struct timespec *ts);
-+	int (*update)(const struct timespec ts);
-+};
-+
-+struct boot_clock_ops {
-+	void (*read)(struct timespec *ts);
-+};
-+
-+extern void register_persistent_clock(const struct persistent_clock_ops *clock);
-+extern void register_boot_clock(const struct boot_clock_ops *clock);
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
- extern int update_persistent_clock(struct timespec now);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index fb4a9c2..414c172 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -66,6 +66,9 @@ int __read_mostly timekeeping_suspended;
- /* Flag for if there is a persistent clock on this platform */
- bool __read_mostly persistent_clock_exist = false;
- 
-+const struct persistent_clock_ops __read_mostly *persistent_clock = NULL;
-+const struct boot_clock_ops __read_mostly *boot_clock = NULL;
-+
- static inline void tk_normalize_xtime(struct timekeeper *tk)
- {
- 	while (tk->tkr.xtime_nsec >= ((u64)NSEC_PER_SEC << tk->tkr.shift)) {
-@@ -956,6 +959,30 @@ u64 timekeeping_max_deferment(void)
- 	return ret;
- }
- 
-+extern void register_persistent_clock(const struct persistent_clock_ops *clock)
-+{
-+	BUG_ON(!clock);
-+	BUG_ON(!clock->read);
-+
-+	if (persistent_clock) {
-+		pr_warn("Ignore extra persistent clock registration");
-+		return;
-+	}
-+	persistent_clock = clock;
-+}
-+
-+extern void register_boot_clock(const struct boot_clock_ops *clock)
-+{
-+	BUG_ON(!clock);
-+	BUG_ON(!clock->read);
-+
-+	if (boot_clock) {
-+		pr_warn("Ignore extra boot clock registration");
-+		return;
-+	}
-+	boot_clock = clock;
-+}
-+
- /**
-  * read_persistent_clock -  Return time from the persistent clock.
-  *
-@@ -967,8 +994,12 @@ u64 timekeeping_max_deferment(void)
-  */
- void __weak read_persistent_clock(struct timespec *ts)
- {
--	ts->tv_sec = 0;
--	ts->tv_nsec = 0;
-+	if (persistent_clock) {
-+		persistent_clock->read(ts);
-+	} else {
-+		ts->tv_sec = 0;
-+		ts->tv_nsec = 0;
-+	}
- }
- 
- /**
-@@ -982,8 +1013,12 @@ void __weak read_persistent_clock(struct timespec *ts)
-  */
- void __weak read_boot_clock(struct timespec *ts)
- {
--	ts->tv_sec = 0;
--	ts->tv_nsec = 0;
-+	if (boot_clock) {
-+		boot_clock->read(ts);
-+	} else {
-+		ts->tv_sec = 0;
-+		ts->tv_nsec = 0;
-+	}
- }
- 
- /*
++	pgoff = page_to_pgoff(page);
+ 	i_mmap_lock_read(mapping);
+ 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+ 		unsigned long address = vma_address(page, vma);
 -- 
-2.1.0.rc2.206.gedb03e5
+1.8.4.5
+
 
