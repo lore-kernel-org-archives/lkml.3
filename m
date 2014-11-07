@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaKGJcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:32:01 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:50501 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaKGJbz (ORCPT
+	id S1751533AbaKGJcS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:32:18 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59403 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaKGJcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:31:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>, roland@hack.frob.com,
-        oleg@redhat.com, linaro-kernel@lists.linaro.org,
-        linux@arm.linux.org.uk, keescook@chromium.org, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, dsaxena@linaro.org
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-Date: Fri, 07 Nov 2014 10:30:53 +0100
-Message-ID: <1977974.l97vvy7Y8b@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LMA30pxAgBSGgAQrjJaeCwN3XXiLXDiu805SUpIleo7
- KY+N7FZd0/do/m9BP96zzRGBRhTB52ijnAbC4+mdOBMKZrK/EN
- gAie+pEsiy5JZq+ATVnCTA+AgPFLYWj0/ysq3fJROBl1ZL3uCD
- gj6r0ofPxyeinxrKdS67LH5QDxC7t9JiMW1/qaAGj5D4xQlE3Q
- f6oXS/Bj1qcu41rtw6K7LgQvC6XPj71g/MDP8rzPar27Z8QnIz
- XMN7StXQ/Yer1w+ku7o6zKApXDyJMmihdA/ufuIxj3OBr1m1Cd
- Y/ikNmG9VTU/Wwhz0t9Lk3cVFlP36Y9hrDkgx0tUf5c38zEeI8
- E+2MhT0GiEwGl5TvQPaQ=
-X-UI-Out-Filterresults: notjunk:1;
+	Fri, 7 Nov 2014 04:32:11 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-84-545c91988fb0
+Message-id: <545C9197.3090808@samsung.com>
+Date: Fri, 07 Nov 2014 10:32:07 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
+        k.kozlowski@samsung.com
+Subject: Re: [PATCH v4 1/3] mfd: max8997: use regmap to access registers
+References: <1398693358-28336-1-git-send-email-r.baldyga@samsung.com>
+ <1398693358-28336-2-git-send-email-r.baldyga@samsung.com>
+ <20140520161902.GD32025@lee--X1> <20140520161948.GE32025@lee--X1>
+In-reply-to: <20140520161948.GE32025@lee--X1>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xy7ozJsaEGPzdom2x5OJVdovXLwwt
+	7n89ymhxedccNou1R+6yW+zv7GC0ON3N6sDusWfiSTaPO9f2sHnMOxno0bdlFaPH9Hk/mTw+
+	b5ILYIvisklJzcksSy3St0vgytj8+hFrwRXeivN77rA1MF7h6mLk5JAQMJG403WAFcIWk7hw
+	bz1bFyMXh5DAUkaJUwcusEM4HxklHk+bxNTFyMHBK6AlcWdrNUgDi4CqxPMLb9lAbDYBHYkt
+	3ycwgtiiAhESJ+/uYQexeQUEJX5MvscC0ioioCJx7o05SJhZYB6jxLdPgSC2sICHROfEeawQ
+	q44yShzZuASsl1NAV+LP7cvMIL3MAuoSU6bkQvTKS2xe85Z5AqPALCQbZiFUzUJStYCReRWj
+	aGppckFxUnqukV5xYm5xaV66XnJ+7iZGSJB/3cG49JjVIUYBDkYlHt4HIjEhQqyJZcWVuYcY
+	JTiYlUR4UxuBQrwpiZVVqUX58UWlOanFhxiZODilGhgNdZ8wxH1tPnW2qGEK7zW7hZK/xQt0
+	hWbtlPztuy368+GlWRFpmZtSj03Zl3Fme3jRCw52JtUSzkbDgkunBbetTkmerXjS+1aj4YPD
+	5ZoLFPtnsFW8/ln2dr/s0fMbrFe45mlON5+/yGCZ2ilBtk7ZySbqzF6rvTP9eep+th2qeDfh
+	6PGUhANKLMUZiYZazEXFiQDDrywoUAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 November 2014 16:47:23 AKASHI Takahiro wrote:
-> This patch adds a new generic ptrace request, PTRACE_SET_SYSCALL.
-> It can be used to change a system call number as follows:
->     ret = ptrace(pid, PTRACE_SET_SYSCALL, null, new_syscall_no);
-> 'new_syscall_no' can be -1 to skip this system call, you need to modify
-> a register's value, in arch-specific way, as return value though.
+Hi,
+
+It looks like everybody have forgot about this patch series. Is there
+any chance for them to be applied? I can resend patches rebased to last
+next branch.
+
+Best regards,
+Robert Baldyga.
+
+On 05/20/2014 06:19 PM, Lee Jones wrote:
+> On Tue, 20 May 2014, Lee Jones wrote:
 > 
-> Please note that we can't define PTRACE_SET_SYSCALL macro in
-> uapi/linux/ptrace.h partly because its value on arm, 23, is used as another
-> request on sparc.
+>>> This patch modifies max8997 driver and each associated function driver,
+>>> to use regmap instead of operating directly on i2c bus. It will allow to
+>>> simplify IRQ handling using regmap-irq.
+>>>
+>>> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+>>> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>>>
+>>> [For extcon part]
+>>> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>
+>>> [For leds part]
+>>> Acked-by: Bryan Wu <cooloney@gmail.com>
+>>> ---
+>>>  drivers/extcon/extcon-max8997.c     |  31 ++++----
+>>>  drivers/input/misc/max8997_haptic.c |  34 +++++----
+>>>  drivers/leds/leds-max8997.c         |  13 ++--
+>>>  drivers/mfd/Kconfig                 |   1 +
+>>>  drivers/mfd/max8997-irq.c           |  64 +++++++---------
+>>>  drivers/mfd/max8997.c               | 141 ++++++++++++++++-------------------
+>>
+>> Looks to be doing the right things and the diff looks good.
+>>
+>> For the MFD part:
+>>   Acked-by: Lee Jones <lee.jones@linaro.org>
 > 
-> This patch also contains an example of change on arch side, arm.
-> Only syscall_set_nr() is required to be defined in asm/syscall.h.
+> I should add that I'd like this to go through the MFD tree.
 > 
-> Currently only arm has this request, while arm64 would also have it
-> once my patch series of seccomp for arm64 is merged. It will also be
-> usable for most of other arches.
-> See the discussions in lak-ml:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/300167.html
+> I can supply the other maintainers with a pull-request as required.
 > 
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>>>  drivers/power/max8997_charger.c     |  33 +++++----
+>>>  drivers/regulator/max8997.c         |  87 +++++++++++-----------
+>>>  drivers/rtc/rtc-max8997.c           |  56 +++++++-------
+>>>  include/linux/mfd/max8997-private.h |  17 ++---
+>>>  10 files changed, 228 insertions(+), 249 deletions(-)
+>>
 > 
 
-Can you describe why you are moving the implementation? Is this a feature
-that we want to have on all architectures in the future? As you say,
-only arm32 implements is at the moment.
-
-	Arnd
