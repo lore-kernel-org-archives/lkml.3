@@ -1,132 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaKGNFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:05:08 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:56109 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaKGNFE (ORCPT
+	id S1752506AbaKGNFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:05:51 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:50850 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268AbaKGNFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:05:04 -0500
-From: Sanchayan Maity <maitysanchayan@gmail.com>
-To: rtc-linux@googlegroups.com
-Cc: shawn.guo@linaro.org, linux@arm.linux.org.uk, kernel@pengutronix.de,
-        stefan@agner.ch, b35083@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sanchayan Maity <maitysanchayan@gmail.com>
-Subject: [[PATCHv2] 3/3] drivers/rtc/rtc-snvs: Add clock support
-Date: Fri,  7 Nov 2014 18:34:28 +0530
-Message-Id: <30e496ce2d6521e608df3b68b73b3e05caa1daef.1415364391.git.maitysanchayan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1415364391.git.maitysanchayan@gmail.com>
-References: <cover.1415364391.git.maitysanchayan@gmail.com>
-In-Reply-To: <cover.1415364391.git.maitysanchayan@gmail.com>
-References: <cover.1415364391.git.maitysanchayan@gmail.com>
+	Fri, 7 Nov 2014 08:05:46 -0500
+Date: Fri, 7 Nov 2014 13:05:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x
+ Driver defines
+Message-ID: <20141107130538.GB3745@x1>
+References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org>
+ <545B1C53.9010406@ti.com>
+ <545B3FA4.8040109@st.com>
+ <20141106112825.GC26543@x1>
+ <545B6144.2020503@st.com>
+ <20141106153659.GD26543@x1>
+ <545B9F15.5070404@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <545B9F15.5070404@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds clock enable and disable support for
-the SNVS peripheral, which is required for using the
-RTC within the SNVS block.
+On Thu, 06 Nov 2014, Maxime Coquelin wrote:
+> On 11/06/2014 04:36 PM, Lee Jones wrote:
+> >On Thu, 06 Nov 2014, Maxime Coquelin wrote:
+> >>On 11/06/2014 12:28 PM, Lee Jones wrote:
+> >>>On Thu, 06 Nov 2014, Maxime Coquelin wrote:
+> >>>
+> >>>>Hi Kishon,
+> >>>>On 11/06/2014 07:59 AM, Kishon Vijay Abraham I wrote:
+> >>>>>Hi,
+> >>>>>
+> >>>>>On Tuesday 04 November 2014 04:21 PM, Gabriel FERNANDEZ wrote:
+> >>>>>>This provides the shared header file which will be reference from both
+> >>>>>>PHY driver and its associated Device Tree node(s).
+> >>>>>>
+> >>>>>>Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> >>>>>>---
+> >>>>>>  include/dt-bindings/phy/phy.h | 18 ++++++++++++++++++
+> >>>>>I don't see this being used in device tree file. Are you planning to add this
+> >>>>>after -rc1 is tagged. Or else I have to create a separate branch for this file
+> >>>>>which will be merged by both me and the dt maintainer. Let me know.
+> >>>>I think we don't need to create a branch we will merged by both of us.
+> >>>>
+> >>>>What we can do that both of us apply this patch in our trees.
+> >>>>It will avoid dependencies on each others.
+> >>>>
+> >>>>What do you think?
+> >>>This makes no sense to me.  Can you find another way to explain this
+> >>>please?
+> >>I apply the patch on my STi tree.
+> >>Kishon applies the patch on his phy tree.
+> >>
+> >>At the end, both STi and phy branches will be merged in Linus tree,
+> >>with no conflicts.
+> >>
+> >>This is what we are doing for the STiH407 reset DT bindings with Philipp Z.
+> >If you do that, you will almost certainly get conflicts.  The commits
+> >have to share the same SHA1 for Git to know for sure that they are the
+> >same patch.  One of you needs to create a branch and tag it.  The
+> >other can then merge the tag _then_ you won't get conflicts.
+> 
+> Just made the test on my side, and I don't get any conflict.
+> In my test, the two SHA-1 were different.
 
-Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
----
- drivers/rtc/rtc-snvs.c |   34 ++++++++++++++++++++++++++++++++--
- 1 file changed, 32 insertions(+), 2 deletions(-)
+If the merge turns out to be simple, then Git will do the correct
+thing; however, if the first version of the patch is applied, then
+some changes around the same area of the file occur _then_ when the
+second version (of the same patch differing only by SHA1) is applied
+Git will get confused.  If it has the same SHA1 however, Git will
+discard it as 'already applied'.  This is the reason we pass around
+shared tags to immutable branches.
 
-diff --git a/drivers/rtc/rtc-snvs.c b/drivers/rtc/rtc-snvs.c
-index fa384fe..d4a6512 100644
---- a/drivers/rtc/rtc-snvs.c
-+++ b/drivers/rtc/rtc-snvs.c
-@@ -17,6 +17,7 @@
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/rtc.h>
-+#include <linux/clk.h>
- 
- /* These register offsets are relative to LP (Low Power) range */
- #define SNVS_LPCR		0x04
-@@ -39,6 +40,7 @@ struct snvs_rtc_data {
- 	void __iomem *ioaddr;
- 	int irq;
- 	spinlock_t lock;
-+	struct clk *clk;
- };
- 
- static u32 rtc_read_lp_counter(void __iomem *ioaddr)
-@@ -260,6 +262,18 @@ static int snvs_rtc_probe(struct platform_device *pdev)
- 	if (data->irq < 0)
- 		return data->irq;
- 
-+	data->clk = devm_clk_get(&pdev->dev, "snvs-rtc");
-+	if (IS_ERR(data->clk)) {
-+		data->clk = NULL;
-+	} else {
-+		ret = clk_prepare_enable(data->clk);
-+		if (ret) {
-+			dev_err(&pdev->dev,
-+				"Could not prepare or enable the snvs clock\n");
-+			return ret;
-+		}
-+	}
-+
- 	platform_set_drvdata(pdev, data);
- 
- 	spin_lock_init(&data->lock);
-@@ -280,7 +294,7 @@ static int snvs_rtc_probe(struct platform_device *pdev)
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to request irq %d: %d\n",
- 			data->irq, ret);
--		return ret;
-+		goto error_rtc_device_register;
- 	}
- 
- 	data->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
-@@ -288,10 +302,16 @@ static int snvs_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(data->rtc)) {
- 		ret = PTR_ERR(data->rtc);
- 		dev_err(&pdev->dev, "failed to register rtc: %d\n", ret);
--		return ret;
-+		goto error_rtc_device_register;
- 	}
- 
- 	return 0;
-+
-+error_rtc_device_register:
-+	if (data->clk)
-+		clk_disable_unprepare(data->clk);
-+
-+	return ret;
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -302,16 +322,26 @@ static int snvs_rtc_suspend(struct device *dev)
- 	if (device_may_wakeup(dev))
- 		enable_irq_wake(data->irq);
- 
-+	if (data->clk)
-+		clk_disable_unprepare(data->clk);
-+
- 	return 0;
- }
- 
- static int snvs_rtc_resume(struct device *dev)
- {
- 	struct snvs_rtc_data *data = dev_get_drvdata(dev);
-+	int ret;
- 
- 	if (device_may_wakeup(dev))
- 		disable_irq_wake(data->irq);
- 
-+	if (data->clk) {
-+		ret = clk_prepare_enable(data->clk);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	return 0;
- }
- #endif
+> >>>>>Thanks
+> >>>>>Kishon
+> >>>>>>  1 file changed, 18 insertions(+)
+> >>>>>>  create mode 100644 include/dt-bindings/phy/phy.h
+> >>>>>>
+> >>>>>>diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+> >>>>>>new file mode 100644
+> >>>>>>index 0000000..e8c6a3f
+> >>>>>>--- /dev/null
+> >>>>>>+++ b/include/dt-bindings/phy/phy.h
+> >>>>>>@@ -0,0 +1,18 @@
+> >>>>>>+/*
+> >>>>>>+ *
+> >>>>>>+ * This header provides constants for the phy framework
+> >>>>>>+ *
+> >>>>>>+ * Copyright (C) 2014 STMicroelectronics
+> >>>>>>+ * Author: Gabriel Fernandez <gabriel.fernandez@st.com>
+> >>>>>>+ * License terms:  GNU General Public License (GPL), version 2
+> >>>>>>+ */
+> >>>>>>+
+> >>>>>>+#ifndef _DT_BINDINGS_PHY
+> >>>>>>+#define _DT_BINDINGS_PHY
+> >>>>>>+
+> >>>>>>+#define PHY_TYPE_SATA		1
+> >>>>>>+#define PHY_TYPE_PCIE		2
+> >>>>>>+#define PHY_TYPE_USB2		3
+> >>>>>>+#define PHY_TYPE_USB3		4
+> >>>>>>+
+> >>>>>>+#endif /* _DT_BINDINGS_PHY */
+> >>>>>>
+> 
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
