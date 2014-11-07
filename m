@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaKGW4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 17:56:47 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56239 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752264AbaKGW4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 17:56:45 -0500
-X-Sasl-enc: M2tKyTejtWqCbC2xnYjMKKTZWLgW7PKzKFV0L7kulHVK 1415401005
-Date: Fri, 7 Nov 2014 20:56:39 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 8/8] x86, microcode, intel: defend apply_microcode_intel
- with BUG_ON
-Message-ID: <20141107225639.GD18128@khazad-dum.debian.net>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-9-git-send-email-hmh@hmh.eng.br>
- <20141107200501.GF5180@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141107200501.GF5180@pd.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753205AbaKGW7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 17:59:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:2758 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837AbaKGW7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 17:59:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,335,1413270000"; 
+   d="scan'208,223";a="633578197"
+Message-ID: <1415401145.1954.11.camel@localhost.localdomain>
+Subject: [PATCH 2/3] AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
+From: Devin Ryles <devin.ryles@intel.com>
+To: tj@kernel.org
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        james.d.ralston@intel.com, frank.riegel@intel.com,
+        devin.ryles@intel.com
+Date: Fri, 07 Nov 2014 17:59:05 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov 2014, Borislav Petkov wrote:
-> On Mon, Sep 08, 2014 at 02:37:54PM -0300, Henrique de Moraes Holschuh wrote:
-> > Microcode updates that requires an unknown loader should never reach the
-> > apply_* functions (the code should have rejected it earlier).  Likewise
-> > for an unknown microcode header layout.
-> > 
-> > Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> > ---
-> >  arch/x86/kernel/cpu/microcode/intel.c       |    2 ++
-> >  arch/x86/kernel/cpu/microcode/intel_early.c |    2 ++
-> >  2 files changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-> > index 40caef1..439681f 100644
-> > --- a/arch/x86/kernel/cpu/microcode/intel.c
-> > +++ b/arch/x86/kernel/cpu/microcode/intel.c
-> > @@ -157,6 +157,8 @@ static int apply_microcode_intel(int cpu)
-> >  	if (mc_intel == NULL)
-> >  		return 0;
-> >  
-> > +	BUG_ON(mc_intel->hdr.hdrver != 1 || mc_intel->hdr.ldrver != 1);
-> > +
-> >  	/* Intel SDM vol 3A section 9.11.6, page 9-34 */
-> >  	if (WARN_ONCE((unsigned long)(mc_intel->bits) % 16,
-> >  		"microcode data incorrectly aligned"))
-> > diff --git a/arch/x86/kernel/cpu/microcode/intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
-> > index 994c59b..095db11 100644
-> > --- a/arch/x86/kernel/cpu/microcode/intel_early.c
-> > +++ b/arch/x86/kernel/cpu/microcode/intel_early.c
-> > @@ -671,6 +671,8 @@ static int apply_microcode_early(struct mc_saved_data *mc_saved_data,
-> >  	if (mc_intel == NULL)
-> >  		return 0;
-> >  
-> > +	BUG_ON(mc_intel->hdr.hdrver != 1 || mc_intel->hdr.ldrver != 1);
-> > +
-> >  	mcu_data = mc_intel->bits;
-> >  	aligned_mcu_data = mc_intel->bits;
-> 
-> Both not needed, because we're running all microcode through
-> microcode_sanity_check() first which already does that check.
+>From f01919cca1259bb2eec1c6db00cf31055a5c481d Mon Sep 17 00:00:00 2001
+From: Devin Ryles <devin.ryles@intel.com>
+Date: Wed, 5 Nov 2014 17:41:22 -0500
+Subject: [PATCH 2/3] AHCI: Add DeviceIDs for Sunrise Point-LP SATA
+controller
 
-Yeah, that's why it is BUG_ON().
+This patch adds DeviceIDs for Sunrise Point-LP
 
-But if you feel this is too defensive, I will just drop this patch.
+Signed-off-by: Devin Ryles <devin.ryles@intel.com>
+---
+ drivers/ata/ahci.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 5f039f1..50d9de5 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -313,6 +313,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d03), board_ahci }, /* Sunrise Point-LP AHCI*/
++	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID*/
++	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID*/
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.9.3
+
+
+
