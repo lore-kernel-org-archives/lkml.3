@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaKGXnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:43:00 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51351 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaKGXm5 (ORCPT
+	id S1752848AbaKGXpQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:45:16 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57019 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbaKGXpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:42:57 -0500
-Date: Fri, 7 Nov 2014 23:42:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@redhat.com>
-Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org
-Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
-Message-ID: <20141107234253.GE7996@ZenIV.linux.org.uk>
-References: <20141105210745.GT7996@ZenIV.linux.org.uk>
- <20141105.165719.835728206041332333.davem@davemloft.net>
- <20141106032533.GU7996@ZenIV.linux.org.uk>
- <20141107.164859.951682597018909290.davem@redhat.com>
- <20141107221114.GB7996@ZenIV.linux.org.uk>
+	Fri, 7 Nov 2014 18:45:14 -0500
+Date: Fri, 7 Nov 2014 15:45:07 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        GTA04 owners <gta04-owner@goldelico.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH] Input: gpio_keys: Make sure wake-up buttons work.
+Message-ID: <20141107234507.GB4439@dtor-ws>
+References: <20141108103707.45bcc7e3@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141107221114.GB7996@ZenIV.linux.org.uk>
+In-Reply-To: <20141108103707.45bcc7e3@notabene.brown>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 10:11:14PM +0000, Al Viro wrote:
+Hi Neil,
 
-> I'm looking through the tree right now; so far it looks like we can just
-> move those suckers to the point where we validate iovec and lose them
-> from low-level iovec and csum copying completely.  I still haven't finished
-> tracing all possible paths for address to arrive at the points where we
-> currently check that stuff, but so far it looks very doable.
+On Sat, Nov 08, 2014 at 10:37:07AM +1100, NeilBrown wrote:
+> 
+> 
+> If a key is to be used for wake-up, we must not disable
+> the interrupt during suspend.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> 
+> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+> index 8c98e97f8e41..0b5e54ae343e 100644
+> --- a/drivers/input/keyboard/gpio_keys.c
+> +++ b/drivers/input/keyboard/gpio_keys.c
+> @@ -526,6 +526,8 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+>  	 */
+>  	if (!button->can_disable)
+>  		irqflags |= IRQF_SHARED;
+> +	if (button->wakeup)
+> +		irqflags |= IRQF_NO_SUSPEND;
 
-Definitely doable.  The only remaining interesting part is drivers/vhost
-with the stuff it puts in vq->iov[].  If we can guarantee that it satisfies
-the sanity checks (access_ok() and size-related ones), we are done -
-making verify_iovec() use rw_copy_check_uvector() (and verify_compat_iov()
-use compat_rw_copy_check_uvector()) will suffice to guarantee that none of
-	csum_partial_copy_fromiovecend
-	memcpy_fromiovec
-	memcpy_toiovec
-	memcpy_toiovecend
-	memcpy_fromiovecend
-	skb_copy_datagram_iovec
-	skb_copy_datagram_iter
-	skb_copy_datagram_from_iter
-	zerocopy_sg_from_iter
-	skb_copy_and_csum_datagram
-	skb_copy_and_csum_datagram_iovec
-	csum_and_copy_from_user
-	csum_and_copy_to_user
-	csum_partial_copy_from_user
-will ever see an address that doesn't satisfy access_ok() checks.  And
-having looked at the data flow...  we definitely want to do those checks
-on intake of iovec - as it is, we usually repeat them quite a few times
-for the same iovec segment, and we practically never end up _not_ doing them
-for some segment of iovec, unless we hit a failure exit before we get around
-to copying any data at all.
+No, enable_irq_wake() should be enough. I believe Rafael has fixed that
+in the core, right?
 
-I'll finish RTFS drivers/vhost and if it turns out to be OK I'll post the
-series moving those checks to the moment of copying iovec from userland,
-so that kernel-side we could always rely on ->msg_iov elements having been
-verified.
+>  
+>  	error = devm_request_any_context_irq(&pdev->dev, bdata->irq,
+>  					     isr, irqflags, desc, bdata);
+
+Thanks.
+
+-- 
+Dmitry
