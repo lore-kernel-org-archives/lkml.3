@@ -1,224 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaKGOvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:51:31 -0500
-Received: from lb3-smtp-cloud2.xs4all.net ([194.109.24.29]:60970 "EHLO
-	lb3-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751987AbaKGOv3 (ORCPT
+	id S1752841AbaKGOyB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:54:01 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:58237 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380AbaKGOx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:51:29 -0500
-Message-ID: <545CDC59.8020504@xs4all.nl>
-Date: Fri, 07 Nov 2014 15:51:05 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>
-CC: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v3 00/10] [media] Make mediabus format subsystem neutral
-References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Nov 2014 09:53:57 -0500
+X-AuditID: cbfec7f4-b7f6c6d00000120b-90-545cdd02351a
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: peterz@infradead.org, mingo@redhat.com, riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [PATCH] sched: core: fix out of bounds read in sched_init_numa()
+Date: Fri, 07 Nov 2014 17:53:40 +0300
+Message-id: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDJMWRmVeSWpSXmKPExsVy+t/xa7pMd2NCDL5OFbHY9usRm8XlXXPY
+	LC4dWMBkcbz3AJPF3yvrWRxYPTav0PJ4v+8qm0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
+	PO/dylRwU71iZ88DtgbG23JdjJwcEgImEm8OvWWFsMUkLtxbz9bFyMUhJLCUUeLEi0XsEE4f
+	k8S8Vx1gVWwCehL/Zm1nA7FFBKwlTr9+DhZnFvCS2Hh1KVMXIweHsICnxNomV5Awi4CqxOeD
+	C1hAbF4BV4kTE3sZQUokBOQktq7znsDIvYCRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZG
+	SAh82cG4+JjVIUYBDkYlHt5OoZgQIdbEsuLK3EOMEhzMSiK8N44DhXhTEiurUovy44tKc1KL
+	DzEycXBKNTDOnjG1MlQwQXyaTJi2Bp/hlBcHe4I9ulLtKja/XBhod46bS/XOC0Xbxxl3LY49
+	Ut8jNG3qW5fu6bwXk25xHjvoXPxE8civ6mj3yFf9bEcits17s2fLbUOZRbkfNz7UK1PInfy+
+	9qRW6BlZ7dU3mOel61RFTZ3EfIDPI6mg6jfTRJbvneybVIqUWIozEg21mIuKEwGauzUI3wEA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/14 15:07, Boris Brezillon wrote:
-> Hello,
-> 
-> This patch series prepares the use of media bus formats outside of
-> the V4L2 subsytem (my final goal is to use it in the Atmel HLCDC DRM
-> driver where I have to configure my DPI/RGB bus according to the
-> connected display).
-> 
-> The series first defines MEDIA_BUS_FMT_ macros, and then replace all
-> references to the v4l2_mbus_pixelcode enum and its values within the
-> kernel.
+On latest mm + KASan patchset I've got this:
 
-Looks good!
+    ==================================================================
+    BUG: AddressSanitizer: out of bounds access in sched_init_smp+0x3ba/0x62c at addr ffff88006d4bee6c
+    =============================================================================
+    BUG kmalloc-8 (Not tainted): kasan error
+    -----------------------------------------------------------------------------
 
-For patches 1-9:
+    Disabling lock debugging due to kernel taint
+    INFO: Allocated in alloc_vfsmnt+0xb0/0x2c0 age=75 cpu=0 pid=0
+     __slab_alloc+0x4b4/0x4f0
+     __kmalloc_track_caller+0x15f/0x1e0
+     kstrdup+0x44/0x90
+     alloc_vfsmnt+0xb0/0x2c0
+     vfs_kern_mount+0x35/0x190
+     kern_mount_data+0x25/0x50
+     pid_ns_prepare_proc+0x19/0x50
+     alloc_pid+0x5e2/0x630
+     copy_process.part.41+0xdf5/0x2aa0
+     do_fork+0xf5/0x460
+     kernel_thread+0x21/0x30
+     rest_init+0x1e/0x90
+     start_kernel+0x522/0x531
+     x86_64_start_reservations+0x2a/0x2c
+     x86_64_start_kernel+0x15b/0x16a
+    INFO: Slab 0xffffea0001b52f80 objects=24 used=22 fp=0xffff88006d4befc0 flags=0x100000000004080
+    INFO: Object 0xffff88006d4bed20 @offset=3360 fp=0xffff88006d4bee70
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+    Bytes b4 ffff88006d4bed10: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+    Object ffff88006d4bed20: 70 72 6f 63 00 6b 6b a5                          proc.kk.
+    Redzone ffff88006d4bed28: cc cc cc cc cc cc cc cc                          ........
+    Padding ffff88006d4bee68: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+    CPU: 0 PID: 1 Comm: swapper/0 Tainted: G    B          3.18.0-rc3-mm1+ #108
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+     ffff88006d4be000 0000000000000000 ffff88006d4bed20 ffff88006c86fd18
+     ffffffff81cd0a59 0000000000000058 ffff88006d404240 ffff88006c86fd48
+     ffffffff811fa3a8 ffff88006d404240 ffffea0001b52f80 ffff88006d4bed20
+    Call Trace:
+    dump_stack (lib/dump_stack.c:52)
+    print_trailer (mm/slub.c:645)
+    object_err (mm/slub.c:652)
+    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
+    kasan_report_error (mm/kasan/report.c:102 mm/kasan/report.c:178)
+    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
+    ? kasan_unpoison_shadow (mm/kasan/kasan.c:54)
+    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
+    ? kasan_kmalloc (mm/kasan/kasan.c:311)
+    __asan_load4 (mm/kasan/kasan.c:371)
+    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
+    sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
+    kernel_init_freeable (init/main.c:869 init/main.c:997)
+    ? finish_task_switch (kernel/sched/sched.h:1036 kernel/sched/core.c:2248)
+    ? rest_init (init/main.c:924)
+    kernel_init (init/main.c:929)
+    ? rest_init (init/main.c:924)
+    ret_from_fork (arch/x86/kernel/entry_64.S:348)
+    ? rest_init (init/main.c:924)
+    Read of size 4 by task swapper/0:
+    Memory state around the buggy address:
+     ffff88006d4beb80: fc fc fc fc fc fc fc fc fc fc 00 fc fc fc fc fc
+     ffff88006d4bec00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bec80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bed00: fc fc fc fc 00 fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bed80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+    >ffff88006d4bee00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc 04 fc
+                                                              ^
+     ffff88006d4bee80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bef00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bef80: fc fc fc fc fc fc fc fc fb fb fb fb fb fb fb fb
+     ffff88006d4bf000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+     ffff88006d4bf080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+    ==================================================================
 
-Patch 10 needs a bit more work, see my reply to that patch. If I get a
-v4 for that patch and nobody else has any further comments, then I'll
-make a pull request for this on Monday.
+Zero 'level' (e.g. on non-NUMA system) causing out of bounds access
+in this line:
 
-Regards,
+     sched_max_numa_distance = sched_domains_numa_distance[level - 1];
 
-	Hans
+Fix this by exiting from sched_init_numa() earlier.
 
-> Best Regards,
-> 
-> Boris
-> 
-> Changes since v2:
-> - drop media_bus_format enum and replace its values with pre-processor
->   macros
-> 
-> Changes since v1:
-> - drop patches deprecating v4l2_mbus_pixelcode for user-space users
-> - put V4L2 legacy format definitions into media-bus-format.h
-> 
-> Boris Brezillon (10):
->   [media] Move mediabus format definition to a more standard place
->   [media] v4l: Update subdev-formats doc with new MEDIA_BUS_FMT values
->   [media] Make use of the new media_bus_format definitions
->   [media] i2c: Make use of media_bus_format enum
->   [media] pci: Make use of MEDIA_BUS_FMT definitions
->   [media] platform: Make use of media_bus_format enum
->   [media] usb: Make use of media_bus_format enum
->   staging: media: Make use of MEDIA_BUS_FMT_ definitions
->   gpu: ipu-v3: Make use of media_bus_format enum
->   [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the
->     kernel
-> 
->  Documentation/DocBook/media/v4l/subdev-formats.xml | 308 ++++++++++-----------
->  Documentation/video4linux/soc-camera.txt           |   2 +-
->  arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
->  arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
->  arch/arm/mach-davinci/dm355.c                      |   7 +-
->  arch/arm/mach-davinci/dm365.c                      |   7 +-
->  arch/arm/mach-shmobile/board-mackerel.c            |   2 +-
->  arch/sh/boards/mach-ap325rxa/setup.c               |   2 +-
->  drivers/gpu/ipu-v3/ipu-csi.c                       |  66 ++---
->  drivers/media/i2c/adv7170.c                        |  16 +-
->  drivers/media/i2c/adv7175.c                        |  16 +-
->  drivers/media/i2c/adv7180.c                        |   6 +-
->  drivers/media/i2c/adv7183.c                        |   6 +-
->  drivers/media/i2c/adv7604.c                        |  72 ++---
->  drivers/media/i2c/adv7842.c                        |   6 +-
->  drivers/media/i2c/ak881x.c                         |   8 +-
->  drivers/media/i2c/cx25840/cx25840-core.c           |   2 +-
->  drivers/media/i2c/m5mols/m5mols_core.c             |   6 +-
->  drivers/media/i2c/ml86v7667.c                      |   6 +-
->  drivers/media/i2c/mt9m032.c                        |   6 +-
->  drivers/media/i2c/mt9p031.c                        |   8 +-
->  drivers/media/i2c/mt9t001.c                        |   8 +-
->  drivers/media/i2c/mt9v011.c                        |   6 +-
->  drivers/media/i2c/mt9v032.c                        |  12 +-
->  drivers/media/i2c/noon010pc30.c                    |  12 +-
->  drivers/media/i2c/ov7670.c                         |  16 +-
->  drivers/media/i2c/ov9650.c                         |  10 +-
->  drivers/media/i2c/s5c73m3/s5c73m3.h                |   6 +-
->  drivers/media/i2c/s5k4ecgx.c                       |   4 +-
->  drivers/media/i2c/s5k5baf.c                        |  14 +-
->  drivers/media/i2c/s5k6a3.c                         |   2 +-
->  drivers/media/i2c/s5k6aa.c                         |   8 +-
->  drivers/media/i2c/saa6752hs.c                      |   6 +-
->  drivers/media/i2c/saa7115.c                        |   2 +-
->  drivers/media/i2c/saa717x.c                        |   2 +-
->  drivers/media/i2c/smiapp/smiapp-core.c             |  32 +--
->  drivers/media/i2c/soc_camera/imx074.c              |   8 +-
->  drivers/media/i2c/soc_camera/mt9m001.c             |  14 +-
->  drivers/media/i2c/soc_camera/mt9m111.c             |  70 ++---
->  drivers/media/i2c/soc_camera/mt9t031.c             |  10 +-
->  drivers/media/i2c/soc_camera/mt9t112.c             |  22 +-
->  drivers/media/i2c/soc_camera/mt9v022.c             |  26 +-
->  drivers/media/i2c/soc_camera/ov2640.c              |  54 ++--
->  drivers/media/i2c/soc_camera/ov5642.c              |   8 +-
->  drivers/media/i2c/soc_camera/ov6650.c              |  58 ++--
->  drivers/media/i2c/soc_camera/ov772x.c              |  20 +-
->  drivers/media/i2c/soc_camera/ov9640.c              |  40 +--
->  drivers/media/i2c/soc_camera/ov9740.c              |  12 +-
->  drivers/media/i2c/soc_camera/rj54n1cb0c.c          |  54 ++--
->  drivers/media/i2c/soc_camera/tw9910.c              |  10 +-
->  drivers/media/i2c/sr030pc30.c                      |  14 +-
->  drivers/media/i2c/tvp514x.c                        |  12 +-
->  drivers/media/i2c/tvp5150.c                        |   6 +-
->  drivers/media/i2c/tvp7002.c                        |  10 +-
->  drivers/media/i2c/vs6624.c                         |  18 +-
->  drivers/media/pci/cx18/cx18-av-core.c              |   2 +-
->  drivers/media/pci/cx18/cx18-controls.c             |   2 +-
->  drivers/media/pci/cx18/cx18-ioctl.c                |   2 +-
->  drivers/media/pci/cx23885/cx23885-video.c          |   2 +-
->  drivers/media/pci/ivtv/ivtv-controls.c             |   2 +-
->  drivers/media/pci/ivtv/ivtv-ioctl.c                |   2 +-
->  drivers/media/pci/saa7134/saa7134-empress.c        |   4 +-
->  drivers/media/platform/blackfin/bfin_capture.c     |  14 +-
->  drivers/media/platform/davinci/vpbe.c              |   2 +-
->  drivers/media/platform/davinci/vpfe_capture.c      |   4 +-
->  drivers/media/platform/exynos-gsc/gsc-core.c       |   8 +-
->  drivers/media/platform/exynos-gsc/gsc-core.h       |   2 +-
->  drivers/media/platform/exynos4-is/fimc-capture.c   |   2 +-
->  drivers/media/platform/exynos4-is/fimc-core.c      |  14 +-
->  drivers/media/platform/exynos4-is/fimc-core.h      |   4 +-
->  drivers/media/platform/exynos4-is/fimc-isp.c       |  16 +-
->  drivers/media/platform/exynos4-is/fimc-lite-reg.c  |  26 +-
->  drivers/media/platform/exynos4-is/fimc-lite.c      |  14 +-
->  drivers/media/platform/exynos4-is/fimc-reg.c       |  14 +-
->  drivers/media/platform/exynos4-is/mipi-csis.c      |  14 +-
->  drivers/media/platform/marvell-ccic/mcam-core.c    |  21 +-
->  drivers/media/platform/marvell-ccic/mcam-core.h    |   2 +-
->  drivers/media/platform/omap3isp/ispccdc.c          | 112 ++++----
->  drivers/media/platform/omap3isp/ispccp2.c          |  18 +-
->  drivers/media/platform/omap3isp/ispcsi2.c          |  42 +--
->  drivers/media/platform/omap3isp/isppreview.c       |  60 ++--
->  drivers/media/platform/omap3isp/ispresizer.c       |  19 +-
->  drivers/media/platform/omap3isp/ispvideo.c         |  95 ++++---
->  drivers/media/platform/omap3isp/ispvideo.h         |  10 +-
->  drivers/media/platform/s3c-camif/camif-capture.c   |  10 +-
->  drivers/media/platform/s3c-camif/camif-regs.c      |   8 +-
->  drivers/media/platform/s5p-tv/hdmi_drv.c           |   2 +-
->  drivers/media/platform/s5p-tv/sdo_drv.c            |   2 +-
->  drivers/media/platform/sh_vou.c                    |   8 +-
->  drivers/media/platform/soc_camera/atmel-isi.c      |  22 +-
->  drivers/media/platform/soc_camera/mx2_camera.c     |  26 +-
->  drivers/media/platform/soc_camera/mx3_camera.c     |   6 +-
->  drivers/media/platform/soc_camera/omap1_camera.c   |  36 +--
->  drivers/media/platform/soc_camera/pxa_camera.c     |  16 +-
->  drivers/media/platform/soc_camera/rcar_vin.c       |  14 +-
->  .../platform/soc_camera/sh_mobile_ceu_camera.c     |  20 +-
->  drivers/media/platform/soc_camera/sh_mobile_csi2.c |  38 +--
->  drivers/media/platform/soc_camera/soc_camera.c     |   2 +-
->  .../platform/soc_camera/soc_camera_platform.c      |   2 +-
->  drivers/media/platform/soc_camera/soc_mediabus.c   |  78 +++---
->  drivers/media/platform/via-camera.c                |   8 +-
->  drivers/media/platform/vsp1/vsp1_bru.c             |  14 +-
->  drivers/media/platform/vsp1/vsp1_hsit.c            |  12 +-
->  drivers/media/platform/vsp1/vsp1_lif.c             |  10 +-
->  drivers/media/platform/vsp1/vsp1_lut.c             |  14 +-
->  drivers/media/platform/vsp1/vsp1_rwpf.c            |  10 +-
->  drivers/media/platform/vsp1/vsp1_sru.c             |  12 +-
->  drivers/media/platform/vsp1/vsp1_uds.c             |  10 +-
->  drivers/media/platform/vsp1/vsp1_video.c           |  42 +--
->  drivers/media/usb/cx231xx/cx231xx-417.c            |   2 +-
->  drivers/media/usb/cx231xx/cx231xx-video.c          |   4 +-
->  drivers/media/usb/em28xx/em28xx-camera.c           |   2 +-
->  drivers/media/usb/go7007/go7007-v4l2.c             |   2 +-
->  drivers/media/usb/pvrusb2/pvrusb2-hdw.c            |   2 +-
->  drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |  18 +-
->  .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    |  26 +-
->  drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 100 +++----
->  drivers/staging/media/davinci_vpfe/dm365_isif.c    |  90 +++---
->  drivers/staging/media/davinci_vpfe/dm365_resizer.c |  98 +++----
->  .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  18 +-
->  drivers/staging/media/omap4iss/iss_csi2.c          |  62 ++---
->  drivers/staging/media/omap4iss/iss_ipipe.c         |  16 +-
->  drivers/staging/media/omap4iss/iss_ipipeif.c       |  28 +-
->  drivers/staging/media/omap4iss/iss_resizer.c       |  26 +-
->  drivers/staging/media/omap4iss/iss_video.c         |  78 +++---
->  drivers/staging/media/omap4iss/iss_video.h         |  10 +-
->  include/media/davinci/vpbe.h                       |   2 +-
->  include/media/davinci/vpbe_venc.h                  |   5 +-
->  include/media/exynos-fimc.h                        |   2 +-
->  include/media/soc_camera.h                         |   2 +-
->  include/media/soc_mediabus.h                       |   6 +-
->  include/media/v4l2-mediabus.h                      |   2 +-
->  include/media/v4l2-subdev.h                        |   2 +-
->  include/uapi/linux/Kbuild                          |   1 +
->  include/uapi/linux/media-bus-format.h              | 125 +++++++++
->  include/uapi/linux/v4l2-mediabus.h                 | 189 ++++++-------
->  include/uapi/linux/v4l2-subdev.h                   |   6 +-
->  137 files changed, 1569 insertions(+), 1470 deletions(-)
->  create mode 100644 include/uapi/linux/media-bus-format.h
-> 
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Fixes: 9942f79ba ("sched/numa: Export info needed for NUMA balancing on complex topologies")
+---
+   Another option would be to not call sched_init_numa() if nr_node_ids == 1,
+   but I'm not sure that there is no such configuration where nr_node_ids > 1
+   and node_distance(i, j) = node_distance(0, 0) for any i and j.
+
+ kernel/sched/core.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 72d9d92..932c7a9 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6470,6 +6470,10 @@ static void sched_init_numa(void)
+ 		if (!sched_debug())
+ 			break;
+ 	}
++
++	if (!level)
++		return;
++
+ 	/*
+ 	 * 'level' contains the number of unique distances, excluding the
+ 	 * identity distance node_distance(i,i).
+-- 
+2.1.3
 
