@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368AbaKGKJv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:09:51 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5858 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKGKJt (ORCPT
+	id S1751509AbaKGKKM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:10:12 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:39621 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKGKKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:09:49 -0500
-Message-ID: <545C9A1B.6020905@huawei.com>
-Date: Fri, 7 Nov 2014 18:08:27 +0800
-From: hujianyang <hujianyang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 7 Nov 2014 05:10:05 -0500
+Date: Fri, 7 Nov 2014 10:09:59 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 09/11] perf/x86/intel: Support task events with Intel CQM
+Message-ID: <20141107100959.GK3592@console-pimps.org>
+References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
+ <1415276602-10337-10-git-send-email-matt@console-pimps.org>
+ <20141107090804.GA3337@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Tanya Brokhman <tlinder@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, Richard Weinberger <richard@nod.at>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org> <1415201733.958.121.camel@sauron.fi.intel.com>
-In-Reply-To: <1415201733.958.121.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.144]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107090804.GA3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/5 23:35, Artem Bityutskiy wrote:
-> On Mon, 2014-11-03 at 15:58 +0200, Tanya Brokhman wrote:
->> If there is more then one UBI device mounted, there is no way to
->> distinguish between messages from different UBI devices.
->> Add device number to all ubi layer message types.
->>
->> The R/O block driver messages were replaced by pr_* since
->> ubi_device structure is not used by it.
->>
->> Amended a bit by Artem.
->>
->> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
->> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Fri, 07 Nov, at 10:08:04AM, Peter Zijlstra wrote:
 > 
-> Oh, the entire patch-set again... this means we need to review it again!
-> Please, have a mercy! :-) It is huge! Please, send a small patch against
-> the one which I pushed already. Thanks!
->
+> How is that supposed to work? You call __intel_cqm_event_count() on the
+> one cpu per socket, but then you use a local_add, not an atomic_add,
+> even though these adds can happen concurrently as per IPI broadcast.
+ 
+Ouch, right. That's broken.
 
-That means I can't add a Reviewed-by on this huge one...
+> Also, I think smp_call_function_many() ignores the current cpu, if this
+> cpu happens to be the cpu for this socket, you're up some creek without
+> no paddle, right?
+ 
+OK, I didn't realise that. Yeah that sounds very problematic. I think my
+eyes skipped over the word "other" in the smp_call_function_many() docs,
 
-What a pity~! ^.^
+ * smp_call_function_many(): Run a function on a set of other CPUs.
 
+So, the correct way to do this is to iterate over cqm_cpumask and invoke
+smp_call_function_single(), right?
 
-> Artem.
-> 
-> 
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
-> 
-> 
+> Thirdly, there is no serialization around calling perf_event_count() [or
+> your pmu::count method] so you cannot temporarily put it to 0.
 
+Urgh, thanks. Good spot. I'm gonna have to think of a suitable
+serialisation mechanism because all the current ones are pretty
+heavy-handed. And of course, there's the added fun that it needs to be
+held across the IPIs.
 
+Perhaps a per-cache-group mutex?
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
