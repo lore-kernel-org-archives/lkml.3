@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaKGKAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:00:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35744 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245AbaKGKAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:00:13 -0500
-Date: Fri, 7 Nov 2014 10:23:13 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] brd: Add getgeo to block ops for fdisk
-Message-ID: <20141107092313.GH6880@x2.net.home>
-References: <545A2D69.8090003@plexistor.com>
- <545A2FEA.3050101@plexistor.com>
+	id S1751471AbaKGKDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:03:06 -0500
+Received: from lhrrgout.huawei.com ([194.213.3.17]:47993 "EHLO
+	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKGKDD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 05:03:03 -0500
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 05:03:02 EST
+From: Frediano Ziglio <frediano.ziglio@huawei.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Frediano Ziglio <freddy77@gmail.com>
+CC: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH] xen/arm: Return correct code error for
+ xen_swiotlb_map_page
+Thread-Topic: [Xen-devel] [PATCH] xen/arm: Return correct code error for
+ xen_swiotlb_map_page
+Thread-Index: AQHP+eQybFi0WqSOD0+2fx6E4sVCLJxT2xKAgAAaXQCAAAKpgIAA9P6w
+Date: Fri, 7 Nov 2014 09:56:36 +0000
+Message-ID: <B944B469BF5302468AC6EB05E56CC70D17DF04@lhreml509-mbb>
+References: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com>
+ <alpine.DEB.2.02.1411061730240.22875@kaball.uk.xensource.com>
+ <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
+ <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.47.66.6]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545A2FEA.3050101@plexistor.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sA7A3C3W012120
 
-On Wed, Nov 05, 2014 at 04:10:50PM +0200, Boaz Harrosh wrote:
-> From: Boaz Harrosh <boaz@plexistor.com>
+> On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> > 2014-11-06 17:30 GMT+00:00 Stefano Stabellini
+> <stefano.stabellini@eu.citrix.com>:
+> >       On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> >       > On ARM error code is not 0 so avoid to return it as error.
+> >       >
+> >       > Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
+> >
+> >       Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >
+> >
+> >       Could you please fix the same error in lib/swiotlb.c too please?
+> >
+> >
+> > Same patch or another ?
+> >
 > 
-> Now when fdisk is run on brd it will ask some cryptic
-> questions about CHS. This is because the getgeo block operation
-> is not implemented.
+> Another
+> 
 
- Again, what fdisk (util-linux) version?
+lib/swiotlb.c is not affected at a physical address to io_tlb_overflow_buffer is returned in case of error.
+Looks like a way to transform silently an allocation error to a more serious memory corruption.
 
-> I have done a quick audit of the fdisk code. The CHS calculation
-> is very convoluted but at the end it comes out with a number.
-> Which is taken into consideration in first-sector to allow. With
-> all 1(s) this numbers is very small and other numbers come into
-> account. Also note that if the device is big like 1G (not sure what
-> is the threshold) fdisk will offer 1M (2048) as possible first-
-> sector, and it does not matter what numbers we give here.
+Frediano
 
- oh.. sounds like archeology, CHS calculation does not mater in the
- current code, it follows I/O limits (including crazy alignment
- offset).
-
-    Karel
-
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+> >
+> >       >Â  drivers/xen/swiotlb-xen.c | 2 +-
+> >       >Â  1 file changed, 1 insertion(+), 1 deletion(-)
+> >       >
+> >       > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-
+> xen.c
+> >       > index ebd8f21..3b8d628 100644
+> >       > --- a/drivers/xen/swiotlb-xen.c
+> >       > +++ b/drivers/xen/swiotlb-xen.c
+> >       > @@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct
+> device *dev, struct page *page,
+> >       >Â  Â  Â  Â  */
+> >       >Â  Â  Â  Â if (!dma_capable(dev, dev_addr, size)) {
+> >       >Â  Â  Â  Â  Â  Â  Â  Â swiotlb_tbl_unmap_single(dev, map, size, dir);
+> >       > -Â  Â  Â  Â  Â  Â  Â dev_addr = 0;
+> >       > +Â  Â  Â  Â  Â  Â  Â dev_addr = DMA_ERROR_CODE;
+> >       >Â  Â  Â  Â }
+> >       >Â  Â  Â  Â return dev_addr;
+> >       >Â  }
+> >       > --
+> >       > 1.9.1
+> >       >
+> >       >
+> >       > --
+> >       > To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> >       > the body of a message to majordomo@vger.kernel.org
+> >       > More majordomo info atÂ  http://vger.kernel.org/majordomo-
+> info.html
+> >       > Please read the FAQ atÂ http://secure-
+> web.cisco.com/1cvjROyUxV6SnA0uBTMRubqrQWsaXGhps-
+> FWjY3vly9AxaKKlt2DPY7GjL0FCHeP4rsbjKsc-P4zH2_7-kpcxwEH-udGrGCCq
+> >       kCLlH1-fLOo1X6Nlui6EwEVHUpB2r7gt-
+> Gsgxbep9QWPnIdypDPNf8Hf5clxCMXYcvWsOK5s3qg/http%3A%2F%2Fwww.tux.org%2Fl
+> kml%2F
+> >       >
+> >
+> >       _______________________________________________
+> >       Xen-devel mailing list
+> >       Xen-devel@lists.xen.org
+> >       http://lists.xen.org/xen-devel
+> >
+> >
+> >
+> >
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
