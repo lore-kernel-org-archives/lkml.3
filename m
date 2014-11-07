@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaKGJ4F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:56:05 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:55353 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaKGJz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:55:26 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sA79tKHs019413, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/2] r8152: adjust r8152_submit_rx
-Date: Fri, 7 Nov 2014 17:55:10 +0800
-Message-ID: <1394712342-15778-89-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-88-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	id S1751823AbaKGJ4l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:56:41 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24136 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797AbaKGJ4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:56:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,331,1413270000"; 
+   d="scan'208";a="628225735"
+Message-ID: <1415354191.958.307.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] UBI: Block: Add blk-mq support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: Christoph Hellwig <hch@infradead.org>, axboe@fb.com,
+        ezequiel.garcia@free-electrons.com, dwmw2@infradead.org,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Nov 2014 11:56:31 +0200
+In-Reply-To: <545C96A1.40304@nod.at>
+References: <1414933255-3795-1-git-send-email-richard@nod.at>
+		 <20141103081821.GA5261@infradead.org> <54573B72.1060600@nod.at>
+	 <1415353596.958.302.camel@sauron.fi.intel.com> <545C96A1.40304@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The behavior of handling the returned status from r8152_submit_rx()
-is almost same, so let r8152_submit_rx() deal with the error
-directly. This could avoid the duplicate code.
+On Fri, 2014-11-07 at 10:53 +0100, Richard Weinberger wrote:
+> Am 07.11.2014 um 10:46 schrieb Artem Bityutskiy:
+> > On Mon, 2014-11-03 at 09:23 +0100, Richard Weinberger wrote:
+> >> Am 03.11.2014 um 09:18 schrieb Christoph Hellwig:
+> >>> On Sun, Nov 02, 2014 at 02:00:55PM +0100, Richard Weinberger wrote:
+> >>>> +#define UBIBLOCK_SG_COUNT 64
+> >>>
+> >>>
+> >>> Can you document why you choose this number? The default nr_request
+> >>> for the old code would be 128.
+> >>
+> >> Is 64 a problem? Beside of the fact that I forgot to set blk_queue_max_segments().
+> >> I used this number because 128 seemed a bit high and my goal was to
+> >> keep the memory footprint small.
+> >> This is also why I've set tag_set.queue_depth to 64.
+> > 
+> > The request was to document, so lets' document the choice.
+> 
+> Of course I'll document it. But so far I had no time to do a
+> v2 of this patch.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+Your reply just sounded like you are complaining to the request (starts
+with "is this a problem?"). And it looked like you try to defend the 64
+choice, while no one challenged it.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 66b139a..ad62994 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1032,7 +1032,6 @@ static void read_bulk_callback(struct urb *urb)
- 	int status = urb->status;
- 	struct rx_agg *agg;
- 	struct r8152 *tp;
--	int result;
- 
- 	agg = urb->context;
- 	if (!agg)
-@@ -1083,16 +1082,7 @@ static void read_bulk_callback(struct urb *urb)
- 		break;
- 	}
- 
--	result = r8152_submit_rx(tp, agg, GFP_ATOMIC);
--	if (result == -ENODEV) {
--		set_bit(RTL8152_UNPLUG, &tp->flags);
--		netif_device_detach(tp->netdev);
--	} else if (result) {
--		spin_lock(&tp->rx_lock);
--		list_add_tail(&agg->list, &tp->rx_done);
--		spin_unlock(&tp->rx_lock);
--		tasklet_schedule(&tp->tl);
--	}
-+	r8152_submit_rx(tp, agg, GFP_ATOMIC);
- }
- 
- static void write_bulk_callback(struct urb *urb)
-@@ -1681,7 +1671,6 @@ static void rx_bottom(struct r8152 *tp)
- 		int len_used = 0;
- 		struct urb *urb;
- 		u8 *rx_data;
--		int ret;
- 
- 		list_del_init(cursor);
- 
-@@ -1734,13 +1723,7 @@ find_next_rx:
- 		}
- 
- submit:
--		ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
--		if (ret && ret != -ENODEV) {
--			spin_lock_irqsave(&tp->rx_lock, flags);
--			list_add_tail(&agg->list, &tp->rx_done);
--			spin_unlock_irqrestore(&tp->rx_lock, flags);
--			tasklet_schedule(&tp->tl);
--		}
-+		r8152_submit_rx(tp, agg, GFP_ATOMIC);
- 	}
- }
- 
-@@ -1805,11 +1788,27 @@ static void bottom_half(unsigned long data)
- static
- int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
- {
-+	int ret = 0;
-+
- 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
- 			  agg->head, agg_buf_sz,
- 			  (usb_complete_t)read_bulk_callback, agg);
- 
--	return usb_submit_urb(agg->urb, mem_flags);
-+	ret = usb_submit_urb(agg->urb, mem_flags);
-+
-+	if (ret == -ENODEV) {
-+		set_bit(RTL8152_UNPLUG, &tp->flags);
-+		netif_device_detach(tp->netdev);
-+	} else if (ret) {
-+		unsigned long flags;
-+
-+		spin_lock_irqsave(&tp->rx_lock, flags);
-+		list_add_tail(&agg->list, &tp->rx_done);
-+		spin_unlock_irqrestore(&tp->rx_lock, flags);
-+		tasklet_schedule(&tp->tl);
-+	}
-+
-+	return ret;
- }
- 
- static void rtl_drop_queued_tx(struct r8152 *tp)
--- 
-1.9.3
+So my e-mail is to just kindly help you by pointing that the request was
+to only add a piece of doc so far, in case you misinterpreted it.
+
+Artem.
 
