@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaKGTRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:17:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30235 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaKGTRp (ORCPT
+	id S1753018AbaKGTUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:20:06 -0500
+Received: from modemcable114.129-37-24.static.videotron.ca ([24.37.129.114]:33073
+	"EHLO haddock.xiphos.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751459AbaKGTUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:17:45 -0500
-To: Chris Friesen <chris.friesen@windriver.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
-	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>
-	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>
-	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com>
-	<yq1bnoj9dvu.fsf@sermon.lab.mkp.net> <545D13FF.6090306@windriver.com>
-Date: Fri, 07 Nov 2014 14:17:37 -0500
-In-Reply-To: <545D13FF.6090306@windriver.com> (Chris Friesen's message of
-	"Fri, 7 Nov 2014 12:48:31 -0600")
-Message-ID: <yq1389u95wu.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 7 Nov 2014 14:20:04 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 14:20:04 EST
+From: Joshua Lamorie <joshua.lamorie@xiphos.com>
+To: jic23@kernel.org
+Cc: michal.simek@xilinx.com, lars@metafoo.de, linux-iio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        soren.brinkmann@xilinx.com, Joshua Lamorie <joshua.lamorie@xiphos.com>
+Subject: [PATCH] iio:xilinx-xadc:xadc_read_raw INFO_OFFSET
+Date: Fri,  7 Nov 2014 14:11:56 -0500
+Message-Id: <1415387516-15051-1-git-send-email-joshua.lamorie@xiphos.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+Added a condition for a read of IIO_CHAN_INFO_OFFSET to
+ensure that an offset is only provided for requests for XADC temperature. The
+previous assumption was that only requests for temperature would include a
+read of CHAN_INFO_OFFSET. However there is no way to restrict this in calling
+functions, such as iio_convert_raw_to_processed_unlocked() which is called when
+using the XADC as a device for iio_hwmon.
 
-Chris> Apparently the "hdparm -I" command is giving bogus data as well.
-Chris> I've seen that happen if the drive is on a RAID controller--I
-Chris> assume that could cause problems with firmware updates too?
+Signed-off-by: Joshua Lamorie <joshua.lamorie@xiphos.com>
+---
+ drivers/iio/adc/xilinx-xadc-core.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-I'd suggest trying /dev/sgN instead.
-
-But yes, some RAID controllers require you to use their tooling and
-won't allow direct passthrough.
-
+diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
+index 23c152e..2c549ab 100644
+--- a/drivers/iio/adc/xilinx-xadc-core.c
++++ b/drivers/iio/adc/xilinx-xadc-core.c
+@@ -877,9 +877,13 @@ static int xadc_read_raw(struct iio_dev *indio_dev,
+ 			return -EINVAL;
+ 		}
+ 	case IIO_CHAN_INFO_OFFSET:
+-		/* Only the temperature channel has an offset */
+-		*val = -((273150 << 12) / 503975);
+-		return IIO_VAL_INT;
++		if (chan->type == IIO_TEMP) {
++			/* Only the temperature channel has an offset */
++			*val = -((273150 << 12) / 503975);
++			return IIO_VAL_INT;
++		} else {
++			return -EINVAL;
++		}
+ 	case IIO_CHAN_INFO_SAMP_FREQ:
+ 		ret = xadc_read_adc_reg(xadc, XADC_REG_CONF2, &val16);
+ 		if (ret)
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.8.3.1
+
