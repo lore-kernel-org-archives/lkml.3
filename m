@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbaKGKnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:43:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33742 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaKGKnb (ORCPT
+	id S1751856AbaKGKoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:44:21 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:47515 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaKGKoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:43:31 -0500
-Date: Fri, 7 Nov 2014 10:43:28 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: stable@vger.kernel.org
-Cc: lwn@lwn.net, kernel-team@lists.ubuntu.com, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Subject: Re: [ANNOUNCE] Linux 3.16.y.z extended stable support
-Message-ID: <20141107104328.GC8365@hercules>
-References: <20141030181701.GD9032@hercules>
+	Fri, 7 Nov 2014 05:44:18 -0500
+X-IronPort-AV: E=Sophos;i="5.07,331,1413244800"; 
+   d="scan'208";a="190513031"
+Message-ID: <545CA27F.4070400@citrix.com>
+Date: Fri, 7 Nov 2014 10:44:15 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141030181701.GD9032@hercules>
+To: <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: BUG in xennet_make_frags with paged skb data
+References: <20141106214940.GD44162@ubuntu-hedt>
+In-Reply-To: <20141106214940.GD44162@ubuntu-hedt>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 06:17:01PM +0000, Luis Henriques wrote:
-> The Ubuntu kernel team is pleased to announce that we will be
-> providing extended stable support for the Linux 3.16 kernel until
-> April 2016 as a third party effort maintained on our infrastructure.
-> The team will pick up stable maintenance where Greg KH left off with
-> v3.16.7 [1].  Thank you, Greg.
+On 06/11/14 21:49, Seth Forshee wrote:
+> We've had several reports of hitting the following BUG_ON in
+> xennet_make_frags with 3.2 and 3.13 kernels (I'm currently awaiting
+> results of testing with 3.17):
 > 
-> In addition to the Ubuntu 14.10 "Utopic Unicorn" release, the Debian 8
-> "Jessie" release will also be based on this kernel [2].  Since the
-> regular support for "Jessie" will go beyond April 2016, after this
-> date Ben Hutchings (or myself) will continue the Linux 3.16 kernel
-> maintenance.
+>         /* Grant backend access to each skb fragment page. */
+>         for (i = 0; i < frags; i++) {
+>                 skb_frag_t *frag = skb_shinfo(skb)->frags + i;
+>                 struct page *page = skb_frag_page(frag);
 > 
-> Our linux-3.16.y{-queue,-review} stable branches will fork from
-> v3.16.7
-> and will be published here:
+>                 len = skb_frag_size(frag);
+>                 offset = frag->page_offset;
 > 
->     git://kernel.ubuntu.com/ubuntu/linux.git
+>                 /* Data must not cross a page boundary. */
+>                 BUG_ON(len + offset > PAGE_SIZE<<compound_order(page));
 > 
-> We will use the same stable request/review workflow and follow the
-> standard upstream stable kernel rules.  More details are available
-> here [3].
+> When this happens the page in question is a "middle" page in a compound
+> page (i.e. it's a tail page but not the last tail page), and the data is
+> fully contained within the compound page. The data does however cross
+> the hardware page boundary, and since compound_order evaluates to 0 for
+> tail pages the check fails.
 > 
+> In going over this I've been unable to determine whether the BUG_ON in
+> xennet_make_frags is incorrect or the paged skb data is wrong. I can't
+> find that it's documented anywhere, and the networking code itself is a
+> bit ambiguous when it comes to compound pages. On the one hand
+> __skb_fill_page_desc specifically handles adding tail pages as paged
+> data, but on the other hand skb_copy_bits kmaps frag->page.p which could
+> fail with data that extends into another page.
 
-In addition, I would like to announce a change in the kernel numbering
-scheme that we will be using: we are adding the string '-ckt'
-('Canonical Kernel Team') to the kernel version.  So, for example,
-kernel '3.16.7.1' becomes '3.16.7-ckt1'.
+netfront will safely handle this case so you can remove this BUG_ON()
+(and the one later on).  But it would be better to find out were these
+funny-looking skbs are coming from and (if necessary) fixing the bug there.
 
-Note that this change applies *only* to the 3.16 kernel, although in
-the future we may consider doing it for other kernels we are currently
-maintaining.
-
-Cheers,
---
-Luís
-
-> We welcome any feedback and contribution to this effort.  We will be
-> posting the first review cycle patch set in a week or two.
-> 
-> [1] https://lkml.org/lkml/2014/10/30/583
-> [2] https://lists.debian.org/debian-kernel/2014/07/msg00413.html
-> [3] http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-> 
-> Cheers,
-> -- 
-> Luís Henriques
-> Ubuntu Kernel Team, Canonical Ltd.
-> 
-> -- 
-> kernel-team mailing list
-> kernel-team@lists.ubuntu.com
-> https://lists.ubuntu.com/mailman/listinfo/kernel-team
+David
