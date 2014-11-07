@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaKGJLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:11:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43307 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395AbaKGJLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:11:13 -0500
-Date: Fri, 7 Nov 2014 10:11:07 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 07/12 v3] tracing: Have seq_buf use full buffer
-Message-ID: <20141107091107.GA1136@dhcp128.suse.cz>
-References: <20141104155237.228431433@goodmis.org>
- <20141104160222.502133196@goodmis.org>
- <20141105163150.GI4570@pathway.suse.cz>
- <20141105152130.09779ccf@gandalf.local.home>
- <20141105160618.6c684f23@gandalf.local.home>
- <20141106153107.GH2001@dhcp128.suse.cz>
- <20141106142402.0daada65@gandalf.local.home>
+	id S1751398AbaKGJN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:13:57 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:45440 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaKGJNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:13:52 -0500
+Date: Fri, 7 Nov 2014 10:06:36 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alex Pilon <alp+linux@alexpilon.ca>
+Cc: David Airlie <airlied@linux.ie>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: Fix spelling.
+Message-ID: <20141107090636.GK26941@phenom.ffwll.local>
+Mail-Followup-To: Alex Pilon <alp+linux@alexpilon.ca>,
+	David Airlie <airlied@linux.ie>, trivial@kernel.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <20141107003505.GA3491@alexpilon.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141106142402.0daada65@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141107003505.GA3491@alexpilon.ca>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-11-06 14:24:02, Steven Rostedt wrote:
-> On Thu, 6 Nov 2014 16:31:07 +0100
-> Petr Mladek <pmladek@suse.cz> wrote:
+On Thu, Nov 06, 2014 at 07:36:03PM -0500, Alex Pilon wrote:
+> Fix spelling of 'ioctl'.
 > 
->  
-> > I like the idea of having the exception only in the bitmap code and filling
-> > the whole buffer in other cases.
-> > 
-> > I am now in doubts about the overflow state. A solution would
-> > be to add an "overflow" flag to struct seq_bug. I agree that it
-> > is ugly but it looks more secure then "len = size + 1".
-> > 
-> > Well, I do not have that strong opinion about it. What do you think?
+> Signed-off-by: Alex Pilon <alp+linux@alexpilon.ca>
+> ---
+>  drivers/gpu/drm/drm_crtc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Ideally, I want struct seq_buf defined only within seq_buf.c, and all
-> users must access the buffer via function methods.
-> 
-> We would need to remove all the inline calls, which will have a small
-> affect on performance. But most seq_buf code is for output of text,
-> where this overhead would be a nit to the total cost of operations.
-> 
-> That would get rid of all users that think it's safe to access
-> s->buffer + s->len.
+> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> index e79c8d3..3d274c1 100644
+> --- a/drivers/gpu/drm/drm_crtc.c
+> +++ b/drivers/gpu/drm/drm_crtc.c
+> @@ -2943,7 +2943,7 @@ EXPORT_SYMBOL(drm_mode_legacy_fb_format);
+>   * @file_priv: drm file for the ioctl call
+>   *
+>   * Add a new FB to the specified CRTC, given a user request. This is the
+> - * original addfb ioclt which only supported RGB formats.
+> + * original addfb ioctl which only supported RGB formats.
 
-Sounds like a good plan.
-
-Best Regards,
-Petr
+I already have this one from a different person. When doing trivial
+patches please always check with linux-next whether it's still valid.
+Especially for drm where we have a few hundred patches per release.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
