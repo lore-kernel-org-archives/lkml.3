@@ -1,205 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439AbaKGJ0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:26:49 -0500
-Received: from mga03.intel.com ([134.134.136.65]:46761 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164AbaKGJ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:26:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,330,1413270000"; 
-   d="scan'208";a="633193677"
-Date: Fri, 7 Nov 2014 17:26:51 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: LKP <lkp@01.org>, Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [LKP] [dmi] PANIC: early exception 0e rip 10:ffffffff81899e6b
- error 9 cr2 ffffffffff240000
-Message-ID: <20141107092651.GE24745@yliu-dev.sh.intel.com>
-References: <20141107054741.GB30507@yliu-dev.sh.intel.com>
- <CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
- <20141107073720.GB24745@yliu-dev.sh.intel.com>
- <CAKv+Gu-rRMmcP4LF3oo5=6hf8m7fjzkzV14hfkjBPbPn34OZGA@mail.gmail.com>
- <20141107081344.GC24745@yliu-dev.sh.intel.com>
- <CAKv+Gu9u5ojSWarm2A5MeWOj1r1+W8U0d+icnx2rfAmiSaL8Ww@mail.gmail.com>
- <20141107084604.GD24745@yliu-dev.sh.intel.com>
- <CAKv+Gu_Xx9aKzNU2CfP20WR1ojwjUEvTKyD7L-S9bR_C8EOogQ@mail.gmail.com>
+	id S1751490AbaKGJ2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:28:10 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64412 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaKGJ2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:28:05 -0500
+Date: Fri, 7 Nov 2014 11:27:54 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-11-07
+Message-ID: <20141107092754.GA6995@t440s.lan>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
 Content-Disposition: inline
-In-Reply-To: <CAKv+Gu_Xx9aKzNU2CfP20WR1ojwjUEvTKyD7L-S9bR_C8EOogQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 10:03:55AM +0100, Ard Biesheuvel wrote:
-> On 7 November 2014 09:46, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > On Fri, Nov 07, 2014 at 09:23:56AM +0100, Ard Biesheuvel wrote:
-> >> On 7 November 2014 09:13, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> >> > On Fri, Nov 07, 2014 at 08:44:40AM +0100, Ard Biesheuvel wrote:
-> >> >> On 7 November 2014 08:37, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> >> >> > On Fri, Nov 07, 2014 at 08:17:36AM +0100, Ard Biesheuvel wrote:
-> >> >> >> On 7 November 2014 06:47, LKP <lkp@01.org> wrote:
-> >> >> >> > FYI, we noticed the below changes on
-> >> >> >> >
-> >> >> >> > https://git.linaro.org/people/ard.biesheuvel/linux-arm efi-for-3.19
-> >> >> >> > commit aacdce6e880894acb57d71dcb2e3fc61b4ed4e96 ("dmi: add support for SMBIOS 3.0 64-bit entry point")
-> >> >> >> >
-> >> >> >> >
-> >> >> >> > +-----------------------+------------+------------+
-> >> >> >> > |                       | 2fa165a26c | aacdce6e88 |
-> >> >> >> > +-----------------------+------------+------------+
-> >> >> >> > | boot_successes        | 20         | 10         |
-> >> >> >> > | early-boot-hang       | 1          |            |
-> >> >> >> > | boot_failures         | 0          | 5          |
-> >> >> >> > | PANIC:early_exception | 0          | 5          |
-> >> >> >> > +-----------------------+------------+------------+
-> >> >> >> >
-> >> >> >> >
-> >> >> >> > [    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000036fffffff] usable
-> >> >> >> > [    0.000000] bootconsole [earlyser0] enabled
-> >> >> >> > [    0.000000] NX (Execute Disable) protection: active
-> >> >> >> > PANIC: early exception 0e rip 10:ffffffff81899e6b error 9 cr2 ffffffffff240000
-> >> >> >> > [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc2-gc5221e6 #1
-> >> >> >> > [    0.000000]  0000000000000000 ffffffff82203d30 ffffffff819f0a6e 00000000000003f8
-> >> >> >> > [    0.000000]  ffffffffff240000 ffffffff82203e18 ffffffff823701b0 ffffffff82511401
-> >> >> >> > [    0.000000]  0000000000000000 0000000000000ba3 0000000000000000 ffffffffff240000
-> >> >> >> > [    0.000000] Call Trace:
-> >> >> >> > [    0.000000]  [<ffffffff819f0a6e>] dump_stack+0x4e/0x68
-> >> >> >> > [    0.000000]  [<ffffffff823701b0>] early_idt_handler+0x90/0xb7
-> >> >> >> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> >> >> >> > [    0.000000]  [<ffffffff81899e6b>] ? dmi_table+0x3f/0x94
-> >> >> >> > [    0.000000]  [<ffffffff81899e42>] ? dmi_table+0x16/0x94
-> >> >> >> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> >> >> >> > [    0.000000]  [<ffffffff823c80da>] ? dmi_save_one_device+0x81/0x81
-> >> >> >> > [    0.000000]  [<ffffffff823c7eff>] dmi_walk_early+0x44/0x69
-> >> >> >> > [    0.000000]  [<ffffffff823c88a2>] dmi_present+0x180/0x1ff
-> >> >> >> > [    0.000000]  [<ffffffff823c8ab3>] dmi_scan_machine+0x144/0x191
-> >> >> >> > [    0.000000]  [<ffffffff82370702>] ? loglevel+0x31/0x31
-> >> >> >> > [    0.000000]  [<ffffffff82377f52>] setup_arch+0x490/0xc73
-> >> >> >> > [    0.000000]  [<ffffffff819eef73>] ? printk+0x4d/0x4f
-> >> >> >> > [    0.000000]  [<ffffffff82370b90>] start_kernel+0x9c/0x43f
-> >> >> >> > [    0.000000]  [<ffffffff82370120>] ? early_idt_handlers+0x120/0x120
-> >> >> >> > [    0.000000]  [<ffffffff823704a2>] x86_64_start_reservations+0x2a/0x2c
-> >> >> >> > [    0.000000]  [<ffffffff823705df>] x86_64_start_kernel+0x13b/0x14a
-> >> >> >> > [    0.000000] RIP 0x4
-> >> >> >> >
-> >> >> >>
-> >> >> >> This is most puzzling. Could anyone decode the exception?
-> >> >> >> This looks like the non-EFI path through dmi_scan_machine(), which
-> >> >> >> calls dmi_present() /after/ calling dmi_smbios3_present(), which
-> >> >> >> apparently has not found the _SM3_ header tag. Or could the call stack
-> >> >> >> be inaccurate?
-> >> >> >>
-> >> >> >> Anyway, it would be good to know the exact type of the platform,
-> >> >> >
-> >> >> > It's a Nehalem-EP machine, wht 16 CPU and 12G memory.
-> >> >> >
-> >> >> >> and
-> >> >> >> perhaps we could find out if there is an inadvertent _SM3_ tag
-> >> >> >> somewhere in the 0xF0000 - 0xFFFFF range?
-> >> >> >
-> >> >> > Sorry, how?
-> >> >> >
-> >> >>
-> >> >> That's not a brand new machine, so I suppose there wouldn't be a
-> >> >> SMBIOS 3.0 header lurking in there.
-> >> >>
-> >> >> Anyway, if you are in a position to try things, could you apply this
-> >> >>
-> >> >> --- a/drivers/firmware/dmi_scan.c
-> >> >> +++ b/drivers/firmware/dmi_scan.c
-> >> >> @@ -617,7 +617,7 @@ void __init dmi_scan_machine(void)
-> >> >>                 memset(buf, 0, 16);
-> >> >>                 for (q = p; q < p + 0x10000; q += 16) {
-> >> >>                         memcpy_fromio(buf + 16, q, 16);
-> >> >> -                       if (!dmi_smbios3_present(buf) || !dmi_present(buf)) {
-> >> >> +                       if (!dmi_present(buf)) {
-> >> >>                                 dmi_available = 1;
-> >> >>                                 dmi_early_unmap(p, 0x10000);
-> >> >>                                 goto out;
-> >> >>
-> >> >> and try again?
-> >> >
-> >> > kernel boots perfectly with this patch applied.
-> >> >
-> >> >         --yliu
-> >> >
-> >>
-> >> Thank you! Very useful to know
-> >>
-> >
-> > Sigh, I made a silly error, I speicified wrong commit while testing your
-> > patch. Sorry for that.
-> >
-> > And I tested it again, with your former patch, sorry, the panic still
-> > happens.
-> >
-> >         --yliu
-> >
-> 
-> OK, no worries.
-> 
-> Could you please try the attached patch? On my ARM system, it produces
-> something like this
-> 
->  ====== Decoding _DMI_ header:
-> 5f 44 4d 49 5f 89 62 02 00 c0 8a fe 0c 00 27 cf
-> ====== Remapped SMBIOS table 0xfe8ac000 at ffffff800001e000, size 0x262, num 0xc
-> ====== Processing SMBIOS table entry at ffffff800001e000, type 0x0, length 0x18
-> ====== Processing SMBIOS table entry at ffffff800001e043, type 0x1, length 0x1b
-> ====== Processing SMBIOS table entry at ffffff800001e09d, type 0x2, length 0x11
-> ====== Processing SMBIOS table entry at ffffff800001e105, type 0x3, length 0x18
-> ====== Processing SMBIOS table entry at ffffff800001e155, type 0x4, length 0x2a
-> ====== Processing SMBIOS table entry at ffffff800001e19a, type 0x7, length 0x13
-> ====== Processing SMBIOS table entry at ffffff800001e1b5, type 0x9, length 0x11
-> ====== Processing SMBIOS table entry at ffffff800001e1cf, type 0x10, length 0x17
-> ====== Processing SMBIOS table entry at ffffff800001e1e8, type 0x11, length 0x28
-> ====== Processing SMBIOS table entry at ffffff800001e22e, type 0x13, length 0x1f
-> ====== Processing SMBIOS table entry at ffffff800001e24f, type 0x20, length 0xb
-> ====== Processing SMBIOS table entry at ffffff800001e25c, type 0x7f, length 0x4
-> SMBIOS 2.7 present.
-> DMI: ARM Arm Versatile Express/Arm Versatile Express, BIOS 16:20:46 Oct 28 2014
-> 
-> That should help us pinpoint what is going on here.
-> 
 
-Here is the output:
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[    0.000000] NX (Execute Disable) protection: active
-[    0.000000] ====== Decoding _DMI_ header:
-[    0.000000] 5f 44 4d 49 5f 48 a3 0b 00 20 60 8f 3e 00 25 00 
-[    0.000000] ====== Remapped SMBIOS table 0xffffffff8f602000 at ffffffffff240000, size 0xba3, num 0x3e
-PANIC: early exception 0e rip 10:ffffffff8167aa1a error 9 cr2 ffffffffff240001
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.18.0-rc2-00008-g4d3a0be #66
-[    0.000000]  0000000000000ba3 ffffffff81bcfd10 ffffffff818010a4 00000000000003f8
-[    0.000000]  000000000000003e ffffffff81bcfdf8 ffffffff81d801b0 617420534f49424d
-[    0.000000]  000000000000001f ffffffffff240000 0000000000000000 ffffffffff240000
-[    0.000000] Call Trace:
-[    0.000000]  [<ffffffff818010a4>] dump_stack+0x46/0x58
-[    0.000000]  [<ffffffff81d801b0>] early_idt_handler+0x90/0xb7
-[    0.000000]  [<ffffffff81dd4cfc>] ? dmi_format_ids.constprop.9+0x13c/0x13c
-[    0.000000]  [<ffffffff8167aa1a>] ? dmi_table+0x4a/0xf0
-[    0.000000]  [<ffffffff817fa71b>] ? printk+0x61/0x63
-[    0.000000]  [<ffffffff81dd4cfc>] ? dmi_format_ids.constprop.9+0x13c/0x13c
-[    0.000000]  [<ffffffff81dd4cfc>] ? dmi_format_ids.constprop.9+0x13c/0x13c
-[    0.000000]  [<ffffffff81dd49dc>] dmi_walk_early+0x6b/0x90
-[    0.000000]  [<ffffffff81dd52fc>] dmi_present+0x1b4/0x23f
-[    0.000000]  [<ffffffff81dd55ab>] dmi_scan_machine+0x1d4/0x23a
-[    0.000000]  [<ffffffff81d80120>] ? early_idt_handlers+0x120/0x120
-[    0.000000]  [<ffffffff81d883a2>] setup_arch+0x462/0xcc6
-[    0.000000]  [<ffffffff81d80120>] ? early_idt_handlers+0x120/0x120
-[    0.000000]  [<ffffffff81d80167>] ? early_idt_handler+0x47/0xb7
-[    0.000000]  [<ffffffff81d80120>] ? early_idt_handlers+0x120/0x120
-[    0.000000]  [<ffffffff81d80cf0>] start_kernel+0x97/0x456
-[    0.000000]  [<ffffffff81d80120>] ? early_idt_handlers+0x120/0x120
-[    0.000000]  [<ffffffff81d80120>] ? early_idt_handlers+0x120/0x120
-[    0.000000]  [<ffffffff81d805ee>] x86_64_start_reservations+0x2a/0x2c
-[    0.000000]  [<ffffffff81d8072e>] x86_64_start_kernel+0x13e/0x14d
-[    0.000000] RIP 0xba2
+Hi John
+
+Here's another set of patches for 3.19. Most of it is again fixes and
+cleanups to ieee802154 related code from Alexander Aring. We've also got
+better handling of hardware error events along with a proper API for HCI
+drivers to notify the HCI core of such situations. There's also a minor
+fix for mgmt events as well as a sparse warning fix. The code for
+sending HCI commands synchronously also gets a fix where we might loose
+the completion event in the case of very fast HW (particularly easily
+reproducible with an emulated HCI device).
+
+Please let me know if there are any issues pulling. Thanks.
+
+Johan
+
+---
+The following changes since commit 6bc6c49f1e2f3ab1bec05d1c08aad219ab4eb5d0:
+
+  mwifiex: add cfg80211 dump_survey handler (2014-10-31 16:07:49 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 56b2c3eea398c772dd895dc62c18cbdd1ba127b1:
+
+  6lowpan: move skb_free from error paths in decompression (2014-11-06 22:09:48 +0100)
+
+----------------------------------------------------------------
+Alexander Aring (41):
+      at86rf230: fix page parameter constraints
+      ieee802154: remove default channel settings
+      at86rf230: add default channel settings
+      cfg802154: introduce cfg802154_registered_device
+      mac802154: introduce mac802154_config_ops
+      ieee802154: add helper wpan_phy_to_rdev function
+      cfg802154: convert deprecated iface add and del
+      ieee802154: don't allow to change addr while netif_running
+      mac802154: add helper for converting dev_addr
+      mac802154: set extended address filter on ifup
+      mac802154: set short address filter on ifup
+      mac802154: set panid address filter on ifup
+      mac802154: move phy settings into netlink receive
+      ieee802154: add extended address validation helper
+      mac802154: iface: add validation for extended address
+      ieee802154: 6lowpan: remove set of mac address
+      ieee802154: add missing ULL definition
+      ieee802154: fix byteorder issues
+      mac802154: fix byteorder issues
+      ieee802154: sysfs: add missing include
+      mac802154: cfg: add missing include
+      ieee802154: remove unnecessary functions
+      netdevice: add ieee802154_ptr to net_device
+      ieee802154: rework wpan_phy index assignment
+      ieee802154: remove nl802154 unused functions
+      mac802154: move interface del handling in iface
+      mac802154: move interface add handling in iface
+      mac802154: move dev_hold out of ieee802154_if_add
+      ieee802154: rework interface registration
+      ieee802154: remove mlme get_phy callback
+      mac802154: add default interface registration
+      mac802154: add ieee802154_vif struct
+      ieee802154: add IEEE802154_EXTENDED_ADDR_LEN
+      ieee802154: add ieee802154_random_extended_addr
+      mac802154: add ieee802154_le64_to_be64
+      mac802154: cleanup ieee802154_netdev_to_extended_addr
+      mac802154: add support for perm_extended_addr
+      at86rf230: generate random perm extended address
+      at86rf230: add force slotted operation bit
+      mac802154: use IEEE802154_EXTENDED_ADDR_LEN
+      mac802154: fix typo promisuous to promiscuous
+
+Chan-yeol Park (1):
+      Bluetooth: Fix hci_sync missing wakeup interrupt
+
+Dan Carpenter (1):
+      ieee802154: || vs && in ieee802154_is_valid_extended_addr()
+
+Fengguang Wu (1):
+      at86rf230: fix simple_return.cocci warnings
+
+Johan Hedberg (1):
+      Bluetooth: Fix sparse warnings in RFCOMM
+
+Kuba Pawlak (2):
+      Bluetooth: Clear role switch pending flag
+      Bluetooth: Sort switch cases by opcode's numeric value
+
+Marcel Holtmann (11):
+      Bluetooth: Check status of command complete for HCI_Reset
+      Bluetooth: Print error message for HCI_Hardware_Error event
+      Bluetooth: Use HCI_EV_HARDWARE_ERROR define for event payload
+      Bluetooth: Introduce BT_BREDR and BT_LE config options
+      Bluetooth: Add hci_reset_dev() for driver triggerd stack reset
+      Bluetooth: Switch HCI H5 driver to use hci_reset_dev() function
+      Bluetooth: Introduce HCI_QUIRK_STRICT_DUPLICATE_FILTER
+      Bluetooth: Set HCI_QUIRK_STRICT_DUPLICATE_FILTER for Broadcom devices
+      Bluetooth: Consolidate whitelist debugfs entry into device_list
+      Bluetooth: btusb: Add internal callback for USB bulk rx data
+      Bluetooth: Add hci_conn_lookup_type() helper function
+
+Martin Townsend (1):
+      6lowpan: move skb_free from error paths in decompression
+
+Simon Vincent (1):
+      6lowpan: fix udp header compression when using raw sockets
+
+Szymon Janc (1):
+      Bluetooth: Fix invalid response for 'Start Discovery' command
+
+ MAINTAINERS                        |   1 -
+ drivers/bluetooth/btusb.c          |   7 +-
+ drivers/bluetooth/hci_h5.c         |  13 +--
+ drivers/net/ieee802154/at86rf230.c |  13 ++-
+ drivers/net/ieee802154/cc2520.c    |   1 +
+ include/linux/ieee802154.h         |  32 ++++++
+ include/linux/netdevice.h          |   3 +
+ include/net/bluetooth/hci.h        |  15 +++
+ include/net/bluetooth/hci_core.h   |  21 ++++
+ include/net/cfg802154.h            |  24 +++--
+ include/net/ieee802154_netdev.h    |  12 ---
+ include/net/mac802154.h            |  33 ++++++
+ include/net/nl802154.h             | 122 ---------------------
+ net/6lowpan/iphc.c                 |  41 +++----
+ net/bluetooth/6lowpan.c            |  15 ++-
+ net/bluetooth/Kconfig              |  20 +++-
+ net/bluetooth/bnep/Kconfig         |   2 +-
+ net/bluetooth/cmtp/Kconfig         |   2 +-
+ net/bluetooth/hci_core.c           |  72 ++++++-------
+ net/bluetooth/hci_event.c          |  61 +++++++++--
+ net/bluetooth/hidp/Kconfig         |   2 +-
+ net/bluetooth/mgmt.c               |  56 ++++++----
+ net/bluetooth/rfcomm/Kconfig       |   2 +-
+ net/bluetooth/rfcomm/core.c        |   6 +-
+ net/ieee802154/6lowpan_rtnl.c      |  38 ++-----
+ net/ieee802154/core.c              |  64 +++++------
+ net/ieee802154/core.h              |  29 +++++
+ net/ieee802154/nl-mac.c            | 203 ++++-------------------------------
+ net/ieee802154/nl-phy.c            |  23 ++--
+ net/ieee802154/rdev-ops.h          |  23 ++++
+ net/ieee802154/sysfs.c             |  16 ++-
+ net/mac802154/Makefile             |   2 +-
+ net/mac802154/cfg.c                |  47 ++++++++
+ net/mac802154/cfg.h                |   9 ++
+ net/mac802154/ieee802154_i.h       |  17 ++-
+ net/mac802154/iface.c              | 195 +++++++++++++++++++++------------
+ net/mac802154/mac_cmd.c            |  42 ++++----
+ net/mac802154/main.c               | 102 +++---------------
+ net/mac802154/mib.c                |  71 ------------
+ net/mac802154/rx.c                 |   4 +-
+ 40 files changed, 678 insertions(+), 783 deletions(-)
+ delete mode 100644 include/net/nl802154.h
+ create mode 100644 net/ieee802154/core.h
+ create mode 100644 net/ieee802154/rdev-ops.h
+ create mode 100644 net/mac802154/cfg.c
+ create mode 100644 net/mac802154/cfg.h
 
 
-	--yliu
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUXJCaAAoJECQj9vv5qNQSXyAQAJj2kpekYfoB8gB1s/5x8qTO
+6Qr832BIJZ13BOmL2jszTrAcY1Pq9LBFTiBvzshizefbA93O9o0xoT357yEFrJZG
+YC7oV6O+mrNFxFPUDbkcEtIoNxAEpWd/+pXYmJZZ9ZMfTjMcN3HGcalud+fRiFlM
+M/Av+n68wjvN7DItmWuLgWJenOqAZJ4+gEkHtYz5u6n9Uz8DAsOY5U6QSlmastw1
+ESjH6C2SwpDecBHIO+J9Zp5k2o2j3VovNanu8rtDD1X1gqbLWKR/nDvqjNDxtNeB
+YqXV23af+CDPltMeBUn1quIS+MDQGHUdQEH0jJvLsz8/STMQi10uTpxFG8Sxckuw
+bXuifdEEIN/EHpTeEEg1U4JRCnzhTbQkYFWNiIUG/4caGm2TBYdkEAgkY5zbEDtk
+TOi8zKIu1SEUz79iQ1iLb6bF+06HkXWNAN6FDW9sWeSnoFUmBS+9b4pqywH2sMdT
+yoRMAkGYDdj85meTkOrR7JbpYUqduocYAzCcW52CEzZZ3xsmcgtIme3IzU368rAX
+MsCMlAyz8exKc8iksL2L4LAPQKO7Am93oKYWUKp5uarvcspxGGiS/OGIvi5wlGU8
+aH8dRTlMY+Odq+F4pbfvo2cDF7YbYtJ84IpTvP+fyIQFAOGxuKvDuqXGCBJoBZ8z
+845T4eIWdDiuiOZKiw1F
+=DttJ
+-----END PGP SIGNATURE-----
+
+--X1bOJ3K7DJ5YkBrT--
