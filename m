@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaKGOQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:16:24 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54228 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752821AbaKGOPH (ORCPT
+	id S1752521AbaKGOUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:20:00 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:59422 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751971AbaKGOT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:15:07 -0500
-Message-ID: <545CD3CF.4070901@arm.com>
-Date: Fri, 07 Nov 2014 14:14:39 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 7 Nov 2014 09:19:58 -0500
+Date: Fri, 7 Nov 2014 15:19:54 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/11] memory: add Atmel EBI (External Bus Interface)
+ driver
+Message-ID: <20141107151954.4d70a444@bbrezillon>
+In-Reply-To: <20141107134112.GB4068@piout.net>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20141107134112.GB4068@piout.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 2/5] serial: pl011: Avoid assumptions about buffer size when
- refilling TX DMA
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 7 Nov 2014 14:41:12 +0100
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-The existing code assumed that PL011_DMA_BUFFER_SIZE == UART_XMIT_SIZE,
-which may not always be the case.  This allows for these two being
-different sizes and not copying too much data.
+> On 05/11/2014 at 17:01:16 +0100, Boris Brezillon wrote :
+> > Arnd, you've commented the first version of this driver (IIRC, you
+> > focused on the DT binding part), could you give your feedback on this
+> > version (I based the new DT binding on TI's aemif driver).
+> > 
+> 
+> Shouldn't you Cc Arnd then? ;)
 
-Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
----
- drivers/tty/serial/amba-pl011.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+I bounced the series a few minutes after realizing I had forgotten to
+add him in Cc ;-)
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index a285196..d8d067a 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -501,7 +501,11 @@ static int pl011_dma_tx_refill(struct uart_amba_port *uap)
- 		memcpy(&dmatx->buf[0], &xmit->buf[xmit->tail], count);
- 	else {
- 		size_t first = UART_XMIT_SIZE - xmit->tail;
--		size_t second = xmit->head;
-+		size_t second;
-+
-+		if (first > count)
-+			first = count;
-+		second = count - first;
- 
- 		memcpy(&dmatx->buf[0], &xmit->buf[xmit->tail], first);
- 		if (second)
+
+
 -- 
-1.7.1
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
