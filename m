@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaKGOyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:54:01 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:58237 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaKGOx5 (ORCPT
+	id S1752875AbaKGOyZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:54:25 -0500
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:59788 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170AbaKGOyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:53:57 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-90-545cdd02351a
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: peterz@infradead.org, mingo@redhat.com, riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH] sched: core: fix out of bounds read in sched_init_numa()
-Date: Fri, 07 Nov 2014 17:53:40 +0300
-Message-id: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.3
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDJMWRmVeSWpSXmKPExsVy+t/xa7pMd2NCDL5OFbHY9usRm8XlXXPY
-	LC4dWMBkcbz3AJPF3yvrWRxYPTav0PJ4v+8qm0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	PO/dylRwU71iZ88DtgbG23JdjJwcEgImEm8OvWWFsMUkLtxbz9bFyMUhJLCUUeLEi0XsEE4f
-	k8S8Vx1gVWwCehL/Zm1nA7FFBKwlTr9+DhZnFvCS2Hh1KVMXIweHsICnxNomV5Awi4CqxOeD
-	C1hAbF4BV4kTE3sZQUokBOQktq7znsDIvYCRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZG
-	SAh82cG4+JjVIUYBDkYlHt5OoZgQIdbEsuLK3EOMEhzMSiK8N44DhXhTEiurUovy44tKc1KL
-	DzEycXBKNTDOnjG1MlQwQXyaTJi2Bp/hlBcHe4I9ulLtKja/XBhod46bS/XOC0Xbxxl3LY49
-	Ut8jNG3qW5fu6bwXk25xHjvoXPxE8civ6mj3yFf9bEcits17s2fLbUOZRbkfNz7UK1PInfy+
-	9qRW6BlZ7dU3mOel61RFTZ3EfIDPI6mg6jfTRJbvneybVIqUWIozEg21mIuKEwGauzUI3wEA	AA==
+	Fri, 7 Nov 2014 09:54:23 -0500
+X-ASG-Debug-ID: 1415372061-0759e711ce2936c0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Jiri Kosina <trivial@kernel.org>
+CC: Frans Klaver <frans.klaver@xsens.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH trivial] kernel: trace: fix typo
+Date: Fri, 7 Nov 2014 15:53:44 +0100
+X-ASG-Orig-Subj: [PATCH trivial] kernel: trace: fix typo
+Message-ID: <1415372024-16708-1-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1415372061
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.11334
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On latest mm + KASan patchset I've got this:
+s,produciton,production
 
-    ==================================================================
-    BUG: AddressSanitizer: out of bounds access in sched_init_smp+0x3ba/0x62c at addr ffff88006d4bee6c
-    =============================================================================
-    BUG kmalloc-8 (Not tainted): kasan error
-    -----------------------------------------------------------------------------
-
-    Disabling lock debugging due to kernel taint
-    INFO: Allocated in alloc_vfsmnt+0xb0/0x2c0 age=75 cpu=0 pid=0
-     __slab_alloc+0x4b4/0x4f0
-     __kmalloc_track_caller+0x15f/0x1e0
-     kstrdup+0x44/0x90
-     alloc_vfsmnt+0xb0/0x2c0
-     vfs_kern_mount+0x35/0x190
-     kern_mount_data+0x25/0x50
-     pid_ns_prepare_proc+0x19/0x50
-     alloc_pid+0x5e2/0x630
-     copy_process.part.41+0xdf5/0x2aa0
-     do_fork+0xf5/0x460
-     kernel_thread+0x21/0x30
-     rest_init+0x1e/0x90
-     start_kernel+0x522/0x531
-     x86_64_start_reservations+0x2a/0x2c
-     x86_64_start_kernel+0x15b/0x16a
-    INFO: Slab 0xffffea0001b52f80 objects=24 used=22 fp=0xffff88006d4befc0 flags=0x100000000004080
-    INFO: Object 0xffff88006d4bed20 @offset=3360 fp=0xffff88006d4bee70
-
-    Bytes b4 ffff88006d4bed10: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
-    Object ffff88006d4bed20: 70 72 6f 63 00 6b 6b a5                          proc.kk.
-    Redzone ffff88006d4bed28: cc cc cc cc cc cc cc cc                          ........
-    Padding ffff88006d4bee68: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-    CPU: 0 PID: 1 Comm: swapper/0 Tainted: G    B          3.18.0-rc3-mm1+ #108
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-     ffff88006d4be000 0000000000000000 ffff88006d4bed20 ffff88006c86fd18
-     ffffffff81cd0a59 0000000000000058 ffff88006d404240 ffff88006c86fd48
-     ffffffff811fa3a8 ffff88006d404240 ffffea0001b52f80 ffff88006d4bed20
-    Call Trace:
-    dump_stack (lib/dump_stack.c:52)
-    print_trailer (mm/slub.c:645)
-    object_err (mm/slub.c:652)
-    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
-    kasan_report_error (mm/kasan/report.c:102 mm/kasan/report.c:178)
-    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
-    ? kasan_unpoison_shadow (mm/kasan/kasan.c:54)
-    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
-    ? kasan_kmalloc (mm/kasan/kasan.c:311)
-    __asan_load4 (mm/kasan/kasan.c:371)
-    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
-    sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
-    kernel_init_freeable (init/main.c:869 init/main.c:997)
-    ? finish_task_switch (kernel/sched/sched.h:1036 kernel/sched/core.c:2248)
-    ? rest_init (init/main.c:924)
-    kernel_init (init/main.c:929)
-    ? rest_init (init/main.c:924)
-    ret_from_fork (arch/x86/kernel/entry_64.S:348)
-    ? rest_init (init/main.c:924)
-    Read of size 4 by task swapper/0:
-    Memory state around the buggy address:
-     ffff88006d4beb80: fc fc fc fc fc fc fc fc fc fc 00 fc fc fc fc fc
-     ffff88006d4bec00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bec80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bed00: fc fc fc fc 00 fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bed80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-    >ffff88006d4bee00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc 04 fc
-                                                              ^
-     ffff88006d4bee80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bef00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bef80: fc fc fc fc fc fc fc fc fb fb fb fb fb fb fb fb
-     ffff88006d4bf000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-     ffff88006d4bf080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-    ==================================================================
-
-Zero 'level' (e.g. on non-NUMA system) causing out of bounds access
-in this line:
-
-     sched_max_numa_distance = sched_domains_numa_distance[level - 1];
-
-Fix this by exiting from sched_init_numa() earlier.
-
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Fixes: 9942f79ba ("sched/numa: Export info needed for NUMA balancing on complex topologies")
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 ---
-   Another option would be to not call sched_init_numa() if nr_node_ids == 1,
-   but I'm not sure that there is no such configuration where nr_node_ids > 1
-   and node_distance(i, j) = node_distance(0, 0) for any i and j.
+ kernel/trace/trace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- kernel/sched/core.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 72d9d92..932c7a9 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6470,6 +6470,10 @@ static void sched_init_numa(void)
- 		if (!sched_debug())
- 			break;
- 	}
-+
-+	if (!level)
-+		return;
-+
- 	/*
- 	 * 'level' contains the number of unique distances, excluding the
- 	 * identity distance node_distance(i,i).
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 8a52839..f3ef80c 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2028,7 +2028,7 @@ void trace_printk_init_buffers(void)
+ 	pr_warning("** trace_printk() being used. Allocating extra memory.  **\n");
+ 	pr_warning("**                                                      **\n");
+ 	pr_warning("** This means that this is a DEBUG kernel and it is     **\n");
+-	pr_warning("** unsafe for produciton use.                           **\n");
++	pr_warning("** unsafe for production use.                           **\n");
+ 	pr_warning("**                                                      **\n");
+ 	pr_warning("** If you see this message and you are not debugging    **\n");
+ 	pr_warning("** the kernel, report this immediately to your vendor!  **\n");
 -- 
-2.1.3
+2.1.0
 
