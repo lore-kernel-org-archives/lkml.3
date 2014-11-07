@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaKGNA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:00:27 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44206 "EHLO
+	id S1752372AbaKGNAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:00:31 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:44222 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaKGNAY (ORCPT
+	with ESMTP id S1752244AbaKGNA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:00:24 -0500
+	Fri, 7 Nov 2014 08:00:28 -0500
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
@@ -16,93 +16,67 @@ Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v5 0/5] regulator: of: Add initial and suspend modes support
-Date: Fri,  7 Nov 2014 14:00:00 +0100
-Message-Id: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v5 2/5] regulator: Add function to map modes to struct regulator_desc
+Date: Fri,  7 Nov 2014 14:00:02 +0100
+Message-Id: <1415365205-27630-3-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+The "regulator-initial-mode" and "regulator-mode" DT properties allows
+to configure the regulator operating modes at startup or when a system
+enters into a susend state.
 
-This is the fifth version of the series that adds regulator initial
-and suspend operating modes support. It relies on the existing work
-that added suspend states bindings. The opmodes are parsed by the
-regulator core and drivers should only define a translation function
-to map between hardware specific to standard modes.
+But these properties use as valid values the operating modes supported
+by each device while the core deals with the standard operating modes.
+So a mapping function is needed to translate from the hardware specific
+modes to the standard ones.
 
-The series adds a "regulator-initial-mode" property to configure at
-startup, the operating mode for the regulators that support changing
-its mode during normal operation and a "regulator-mode" property for
-the regulators that supports changing its operating mode when the
-system enters in a suspend state. These properties were originally
-part of Chanwoo Choi's regulator suspend state series [0] but were
-removed since there wasn't a way to define the operating modes in a
-generic way.
+This mapping is a non-varying configuration for each regulator, so add
+a function pointer to struct regulator_desc that will allow drivers to
+define their callback to do the modes translation.
 
-The generic regulator DT binding doc explains that each device has
-to document what their valid operating modes are and drivers must
-add a translation function so the core knows how to map the opmodes.
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-Older versions of this series were meant to add initial and suspend
-modes for the max77802 regulator driver but the feedback was that
-this should had been done in a generic way. The latest version was
-"[PATCH v4 00/14] Add Maxim 77802 PMIC support" [1] but that series
-mixed core changes, bugfixes and new driver features.
+Changes in v5:
+ - Add a better explanation of what mode is passed as an argument and what
+   mode is returned. Suggested by Krzysztof Kozlowski.
+ - Explain that this callback is needed to be able to parse the regulator
+   initial and suspend state modes. Suggested by Krzysztof Kozlowski.
 
-This series instead contains only the patches that add the support
-to the regulator core and drivers are only modified when a function
-signature is changed to maintain git bisect-ability.
+ include/linux/regulator/driver.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-If the patches are merged, following series will change the drivers
-using of_regulator_match() to pass the regulator description in the
-match table and another series will add the new opmode feature in
-the max77802 regulator driver.
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 28da08e..7966650 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -243,6 +243,12 @@ enum regulator_type {
+  *
+  * @enable_time: Time taken for initial enable of regulator (in uS).
+  * @off_on_delay: guard time (in uS), before re-enabling a regulator
++ *
++ * @map_modes: Callback invoked to translate from hardware to standard modes.
++ *             The function returns the standard REGULATOR_MODE that maps to
++ *             the hardware specific mode passed as an argument.
++ *             If the callback is not defined, the "regulator-initial-mode"
++ *             and suspend states "regulator-mode" properties won't be parsed.
+  */
+ struct regulator_desc {
+ 	const char *name;
+@@ -285,6 +291,8 @@ struct regulator_desc {
+ 	unsigned int enable_time;
+ 
+ 	unsigned int off_on_delay;
++
++	unsigned int (*map_modes)(unsigned int mode);
+ };
+ 
+ /**
+-- 
+2.1.0
 
-The series is composed of the following patches:
-
-Javier Martinez Canillas (5):
-  regulator: Document binding for initial and suspend modes
-  regulator: Add function to map modes to struct regulator_desc
-  regulator: of: Add regulator desc param to
-    of_get_regulator_init_data()
-  regulator: of: Pass the regulator description in the match table
-  regulator: of: Add support for parsing initial and suspend modes
-
- .../devicetree/bindings/regulator/regulator.txt    | 14 ++++++++++
- drivers/regulator/88pm8607.c                       |  3 +-
- drivers/regulator/anatop-regulator.c               |  4 +--
- drivers/regulator/arizona-ldo1.c                   |  8 ++++--
- drivers/regulator/arizona-micsupp.c                |  8 ++++--
- drivers/regulator/da9052-regulator.c               |  3 +-
- drivers/regulator/da9210-regulator.c               |  2 +-
- drivers/regulator/fan53555.c                       | 17 ++++++------
- drivers/regulator/fixed.c                          | 18 ++++++------
- drivers/regulator/gpio-regulator.c                 | 18 ++++++------
- drivers/regulator/max8952.c                        |  2 +-
- drivers/regulator/max8973-regulator.c              |  3 +-
- drivers/regulator/max8997.c                        |  3 +-
- drivers/regulator/max8998.c                        |  5 ++--
- drivers/regulator/mc13xxx-regulator-core.c         |  3 +-
- drivers/regulator/of_regulator.c                   | 32 ++++++++++++++++++----
- drivers/regulator/pwm-regulator.c                  |  3 +-
- drivers/regulator/qcom_rpm-regulator.c             |  9 +++---
- drivers/regulator/s5m8767.c                        |  3 +-
- drivers/regulator/sky81452-regulator.c             |  2 +-
- drivers/regulator/stw481x-vmmc.c                   |  3 +-
- drivers/regulator/ti-abb-regulator.c               |  3 +-
- drivers/regulator/tps51632-regulator.c             | 16 ++++++-----
- drivers/regulator/tps62360-regulator.c             | 17 +++++++-----
- drivers/regulator/tps65218-regulator.c             |  3 +-
- drivers/regulator/twl-regulator.c                  |  3 +-
- drivers/regulator/vexpress.c                       |  3 +-
- include/linux/regulator/driver.h                   |  8 ++++++
- include/linux/regulator/of_regulator.h             |  9 ++++--
- 29 files changed, 151 insertions(+), 74 deletions(-)
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/10/10/161
-[1]: https://lkml.org/lkml/2014/6/25/668
