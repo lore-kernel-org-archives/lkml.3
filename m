@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaKGMQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:16:01 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:39898 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaKGMQA (ORCPT
+	id S1752290AbaKGMQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:16:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34160 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaKGMQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:16:00 -0500
+	Fri, 7 Nov 2014 07:16:04 -0500
+Message-ID: <545CB7FF.8080003@canonical.com>
+Date: Fri, 07 Nov 2014 13:15:59 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1415279067-653-1-git-send-email-sudipm.mukherjee@gmail.com>
-References: <1415279067-653-1-git-send-email-sudipm.mukherjee@gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 7 Nov 2014 12:08:59 +0000
-Message-ID: <CA+V-a8vk3Ct8wGCsqzr4Bj9ACw__E0wB1-HuYNfohV847d7ycA@mail.gmail.com>
-Subject: Re: [PATCH] media: davinci: vpbe: missing clk_put
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Zoltan Kiss <zoltan.kiss@linaro.org>
+CC: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] BUG in xennet_make_frags with paged skb data
+References: <20141106214940.GD44162@ubuntu-hedt>	 <545C9013.1090406@linaro.org> <1415359320.13896.105.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1415359320.13896.105.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="opLDNHQ8k3gaC4DnE7Cxm0op4Sxl5uidl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--opLDNHQ8k3gaC4DnE7Cxm0op4Sxl5uidl
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the patch!
+On 07.11.2014 12:22, Eric Dumazet wrote:
+> On Fri, 2014-11-07 at 09:25 +0000, Zoltan Kiss wrote:
+>=20
+> Please do not top post.
+>=20
+>> Hi,
+>>
+>> AFAIK in this scenario your skb frag is wrong. The page pointer should=
+=20
+>> point to the original compound page (not a member of it), and offset=20
+>> should be set accordingly.
+>> For example, if your compound page is 16K (4 page), then the page=20
+>> pointer should point to the first page, and if the data starts at the =
 
-On Thu, Nov 6, 2014 at 1:04 PM, Sudip Mukherjee
-<sudipm.mukherjee@gmail.com> wrote:
-> we are getting struct clk using clk_get before calling
-> clk_prepare_enable. but if clk_prepare_enable fails, then we are
-> jumping to fail_mutex_unlock where we are just unlocking the mutex,
-> but we are not freeing the clock source.
-> this patch just adds a call to clk_put before jumping to
-> fail_mutex_unlock.
->
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+>> 3rd page, then offset should be >8K
+>=20
+> This is not accurate.
+>=20
+> This BUG_ON() is wrong.
+>=20
+> It should instead be :
+>=20
+> BUG_ON(len + offset > PAGE_SIZE<<compound_order(compound_head(page)));
 
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+would that not have to be
 
-Thanks,
---Prabhakar
+BUG_ON((page-compound_head(page)*PAGE_SIZE)+offset+len >
+PAGE_SIZE<<compound_order(compound_head(page)));
 
-> ---
->  drivers/media/platform/davinci/vpbe.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
-> index 49d2de0..e5df991 100644
-> --- a/drivers/media/platform/davinci/vpbe.c
-> +++ b/drivers/media/platform/davinci/vpbe.c
-> @@ -625,6 +625,7 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
->                 }
->                 if (clk_prepare_enable(vpbe_dev->dac_clk)) {
->                         ret =  -ENODEV;
-> +                       clk_put(vpbe_dev->dac_clk);
->                         goto fail_mutex_unlock;
->                 }
->         }
-> --
-> 1.8.1.2
->
+since offset is adjusted to start from the tail page in that case.
+>=20
+> splice() code can generate such cases.
+>=20
+>=20
+
+
+
+--opLDNHQ8k3gaC4DnE7Cxm0op4Sxl5uidl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUXLf/AAoJEOhnXe7L7s6jwO4QANXShxZX4Btb/XdJqqqOkOyZ
+5yU4K4RucnZCx3x6XZp2QCRtNLThkUeIjQJg5n8SbGrAUYIPceuECAN4HeMIPKDC
+GcV/g/o4fy/rklSNaHx+ovZo4fr6vvK6ddN8kdh9S2wydD3z6oLpBIvpFAG5zj2a
+YfLa/VZJl/YBGcl/NgW02z+XsNyAn0chwVVk5sQiHY/+dQpbSW9t2sF9fKmevAlN
+mmY2K+nTFSE5+urKuNZWBkbBdz+hJayyociJlD6E3OWWa6211LV+ZtUhdzJAX+6C
+Galm0Tx18tSg3+RDIZkodUgup6D4rpCxR385CmXSllFT3ZO+ZY2qa6bQD0qGPBR+
+KFQ3W4N66auQ/onV0RwxCMCC6oj0yIldCYjq+gQPPeJG2VPiSLAyw8vdr5tQalzD
+auqXimkvj/9CsRyihQLbkq7qrhv5zeqb7THLxJQlG2SkKuwwZMGTkV5P9F4rYPxO
+1ZKGoXe+5lPJgO18haH2fKNztD/dsR4OkTk6QHausxzRmKIe8d2AIuwJsAwG4X+V
+mts94bySYCUY9lJUd6sh8qVtTRShg3QV2GtzTyZ0sU0srSaZEJkpWjHRJ4vqKexF
+ovRi8EU5Mt4svRVi3nasM3knvG8ZWsdsxQ57HHIR6fQiPiDuke+9VfCZYl4WePNF
+rWCPML3R458kxlDrhr0A
+=Jb9a
+-----END PGP SIGNATURE-----
+
+--opLDNHQ8k3gaC4DnE7Cxm0op4Sxl5uidl--
