@@ -1,77 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaKGSkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:40:36 -0500
-Received: from queue01c.mail.zen.net.uk ([212.23.3.237]:36324 "EHLO
-	queue01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaKGSkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:40:15 -0500
-From: Jon Medhurst <tixy@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/2] dma: pl330: Align DMA memcpy operations to MFIFO width
-Date: Fri,  7 Nov 2014 18:05:17 +0000
-Message-Id: <1415383518-29327-2-git-send-email-tixy@linaro.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1415383518-29327-1-git-send-email-tixy@linaro.org>
-References: <1415383518-29327-1-git-send-email-tixy@linaro.org>
-X-Originating-smarthost01a-IP: [82.69.122.217]
+	id S1753220AbaKGSke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:40:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55054 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753183AbaKGSkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:40:16 -0500
+Date: Fri, 7 Nov 2014 19:40:11 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: module notifier: was Re: [PATCH 2/2] kernel: add support for
+ live patching
+Message-ID: <20141107184011.GF1136@dhcp128.suse.cz>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <20141107171307.GC1136@dhcp128.suse.cz>
+ <20141107180711.GC2057@cerebellum.variantweb.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107180711.GC2057@cerebellum.variantweb.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The algorithm used for programming the DMA Controller doesn't take into
-consideration the requirements of transfers that are not aligned to the
-bus width. This failure may result in DMA transferring one too few MFIFO
-entries (so too few bytes are copied) or the DMA trying to write one too
-many MFIFO entries and hanging because this is never provided.
+On Fri 2014-11-07 12:07:11, Seth Jennings wrote:
+> On Fri, Nov 07, 2014 at 06:13:07PM +0100, Petr Mladek wrote:
+> > On Thu 2014-11-06 08:39:08, Seth Jennings wrote:
+> > > This commit introduces code for the live patching core.  It implements
+> > > an ftrace-based mechanism and kernel interface for doing live patching
+> > > of kernel and kernel module functions.
+> > > 
+> > > It represents the greatest common functionality set between kpatch and
+> > > kgraft and can accept patches built using either method.
+> > > 
+> > > This first version does not implement any consistency mechanism that
+> > > ensures that old and new code do not run together.  In practice, ~90% of
+> > > CVEs are safe to apply in this way, since they simply add a conditional
+> > > check.  However, any function change that can not execute safely with
+> > > the old version of the function can _not_ be safely applied in this
+> > > version.
+> > 
+> > [...]
+> >  
+> > > +/******************************
+> > > + * module notifier
+> > > + *****************************/
+> > > +
+> > > +static int lp_module_notify(struct notifier_block *nb, unsigned long action,
+> > > +			    void *data)
+> > > +{
+> > > +	struct module *mod = data;
+> > > +	struct lpc_patch *patch;
+> > > +	struct lpc_object *obj;
+> > > +	int ret = 0;
+> > > +
+> > > +	if (action != MODULE_STATE_COMING)
+> > > +		return 0;
+> > 
+> > IMHO, we should handle also MODULE_STATE_GOING. We should unregister
+> > the ftrace handlers and update the state of the affected objects
+> > (ENABLED -> DISABLED)
+> 
+> The mechanism we use to avoid this right now is taking a reference on
+> patched module.  We only release that reference after the patch is
+> disabled, which unregisters all the patched functions from ftrace.
 
-See "MFIFO Usage Overview" chapter in the the TRM for "CoreLink DMA
-Controller DMA-330", Revision r1p1.
+I see. This was actually another thing that I noticed and wanted to
+investigate :-) I think that we should not force users to disable
+the entire patch if they want to remove some module.
 
-We work around these shortcomings by making sure we pick a burst size
-and length which ensures no bursts straddle an MFIFO entry.
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
----
- drivers/dma/pl330.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+> However, your comment reminded me of an idea I had to use
+> MODULE_STATE_GOING and let the lpc_mutex protect against races.  I think
+> it could be cleaner, but I haven't fleshed the idea out fully.
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 4839bfa..8f869ec 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2459,8 +2459,13 @@ pl330_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dst,
- 	/* Select max possible burst size */
- 	burst = pl330->pcfg.data_bus_width / 8;
+AFAIK, the going module is not longer used when the notifier is
+called. Therefore we could remove the patch fast way even when
+patching would require the slow path otherwise.
+
+
+> > 
+> > > +	down(&lpc_mutex);
+> > > +
+> > > +	list_for_each_entry(patch, &lpc_patches, list) {
+> > > +		if (patch->state == DISABLED)
+> > > +			continue;
+> > > +		list_for_each_entry(obj, &patch->objs, list) {
+> > > +			if (strcmp(obj->name, mod->name))
+> > > +				continue;
+> > > +			pr_notice("load of module '%s' detected, applying patch '%s'\n",
+> > > +				  mod->name, patch->mod->name);
+> > > +			obj->mod = mod;
+> > > +			ret = lpc_enable_object(patch->mod, obj);
+> > > +			if (ret)
+> > > +				goto out;
+> > > +			break;
+> > > +		}
+> > > +	}
+> > > +
+> > > +	up(&lpc_mutex);
+> > > +	return 0;
+> > > +out:
+> > 
+> > I would name this err_our or so to make it clear that it is used when
+> > something fails.
+> 
+> Just "err" good?
+
+Fine with me.
  
-+	/*
-+	 * Make sure we use a burst size that aligns with all the memcpy
-+	 * parameters because our DMA programming algorithm doesn't cope with
-+	 * transfers which straddle an entry in the DMA device's MFIFO.
-+	 */
- 	while (burst > 1) {
--		if (!(len % burst))
-+		if (!((src | dst | len) % burst))
- 			break;
- 		burst /= 2;
- 	}
-@@ -2469,6 +2474,13 @@ pl330_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dst,
- 	while (burst != (1 << desc->rqcfg.brst_size))
- 		desc->rqcfg.brst_size++;
- 
-+	/*
-+	 * If burst size is smaller than bus width then make sure we only
-+	 * transfer one at a time to avoid a burst stradling an MFIFO entry.
-+	 */
-+	if (desc->rqcfg.brst_size * 8 < pl330->pcfg.data_bus_width)
-+		desc->rqcfg.brst_len = 1;
-+
- 	desc->rqcfg.brst_len = get_burst_len(desc, len);
- 
- 	desc->txd.flags = flags;
--- 
-2.1.1
+> > > +	up(&lpc_mutex);
+> > > +	WARN("failed to apply patch '%s' to module '%s'\n",
+> > > +		patch->mod->name, mod->name);
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static struct notifier_block lp_module_nb = {
+> > > +	.notifier_call = lp_module_notify,
+> > > +	.priority = INT_MIN, /* called last */
+> > 
+> > The handler for MODULE_STATE_COMMING would need have higger priority,
+> > if we want to cleanly unregister the ftrace handlers.
+> 
+> Yes, we might need two handlers at different priorities if we decide to
+> go that direction: one for MODULE_STATE_GOING at high/max and one for
+> MODULE_STATE_COMING at low/min.
 
+kGraft has notifier only for the going state. The initialization is
+called directly from load_module() after ftrace_module_init()
+and complete_formation() before it is executed by parse_args().
+
+I need to investigate if the notifier is more elegant and safe or not.
+
+Best Regards,
+Petr
