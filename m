@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaKGJpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:45:41 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:15558 "EHLO
+	id S1751607AbaKGJpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:45:47 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:64825 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751229AbaKGJpi (ORCPT
+	with ESMTP id S1751523AbaKGJpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:45:38 -0500
+	Fri, 7 Nov 2014 04:45:44 -0500
 X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="43017511"
+   d="scan'208";a="43017524"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
         <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
@@ -21,10 +21,12 @@ To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
         <hannes@cmpxchg.org>
 CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
         <tangchen@cn.fujitsu.com>, <miaox@cn.fujitsu.com>
-Subject: [PATCH v2 0/2] Fix node meminfo and zoneinfo corruption.
-Date: Fri, 7 Nov 2014 17:44:39 +0800
-Message-ID: <1415353481-3140-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 2/2] mem-hotplug: Reset node present pages when hot-adding a new pgdat.
+Date: Fri, 7 Nov 2014 17:44:41 +0800
+Message-ID: <1415353481-3140-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415353481-3140-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1415353481-3140-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.167.226.71]
@@ -32,20 +34,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two problems in memory hot-add progress:
-
-1. When hot-adding a node without onlining any page, node meminfo corrupted:
-
-# hot-add node2 (memory not onlined)
-# cat /sys/device/system/node/node2/meminfo
-Node 2 MemTotal:       33554432 kB			/* corrupted */
-Node 2 MemFree:               0 kB
-Node 2 MemUsed:        33554432 kB
-Node 2 Active:                0 kB
-......
-
-
-2. When onlining memory on node2, node2 zoneinfo and node3 meminfo corrupted:
+When onlining memory on node2, node2 zoneinfo and node3 meminfo corrupted:
 
 # for ((i = 2048; i < 2064; i++)); do echo online_movable > /sys/devices/system/node/node2/memory$i/state; done
 # cat /sys/devices/system/node/node2/meminfo
@@ -64,25 +53,52 @@ Node 3 MemUsed:               0 kB
 Node 2, zone   Movable
 ......
         spanned  8388608
-        present  16777216		/* corrupted, should be 8388608 */
+        present  16777216               /* corrupted, should be 8388608 */
         managed  8388608
 
 
+When memory is hot-added, all the memory is in offline state. So
+clear all zone->present_pages because they will be updated in 
+online_pages() and offline_pages().
 
-Change log v1 -> v2:
-1. Replace patch 2/2 with a new one. It provides the simplest way to
-   fix problem 2. 
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ mm/memory_hotplug.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Tang Chen (2):
-  mem-hotplug: Reset node managed pages when hot-adding a new pgdat.
-  mem-hotplug: Reset node present pages when hot-adding a new pgdat.
-
- include/linux/bootmem.h |  1 +
- mm/bootmem.c            |  9 +++++----
- mm/memory_hotplug.c     | 24 ++++++++++++++++++++++++
- mm/nobootmem.c          |  8 +++++---
- 4 files changed, 35 insertions(+), 7 deletions(-)
-
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 8aba12b..26eac61 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1067,6 +1067,14 @@ out:
+ }
+ #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+ 
++static void reset_node_present_pages(pg_data_t *pgdat)
++{
++        struct zone *z;
++
++        for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
++                z->present_pages = 0;
++}
++
+ /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+ {
+@@ -1105,6 +1113,13 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+ 	 */
+ 	reset_node_managed_pages(pgdat);
+ 
++	/*
++	 * When memory is hot-added, all the memory is in offline state. So
++	 * clear all zones' present_pages because they will be updated in
++	 * online_pages() and offline_pages().
++	 */
++	reset_node_present_pages(pgdat);
++
+ 	return pgdat;
+ }
+ 
 -- 
 1.8.3.1
 
