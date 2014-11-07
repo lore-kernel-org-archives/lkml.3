@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaKGSDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:03:53 -0500
-Received: from sauhun.de ([89.238.76.85]:55883 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718AbaKGSDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:03:52 -0500
-Date: Fri, 7 Nov 2014 19:05:03 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH 1/3] of/irq: Export of_irq_get()
-Message-ID: <20141107180502.GH3656@katana>
-References: <1414677578-27412-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <1414677578-27412-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	id S1752995AbaKGSD7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:03:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25016 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953AbaKGSD5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:03:57 -0500
+To: Chris Friesen <chris.friesen@windriver.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
+	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>
+	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>
+	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com>
+	<yq1bnoj9dvu.fsf@sermon.lab.mkp.net>
+	<yq1ioiq9abc.fsf@sermon.lab.mkp.net> <545D06AC.7000606@windriver.com>
+Date: Fri, 07 Nov 2014 13:03:47 -0500
+In-Reply-To: <545D06AC.7000606@windriver.com> (Chris Friesen's message of
+	"Fri, 7 Nov 2014 11:51:40 -0600")
+Message-ID: <yq1egte99bw.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J/zg8ciPNcraoWb6"
-Content-Disposition: inline
-In-Reply-To: <1414677578-27412-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
 
---J/zg8ciPNcraoWb6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Chris> Apparently there's a new firmware available, dated Oct 13 but
+Chris> with no release notes.  We just tried updating the firmware on
+Chris> one of the drives in question and it failed from two different
+Chris> versions of linux,
 
-On Thu, Oct 30, 2014 at 03:59:36PM +0200, Laurent Pinchart wrote:
-> The function will be used by the I2C core which can be compiled as a
-> module.
->=20
-> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.co=
-m>
+Did you use sg_write_buffer or some special firmware update tool?
 
-Applied to for-next, thanks!
-
-
---J/zg8ciPNcraoWb6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUXQnOAAoJEBQN5MwUoCm23Y0P/RzqzJmoK3btoWBHH4CO8sY3
-DOiBU2hhNWg1Y2HG8Tq96ECDAC95rgjhvermcAPXXk3UnSDTswrFsbPedrYb5aOE
-pcogELBhTChZOypcIFLHRAk4mbJP5JkH/uUdvNZBuwcMP+sigKIzoxvbFVlWUsMJ
-rzIcxaYhLXxo1WOGXTVANjnf46ndQuCzIsNhrBytGXDFaSkziGtUtkIy273MbZmq
-7z1or5LpqyKzqlh3GSHjOPihdrxMsklX7KCKXuAq8u28AvpcH2UJ/DuKbfhoW+u7
-kdaiXlVZ1yLVNyVg7nDur4QcSd25ZliWtQGj1VHAW0WOODA+7Wmx6xNrV3v86qf2
-Fz5kmR9YUPUm4r37HFIy/s4CMWlYF9oj/fOgmE//7VjYfyQuGeiKEhjahDmkiYyq
-8U2+3CbeSMVxUJW+nM1dWqWjWWFMFbg/2H1TcCb3ktDQix4tCZvaEVDD9XljPZvb
-YJnI6DaX0gm/GbP4WinCMnQa5n4y23+3uTY81rSkAr+ane0jEnOh0Tmk3fZkZwEu
-HXCNYGLHYrhIsRcWEWYIlckT/H5oiYNm9jYKUtwqEZrG+WBegLtEINsIf1eulh1C
-pgo9+aze3rbEf8EfWR+ZuzXs4bqW5xVdWn56KgSG7ZNTwIBoVYP1UHWVP+LxbNq5
-vwu/jd9eHsFHT2XgXDzx
-=1UQc
------END PGP SIGNATURE-----
-
---J/zg8ciPNcraoWb6--
+-- 
+Martin K. Petersen	Oracle Linux Engineering
