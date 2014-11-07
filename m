@@ -1,115 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaKGWHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 17:07:44 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52185 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752886AbaKGWHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 17:07:42 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aho5ABxCXVR5LbBUPGdsb2JhbABbgw5UWYc9sEwBAQEBAQEGk0GBZYVsBAKBHBcBAQEBAQYBAQEBODuEQxwjGCQ0BSUDBy2IQM9xGIYgilmEUgWGN5BEhEqCVIEzEoM8iiqLPykvgksBAQE
-Date: Sat, 8 Nov 2014 09:07:31 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [GIT PULL] xfs: fixes for 3.18-rc3
-Message-ID: <20141107220731.GK23575@dastard>
+	id S1753051AbaKGWIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 17:08:45 -0500
+Received: from mail-bn1bon0056.outbound.protection.outlook.com ([157.56.111.56]:14592
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752470AbaKGWIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 17:08:43 -0500
+Message-ID: <545D430A.100@opensource.altera.com>
+Date: Fri, 7 Nov 2014 16:09:14 -0600
+From: Thor Thayer <tthayer@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dinh Nguyen <dinguyen@opensource.altera.com>, <bp@alien8.de>,
+        <dougthompson@xmission.com>, <m.chehab@samsung.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
+Subject: Re: [PATCHv4 1/5] arm: socfpga: Enable L2 Cache ECC on startup.
+References: <1415379263-12391-1-git-send-email-tthayer@opensource.altera.com> <1415379263-12391-2-git-send-email-tthayer@opensource.altera.com> <545D27D2.1080305@opensource.altera.com>
+In-Reply-To: <545D27D2.1080305@opensource.altera.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR12CA0038.namprd12.prod.outlook.com (25.160.77.48) To
+ BL2PR03MB116.namprd03.prod.outlook.com (10.255.230.28)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB116;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03883BD916
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(41574002)(189002)(22564002)(479174003)(377454003)(24454002)(51704005)(199003)(77096003)(92726001)(66066001)(4396001)(106356001)(65956001)(65806001)(15202345003)(83506001)(107046002)(64706001)(47776003)(105586002)(64126003)(50466002)(102836001)(575784001)(97736003)(62966003)(92566001)(2201001)(20776003)(86362001)(46102003)(87976001)(33656002)(76176999)(65816999)(42186005)(21056001)(54356999)(50986999)(95666004)(40100003)(31966008)(99396003)(23746002)(15975445006)(101416001)(122386002)(77156002)(120916001)(19580395003)(19580405001)(2004002)(921003)(1121002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB116;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Dinh,
 
-Can you please pull from the tag listed below? This update fixes
-a warning in the new pagecache_isize_extended() and updates some
-related comments, another fix for zero-range misbehaviour, and an
-unforntuately large set of fixes for regressions in the bulkstat
-code.
-
-The bulkstat fixes are large but necessary.  I wouldn't normally
-push such a rework for a -rcX update, but right now xfsdump can
-silently create incomplete dumps on 3.17 and it's possible that
-even xfsrestore won't notice that the dumps were incomplete. Hence
-we need to get this update into 3.17-stable kernels ASAP.
-
-In more detail, the refactoring work I committed in 3.17 has exposed
-a major hole in our QA coverage. With both xfsdump (the major user
-of bulkstat) and xfsrestore silently ignoring missing files in the
-dump/restore process, incomplete dumps were going unnoticed if they
-were being triggered. Many of the dump/restore filesets were so
-small that they didn't evenhave a chance of triggering the loop
-iteration bugs we introduced in 3.17, so we didn't exercise the code
-sufficiently, either.
-
-We have already taken steps to improve QA coverage in xfstests to
-avoid this happening again, and I've done a lot of manual
-verification of dump/restore on very large data sets (tens of
-millions of inodes) of the past week to verify this patch set
-results in bulkstat behaving the same way as it does on 3.16.
-
-Unfortunately, the fixes are not exactly simple - in tracking down
-the problem historic API warts were discovered (e.g xfsdump has been
-working around a 20 year old bug in the bulkstat API for the past 10
-years) and so that complicated the process of diagnosing and fixing
-the problems. i.e. we had to fix bugs in the code as well as
-discover and re-introduce the userspace visible API bugs that we
-unwittingly "fixed" in 3.17 that xfsdump relied on to work
-correctly.
-
--Dave.
-
-The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
-
-  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/linux-xfs tags/xfs-for-linus-3.18-rc3
-
-for you to fetch changes up to 002758992693ae63c04122603ea9261a0a58d728:
-
-  xfs: track bulkstat progress by agino (2014-11-07 08:33:52 +1100)
-
-----------------------------------------------------------------
-xfs: fixes for v3.18-rc3
-
-This update fixes:
-
-- incorrect warnings about i_mutex locking in
-  pagecache_isize_extended() and updates comments to match expected
-  locking
-- another zero-range bug fix for stray file size updates
-- a bunch of fixes for regression in the bulkstat code introduced in
-  3.17.
-
-----------------------------------------------------------------
-Brian Foster (1):
-      xfs: rework zero range to prevent invalid i_size updates
-
-Dave Chinner (7):
-      xfs: bulkstat doesn't release AGI buffer on error
-      xfs: bulkstat btree walk doesn't terminate
-      xfs: bulkstat chunk formatting cursor is broken
-      xfs: bulkstat chunk-formatter has issues
-      xfs: bulkstat main loop logic is a mess
-      xfs: bulkstat error handling is broken
-      xfs: track bulkstat progress by agino
-
-Jan Kara (3):
-      xfs: Check error during inode btree iteration in xfs_bulkstat()
-      mm: Remove false WARN_ON from pagecache_isize_extended()
-      mm: Fix comment before truncate_setsize()
-
- fs/xfs/xfs_bmap_util.c |   72 ++++----------
- fs/xfs/xfs_itable.c    |  250 +++++++++++++++++++++++-------------------------
- fs/xfs/xfs_itable.h    |   16 ----
- mm/truncate.c          |    6 +-
- 4 files changed, 145 insertions(+), 199 deletions(-)
--- 
-Dave Chinner
-david@fromorbit.com
+On 11/07/2014 02:13 PM, Dinh Nguyen wrote:
+> Hi Thor,
+>
+> On 11/07/2014 10:54 AM, tthayer@opensource.altera.com wrote:
+>> From: Thor Thayer <tthayer@opensource.altera.com>
+>>
+>> This patch enables the ECC for L2 cache on machine
+>> startup.  The ECC has to be enabled before data is
+>> is stored in memory otherwise the ECC will fail on
+>> reads.
+>>
+>> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+>> ---
+>> v2: Split OCRAM initialization into separate patch.
+>>
+>> v3/4: No change
+>> ---
+>>   MAINTAINERS                      |    1 +
+>>   arch/arm/mach-socfpga/Makefile   |    1 +
+>>   arch/arm/mach-socfpga/l2_cache.c |   44 ++++++++++++++++++++++++++++++++++++++
+>>   arch/arm/mach-socfpga/l2_cache.h |   28 ++++++++++++++++++++++++
+>>   arch/arm/mach-socfpga/socfpga.c  |    5 ++++-
+>>   5 files changed, 78 insertions(+), 1 deletion(-)
+>>   create mode 100644 arch/arm/mach-socfpga/l2_cache.c
+>>   create mode 100644 arch/arm/mach-socfpga/l2_cache.h
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index ee1bc5b..d0c7752 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -1407,6 +1407,7 @@ ARM/SOCFPGA EDAC SUPPORT
+>>   M:	Thor Thayer <tthayer@opensource.altera.com>
+>>   S:	Maintained
+>>   F:	drivers/edac/altera_edac.
+>> +F:	arch/arm/mach-socfpga/l2_cache.*
+>>   
+>>   ARM/STI ARCHITECTURE
+>>   M:	Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
+>> diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
+>> index 6dd7a93..142609e 100644
+>> --- a/arch/arm/mach-socfpga/Makefile
+>> +++ b/arch/arm/mach-socfpga/Makefile
+>> @@ -4,3 +4,4 @@
+>>   
+>>   obj-y					:= socfpga.o
+>>   obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
+>> +obj-$(CONFIG_EDAC_ALTERA_L2C) += l2_cache.o
+>> diff --git a/arch/arm/mach-socfpga/l2_cache.c b/arch/arm/mach-socfpga/l2_cache.c
+>> new file mode 100644
+>> index 0000000..8e109f3
+>> --- /dev/null
+>> +++ b/arch/arm/mach-socfpga/l2_cache.c
+>> @@ -0,0 +1,44 @@
+>> +/*
+>> + * Copyright Altera Corporation (C) 2014. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License along with
+>> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+>> + */
+>> +#include <linux/clk-provider.h>
+> Why clk-provider.h and not io.h?
+>> +#include <linux/of_platform.h>
+>> +#include <linux/of_address.h>
+>> +
+>> +#include "l2_cache.h"
+>> +
+>> +void socfpga_init_l2_ecc(void)
+>> +{
+>> +	struct device_node *np;
+>> +	void __iomem  *mapped_l2_edac_addr;
+>> +
+>> +	np = of_find_compatible_node(NULL, NULL, "altr,l2-edac");
+>> +	if (!np) {
+>> +		pr_err("SOCFPGA: Unable to find altr,l2-edac in dtb\n");
+>> +		return;
+>> +	}
+>> +
+>> +	mapped_l2_edac_addr = of_iomap(np, 0);
+>> +	if (!mapped_l2_edac_addr) {
+>> +		pr_err("SOCFPGA: Unable to find L2 ECC mapping in dtb\n");
+>> +		return;
+>> +	}
+>> +
+>> +	/* Enable ECC */
+>> +	writel(0x01, mapped_l2_edac_addr);
+>> +
+>> +	pr_debug("SOCFPGA: Success Initializing L2 cache ECC\n");
+>> +}
+>> +
+> Extra line here...
+>
+>> diff --git a/arch/arm/mach-socfpga/l2_cache.h b/arch/arm/mach-socfpga/l2_cache.h
+>> new file mode 100644
+>> index 0000000..58e140d
+>> --- /dev/null
+>> +++ b/arch/arm/mach-socfpga/l2_cache.h
+>> @@ -0,0 +1,28 @@
+>> +/*
+>> + * Copyright Altera Corporation (C) 2014. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License along with
+>> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+>> + */
+>> +
+>> +#ifndef MACH_SOCFPGA_L2_CACHE_H
+>> +#define MACH_SOCFPGA_L2_CACHE_H
+>> +
+>> +#ifdef CONFIG_EDAC_ALTERA_L2C
+>> +void socfpga_init_l2_ecc(void);
+>> +#else
+>> +inline void socfpga_init_l2_ecc(void)
+>> +{
+>> +}
+>> +#endif
+>> +
+>> +#endif /* #ifndef MACH_SOCFPGA_L2_CACHE_H */
+>> diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+>> index adbf383..af6413a 100644
+>> --- a/arch/arm/mach-socfpga/socfpga.c
+>> +++ b/arch/arm/mach-socfpga/socfpga.c
+>> @@ -1,5 +1,5 @@
+>>   /*
+>> - *  Copyright (C) 2012 Altera Corporation
+>> + *  Copyright (C) 2012;2014 Altera Corporation
+> Should be "2012-2014".
+>
+>>    *
+>>    * This program is free software; you can redistribute it and/or modify
+>>    * it under the terms of the GNU General Public License as published by
+>> @@ -25,6 +25,8 @@
+>>   #include <asm/mach/map.h>
+>>   
+>>   #include "core.h"
+>> +#include "l2_cache.h"
+>> +#include "ocram.h"
+> Including ocram.h should go into patch 2/5. But I think ocram.h can be
+> removed as well if you just use IS_ENABLED().
+>
+>>   
+>>   void __iomem *socfpga_scu_base_addr = ((void __iomem *)(SOCFPGA_SCU_VIRT_BASE));
+>>   void __iomem *sys_manager_base_addr;
+>> @@ -83,6 +85,7 @@ static void __init socfpga_init_irq(void)
+>>   {
+>>   	irqchip_init();
+>>   	socfpga_sysmgr_init();
+>> +	socfpga_init_l2_ecc();
+> If you use "if (IS_ENABLED(CONFIG_EDAC_ALTERA_L2C))", then you can
+> remove l2_cache.h.
+>
+> Dinh
+>
+>
+Yes, this is cleaner. I will make these changes. Thanks!
