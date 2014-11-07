@@ -1,115 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaKGMBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:01:45 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:37283 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaKGMBm (ORCPT
+	id S1752028AbaKGMDe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:03:34 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:36460 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaKGMDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:01:42 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, Joe Perches <joe@perches.com>,
-        stable@vger.kernel.org
-Subject: [PATCH v2 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
-Date: Fri,  7 Nov 2014 12:01:26 +0000
-Message-Id: <1415361686-3797-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 7 Nov 2014 07:03:31 -0500
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
+Subject: [PATCH 03/13] ARM: STi: DT: STiH416: Add DT nodes for the ehci and ohci usb controllers.
+Date: Fri,  7 Nov 2014 11:57:45 +0000
+Message-Id: <1415361475-6218-4-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
+References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when kdb traps printk messages then the raw log level prefix
-(consisting of '\001' followed by a numeral) does not get stripped off
-before the message is issued to the various I/O handlers supported by
-kdb. This causes annoying visual noise as well as causing problems
-grepping for ^. It is also a change of behaviour compared to normal usage
-of printk() usage. For example <SysRq>-h ends up with different output to
-that of kdb's "sr h".
+This patch adds the DT nodes for the 4 usb ehci and ohci usb controllers
+on the stih416 SoC.
 
-This patch addresses the problem by stripping log levels from messages
-before they are issued to the I/O handlers. printk() which can also
-act as an i/o handler in some cases is special cased; if the caller
-provided a log level then this will be preserved when sent to printk().
-
-The addition of non-printable characters to the output of kdb commands is a
-regression, albeit and extremely elderly one, introduced by commit
-04d2c8c83d0e ("printk: convert the format for KERN_<LEVEL> to a 2 byte
-pattern"). Note also that this patch does *not* restore the original
-behaviour from v3.5. Instead it makes printk() from within a kdb command
-display the message without any prefix (i.e. like printk() normally does).
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 ---
+ arch/arm/boot/dts/stih416-b2020.dts  |   4 +
+ arch/arm/boot/dts/stih416-b2020e.dts |   4 +
+ arch/arm/boot/dts/stih416.dtsi       | 144 +++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih41x-b2020.dtsi |  12 +++
+ 4 files changed, 164 insertions(+)
 
-Notes:
-    This patch is tested both on arm (kgdboc=ttyAMA0) and x86_64
-    (kgdboc=kdb,ttyS0).
-    
-    v2:
-    
-    * Adopt printk_skip_level() to skip the header characters (Joe Perches).
-    
-    * Update patch description to describe the addition of non-printable
-      characters to kdb output as a regression and Cc: stable@ (Joe Perches).
-    
-
- kernel/debug/kdb/kdb_io.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-index 7c70812caea5..f3982adf8695 100644
---- a/kernel/debug/kdb/kdb_io.c
-+++ b/kernel/debug/kdb/kdb_io.c
-@@ -691,19 +691,20 @@ kdb_printit:
- 	 * Write to all consoles.
- 	 */
- 	retlen = strlen(kdb_buffer);
-+	cp = printk_skip_level(kdb_buffer);
- 	if (!dbg_kdb_mode && kgdb_connected) {
--		gdbstub_msg_write(kdb_buffer, retlen);
-+		gdbstub_msg_write(cp, retlen - (cp - kdb_buffer));
- 	} else {
- 		if (dbg_io_ops && !dbg_io_ops->is_console) {
--			len = retlen;
--			cp = kdb_buffer;
-+			len = retlen - (cp - kdb_buffer);
-+			cp2 = cp;
- 			while (len--) {
--				dbg_io_ops->write_char(*cp);
--				cp++;
-+				dbg_io_ops->write_char(*cp2);
-+				cp2++;
- 			}
- 		}
- 		while (c) {
--			c->write(c, kdb_buffer, retlen);
-+			c->write(c, cp, retlen - (cp - kdb_buffer));
- 			touch_nmi_watchdog();
- 			c = c->next;
- 		}
-@@ -711,7 +712,10 @@ kdb_printit:
- 	if (logging) {
- 		saved_loglevel = console_loglevel;
- 		console_loglevel = CONSOLE_LOGLEVEL_SILENT;
--		printk(KERN_INFO "%s", kdb_buffer);
-+		if (cp == kdb_buffer)
-+			printk(KERN_INFO "%s", kdb_buffer);
-+		else
-+			printk("%s", kdb_buffer);
- 	}
-
- 	if (KDB_STATE(PAGER)) {
---
-1.9.3
+diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+index 5d1543b..c75b632 100644
+--- a/arch/arm/boot/dts/stih416-b2020.dts
++++ b/arch/arm/boot/dts/stih416-b2020.dts
+@@ -33,5 +33,9 @@
+ 		sata0: sata@fe380000{
+ 			status = "okay";
+ 		};
++
++		usb3: usb@fe340000 {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih416-b2020e.dts b/arch/arm/boot/dts/stih416-b2020e.dts
+index 956fab8..9768503 100644
+--- a/arch/arm/boot/dts/stih416-b2020e.dts
++++ b/arch/arm/boot/dts/stih416-b2020e.dts
+@@ -51,5 +51,9 @@
+ 		sata0: sata@fe380000{
+ 			status = "okay";
+ 		};
++
++		usb3: usb@fe340000 {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 0f3019a..6238d9e 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -325,5 +325,149 @@
+ 			clock-names = "osc_phy";
+ 
+ 		};
++
++		ehci0: usb@0xfe1ffe00 {
++			compatible = "st,st-ehci-300x";
++			reg = <0xfe1ffe00 0x100>;
++			interrupts = <GIC_SPI 148 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_usb0>;
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB0_POWERDOWN>,
++				 <&softreset STIH416_USB0_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ohci0: usb@0xfe1ffc00 {
++			compatible = "st,st-ohci-300x";
++			reg = <0xfe1ffc00 0x100>;
++			interrupts = <GIC_SPI 149 IRQ_TYPE_NONE>;
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB0_POWERDOWN>,
++				 <&softreset STIH416_USB0_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ehci1: usb@0xfe203e00 {
++			compatible = "st,st-ehci-300x";
++			reg = <0xfe203e00 0x100>;
++			interrupts = <GIC_SPI 150 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_usb1>;
++
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB1_POWERDOWN>,
++				 <&softreset STIH416_USB1_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ohci1: usb@0xfe203c00 {
++			compatible = "st,st-ohci-300x";
++			reg = <0xfe203c00 0x100>;
++			interrupts = <GIC_SPI 151 IRQ_TYPE_NONE>;
++
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB1_POWERDOWN>,
++				 <&softreset STIH416_USB1_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ehci2: usb@0xfe303e00 {
++			compatible = "st,st-ehci-300x";
++			reg = <0xfe303e00 0x100>;
++			interrupts = <GIC_SPI 152 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_usb2>;
++
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB2_POWERDOWN>,
++				 <&softreset STIH416_USB2_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ohci2: usb@0xfe303c00 {
++			compatible = "st,st-ohci-300x";
++			reg = <0xfe303c00 0x100>;
++			interrupts = <GIC_SPI 153 IRQ_TYPE_NONE>;
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB2_POWERDOWN>,
++				 <&softreset STIH416_USB2_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ehci3: usb@0xfe343e00 {
++			compatible = "st,st-ehci-300x";
++			reg = <0xfe343e00 0x100>;
++			interrupts = <GIC_SPI 154 IRQ_TYPE_NONE>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_usb3>;
++
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB3_POWERDOWN>,
++				 <&softreset STIH416_USB3_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
++
++		ohci3: usb@0xfe343c00 {
++			compatible = "st,st-ohci-300x";
++			reg = <0xfe343c00 0x100>;
++			interrupts = <GIC_SPI 155 IRQ_TYPE_NONE>;
++			clocks = <&clk_s_a1_ls 0>,
++				 <&clockgen_b0 0>;
++			clock-names = "ic", "clk48";
++			phys = <&usb2_phy>;
++			phy-names = "usb";
++			status = "okay";
++
++			resets = <&powerdown STIH416_USB3_POWERDOWN>,
++				 <&softreset STIH416_USB3_SOFTRESET>;
++			reset-names = "power", "softreset";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
+index 487d7d8..005ab38 100644
+--- a/arch/arm/boot/dts/stih41x-b2020.dtsi
++++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
+@@ -78,5 +78,17 @@
+ 		mmc0: sdhci@fe81e000 {
+ 			bus-width = <8>;
+ 		};
++
++		usb0: usb@fe100000 {
++			status = "okay";
++		};
++
++		usb1: usb@fe200000 {
++			status = "okay";
++		};
++
++		usb2: usb@fe300000 {
++			status = "okay";
++		};
+ 	};
+ };
+-- 
+1.9.1
 
