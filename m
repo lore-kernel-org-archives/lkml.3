@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaKGO5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:57:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57252 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127AbaKGO5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:57:14 -0500
-Date: Fri, 7 Nov 2014 08:57:07 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
-        kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] kernel: add support for live patching
-Message-ID: <20141107145707.GA2057@cerebellum.variantweb.net>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
- <1415284748-14648-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411061607250.29198@pobox.suse.cz>
- <20141106162049.GA14689@cerebellum.variantweb.net>
- <alpine.LNX.2.00.1411062312220.29198@pobox.suse.cz>
- <20141107125016.GB4071@treble.redhat.com>
- <alpine.LNX.2.00.1411071405170.29198@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411071405170.29198@pobox.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753198AbaKGO5s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:57:48 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43513 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571AbaKGO5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 09:57:47 -0500
+Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms
+ on NO_LIBELF=1
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>
+In-Reply-To: <20141107082723.GB23531@worktop.programming.kicks-ass.net>
+References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
+	 <20141107082723.GB23531@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Nov 2014 23:57:39 +0900
+Message-ID: <1415372259.1648.51.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 02:13:37PM +0100, Jiri Kosina wrote:
-> On Fri, 7 Nov 2014, Josh Poimboeuf wrote:
-> 
-> > > Also, lpc_create_object(), lpc_create_func(), lpc_create_patch(), 
-> > > lpc_create_objects(), lpc_create_funcs(), ... they all are pretty much 
-> > > alike, and are asking for some kind of unification ... perhaps iterator 
-> > > for generic structure initialization?
+Hi Peter,
+
+2014-11-07 (금), 09:27 +0100, Peter Zijlstra:
+> On Fri, Nov 07, 2014 at 02:20:04PM +0900, Namhyung Kim wrote:
+> > When libelf is not used, perf cannot not show symbol names since it
+> > doesn't access the ELF symbol table.  But kernel is different as it
+> > can fallback to kallsyms.
 > > 
-> > The allocation and initialization code is very simple and
-> > straightforward.  I really don't see a problem there.
+> > It worked w/o libelf, but recent change to use vmlinux for kernel
+> > symbols break it.
+> > 
+> > With this change, it now can show kernel symbols again:
+> > 
+> >   # Overhead  Command  Shared Object      Symbol
+> >   # ........  .......  .................  ........................
+> >   #
+> >       34.51%  swapper  [kernel.kallsyms]  [k] intel_idle
+> >       12.54%  perf     [kernel.kallsyms]  [k] generic_exec_single
+> >       10.11%  swapper  [kernel.kallsyms]  [k] int_sqrt
+> >        9.83%  swapper  [kernel.kallsyms]  [k] hrtimer_interrupt
+> >        7.25%  emacs    [kernel.kallsyms]  [k] __switch_to
+> >        7.06%  sleep    [kernel.kallsyms]  [k] find_next_iomem_res
+> >        7.02%  swapper  [kernel.kallsyms]  [k] run_timer_softirq
+> >        2.55%  swapper  [kernel.kallsyms]  [k] _raw_spin_unlock_irq
+> >        1.90%  swapper  [kernel.kallsyms]  [k] lapic_next_deadline
+> >        1.75%  swapper  [kernel.kallsyms]  [k] native_sched_clock
+> >        1.49%  swapper  [kernel.kallsyms]  [k] __schedule
+> >        1.20%  swapper  [kernel.kallsyms]  [k] read_tsc
+> >        1.10%  sleep    [kernel.kallsyms]  [k] current_kernel_time
+> >        0.99%  swapper  [kernel.kallsyms]  [k] pick_next_task_rt
+> >        0.36%  swapper  [kernel.kallsyms]  [k] group_sched_in
+> >        0.24%  swapper  [kernel.kallsyms]  [k] x86_pmu_commit_txn
+> >        0.06%  swapper  [kernel.kallsyms]  [k] intel_pmu_enable_all
+> >        0.03%  perf     [kernel.kallsyms]  [k] intel_pmu_enable_all
+> > 
+> > Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Adrian Hunter <adrian.hunter@intel.com>
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> > ---
+> >  tools/perf/util/symbol-minimal.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+> > index c9541fea9514..226cf41ed7e6 100644
+> > --- a/tools/perf/util/symbol-minimal.c
+> > +++ b/tools/perf/util/symbol-minimal.c
+> > @@ -335,6 +335,9 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
+> >  	unsigned char *build_id[BUILD_ID_SIZE];
+> >  	int ret;
+> >  
+> > +	if (dso->kernel)
+> > +		return 0;  /* always use kallsyms */
+> > +
+> >  	ret = fd__is_64_bit(ss->fd);
+> >  	if (ret >= 0)
+> >  		dso->is_64_bit = ret;
 > 
-> This really boils down to the question I had in previous mail, whether 
-> three-level hierarchy (patch->object->funcs), which is why there is a lot 
-> of very alike initialization code, is not a bit over-designed.
+> Why does this live in the minimal implementation; should we not always
+> discard ELF files with 0 symbols?
+> 
+> Suppose I have a vmlinux but removed all symbols from it; I want it to
+> fall back to kallsyms too.
 
-It might right now, but we coded ourselves into a corner a couple of
-times in kpatch using optimal, but inflexible data structures and
-sharing those data structures with the API.  This structure layout will
-give us flexibility to make changes without having to gut everything.  I
-see flexibility and modularity being important going forward as we are
-both looking to extend the abilities.
+I'm not sure I understood what you said correctly.  With this change,
+dso__load_kernel_sym() always ends up calling dso__load_kallsyms() since
+dso__load_vmlinux() will always return 0;
 
-Additionally it allows the sysfs directories to correlate to data
-structures and we can use the kobject ref count to cleanly do object
-cleanup (i.e.  kobject_put() with release handlers for each ktype).
-
-As Josh said, we do have operations that apply to each level.  I think
-your point is that we could do away with the object level, but we have
-operations that happen on a per-object basis. lpc_enable_object() isn't
-just a for loop for registering the functions with ftrace.  It also does
-the dynamic relocations.  I'm sure we will find other things in the
-future.  It is also nice to have a function that can be called from both
-lpc_enable_patch() and lp_module_notify() to enable the object in a
-common way.
+So I think you'll fall back to kallsyms even though you have a vmlinux
+with symbol.  This makes dso__load_sym() in the patch 2/3 simpler IMHO.
 
 Thanks,
-Seth
+Namhyung
 
-> 
-> > > I am not also really fully convinced that we need the 
-> > > patch->object->funcs abstraction hierarchy (which also contributes to 
-> > > the structure allocation being rather a spaghetti copy/paste code) ... 
-> > > wouldn't patch->funcs be suffcient, with the "object" being made just 
-> > > a property of the function, for example?
-> > > 
-> > > > Plus, I show that kernel/kgraft.c + kernel/kgraft_files.c is
-> > > > 906+193=1099.  I'd say they are about the same size :)
-> > > 
-> > > Which is still seem to me to be a ratio worth thinking about improving 
-> > > :)
-> > 
-> > Yes, this code doesn't have a consistency model, but it does have some
-> > other non-kGraft things like dynamic relocations, 
-> 
-> BTW we need to put those into arch/x86/ as they are unfortunately not 
-> generic. But more on this later independently.
-> 
-> > deferred module patching,
-> 
-> FWIW kgraft supports that as well.
-> 
-> > and a unified API.  There's really no point in comparing lines of code.
-> 
-> Oh, sure, I didn't mean that this is any kind of metrics that should be 
-> taken too seriously at all. I was just expressing my surprise that 
-> unification of the API would bring so much code that it makes the result 
-> comparably sized to "the whole thing" :)
-> 
-> Thanks,
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
+
