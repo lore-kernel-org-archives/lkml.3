@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaKGKKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:10:12 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:39621 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKGKKF (ORCPT
+	id S1751741AbaKGKLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:11:05 -0500
+Received: from smtprelay0061.hostedemail.com ([216.40.44.61]:45145 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751585AbaKGKLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:10:05 -0500
-Date: Fri, 7 Nov 2014 10:09:59 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 09/11] perf/x86/intel: Support task events with Intel CQM
-Message-ID: <20141107100959.GK3592@console-pimps.org>
-References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
- <1415276602-10337-10-git-send-email-matt@console-pimps.org>
- <20141107090804.GA3337@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141107090804.GA3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Nov 2014 05:11:02 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:421:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3872:3873:3874:4321:5007:6261:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beast61_886c2a15db31
+X-Filterd-Recvd-Size: 1627
+Message-ID: <1415355054.23530.8.camel@perches.com>
+Subject: Re: [RESEND PATCH 3.18-rc3] kdb: Avoid printing KERN_ levels to
+ consoles
+From: Joe Perches <joe@perches.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Date: Fri, 07 Nov 2014 02:10:54 -0800
+In-Reply-To: <545C9791.7050608@linaro.org>
+References: <1411555097-16924-1-git-send-email-daniel.thompson@linaro.org>
+	 <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
+	 <1415290399.6634.52.camel@perches.com> <545BAE67.1060602@linaro.org>
+	 <1415295835.6634.56.camel@perches.com> <545C9791.7050608@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov, at 10:08:04AM, Peter Zijlstra wrote:
-> 
-> How is that supposed to work? You call __intel_cqm_event_count() on the
-> one cpu per socket, but then you use a local_add, not an atomic_add,
-> even though these adds can happen concurrently as per IPI broadcast.
- 
-Ouch, right. That's broken.
+On Fri, 2014-11-07 at 09:57 +0000, Daniel Thompson wrote:
 
-> Also, I think smp_call_function_many() ignores the current cpu, if this
-> cpu happens to be the cpu for this socket, you're up some creek without
-> no paddle, right?
- 
-OK, I didn't realise that. Yeah that sounds very problematic. I think my
-eyes skipped over the word "other" in the smp_call_function_many() docs,
+> Does that arguing against Cc:ing stable@ or you think I should just put
+> that on anyway and leave it for the stable committee?
 
- * smp_call_function_many(): Run a function on a set of other CPUs.
+It's a regression, I think you should send a fix
+for it to stable.  It's up to the stable folks to
+figure out if they want to take it.
 
-So, the correct way to do this is to iterate over cqm_cpumask and invoke
-smp_call_function_single(), right?
 
-> Thirdly, there is no serialization around calling perf_event_count() [or
-> your pmu::count method] so you cannot temporarily put it to 0.
-
-Urgh, thanks. Good spot. I'm gonna have to think of a suitable
-serialisation mechanism because all the current ones are pretty
-heavy-handed. And of course, there's the added fun that it needs to be
-held across the IPIs.
-
-Perhaps a per-cache-group mutex?
-
--- 
-Matt Fleming, Intel Open Source Technology Center
