@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaKGMLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:11:44 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58937 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751435AbaKGMLk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:11:40 -0500
-Date: Fri, 7 Nov 2014 12:11:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "roland@hack.frob.com" <roland@hack.frob.com>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-Message-ID: <20141107121119.GQ4042@n2100.arm.linux.org.uk>
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
- <1977974.l97vvy7Y8b@wuerfel>
- <20141107115551.GC18916@arm.com>
- <1678531.AUssrM9PAs@wuerfel>
+	id S1752017AbaKGMMr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:12:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57957 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299AbaKGMMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 07:12:43 -0500
+Date: Fri, 7 Nov 2014 13:12:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Chen Yucong <slaoub@gmail.com>, "ak@linux.intel.com" <ak@linux.intel.com>,
+        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 v2] x86, mce, severity: extend the the mce_severity
+Message-ID: <20141107121239.GA19142@pd.tnic>
+References: <1415162873-1874-1-git-send-email-slaoub@gmail.com>
+ <1415162873-1874-2-git-send-email-slaoub@gmail.com>
+ <20141106153539.GC4318@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F329240AE@ORSMSX114.amr.corp.intel.com>
+ <20141106182206.GG4318@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F3292433C@ORSMSX114.amr.corp.intel.com>
+ <20141106185638.GH4318@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F329246B2@ORSMSX114.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1678531.AUssrM9PAs@wuerfel>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F329246B2@ORSMSX114.amr.corp.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 01:03:00PM +0100, Arnd Bergmann wrote:
-> On Friday 07 November 2014 11:55:51 Will Deacon wrote:
-> > We need this for arm64 and, since all architectures seem to have a mechanism
-> > for setting a system call via ptrace, moving it to generic code should make
-> > sense for new architectures too, no?
-> 
-> It makes a little more sense now, but I still don't understand why you
-> need to set the system call number via ptrace. What is this used for,
-> and why doesn't any other architecture have this?
+On Thu, Nov 06, 2014 at 09:24:01PM +0000, Luck, Tony wrote:
+> Architecturally it is true that MCIP will be set when machine check is
+> signaled. But, sometimes there are bugs. BIOS has a hook to get an SMI
+> to see the event before the OS sees the machine check - which gives
+> lots of scope for things to not happen by the book. If MCIP isn't set
+> correctly, I'd like to get on and panic quickly - because all sorts
+> of bad things will happen if a nested machine check happens and isn't
+> caught because MCIP wasn't set in the first machine check.
 
-All other architectures have a way.  x86, for example, you set orig_eax
-(or orig_rax) to change the syscall number.  On ARM, that doesn't work
-because we don't always pass the syscall number in a register.
+I won't even ask about your actual experience with stuff not setting
+MCIP :-)
+
+Anyway, noted. So for the mce_severity rewrite we should make sure to
+note from which context we're being called as the more reliable method,
+instead of looking at MCGSTATUS.MCIP.
+
+Thanks.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
