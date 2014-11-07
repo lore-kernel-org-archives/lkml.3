@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaKGJ4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:56:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:24136 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797AbaKGJ4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:56:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,331,1413270000"; 
-   d="scan'208";a="628225735"
-Message-ID: <1415354191.958.307.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: Block: Add blk-mq support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: Christoph Hellwig <hch@infradead.org>, axboe@fb.com,
-        ezequiel.garcia@free-electrons.com, dwmw2@infradead.org,
-        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Nov 2014 11:56:31 +0200
-In-Reply-To: <545C96A1.40304@nod.at>
-References: <1414933255-3795-1-git-send-email-richard@nod.at>
-		 <20141103081821.GA5261@infradead.org> <54573B72.1060600@nod.at>
-	 <1415353596.958.302.camel@sauron.fi.intel.com> <545C96A1.40304@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751831AbaKGJ5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:57:55 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:50613 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaKGJ5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:57:51 -0500
+Message-ID: <545C9791.7050608@linaro.org>
+Date: Fri, 07 Nov 2014 09:57:37 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Jason Wessel <jason.wessel@windriver.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RESEND PATCH 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
+References: <1411555097-16924-1-git-send-email-daniel.thompson@linaro.org>	 <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>	 <1415290399.6634.52.camel@perches.com> <545BAE67.1060602@linaro.org> <1415295835.6634.56.camel@perches.com>
+In-Reply-To: <1415295835.6634.56.camel@perches.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 10:53 +0100, Richard Weinberger wrote:
-> Am 07.11.2014 um 10:46 schrieb Artem Bityutskiy:
-> > On Mon, 2014-11-03 at 09:23 +0100, Richard Weinberger wrote:
-> >> Am 03.11.2014 um 09:18 schrieb Christoph Hellwig:
-> >>> On Sun, Nov 02, 2014 at 02:00:55PM +0100, Richard Weinberger wrote:
-> >>>> +#define UBIBLOCK_SG_COUNT 64
-> >>>
-> >>>
-> >>> Can you document why you choose this number? The default nr_request
-> >>> for the old code would be 128.
-> >>
-> >> Is 64 a problem? Beside of the fact that I forgot to set blk_queue_max_segments().
-> >> I used this number because 128 seemed a bit high and my goal was to
-> >> keep the memory footprint small.
-> >> This is also why I've set tag_set.queue_depth to 64.
-> > 
-> > The request was to document, so lets' document the choice.
+On 06/11/14 17:43, Joe Perches wrote:
+> On Thu, 2014-11-06 at 17:22 +0000, Daniel Thompson wrote:
+>> On 06/11/14 16:13, Joe Perches wrote:
+>>> On Thu, 2014-11-06 at 15:27 +0000, Daniel Thompson wrote:
+>>>> Currently when kdb traps printk messages then the raw log level prefix
+>>>> (consisting of '\001' followed by a numeral) does not get stripped off
+>>>> before the message is issued to the various I/O handlers supported by
+>>>> kdb. This causes annoying visual noise as well as causing problems
+>>>> grepping for ^. It is also a change of behaviour compared to normal usage
+>>>> of printk() usage. For example <SysRq>-h ends up with different to that of
+>>>> kdb's "sr h".
+>>>>
+>>>> This patch addresses the problem by stripping log levels from messages
+>>>> before they are issued to the I/O handlers.
+>>>
+>>> Perhaps instead of stripping the logging level,
+>>> maybe a KERN_SOH_ASCII 'char' sequence should be
+>>> emitted as '<' 'char' '>' (see: printk:print_prefix)
+>>>
+>>> Maybe this should be added to stable from v3.6
+>>> when KERN_SOH_ASCII was first added.
+>>
+>> You mean call the problem a regression and try to restore the original
+>> 3.5 behaviour?
 > 
-> Of course I'll document it. But so far I had no time to do a
-> v2 of this patch.
+> Yes.
+> 
+> I added KERN_SOH_ASCII so to me it's a regression.
+> 
+>> However I have to confess that I don't really like the old behaviour.
+>> I'd view it as contradicting the normal behaviours of consoles
+>> (including the kgdbcon console). Why should printk() inside kdb show
+>> different text to printk() outside kdb? For me, having <5> and <c>
+>> scribbled all over the output of an "sr" command (which I think is
+>> probably the heaviest user of printk() inside kdb) never struck me as
+>> adding much value.
+>>
+>> Is the above paragraph convincing?
+> 
+> I don't use it so I have a useful opinion.
+> 
+> I don't recall that anyone has reported it in the 
+> 2+ years since so it doesn't seem widely used.
 
-Your reply just sounded like you are complaining to the request (starts
-with "is this a problem?"). And it looked like you try to defend the 64
-choice, while no one challenged it.
+Does that arguing against Cc:ing stable@ or you think I should just put
+that on anyway and leave it for the stable committee?
 
-So my e-mail is to just kindly help you by pointing that the request was
-to only add a piece of doc so far, in case you misinterpreted it.
 
-Artem.
+> But then again, this is a resend and I don't recall
+> seeing it the first time either.
+>
+>> On the other hand if you really mean "perhaps and maybe" then I'd prefer
+>> to leave it as it it.
+> 
+> Your choice.
+> 
+> btw: in the patch I suggest using printk_skip_level
+> instead of the direct test here:
+> 
+> +       cp = kdb_buffer;
+> +       if (cp[0] == KERN_SOH_ASCII && cp[1] != '\0')
+> +               cp += 2;
+> 
+> so this could be
+> 
+> 	cp = printk_skip_level(kdb_buffer);
+
+Excellent. I'll do that.
 
