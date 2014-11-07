@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471AbaKGKDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:03:06 -0500
-Received: from lhrrgout.huawei.com ([194.213.3.17]:47993 "EHLO
-	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKGKDD (ORCPT
+	id S1751570AbaKGKEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:04:45 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:60387 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaKGKEn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:03:03 -0500
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 05:03:02 EST
-From: Frediano Ziglio <frediano.ziglio@huawei.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Frediano Ziglio <freddy77@gmail.com>
-CC: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] [PATCH] xen/arm: Return correct code error for
- xen_swiotlb_map_page
-Thread-Topic: [Xen-devel] [PATCH] xen/arm: Return correct code error for
- xen_swiotlb_map_page
-Thread-Index: AQHP+eQybFi0WqSOD0+2fx6E4sVCLJxT2xKAgAAaXQCAAAKpgIAA9P6w
-Date: Fri, 7 Nov 2014 09:56:36 +0000
-Message-ID: <B944B469BF5302468AC6EB05E56CC70D17DF04@lhreml509-mbb>
-References: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com>
- <alpine.DEB.2.02.1411061730240.22875@kaball.uk.xensource.com>
- <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
- <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.47.66.6]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 7 Nov 2014 05:04:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: DATACOM - =?ISO-8859-1?Q?=C9rico?= Nunes 
+	<erico.nunes@datacom.ind.br>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Creating a new platform_bus inside a spi_driver
+Date: Fri, 07 Nov 2014 11:04:36 +0100
+Message-ID: <707686811.tbHdnxXMgE@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <545BD3EC.6050503@datacom.ind.br>
+References: <545BD3EC.6050503@datacom.ind.br>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:LKVvWJCBl2O6bFrFHpqlwv8Kx7ywxzP9jY8nptbjrCu
+ kTrXgvxCABk2ejkyI/N3yD9eC1O9ZFPkjxyUA9jmAD/j+OxjRC
+ D65qTMSBHrgXXTPsgncNOxTXc4xCj5jpRKcaZUzFkJO74BUbNk
+ d0v4OLWQUHoHjQocU5cKMySQD5tFjV+8q8M39bpzp+Gd+Q5UrV
+ f906zRNgF6EiNaLpBBDxj+C5hsaZPzqoSQpU/4I1REpPgB+xRW
+ b7ZZ0+Sqr/yQ4UJ43vC4V4z5fxkFUePPsIcNKgyWCFxlrMK/Zr
+ kTDvxdlMp58uiUsLvtkPP0HrwsRYyImtyFMRmCqQ5pUBpmRAjK
+ bUXIiDY/KRBR/c651E8g=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sA7A3C3W012120
 
-> On Thu, 6 Nov 2014, Frediano Ziglio wrote:
-> > 2014-11-06 17:30 GMT+00:00 Stefano Stabellini
-> <stefano.stabellini@eu.citrix.com>:
-> >       On Thu, 6 Nov 2014, Frediano Ziglio wrote:
-> >       > On ARM error code is not 0 so avoid to return it as error.
-> >       >
-> >       > Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
-> >
-> >       Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >
-> >
-> >       Could you please fix the same error in lib/swiotlb.c too please?
-> >
-> >
-> > Same patch or another ?
-> >
+On Thursday 06 November 2014 18:02:52 DATACOM - Érico Nunes wrote:
 > 
-> Another
+> The idea is that "fpga-spi" is a spi_driver which instantiates all of the
+> "fpga-deviceN" as platform_devices, through the use of
+> of_platform_populate(dev->of_node, NULL, NULL, dev).
 > 
+> The visible problem we're facing with this approach is that, as the internal
+> platform_devices have a "reg" property, of_platform_populate() eventually
+> triggers an address translation which is apparently trying to translate the
+> addresses of the internal platform_bus to addresses of the processor memory
+> map.
+> This translation is however not part of our intention, as we intend to have an
+> internal bus with its own memory map.
+> This fails when __of_translate_address() reaches the spi-master boundary
+> because (as it seems to make sense) it isn't possible to translate them past
+> that.
+> A KERN_ERR rated message like
+> "prom_parse: Bad cell count for /soc@f0000000/spi@2000/fpga@1"
+> is thrown by __of_translate_address() and later it is not possible to obtain
+> the "reg" address with platform_get_resource().
+> 
+> On this scenario, we have a few questions and, depending on the outcome of
+> these, possibly a patch.
+> 
+> 1. Is it possible to have an internal platform_bus with a different memory map
+> as we intended? Or are platform_busses and platform_devices supposed to always
+> be mapped on the processor memory map?
 
-lib/swiotlb.c is not affected at a physical address to io_tlb_overflow_buffer is returned in case of error.
-Looks like a way to transform silently an allocation error to a more serious memory corruption.
+It's inconsistent. We have some code that assumes that platform devices
+are always memory mapped, and some other code that breaks this assumption.
 
-Frediano
+> 2. If platform_bus and platform_device were actually designed to always be
+> mappable to the processor memory map, what would be a different approach to
+> this problem?  One alternative considered was to define a new "fpga_bus" and
+> "fpga_device" but that seemed as an overkill approach to the problem.
 
-> >
-> >       >Â  drivers/xen/swiotlb-xen.c | 2 +-
-> >       >Â  1 file changed, 1 insertion(+), 1 deletion(-)
-> >       >
-> >       > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-
-> xen.c
-> >       > index ebd8f21..3b8d628 100644
-> >       > --- a/drivers/xen/swiotlb-xen.c
-> >       > +++ b/drivers/xen/swiotlb-xen.c
-> >       > @@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct
-> device *dev, struct page *page,
-> >       >Â  Â  Â  Â  */
-> >       >Â  Â  Â  Â if (!dma_capable(dev, dev_addr, size)) {
-> >       >Â  Â  Â  Â  Â  Â  Â  Â swiotlb_tbl_unmap_single(dev, map, size, dir);
-> >       > -Â  Â  Â  Â  Â  Â  Â dev_addr = 0;
-> >       > +Â  Â  Â  Â  Â  Â  Â dev_addr = DMA_ERROR_CODE;
-> >       >Â  Â  Â  Â }
-> >       >Â  Â  Â  Â return dev_addr;
-> >       >Â  }
-> >       > --
-> >       > 1.9.1
-> >       >
-> >       >
-> >       > --
-> >       > To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> >       > the body of a message to majordomo@vger.kernel.org
-> >       > More majordomo info atÂ  http://vger.kernel.org/majordomo-
-> info.html
-> >       > Please read the FAQ atÂ http://secure-
-> web.cisco.com/1cvjROyUxV6SnA0uBTMRubqrQWsaXGhps-
-> FWjY3vly9AxaKKlt2DPY7GjL0FCHeP4rsbjKsc-P4zH2_7-kpcxwEH-udGrGCCq
-> >       kCLlH1-fLOo1X6Nlui6EwEVHUpB2r7gt-
-> Gsgxbep9QWPnIdypDPNf8Hf5clxCMXYcvWsOK5s3qg/http%3A%2F%2Fwww.tux.org%2Fl
-> kml%2F
-> >       >
-> >
-> >       _______________________________________________
-> >       Xen-devel mailing list
-> >       Xen-devel@lists.xen.org
-> >       http://lists.xen.org/xen-devel
-> >
-> >
-> >
-> >
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I think the existing mfd framework should do what you need, when you call
+mfd_add_devices() and pass a table of cells with the compatible strings
+for your devices, it should create the platform devices you want. If not,
+that can probably be fixed in the mfd core code.
+
+	Arnd
