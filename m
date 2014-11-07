@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaKGVCU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 16:02:20 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62183 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbaKGVCT (ORCPT
+	id S1752695AbaKGVEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 16:04:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55826 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822AbaKGVEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 16:02:19 -0500
-Date: Fri, 7 Nov 2014 22:00:06 +0100
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v5 20/48] mfd: rn5t618: Register power-off handler with
- kernel power-off handler
-Message-ID: <20141107210006.GA22111@gmail.com>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
- <1415292213-28652-21-git-send-email-linux@roeck-us.net>
+	Fri, 7 Nov 2014 16:04:37 -0500
+Message-ID: <545D33DB.3070904@windriver.com>
+Date: Fri, 7 Nov 2014 15:04:27 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415292213-28652-21-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com>	<yq1bnoj9dvu.fsf@sermon.lab.mkp.net> <545D13FF.6090306@windriver.com> <yq1389u95wu.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1389u95wu.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.116.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 08:43:04AM -0800, Guenter Roeck wrote:
-> Register with kernel power-off handler instead of setting pm_power_off
-> directly. Register with low priority to reflect that the original code
-> only sets pm_power_off if it was not already set.
-> 
-> Cc: Beniamino Galvani <b.galvani@gmail.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v5:
-> - Rebase to v3.18-rc3
-> v4:
-> - Do not use notifiers but internal functions and data structures to manage
->   the list of power-off handlers. Drop unused parameters from callbacks, and
->   make the power-off function type void
-> v3:
-> - Replace poweroff in all newly introduced variables and in text
->   with power_off or power-off as appropriate
-> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> v2:
-> - New patch
-> 
->  drivers/mfd/rn5t618.c       | 28 ++++++++++++----------------
->  include/linux/mfd/rn5t618.h |  2 ++
->  2 files changed, 14 insertions(+), 16 deletions(-)
+On 11/07/2014 01:17 PM, Martin K. Petersen wrote:
 
-Tested-by: Beniamino Galvani <b.galvani@gmail.com>
+> I'd suggest trying /dev/sgN instead.
+
+That seems to work.  Much appreciated.
+
+And it's now showing an "optimal_io_size" of 0, so I think the issue is 
+dealt with.
+
+Thanks for all the help, it's been educational. :)
+
+Chris
