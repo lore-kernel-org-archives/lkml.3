@@ -1,101 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaKGOZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:25:08 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:53311 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaKGOZG (ORCPT
+	id S1752518AbaKGOam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:30:42 -0500
+Received: from c.mx.filmlight.ltd.uk ([54.76.112.217]:49438 "EHLO
+	c.mx.filmlight.ltd.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbaKGOaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:25:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
-        will.deacon@arm.com, bhelgaas@google.com, Liviu.Dudau@arm.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net,
-        linaro-acpi@lists.linaro.org, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [RFC PATCH 4/4] arm64, acpi, pci: Provide arch-specific calls for PCI host bridge dirver (PNP0A03).
-Date: Fri, 07 Nov 2014 15:24:30 +0100
-Message-ID: <4474363.kMvYSLl2Ev@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415366876-30811-5-git-send-email-tomasz.nowicki@linaro.org>
-References: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org> <1415366876-30811-5-git-send-email-tomasz.nowicki@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:nZ0yjoFVB4lmyDqqRn0v1odJp95mKr8E/y/ozTFm10P
- jSflvYo1E+upVsd5SMuhFdVpeO1HNEWADiPr4XH9No1Dq4Ow+H
- J2Ht2waur4iJoU2dUte7I7ECxgGhPxjWK6K1o8EkMzkqIdzptX
- mLTGOoYC9aUMlnaTqC4CIYZYNlyJPwPEjYWi4iUZOYCrw1gFsU
- USvN8YAjlhhzvld/okQ6JMYBL/VCOdN1IUgJSIeVKVAgd2Xgd3
- xrMNw0Xv0EdjwluZc531LLUuesAsZs8YGC9QtidpC0IqbsPZXO
- lTDMM0oUJ+RXqgVChDICiffUFXy/Q5VJzn0o3R4Kh8SVF6mzB4
- jCyzg5frhEuIWT2z8MHg=
-X-UI-Out-Filterresults: notjunk:1;
+	Fri, 7 Nov 2014 09:30:39 -0500
+X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 09:30:37 EST
+Subject: Re: [fuse-devel] [PATCH v5 7/7] add a flag for per-operation
+	O_DSYNC semantics
+From: Roger Willcocks <roger@filmlight.ltd.uk>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Anand Avati <avati@gluster.org>, linux-arch@vger.kernel.org,
+        linux-aio@kvack.org, linux-nfs@vger.kernel.org,
+        Volker Lendecke <Volker.Lendecke@sernet.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mgorman@suse.de>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        linux-api@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        ocfs2-devel@oss.oracle.com, Milosz Tanski <milosz@adfin.com>
+In-Reply-To: <B92AEADD-B22C-4A4A-B64D-96E8869D3282@cam.ac.uk>
+References: <cover.1415220890.git.milosz@adfin.com>
+	 <c188b04ede700ce5f986b19de12fa617d158540f.1415220890.git.milosz@adfin.com>
+	 <x49r3xf28qn.fsf@segfault.boston.devel.redhat.com>
+	 <BF30FAEC-D4D3-4079-9ECD-2743747279BD@cam.ac.uk>
+	 <CAFboF2y2skt=H4crv54shfnXOmz23W-shYWtHWekK8ZUDkfP=A@mail.gmail.com>
+	 <B92AEADD-B22C-4A4A-B64D-96E8869D3282@cam.ac.uk>
+Content-Type: text/plain
+Date: Fri, 07 Nov 2014 14:21:18 +0000
+Message-Id: <1415370078.11083.511.camel@montana.filmlight.ltd.uk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 November 2014 14:27:56 Tomasz Nowicki wrote:
->  
->  #ifdef CONFIG_PCI
-> +struct pci_controller {
-> +	struct acpi_device *companion;
-> +	int segment;
-> +	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
-> +};
-> +
-> +#define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
-> +
 
-Don't use busdev->sysdata in architecture specific code, it belongs to the
-host bridge driver with the new model. For ACPI you don't have a host bridge
-driver, but it's better to keep these separate.
+On Fri, 2014-11-07 at 08:43 +0200, Anton Altaparmakov wrote:
+> Hi,
+> 
+> > On 7 Nov 2014, at 07:52, Anand Avati <avati@gluster.org> wrote:
+> > On Thu, Nov 6, 2014 at 8:22 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+> > > On 7 Nov 2014, at 01:46, Jeff Moyer <jmoyer@redhat.com> wrote:
+> > > Minor nit, but I'd rather read something that looks like this:
+> > >
+> > >       if (type == READ && (flags & RWF_NONBLOCK))
+> > >               return -EAGAIN;
+> > >       else if (type == WRITE && (flags & RWF_DSYNC))
+> > >               return -EINVAL;
+> > 
+> > But your version is less logically efficient for the case where "type == READ" is true and "flags & RWF_NONBLOCK" is false because your version then has to do the "if (type == WRITE" check before discovering it does not need to take that branch either, whilst the original version does not have to do such a test at all.
+> > 
+> > Seriously?
+> 
+> Of course seriously.
+> 
+> > Just focus on the code readability/maintainability which makes the code most easily understood/obvious to a new pair of eyes, and leave such micro-optimizations to the compiler..
+> 
+> The original version is more readable (IMO) and this is not a micro-optimization.  It is people like you who are responsible for the fact that we need faster and faster computers to cope with the inefficient/poor code being written more and more...
+> 
 
-The segment is always the same as the domain number, so just use that.
-The node and companion members here can get added to struct pci_host_bridge.
+Your original version needs me to know that type can only be either READ
+or WRITE (and not, for instance, READONLY or READWRITE or some other
+random special case) and it rings alarm bells when I first see it. If
+you want to keep the micro optimization, you need an assertion to
+acknowledge the potential bug and a comment to make the code obvious:
 
-> @@ -43,7 +53,8 @@ resource_size_t pcibios_align_resource(void *data, const struct resource *res,
->   */
->  int pcibios_add_device(struct pci_dev *dev)
->  {
-> -	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
-> +	if (acpi_disabled)
-> +		dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
->  
->  	return 0;
->  }
+ +            assert(type == READ || type == WRITE);
+ +            if (type == READ) {
+ +                    if (flags & RWF_NONBLOCK)
+ +                            return -EAGAIN;
+ +            } else { /* WRITE */
+ +                    if (flags & RWF_DSYNC)
+ +                            return -EINVAL;
+ +            }
 
-How do you assign the irq number with ACPI? Do you only support MSI?
+but since what's really happening here is two separate and independent
+error checks, Jeff's version is still better, even if it does take an
+extra couple of nanoseconds.
 
->  /*
->   * raw_pci_read/write - Platform-specific PCI config space access.
-> - *
-> - * Default empty implementation.  Replace with an architecture-specific setup
-> - * routine, if necessary.
->   */
->  int raw_pci_read(unsigned int domain, unsigned int bus,
->  		  unsigned int devfn, int reg, int len, u32 *val)
->  {
-> -	return -EINVAL;
-> +	char __iomem *addr;
-> +
-> +	if (unlikely((bus > 255) || (devfn > 255) || (reg > 4095))) {
-> +err:		*val = -1;
-> +		return -EINVAL;
-> +	}
-> +
-> +	rcu_read_lock();
-> +	addr = pci_dev_base(domain, bus, devfn);
-> +	if (!addr) {
-> +		rcu_read_unlock();
-> +		goto err;
-> +	}
+Actually I'd probably write:
 
-The config space accessors should probably be shared with
-drivers/pci/host/pci-host-generic.c, e.g. by moving the rest of
-the new code in there as well, or by moving the config space
-accessors from that file to drivers/pci/mmconfig.c.
+       if (type == READ && (flags & RWF_NONBLOCK))
+              return -EAGAIN;
 
-	Arnd
+       if (type == WRITE && (flags & RWF_DSYNC))
+              return -EINVAL;
+
+(no 'else' since the code will never be reached if the first test is
+true).
+
+
+-- 
+Roger Willcocks <roger@filmlight.ltd.uk>
+
