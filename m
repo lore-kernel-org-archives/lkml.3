@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaKGNBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:01:30 -0500
-Received: from dotsec.net ([62.75.224.215]:56969 "EHLO styx.dotsec.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563AbaKGNB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:01:27 -0500
-Date: Fri, 7 Nov 2014 13:59:31 +0100
-From: Alban <albeu@free.fr>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Alban Bedel <albeu@free.fr>
-Subject: Re: [PATCH] OF: Add support for built in FDT blob
-Message-ID: <20141107135931.376caf98@tock>
-In-Reply-To: <20141107120933.GA5487@leverpostej>
-References: <1415358849-25879-1-git-send-email-albeu@free.fr>
-	<20141107120933.GA5487@leverpostej>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Score: -1.0
+	id S1752626AbaKGNB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:01:58 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:44216 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaKGNA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 08:00:26 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v5 1/5] regulator: Document binding for initial and suspend modes
+Date: Fri,  7 Nov 2014 14:00:01 +0100
+Message-Id: <1415365205-27630-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Nov 2014 12:09:33 +0000
-Mark Rutland <mark.rutland@arm.com> wrote:
+Some regulators can run on different operating modes (opmodes). This
+allows systems to choose the most efficient opmode for each regulator.
 
-> Hi,
-> 
-> On Fri, Nov 07, 2014 at 11:14:09AM +0000, Alban Bedel wrote:
-> > Allow embedding an FDT blob in the kernel image, this is mostly
-> > useful to run new kernels on boards with old bootloaders.
-> 
-> I am very much not keen on embedding a DTB within a kernel. It's far
-> nicer for the two to remain separate blobs, with a small shim to set
-> up the DTB address.
-> 
-> On ARM we have appended DTB for this purpose, which is at least better
-> than embedding the DT inside of the kernel.
+This patch builds on top of (291d761 regulator: Document binding for
+regulator suspend state for PM state) adding a regulator-initial-mode
+DT property to configure at startup the operating mode for regulators
+that support changing its mode during normal operation and a property
+regulator-mode to be used in the regulator-state-[mem/disk] nodes for
+regulators that supports changing its operating mode when the system
+enters in a suspend state.
 
-I looked at that but that seemed quiet complicated to implement, not to
-mention that it needed quiet a lot of arch specific code. On the other
-hand having the DTB built in like this was trivial and would be portable
-to every architecture, so that seemed like the best way to me.
+The set of possible modes that a regulator can operate depends on the
+hardware capabilities so a list of generic operating modes can't be
+provided. Instead, each hardware binding should define the list of
+valid operating modes for the regulators found on that device.
 
-> What architecture and bootloader are you using that necessitate this?
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-MIPS with an antic u-boot version patched by the board vendor to use
-some non standard image format. Updating the boot loader is currently
-not an option because of the lack of documentation for the board/SoC.
+Changes in v5: None
 
-Alban
+Changes in v4: None
+
+Changes in v3:
+ - Rebased on top of regulator suspend voltage series
+
+ Documentation/devicetree/bindings/regulator/regulator.txt | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index 4e7ed76..3fffa3b 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -30,6 +30,20 @@ Optional properties:
+ 	- regulator-off-in-suspend: regulator should be off in suspend state.
+ 	- regulator-suspend-microvolt: regulator should be set to this voltage
+ 	  in suspend.
++	- regulator-mode: operating mode in the given suspend state.
++	  The set of possible operating modes depends on the capabilities of
++	  every hardware so the valid modes are documented on each regulator
++	  device tree binding document.
++	  The "regulator-mode" property only takes effect if the regulator is
++	  enabled for the given suspend state using "regulator-on-in-suspend".
++	  If the regulator has not been explicitly disabled for the given state
++	  with "regulator-off-in-suspend", then setting the operating mode
++	  will also have no effect.
++- regulator-initial-mode: initial operating mode. The set of possible operating
++  modes is the same used for the regulator-mode property and the device binding
++  documentation explains which property each regulator supports.
++If no mode is defined, then the OS will not manage the modes and the hardware
++default values will be used instead.
+ 
+ Deprecated properties:
+ - regulator-compatible: If a regulator chip contains multiple
+-- 
+2.1.0
+
