@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaKGG0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 01:26:46 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:51900 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555AbaKGG0o convert rfc822-to-8bit (ORCPT
+	id S1751951AbaKGG06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 01:26:58 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:63133 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901AbaKGG0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 01:26:44 -0500
+	Fri, 7 Nov 2014 01:26:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141107060040.GD30507@yliu-dev.sh.intel.com>
-References: <20141107060040.GD30507@yliu-dev.sh.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 6 Nov 2014 22:26:23 -0800
-Message-ID: <CALCETrVBcZ=5YJMzjKwFpjz6p32FmXcdkR=8uSPm8kCECDka4g@mail.gmail.com>
-Subject: Re: [LKP] [x86_64,entry] f04e05b81e4: -62.7% time.user_time
-To: LKP <lkp@01.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>
+In-Reply-To: <545C656C.2040306@samsung.com>
+References: <1414372878-3737-1-git-send-email-cw00.choi@samsung.com>
+	<545C656C.2040306@samsung.com>
+Date: Fri, 7 Nov 2014 15:26:54 +0900
+Message-ID: <CA+Ln22EdtNkyAH8AtjdRhQcMD-qsfjXJ7Nq8PBmemUEfKJdNQQ@mail.gmail.com>
+Subject: Re: [PATCHv2] pinctrl: exynos: Add support for Exynos4415
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "sw0312.kim" <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 10:00 PM, LKP <lkp@01.org> wrote:
-> FYI, we noticed the below changes on
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git x86/entry
-> commit f04e05b81e4d9ae88bee379f12176f551a24394a ("x86_64,entry: Use sysret to return to userspace when possible")
->
->
-> f2ee9bebb99dd4a4  f04e05b81e4d9ae88bee379f12  testbox/testcase/testparams
-> ----------------  --------------------------
->          %stddev     %change         %stddev
->              \          |                \
->      24.09 ±  4%     -62.7%       8.99 ±  3%  lkp-wsx02/aim9/performance-300s-creat-clo
->      24.09           -62.7%       8.99        GEO-MEAN time.user_time
->
+Hi Chanwoo,
 
-I don't really know how to interpret this.  Is this a good thing or a bad thing?
+2014-11-07 15:23 GMT+09:00 Chanwoo Choi <cw00.choi@samsung.com>:
+> Dear Linus,
+>
+> Could you please review this patch?
 
-I actually expect this change to be a dramatic speedup for some
-workloads.  Any chance you can send me the .config, kernel command
-line, and whether you have any tracing features enabled?
+I'll take care of this during this weekend.
 
---Andy
+Sorry for all the delays, but I was in the middle of relocation to
+another country and I just didn't have enough time yet to collect all
+the patches.
+
+Best regards,
+Tomasz
