@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaKGS2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:28:36 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:54105 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaKGS2e (ORCPT
+	id S1752731AbaKGS3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:29:43 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:63996 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069AbaKGS3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:28:34 -0500
-Date: Fri, 7 Nov 2014 10:28:23 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Giedrius Statkevicius <giedriuswork@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafael Wysocki <rjw@rjwysocki.net>,
-        Linux ACPI Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] platform: x86: remove redundant variable in hp-wireless.c
-Message-ID: <20141107182822.GA62564@vmdeb7>
-References: <1415144839-2035-1-git-send-email-giedriuswork@gmail.com>
+	Fri, 7 Nov 2014 13:29:41 -0500
+X-IronPort-AV: E=Sophos;i="5.07,334,1413270000"; 
+   d="scan'208";a="50383964"
+Message-ID: <545D0F93.9080007@broadcom.com>
+Date: Fri, 7 Nov 2014 10:29:39 -0800
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415144839-2035-1-git-send-email-giedriuswork@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "Peter Griffin" <peter.griffin@linaro.org>,
+        Chris Ball <chris@printf.net>, "Piotr Krol" <pietrushnic@gmail.com>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, <linux-rpi-kernel@lists.infradead.org>,
+        Ray Jui <rjui@broadcom.com>, <bcm-kernel-feedback-list@broadcom.com>
+Subject: Re: [PATCHv2 3/5] mmc: shdci-bcm2835: add efficient back-to-back
+ write workaround
+References: <Scott Branden <sbranden@broadcom.com> <1414651017-3545-1-git-send-email-sbranden@broadcom.com> <1414651017-3545-4-git-send-email-sbranden@broadcom.com> <5459AE2C.2050401@wwwdotorg.org> <5459C9C8.9070800@broadcom.com> <545AFDB1.80008@wwwdotorg.org>
+In-Reply-To: <545AFDB1.80008@wwwdotorg.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 01:47:19AM +0200, Giedrius Statkevicius wrote:
-> Remove a variable because it only holds the results of a function call
-> and then gets returned so instead just return the result of a function
-> call.
-> 
-> Signed-off-by: Giedrius Statkevičius <giedriuswork@gmail.com>
-> ---
->  drivers/platform/x86/hp-wireless.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
-> index 415348f..670c62b 100644
-> --- a/drivers/platform/x86/hp-wireless.c
-> +++ b/drivers/platform/x86/hp-wireless.c
-> @@ -82,10 +82,7 @@ static void hpwl_notify(struct acpi_device *acpi_dev, u32 event)
->  
->  static int hpwl_add(struct acpi_device *device)
->  {
-> -	int err;
-> -
-> -	err = hp_wireless_input_setup();
-> -	return err;
-> +	return hp_wireless_input_setup();
+On 14-11-05 08:48 PM, Stephen Warren wrote:
+> On 11/04/2014 11:55 PM, Scott Branden wrote:
+>> On 14-11-04 08:57 PM, Stephen Warren wrote:
+>>> On 10/30/2014 12:36 AM, Scott Branden wrote:
+>>>> The bcm2835 has clock domain issues when back to back writes to certain
+>>>> registers are written.  The existing driver works around this issue with
+>>>> udelay.  A more efficient method is to store the 8 and 16 bit writes
+>>>> to the registers affected and then write them as 32 bits at the
+>>>> appropriate
+>>>> time.
+>>>
+>>>> diff --git a/drivers/mmc/host/sdhci-bcm2835.c
+>>>> b/drivers/mmc/host/sdhci-bcm2835.c
+>>>
+>>>>    static void bcm2835_sdhci_writew(struct sdhci_host *host, u16 val,
+>>>> int reg)
+>>>>    {
+>>>>        struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+>>>> -    struct bcm2835_sdhci *bcm2835_host = pltfm_host->priv;
+>>>> -    u32 oldval = (reg == SDHCI_COMMAND) ? bcm2835_host->shadow :
+>>>> -        bcm2835_sdhci_readl(host, reg & ~3);
+>>>> +    struct bcm2835_sdhci_host *bcm2835_host = pltfm_host->priv;
+>>>
+>>> Is that type change for bcm2835_host really correct?
+>>
+>> Yes - at the top of the patch the structure has been expanded and named
+>> appropriately.
+>>
+>> -struct bcm2835_sdhci {
+>> -    u32 shadow;
+>> +struct bcm2835_sdhci_host {
+>> +    u32 shadow_cmd;
+>> +    u32 shadow_blk;
+>>   };
+>
+> Ah yes, sorry for missing that.
+>
+>>>> +    } else {
+>>>> +        /* Read reg, all other registers are not shadowed */
+>>>> +        oldval = readl(host->ioaddr + (reg & ~3));
+>>>
+>>> Is there any reason to use readl() directly here rather than calling
+>>> bcm2835_readl()? ...
+>>
+>> Yes, bcm2835_readl does not need to be called in read-modify-write and
+>> shadow register situations and just adds overhead.  All that needs to be
+>> called is readl.  bcm2835_readl has some existing ugly code in it to
+>> modify the capabilities register on a read function.  This info never
+>> needs to be for write as you can't overwrite the capabilities register.
+>
+> To be honest, it seems better to do all the read/write through
+> consistent functions. One advantage of bcm2835_readl() is that it
+> consistently adds on the base address internally so you don't have to
+> write it out every time manually. Still, the code ought to work fine
+> after this change, so I guess it's OK.
+>
+>> I hope to get rid of the capabilities hack in a future patch as this
+>> should never have been acceptable in upstreamed code to begin with.  The
+>> capabilities override should have been passed in through a device tree
+>> entry.
+>
+> It's a pretty common technique with precedent. I certainly don't agree
+> that it should be configured by DT. Arguably, DT makes sense to describe
+> board-to-board variations, but there's almost zero point putting data
+> into DT that is SoC description rather than board description; just put
+> it into the driver to avoid continually parsing the same data over and
+> over from DT just to get back to the same data that could have been
+> encoded into the driver. If the data varies between similar controllers,
+> an of_match table can easily be used to parameterize it based on
+> compatible value.
+There is work to be done here or I will be unable to use this driver in 
+our chipsets.  Perhaps it will be easier having another driver 
+actually... as the DMA seems quite different on RPI.
+>
 
-Since acpi_device_probe() does not print a warning if add() fails, it might be
-preferable to print the message here, rather than ignoring it completely.
-
-Rafael?
-
--- 
-Darren Hart
-Intel Open Source Technology Center
