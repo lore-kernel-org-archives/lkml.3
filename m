@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaKGObq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:31:46 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:35435 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaKGObk (ORCPT
+	id S1752931AbaKGOcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:32:03 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:58015 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaKGObt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:31:40 -0500
+	Fri, 7 Nov 2014 09:31:49 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: rjw@rjwysocki.net
 Cc: preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         peterz@infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, lenb@kernel.org
-Subject: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req before idle
-Date: Fri,  7 Nov 2014 15:31:23 +0100
-Message-Id: <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH V3 6/6] cpuidle: menu: Move the update function before its declaration
+Date: Fri,  7 Nov 2014 15:31:27 +0100
+Message-Id: <1415370687-18688-7-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
 References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
@@ -23,223 +23,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the pmqos latency requirement is set to zero that means "poll in all the
-cases".
+In order to prevent a pointless forward declaration, just move the function
+at the beginning of the file.
 
-That is correctly implemented on x86 but not on the other archs.
-
-As how is written the code, if the latency request is zero, the governor will
-return zero, so corresponding, for x86, to the poll function, but for the
-others arch the default idle function. For example, on ARM this is wait-for-
-interrupt with a latency of '1', so violating the constraint.
-
-In order to fix that, do the latency requirement check *before* calling the
-cpuidle framework in order to jump to the poll function without entering
-cpuidle. That has several benefits:
-
- 1. It clarifies and unifies the code
- 2. It fixes x86 vs other archs behavior
- 3. Factors out the call to the same function
- 4. Prevent to enter the cpuidle framework with its expensive cost in
-    calculation
-
-As the latency_req is needed in all the cases, change the select API to take
-the latency_req as parameter in case it is not equal to zero.
-
-As a positive side effect, it introduces the latency constraint specified
-externally, so one more step to the cpuidle/scheduler integration.
+This patch does not change the behavior of the governor, it is just code
+reordering.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Reviewed-by: Len Brown <len.brown@intel.com>
+Acked-by: Len Brown <len.brown@intel.com>
 ---
- drivers/cpuidle/cpuidle.c          |  6 ++++--
- drivers/cpuidle/governors/ladder.c |  9 +--------
- drivers/cpuidle/governors/menu.c   |  8 ++------
- include/linux/cpuidle.h            |  7 ++++---
- kernel/sched/idle.c                | 18 ++++++++++++++----
- 5 files changed, 25 insertions(+), 23 deletions(-)
+ drivers/cpuidle/governors/menu.c | 149 +++++++++++++++++++--------------------
+ 1 file changed, 74 insertions(+), 75 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 125150d..86f6cb8 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -155,10 +155,12 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
-  *
-  * @drv: the cpuidle driver
-  * @dev: the cpuidle device
-+ * @latency_req: the latency constraint when choosing an idle state
-  *
-  * Returns the index of the idle state.
-  */
--int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-+int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-+		   int latency_req)
- {
- 	if (off || !initialized)
- 		return -ENODEV;
-@@ -169,7 +171,7 @@ int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	if (unlikely(use_deepest_state))
- 		return cpuidle_find_deepest_state(drv, dev);
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 163e63b..b8017ad 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -184,7 +184,6 @@ static inline int performance_multiplier(unsigned long nr_iowaiters, unsigned lo
  
--	return cpuidle_curr_governor->select(drv, dev);
-+	return cpuidle_curr_governor->select(drv, dev, latency_req);
+ static DEFINE_PER_CPU(struct menu_device, menu_devices);
+ 
+-static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev);
+ 
+ /* This implements DIV_ROUND_CLOSEST but avoids 64 bit division */
+ static u64 div_round64(u64 dividend, u32 divisor)
+@@ -192,6 +191,80 @@ static u64 div_round64(u64 dividend, u32 divisor)
+ 	return div_u64(dividend + (divisor / 2), divisor);
+ }
+ 
++/**
++ * menu_update - attempts to guess what happened after entry
++ * @drv: cpuidle driver containing state data
++ * @dev: the CPU
++ */
++static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
++{
++	struct menu_device *data = this_cpu_ptr(&menu_devices);
++	int last_idx = data->last_state_idx;
++	struct cpuidle_state *target = &drv->states[last_idx];
++	unsigned int measured_us;
++	unsigned int new_factor;
++
++	/*
++	 * Try to figure out how much time passed between entry to low
++	 * power state and occurrence of the wakeup event.
++	 *
++	 * If the entered idle state didn't support residency measurements,
++	 * we are basically lost in the dark how much time passed.
++	 * As a compromise, assume we slept for the whole expected time.
++	 *
++	 * Any measured amount of time will include the exit latency.
++	 * Since we are interested in when the wakeup begun, not when it
++	 * was completed, we must subtract the exit latency. However, if
++	 * the measured amount of time is less than the exit latency,
++	 * assume the state was never reached and the exit latency is 0.
++	 */
++	if (unlikely(!(target->flags & CPUIDLE_FLAG_TIME_VALID))) {
++		/* Use timer value as is */
++		measured_us = data->next_timer_us;
++
++	} else {
++		/* Use measured value */
++		measured_us = cpuidle_get_last_residency(dev);
++
++		/* Deduct exit latency */
++		if (measured_us > target->exit_latency)
++			measured_us -= target->exit_latency;
++
++		/* Make sure our coefficients do not exceed unity */
++		if (measured_us > data->next_timer_us)
++			measured_us = data->next_timer_us;
++	}
++
++	/* Update our correction ratio */
++	new_factor = data->correction_factor[data->bucket];
++	new_factor -= new_factor / DECAY;
++
++	if (data->next_timer_us > 0 && measured_us < MAX_INTERESTING)
++		new_factor += RESOLUTION * measured_us / data->next_timer_us;
++	else
++		/*
++		 * we were idle so long that we count it as a perfect
++		 * prediction
++		 */
++		new_factor += RESOLUTION;
++
++	/*
++	 * We don't want 0 as factor; we always want at least
++	 * a tiny bit of estimated time. Fortunately, due to rounding,
++	 * new_factor will stay nonzero regardless of measured_us values
++	 * and the compiler can eliminate this test as long as DECAY > 1.
++	 */
++	if (DECAY == 1 && unlikely(new_factor == 0))
++		new_factor = 1;
++
++	data->correction_factor[data->bucket] = new_factor;
++
++	/* update the repeating-pattern data */
++	data->intervals[data->interval_ptr++] = measured_us;
++	if (data->interval_ptr >= INTERVALS)
++		data->interval_ptr = 0;
++}
++
+ /*
+  * Try detecting repeating patterns by keeping track of the last 8
+  * intervals, and checking if the standard deviation of that set
+@@ -371,80 +444,6 @@ static void menu_reflect(struct cpuidle_device *dev, int index)
  }
  
  /**
-diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
-index 06b57c4..53113c2 100644
---- a/drivers/cpuidle/governors/ladder.c
-+++ b/drivers/cpuidle/governors/ladder.c
-@@ -64,18 +64,11 @@ static inline void ladder_do_selection(struct ladder_device *ldev,
-  * @dev: the CPU
-  */
- static int ladder_select_state(struct cpuidle_driver *drv,
--				struct cpuidle_device *dev)
-+			       struct cpuidle_device *dev, int latency_req)
- {
- 	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
- 	struct ladder_device_state *last_state;
- 	int last_residency, last_idx = ldev->last_state_idx;
--	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+- * menu_update - attempts to guess what happened after entry
+- * @drv: cpuidle driver containing state data
+- * @dev: the CPU
+- */
+-static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+-{
+-	struct menu_device *data = this_cpu_ptr(&menu_devices);
+-	int last_idx = data->last_state_idx;
+-	struct cpuidle_state *target = &drv->states[last_idx];
+-	unsigned int measured_us;
+-	unsigned int new_factor;
 -
--	/* Special case when user has set very strict latency requirement */
--	if (unlikely(latency_req == 0)) {
--		ladder_do_selection(ldev, last_idx, 0);
--		return 0;
+-	/*
+-	 * Try to figure out how much time passed between entry to low
+-	 * power state and occurrence of the wakeup event.
+-	 *
+-	 * If the entered idle state didn't support residency measurements,
+-	 * we are basically lost in the dark how much time passed.
+-	 * As a compromise, assume we slept for the whole expected time.
+-	 *
+-	 * Any measured amount of time will include the exit latency.
+-	 * Since we are interested in when the wakeup begun, not when it
+-	 * was completed, we must subtract the exit latency. However, if
+-	 * the measured amount of time is less than the exit latency,
+-	 * assume the state was never reached and the exit latency is 0.
+-	 */
+-	if (unlikely(!(target->flags & CPUIDLE_FLAG_TIME_VALID))) {
+-		/* Use timer value as is */
+-		measured_us = data->next_timer_us;
+-
+-	} else {
+-		/* Use measured value */
+-		measured_us = cpuidle_get_last_residency(dev);
+-
+-		/* Deduct exit latency */
+-		if (measured_us > target->exit_latency)
+-			measured_us -= target->exit_latency;
+-
+-		/* Make sure our coefficients do not exceed unity */
+-		if (measured_us > data->next_timer_us)
+-			measured_us = data->next_timer_us;
 -	}
- 
- 	last_state = &ldev->states[last_idx];
- 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 710a233..9b7c0b9 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -287,10 +287,10 @@ again:
-  * @drv: cpuidle driver containing state data
-  * @dev: the CPU
-  */
--static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-+static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-+		       int latency_req)
- {
- 	struct menu_device *data = this_cpu_ptr(&menu_devices);
--	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
- 	int i;
- 	unsigned int interactivity_req;
- 	unsigned long nr_iowaiters, cpu_load;
-@@ -302,10 +302,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 
- 	data->last_state_idx = CPUIDLE_DRIVER_STATE_START - 1;
- 
--	/* Special case when user has set very strict latency requirement */
--	if (unlikely(latency_req == 0))
--		return 0;
 -
- 	/* determine the expected residency time, round up */
- 	data->next_timer_us = ktime_to_us(tick_nohz_get_sleep_length());
- 
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 25e0df6..fb465c1 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -122,7 +122,7 @@ struct cpuidle_driver {
- extern void disable_cpuidle(void);
- 
- extern int cpuidle_select(struct cpuidle_driver *drv,
--			  struct cpuidle_device *dev);
-+			  struct cpuidle_device *dev, int latency_req);
- extern int cpuidle_enter(struct cpuidle_driver *drv,
- 			 struct cpuidle_device *dev, int index);
- extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
-@@ -150,7 +150,7 @@ extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
- #else
- static inline void disable_cpuidle(void) { }
- static inline int cpuidle_select(struct cpuidle_driver *drv,
--				 struct cpuidle_device *dev)
-+				 struct cpuidle_device *dev, int latency_req)
- {return -ENODEV; }
- static inline int cpuidle_enter(struct cpuidle_driver *drv,
- 				struct cpuidle_device *dev, int index)
-@@ -205,7 +205,8 @@ struct cpuidle_governor {
- 					struct cpuidle_device *dev);
- 
- 	int  (*select)		(struct cpuidle_driver *drv,
--					struct cpuidle_device *dev);
-+				 struct cpuidle_device *dev,
-+				 int latency_req);
- 	void (*reflect)		(struct cpuidle_device *dev, int index);
- 
- 	struct module 		*owner;
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index ea65bbae..189e80a 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -5,6 +5,7 @@
- #include <linux/cpu.h>
- #include <linux/cpuidle.h>
- #include <linux/tick.h>
-+#include <linux/pm_qos.h>
- #include <linux/mm.h>
- #include <linux/stackprotector.h>
- 
-@@ -79,7 +80,7 @@ static inline int cpu_idle_poll(void)
-  * set, and it returns with polling set.  If it ever stops polling, it
-  * must clear the polling bit.
-  */
--static void cpuidle_idle_call(void)
-+static void cpuidle_idle_call(unsigned int latency_req)
- {
- 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
- 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-@@ -112,7 +113,7 @@ static void cpuidle_idle_call(void)
- 	 * Ask the cpuidle framework to choose a convenient idle state.
- 	 * Fall back to the default arch idle method on errors.
- 	 */
--	next_state = cpuidle_select(drv, dev);
-+	next_state = cpuidle_select(drv, dev, latency_req);
- 	if (next_state < 0) {
- use_default:
- 		/*
-@@ -193,6 +194,8 @@ exit_idle:
-  */
- static void cpu_idle_loop(void)
- {
-+	unsigned int latency_req;
-+
- 	while (1) {
- 		/*
- 		 * If the arch has a polling bit, we maintain an invariant:
-@@ -216,19 +219,26 @@ static void cpu_idle_loop(void)
- 			local_irq_disable();
- 			arch_cpu_idle_enter();
- 
-+			latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
-+
- 			/*
- 			 * In poll mode we reenable interrupts and spin.
- 			 *
-+			 * If the latency req is zero, we don't want to
-+			 * enter any idle state and we jump to the poll
-+			 * function directly
-+			 *
- 			 * Also if we detected in the wakeup from idle
- 			 * path that the tick broadcast device expired
- 			 * for us, we don't want to go deep idle as we
- 			 * know that the IPI is going to arrive right
- 			 * away
- 			 */
--			if (cpu_idle_force_poll || tick_check_broadcast_expired())
-+			if (!latency_req || cpu_idle_force_poll ||
-+			    tick_check_broadcast_expired())
- 				cpu_idle_poll();
- 			else
--				cpuidle_idle_call();
-+				cpuidle_idle_call(latency_req);
- 
- 			arch_cpu_idle_exit();
- 		}
+-	/* Update our correction ratio */
+-	new_factor = data->correction_factor[data->bucket];
+-	new_factor -= new_factor / DECAY;
+-
+-	if (data->next_timer_us > 0 && measured_us < MAX_INTERESTING)
+-		new_factor += RESOLUTION * measured_us / data->next_timer_us;
+-	else
+-		/*
+-		 * we were idle so long that we count it as a perfect
+-		 * prediction
+-		 */
+-		new_factor += RESOLUTION;
+-
+-	/*
+-	 * We don't want 0 as factor; we always want at least
+-	 * a tiny bit of estimated time. Fortunately, due to rounding,
+-	 * new_factor will stay nonzero regardless of measured_us values
+-	 * and the compiler can eliminate this test as long as DECAY > 1.
+-	 */
+-	if (DECAY == 1 && unlikely(new_factor == 0))
+-		new_factor = 1;
+-
+-	data->correction_factor[data->bucket] = new_factor;
+-
+-	/* update the repeating-pattern data */
+-	data->intervals[data->interval_ptr++] = measured_us;
+-	if (data->interval_ptr >= INTERVALS)
+-		data->interval_ptr = 0;
+-}
+-
+-/**
+  * menu_enable_device - scans a CPU's states and does setup
+  * @drv: cpuidle driver
+  * @dev: the CPU
 -- 
 1.9.1
 
