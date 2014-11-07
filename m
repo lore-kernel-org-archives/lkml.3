@@ -1,49 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaKGOJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:09:57 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:45818 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620AbaKGOJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:09:52 -0500
-X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
-   d="scan'208";a="189135000"
-Message-ID: <545CD26E.8040404@citrix.com>
-Date: Fri, 7 Nov 2014 14:08:46 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH V2 2/5] xen: Delay m2p_override initialization
-References: <1415252853-7106-1-git-send-email-jgross@suse.com>	<1415252853-7106-3-git-send-email-jgross@suse.com>	<545CC349.8020006@citrix.com> <545CC6D8.80100@suse.com>
-In-Reply-To: <545CC6D8.80100@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+	id S1753009AbaKGOKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:10:18 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:59139 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752662AbaKGOH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 09:07:59 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 05/10] [media] pci: Make use of MEDIA_BUS_FMT definitions
+Date: Fri,  7 Nov 2014 15:07:44 +0100
+Message-Id: <1415369269-5064-6-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/14 13:19, Juergen Gross wrote:
-> On 11/07/2014 02:04 PM, David Vrabel wrote:
->>
->> I suppose this is the "make some functions static" but it's an
->> unreviewable mess.  If you can't do this with some one line changes
->> adding "static" and perhaps some forward declarations then please drop
->> this bit.
-> 
-> Do you really prefer forward declarations instead of pure code movement?
-> I can do as you request, but just want to make sure.
+In order to have subsytem agnostic media bus format definitions we've
+moved media bus definition to include/uapi/linux/media-bus-format.h and
+prefixed values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
 
-Normally I prefer not having forward declarations...  How about a patch
-that does this and then a 2nd patch that does the pure code motion.
-Maybe that will produce a better diff?
+Replace all references to the old definitions in pci drivers.
 
-You can also try the --patience option for git diff (etc.).  This may
-produce more readable diffs.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ drivers/media/pci/cx18/cx18-av-core.c       | 2 +-
+ drivers/media/pci/cx18/cx18-controls.c      | 2 +-
+ drivers/media/pci/cx18/cx18-ioctl.c         | 2 +-
+ drivers/media/pci/cx23885/cx23885-video.c   | 2 +-
+ drivers/media/pci/ivtv/ivtv-controls.c      | 2 +-
+ drivers/media/pci/ivtv/ivtv-ioctl.c         | 2 +-
+ drivers/media/pci/saa7134/saa7134-empress.c | 4 ++--
+ 7 files changed, 8 insertions(+), 8 deletions(-)
 
-David
+diff --git a/drivers/media/pci/cx18/cx18-av-core.c b/drivers/media/pci/cx18/cx18-av-core.c
+index 2d3afe0..4c6ce21 100644
+--- a/drivers/media/pci/cx18/cx18-av-core.c
++++ b/drivers/media/pci/cx18/cx18-av-core.c
+@@ -952,7 +952,7 @@ static int cx18_av_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt
+ 	int HSC, VSC, Vsrc, Hsrc, filter, Vlines;
+ 	int is_50Hz = !(state->std & V4L2_STD_525_60);
+ 
+-	if (fmt->code != V4L2_MBUS_FMT_FIXED)
++	if (fmt->code != MEDIA_BUS_FMT_FIXED)
+ 		return -EINVAL;
+ 
+ 	fmt->field = V4L2_FIELD_INTERLACED;
+diff --git a/drivers/media/pci/cx18/cx18-controls.c b/drivers/media/pci/cx18/cx18-controls.c
+index 282a3d2..4aeb7c6 100644
+--- a/drivers/media/pci/cx18/cx18-controls.c
++++ b/drivers/media/pci/cx18/cx18-controls.c
+@@ -98,7 +98,7 @@ static int cx18_s_video_encoding(struct cx2341x_handler *cxhdl, u32 val)
+ 	/* fix videodecoder resolution */
+ 	fmt.width = cxhdl->width / (is_mpeg1 ? 2 : 1);
+ 	fmt.height = cxhdl->height;
+-	fmt.code = V4L2_MBUS_FMT_FIXED;
++	fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(cx->sd_av, video, s_mbus_fmt, &fmt);
+ 	return 0;
+ }
+diff --git a/drivers/media/pci/cx18/cx18-ioctl.c b/drivers/media/pci/cx18/cx18-ioctl.c
+index 6f2b590..71963db 100644
+--- a/drivers/media/pci/cx18/cx18-ioctl.c
++++ b/drivers/media/pci/cx18/cx18-ioctl.c
+@@ -294,7 +294,7 @@ static int cx18_s_fmt_vid_cap(struct file *file, void *fh,
+ 
+ 	mbus_fmt.width = cx->cxhdl.width = w;
+ 	mbus_fmt.height = cx->cxhdl.height = h;
+-	mbus_fmt.code = V4L2_MBUS_FMT_FIXED;
++	mbus_fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(cx->sd_av, video, s_mbus_fmt, &mbus_fmt);
+ 	return cx18_g_fmt_vid_cap(file, fh, fmt);
+ }
+diff --git a/drivers/media/pci/cx23885/cx23885-video.c b/drivers/media/pci/cx23885/cx23885-video.c
+index 682a4f9..091f5db 100644
+--- a/drivers/media/pci/cx23885/cx23885-video.c
++++ b/drivers/media/pci/cx23885/cx23885-video.c
+@@ -608,7 +608,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+ 	dev->field	= f->fmt.pix.field;
+ 	dprintk(2, "%s() width=%d height=%d field=%d\n", __func__,
+ 		dev->width, dev->height, dev->field);
+-	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
++	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, MEDIA_BUS_FMT_FIXED);
+ 	call_all(dev, video, s_mbus_fmt, &mbus_fmt);
+ 	v4l2_fill_pix_format(&f->fmt.pix, &mbus_fmt);
+ 	/* s_mbus_fmt overwrites f->fmt.pix.field, restore it */
+diff --git a/drivers/media/pci/ivtv/ivtv-controls.c b/drivers/media/pci/ivtv/ivtv-controls.c
+index 2b0ab26..ccf548c 100644
+--- a/drivers/media/pci/ivtv/ivtv-controls.c
++++ b/drivers/media/pci/ivtv/ivtv-controls.c
+@@ -69,7 +69,7 @@ static int ivtv_s_video_encoding(struct cx2341x_handler *cxhdl, u32 val)
+ 	/* fix videodecoder resolution */
+ 	fmt.width = cxhdl->width / (is_mpeg1 ? 2 : 1);
+ 	fmt.height = cxhdl->height;
+-	fmt.code = V4L2_MBUS_FMT_FIXED;
++	fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(itv->sd_video, video, s_mbus_fmt, &fmt);
+ 	return 0;
+ }
+diff --git a/drivers/media/pci/ivtv/ivtv-ioctl.c b/drivers/media/pci/ivtv/ivtv-ioctl.c
+index 3e0cb77..4d8ee18 100644
+--- a/drivers/media/pci/ivtv/ivtv-ioctl.c
++++ b/drivers/media/pci/ivtv/ivtv-ioctl.c
+@@ -595,7 +595,7 @@ static int ivtv_s_fmt_vid_cap(struct file *file, void *fh, struct v4l2_format *f
+ 		fmt->fmt.pix.width /= 2;
+ 	mbus_fmt.width = fmt->fmt.pix.width;
+ 	mbus_fmt.height = h;
+-	mbus_fmt.code = V4L2_MBUS_FMT_FIXED;
++	mbus_fmt.code = MEDIA_BUS_FMT_FIXED;
+ 	v4l2_subdev_call(itv->sd_video, video, s_mbus_fmt, &mbus_fmt);
+ 	return ivtv_g_fmt_vid_cap(file, fh, fmt);
+ }
+diff --git a/drivers/media/pci/saa7134/saa7134-empress.c b/drivers/media/pci/saa7134/saa7134-empress.c
+index e4ea85f..8b3bb78 100644
+--- a/drivers/media/pci/saa7134/saa7134-empress.c
++++ b/drivers/media/pci/saa7134/saa7134-empress.c
+@@ -140,7 +140,7 @@ static int empress_s_fmt_vid_cap(struct file *file, void *priv,
+ 	struct saa7134_dev *dev = video_drvdata(file);
+ 	struct v4l2_mbus_framefmt mbus_fmt;
+ 
+-	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
++	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, MEDIA_BUS_FMT_FIXED);
+ 	saa_call_all(dev, video, s_mbus_fmt, &mbus_fmt);
+ 	v4l2_fill_pix_format(&f->fmt.pix, &mbus_fmt);
+ 
+@@ -157,7 +157,7 @@ static int empress_try_fmt_vid_cap(struct file *file, void *priv,
+ 	struct saa7134_dev *dev = video_drvdata(file);
+ 	struct v4l2_mbus_framefmt mbus_fmt;
+ 
+-	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
++	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, MEDIA_BUS_FMT_FIXED);
+ 	saa_call_all(dev, video, try_mbus_fmt, &mbus_fmt);
+ 	v4l2_fill_pix_format(&f->fmt.pix, &mbus_fmt);
+ 
+-- 
+1.9.1
+
