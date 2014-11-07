@@ -1,129 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaKGSyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:54:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46529 "EHLO mx1.redhat.com"
+	id S1753194AbaKGSzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:55:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38770 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074AbaKGSyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:54:53 -0500
-Message-ID: <545D1575.2010708@redhat.com>
-Date: Fri, 07 Nov 2014 13:54:45 -0500
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753020AbaKGSzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:55:35 -0500
+Date: Fri, 7 Nov 2014 12:55:28 -0600
+From: Seth Jennings <sjenning@redhat.com>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: module notifier: was Re: [PATCH 2/2] kernel: add support for
+ live patching
+Message-ID: <20141107185528.GD2057@cerebellum.variantweb.net>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <20141107171307.GC1136@dhcp128.suse.cz>
+ <20141107180711.GC2057@cerebellum.variantweb.net>
+ <20141107184011.GF1136@dhcp128.suse.cz>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-CC: linux-unionfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/7] Security: Provide unioned file support
-References: <545BC088.6080306@schaufler-ca.com> <545BB147.4000100@schaufler-ca.com> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <6108.1415296719@warthog.procyon.org.uk> <29936.1415373684@warthog.procyon.org.uk>
-In-Reply-To: <29936.1415373684@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107184011.GF1136@dhcp128.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 07, 2014 at 07:40:11PM +0100, Petr Mladek wrote:
+> On Fri 2014-11-07 12:07:11, Seth Jennings wrote:
+> > On Fri, Nov 07, 2014 at 06:13:07PM +0100, Petr Mladek wrote:
+> > > On Thu 2014-11-06 08:39:08, Seth Jennings wrote:
+> > > > This commit introduces code for the live patching core.  It implements
+> > > > an ftrace-based mechanism and kernel interface for doing live patching
+> > > > of kernel and kernel module functions.
+> > > > 
+> > > > It represents the greatest common functionality set between kpatch and
+> > > > kgraft and can accept patches built using either method.
+> > > > 
+> > > > This first version does not implement any consistency mechanism that
+> > > > ensures that old and new code do not run together.  In practice, ~90% of
+> > > > CVEs are safe to apply in this way, since they simply add a conditional
+> > > > check.  However, any function change that can not execute safely with
+> > > > the old version of the function can _not_ be safely applied in this
+> > > > version.
+> > > 
+> > > [...]
+> > >  
+> > > > +/******************************
+> > > > + * module notifier
+> > > > + *****************************/
+> > > > +
+> > > > +static int lp_module_notify(struct notifier_block *nb, unsigned long action,
+> > > > +			    void *data)
+> > > > +{
+> > > > +	struct module *mod = data;
+> > > > +	struct lpc_patch *patch;
+> > > > +	struct lpc_object *obj;
+> > > > +	int ret = 0;
+> > > > +
+> > > > +	if (action != MODULE_STATE_COMING)
+> > > > +		return 0;
+> > > 
+> > > IMHO, we should handle also MODULE_STATE_GOING. We should unregister
+> > > the ftrace handlers and update the state of the affected objects
+> > > (ENABLED -> DISABLED)
+> > 
+> > The mechanism we use to avoid this right now is taking a reference on
+> > patched module.  We only release that reference after the patch is
+> > disabled, which unregisters all the patched functions from ftrace.
+> 
+> I see. This was actually another thing that I noticed and wanted to
+> investigate :-) I think that we should not force users to disable
+> the entire patch if they want to remove some module.
 
-On 11/07/2014 10:21 AM, David Howells wrote:
-> Casey Schaufler <casey@schaufler-ca.com> wrote:
->
->>>> What does this mean?
->>> It has been decided that for the purposes of docker, all files within the
->>> docker root fs will have the same label.  We'd have to provide policy
->>> namespacing otherwise (I think).
->> That's just insane. "It has been decided" by who? Obviously not people
->> who care about security policies. Maybe it's good enough for your
->> particular use case, but labeling of files has to be up to the security
->> module. That's what the modules are for.
-> It has been decided by the docker people that I've dealt with.  I was
-> expecting there to be different labels throughout a docker image, but
-> apparently not...
-We want the equivalent of the mount option
-context="system_u:object_r:svirt_sandbox_file_t:s0:c1,c2"
+I agree that would be better.
 
-Which would label all of the content in the OVERLAYFS with this label. 
-If we have to have a readonly label for the lower
-level and a RW Label for the context mount then that is fine with us. 
-The lower level can actually just reveal the label of the INODE.
-We can take care of labeling it with a single label.
+> 
+> 
+> > However, your comment reminded me of an idea I had to use
+> > MODULE_STATE_GOING and let the lpc_mutex protect against races.  I think
+> > it could be cleaner, but I haven't fleshed the idea out fully.
+> 
+> AFAIK, the going module is not longer used when the notifier is
+> called. Therefore we could remove the patch fast way even when
+> patching would require the slow path otherwise.
 
-If the context="LABEL" (Or its equivalent is not passed), it should get
-some kind of label based on the parent directory I would guess
-or transition rules. 
+Yes (Josh just brought this to my attention) is that the notifiers are
+call with GOING _after_ the module's exit function is called.
 
-With docker we want to treat all contents of a container with a single
-label and then separate containers based on MCS(Svirt) separation.
->>>> What about LSMs that have multiple labels on a file?
->>> Setting policy is something I'll have to leave to the docker people and the
->>> administrators of systems that use docker.
->> What does that mean? If the underlying mechanism can't do the job,
->> how the dickens is the administrator supposed to make it happen?
-> I'm trying to make the kernel able to support a policy on this at all - not
-> actually write the policy itself.  The policy may well vary depending on the
-> installation anyway.
->
->>> But all I'm proposing is a way to give the LSM access to both the file in
->>> the overlay and the file in the lower fs that is leeching through into the
->>> overlay.
->> But your mechanisms are simultaneously incomplete and over specified.
-> Well then, specify better ones!  I'm fairly certain it is incomplete and I'm
-> *trying* to get input on how it may be improved.  I should've marked the
-> patches [RFC] but it didn't occur to me until just after I'd sent them (of
-> course).
->
-> Anyway, there are a number of things one has to take account of:
->
->  (1) There may be multiple 'views' or instances of a file in a union - and
->      each may be labelled differently.
->
->  (2) The lower file may have xattrs attached to it that represent the security
->      policy.
->
->  (3) The union file may have xattrs attached to it that represent the security
->      policy.
->
->  (4) When copying the lower file up, the xattrs representing the security
->      attributes of the lower file must not be written as they may incorrectly
->      overwrite the security attributes of the union file.
->
->  (5) There needs to be a way to set the security attributes on the union file.
->
->  (6) When setting the attributes on the union file, the LSM might need to take
->      account of the attributes of the lower file in their derivation.
->
->  (7) There may be no inode in the union layer on which to hang the attributes
->      for the upper file.
->
->  (8) struct file::f_security should be used to contain the union layer
->      labellage on open files that point to a lower layer.
->
->  (9) Ideally, file->f_path would point to the union layer and file->f_inode to
->      the lower layer when there is no upper file.  However, this is not the
->      case at the moment.  The file struct *only* points to the lower file or
->      the upper file and never both.
->
-> (10) Overlayfs has an extra complication in that there are potentially three
->      files involved in any union.  The lower file that is the source, the
->      upper file that where the copy-up goes and the virtual union file in the
->      overlay fs that redirects to one or the other.
->
->      I've taken the approach that we assume that the upper file (if it exists)
->      has the same labellage as the union file.
->
->> Your proposal is a cop out. It may work in a limited set of cases.
->> It is not a general solution.
-> Actually, I think the actual code interface I've proposed is pretty close to
-> being a general solution.  I've given the LSM the information I have, it can
-> implement a fabulous maze of specially crafted labels if it wants to - and
-> even have multiple labels per inode or per file.  The VFS does not care.
->
-> David
->
-> _______________________________________________
-> Selinux mailing list
-> Selinux@tycho.nsa.gov
-> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
-> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+Thanks,
+Seth
 
+> 
+> 
+> > > 
+> > > > +	down(&lpc_mutex);
+> > > > +
+> > > > +	list_for_each_entry(patch, &lpc_patches, list) {
+> > > > +		if (patch->state == DISABLED)
+> > > > +			continue;
+> > > > +		list_for_each_entry(obj, &patch->objs, list) {
+> > > > +			if (strcmp(obj->name, mod->name))
+> > > > +				continue;
+> > > > +			pr_notice("load of module '%s' detected, applying patch '%s'\n",
+> > > > +				  mod->name, patch->mod->name);
+> > > > +			obj->mod = mod;
+> > > > +			ret = lpc_enable_object(patch->mod, obj);
+> > > > +			if (ret)
+> > > > +				goto out;
+> > > > +			break;
+> > > > +		}
+> > > > +	}
+> > > > +
+> > > > +	up(&lpc_mutex);
+> > > > +	return 0;
+> > > > +out:
+> > > 
+> > > I would name this err_our or so to make it clear that it is used when
+> > > something fails.
+> > 
+> > Just "err" good?
+> 
+> Fine with me.
+>  
+> > > > +	up(&lpc_mutex);
+> > > > +	WARN("failed to apply patch '%s' to module '%s'\n",
+> > > > +		patch->mod->name, mod->name);
+> > > > +	return 0;
+> > > > +}
+> > > > +
+> > > > +static struct notifier_block lp_module_nb = {
+> > > > +	.notifier_call = lp_module_notify,
+> > > > +	.priority = INT_MIN, /* called last */
+> > > 
+> > > The handler for MODULE_STATE_COMMING would need have higger priority,
+> > > if we want to cleanly unregister the ftrace handlers.
+> > 
+> > Yes, we might need two handlers at different priorities if we decide to
+> > go that direction: one for MODULE_STATE_GOING at high/max and one for
+> > MODULE_STATE_COMING at low/min.
+> 
+> kGraft has notifier only for the going state. The initialization is
+> called directly from load_module() after ftrace_module_init()
+> and complete_formation() before it is executed by parse_args().
+> 
+> I need to investigate if the notifier is more elegant and safe or not.
+> 
+> Best Regards,
+> Petr
