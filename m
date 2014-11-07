@@ -1,145 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaKGMVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:21:18 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58046 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752285AbaKGMVN (ORCPT
+	id S1752035AbaKGM0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:26:22 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:63298 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaKGM0R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:21:13 -0500
-Date: Fri, 7 Nov 2014 13:21:08 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-api@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v2 01/10] [media] Move mediabus format definition to a
- more standard place
-Message-ID: <20141107132108.0f30dafb@bbrezillon>
-In-Reply-To: <20141107114358.GB3136@valkosipuli.retiisi.org.uk>
-References: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1415267829-4177-2-git-send-email-boris.brezillon@free-electrons.com>
-	<20141107114358.GB3136@valkosipuli.retiisi.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 7 Nov 2014 07:26:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1415350967-2238-2-git-send-email-LW@KARO-electronics.de>
+References: <1415350967-2238-1-git-send-email-LW@KARO-electronics.de>
+	<1415350967-2238-2-git-send-email-LW@KARO-electronics.de>
+Date: Fri, 7 Nov 2014 10:26:15 -0200
+Message-ID: <CAOMZO5Cb1=Nvzu8EHqmV+K+W+ZJxzL1=5MnK6hDSstwh9ruweA@mail.gmail.com>
+Subject: Re: [PATCHv4 1/1] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+From: Fabio Estevam <festevam@gmail.com>
+To: =?UTF-8?Q?Lothar_Wa=C3=9Fmann?= <LW@karo-electronics.de>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Frank Li <Frank.Li@freescale.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stefan Wahren <stefan.wahren@i2se.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Nov 2014 13:43:59 +0200
-Sakari Ailus <sakari.ailus@iki.fi> wrote:
+On Fri, Nov 7, 2014 at 7:02 AM, Lothar Waßmann <LW@karo-electronics.de> wrote:
+> commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> introduced a regression for i.MX28. The swap_buffer() function doing
+> the endian conversion of the received data on i.MX28 may access memory
+> beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> does not copy those bytes, so that the last bytes of a packet may be
+> filled with invalid data after swapping.
+> This will likely lead to checksum errors on received packets.
+> E.g. when trying to mount an NFS rootfs:
+> UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+>
+> Do the byte swapping and copying to the new skb in one go if
+> necessary.
+>
+> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 
-> Hi Boris,
-> 
-> Thank you for the update.
-> 
-> On Thu, Nov 06, 2014 at 10:56:59AM +0100, Boris Brezillon wrote:
-> > Rename mediabus formats and move the enum into a separate header file so
-> > that it can be used by DRM/KMS subsystem without any reference to the V4L2
-> > subsystem.
-> > 
-> > Old v4l2_mbus_pixelcode now points to media_bus_format.
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > ---
-> >  include/uapi/linux/Kbuild             |   1 +
-> >  include/uapi/linux/media-bus-format.h | 131 ++++++++++++++++++++++++++++++++++
-> >  include/uapi/linux/v4l2-mediabus.h    | 114 +----------------------------
-> >  3 files changed, 134 insertions(+), 112 deletions(-)
-> >  create mode 100644 include/uapi/linux/media-bus-format.h
-> > 
-> > diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> > index b70237e..b2c23f8 100644
-> > --- a/include/uapi/linux/Kbuild
-> > +++ b/include/uapi/linux/Kbuild
-> > @@ -414,6 +414,7 @@ header-y += veth.h
-> >  header-y += vfio.h
-> >  header-y += vhost.h
-> >  header-y += videodev2.h
-> > +header-y += media-bus-format.h
-> 
-> Could you arrange this to the list alphabetically, please?
-> 
-> >  header-y += virtio_9p.h
-> >  header-y += virtio_balloon.h
-> >  header-y += virtio_blk.h
-> > diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
-> > new file mode 100644
-> > index 0000000..251a902
-> > --- /dev/null
-> > +++ b/include/uapi/linux/media-bus-format.h
-> > @@ -0,0 +1,131 @@
-> > +/*
-> > + * Media Bus API header
-> > + *
-> > + * Copyright (C) 2009, Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#ifndef __LINUX_MEDIA_BUS_FORMAT_H
-> > +#define __LINUX_MEDIA_BUS_FORMAT_H
-> > +
-> > +/*
-> > + * These bus formats uniquely identify data formats on the data bus. Format 0
-> > + * is reserved, MEDIA_BUS_FMT_FIXED shall be used by host-client pairs, where
-> > + * the data format is fixed. Additionally, "2X8" means that one pixel is
-> > + * transferred in two 8-bit samples, "BE" or "LE" specify in which order those
-> > + * samples are transferred over the bus: "LE" means that the least significant
-> > + * bits are transferred first, "BE" means that the most significant bits are
-> > + * transferred first, and "PADHI" and "PADLO" define which bits - low or high,
-> > + * in the incomplete high byte, are filled with padding bits.
-> > + *
-> > + * The bus formats are grouped by type, bus_width, bits per component, samples
-> > + * per pixel and order of subsamples. Numerical values are sorted using generic
-> > + * numerical sort order (8 thus comes before 10).
-> > + *
-> > + * As their value can't change when a new bus format is inserted in the
-> > + * enumeration, the bus formats are explicitly given a numerical value. The next
-> > + * free values for each category are listed below, update them when inserting
-> > + * new pixel codes.
-> > + */
-> > +
-> > +#define MEDIA_BUS_FMT_ENTRY(name, val)	\
-> > +	MEDIA_BUS_FMT_ ## name = val,	\
-> > +	V4L2_MBUS_FMT_ ## name = val
-> > +
-> > +enum media_bus_format {
-> 
-> There's no really a need to keep the definitions inside the enum. It looks a
-> little bit confusing to me. That made me realise something I missed
-> yesterday.
-> 
-> There's a difference: the enum in C++ is a different thing than in C, and
-> the enum type isn't able to contain any other values than those defined in
-> the enumeration.
-> 
-> So what I propose is the following. Keep enum v4l2_mbus_pixelcode around,
-> including the enum values. Define new values for MEDIA_BUS_* equivalents
-> using preprocessor macros, as you've done below. Drop the definition of enum
-> media_bus_format, and use u32 (or uint32_t) type for the variables.
-> 
-> This way the enum stays intact for existing C++ applications, and new
-> applications will have to use a 32-bit type.
-> 
+With this patch I am able to NFS mount on mx28 again. Thanks, Lothar!
 
-Fair enough. If Hans agree I'll rework the series and drop the
-media_bus_format enum.
-
-Thanks,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
