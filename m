@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaKGOWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:22:17 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54609 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960AbaKGOWQ (ORCPT
+	id S1752567AbaKGOZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:25:08 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:53311 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaKGOZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:22:16 -0500
-Date: Fri, 7 Nov 2014 14:22:05 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 6/8] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-Message-ID: <20141107142205.GD29148@e104818-lin.cambridge.arm.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
- <1414422568-19103-6-git-send-email-stefano.stabellini@eu.citrix.com>
+	Fri, 7 Nov 2014 09:25:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
+        will.deacon@arm.com, bhelgaas@google.com, Liviu.Dudau@arm.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net,
+        linaro-acpi@lists.linaro.org, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC PATCH 4/4] arm64, acpi, pci: Provide arch-specific calls for PCI host bridge dirver (PNP0A03).
+Date: Fri, 07 Nov 2014 15:24:30 +0100
+Message-ID: <4474363.kMvYSLl2Ev@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415366876-30811-5-git-send-email-tomasz.nowicki@linaro.org>
+References: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org> <1415366876-30811-5-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414422568-19103-6-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:nZ0yjoFVB4lmyDqqRn0v1odJp95mKr8E/y/ozTFm10P
+ jSflvYo1E+upVsd5SMuhFdVpeO1HNEWADiPr4XH9No1Dq4Ow+H
+ J2Ht2waur4iJoU2dUte7I7ECxgGhPxjWK6K1o8EkMzkqIdzptX
+ mLTGOoYC9aUMlnaTqC4CIYZYNlyJPwPEjYWi4iUZOYCrw1gFsU
+ USvN8YAjlhhzvld/okQ6JMYBL/VCOdN1IUgJSIeVKVAgd2Xgd3
+ xrMNw0Xv0EdjwluZc531LLUuesAsZs8YGC9QtidpC0IqbsPZXO
+ lTDMM0oUJ+RXqgVChDICiffUFXy/Q5VJzn0o3R4Kh8SVF6mzB4
+ jCyzg5frhEuIWT2z8MHg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 03:09:26PM +0000, Stefano Stabellini wrote:
-> Merge xen/mm32.c into xen/mm.c.
-> As a consequence the code gets compiled on arm64 too: introduce a few
-> compat functions to actually be able to compile it.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
-Since I missed the commit introducing mm32.c (340720be32d4 xen/arm:
-reimplement xen_dma_unmap_page & friends), I'll add a retrospective NAK ;).
-
-The main reason is the asymmetry between dma map and unmap. With host
-swiotlb somehow getting !dma_capable(dev), you even risk leaking dom0
-swiotlb bounce buffers (on arm64).
-
-> --- a/arch/arm/xen/mm.c
-> +++ b/arch/arm/xen/mm.c
-[...]
-> +/* functions called by SWIOTLB */
+On Friday 07 November 2014 14:27:56 Tomasz Nowicki wrote:
+>  
+>  #ifdef CONFIG_PCI
+> +struct pci_controller {
+> +	struct acpi_device *companion;
+> +	int segment;
+> +	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
+> +};
 > +
-> +static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
-> +       size_t size, enum dma_data_direction dir,
-> +       void (*op)(const void *, size_t, int))
-> +{
-> +       unsigned long pfn;
-> +       size_t left = size;
+> +#define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
 > +
-> +       pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
-> +       offset %= PAGE_SIZE;
+
+Don't use busdev->sysdata in architecture specific code, it belongs to the
+host bridge driver with the new model. For ACPI you don't have a host bridge
+driver, but it's better to keep these separate.
+
+The segment is always the same as the domain number, so just use that.
+The node and companion members here can get added to struct pci_host_bridge.
+
+> @@ -43,7 +53,8 @@ resource_size_t pcibios_align_resource(void *data, const struct resource *res,
+>   */
+>  int pcibios_add_device(struct pci_dev *dev)
+>  {
+> -	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
+> +	if (acpi_disabled)
+> +		dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
+>  
+>  	return 0;
+>  }
+
+How do you assign the irq number with ACPI? Do you only support MSI?
+
+>  /*
+>   * raw_pci_read/write - Platform-specific PCI config space access.
+> - *
+> - * Default empty implementation.  Replace with an architecture-specific setup
+> - * routine, if necessary.
+>   */
+>  int raw_pci_read(unsigned int domain, unsigned int bus,
+>  		  unsigned int devfn, int reg, int len, u32 *val)
+>  {
+> -	return -EINVAL;
+> +	char __iomem *addr;
 > +
-> +       do {
-> +               size_t len = left;
-> +               void *vaddr;
+> +	if (unlikely((bus > 255) || (devfn > 255) || (reg > 4095))) {
+> +err:		*val = -1;
+> +		return -EINVAL;
+> +	}
 > +
-> +               if (!pfn_valid(pfn))
+> +	rcu_read_lock();
+> +	addr = pci_dev_base(domain, bus, devfn);
+> +	if (!addr) {
+> +		rcu_read_unlock();
+> +		goto err;
+> +	}
 
-Is this the pfn or the mfn? As you said in the previous email, there is
-no mfn_to_pfn() conversion, so that's actually in another address space
-where dom0 pfn_valid() would not make sense.
+The config space accessors should probably be shared with
+drivers/pci/host/pci-host-generic.c, e.g. by moving the rest of
+the new code in there as well, or by moving the config space
+accessors from that file to drivers/pci/mmconfig.c.
 
-Do you use this as a check for foreign pages? If yes, is the mfn for
-such pages guaranteed to be different from any valid dom0 pfn?
-
-> +               {
-> +                       /* TODO: cache flush */
-
-What does this TODO mean here? Which cases are not covered yet?
-
-> +               } else {
-> +                       struct page *page = pfn_to_page(pfn);
-
-If the pfn here is correct, can you not just have something like:
-
-void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
-		size_t size, enum dma_data_direction dir,
-		struct dma_attrs *attrs)
-
-{
-	unsigned long pfn = handle >> PAGE_SHIFT;	/* could use some macros */
-	if (!pfn_valid(pfn)) {
-		/* FIXME */
-		return;
-	}
-	__generic_dma_ops(hwdev)->unmap_page(hwdev, handle, size, dir, attrs);
-}
-
--- 
-Catalin
+	Arnd
