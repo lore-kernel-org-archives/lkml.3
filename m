@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaKGJos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:44:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10898 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229AbaKGJop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:44:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="485350861"
-Message-ID: <1415353480.958.301.camel@sauron.fi.intel.com>
-Subject: Re: [RESEND PATCH V2] mtd: block2mtd: Present block2mtd timely on
- boot time
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Rodrigo Freire <rfreire@redhat.com>
-Cc: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        linux-mtd@lists.infradead.org, Felix Fietkau <nbd@openwrt.org>,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Herton Krzesinski <hkrzesin@redhat.com>
-Date: Fri, 07 Nov 2014 11:44:40 +0200
-In-Reply-To: <2124950018.4236135.1414848795831.JavaMail.zimbra@redhat.com>
-References: <2124950018.4236135.1414848795831.JavaMail.zimbra@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751514AbaKGJpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:45:41 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:15558 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751229AbaKGJpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:45:38 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="43017511"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
+        <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.co>, <fabf@skynet.be>, <nzimmer@sgi.com>,
+        <wangnan0@huawei.com>, <vdavydov@parallels.com>, <toshi.kani@hp.com>,
+        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
+        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
+        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
+        <qiuxishi@huawei.com>, <mgorman@suse.de>, <rientjes@google.com>,
+        <hannes@cmpxchg.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>, <miaox@cn.fujitsu.com>
+Subject: [PATCH v2 0/2] Fix node meminfo and zoneinfo corruption.
+Date: Fri, 7 Nov 2014 17:44:39 +0800
+Message-ID: <1415353481-3140-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-11-01 at 09:33 -0400, Rodrigo Freire wrote:
-> From: Felix Fietkau <nbd@openwrt.org> 
-> 
-> mtd: block2mtd: Ensure that block2mtd is presented timely on boot time
-> 
-> Currently, a block MTD device is not presented to the system on time, in 
-> order to start mounting the filesystems. This patch ensures that block2mtd 
-> is presented at the right time, so filesystems can be mounted on boot time. 
-> This issue is seen on BCM2835 (Raspberry Pi) systems when mounting JFFS2 
-> over block2mtd devices as the root filesystem.
-> This patchset also adds a MTD device name and a timeout option to the driver. 
-> Original patchset: 
-> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/440-block2mtd_init.patch?rev=40444 
-> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/441-block2mtd_probe.patch?rev=40444 
+There are two problems in memory hot-add progress:
 
-I  think you can mount jffs2 using /dev/mtdX, you do not need the block
-driver.
+1. When hot-adding a node without onlining any page, node meminfo corrupted:
+
+# hot-add node2 (memory not onlined)
+# cat /sys/device/system/node/node2/meminfo
+Node 2 MemTotal:       33554432 kB			/* corrupted */
+Node 2 MemFree:               0 kB
+Node 2 MemUsed:        33554432 kB
+Node 2 Active:                0 kB
+......
+
+
+2. When onlining memory on node2, node2 zoneinfo and node3 meminfo corrupted:
+
+# for ((i = 2048; i < 2064; i++)); do echo online_movable > /sys/devices/system/node/node2/memory$i/state; done
+# cat /sys/devices/system/node/node2/meminfo
+Node 2 MemTotal:       33554432 kB
+Node 2 MemFree:        33549092 kB
+Node 2 MemUsed:            5340 kB
+......
+# cat /sys/devices/system/node/node3/meminfo
+Node 3 MemTotal:              0 kB
+Node 3 MemFree:               248 kB      /* corrupted, should be 0 */
+Node 3 MemUsed:               0 kB
+......
+
+# cat /proc/zoneinfo
+......
+Node 2, zone   Movable
+......
+        spanned  8388608
+        present  16777216		/* corrupted, should be 8388608 */
+        managed  8388608
+
+
+
+Change log v1 -> v2:
+1. Replace patch 2/2 with a new one. It provides the simplest way to
+   fix problem 2. 
+
+Tang Chen (2):
+  mem-hotplug: Reset node managed pages when hot-adding a new pgdat.
+  mem-hotplug: Reset node present pages when hot-adding a new pgdat.
+
+ include/linux/bootmem.h |  1 +
+ mm/bootmem.c            |  9 +++++----
+ mm/memory_hotplug.c     | 24 ++++++++++++++++++++++++
+ mm/nobootmem.c          |  8 +++++---
+ 4 files changed, 35 insertions(+), 7 deletions(-)
+
+-- 
+1.8.3.1
 
