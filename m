@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaKGO6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:58:54 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49077 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaKGO6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:58:48 -0500
-Date: Fri, 7 Nov 2014 14:58:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141107145806.GQ8509@sirena.org.uk>
-References: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk>
- <1415365205-27630-2-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6yp3DxVbLZXge6e"
-Content-Disposition: inline
-In-Reply-To: <1415365205-27630-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.165.208
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 1/5] regulator: Document binding for initial and
- suspend modes
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1751660AbaKGO7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:59:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44037 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751631AbaKGO7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 09:59:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="485415544"
+Message-ID: <1415372340.22887.23.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH V2] mtd: block2mtd: Present block2mtd timely on boot time
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Rodrigo Freire <rfreire@redhat.com>, Felix Fietkau <nbd@openwrt.org>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Herton Krzesinski <hkrzesin@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, dwmw2@infradead.org
+Date: Fri, 07 Nov 2014 16:59:00 +0200
+In-Reply-To: <20141105202303.GN23619@ld-irv-0074>
+References: <371358190.34795877.1410204429882.JavaMail.zimbra@redhat.com>
+	 <1444809468.34812041.1410206680931.JavaMail.zimbra@redhat.com>
+	 <20140909170231.GA14429@logfs.org>
+	 <1807144344.40128259.1410985683342.JavaMail.zimbra@redhat.com>
+	 <20141105202303.GN23619@ld-irv-0074>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-11-05 at 12:23 -0800, Brian Norris wrote:
+> On Wed, Sep 17, 2014 at 04:28:03PM -0400, Rodrigo Freire wrote:
+> > From: Felix Fietkau <nbd@openwrt.org>
+> > 
+> > mtd: block2mtd: Ensure that block2mtd is presented in a timely fashion
+> > 
+> > Currently, a block MTD device is not presented to the system on time, in
+> > order to start mounting the filesystems. This patch ensures that block2mtd
+> > is presented at the right time, so filesystems can be mounted on boot time.
+> > This issue was seen on BCM2835 (Raspberry Pi) systems when mounting JFFS2
+> > block2mtd filesystems.
+> 
+> This still seems like a bad idea (using a block device + block2mtd +
+> JFFS2). Why are you doing this? See comments here:
+> 
+>   http://www.linux-mtd.infradead.org/faq/jffs2.html#L_hdd_jffs2
 
---d6yp3DxVbLZXge6e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+At old days it was impossible to mount character devices, only block
+devices. So people ware using mtdblock to mount jffs2. This is just a
+work-around.
 
-On Fri, Nov 07, 2014 at 02:00:01PM +0100, Javier Martinez Canillas wrote:
+I did not look at this code for long time, and may have forgotten
+something, but I believe you do not need mtdblock anymore for this. You
+just mount the mtd device.
 
-> +	  The "regulator-mode" property only takes effect if the regulator is
-> +	  enabled for the given suspend state using "regulator-on-in-suspend".
+This driver should not be used for this.
 
-Why?
+The only usage of this driver is emulating a block device on top of NOR
+flash, and in most cases, only for debugging / research purposes. This
+is because (a) this driver does not handle bad blocks (and hence,
+NAND-incompatible) and (b) it does read-erase-write when you modify a
+block, so it is extremely slow and does not handle power cuts at all.
 
-> +	  If the regulator has not been explicitly disabled for the given state
-> +	  with "regulator-off-in-suspend", then setting the operating mode
-> +	  will also have no effect.
+Therefore,
 
-This seems surprising, I'd expect mode setting to be paid attention to
-even if the regulator is off - we may add other ways to control the
-enable state in suspend for example.
+Nack for this patch so far.
 
-> +- regulator-initial-mode: initial operating mode. The set of possible operating
-> +  modes is the same used for the regulator-mode property and the device binding
-> +  documentation explains which property each regulator supports.
-> +If no mode is defined, then the OS will not manage the modes and the hardware
-> +default values will be used instead.
+Artem.
 
-Again that seems surprising, it precludes any future changes and isn't
-going to be true for devices where we can't read the current state.
-
---d6yp3DxVbLZXge6e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUXN3+AAoJECTWi3JdVIfQ1CEH+wVIAHIeDVtR3iEK1BH1GdzP
-K6IqQUcMQ2z6/OZgW3FNSArPj6AoGGsWPwlGDYbI/j0pbuo4ufYcZqKLeJmo9iOX
-ohGmkmAjqb68EtLlsDghOm1110JXBwr0qqmkFAlawvKT6eZYWnlJs1nyGoyakO/2
-isq7C3qxYVzMP1hgOhs2A8LL804kACmd/K7t4eoZJk12KwGi6m/NLM6LOrGunMnF
-BUaSZGih9SeqXwxnVcQiHhOUJU8ikcS4p2c8305Qdmmmd9fU/ElLLYbfiU12IEOj
-Yzpm9d2v/RqVslJC0bBf14HXAPJzxVngS3ZS3cVWhDcsJFVaAWXRuNsmmUZjueo=
-=jVnK
------END PGP SIGNATURE-----
-
---d6yp3DxVbLZXge6e--
