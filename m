@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaKGQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:35:28 -0500
-Received: from mail-by2on0069.outbound.protection.outlook.com ([207.46.100.69]:39328
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751133AbaKGQf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:35:26 -0500
-Message-ID: <545CF3D8.1020500@opensource.altera.com>
-Date: Fri, 7 Nov 2014 10:31:20 -0600
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752434AbaKGQhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:37:31 -0500
+Received: from mx.datacom.ind.br ([177.66.5.10]:33029 "EHLO
+	mail.datacom.ind.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751519AbaKGQh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 11:37:29 -0500
+Message-ID: <545CF546.8090703@datacom.ind.br>
+Date: Fri, 07 Nov 2014 14:37:26 -0200
+From: =?windows-1252?Q?DATACOM_-_=C9rico_Nunes?= 
+	<erico.nunes@datacom.ind.br>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Thor Thayer <tthayer@opensource.altera.com>
-CC: <dougthompson@xmission.com>, <m.chehab@samsung.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
-Subject: Re: [PATCHv3 4/5] edac: altera: Add Altera L2 Cache and OCRAM EDAC
- Support
-References: <1414683131-20786-1-git-send-email-tthayer@opensource.altera.com> <1414683131-20786-5-git-send-email-tthayer@opensource.altera.com> <20141104151214.GD9570@pd.tnic> <545959E8.2040005@opensource.altera.com> <20141106163134.GF4318@pd.tnic>
-In-Reply-To: <20141106163134.GF4318@pd.tnic>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: DM2PR09CA0001.namprd09.prod.outlook.com (25.160.127.11) To
- BN3PR0301MB1185.namprd03.prod.outlook.com (25.160.156.147)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1185;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03883BD916
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(51704005)(199003)(377454003)(479174003)(76104003)(189002)(24454002)(164054003)(83506001)(92566001)(101416001)(99396003)(31966008)(65956001)(47776003)(42186005)(65806001)(20776003)(80316001)(64126003)(50466002)(66066001)(102836001)(120916001)(33656002)(64706001)(86362001)(4396001)(87976001)(76176999)(54356999)(62966003)(122386002)(46102003)(50986999)(107046002)(92726001)(95666004)(40100003)(23676002)(106356001)(105586002)(87266999)(77096003)(97736003)(65816999)(93886004)(21056001)(59896002)(77156002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1185;H:[137.57.160.210];FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1202;
-X-OriginatorOrg: opensource.altera.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Creating a new platform_bus inside a spi_driver
+References: <545BD3EC.6050503@datacom.ind.br> <707686811.tbHdnxXMgE@wuerfel>
+In-Reply-To: <707686811.tbHdnxXMgE@wuerfel>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Hello Arnd and all,
 
-On 11/06/2014 10:31 AM, Borislav Petkov wrote:
-> Hi Thor,
-> 
-> On Tue, Nov 04, 2014 at 04:57:44PM -0600, Thor Thayer wrote:
->> We want to at least separate L2/OCRAM ECC from the SDRAM ECC because
->> 1) the SDRAM preparation can take almost 2 seconds on boot and some
->> customers need a faster boot time.
->> 2) the SDRAM has an ECC initialization dependency on the preloader which is
->> outside the kernel. It is desirable to be able to turn the SDRAM on & off
->> separately.
-> 
-> Well, now that I asked and you gave valid reasons for the split,
-> you should keep them split the way they are. But please do add that
-> explanation to the commit message so that it is clear to people why
-> there is a split.
-> 
->> You bring up a good point about the L2 and OCRAM being combined though.
+On 11/07/2014 08:04 AM, Arnd Bergmann wrote:
+> On Thursday 06 November 2014 18:02:52 DATACOM - Érico Nunes wrote:
+>> The idea is that "fpga-spi" is a spi_driver which instantiates all of the
+>> "fpga-deviceN" as platform_devices, through the use of
+>> of_platform_populate(dev->of_node, NULL, NULL, dev).
 >>
->> If we do want granular control, maybe I should use a submenu? Or isn't that
->> desirable either?
-> 
-> Well, what do you think would be easier/faster for a user configuring? A
-> separate menu where you have to do a couple of key presses just to enter
-> it or simply a subtree in Kconfig with all the options together. I think
-> the "depends" gives you that already...
-> 
-> Ok, once you've worked in the suggested changes, you're good to go,
-> at least for the EDAC bits. Let me know how you want to handle this,
-> whether I should pick up the whole thing or I should ack the EDAC parts.
-> This patchset should go together, in any case, and so I don't care
-> whoever picks it up.
-> 
+>> The visible problem we're facing with this approach is that, as the internal
+>> platform_devices have a "reg" property, of_platform_populate() eventually
+>> triggers an address translation which is apparently trying to translate the
+>> addresses of the internal platform_bus to addresses of the processor memory
+>> map.
+>> This translation is however not part of our intention, as we intend to have an
+>> internal bus with its own memory map.
+>> This fails when __of_translate_address() reaches the spi-master boundary
+>> because (as it seems to make sense) it isn't possible to translate them past
+>> that.
+>> A KERN_ERR rated message like
+>> "prom_parse: Bad cell count for /soc@f0000000/spi@2000/fpga@1"
+>> is thrown by __of_translate_address() and later it is not possible to obtain
+>> the "reg" address with platform_get_resource().
+>>
+>> On this scenario, we have a few questions and, depending on the outcome of
+>> these, possibly a patch.
+>>
+>> 1. Is it possible to have an internal platform_bus with a different memory map
+>> as we intended? Or are platform_busses and platform_devices supposed to always
+>> be mapped on the processor memory map?
+> It's inconsistent. We have some code that assumes that platform devices
+> are always memory mapped, and some other code that breaks this assumption.
 
-If it's okay, can you please pick up this series, once everything is
-cleaned up? I just checked to make sure that there aren't any merge
-conflicts in the DTS files in this series against DTS patches that I
-have queue up for 3.19, and there aren't.
+By this I take that the platform subsystem could be made generic so it can be
+used in both ways (mapped to processor memory map or mapped to a private memory
+map). There seems to be no strict requirement enforcing it to be processor
+memory map.
 
-Thanks,
-Dinh
+Is this correct?
+
+>> 2. If platform_bus and platform_device were actually designed to always be
+>> mappable to the processor memory map, what would be a different approach to
+>> this problem?  One alternative considered was to define a new "fpga_bus" and
+>> "fpga_device" but that seemed as an overkill approach to the problem.
+> I think the existing mfd framework should do what you need, when you call
+> mfd_add_devices() and pass a table of cells with the compatible strings
+> for your devices, it should create the platform devices you want. If not,
+> that can probably be fixed in the mfd core code.
+>
+>
+
+Thanks for the tip, we were not aware of the purpose of this mfd framework and
+we will take a look at this framework now.
+However I'm thinking now that eventually it would fall in the same case of
+trying to translate the address of any "reg" dts property to the processor
+memory map, and fail with the same error for the SPI case.
+
+Considering this and taking the answer to the first question, do you think a
+patch fixing the "error" report by the translation function would be
+acceptable?
+We can prepare/test that under our platform and submit it.
+
+Thanks!
+
 
