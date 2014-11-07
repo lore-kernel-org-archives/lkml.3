@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaKGOMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:12:32 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:59247 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaKGOML (ORCPT
+	id S1752578AbaKGOOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:14:47 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:62964 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbaKGOOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:12:11 -0500
-X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
-   d="scan'208";a="190564560"
-Date: Fri, 7 Nov 2014 14:10:34 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-In-Reply-To: <20141107111126.GB21875@localhost>
-Message-ID: <alpine.DEB.2.02.1411071239110.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com>
- <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com> <20141105165646.GN32700@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1411051757140.22875@kaball.uk.xensource.com> <20141106103337.GA19702@e104818-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1411061155200.22875@kaball.uk.xensource.com> <20141107110524.GA21875@localhost> <20141107111126.GB21875@localhost>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 7 Nov 2014 09:14:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-acpi@lists.linaro.org
+Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
+        will.deacon@arm.com, bhelgaas@google.com, Liviu.Dudau@arm.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net,
+        linux-pci@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-acpi] [RFC PATCH 3/4] arm64, acpi, pci: Add arch specific functions for mmconfig driver.
+Date: Fri, 07 Nov 2014 15:12:45 +0100
+Message-ID: <16660879.6KxQndPqBW@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415366876-30811-4-git-send-email-tomasz.nowicki@linaro.org>
+References: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org> <1415366876-30811-4-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:on6N9WnydhixsC3TF5T2ZQSs/Lia/2NW+kUooAkxDBE
+ y1UBX4/GkTAs/O63WZVpOU+ap00rt0tkOE8EP7flJe2957Z/nF
+ nILTZbp3hrKRuEbfDFXtpQ6AuoI2VUsUGOfbzG64zzbuYww+cy
+ qXMvSXVTXWidSJ3vKOKqDN3BNilI/EqD+6X91wiOgANjtvBhlh
+ TQTiuJ6J1lGGovO2EdWAHBETLeUcPotXS9vVwhwySk6OesKkhG
+ aQoT/WVhUFfK3vNGOXiUGG6CuXlkO1v0GXyLkW365hD4hT6kU6
+ YLHLaMgRplZkEut1vdQebHAzFuDHQJmbhVhH+pyZKMFK3Fktby
+ yG2F675fwRL6jlt9o6jA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Nov 2014, Catalin Marinas wrote:
-> On Fri, Nov 07, 2014 at 11:05:25AM +0000, Catalin Marinas wrote:
-> > BTW, drivers/xen/swiotlb-xen.c needs something like:
-> > 
-> >         dma_addr_t dev_addr = xen_phys_to_bus(phys_to_dma(phys));
-> > 
-> > phys != bus address.
+On Friday 07 November 2014 14:27:55 Tomasz Nowicki wrote:
+> These calls allow to map/unmap PCI config space ranges (which are specified in
+> MMCFG ACPI table).
 > 
-> Wrong place, what I meant is when calling:
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 > 
->         xen_dma_unmap_page(hwdev, phys_to_dma(paddr), size, dir, attrs);
 
-Well spotted! This is an actual mistake in the current code, independent
-from the problem described before. Julien reported it a couple of days
-ago and I have already queued a patch to fix it at the end of the
-series.
+Nothing in this patch looks arm64 specific, and most of it looks like a
+copy of the x86 code.
+
+	Arnd
