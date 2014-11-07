@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaKGOPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:15:00 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:59307 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752708AbaKGOO6 (ORCPT
+	id S1752910AbaKGOPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:15:12 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54177 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752791AbaKGOPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:14:58 -0500
-Date: Fri, 7 Nov 2014 15:14:55 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 01/11] mfd: syscon: Add atmel-matrix registers
- definition
-Message-ID: <20141107151455.75c73416@bbrezillon>
-In-Reply-To: <20141107134510.GC4068@piout.net>
-References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1415203287-21517-2-git-send-email-boris.brezillon@free-electrons.com>
-	<20141107134510.GC4068@piout.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 7 Nov 2014 09:15:05 -0500
+Message-ID: <545CD3CB.7090909@arm.com>
+Date: Fri, 07 Nov 2014 14:14:35 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 1/5] serial: pl011: Allocate TX DMA buffer from DMA capable
+ memory
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
 
-On Fri, 7 Nov 2014 14:45:10 +0100
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+Allocating with __GFP_DMA avoids the need for bounce buffers
 
-> On 05/11/2014 at 17:01:17 +0100, Boris Brezillon wrote :
-> > AT91 SoCs have a memory range reserved for internal bus configuration.
-> > Expose those registers so that drivers can make use of the matrix syscon
-> > declared in at91 DTs.
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> >  include/linux/mfd/syscon/atmel-matrix.h | 114 ++++++++++++++++++++++++++++++++
-> 
-> I think we should stop cluttering the include/linux directory and start
-> doing what has been done for tegra and create an include/soc/atmel or
-> include/soc/at91 directory. that's what I was planning to do in my
-> sdramc/reset series but I didn't get any comment on it.
-> 
+Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+---
+ drivers/tty/serial/amba-pl011.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I'll let MFD and ARM maintainers decide, but other syscon drivers are
-using this directory to define their registers...
-
-Regards,
-
-Boris
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 8572f2a..a285196 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -987,7 +987,7 @@ static void pl011_dma_startup(struct uart_amba_port *uap)
+ 	if (!uap->dmatx.chan)
+ 		return;
+ 
+-	uap->dmatx.buf = kmalloc(PL011_DMA_BUFFER_SIZE, GFP_KERNEL);
++	uap->dmatx.buf = kmalloc(PL011_DMA_BUFFER_SIZE, GFP_KERNEL | __GFP_DMA);
+ 	if (!uap->dmatx.buf) {
+ 		dev_err(uap->port.dev, "no memory for DMA TX buffer\n");
+ 		uap->port.fifosize = uap->fifosize;
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.7.1
+
