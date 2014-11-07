@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468AbaKGKsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:48:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48255 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaKGKsi (ORCPT
+	id S1751666AbaKGKvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:51:55 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33644 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbaKGKvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:48:38 -0500
-Date: Fri, 7 Nov 2014 10:48:17 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
-Message-ID: <20141107104817.GH8509@sirena.org.uk>
+	Fri, 7 Nov 2014 05:51:53 -0500
+Message-ID: <545CA436.8030306@linux.vnet.ibm.com>
+Date: Fri, 07 Nov 2014 16:21:34 +0530
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1IOMu5+WhZnpLp54"
-Content-Disposition: inline
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.165.192
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] SPI fixes for v3.18
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        aravinda@linux.vnet.ibm.com, penberg@iki.fi, brendan.d.gregg@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [RFC] perf-cache command interface design
+References: <20141102105006.21708.28734.stgit@hemant-fedora> <20141102105557.21708.19032.stgit@hemant-fedora> <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com> <874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com> <545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com>
+In-Reply-To: <545C80F4.4020905@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110710-0021-0000-0000-0000021576EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1IOMu5+WhZnpLp54
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 11/07/2014 01:51 PM, Masami Hiramatsu wrote:
+> Hello,
+>
+> Here, I've tried to describe my idea of perf-cache subcommand interface.
+> It is just a design review, not implemented yet :)
+> Please give me your comments/ideas!
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+Thanks, I have some comments below.
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
+> Command-line Synopsis
+> =====================
+>
+> Current "perf buildid-cache [options]" are directly mapped to
+> "perf cache --buildid [options]".
+>
+> And adding --sdt for managing SDT caches as below.
+>
+>   Add or update SDT events in <FILES>
+>     perf cache --sdt --add|--update <FILES>
+>   Remove all SDT events for <FILES>
+>     perf cache --sdt --remove <FILES>
+>
+>   List all SDT events
+>     perf cache --sdt --list
+>
+> And --probes for managing probe-caches as below.
+>
+>   Add new probe-cache entries for kernel, <PATH> or <MOD>.
+>     perf cache --probe [--exec <PATH>|--module <MOD>] --add <SPEC>
+>
+>   Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
+>     perf cache --probe --del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+>
+>   Or remove all entires for given FILES
+>     perf cache --probe --remove <FILES>
+>
+>   List the probe caches(including SDT) for kernel, <PATH>, or/and <BUILDID>.
+>     perf cache --probe --list [@<PATH>][#<BUILDID>]
+>
+>   Query the probe definitions.
+>     perf cache --probe --query [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+>
+> Note that --probes also can be used for managing SDT events, which has % prefix
+> e.g.
+>   Add all SDT events for <PATH>
+>     perf cache --probe --exec <PATH> --add '%*:*'
+>
+>   Remove some SDT events for <PATH>
+>     perf cache --probe --del '%some:events@<PATH>'
+>
+>   Or remove all SDT events for <BUILDID>
+>     perf cache --probe --del '%*:*#<BUILDID>'
 
-are available in the git repository at:
+Looks nice to me :)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3.18-rc3
+>
+> File Format
+> ===========
+> All the cache files are placed under ~/.debug/ by default.
+> The paths of buildid cache of binary/symbols are not changed.
+>
+> The SDT/probe caches are placed under the ~/.debug/.probes/path/to/bin/bu/ildid
+> and that is linked to ~/.debug/.probes/.buildid/bu/ildid
+> # To avoid conflict with files under /probes/*, I picked up .probes/.
+>
+> This SDT/probe caches contain probe-definitions as following format.
+> ----
+> #buildid:BUILDID
+> #path:PATH
+> p:%PROVIDER/EVENT PATH:OFFSET [ARGS]
 
-for you to fetch changes up to 4e72b4278dbc228e4dc453d4dfeca997e521d9af:
+I think this format isn't accepted by the uprobe_events file (because of
+the '%') if we want to cat and grep into uprobe_events file directly.
+Although, in case of perf record, we can process it to remove '%' and
+then write into uprobe_events file. And, '%' is required as a flag for
+the SDT entries.
+So, either we can modify the uprobe_events file to ignore '%' in the
+event group name (with an additional patch in the SDT series) or we can
+leave it to the user to write a script which can do some processing to
+remove '%' and then echo it to uprobe_events file.
+What would you think?
 
-  Merge remote-tracking branches 'spi/fix/fsl-dspi' and 'spi/fix/pxa2xx' into spi-linus (2014-11-06 12:58:46 +0000)
+> p:PROBE/EVENT _text+OFFSET [ARGS]
+> ----
+>
+> Normal probes and SDT cache entries can be mixed in a cache file, we'll
+> load all the entries and filter by % prefixes.
+>
+>
+> Thank you,
+>
 
-----------------------------------------------------------------
-spi: Bug fixes for v3.18
+-- 
+Thanks,
+Hemant Kumar
 
-A couple of small driver fixes for v3.18, both quite problematic if you
-hit a use case that's affected.
-
-----------------------------------------------------------------
-Alexander Stein (1):
-      spi: fsl-dspi: Fix CTAR selection
-
-Dmitry Eremin-Solenikov (1):
-      spi: pxa2xx: toggle clocks on suspend if not disabled by runtime PM
-
-Mark Brown (1):
-      Merge remote-tracking branches 'spi/fix/fsl-dspi' and 'spi/fix/pxa2xx' into spi-linus
-
- drivers/spi/spi-fsl-dspi.c | 4 ++--
- drivers/spi/spi-pxa2xx.c   | 7 +++++--
- 2 files changed, 7 insertions(+), 4 deletions(-)
-
---1IOMu5+WhZnpLp54
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUXKNwAAoJECTWi3JdVIfQrBoH/i4D82DBWJKQC83bNbng3Qb+
-26W0Pk3ZnWs5mWR6Rlgx4fl/P843D8ogsMDp0rRXWzKg46qM6845MG1tYNyuFqOH
-2FMPMJQqcGllM8Hfjv0Nc4A5oDboZonCJZS6wtg6DrgH/LdHJK45ngzRwzaqMPU4
-2hBUaEJUx/cPeKrZz0mO6ylNpJaZ//ryxH43c314/IHP2AfMCG2BUh31YxMENbeY
-VkAwxa3bOWVNwQQfifCehGZ4jaT6E1xVOu8mz3Js8U8fkTtg6sJ0AXMGvDRdDGoS
-sB0V72htq5QRGumVrtWXyG0syHULHFXOfuM0GDfkBwx2vcK6k1AlCYt+3xgXWX4=
-=b8Un
------END PGP SIGNATURE-----
-
---1IOMu5+WhZnpLp54--
