@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaKGOcg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:32:36 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:61998 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815AbaKGObm (ORCPT
+	id S1752984AbaKGOcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:32:33 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:63449 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821AbaKGObo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:31:42 -0500
+	Fri, 7 Nov 2014 09:31:44 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: rjw@rjwysocki.net
 Cc: preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         peterz@infradead.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, lenb@kernel.org
-Subject: [PATCH V3 3/6] sched: idle: Get the next timer event and pass it the cpuidle framework
-Date: Fri,  7 Nov 2014 15:31:24 +0100
-Message-Id: <1415370687-18688-4-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH V3 4/6] cpuidle: idle: menu: Don't reflect when a state selection failed
+Date: Fri,  7 Nov 2014 15:31:25 +0100
+Message-Id: <1415370687-18688-5-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
 References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
@@ -23,201 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the logic of the previous patch, retrieve from the idle task the
-expected timer sleep duration and pass it to the cpuidle framework.
+In the current code, the check to reflect or not the outcoming state is done
+against the idle state which has been chosen and its value.
 
-Take the opportunity to remove the unused headers in the menu.c file.
-
-This patch does not change the current behavior.
+Instead of doing a check in each of the reflect functions, just don't call reflect
+if something went wrong in the idle path.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
-Reviewed-by: Len Brown <len.brown@intel.com>
 ---
- drivers/cpuidle/cpuidle.c          | 10 ++++------
- drivers/cpuidle/governors/ladder.c |  3 ++-
- drivers/cpuidle/governors/menu.c   |  8 ++------
- include/linux/cpuidle.h            |  8 +++++---
- kernel/sched/idle.c                | 13 +++++++++----
- 5 files changed, 22 insertions(+), 20 deletions(-)
+ drivers/cpuidle/governors/ladder.c | 3 +--
+ drivers/cpuidle/governors/menu.c   | 3 +--
+ kernel/sched/idle.c                | 3 ++-
+ 3 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 86f6cb8..f3e7b73 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -8,16 +8,12 @@
-  * This code is licenced under the GPL.
-  */
- 
--#include <linux/clockchips.h>
- #include <linux/kernel.h>
- #include <linux/mutex.h>
--#include <linux/sched.h>
- #include <linux/notifier.h>
- #include <linux/pm_qos.h>
- #include <linux/cpu.h>
- #include <linux/cpuidle.h>
--#include <linux/ktime.h>
--#include <linux/hrtimer.h>
- #include <linux/module.h>
- #include <trace/events/power.h>
- 
-@@ -156,11 +152,12 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
-  * @drv: the cpuidle driver
-  * @dev: the cpuidle device
-  * @latency_req: the latency constraint when choosing an idle state
-+ * @next_timer_event: the duration until the timer expires
-  *
-  * Returns the index of the idle state.
-  */
- int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
--		   int latency_req)
-+		   int latency_req, int next_timer_event)
+diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+index 51c9ccd..86e4d49 100644
+--- a/drivers/cpuidle/governors/ladder.c
++++ b/drivers/cpuidle/governors/ladder.c
+@@ -165,8 +165,7 @@ static int ladder_enable_device(struct cpuidle_driver *drv,
+ static void ladder_reflect(struct cpuidle_device *dev, int index)
  {
- 	if (off || !initialized)
- 		return -ENODEV;
-@@ -171,7 +168,8 @@ int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
- 	if (unlikely(use_deepest_state))
- 		return cpuidle_find_deepest_state(drv, dev);
+ 	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
+-	if (index > 0)
+-		ldev->last_state_idx = index;
++	ldev->last_state_idx = index;
+ }
  
--	return cpuidle_curr_governor->select(drv, dev, latency_req);
-+	return cpuidle_curr_governor->select(drv, dev, latency_req,
-+					     next_timer_event);
+ static struct cpuidle_governor ladder_governor = {
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 91b3000..2e4a315 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -366,8 +366,7 @@ static void menu_reflect(struct cpuidle_device *dev, int index)
+ {
+ 	struct menu_device *data = this_cpu_ptr(&menu_devices);
+ 	data->last_state_idx = index;
+-	if (index >= 0)
+-		data->needs_update = 1;
++	data->needs_update = 1;
  }
  
  /**
-diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
-index 53113c2..51c9ccd 100644
---- a/drivers/cpuidle/governors/ladder.c
-+++ b/drivers/cpuidle/governors/ladder.c
-@@ -64,7 +64,8 @@ static inline void ladder_do_selection(struct ladder_device *ldev,
-  * @dev: the CPU
-  */
- static int ladder_select_state(struct cpuidle_driver *drv,
--			       struct cpuidle_device *dev, int latency_req)
-+			       struct cpuidle_device *dev,
-+			       int latency_req, int next_timer_event)
- {
- 	struct ladder_device *ldev = this_cpu_ptr(&ladder_devices);
- 	struct ladder_device_state *last_state;
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 9b7c0b9..91b3000 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -13,10 +13,6 @@
- #include <linux/kernel.h>
- #include <linux/cpuidle.h>
- #include <linux/pm_qos.h>
--#include <linux/time.h>
--#include <linux/ktime.h>
--#include <linux/hrtimer.h>
--#include <linux/tick.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
- #include <linux/module.h>
-@@ -288,7 +284,7 @@ again:
-  * @dev: the CPU
-  */
- static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
--		       int latency_req)
-+		       int latency_req, int next_timer_event)
- {
- 	struct menu_device *data = this_cpu_ptr(&menu_devices);
- 	int i;
-@@ -303,7 +299,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
- 	data->last_state_idx = CPUIDLE_DRIVER_STATE_START - 1;
- 
- 	/* determine the expected residency time, round up */
--	data->next_timer_us = ktime_to_us(tick_nohz_get_sleep_length());
-+	data->next_timer_us = next_timer_event;
- 
- 	get_iowait_load(&nr_iowaiters, &cpu_load);
- 	data->bucket = which_bucket(data->next_timer_us, nr_iowaiters);
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index fb465c1..d477746 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -122,7 +122,8 @@ struct cpuidle_driver {
- extern void disable_cpuidle(void);
- 
- extern int cpuidle_select(struct cpuidle_driver *drv,
--			  struct cpuidle_device *dev, int latency_req);
-+			  struct cpuidle_device *dev,
-+			  int latency_req, int next_timer_event);
- extern int cpuidle_enter(struct cpuidle_driver *drv,
- 			 struct cpuidle_device *dev, int index);
- extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
-@@ -150,7 +151,8 @@ extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
- #else
- static inline void disable_cpuidle(void) { }
- static inline int cpuidle_select(struct cpuidle_driver *drv,
--				 struct cpuidle_device *dev, int latency_req)
-+				 struct cpuidle_device *dev,
-+				 int latency_req, int next_timer_event)
- {return -ENODEV; }
- static inline int cpuidle_enter(struct cpuidle_driver *drv,
- 				struct cpuidle_device *dev, int index)
-@@ -206,7 +208,7 @@ struct cpuidle_governor {
- 
- 	int  (*select)		(struct cpuidle_driver *drv,
- 				 struct cpuidle_device *dev,
--				 int latency_req);
-+				 int latency_req, int next_timer_event);
- 	void (*reflect)		(struct cpuidle_device *dev, int index);
- 
- 	struct module 		*owner;
 diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 189e80a..0a7a1d1 100644
+index 0a7a1d1..0ae1cc8 100644
 --- a/kernel/sched/idle.c
 +++ b/kernel/sched/idle.c
-@@ -80,7 +80,8 @@ static inline int cpu_idle_poll(void)
-  * set, and it returns with polling set.  If it ever stops polling, it
-  * must clear the polling bit.
-  */
--static void cpuidle_idle_call(unsigned int latency_req)
-+static void cpuidle_idle_call(unsigned int latency_req,
-+			      unsigned int next_timer_event)
- {
- 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
- 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-@@ -113,7 +114,7 @@ static void cpuidle_idle_call(unsigned int latency_req)
- 	 * Ask the cpuidle framework to choose a convenient idle state.
- 	 * Fall back to the default arch idle method on errors.
+@@ -173,7 +173,8 @@ use_default:
+ 	/*
+ 	 * Give the governor an opportunity to reflect on the outcome
  	 */
--	next_state = cpuidle_select(drv, dev, latency_req);
-+	next_state = cpuidle_select(drv, dev, latency_req, next_timer_event);
- 	if (next_state < 0) {
- use_default:
- 		/*
-@@ -194,7 +195,7 @@ exit_idle:
-  */
- static void cpu_idle_loop(void)
- {
--	unsigned int latency_req;
-+	unsigned int latency_req, next_timer_event;
+-	cpuidle_reflect(dev, entered_state);
++	if (entered_state >= 0)
++		cpuidle_reflect(dev, entered_state);
  
- 	while (1) {
- 		/*
-@@ -221,6 +222,9 @@ static void cpu_idle_loop(void)
- 
- 			latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
- 
-+			next_timer_event =
-+				ktime_to_us(tick_nohz_get_sleep_length());
-+
- 			/*
- 			 * In poll mode we reenable interrupts and spin.
- 			 *
-@@ -238,7 +242,8 @@ static void cpu_idle_loop(void)
- 			    tick_check_broadcast_expired())
- 				cpu_idle_poll();
- 			else
--				cpuidle_idle_call(latency_req);
-+				cpuidle_idle_call(latency_req,
-+						  next_timer_event);
- 
- 			arch_cpu_idle_exit();
- 		}
+ exit_idle:
+ 	__current_set_polling();
 -- 
 1.9.1
 
