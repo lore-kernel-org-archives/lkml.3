@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaKGXkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:40:12 -0500
-Received: from spfldrelay.bhs.org ([208.99.255.26]:45333 "EHLO
-	spfldrelay.bhs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440AbaKGXkK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:40:10 -0500
-X-Greylist: delayed 6757 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 18:40:10 EST
-From: "Sorci, Laura" <Laura.Sorci@baystatehealth.org>
-Date: Fri, 7 Nov 2014 16:46:24 -0500
-Subject: 
-Thread-Index: AQHP+tRGlG4c3k1Gik+oyi28D0IU6A==
-Message-ID: <3115ECE23B13C94CACDB17711212E7D86DDD96E42F@bhsexc01.bhs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Transfer-Encoding: 7BIT
+	id S1753288AbaKGXk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:40:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59484 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753244AbaKGXkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 18:40:24 -0500
+Date: Sat, 8 Nov 2014 10:40:15 +1100
+From: NeilBrown <neilb@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        GTA04 owners <gta04-owner@goldelico.com>
+Subject: [PATCH] Input: twl4030-pwrbutton: ensure a wakeup event is
+ recorded.
+Message-ID: <20141108104015.635a7388@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Undisclosed recipients:;
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-07_08:2014-11-07,2014-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=5 spamscore=5 suspectscore=0
- phishscore=95 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1411070180
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/+tz=3THW/tmZZrmiOxZNXSe"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/+tz=3THW/tmZZrmiOxZNXSe
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This is to inform you that our web-mail Admin Server is currently congested, and your Mailbox is out of date. We are currently  deleting all inactive accounts so please confirm that your e-mail account is still active by updating your current and correct details by CLICKING HERE<http://burberry.twomini.com/aspx/>
 
-Thanks,
-Admin Departmen
 
-----------------------------------------------------------------------
-Please view our annual report at http://baystatehealth.org/annualreport
- 
+This button is treated as a wakeup source, so we need to initialise it
+correctly.
 
-CONFIDENTIALITY NOTICE: This e-mail communication and any attachments may contain confidential and privileged information for the use of the designated recipients named above. If you are not the intended recipient, you are hereby notified that you have received this communication in error and that any review, disclosure, dissemination, distribution or copying of it or its contents is prohibited. If you have received this communication in error, please reply to the sender immediately or by telephone at 413-794-0000 and destroy all copies of this communication and any attachments. For further information regarding Baystate Health's privacy policy, please visit our Internet site at http://baystatehealth.org.
+Without the device_init_wakeup() call, dev->power.wakeup will
+be NULL, and pm_wakeup_event() will do nothing.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/tw=
+l4030-pwrbutton.c
+index fb3b63b2f85c..8400a1a34d87 100644
+--- a/drivers/input/misc/twl4030-pwrbutton.c
++++ b/drivers/input/misc/twl4030-pwrbutton.c
+@@ -85,6 +85,7 @@ static int twl4030_pwrbutton_probe(struct platform_device=
+ *pdev)
+ 	}
+=20
+ 	platform_set_drvdata(pdev, pwr);
++	device_init_wakeup(&pdev->dev, true);
+=20
+ 	return 0;
+ }
+
+--Sig_/+tz=3THW/tmZZrmiOxZNXSe
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVF1YXznsnt1WYoG5AQKtnw/+PR6ghZbzFGZ57RvvlDXmg9R9tN3IIP+g
++ofG/LmXONhdI4r7PejG53+rpRm8lSays2UGgloGo7OR/cdJne4Rxoylf/WbqunR
+vUHSwaucSWfHCMpQm7K8qpquSAg2xuzUNcFJyEYx6LCrQfOkJQgSRCs8IwwxOF8Z
+Dva9fAF4h0TGJLWvX5K3eySBu7tJfMVim6+VtYahRk8mPn7eqv14Nid3CWzJwjVW
+ZnuQiX/BkFKYEZQGFjaRra9Fwdxqmrfdq4UoQA5c6/CEc+1NdtH42MEbnXpvC0Ab
+Tu6OTBvNu1gbr9SbTOzDSzUfmFiuOZVkyv25yFZP9wjXkWd7aPkRfNl8OddArs4I
+DD8Fz1uIWbS5fq02soREiidm3L9FLcAJgC8hxeQ/CeW8tCTba2aU/oJRXzkTqGK7
+NLlPZRxzK8aT8LoEggr3BiAE+COLqk+S6LHF31xR8HOJvic3esOB2+fwu3xwctka
+BeGF0AEUIu77U9M2C0vGJ6XgZaQDSc1zdGiJRMS8/YCijuwIr0dBPVfvM/KEKmdx
+nChTRqN73f1N5V+TLaZwz7AYeDQ09Cwlf+7GcrsJcwJaRTJ9vOQIN7l4vQBSyrpt
+hUDQ+IBfQJT41m6hqPL2nx4s8IPxsEvNVlhYB2iEkbiSbX0aQqscFmi5a354OiMs
+/8ErbJkfR8A=
+=URX5
+-----END PGP SIGNATURE-----
+
+--Sig_/+tz=3THW/tmZZrmiOxZNXSe--
