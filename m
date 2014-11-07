@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaKGL4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 06:56:52 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:47958 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaKGL4s (ORCPT
+	id S1752164AbaKGL6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 06:58:18 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:51151 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaKGL6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 06:56:48 -0500
-Message-ID: <545CB37C.6080804@message-id.googlemail.com>
-Date: Fri, 07 Nov 2014 12:56:44 +0100
-From: Stefan Seyfried <stefan.seyfried@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION] in 3.18-rc1: ppp crashes kernel
-References: <545CA8B6.2060608@message-id.googlemail.com> <1415361193.4390.46.camel@x220>
-In-Reply-To: <1415361193.4390.46.camel@x220>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Fri, 7 Nov 2014 06:58:17 -0500
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
+Subject: [PATCH 00/13] Add stih410 SoC and USB2/1.1 support
+Date: Fri,  7 Nov 2014 11:57:42 +0000
+Message-Id: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi,
 
-Am 07.11.2014 um 12:53 schrieb Paul Bolle:
-> On Fri, 2014-11-07 at 12:10 +0100, Stefan Seyfried wrote:
->> I bisected the issue multiple times and always arrived at
->>
->> # first bad commit: [d6dd50e07c5bec00db2005969b1a01f8ca3d25ef] Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
->>
->> which is a merge commit unfortunately.
-> 
-> That merge commit actually does add some code:
-> 
-> git show d6dd50e07c5bec00db2005969b1a01f8ca3d25ef
-> [...]
-> diff --cc init/main.c
-> index 8af2f1abfe38,e3c4cdd94d5b..c5c11da6c4e1
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@@ -583,6 -585,6 +583,7 @@@ asmlinkage __visible void __init start_
->   	early_irq_init();
->   	init_IRQ();
->   	tick_init();
-> ++	rcu_init_nohz();
->   	init_timers();
->   	hrtimers_init();
->   	softirq_init();
-> 
-> Wild guess: is CONFIG_RCU_NOCB_CPU perhaps set in your
-> v3.18-rc3 .config?
+This series adds the required device tree nodes to enable the usb2/1.1 phy
+and usb2/1.1 controllers on the stih416-b2120 board.
 
-Yes it is:
-tux@linux:~> zgrep CONFIG_RCU_NOCB_CPU /proc/config.gz
-CONFIG_RCU_NOCB_CPU=y
-# CONFIG_RCU_NOCB_CPU_NONE is not set
-# CONFIG_RCU_NOCB_CPU_ZERO is not set
-CONFIG_RCU_NOCB_CPU_ALL=y
+It additionally re-works and adds support for the new stih410 SoC which is
+very similar to the stih407 SoC, by abstracting out the common parts
+into common dt files. It also then adds the dt nodes to enable usb2/1.1 
+for the stih410 platform as well.
 
-And I'll try without it, but looking at the backtrace and the actual
-BUG_ON() in the code, I cannot really believe it is the real problems.
+As well as adding dt nodes it also enables the relevant drivers in the 
+mult7_v7_defconfig.
 
-But I'll try with the config changed and with the above line removed.
+Finally we update the default bootargs for stih407-b2120 and stih410-b2120
+to boot with the clk_ignore_unused kernel parameter so as not to hang
+the SoC when the (as yet) unreferenced interconnect clocks get disabled
+by CCF (this is a tempoary solution).
 
-Thanks,
+This series has been tested on stih416-b2020 and stih410-b2120 SoC/boards.
 
-	Stefan
+regards,
+
+Peter.
+
+Peter Griffin (13):
+  ARM: STi: DT: STiH416: Add pinctl setup for usb controllers.
+  ARM: STi: DT: STiH416: Add DT node for the stih415/6 usb2 phy
+  ARM: STi: DT: STiH416: Add DT nodes for the ehci and ohci usb
+    controllers.
+  ARM: multi_v7_defconfig: Enable st ohci and ehci HCD drivers.
+  ARM: multi_v7_defconfig: Enable stih415/6 usb2 phy driver.
+  ARM: multi_v7_defconfig: Enable stih407 usb picophy
+  ARM: STi: DT: STiH407: Add usb2 picophy dt nodes
+  ARM: STi: DT: STiH410: Add defines for STiH410 DT clocks
+  ARM: STi: DT: STiH410:  Add pinctl config for usb controllers.
+  ARM: STi: DT: STih410: Add dt nodes for the ehci / ohci usb
+    controllers.
+  ARM: STi: DT: STih407: Abstract common dt nodes into shared files.
+  ARM: STi: DT: STiH410: Add STiH410 SoC clock support.
+  ARM: STi: DT: STih407: Add clk_ignore_unused to kernel bootargs
+
+ arch/arm/boot/dts/Makefile               |   1 +
+ arch/arm/boot/dts/stih407-b2120.dts      |  67 +-----
+ arch/arm/boot/dts/stih407-family.dtsi    | 384 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih407-pinctrl.dtsi   |  18 ++
+ arch/arm/boot/dts/stih407.dtsi           | 279 ----------------------
+ arch/arm/boot/dts/stih410-b2120.dts      |  42 ++++
+ arch/arm/boot/dts/stih410-clock.dtsi     | 338 +++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih416-b2020.dts      |   4 +
+ arch/arm/boot/dts/stih416-b2020e.dts     |   4 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi   |  34 +++
+ arch/arm/boot/dts/stih416.dtsi           | 153 ++++++++++++
+ arch/arm/boot/dts/stih41x-b2020.dtsi     |  12 +
+ arch/arm/boot/dts/stihxxx-b2120.dtsi     |  73 ++++++
+ arch/arm/configs/multi_v7_defconfig      |   4 +
+ include/dt-bindings/clock/stih410-clks.h |  24 ++
+ 15 files changed, 1094 insertions(+), 343 deletions(-)
+ create mode 100644 arch/arm/boot/dts/stih407-family.dtsi
+ delete mode 100644 arch/arm/boot/dts/stih407.dtsi
+ create mode 100644 arch/arm/boot/dts/stih410-b2120.dts
+ create mode 100644 arch/arm/boot/dts/stih410-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stihxxx-b2120.dtsi
+ create mode 100644 include/dt-bindings/clock/stih410-clks.h
+
 -- 
-Stefan Seyfried
-Linux Consultant & Developer -- GPG Key: 0x731B665B
+1.9.1
 
-B1 Systems GmbH
-Osterfeldstraße 7 / 85088 Vohburg / http://www.b1-systems.de
-GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
