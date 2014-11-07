@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaKGVoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 16:44:10 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:50245 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaKGVoH (ORCPT
+	id S1752906AbaKGVsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 16:48:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44162 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaKGVsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 16:44:07 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] SELinux: Stub in copy-up handling
-Date: Fri, 07 Nov 2014 16:44:03 -0500
-Message-ID: <1791526.rYj1Ea3vWT@sifl>
-User-Agent: KMail/4.14.2 (Linux/3.16.7-gentoo; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141105154248.2555.15813.stgit@warthog.procyon.org.uk>
-References: <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154248.2555.15813.stgit@warthog.procyon.org.uk>
+	Fri, 7 Nov 2014 16:48:31 -0500
+Date: Fri, 7 Nov 2014 13:48:30 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pratik Patel <pratikp@codeaurora.org>,
+        Vikas Varshney <varshney@ti.com>, Al Grant <Al.Grant@arm.com>,
+        Jonas Svennebring <jonas.svennebring@avagotech.com>,
+        James King <james.king@linaro.org>, Kaixu Xia <kaixu.xia@linaro.org>,
+        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
+        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
+        trollkarlen Marklund <robbelibobban@gmail.com>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 01/12] coresight: add CoreSight core layer framework
+Message-ID: <20141107214830.GA1995@kroah.com>
+References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
+ <1415038066-22423-2-git-send-email-mathieu.poirier@linaro.org>
+ <20141107193016.GA29311@kroah.com>
+ <20141107193054.GB29311@kroah.com>
+ <CANLsYkzKB7iBUFxsqmaoHob26mEZvfbVSA1O_ZadFCYHE2viAA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANLsYkzKB7iBUFxsqmaoHob26mEZvfbVSA1O_ZadFCYHE2viAA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 05, 2014 03:42:48 PM David Howells wrote:
-> Provide stubs for union/overlay copy-up handling.  The xattr copy up stub
-> discards lower SELinux xattrs rather than letting them be copied up so that
-> the security label on the copy doesn't get corrupted.
+On Fri, Nov 07, 2014 at 02:39:31PM -0700, Mathieu Poirier wrote:
+> On 7 November 2014 12:30, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Fri, Nov 07, 2014 at 11:30:16AM -0800, Greg KH wrote:
+> >> On Mon, Nov 03, 2014 at 11:07:35AM -0700, mathieu.poirier@linaro.org wrote:
+> >> > From: Pratik Patel <pratikp@codeaurora.org>
+> >> >
+> >> > CoreSight components are compliant with the ARM CoreSight
+> >> > architecture specification and can be connected in various
+> >> > topologies to suit a particular SoC tracing needs. These trace
+> >> > components can generally be classified as sources, links and
+> >> > sinks. Trace data produced by one or more sources flows through
+> >> > the intermediate links connecting the source to the currently
+> >> > selected sink.
+> >> >
+> >> > The CoreSight framework provides an interface for the CoreSight trace
+> >> > drivers to register themselves with. It's intended to build up a
+> >> > topological view of the CoreSight components and configure the
+> >> > correct serie of components on user input via sysfs.
+> >> >
+> >> > For eg., when enabling a source, the framework builds up a path
+> >> > consisting of all the components connecting the source to the
+> >> > currently selected sink(s) and enables all of them.
+> >> >
+> >> > The framework also supports switching between available sinks
+> >> > and provides status information to user space applications
+> >> > through the debugfs interface.
+> >> >
+> >> > Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+> >> > Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> >>
+> >> You don't seem to document the sysfs files you create here in
+> >> Documentation/ABI/ anywhere in the series.  Can you fix that up?
 > 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  security/selinux/hooks.c |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index e66314138b38..f3fe7dbbf741 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -3142,6 +3142,19 @@ static void selinux_inode_getsecid(const struct inode
-> *inode, u32 *secid) *secid = isec->sid;
->  }
-> 
-> +static int selinux_inode_copy_up(struct dentry *src, struct dentry *dst)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int selinux_inode_copy_up_xattr(struct dentry *src, struct dentry
-> ...*dst,
-> +				       const char *name, void *value, size_t *size)
-> +{
-> +	if (strcmp(name, XATTR_NAME_SELINUX) == 0)
-> +		return 1; /* Discard */
+> Thanks for the review.   Do you want sysfs entries documented for the
+> framework only or all the ones created by the drivers as well?
 
-I understand that this is just a stub, but I we need to discuss this at some 
-point and I figure better in this patch than elsewhere where it might get 
-lost.
+All need to be documented.
 
-For the docker, context= mount use case (similar to SELinux/sVirt) dropping 
-the SELinux xattr is probably an okay behavior.  However, I would expect that 
-ultimately this is something we would want to control by policy and/or the 
-presence of a context= label.
-
-> +	return 0;
-> +}
-> +
->  /* file security operations */
+> >> Other than that minor nit, this looks good to me.  Feel free to take it
+> >> through some random ARM tree.
+> >
+> > Wait, did you want me to take this through my tree?  If so, I'll be glad
+> > to do so, I can't remember what we talked about here...
 > 
->  static int selinux_revalidate_file_permission(struct file *file, int mask)
-> @@ -5868,6 +5881,8 @@ static struct security_operations selinux_ops = {
->  	.inode_setsecurity =		selinux_inode_setsecurity,
->  	.inode_listsecurity =		selinux_inode_listsecurity,
->  	.inode_getsecid =		selinux_inode_getsecid,
-> +	.inode_copy_up =		selinux_inode_copy_up,
-> +	.inode_copy_up_xattr =		selinux_inode_copy_up_xattr,
-> 
->  	.file_permission =		selinux_file_permission,
->  	.file_alloc_security =		selinux_file_alloc_security,
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-security-module" in the body of a message to
-> majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I was hoping to go through yours.
 
--- 
-paul moore
-www.paul-moore.com
+Ok, I can take it, can you send me a follow-on patch for the sysfs
+files?
 
+thanks,
+
+greg k-h
