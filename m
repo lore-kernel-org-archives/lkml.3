@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaKGLVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 06:21:07 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:45164 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807AbaKGLVB (ORCPT
+	id S1751904AbaKGLWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 06:22:06 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:38086 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaKGLWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 06:21:01 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging: rtl8188eu: unneeded NULL check
-Date: Fri,  7 Nov 2014 16:50:46 +0530
-Message-Id: <1415359246-18212-2-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1415359246-18212-1-git-send-email-sudipm.mukherjee@gmail.com>
-References: <1415359246-18212-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Fri, 7 Nov 2014 06:22:04 -0500
+Message-ID: <1415359320.13896.105.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [Xen-devel] BUG in xennet_make_frags with paged skb data
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Zoltan Kiss <zoltan.kiss@linaro.org>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Date: Fri, 07 Nov 2014 03:22:00 -0800
+In-Reply-To: <545C9013.1090406@linaro.org>
+References: <20141106214940.GD44162@ubuntu-hedt>
+	 <545C9013.1090406@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-before these NULL checks we are already checking it for NULL, and if
-it is NULL then we are jumping to the error label and handling
-the error before returning.
-So we can reach this part of the code only if the variable is known
-to be not NULL, and if we already know that it is not NULL, then no
-need to check it again.
+On Fri, 2014-11-07 at 09:25 +0000, Zoltan Kiss wrote:
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Please do not top post.
 
-hi,
-struct mlme_priv *pmlmepriv and bLinked was moved to the beginning of
-the function, otherwise it was giving warning about mixed code while
-compiling.
+> Hi,
+> 
+> AFAIK in this scenario your skb frag is wrong. The page pointer should 
+> point to the original compound page (not a member of it), and offset 
+> should be set accordingly.
+> For example, if your compound page is 16K (4 page), then the page 
+> pointer should point to the first page, and if the data starts at the 
+> 3rd page, then offset should be >8K
 
- drivers/staging/rtl8188eu/core/rtw_xmit.c   |  4 +---
- drivers/staging/rtl8188eu/hal/rtl8188e_dm.c | 30 ++++++++++++++---------------
- 2 files changed, 16 insertions(+), 18 deletions(-)
+This is not accurate.
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index a0bbf90..7a71df1 100644
---- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -1025,8 +1025,7 @@ s32 rtw_xmitframe_coalesce(struct adapter *padapter, struct sk_buff *pkt, struct
- 
- 		/* adding icv, if necessary... */
- 		if (pattrib->iv_len) {
--			if (psta != NULL) {
--				switch (pattrib->encrypt) {
-+			switch (pattrib->encrypt) {
- 				case _WEP40_:
- 				case _WEP104_:
- 					WEP_IV(pattrib->iv, psta->dot11txpn, pattrib->key_idx);
-@@ -1043,7 +1042,6 @@ s32 rtw_xmitframe_coalesce(struct adapter *padapter, struct sk_buff *pkt, struct
- 					else
- 						AES_IV(pattrib->iv, psta->dot11txpn, 0);
- 					break;
--				}
- 			}
- 
- 			memcpy(pframe, pattrib->iv, pattrib->iv_len);
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c b/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c
-index dab4c33..0156621 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188e_dm.c
-@@ -155,6 +155,8 @@ void rtl8188e_HalDmWatchDog(struct adapter *Adapter)
- 	bool fw_ps_awake = true;
- 	u8 hw_init_completed = false;
- 	struct hal_data_8188e *hal_data = GET_HAL_DATA(Adapter);
-+	struct mlme_priv *pmlmepriv = NULL;
-+	u8 bLinked = false;
- 
- 	hw_init_completed = Adapter->hw_init_completed;
- 
-@@ -170,22 +172,20 @@ void rtl8188e_HalDmWatchDog(struct adapter *Adapter)
- 		fw_ps_awake = false;
- 
- 	/* ODM */
--	if (hw_init_completed) {
--		struct mlme_priv *pmlmepriv = &Adapter->mlmepriv;
--		u8 bLinked = false;
--
--		if ((check_fwstate(pmlmepriv, WIFI_AP_STATE)) ||
--		    (check_fwstate(pmlmepriv, WIFI_ADHOC_STATE | WIFI_ADHOC_MASTER_STATE))) {
--			if (Adapter->stapriv.asoc_sta_count > 2)
--				bLinked = true;
--		} else {/* Station mode */
--			if (check_fwstate(pmlmepriv, _FW_LINKED))
--				bLinked = true;
--		}
--
--		ODM_CmnInfoUpdate(&hal_data->odmpriv, ODM_CMNINFO_LINK, bLinked);
--		ODM_DMWatchdog(&hal_data->odmpriv);
-+	pmlmepriv = &Adapter->mlmepriv;
-+
-+	if ((check_fwstate(pmlmepriv, WIFI_AP_STATE)) ||
-+	    (check_fwstate(pmlmepriv, WIFI_ADHOC_STATE |
-+			   WIFI_ADHOC_MASTER_STATE))) {
-+		if (Adapter->stapriv.asoc_sta_count > 2)
-+			bLinked = true;
-+	} else {/* Station mode */
-+		if (check_fwstate(pmlmepriv, _FW_LINKED))
-+			bLinked = true;
- 	}
-+
-+	ODM_CmnInfoUpdate(&hal_data->odmpriv, ODM_CMNINFO_LINK, bLinked);
-+	ODM_DMWatchdog(&hal_data->odmpriv);
- skip_dm:
- 	/*  Check GPIO to determine current RF on/off and Pbc status. */
- 	/*  Check Hardware Radio ON/OFF or not */
--- 
-1.8.1.2
+This BUG_ON() is wrong.
+
+It should instead be :
+
+BUG_ON(len + offset > PAGE_SIZE<<compound_order(compound_head(page)));
+
+splice() code can generate such cases.
+
 
