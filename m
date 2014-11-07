@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaKGXJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:09:41 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41024 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaKGXJk (ORCPT
+	id S1752899AbaKGXLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:11:23 -0500
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:53985 "HELO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751764AbaKGXLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:09:40 -0500
-Message-ID: <1415401776.2767.1.camel@localhost.localdomain>
-Subject: [PATCH] netfilter: fix compile of nft_reject_bridge
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 08 Nov 2014 00:09:36 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	Fri, 7 Nov 2014 18:11:21 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: "Vick, Matthew" <matthew.vick@intel.com>
+Subject: Re: [PATCH net 3/5] fm10k: Implement ndo_gso_check()
+Date: Fri, 7 Nov 2014 14:35:56 -0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Dept-GELinuxNICDev@qlogic.com" <Dept-GELinuxNICDev@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sathya.perla@emulex.com" <sathya.perla@emulex.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        Linux NICS <Linux-nics@intel.com>,
+        "amirv@mellanox.com" <amirv@mellanox.com>,
+        "shahed.shaikh@qlogic.com" <shahed.shaikh@qlogic.com>,
+        "therbert@google.com" <therbert@google.com>,
+        "Or Gerlitz" <gerlitz.or@gmail.com>
+References: <1415138202-1197-1-git-send-email-joestringer@nicira.com> <201411071805.18119.joestringer@nicira.com> <D0825758.5EC90%matthew.vick@intel.com>
+In-Reply-To: <D0825758.5EC90%matthew.vick@intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+Message-Id: <201411071435.56628.joestringer@nicira.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Von: Stephen Hemminger <stephen@networkplumber.org>
-> An: Thomas Meyer <thomas@m3y3r.de>
-> Betreff: Re: [PATCH] netfilter: fix compile of nft_reject_bridge
-> Datum: Mon, 3 Nov 2014 12:44:06 -0800
+On Friday, November 07, 2014 11:49:38 Vick, Matthew wrote:
+> On 11/6/14, 9:05 PM, "Joe Stringer" <joestringer@nicira.com> wrote:
+> >Let's merge both discussions into one thread (pick here or there). We
+> >have
+> >this suggestion or the one which simply checks for tunnels and
+> >inner+outer
+> >header lengths. Do you have a preference between them?
 > 
-> On Sat, 01 Nov 2014 16:21:39 +0100
-> Thomas Meyer <thomas@m3y3r.de> wrote:
+> Agreed with merging the thread--consider it merged!
 > 
-> > Module uses csum_ipv6_magic(), so include the correct header file.
-> > 
-> > Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> > ---
-> > 
-> > diff --git a/net/bridge/netfilter/nft_reject_bridge.c
-b/net/bridge/netfilter/nft_reject_bridge.c
-> > index 654c901..1123f2b 100644
-> > --- a/net/bridge/netfilter/nft_reject_bridge.c
-> > +++ b/net/bridge/netfilter/nft_reject_bridge.c
-> > @@ -16,6 +16,7 @@
-> >  #include <net/netfilter/nft_reject.h>
-> >  #include <net/netfilter/ipv4/nf_reject.h>
-> >  #include <net/netfilter/ipv6/nf_reject.h>
-> > +#include <net/ip6_checksum.h>
-> >  #include <linux/ip.h>
-> >  #include <net/ip.h>
-> >  #include <linux/netfilter_bridge.h>
-> > 
-> > 
+> Reflecting on this some more, I prefer the latter option (checking tunnels
+> and header lengths). I'm leaning towards pushing the header length check
+> into fm10k_tx_encap_offload and then making fm10k_gso_check call that with
+> the gso_type. So, it's really the most recent version of the patch you
+> proposed:
 > 
-> Acked-by: Stephen Hemminger <stephen@networkplumber.org>
+> static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)
+> {
+> 	if ((skb_shinfo(skb)->gso_type & (SKB_GSO_UDP_TUNNEL | SKB_GSO_GRE)) &&
+> 	    !fm10k_tx_encap_offload(skb))
+> 		return false;
+> 
+> 	return true;
+> }
+> 
+> 
+> plus the header length being checked in fm10k_tx_encap_offload. The only
+> nit would be that I'd just return the conditional instead of having
+> "return true" or "return false" lines.
 
+OK, that sounds reasonable.
 
+> The tunnel length check really should be there in fm10k_tx_encap_offload
+> anyway, so I'll get a patch together for that one.
+
+Thanks.
+
+> >We could introduce an "skb_is_gso_encap()" or similar for this purpose.
+> >Checking for SKB_GSO_UDP_TUNNEL or SKB_GSO_GRE is pretty closely tied to
+> >what
+> >fm10k_tx_encap_offload() checks for though; it might not even make sense
+> >to call
+> >it if some of the other SKB_GSO_* flags are raised.
+> 
+> A fair point. On the other hand, we have to check the header length both
+> in the GSO and non-GSO cases anyway, so only having the check in
+> fm10k_tx_encap_offload and calling it from fm10k_gso_check wouldn't be as
+> duplicative. What do you think about that approach?
+
+Sure, I think fm10k_tx_encap_offload() is a good place for the header length 
+check. Separately, my question above was regarding the idea of a helper for 
+SKB_GSO_{GRE,UDP_TUNNEL}. The only reason it might be useful for the fm10k 
+driver is because all encap is checked in the fm10k_tx_encap_offload() function. 
+Other drivers don't seem to handle different tunnels together like this though, 
+so I'm inclined to stick with the below for now.
+                                                                                
+static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)        
+{                                                                               
+        return (!(skb_shinfo(skb)->gso_type &                                   
+                  (SKB_GSO_UDP_TUNNEL | SKB_GSO_GRE)) ||                        
+                fm10k_tx_encap_offload(skb));                                   
+}
+
+Cheers,
+Joe
