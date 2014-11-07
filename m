@@ -1,116 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaKGXc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:32:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59373 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018AbaKGXc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:32:58 -0500
-Date: Sat, 8 Nov 2014 10:32:49 +1100
-From: NeilBrown <neilb@suse.de>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>
-Subject: [PATCH] w1: support auto-load of w1_bq27000 module.
-Message-ID: <20141108103249.4f86786c@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+	id S1752430AbaKGXgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:36:24 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59982 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751772AbaKGXgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 18:36:23 -0500
+Date: Fri, 7 Nov 2014 23:36:07 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: Propagate prepare and enable when reparenting
+ orphans
+Message-ID: <20141107233607.GS4042@n2100.arm.linux.org.uk>
+References: <1415386312-23741-1-git-send-email-dianders@chromium.org>
+ <20141107185844.GR4042@n2100.arm.linux.org.uk>
+ <CAD=FV=WhWqMB=-ErD-59-z=y7OCZx4r7REkr3DpyYR=76SEJ6A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/5K64Eh+R94GOCIh=ZN+=6LQ"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=WhWqMB=-ErD-59-z=y7OCZx4r7REkr3DpyYR=76SEJ6A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5K64Eh+R94GOCIh=ZN+=6LQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 07, 2014 at 02:52:38PM -0800, Doug Anderson wrote:
+> Russell,
+> 
+> On Fri, Nov 7, 2014 at 10:58 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Fri, Nov 07, 2014 at 10:51:52AM -0800, Doug Anderson wrote:
+> >> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> >> index 4896ae9..a3d3d58 100644
+> >> --- a/drivers/clk/clk.c
+> >> +++ b/drivers/clk/clk.c
+> >> @@ -1650,6 +1650,17 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+> >>       clk_reparent(clk, new_parent);
+> >>       __clk_recalc_accuracies(clk);
+> >>       __clk_recalc_rates(clk, POST_RATE_CHANGE);
+> >> +
+> >> +     if (clk->prepare_count) {
+> >> +             unsigned long flags;
+> >> +
+> >> +             __clk_prepare(new_parent);
+> >> +
+> >> +             flags = clk_enable_lock();
+> >> +             if (clk->enable_count)
+> >> +                     __clk_enable(new_parent);
+> >> +             clk_enable_unlock(flags);
+> >> +     }
+> >
+> > I really don't understand why this isn't already done - I said this was
+> > necessary a /long/ time ago.
+> >
+> > However, the above isn't sufficient.  Think about the old parent - this
+> > should be disabled and unprepared if it was prepared and enabled by the
+> > child.
+> 
+> You may be referring of a different bug than I am addressing.  I can
+> think about the old parent, but it always a tear to my eyes since
+> these clocks are orphans and had no old parents (unless you count the
+> matron at the orphanage, but I doubt she was either prepared or
+> enabled).  ;)
+> 
+> Ah, but I see!  There are other users of this function that are not
+> part of "clk.c".  Doh!  Since this was a "__" function with no
+> documentation I assumed it was "static", but I see that it is not.  I
+> see two callers that are not part of the orphan code.
+> 
+> I'll happily move this code down so it's only called by the orphan
+> code and not touch the two callers of __clk_reparent(), assuming that
+> they don't need to deal with this scenario.
 
+What I am saying is as follows.  Take this diagram - a mux.  clkc can
+be sourced from either clkp1 or clkp2.  Initially, it is set to clkp1:
 
+clkp1 -----o
+            \
+             o--------> clkc
 
-1/ change request_module call to zero-pad single digit
-   family numbers.  This appears to be the intention of
-   the code, but not what it actually does.
+clkp2 -----o
 
-   This means that the alias created for W1_FAMILY_SMEM_01
-   might actually be useful.
+Let's assume that none of these clocks are requested, prepared or
+enabled.
 
-2/ Define a family name for the BQ27000 battery charge monitor.
-   Unfortunately this is the same number as W1_FAMILY_SMEM_01
-   so if both a compiled on a system, one module might need to
-   be blacklisted.
+Now, if clkc is requested, and then prepared, clkp1 will be prepared,
+but not clkp2.
 
-3/ Add a MODULE_ALIAS for the bq27000.
+When clkc is re-parented to clkp2 in this state, there are three things
+which must happen:
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+1. clkp2 needs to be prepared.
+2. clkc needs to be switched from clkp1 to clkp2.
+3. clkp1 needs to be unprepared.
 
-diff --git a/drivers/w1/slaves/w1_bq27000.c b/drivers/w1/slaves/w1_bq27000.c
-index afbefed5f2c9..caafb1722783 100644
---- a/drivers/w1/slaves/w1_bq27000.c
-+++ b/drivers/w1/slaves/w1_bq27000.c
-@@ -88,7 +88,7 @@ static struct w1_family_ops w1_bq27000_fops =3D {
- };
-=20
- static struct w1_family w1_bq27000_family =3D {
--	.fid =3D 1,
-+	.fid =3D W1_FAMILY_BQ27000,
- 	.fops =3D &w1_bq27000_fops,
- };
-=20
-@@ -111,7 +111,7 @@ module_exit(w1_bq27000_exit);
-=20
- module_param(F_ID, int, S_IRUSR);
- MODULE_PARM_DESC(F_ID, "1-wire slave FID for BQ device");
--
-+MODULE_ALIAS("w1-family-" __stringify(W1_FAMILY_BQ27000));
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Texas Instruments Ltd");
- MODULE_DESCRIPTION("HDQ/1-wire slave driver bq27000 battery monitor chip");
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 592f7edc671e..181f41cb960b 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -727,7 +727,7 @@ int w1_attach_slave_device(struct w1_master *dev, struc=
-t w1_reg_num *rn)
-=20
- 	/* slave modules need to be loaded in a context with unlocked mutex */
- 	mutex_unlock(&dev->mutex);
--	request_module("w1-family-0x%0x", rn->family);
-+	request_module("w1-family-0x%02x", rn->family);
- 	mutex_lock(&dev->mutex);
-=20
- 	spin_lock(&w1_flock);
-diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
-index 0d18365b61ad..ed5dcb80a1f7 100644
---- a/drivers/w1/w1_family.h
-+++ b/drivers/w1/w1_family.h
-@@ -27,6 +27,7 @@
- #include <linux/atomic.h>
-=20
- #define W1_FAMILY_DEFAULT	0
-+#define W1_FAMILY_BQ27000	0x01
- #define W1_FAMILY_SMEM_01	0x01
- #define W1_FAMILY_SMEM_81	0x81
- #define W1_THERM_DS18S20 	0x10
+(the order is debatable.)
 
---Sig_/5K64Eh+R94GOCIh=ZN+=6LQ
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+The reason for step 3 is because of what happens if we unprepare clkc,
+or switch back to clkp1.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+If we unprepare clkc, we _should_ end up with clkp1, clkp2 and clkc
+_all_ back in their initial states - in other words, all unprepared.
+clkp1 should not be left prepared by this sequence of events.
 
-iQIVAwUBVF1WoTnsnt1WYoG5AQK7TRAAp8p1G0OwaJf5n0dqoiTaXSShUgocaj7k
-J6ulEZUC+zFCVn4gsSAHarfRrpPP4ioPSwt31Te6RxRDG7F1hTexuqSynI3kUf4R
-9B5AeRJHf3nGI7js96OQJzPmdLuAKMEmmnOn9Hus72qwE6ZLCI2f7bCAVFPBQnaV
-3jP9U9cLVEXYb/EfLGVBOjlYBxdiCS+HH+xQNoZjYNPhQrcxAaTVjZ866y1z0u8p
-zWfB3gpsyDoKvUOQF6z4a+BFnCuBXFsABz8vBM3DO0Ab1+IlrW35Y8ASlu19RchJ
-S4toeIIebVJmwAr7kMKLtjVqrALf6dDctKmC5PLQ3fo/kUe/UIfEDmBDBqjHmoJY
-00iJqkxG0U4EUeltCiV2lTOkuK1lz2/BPpYJxI8rFX0tvaL2bMcnnZLOxPIBXGnO
-SCwVLqNBdqJynGQbcElpaqvQvUlr5mZhpELaPSV3bDA+vqBMxXuWvP5YfyM5RGja
-48lL1cCttlOua7AwXFf1CdXGWilfZm9NOkg/Q5RLXx+G0V702Ahe1Z3N5EmEtJgX
-rQsL95gdkXyEhrVQ4z7H1OGc1YXCEe3J9YNTliunmKqmpz7O2N4SkQ+p0n4n8k9h
-Hzi9MinHSM5XgLRCSvHL2s+M/vIj1Ga0xiAJWSDO7n8qCvOZOfQARaHDvjXlIvJC
-Q3gjdESlmck=
-=Dx7l
------END PGP SIGNATURE-----
+If we switch back to clkp1, then the same three things need to happen
+(just with the appropriate parent clocks):
 
---Sig_/5K64Eh+R94GOCIh=ZN+=6LQ--
+1. clkp1 needs to be prepared.
+2. clkc needs to be switched from clkp2 to clkp1.
+3. clkp2 needs to be unprepared.
+
+And, having done that, we can see that we are in exactly the same state
+as we were when we first prepared clkc in the beginning.
+
+If we omit the unprepare stage, then at this point, we will have prepared
+clkp1 _twice_ and clkp2 _once_, which means when clkc is unprepared, both
+clkp1 and clkp2 are left with a preparation count of one - which is
+effectively a refcount leak.
+
+Fixing the lack of prepare may fix the "clock not running" problem, but
+without addressing the unprepare side, you are introducing a new bug
+while fixing an existing bug.  Both issues need to be resolved together.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
