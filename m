@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaKGTZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:25:20 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:47496 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaKGTZS (ORCPT
+	id S1752834AbaKGTaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:30:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43054 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaKGTaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:25:18 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 2/3] PM / clock_ops: make __pm_clk_enable more generic
-References: <1415281862-23764-1-git-send-email-grygorii.strashko@ti.com>
-	<1415281862-23764-3-git-send-email-grygorii.strashko@ti.com>
-Date: Fri, 07 Nov 2014 11:25:14 -0800
-In-Reply-To: <1415281862-23764-3-git-send-email-grygorii.strashko@ti.com>
-	(Grygorii Strashko's message of "Thu, 6 Nov 2014 15:51:01 +0200")
-Message-ID: <7h1tpestid.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 7 Nov 2014 14:30:17 -0500
+Date: Fri, 7 Nov 2014 11:30:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: mathieu.poirier@linaro.org
+Cc: linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
+        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
+        james.king@linaro.org, kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com,
+        r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 01/12] coresight: add CoreSight core layer framework
+Message-ID: <20141107193016.GA29311@kroah.com>
+References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
+ <1415038066-22423-2-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415038066-22423-2-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii Strashko <grygorii.strashko@ti.com> writes:
+On Mon, Nov 03, 2014 at 11:07:35AM -0700, mathieu.poirier@linaro.org wrote:
+> From: Pratik Patel <pratikp@codeaurora.org>
+> 
+> CoreSight components are compliant with the ARM CoreSight
+> architecture specification and can be connected in various
+> topologies to suit a particular SoC tracing needs. These trace
+> components can generally be classified as sources, links and
+> sinks. Trace data produced by one or more sources flows through
+> the intermediate links connecting the source to the currently
+> selected sink.
+> 
+> The CoreSight framework provides an interface for the CoreSight trace
+> drivers to register themselves with. It's intended to build up a
+> topological view of the CoreSight components and configure the
+> correct serie of components on user input via sysfs.
+> 
+> For eg., when enabling a source, the framework builds up a path
+> consisting of all the components connecting the source to the
+> currently selected sink(s) and enables all of them.
+> 
+> The framework also supports switching between available sinks
+> and provides status information to user space applications
+> through the debugfs interface.
+> 
+> Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-> Now there are two places in code which do the same things,
-> so allow __pm_clk_enable() to accept pointer on pm_clock_entry
-> structure as second parameter instead of pointer on clock and
-> remove duplicated code.
->
-> Also, updated function intended to be used by following patch.
->
-> CC: Santosh Shilimkar <ssantosh@kernel.org>
-> CC: Kevin Hilman <khilman@linaro.org>
-> CC: Ulf Hansson <ulf.hansson@linaro.org>
-> CC: Geert Uytterhoeven <geert@linux-m68k.org>
-> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+You don't seem to document the sysfs files you create here in
+Documentation/ABI/ anywhere in the series.  Can you fix that up?
 
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
+Other than that minor nit, this looks good to me.  Feel free to take it
+through some random ARM tree.
+
+thanks,
+
+greg k-h
