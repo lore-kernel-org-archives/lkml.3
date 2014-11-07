@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471AbaKGIAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:00:44 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:53506 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164AbaKGIAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:00:39 -0500
-Message-ID: <545C7C2E.3060109@c-s.fr>
-Date: Fri, 07 Nov 2014 09:00:46 +0100
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751531AbaKGIAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:00:52 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:47833 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaKGIAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 03:00:45 -0500
+Date: Fri, 7 Nov 2014 09:00:34 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Vignesh R <vigneshr@ti.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        devicetree@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jan Kardell <jan.kardell@telliq.com>, linux-iio@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
+        linux-omap@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Brad Griffis <bgriffis@ti.com>
+Subject: Re: [PATCH 1/4] input: touchscreen: ti_am335x_tsc Interchange
+ touchscreen and ADC steps
+Message-ID: <20141107080033.GA6455@netboy>
+References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
+ <1414408111-2631-2-git-send-email-vigneshr@ti.com>
+ <20141106141916.GA17151@netboy>
+ <545C59CD.3070707@ti.com>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v4,17/21] powerpc/8xx: set PTE bit 22 off TLBmiss
-References: <20140919083609.A92871AB040@localhost.localdomain> <20141107033745.GA23796@home.buserror.net>
-In-Reply-To: <20141107033745.GA23796@home.buserror.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545C59CD.3070707@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 07, 2014 at 11:04:05AM +0530, Vignesh R wrote:
+> 
+> Currently, there is too much noise in the TSC hardware that is being
+> removed by delta filtering.
 
-Le 07/11/2014 04:37, Scott Wood a écrit :
-> On Fri, Sep 19, 2014 at 10:36:09AM +0200, LEROY Christophe wrote:
->> No need to re-set this bit at each TLB miss. Let's set it in the PTE.
->>
->> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
->> ---
->> Changes in v2:
->> - None
->>
->> Changes in v3:
->> - Removed PPC405 related macro from PPC8xx specific code
->> - PTE_NONE_MASK doesn't need PAGE_ACCESSED in Linux 2.6
->>
->> Changes in v4:
->> - None
->>
->>   arch/powerpc/include/asm/pgtable-ppc32.h | 20 ++++++++++++++++++++
->>   arch/powerpc/include/asm/pte-8xx.h       |  7 +++++--
->>   arch/powerpc/kernel/head_8xx.S           | 10 ++--------
->>   3 files changed, 27 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
->> index 47edde8..35a9b44 100644
->> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
->> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
->> @@ -172,6 +172,25 @@ static inline unsigned long pte_update(pte_t *p,
->>   #ifdef PTE_ATOMIC_UPDATES
->>   	unsigned long old, tmp;
->>   
->> +#ifdef CONFIG_PPC_8xx
->> +	unsigned long tmp2;
->> +
->> +	__asm__ __volatile__("\
->> +1:	lwarx	%0,0,%4\n\
->> +	andc	%1,%0,%5\n\
->> +	or	%1,%1,%6\n\
->> +	/* 0x200 == Extended encoding, bit 22 */ \
->> +	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
->> +	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
->> +	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
->> +	or	%1,%3,%1\n\
->> +	xori	%1,%1,0x200\n"
->> +"	stwcx.	%1,0,%4\n\
->> +	bne-	1b"
-> Why do you need this...
->
->> diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
->> index d44826e..daa4616 100644
->> --- a/arch/powerpc/include/asm/pte-8xx.h
->> +++ b/arch/powerpc/include/asm/pte-8xx.h
->> @@ -48,19 +48,22 @@
->>    */
->>   #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
->>   #define _PAGE_USER	0x0800	/* msb PP bits */
->> +/* set when neither _PAGE_USER nor _PAGE_RW are set */
->> +#define _PAGE_KNLRO	0x0200
->>   
->>   #define _PMD_PRESENT	0x0001
->>   #define _PMD_BAD	0x0ff0
->>   #define _PMD_PAGE_MASK	0x000c
->>   #define _PMD_PAGE_8M	0x000c
->>   
->> -#define _PTE_NONE_MASK _PAGE_ACCESSED
->> +#define _PTE_NONE_MASK _PAGE_KNLRO
->>   
->>   /* Until my rework is finished, 8xx still needs atomic PTE updates */
->>   #define PTE_ATOMIC_UPDATES	1
->>   
->>   /* We need to add _PAGE_SHARED to kernel pages */
->> -#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
->> +#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
->> +#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
->>   #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
-> ...if 0x200 is already being set in the PTE here?
->
-If I understand well the way it works, those defines are used for 
-setting the PTE the first time.
-Then, pte_update() is used to modify the pte settings on an existing pte
+The so called "filter" was only programmed because the fifo entries
+were being mixed up. Sebastian fixed that.
 
-0x200 must be set when and only when the page is a RO kernel page. If 
-later on pte_update() is called for instance to set the page to RW, the 
-0x200 has to be removed. Same, if pte_update() is called to remove 
-_PAGE_RW (ptep_set_wrprotect() does this), 0x200 must be set back.
+> I tested TSC unit by removing filtering
+> logic, the performance was not at all satisfactory. The cursor jumps
+> wayward and smooth circles cannot be drawn. Looks like delta filtering
+> cannot be removed as of now. May be I will try and address it in future.
 
-Christophe
+The "filter" code is nonsensical. It picks the two values in seqeunce
+that are closest to one and another. How is that supposed to work?
 
+Did you look at the "noise"? What kind of properties did you see?
+
+A median filter makes more sense. Or sort, remove outliers, and
+average. But choosing the two closest in series is silly.
+
+Thanks,
+Richard
