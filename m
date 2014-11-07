@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018AbaKGTUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:20:06 -0500
-Received: from modemcable114.129-37-24.static.videotron.ca ([24.37.129.114]:33073
-	"EHLO haddock.xiphos.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751459AbaKGTUE (ORCPT
+	id S1753183AbaKGTWP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:22:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42917 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972AbaKGTWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:20:04 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 14:20:04 EST
-From: Joshua Lamorie <joshua.lamorie@xiphos.com>
-To: jic23@kernel.org
-Cc: michal.simek@xilinx.com, lars@metafoo.de, linux-iio@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        soren.brinkmann@xilinx.com, Joshua Lamorie <joshua.lamorie@xiphos.com>
-Subject: [PATCH] iio:xilinx-xadc:xadc_read_raw INFO_OFFSET
-Date: Fri,  7 Nov 2014 14:11:56 -0500
-Message-Id: <1415387516-15051-1-git-send-email-joshua.lamorie@xiphos.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 7 Nov 2014 14:22:14 -0500
+Date: Fri, 7 Nov 2014 11:22:13 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH v5 03/11] drivers: base: add cpu_device_create to support
+ per-cpu devices
+Message-ID: <20141107192213.GA30923@kroah.com>
+References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
+ <1412084912-2767-4-git-send-email-sudeep.holla@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412084912-2767-4-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a condition for a read of IIO_CHAN_INFO_OFFSET to
-ensure that an offset is only provided for requests for XADC temperature. The
-previous assumption was that only requests for temperature would include a
-read of CHAN_INFO_OFFSET. However there is no way to restrict this in calling
-functions, such as iio_convert_raw_to_processed_unlocked() which is called when
-using the XADC as a device for iio_hwmon.
+On Tue, Sep 30, 2014 at 02:48:24PM +0100, Sudeep Holla wrote:
+> This patch adds a new function to create per-cpu devices.
+> This helps in:
+> 1. reusing the device infrastructure to create any cpu related
+>    attributes and corresponding sysfs instead of creating and
+>    dealing with raw kobjects directly
+> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+>    existing sysfs ABI
+> 3. avoiding to create links in the bus directory pointing to the
+>    device as there would be per-cpu instance of these devices with
+>    the same name since dev->bus is not populated to cpu_sysbus on
+>    purpose
+> 
+> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+> Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: David Herrmann <dh.herrmann@gmail.com>
+> Cc: Kay Sievers <kay@vrfy.org>
 
-Signed-off-by: Joshua Lamorie <joshua.lamorie@xiphos.com>
----
- drivers/iio/adc/xilinx-xadc-core.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
-index 23c152e..2c549ab 100644
---- a/drivers/iio/adc/xilinx-xadc-core.c
-+++ b/drivers/iio/adc/xilinx-xadc-core.c
-@@ -877,9 +877,13 @@ static int xadc_read_raw(struct iio_dev *indio_dev,
- 			return -EINVAL;
- 		}
- 	case IIO_CHAN_INFO_OFFSET:
--		/* Only the temperature channel has an offset */
--		*val = -((273150 << 12) / 503975);
--		return IIO_VAL_INT;
-+		if (chan->type == IIO_TEMP) {
-+			/* Only the temperature channel has an offset */
-+			*val = -((273150 << 12) / 503975);
-+			return IIO_VAL_INT;
-+		} else {
-+			return -EINVAL;
-+		}
- 	case IIO_CHAN_INFO_SAMP_FREQ:
- 		ret = xadc_read_adc_reg(xadc, XADC_REG_CONF2, &val16);
- 		if (ret)
--- 
-1.8.3.1
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
