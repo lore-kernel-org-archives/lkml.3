@@ -1,345 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaKGLdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 06:33:18 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:30162 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681AbaKGLdL (ORCPT
+	id S1752105AbaKGLd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 06:33:59 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:49037 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603AbaKGLdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 06:33:11 -0500
-X-AuditID: cbfee68d-f79296d000004278-51-545cadf43961
-From: Yadwinder Singh Brar <yadi.brar@samsung.com>
-To: "'Eduardo Valentin'" <edubezval@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rui.zhang@intel.com, amit.daniel@samsung.com, viresh.kumar@linaro.org,
-        linux-samsung-soc@vger.kernel.org, yadi.brar01@gmail.com
-References: <1415189785-18593-1-git-send-email-yadi.brar@samsung.com>
- <20141105204638.GB5243@developer>
- <004c01cff9b0$6b450740$41cf15c0$%brar@samsung.com>
- <20141106074907.GA8176@developer>
-In-reply-to: <20141106074907.GA8176@developer>
-Subject: RE: [PATCH] thermal: cpu_cooling: Update always cpufreq policy with
- thermal constraints
-Date: Fri, 07 Nov 2014 17:03:05 +0530
-Message-id: <001001cffa7e$a8419f90$f8c4deb0$%brar@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/58x+g58Wj2IGmTa22pzE1L4UUtQAhqZJg
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkVvfL2pgQg46v1hYNV0Ms5l+5xmpx
-	edccNovPvUcYLWac38dk8eRhH5vFxq8eFnN/N7I6cHjsnHWX3WPxnpdMHneu7WHz6NuyitHj
-	8ya5ANYoLpuU1JzMstQifbsErowzvyezFHz1qOh51sHewLjZoouRk0NCwETi0pWv7BC2mMSF
-	e+vZuhi5OIQEljJKHL3wkBWm6MC1HVCJ6YwSV/++ZIVwfjJKnJx1ASjDwcEmYCxx9iY3SIOI
-	gI7EjbebmEBqmAX2M0o8f3ORCaLhEKPEy+ZDzCBVnAJ6Ek9vnWYBsYUFkiS6519iBLFZBFQl
-	ps5/DbaaV8BO4vrBw4wQtqDEj8n3wOqZBbQk1u88zgRhy0tsXvOWGeQICQF1iUd/dUFMEQEj
-	iVVThCEqxCUmPXjIDnKChMBHdol501azQawSkPg2+RALRKusxKYDzBAPS0ocXHGDZQKjxCwk
-	i2chWTwLyeJZSFYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iREYxaf/PevdwXj7gPUh
-	RgEORiUe3hu8MSFCrIllxZW5hxhNgS6ayCwlmpwPTBV5JfGGxmZGFqYmpsZG5pZmSuK8ilI/
-	g4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw9uvG3b17b47zwo4JcfWBl+eczFCwn6jxuLAk
-	YKGK5cyfWofWl/7OXOmt+us0s+1aU96OjL9qk06Kl5urhfGsuldlZmNXa3u92/AgJ/vanov8
-	hW8MV27V4ruqKjmvetPToOdrTvk9Fo2u5pN1suM6EXWvJWCu1ubb3Bc/r7vkz2jSPWVy3eZ/
-	SizFGYmGWsxFxYkAdtiJFt0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t9jQd0va2NCDGZ8NrRouBpiMf/KNVaL
-	y7vmsFl87j3CaDHj/D4miycP+9gsNn71sJj7u5HVgcNj56y77B6L97xk8rhzbQ+bR9+WVYwe
-	nzfJBbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl
-	5gCdoqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMOPN7MkvBV4+Knmcd
-	7A2Mmy26GDk5JARMJA5c28EGYYtJXLi3Hsjm4hASmM4ocfXvS1YI5yejxMlZF4AyHBxsAsYS
-	Z29ygzSICOhI3Hi7iQmkhllgP6PE8zcXmSAaDjFKvGw+xAxSxSmgJ/H01mkWEFtYIEmie/4l
-	RhCbRUBVYur816wgNq+AncT1g4cZIWxBiR+T74HVMwtoSazfeZwJwpaX2LzmLTPIERIC6hKP
-	/uqCmCICRhKrpghDVIhLTHrwkH0Co9AsJINmIRk0C8mgWUhaFjCyrGIUTS1ILihOSs810itO
-	zC0uzUvXS87P3cQIThHPpHcwrmqwOMQowMGoxMN7gzcmRIg1say4MhfoVw5mJRHe2auBQrwp
-	iZVVqUX58UWlOanFhxhNgf6cyCwlmpwPTF95JfGGxibmpsamliYWJmaWSuK8B1utA4UE0hNL
-	UrNTUwtSi2D6mDg4pRoYIzKvqm+pm8liIGKjbCm0RTrCwN1/wvwuq/sSWmxmRzOC/nvWP5kk
-	vGDDIZ9kq/vXPXZOy5deG9bHEn9I0F1NmPvdfBvtG/WXNrRYdL16+Ex04qK8i2fEquuuNK3P
-	+3vHaNXlqmjuvXF/pm2L2zn5rPid2FO1s6fcv+M99Xso06SbE9Na76gaK7EUZyQaajEXFScC
-	ANoG9p0nAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 7 Nov 2014 06:33:55 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <57e01918dd89d50b3c413574d3e790dd>
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com
+Subject: [PATCH V4 3/6] dw-hdmi: make checkpatch happy
+Date: Fri,  7 Nov 2014 19:33:36 +0800
+Message-Id: <1415360016-8559-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415359958-8512-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415359958-8512-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Eduardo Valentin, 
+CHECK: Alignment should match open parenthesis
++       if ((hdmi->vic == 10) || (hdmi->vic == 11) ||
++               (hdmi->vic == 12) || (hdmi->vic == 13) ||
 
-On Thursday, November 06, 2014 1:19 PM, Eduardo Valentin wrote:
-> Hello Yadwinder,
-> 
-> On Thu, Nov 06, 2014 at 04:26:27PM +0530, Yadwinder Singh Brar wrote:
-> > Hello Eduardo Valentin,
-> >
-> > On Thursday, November 06, 2014 2:17 AM, Eduardo Valentin wrote:
-> > > Hello Yadwinder,
-> > >
-> > > On Wed, Nov 05, 2014 at 05:46:25PM +0530, Yadwinder Singh Brar
-> wrote:
-> > > > Existing code updates cupfreq policy only while executing
-> > > > cpufreq_apply_cooling() function (i.e. when notify_device !=
-> > > NOTIFY_INVALID).
-> > >
-> > > Correct. The case you mention is when we receive a notification
-> from
-> > > cpufreq. But also, updates the cpufreq policy when the cooling
-> > > device changes state, a call from thermal framework.
-> >
-> > I mentioned thermal framework case only, existing code updates
-> cupfreq
-> > policy only when (notify_device != NOTIFY_INVALID), which happens
-> only
-> > when notification comes from cpufreq_update_policy while changing
-> > cooling device's state(i.e. cpufreq_apply_cooling()).
-> > In case of other notifications notify_device is always
-> NOTIFY_INVALID.
-> 
-> I see your point.
-> 
-> >
-> > >
-> > > > It doesn't apply constraints when cpufreq policy update happens
-> > > > from any other place but it should update the cpufreq policy with
-> > > > thermal constraints every time when there is a cpufreq policy
-> > > > update, to keep state of cpufreq_cooling_device and max_feq of
-> > > > cpufreq policy in
-> > > sync.
-> > >
-> > > I am not sure I follow you here. Can you please elaborate on 'any
-> > > other places'? Could you please mention (also in the commit log)
-> > > what are the case the current code does not cover? For instance,
-> the
-> > > cpufreq_apply_cooling gets called on notification coming from
-> > > thermal subsystem, and for changes in cpufreq subsystem,
-> > > cpufreq_thermal_notifier is called.
-> > >
-> >
-> > "Other places" mean possible places from where
-> cpufreq_update_policy()
-> > can be called at runtime, an instance in present kernel is
-> cpufreq_resume().
-> > But since cpufreq_update_policy() is an exposed API, I think for
-> > robustness, generic cpu cooling should be able to take care of any
-> > possible case(in future as well).
-> >
-> 
-> OK. I understand now. Can you please improve your commit message by
-> adding the descriptions you mentioned here?
->
+CHECK: braces {} should be used on all arms of this statement
++       if (hdmi->hdmi_data.video_mode.mdvi)
+[...]
++       else {
+[...]
 
-Sure, will post updated patch.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+---
+ drivers/gpu/drm/bridge/dw_hdmi.c | 99 ++++++++++++++++++++--------------------
+ 1 file changed, 49 insertions(+), 50 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index e561286..693a379 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -146,8 +146,8 @@ static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
+ 	hdmi_writeb(hdmi, val, reg);
+ }
  
-> > > >
-> > > > This patch modifies code to maintain a global cpufreq_dev_list
-> and
-> > > get
-> > > > corresponding cpufreq_cooling_device for policy's cpu from
-> > > > cpufreq_dev_list when there is any policy update.
-> > >
-> > > OK. Please give real examples of when the current code fails to
-> > > catch the event.
-> > >
-> >
-> > While resuming cpufreq updates cpufreq_policy for boot cpu and it
-> > restores default policy->usr_policy irrespective of cooling device's
-> > cpufreq_state since notification gets missed because (notify_device
-> ==
-> > NOTIFY_INVALID).
-> > Another thing, Rather I would say an issue, I observed is that
-> > Userspace is able to change max_freq irrespective of cooling device's
-> > state, as notification gets missed.
-> >
-> 
-> Include also the examples above you gave.
-> 
-> Have you verified if with this patch the issue with userland goes away?
-> 
-
-Yes, Userspace is not able to set scaling_max_freq more than the
-cooling device constraint(cpufreq_val).
-
-But I have a question here, Is it OK to silently set scaling_max_freq
-less than the requested value from userspace ? 
-
-> > >
-> > > BR,
-> > >
-> > > Eduardo Valentin
-> > >
-> > > >
-> > > > Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> > > > ---
-> > > >  drivers/thermal/cpu_cooling.c |   37 ++++++++++++++++++++-------
-> ----
-> > > ------
-> > > >  1 files changed, 20 insertions(+), 17 deletions(-)
-> > > >
-> > > > diff --git a/drivers/thermal/cpu_cooling.c
-> > > > b/drivers/thermal/cpu_cooling.c index 1ab0018..5546278 100644
-> > > > --- a/drivers/thermal/cpu_cooling.c
-> > > > +++ b/drivers/thermal/cpu_cooling.c
-> > > > @@ -50,15 +50,14 @@ struct cpufreq_cooling_device {
-> > > >  	unsigned int cpufreq_state;
-> > > >  	unsigned int cpufreq_val;
-> > > >  	struct cpumask allowed_cpus;
-> > > > +	struct list_head node;
-> > > >  };
-> > > >  static DEFINE_IDR(cpufreq_idr);
-> > > >  static DEFINE_MUTEX(cooling_cpufreq_lock);
-> > > >
-> > > >  static unsigned int cpufreq_dev_count;
-> > > >
-> > > > -/* notify_table passes value to the CPUFREQ_ADJUST callback
-> > > function.
-> > > > */ -#define NOTIFY_INVALID NULL -static struct
-> > > > cpufreq_cooling_device *notify_device;
-> > > > +static LIST_HEAD(cpufreq_dev_list);
-> > > >
-> > > >  /**
-> > > >   * get_idr - function to get a unique id.
-> > > > @@ -287,15 +286,12 @@ static int cpufreq_apply_cooling(struct
-> > > > cpufreq_cooling_device *cpufreq_device,
-> > > >
-> > > >  	cpufreq_device->cpufreq_state = cooling_state;
-> > > >  	cpufreq_device->cpufreq_val = clip_freq;
-> > > > -	notify_device = cpufreq_device;
-> > > >
-> > > >  	for_each_cpu(cpuid, mask) {
-> > > >  		if (is_cpufreq_valid(cpuid))
-> > > >  			cpufreq_update_policy(cpuid);
-> > > >  	}
-> > > >
-> > > > -	notify_device = NOTIFY_INVALID;
-> > > > -
-> > > >  	return 0;
-> > > >  }
-> > > >
-> > > > @@ -316,21 +312,27 @@ static int cpufreq_thermal_notifier(struct
-> > > > notifier_block *nb,  {
-> > > >  	struct cpufreq_policy *policy = data;
-> > > >  	unsigned long max_freq = 0;
-> > > > +	struct cpufreq_cooling_device *cpufreq_dev;
-> > > >
-> > > > -	if (event != CPUFREQ_ADJUST || notify_device ==
-> NOTIFY_INVALID)
-> > > > +	if (event != CPUFREQ_ADJUST)
-> > > >  		return 0;
-> > > >
-> > > > -	if (cpumask_test_cpu(policy->cpu, &notify_device-
-> >allowed_cpus))
-> > > > -		max_freq = notify_device->cpufreq_val;
-> > > > -	else
-> > > > -		return 0;
-> > > > +	mutex_lock(&cooling_cpufreq_lock);
-> > > > +	list_for_each_entry(cpufreq_dev, &cpufreq_dev_list, node) {
-> > > > +		if (!cpumask_test_cpu(policy->cpu,
-> > > > +					&cpufreq_dev->allowed_cpus))
-> > > > +			continue;
-> > > >
-> > > > -	/* Never exceed user_policy.max */
-> > > > -	if (max_freq > policy->user_policy.max)
-> > > > -		max_freq = policy->user_policy.max;
-> > > > +		max_freq = cpufreq_dev->cpufreq_val;
-> > > >
-> >
-> > I think I missed to post updated patch, Actually it should be :
-> >
-> > +	if (!cpufreq_dev->cpufreq_val)
-> > +		cpufreq_dev->cpufreq_val = get_cpu_frequency(
-> > +
-> > cpumask_any(&cpufreq_dev->allowed_cpus),
-> > +							cpufreq_dev->state);
-> > +	max_freq = cpufreq_dev->cpufreq_val;
-> >
-> > I will send another version of patch.
-> 
-> ok.
-> 
-> >
-> > > > -	if (policy->max != max_freq)
-> > > > -		cpufreq_verify_within_limits(policy, 0, max_freq);
-> > > > +		/* Never exceed user_policy.max */
-> > > > +		if (max_freq > policy->user_policy.max)
-> > > > +			max_freq = policy->user_policy.max;
-> > > > +
-> > > > +		if (policy->max != max_freq)
-> > > > +			cpufreq_verify_within_limits(policy, 0,
-> max_freq);
-> > > > +	}
-> > > > +	mutex_unlock(&cooling_cpufreq_lock);
-> > >
-> > > So, the problem is when we have several cpu cooling devices and you
-> > > want to search for the real max among the existing cpu cooling
-> devices?
-> > >
-> 
-> By max, I meant the maximun constraint (lowest frequency).
-> 
-> >
-> > Sorry I didn't get your question completely I think.
-> > No, above code doesn't find max among existing cooling devices.
-> > It simply finds cooling device corresponding to policy's cpu and
-> > applies updates policy accordingly.
-> 
-> yeah, that's what it does, but for all matching devices, correct?
-> 
-
-Exactly !! though in existing kernel we don't have multiple devices yet.
-
-> well, in fact your code is going through all cpu cooling devices that
-> match the cpu ids and applying their max allowed freq, when they differ
-> from policy->max. cpufreq_verify_within_limits will update the policy
-> if your request is lower than policy max. Then you will, in the end,
-> apply the lowest among the existing matching cpu cooling devices.
-> 
-
-yes ..
-
-> Which, turns out to be the correct thing to do, since we are not doing
-> it per request in single cooling devices.
-> 
-> Can you please also add a comment about this strategy?
-> 
-
-Sure.
-
-Best Regards,
-Yadwinder
-
-> 
-> BR,
-> 
-> Eduardo Valentin
-> 
-> >
-> > Regards,
-> > Yadwinder
-> >
-> > > >  	return 0;
-> > > >  }
-> > > > @@ -486,7 +488,7 @@ __cpufreq_cooling_register(struct device_node
-> > > *np,
-> > > >
-> 	cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
-> > > >  					  CPUFREQ_POLICY_NOTIFIER);
-> > > >  	cpufreq_dev_count++;
-> > > > -
-> > > > +	list_add(&cpufreq_dev->node, &cpufreq_dev_list);
-> > > >  	mutex_unlock(&cooling_cpufreq_lock);
-> > > >
-> > > >  	return cool_dev;
-> > > > @@ -549,6 +551,7 @@ void cpufreq_cooling_unregister(struct
-> > > > thermal_cooling_device *cdev)
-> > > >
-> > > >  	cpufreq_dev = cdev->devdata;
-> > > >  	mutex_lock(&cooling_cpufreq_lock);
-> > > > +	list_del(&cpufreq_dev->node);
-> > > >  	cpufreq_dev_count--;
-> > > >
-> > > >  	/* Unregister the notifier for the last cpufreq cooling
-> device
-> > > > */
-> > > > --
-> > > > 1.7.0.4
-> > > >
-> >
+-static void hdmi_mask_writeb(struct dw_hdmi *hdmi, u8 data, unsigned int reg,
+-		      u8 shift, u8 mask)
++static void hdmi_mask_writeb(struct dw_hdmi *hdmi, u32 data, unsigned int reg,
++			     u32 shift, u32 mask)
+ {
+ 	hdmi_modb(hdmi, data << shift, mask, reg);
+ }
+@@ -311,7 +311,7 @@ static unsigned int hdmi_compute_cts(unsigned int freq, unsigned long pixel_clk,
+ }
+ 
+ static void hdmi_set_clk_regenerator(struct dw_hdmi *hdmi,
+-	unsigned long pixel_clk)
++				     unsigned long pixel_clk)
+ {
+ 	unsigned int clk_n, clk_cts;
+ 
+@@ -322,7 +322,7 @@ static void hdmi_set_clk_regenerator(struct dw_hdmi *hdmi,
+ 
+ 	if (!clk_cts) {
+ 		dev_dbg(hdmi->dev, "%s: pixel clock not supported: %lu\n",
+-			 __func__, pixel_clk);
++			__func__, pixel_clk);
+ 		return;
+ 	}
+ 
+@@ -461,13 +461,11 @@ static void dw_hdmi_update_csc_coeffs(struct dw_hdmi *hdmi)
+ 		u16 coeff_b = (*csc_coeff)[1][i];
+ 		u16 coeff_c = (*csc_coeff)[2][i];
+ 
+-		hdmi_writeb(hdmi, coeff_a & 0xff,
+-			HDMI_CSC_COEF_A1_LSB + i * 2);
++		hdmi_writeb(hdmi, coeff_a & 0xff, HDMI_CSC_COEF_A1_LSB + i * 2);
+ 		hdmi_writeb(hdmi, coeff_a >> 8, HDMI_CSC_COEF_A1_MSB + i * 2);
+ 		hdmi_writeb(hdmi, coeff_b & 0xff, HDMI_CSC_COEF_B1_LSB + i * 2);
+ 		hdmi_writeb(hdmi, coeff_b >> 8, HDMI_CSC_COEF_B1_MSB + i * 2);
+-		hdmi_writeb(hdmi, coeff_c & 0xff,
+-			HDMI_CSC_COEF_C1_LSB + i * 2);
++		hdmi_writeb(hdmi, coeff_c & 0xff, HDMI_CSC_COEF_C1_LSB + i * 2);
+ 		hdmi_writeb(hdmi, coeff_c >> 8, HDMI_CSC_COEF_C1_MSB + i * 2);
+ 	}
+ 
+@@ -519,21 +517,22 @@ static void hdmi_video_packetize(struct dw_hdmi *hdmi)
+ 	struct hdmi_data_info *hdmi_data = &hdmi->hdmi_data;
+ 	u8 val, vp_conf;
+ 
+-	if (hdmi_data->enc_out_format == RGB
+-		|| hdmi_data->enc_out_format == YCBCR444) {
+-		if (!hdmi_data->enc_color_depth)
++	if (hdmi_data->enc_out_format == RGB ||
++	    hdmi_data->enc_out_format == YCBCR444) {
++		if (!hdmi_data->enc_color_depth) {
+ 			output_select = HDMI_VP_CONF_OUTPUT_SELECTOR_BYPASS;
+-		else if (hdmi_data->enc_color_depth == 8) {
++		} else if (hdmi_data->enc_color_depth == 8) {
+ 			color_depth = 4;
+ 			output_select = HDMI_VP_CONF_OUTPUT_SELECTOR_BYPASS;
+-		} else if (hdmi_data->enc_color_depth == 10)
++		} else if (hdmi_data->enc_color_depth == 10) {
+ 			color_depth = 5;
+-		else if (hdmi_data->enc_color_depth == 12)
++		} else if (hdmi_data->enc_color_depth == 12) {
+ 			color_depth = 6;
+-		else if (hdmi_data->enc_color_depth == 16)
++		} else if (hdmi_data->enc_color_depth == 16) {
+ 			color_depth = 7;
+-		else
++		} else {
+ 			return;
++		}
+ 	} else if (hdmi_data->enc_out_format == YCBCR422_8BITS) {
+ 		if (!hdmi_data->enc_color_depth ||
+ 		    hdmi_data->enc_color_depth == 8)
+@@ -545,8 +544,9 @@ static void hdmi_video_packetize(struct dw_hdmi *hdmi)
+ 		else
+ 			return;
+ 		output_select = HDMI_VP_CONF_OUTPUT_SELECTOR_YCC422;
+-	} else
++	} else {
+ 		return;
++	}
+ 
+ 	/* set the packetizer registers */
+ 	val = ((color_depth << HDMI_VP_PR_CD_COLOR_DEPTH_OFFSET) &
+@@ -607,34 +607,34 @@ static void hdmi_video_packetize(struct dw_hdmi *hdmi)
+ }
+ 
+ static inline void hdmi_phy_test_clear(struct dw_hdmi *hdmi,
+-						unsigned char bit)
++				       unsigned char bit)
+ {
+ 	hdmi_modb(hdmi, bit << HDMI_PHY_TST0_TSTCLR_OFFSET,
+ 		  HDMI_PHY_TST0_TSTCLR_MASK, HDMI_PHY_TST0);
+ }
+ 
+ static inline void hdmi_phy_test_enable(struct dw_hdmi *hdmi,
+-						unsigned char bit)
++					unsigned char bit)
+ {
+ 	hdmi_modb(hdmi, bit << HDMI_PHY_TST0_TSTEN_OFFSET,
+ 		  HDMI_PHY_TST0_TSTEN_MASK, HDMI_PHY_TST0);
+ }
+ 
+ static inline void hdmi_phy_test_clock(struct dw_hdmi *hdmi,
+-						unsigned char bit)
++				       unsigned char bit)
+ {
+ 	hdmi_modb(hdmi, bit << HDMI_PHY_TST0_TSTCLK_OFFSET,
+ 		  HDMI_PHY_TST0_TSTCLK_MASK, HDMI_PHY_TST0);
+ }
+ 
+ static inline void hdmi_phy_test_din(struct dw_hdmi *hdmi,
+-						unsigned char bit)
++				     unsigned char bit)
+ {
+ 	hdmi_writeb(hdmi, bit, HDMI_PHY_TST1);
+ }
+ 
+ static inline void hdmi_phy_test_dout(struct dw_hdmi *hdmi,
+-						unsigned char bit)
++				      unsigned char bit)
+ {
+ 	hdmi_writeb(hdmi, bit, HDMI_PHY_TST2);
+ }
+@@ -650,21 +650,21 @@ static bool hdmi_phy_wait_i2c_done(struct dw_hdmi *hdmi, int msec)
+ }
+ 
+ static void __hdmi_phy_i2c_write(struct dw_hdmi *hdmi, unsigned short data,
+-			      unsigned char addr)
++				 unsigned char addr)
+ {
+ 	hdmi_writeb(hdmi, 0xFF, HDMI_IH_I2CMPHY_STAT0);
+ 	hdmi_writeb(hdmi, addr, HDMI_PHY_I2CM_ADDRESS_ADDR);
+ 	hdmi_writeb(hdmi, (unsigned char)(data >> 8),
+-		HDMI_PHY_I2CM_DATAO_1_ADDR);
++		    HDMI_PHY_I2CM_DATAO_1_ADDR);
+ 	hdmi_writeb(hdmi, (unsigned char)(data >> 0),
+-		HDMI_PHY_I2CM_DATAO_0_ADDR);
++		    HDMI_PHY_I2CM_DATAO_0_ADDR);
+ 	hdmi_writeb(hdmi, HDMI_PHY_I2CM_OPERATION_ADDR_WRITE,
+-		HDMI_PHY_I2CM_OPERATION_ADDR);
++		    HDMI_PHY_I2CM_OPERATION_ADDR);
+ 	hdmi_phy_wait_i2c_done(hdmi, 1000);
+ }
+ 
+ static int hdmi_phy_i2c_write(struct dw_hdmi *hdmi, unsigned short data,
+-				     unsigned char addr)
++			      unsigned char addr)
+ {
+ 	__hdmi_phy_i2c_write(hdmi, data, addr);
+ 	return 0;
+@@ -760,7 +760,7 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi, unsigned char prep,
+ 
+ 	hdmi_phy_test_clear(hdmi, 1);
+ 	hdmi_writeb(hdmi, HDMI_PHY_I2CM_SLAVE_ADDR_PHY_GEN2,
+-			HDMI_PHY_I2CM_SLAVE_ADDR);
++		    HDMI_PHY_I2CM_SLAVE_ADDR);
+ 	hdmi_phy_test_clear(hdmi, 0);
+ 
+ 	/* PLL/MPLL Cfg - always match on final entry */
+@@ -777,9 +777,8 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi, unsigned char prep,
+ 			break;
+ 
+ 	if (curr_ctr[i].mpixelclock == (~0UL)) {
+-		dev_err(hdmi->dev,
+-				"Pixel clock %d - unsupported by HDMI\n",
+-				hdmi->hdmi_data.video_mode.mpixelclock);
++		dev_err(hdmi->dev, "Pixel clock %d - unsupported by HDMI\n",
++			hdmi->hdmi_data.video_mode.mpixelclock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1143,21 +1142,21 @@ static int dw_hdmi_setup(struct dw_hdmi *hdmi, struct drm_display_mode *mode)
+ 	}
+ 
+ 	if ((hdmi->vic == 6) || (hdmi->vic == 7) ||
+-		(hdmi->vic == 21) || (hdmi->vic == 22) ||
+-		(hdmi->vic == 2) || (hdmi->vic == 3) ||
+-		(hdmi->vic == 17) || (hdmi->vic == 18))
++	    (hdmi->vic == 21) || (hdmi->vic == 22) ||
++	    (hdmi->vic == 2) || (hdmi->vic == 3) ||
++	    (hdmi->vic == 17) || (hdmi->vic == 18))
+ 		hdmi->hdmi_data.colorimetry = HDMI_COLORIMETRY_ITU_601;
+ 	else
+ 		hdmi->hdmi_data.colorimetry = HDMI_COLORIMETRY_ITU_709;
+ 
+ 	if ((hdmi->vic == 10) || (hdmi->vic == 11) ||
+-		(hdmi->vic == 12) || (hdmi->vic == 13) ||
+-		(hdmi->vic == 14) || (hdmi->vic == 15) ||
+-		(hdmi->vic == 25) || (hdmi->vic == 26) ||
+-		(hdmi->vic == 27) || (hdmi->vic == 28) ||
+-		(hdmi->vic == 29) || (hdmi->vic == 30) ||
+-		(hdmi->vic == 35) || (hdmi->vic == 36) ||
+-		(hdmi->vic == 37) || (hdmi->vic == 38))
++	    (hdmi->vic == 12) || (hdmi->vic == 13) ||
++	    (hdmi->vic == 14) || (hdmi->vic == 15) ||
++	    (hdmi->vic == 25) || (hdmi->vic == 26) ||
++	    (hdmi->vic == 27) || (hdmi->vic == 28) ||
++	    (hdmi->vic == 29) || (hdmi->vic == 30) ||
++	    (hdmi->vic == 35) || (hdmi->vic == 36) ||
++	    (hdmi->vic == 37) || (hdmi->vic == 38))
+ 		hdmi->hdmi_data.video_mode.mpixelrepetitionoutput = 1;
+ 	else
+ 		hdmi->hdmi_data.video_mode.mpixelrepetitionoutput = 0;
+@@ -1186,9 +1185,9 @@ static int dw_hdmi_setup(struct dw_hdmi *hdmi, struct drm_display_mode *mode)
+ 	dw_hdmi_enable_video_path(hdmi);
+ 
+ 	/* not for DVI mode */
+-	if (hdmi->hdmi_data.video_mode.mdvi)
++	if (hdmi->hdmi_data.video_mode.mdvi) {
+ 		dev_dbg(hdmi->dev, "%s DVI mode\n", __func__);
+-	else {
++	} else {
+ 		dev_dbg(hdmi->dev, "%s CEA mode\n", __func__);
+ 
+ 		/* HDMI Initialization Step E - Configure audio */
+@@ -1453,7 +1452,7 @@ static irqreturn_t dw_hdmi_irq(int irq, void *dev_id)
+ 			dev_dbg(hdmi->dev, "EVENT=plugout\n");
+ 
+ 			hdmi_modb(hdmi, HDMI_PHY_HPD, HDMI_PHY_HPD,
+-				HDMI_PHY_POL0);
++				  HDMI_PHY_POL0);
+ 
+ 			dw_hdmi_poweroff(hdmi);
+ 		}
+@@ -1480,7 +1479,7 @@ static int dw_hdmi_register(struct drm_device *drm, struct dw_hdmi *hdmi)
+ 			 DRM_MODE_ENCODER_TMDS);
+ 
+ 	drm_connector_helper_add(&hdmi->connector,
+-			&dw_hdmi_connector_helper_funcs);
++				 &dw_hdmi_connector_helper_funcs);
+ 	drm_connector_init(drm, &hdmi->connector, &dw_hdmi_connector_funcs,
+ 			   DRM_MODE_CONNECTOR_HDMIA);
+ 
+@@ -1531,11 +1530,11 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
+ 		hdmi->priv = hdmi->plat_data->setup(pdev);
+ 	/* Product and revision IDs */
+ 	dev_info(dev,
+-		"Detected HDMI controller 0x%x:0x%x:0x%x:0x%x\n",
+-		hdmi_readb(hdmi, HDMI_DESIGN_ID),
+-		hdmi_readb(hdmi, HDMI_REVISION_ID),
+-		hdmi_readb(hdmi, HDMI_PRODUCT_ID0),
+-		hdmi_readb(hdmi, HDMI_PRODUCT_ID1));
++		 "Detected HDMI controller 0x%x:0x%x:0x%x:0x%x\n",
++		 hdmi_readb(hdmi, HDMI_DESIGN_ID),
++		 hdmi_readb(hdmi, HDMI_REVISION_ID),
++		 hdmi_readb(hdmi, HDMI_PRODUCT_ID0),
++		 hdmi_readb(hdmi, HDMI_PRODUCT_ID1));
+ 
+ 	initialize_hdmi_ih_mutes(hdmi);
+ 
+-- 
+1.9.1
 
