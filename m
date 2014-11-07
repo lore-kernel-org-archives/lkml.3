@@ -1,117 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaKGTKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:10:45 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:13169 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751459AbaKGTKo (ORCPT
+	id S1753126AbaKGTLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:11:42 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:53159 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793AbaKGTLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:10:44 -0500
-Date: Fri, 7 Nov 2014 14:10:32 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Petr Mladek <pmladek@suse.cz>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in
- trace_seq
-Message-ID: <20141107141032.6dce6cf0@gandalf.local.home>
-In-Reply-To: <1415386767.23530.14.camel@perches.com>
-References: <20141104155237.228431433@goodmis.org>
-	<20141104160221.864997179@goodmis.org>
-	<20141105142222.GC4570@pathway.suse.cz>
-	<20141105134147.226a23ef@gandalf.local.home>
-	<20141105150007.1c543b9e@gandalf.local.home>
-	<20141105161720.71abdbdb@gandalf.local.home>
-	<20141105162146.6edc1567@gandalf.local.home>
-	<20141106163352.GJ2001@dhcp128.suse.cz>
-	<20141107133017.0d0ecd2e@gandalf.local.home>
-	<1415386767.23530.14.camel@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Fri, 7 Nov 2014 14:11:40 -0500
+Date: Fri, 7 Nov 2014 15:11:29 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, rui.zhang@intel.com,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v4] Thermal: int3406_thermal: solve the dependency build
+ error
+Message-ID: <20141107191127.GB27438@developer>
+References: <CA+r1ZhhoskOXaRSmcrnbdgapi-FsaKf+dnPHTXGkDvkYbvwQ8Q@mail.gmail.com>
+ <543F88BE.4090307@intel.com>
+ <20141017070620.GA1538@aaronlu.sh.intel.com>
+ <20141017072236.GA12504@aaronlu.sh.intel.com>
+ <544F33AF.1000704@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gj572EiMnwbLXET9"
+Content-Disposition: inline
+In-Reply-To: <544F33AF.1000704@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov 2014 10:59:27 -0800
-Joe Perches <joe@perches.com> wrote:
 
+--gj572EiMnwbLXET9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Create a seq_buf layer that trace_seq sits on. The seq_buf will not
-> > be limited to page size. This will allow other usages of seq_buf
-> > instead of a hard set PAGE_SIZE one that trace_seq has.
-> > 
-> > Link: http://lkml.kernel.org/r/20141104160221.864997179@goodmis.org
-> []
-> > diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-> []
-> > +extern __printf(2, 3)
-> > +int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
-> > +extern __printf(2, 0)
-> > +int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
-> > +extern int
-> > +seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
-> > +extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
-> > +extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
-> > +			   int cnt);
-> > +extern int seq_buf_puts(struct seq_buf *s, const char *str);
-> > +extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
-> > +extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
-> > +extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-> > +			      unsigned int len);
-> > +extern int seq_buf_path(struct seq_buf *s, const struct path *path);
-> > +
-> > +extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-> > +			   int nmaskbits);
-> 
-> Maybe remove the extern bits from the function definitions?
+Hi,
 
-Yeah, probably should have done that. Not sure why I kept them. Cut and
-paste?
+On Tue, Oct 28, 2014 at 02:11:59PM +0800, Aaron Lu wrote:
+> Jim found that the current kernel may trigger a build error with some
+> config: drivers/built-in.o: In function `int3406_thermal_probe':
+> int3406_thermal.c:(.text+0x1d10b8): undefined reference to
+> `acpi_video_get_levels'. The problem happens when CONFIG_THERMAL=3Dy and
+> CONFIG_ACPI_VIDEO=3Dm. Solve the problem by separating a kernel config for
+> int3406 thermal driver and add dependency on ACPI video for it.
+>=20
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-> And maybe the unsigned int len/cnt could be size_t
+Rui,
 
-The struct does get changed later to match seq_file.
+Any further comments on this change?
 
-> 
-> > diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
-> []
-> > @@ -12,16 +12,14 @@
-> >  
-> >  struct trace_seq {
-> >  	unsigned char		buffer[PAGE_SIZE];
-> > -	unsigned int		len;
-> > -	unsigned int		readpos;
-> > +	struct seq_buf		seq;
-> >  	int			full;
-> >  };
-> >  
-> >  static inline void
-> >  trace_seq_init(struct trace_seq *s)
-> >  {
-> > -	s->len = 0;
-> > -	s->readpos = 0;
-> > +	seq_buf_init(&s->seq, s->buffer, PAGE_SIZE);
-> 
-> Maybe the PAGE_SIZE uses could be ARRAY_SIZE(s->buffer)
-> 
-> > diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
-> []
-> >  /* How much buffer is written? */
-> > -#define TRACE_SEQ_BUF_USED(s) min((s)->len, (unsigned int)(PAGE_SIZE - 1))
-> > +#define TRACE_SEQ_BUF_USED(s) min((s)->seq.len, (unsigned int)(PAGE_SIZE - 1))
-> 
-> min_t?
-> maybe this should be FIELD_SIZEOF(struct trace_seq, buffer) - 1
+BR,
 
-These can be done at a later time. This patch set is focusing on
-creation of seq_buf, not cleaning up trace_seq.
+Eduardo Valentin
 
--- Steve
+> ---
+> v4: rebased on v3.18-rc2.
+>=20
+>  drivers/thermal/Kconfig                  | 26 +++-----------------
+>  drivers/thermal/int340x_thermal/Kconfig  | 41 ++++++++++++++++++++++++++=
+++++++
+>  drivers/thermal/int340x_thermal/Makefile |  1 +
+>  3 files changed, 45 insertions(+), 23 deletions(-)
+>  create mode 100644 drivers/thermal/int340x_thermal/Kconfig
+>=20
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index f554d25b4399..ac391d8d76b4 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -229,29 +229,9 @@ config INTEL_SOC_DTS_THERMAL
+>  	  notification methods.The other trip is a critical trip point, which
+>  	  was set by the driver based on the TJ MAX temperature.
+> =20
+> -config INT340X_THERMAL
+> -	tristate "ACPI INT340X thermal drivers"
+> -	depends on X86 && ACPI
+> -	select THERMAL_GOV_USER_SPACE
+> -	select ACPI_THERMAL_REL
+> -	select ACPI_FAN
+> -	help
+> -	  Newer laptops and tablets that use ACPI may have thermal sensors and
+> -	  other devices with thermal control capabilities outside the core
+> -	  CPU/SOC, for thermal safety reasons.
+> -	  They are exposed for the OS to use via the INT3400 ACPI device object
+> -	  as the master, and INT3401~INT340B ACPI device objects as the slaves.
+> -	  Enable this to expose the temperature information and cooling ability
+> -	  from these objects to userspace via the normal thermal framework.
+> -	  This means that a wide range of applications and GUI widgets can show
+> -	  the information to the user or use this information for making
+> -	  decisions. For example, the Intel Thermal Daemon can use this
+> -	  information to allow the user to select his laptop to run without
+> -	  turning on the fans.
+> -
+> -config ACPI_THERMAL_REL
+> -	tristate
+> -	depends on ACPI
+> +menu "ACPI INT340X thermal drivers"
+> +source drivers/thermal/int340x_thermal/Kconfig
+> +endmenu
+> =20
+>  menu "Texas Instruments thermal drivers"
+>  source "drivers/thermal/ti-soc-thermal/Kconfig"
+> diff --git a/drivers/thermal/int340x_thermal/Kconfig b/drivers/thermal/in=
+t340x_thermal/Kconfig
+> new file mode 100644
+> index 000000000000..b92892a6afe0
+> --- /dev/null
+> +++ b/drivers/thermal/int340x_thermal/Kconfig
+> @@ -0,0 +1,41 @@
+> +#
+> +# ACPI INT340x thermal drivers configuration
+> +#
+> +
+> +config INT340X_THERMAL
+> +	tristate "ACPI INT340X thermal drivers"
+> +	depends on X86 && ACPI
+> +	select THERMAL_GOV_USER_SPACE
+> +	select ACPI_THERMAL_REL
+> +	select ACPI_FAN
+> +	help
+> +	  Newer laptops and tablets that use ACPI may have thermal sensors and
+> +	  other devices with thermal control capabilities outside the core
+> +	  CPU/SOC, for thermal safety reasons.
+> +	  They are exposed for the OS to use via the INT3400 ACPI device object
+> +	  as the master, and INT3401~INT340B ACPI device objects as the slaves.
+> +	  Enable this to expose the temperature information and cooling ability
+> +	  from these objects to userspace via the normal thermal framework.
+> +	  This means that a wide range of applications and GUI widgets can show
+> +	  the information to the user or use this information for making
+> +	  decisions. For example, the Intel Thermal Daemon can use this
+> +	  information to allow the user to select his laptop to run without
+> +	  turning on the fans.
+> +
+> +if INT340X_THERMAL
+> +
+> +config ACPI_THERMAL_REL
+> +	tristate
+> +	depends on ACPI
+> +
+> +config INT3406_THERMAL
+> +	tristate "ACPI INT3406 display thermal driver"
+> +	depends on ACPI_VIDEO
+> +	help
+> +	  The display thermal device represents the LED/LCD display panel
+> +	  that may or may not include touch support. The main function of
+> +	  the display thermal device is to allow control of the display
+> +	  brightness in order to address a thermal condition or to reduce
+> +	  power consumed by display device.
+> +
+> +endif
+> diff --git a/drivers/thermal/int340x_thermal/Makefile b/drivers/thermal/i=
+nt340x_thermal/Makefile
+> index ffe40bffaf1a..a9d0429be412 100644
+> --- a/drivers/thermal/int340x_thermal/Makefile
+> +++ b/drivers/thermal/int340x_thermal/Makefile
+> @@ -1,4 +1,5 @@
+>  obj-$(CONFIG_INT340X_THERMAL)	+=3D int3400_thermal.o
+>  obj-$(CONFIG_INT340X_THERMAL)	+=3D int3402_thermal.o
+>  obj-$(CONFIG_INT340X_THERMAL)	+=3D int3403_thermal.o
+> +obj-$(CONFIG_INT3406_THERMAL)	+=3D int3406_thermal.o
+>  obj-$(CONFIG_ACPI_THERMAL_REL)	+=3D acpi_thermal_rel.o
+> --=20
+> 1.9.3
+>=20
 
+--gj572EiMnwbLXET9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUXRlOAAoJEMLUO4d9pOJWvgkIAJpg5ozozIPal1HsS+IOqlmq
+Q7QQzbQLwWkvvr1oDkBuGNXiqhCT0fAovGwYE0BmRDAip4AKiOE+GVoqlNr//YzD
+5116NF4V5Iq+id0gh8ttgVG6pXOYHGIsOiIlLk+le4JGZE7I5hNbViLatV7twE7y
+QBT/P/lacD8zLOw2l6PWQU5Sb+9DKdXZQp5cDIVajgYn/jg1OuX7Rwvro9Uqd1om
+oLqsTev2NyXm6dRIojmnYTF5SIKiOiV8k/30SsRFq4VQ3hBX7GlIZcMAnZ1zUyWn
+3DIA30BLqhe8UvmBKFXPV/eVd6PbaXyvlqWi5mge8GvrRGnHx45d+4GsfOi1O2M=
+=H+rT
+-----END PGP SIGNATURE-----
+
+--gj572EiMnwbLXET9--
