@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaKGMst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:48:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47800 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876AbaKGMss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:48:48 -0500
-Date: Fri, 7 Nov 2014 13:48:45 +0100
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Kernel Live Patching
-Message-ID: <20141107124845.GA6086@suse.cz>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
- <20141106184446.GA12779@infradead.org>
- <20141106185157.GB29272@suse.cz>
- <20141106185857.GA7106@infradead.org>
- <20141106202423.GB2266@suse.cz>
- <20141107123154.GA4071@treble.redhat.com>
+	id S1752331AbaKGMuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:50:10 -0500
+Received: from lb2-smtp-cloud6.xs4all.net ([194.109.24.28]:49524 "EHLO
+	lb2-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752048AbaKGMuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 07:50:06 -0500
+Message-ID: <545CBFE6.3070201@xs4all.nl>
+Date: Fri, 07 Nov 2014 13:49:42 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141107123154.GA4071@treble.redhat.com>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Reichel <sre@kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        linux-media@vger.kernel.org
+CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [RFCv2 0/8] [media] si4713 DT binding
+References: <1413904027-16767-1-git-send-email-sre@kernel.org>
+In-Reply-To: <1413904027-16767-1-git-send-email-sre@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 06:31:54AM -0600, Josh Poimboeuf wrote:
-> On Thu, Nov 06, 2014 at 09:24:23PM +0100, Vojtech Pavlik wrote:
-> > On Thu, Nov 06, 2014 at 10:58:57AM -0800, Christoph Hellwig wrote:
-> > 
-> > > On Thu, Nov 06, 2014 at 07:51:57PM +0100, Vojtech Pavlik wrote:
-> > > > I don't think this specific example was generated. 
-> > > > 
-> > > > I also don't think including the whole kpatch automation into the kernel
-> > > > tree is a viable development model for it. (Same would apply for kGraft
-> > > > automation.)
-> > > 
-> > > Why?  We (IMHO incorrectly) used the argument of tight coupling to put
-> > > perf into the kernel tree.  Generating kernel live patches is way more
-> > > integrated that it absolutely has to go into the tree to be able to do
-> > > proper development on it in an integrated fashion.
-> > 
-> > One reason is that there are currently at least two generators using
-> > very different methods of generation (in addition to the option of doing
-> > the patch module by hand), and neither of them are currently in a state
-> > where they would be ready for inclusion into the kernel (although the
-> > kpatch one is clearly closer to that).
+On 10/21/14 17:06, Sebastian Reichel wrote:
+> Hi,
 > 
-> What generator does kGraft have?  Is that the one that generates the
-> source patch, or is there one that generates a binary patch module?
+> This is the RFCv2 patchset adding DT support to the si4713
+> radio transmitter i2c driver. The changes can be summarized
+> as follows:
+> 
+>  * Move regulator information back into the driver. The
+>    regulators needed are documented in the chip and have
+>    nothing to do with boarddata. Instead devm_regulator_get_optional
+>    is used and errors are handled quite loosely now. Maybe the USB
+>    driver should provide dummy regulators.
+>  * GPIO handling is updated to gpiod consumer interface, resulting
+>    in a driver cleanup and easy DT handling
+>  * The driver is updated to use managed resources wherever possible
+> 
+> So much about the nice stuff. But there is also
+> 
+>  * Instantiation of the platform device from the i2c (sub-)device. Since DT
+>    is not supposed to contain linuxisms the device is a simple i2c node
+>    resulting in the i2c probe function being called. Thus registering the main
+>    v4l device must happen from there.
+> 
+> Tested:
+>  * Compilation on torvalds/linux.git:master (based on 52d589a)
+>  * Booting in DT mode
+>  * Some simply driver queries using v4l2-ctl
+> 
+> Not tested:
+>  * The USB driver, since I do not own the USB dongle
 
-The generator for kGraft:
+I will test this on Monday for the USB device. It looks good, but I need
+to verify that it doesn't break the USB driver.
 
-	* extracts a list of changed functions from a patch (rather naïvely so far)
-	* uses DWARF debuginfo of the old kernel to handle things like inlining
-	  and create a complete list of functions that need to be replaced
-	* compiles the kernel with -fdata-sections -ffunction-sections
-	* uses a modified objcopy to extract functions from the kernel
-	  into a single .o file
-	* creates a stub .c file that references those functions
-	* compiles the .c and links with the .o to build a .ko
+Regards,
 
-The main difference is in that the kGraft generator doesn't try to
-compare the old and new binary objects, but rather works with function
-lists and the DWARF info of the old code and extracts new functions from
-the new binary.
+	Hans
 
-However, as I said before, we have found enough trouble around eg.
-IPA-SRA and other optimizations that make any automated approach fragile
-and in our view more effort than benefit. Hence, we're intend to use the
-manual way of creating live patches until proven that we were wrong in
-this assessment. :)
+>  * The legacy platform code (only DT boot has been tested).
+>    (The legacy platform code is supposed to removed in the near future anyways)
+> 
+> Changes since RFCv1 (requested by Hans Verkuil):
+>  - splitted the patchset into more patches
+>  - replaced dev_info with dev_dbg for missing regulators
+>  - check for ENOSYS value from devm_gpiod_get (disabled GPIOLIB)
+> 
+> -- Sebastian
+> 
+> Sebastian Reichel (8):
+>   [media] si4713: switch to devm regulator API
+>   [media] si4713: switch reset gpio to devm_gpiod API
+>   [media] si4713: use managed memory allocation
+>   [media] si4713: use managed irq request
+>   [media] si4713: add device tree support
+>   [media] si4713: add DT binding documentation
+>   ARM: OMAP2: RX-51: update si4713 platform data
+>   [media] si4713: cleanup platform data
+> 
+>  Documentation/devicetree/bindings/media/si4713.txt |  30 ++++
+>  arch/arm/mach-omap2/board-rx51-peripherals.c       |  69 ++++-----
+>  drivers/media/radio/si4713/radio-platform-si4713.c |  28 +---
+>  drivers/media/radio/si4713/si4713.c                | 167 +++++++++++++--------
+>  drivers/media/radio/si4713/si4713.h                |  15 +-
+>  include/media/radio-si4713.h                       |  30 ----
+>  include/media/si4713.h                             |   4 +-
+>  7 files changed, 186 insertions(+), 157 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/media/si4713.txt
+>  delete mode 100644 include/media/radio-si4713.h
+> 
 
--- 
-Vojtech Pavlik
-Director SUSE Labs
