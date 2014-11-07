@@ -1,59 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaKGTDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:03:32 -0500
-Received: from smtprelay0224.hostedemail.com ([216.40.44.224]:60589 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751459AbaKGTDb (ORCPT
+	id S1752989AbaKGTKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:10:45 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:13169 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751459AbaKGTKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:03:31 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:305:355:379:541:599:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:6261:7903:8957:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pull55_14066440c720
-X-Filterd-Recvd-Size: 2526
-Message-ID: <1415387007.23530.16.camel@perches.com>
-Subject: Re: [PATCH v3 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
-From: Joe Perches <joe@perches.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
+	Fri, 7 Nov 2014 14:10:44 -0500
+Date: Fri, 7 Nov 2014 14:10:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Petr Mladek <pmladek@suse.cz>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, stable@vger.kernel.org
-Date: Fri, 07 Nov 2014 11:03:27 -0800
-In-Reply-To: <1415386070-18850-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
-	 <1415386070-18850-1-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in
+ trace_seq
+Message-ID: <20141107141032.6dce6cf0@gandalf.local.home>
+In-Reply-To: <1415386767.23530.14.camel@perches.com>
+References: <20141104155237.228431433@goodmis.org>
+	<20141104160221.864997179@goodmis.org>
+	<20141105142222.GC4570@pathway.suse.cz>
+	<20141105134147.226a23ef@gandalf.local.home>
+	<20141105150007.1c543b9e@gandalf.local.home>
+	<20141105161720.71abdbdb@gandalf.local.home>
+	<20141105162146.6edc1567@gandalf.local.home>
+	<20141106163352.GJ2001@dhcp128.suse.cz>
+	<20141107133017.0d0ecd2e@gandalf.local.home>
+	<1415386767.23530.14.camel@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 18:47 +0000, Daniel Thompson wrote:
-> Currently when kdb traps printk messages then the raw log level prefix
-> (consisting of '\001' followed by a numeral) does not get stripped off
-> before the message is issued to the various I/O handlers supported by
-> kdb. This causes annoying visual noise as well as causing problems
-> grepping for ^. It is also a change of behaviour compared to normal usage
-> of printk() usage. For example <SysRq>-h ends up with different output to
-> that of kdb's "sr h".
-> 
-> This patch addresses the problem by stripping log levels from messages
-> before they are issued to the I/O handlers. printk() which can also
-> act as an i/o handler in some cases is special cased; if the caller
-> provided a log level then the prefix will be preserved when sent to
-> printk().
-> 
-> The addition of non-printable characters to the output of kdb commands is a
-> regression, albeit and extremely elderly one, introduced by commit
-> 04d2c8c83d0e ("printk: convert the format for KERN_<LEVEL> to a 2 byte
-> pattern"). Note also that this patch does *not* restore the original
-> behaviour from v3.5. Instead it makes printk() from within a kdb command
-> display the message without any prefix (i.e. like printk() normally does).
+On Fri, 07 Nov 2014 10:59:27 -0800
+Joe Perches <joe@perches.com> wrote:
 
-This looks nicer.  Thanks Daniel.
+
+> > Create a seq_buf layer that trace_seq sits on. The seq_buf will not
+> > be limited to page size. This will allow other usages of seq_buf
+> > instead of a hard set PAGE_SIZE one that trace_seq has.
+> > 
+> > Link: http://lkml.kernel.org/r/20141104160221.864997179@goodmis.org
+> []
+> > diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> []
+> > +extern __printf(2, 3)
+> > +int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
+> > +extern __printf(2, 0)
+> > +int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
+> > +extern int
+> > +seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
+> > +extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
+> > +extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
+> > +			   int cnt);
+> > +extern int seq_buf_puts(struct seq_buf *s, const char *str);
+> > +extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
+> > +extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
+> > +extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+> > +			      unsigned int len);
+> > +extern int seq_buf_path(struct seq_buf *s, const struct path *path);
+> > +
+> > +extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+> > +			   int nmaskbits);
+> 
+> Maybe remove the extern bits from the function definitions?
+
+Yeah, probably should have done that. Not sure why I kept them. Cut and
+paste?
+
+> And maybe the unsigned int len/cnt could be size_t
+
+The struct does get changed later to match seq_file.
+
+> 
+> > diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+> []
+> > @@ -12,16 +12,14 @@
+> >  
+> >  struct trace_seq {
+> >  	unsigned char		buffer[PAGE_SIZE];
+> > -	unsigned int		len;
+> > -	unsigned int		readpos;
+> > +	struct seq_buf		seq;
+> >  	int			full;
+> >  };
+> >  
+> >  static inline void
+> >  trace_seq_init(struct trace_seq *s)
+> >  {
+> > -	s->len = 0;
+> > -	s->readpos = 0;
+> > +	seq_buf_init(&s->seq, s->buffer, PAGE_SIZE);
+> 
+> Maybe the PAGE_SIZE uses could be ARRAY_SIZE(s->buffer)
+> 
+> > diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
+> []
+> >  /* How much buffer is written? */
+> > -#define TRACE_SEQ_BUF_USED(s) min((s)->len, (unsigned int)(PAGE_SIZE - 1))
+> > +#define TRACE_SEQ_BUF_USED(s) min((s)->seq.len, (unsigned int)(PAGE_SIZE - 1))
+> 
+> min_t?
+> maybe this should be FIELD_SIZEOF(struct trace_seq, buffer) - 1
+
+These can be done at a later time. This patch set is focusing on
+creation of seq_buf, not cleaning up trace_seq.
+
+-- Steve
 
