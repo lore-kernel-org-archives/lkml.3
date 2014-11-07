@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaKGQ3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:29:15 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48325 "EHLO
+	id S1752610AbaKGQ1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:27:05 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48296 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752627AbaKGQ1d (ORCPT
+	by vger.kernel.org with ESMTP id S1752524AbaKGQ1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:27:33 -0500
+	Fri, 7 Nov 2014 11:27:03 -0500
 From: Mark Rutland <mark.rutland@arm.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 04/11] arm: perf: filter unschedulable events
-Date: Fri,  7 Nov 2014 16:25:29 +0000
-Message-Id: <1415377536-12841-5-git-send-email-mark.rutland@arm.com>
+        Mark Rutland <mark.rutland@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: [PATCH 02/11] perf: allow for PMU-specific event filtering
+Date: Fri,  7 Nov 2014 16:25:27 +0000
+Message-Id: <1415377536-12841-3-git-send-email-mark.rutland@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
 References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
@@ -21,61 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Different CPU microarchitectures implement different PMU events, and
-thus events which can be scheduled on one microarchitecture cannot be
-scheduled on another, and vice-versa. Some archicted events behave
-differently across microarchitectures, and thus cannot be meaningfully
-summed. Due to this, we reject the scheduling of an event on a CPU of a
-different microarchitecture to that the event targets.
+In certain circumstances it may not be possible to schedule particular
+events due to constraints other than a lack of hardware counters (e.g.
+on big.LITTLE systems where CPUs support different events). The core
+perf event code does not distinguish these cases and pessimistically
+assumes that any failure to schedule an events is due to a lack of
+hardware counters, ending event group scheduling early despite hardware
+counters remaining available.
 
-When the core perf code is scheduling events and encounters an event
-which cannot be scheduled, it stops attempting to schedule events. As
-the perf core periodically rotates the list of events, for some
-proportion of the time events which are unschedulable will block events
-which are schedulable, resulting in low utilisation of the hardware
-counters.
+When such an unschedulable event exists in a ctx->flexible_groups list
+it can unnecessarily prevent event groups following it in the list from
+being scheduled until it is rotated to the end of the list. This can
+result in events being scheduled for only a portion of the time they
+would otherwise be eligible, and for short running programs unfortunate
+initial list ordering can result in no events being counted.
 
-This patch implements a pmu::filter_match callback such that we can
-detect and skip such events while scheduling early, before they can
-block the schedulable events. This prevents the low HW counter
-utilisation issue.
+This patch adds a new (optional) filter_match function pointer to struct
+pmu which backends can use to tell the perf core whether or not it is
+worth attempting to schedule an event. This plugs into the existing
+event_filter_match logic, and makes it possible to avoid the scheduling
+problem described above.
 
 Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 ---
- arch/arm/kernel/perf_event.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ include/linux/perf_event.h | 5 +++++
+ kernel/events/core.c       | 8 +++++++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 9ad21ab..b00f6aa 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -509,6 +509,18 @@ static void armpmu_disable(struct pmu *pmu)
- 	armpmu->stop(armpmu);
- }
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 893a0d0..80c5f5f 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -263,6 +263,11 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
++
++	/*
++	 * Filter events for PMU-specific reasons.
++	 */
++	int (*filter_match)		(struct perf_event *event); /* optional */
+ };
  
-+/*
-+ * In heterogeneous systems, events are specific to a particular
-+ * microarchitecture, and aren't suitable for another. Thus, only match CPUs of
-+ * the same microarchitecture.
-+ */
-+static int armpmu_filter_match(struct perf_event *event)
+ /**
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2b02c9f..770b276 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1428,11 +1428,17 @@ static int __init perf_workqueue_init(void)
+ 
+ core_initcall(perf_workqueue_init);
+ 
++static inline int pmu_filter_match(struct perf_event *event)
 +{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	unsigned int cpu = smp_processor_id();
-+	return cpumask_test_cpu(cpu, &armpmu->supported_cpus);
++	struct pmu *pmu = event->pmu;
++	return pmu->filter_match ? pmu->filter_match(event) : 1;
 +}
 +
- #ifdef CONFIG_PM_RUNTIME
- static int armpmu_runtime_resume(struct device *dev)
+ static inline int
+ event_filter_match(struct perf_event *event)
  {
-@@ -549,6 +561,7 @@ static void armpmu_init(struct arm_pmu *armpmu)
- 		.start		= armpmu_start,
- 		.stop		= armpmu_stop,
- 		.read		= armpmu_read,
-+		.filter_match	= armpmu_filter_match,
- 	};
+ 	return (event->cpu == -1 || event->cpu == smp_processor_id())
+-	    && perf_cgroup_match(event);
++	    && perf_cgroup_match(event) && pmu_filter_match(event);
  }
  
+ static void
 -- 
 1.9.1
 
