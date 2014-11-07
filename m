@@ -1,102 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295AbaKGTpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:45:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43220 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbaKGTpw (ORCPT
+	id S1753269AbaKGTrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:47:06 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47298 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899AbaKGTrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:45:52 -0500
-Date: Fri, 7 Nov 2014 11:45:51 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: [PATCH v5 00/11] drivers: cacheinfo support
-Message-ID: <20141107194551.GA6277@kroah.com>
-References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
- <5445587B.8090203@arm.com>
- <20141020184932.GA25398@kroah.com>
- <544626AD.403@arm.com>
- <20141107192310.GB30923@kroah.com>
- <545D2043.1080703@arm.com>
+	Fri, 7 Nov 2014 14:47:04 -0500
+Date: Fri, 7 Nov 2014 09:45:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Frediano Ziglio <freddy77@gmail.com>, linux-kernel@vger.kernel.org,
+        Frediano Ziglio <frediano.ziglio@huawei.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] xen/arm: Return correct code error for
+ xen_swiotlb_map_page
+Message-ID: <20141107144517.GA13259@laptop.dumpdata.com>
+References: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com>
+ <alpine.DEB.2.02.1411061730240.22875@kaball.uk.xensource.com>
+ <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
+ <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <545D2043.1080703@arm.com>
+In-Reply-To: <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 07:40:51PM +0000, Sudeep Holla wrote:
+On Thu, Nov 06, 2014 at 07:14:51PM +0000, Stefano Stabellini wrote:
+> On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> > 2014-11-06 17:30 GMT+00:00 Stefano Stabellini <stefano.stabellini@eu.citrix.com>:
+> >       On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> >       > On ARM error code is not 0 so avoid to return it as error.
+> >       >
+> >       > Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
+> > 
+> >       Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > 
+> > 
+> >       Could you please fix the same error in lib/swiotlb.c too please?
+> > 
+> > 
+> > Same patch or another ?
+> > 
 > 
-> 
-> On 07/11/14 19:23, Greg Kroah-Hartman wrote:
-> >On Tue, Oct 21, 2014 at 10:26:05AM +0100, Sudeep Holla wrote:
-> >>Hi Greg,
-> >>
-> >>On 20/10/14 19:49, Greg Kroah-Hartman wrote:
-> >>>On Mon, Oct 20, 2014 at 07:46:19PM +0100, Sudeep Holla wrote:
-> >>>>Hi Greg,
-> >>>>
-> >>>>On 30/09/14 14:48, Sudeep Holla wrote:
-> >>>>>This series adds a generic cacheinfo support similar to topology. The
-> >>>>>implementation is based on x86 cacheinfo support. Currently x86, powerpc,
-> >>>>>ia64 and s390 have their own implementations. While adding similar support
-> >>>>>to ARM and ARM64, here is the attempt to make it generic quite similar to
-> >>>>>topology info support. It also adds the missing ABI documentation for
-> >>>>>the cacheinfo sysfs which is already being used.
-> >>>>>
-> >>>>>It moves all the existing different implementations on x86, ia64, powerpc
-> >>>>>and s390 to use the generic cacheinfo infrastructure introduced here.
-> >>>>>These changes on non-ARM platforms are only compile tested and tested on x86.
-> >>>>>
-> >>>>>This series also adds support for ARM and ARM64 architectures based on
-> >>>>>the generic support.
-> >>>>>
-> >>>>>The code can be fetched from:
-> >>>>>  git://linux-arm.org/linux-skn cacheinfo
-> >>>>>
-> >>>>
-> >>>>I am hoping to target this for v3.19 if possible, it would be good if
-> >>>>you can review and provide feedback.
-> >>>
-> >>>3.18-rc1 just came out a few _hours_ ago, and now we can start worrying
-> >>>about what goes into 3.19.  I have 1257 emails in my "to-review" queue
-> >>>for 3.19, please give me a chance to catch up in a few weeks to get to
-> >>>this code.
-> >>>
-> >>
-> >>I completely understand and I am sorry if that was a noise.
-> >>I just wanted to ensure it's not lost, thanks for letting me know it's
-> >>in your list.
-> >
-> >Do you want me to take this through my tree?  If so, I will, otherwise,
-> >feel free to add:
-> 
-> I have not got it tested on AMD, IA64 and PPC. Probably they were
-> waiting for the core driver to settle down. I have only tested on
-> ARM{32,64} and x86. Heiko Carstens tested on s390 long back some
-> previous version.
-> 
-> If it fine with you, I would like to break the first 4 patches and
-> target it for v3.19, and take up the arch-specific patches (i.e.5-11)
-> after that, so that I can get them tested on all architectures.
-> 
-> >
-> >Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> >to the series.
-> 
-> Thanks, I will rebase on v3.18-rc4 and repost first 4 patches  on Monday
-> which you can take it through your tree *iff you agree with me* on above
-> flow.
+> Another
 
-I've just taken the first 4 patches in my tree now, no need to repost
-them.  Let's see what breaks with them :)
+It might break the build. Please double-check that it does not affect
+ia64.
+> 
+> >  
+> >       >  drivers/xen/swiotlb-xen.c | 2 +-
+> >       >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >       >
+> >       > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> >       > index ebd8f21..3b8d628 100644
+> >       > --- a/drivers/xen/swiotlb-xen.c
+> >       > +++ b/drivers/xen/swiotlb-xen.c
+> >       > @@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+> >       >        */
+> >       >       if (!dma_capable(dev, dev_addr, size)) {
+> >       >               swiotlb_tbl_unmap_single(dev, map, size, dir);
+> >       > -             dev_addr = 0;
+> >       > +             dev_addr = DMA_ERROR_CODE;
 
-thanks,
+That looks Ok to me.
 
-greg k-h
+> >       >       }
+> >       >       return dev_addr;
+> >       >  }
+> >       > --
+> >       > 1.9.1
+> >       >
+> >       >
+> >       > --
+> >       > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >       > the body of a message to majordomo@vger.kernel.org
+> >       > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >       > Please read the FAQ at http://secure-web.cisco.com/1cvjROyUxV6SnA0uBTMRubqrQWsaXGhps-FWjY3vly9AxaKKlt2DPY7GjL0FCHeP4rsbjKsc-P4zH2_7-kpcxwEH-udGrGCCq
+> >       kCLlH1-fLOo1X6Nlui6EwEVHUpB2r7gt-Gsgxbep9QWPnIdypDPNf8Hf5clxCMXYcvWsOK5s3qg/http%3A%2F%2Fwww.tux.org%2Flkml%2F
+> >       >
+> > 
+> >       _______________________________________________
+> >       Xen-devel mailing list
+> >       Xen-devel@lists.xen.org
+> >       http://lists.xen.org/xen-devel
+> > 
+> > 
+> > 
+> > 
+
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+
