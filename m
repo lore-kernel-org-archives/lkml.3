@@ -1,205 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764AbaKGNu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:50:26 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49459 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbaKGNuU (ORCPT
+	id S1752492AbaKGNyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:54:19 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:17574 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaKGNyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:50:20 -0500
-From: Chris Zhong <zyw@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: mturquette@linaro.org, Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, khilman@kernel.org,
-        linux-rockchip@lists.infradead.org, Chris Zhong <zyw@rock-chips.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 5/5] ARM: dts: add suspend voltage setting for RK808
-Date: Fri,  7 Nov 2014 21:49:37 +0800
-Message-Id: <1415368177-6637-6-git-send-email-zyw@rock-chips.com>
+	Fri, 7 Nov 2014 08:54:15 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-29-545ccf0425f7
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>, Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 0/2] DRM: Add runtime PM to Exynos DSI
+Date: Fri, 07 Nov 2014 14:53:57 +0100
+Message-id: <1415368439-23642-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415368177-6637-1-git-send-email-zyw@rock-chips.com>
-References: <1415368177-6637-1-git-send-email-zyw@rock-chips.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xy7os52NCDK5+MbO4te4cq0XvuZNM
+	FhtnrGe1uPL1PZvFyiksFpPuT2CxeHHvIovF6xeGFr0LrrJZPN38mMnibNMbdotNj6+xWlze
+	NYfNYsb5fUwWa4/cZbeYMfklm4OAx6ZVnWwe2789YPW4332cyWPzknqPvi2rGD2O39jO5PF5
+	k1wAexSXTUpqTmZZapG+XQJXxoEpagUd7BV9H1qZGhhPsXYxcnJICJhInPi/AsoWk7hwbz0b
+	iC0ksJRR4sJ19i5GLiC7j0niw7tnYEVsAsYSm5cvYQNJiAh8Z5KY8mQ9O0iCWWAKk8TUMxUg
+	trCApcSlx/9YQGwWAVWJ3YsWg03lFXCXOLpsJdQ2OYmTxyazTmDkXsDIsIpRNLU0uaA4KT3X
+	SK84Mbe4NC9dLzk/dxMjJBi/7mBceszqEKMAB6MSD+8DkZgQIdbEsuLK3EOMEhzMSiK8N44D
+	hXhTEiurUovy44tKc1KLDzEycXBKNTBa6lmG+ul4s2yPbZMR9NINmdufYm3I+0gn7+VqKyk2
+	q82as3U9nZl3Re25zvxgyZtTzaWNf+Q2Rimy/5VW5AkV/bHbYcnet/v04raFh6/wv8bHtoWh
+	2OpY5g5GO74Js56ZiEst4ExPO6t02Pw9V5wF82Lea/OV1h4y3nRAZecxG4NfnzXmMCqxFGck
+	GmoxFxUnAgAm6OrZJAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-global_pwroff would be pull to high when RK3288 entering suspend,
-this pin is a sleep signal for RK808, so RK808 could goto sleep
-mode, and some regulators would be disable.
+Hi,
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+Changes since v1
+================
+1. Replace patch 1 changing PM core with fix only for DRM exynos driver.
 
----
+Description
+===========
+The goal of the patch 2 is to add runtime PM to the Exynos DSI driver.
+This allows LCD power domain to be turned off.
 
-Changes in v7:
-- add regulator-state-mem sub node for suspend
+However after adding this patch an interesing issue came in. The DSI
+driver could not runtime resume during sustem resume because power
+domain was not allowed to power on.
 
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-Changes in v2: None
+The issue is solved by patch 1.
 
- arch/arm/boot/dts/rk3288-evb-rk808.dts | 46 +++++++++++++++++++++++++++++++++-
- 1 file changed, 45 insertions(+), 1 deletion(-)
+Tested on Trats2 board.
 
-diff --git a/arch/arm/boot/dts/rk3288-evb-rk808.dts b/arch/arm/boot/dts/rk3288-evb-rk808.dts
-index d8c775e6..6145cf4 100644
---- a/arch/arm/boot/dts/rk3288-evb-rk808.dts
-+++ b/arch/arm/boot/dts/rk3288-evb-rk808.dts
-@@ -31,7 +31,7 @@
- 		interrupt-parent = <&gpio0>;
- 		interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
- 		pinctrl-names = "default";
--		pinctrl-0 = <&pmic_int>;
-+		pinctrl-0 = <&pmic_int &global_pwroff>;
- 		rockchip,system-power-controller;
- 		wakeup-source;
- 		#clock-cells = <1>;
-@@ -50,6 +50,9 @@
- 				regulator-min-microvolt = <750000>;
- 				regulator-max-microvolt = <1350000>;
- 				regulator-name = "vdd_arm";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vdd_gpu: DCDC_REG2 {
-@@ -58,12 +61,19 @@
- 				regulator-min-microvolt = <850000>;
- 				regulator-max-microvolt = <1250000>;
- 				regulator-name = "vdd_gpu";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vcc_ddr: DCDC_REG3 {
- 				regulator-always-on;
- 				regulator-boot-on;
- 				regulator-name = "vcc_ddr";
-+				regulator-suspend-mem-enabled;
-+				regulator-state-mem {
-+					regulator-on-in-suspend;
-+				};
- 			};
- 
- 			vcc_io: DCDC_REG4 {
-@@ -72,6 +82,9 @@
- 				regulator-min-microvolt = <3300000>;
- 				regulator-max-microvolt = <3300000>;
- 				regulator-name = "vcc_io";
-+				regulator-state-mem {
-+					regulator-suspend-microvolt = <3300000>;
-+				};
- 			};
- 
- 			vccio_pmu: LDO_REG1 {
-@@ -80,6 +93,9 @@
- 				regulator-min-microvolt = <3300000>;
- 				regulator-max-microvolt = <3300000>;
- 				regulator-name = "vccio_pmu";
-+				regulator-state-mem {
-+					regulator-suspend-microvolt = <3300000>;
-+				};
- 			};
- 
- 			vcc_tp: LDO_REG2 {
-@@ -88,6 +104,9 @@
- 				regulator-min-microvolt = <3300000>;
- 				regulator-max-microvolt = <3300000>;
- 				regulator-name = "vcc_tp";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vdd_10: LDO_REG3 {
-@@ -96,6 +115,9 @@
- 				regulator-min-microvolt = <1000000>;
- 				regulator-max-microvolt = <1000000>;
- 				regulator-name = "vdd_10";
-+				regulator-state-mem {
-+					regulator-suspend-microvolt = <1000000>;
-+				};
- 			};
- 
- 			vcc18_lcd: LDO_REG4 {
-@@ -104,6 +126,9 @@
- 				regulator-min-microvolt = <1800000>;
- 				regulator-max-microvolt = <1800000>;
- 				regulator-name = "vcc18_lcd";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vccio_sd: LDO_REG5 {
-@@ -112,6 +137,9 @@
- 				regulator-min-microvolt = <1800000>;
- 				regulator-max-microvolt = <3300000>;
- 				regulator-name = "vccio_sd";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vdd10_lcd: LDO_REG6 {
-@@ -120,6 +148,9 @@
- 				regulator-min-microvolt = <1000000>;
- 				regulator-max-microvolt = <1000000>;
- 				regulator-name = "vdd10_lcd";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vcc_18: LDO_REG7 {
-@@ -128,6 +159,10 @@
- 				regulator-min-microvolt = <1800000>;
- 				regulator-max-microvolt = <1800000>;
- 				regulator-name = "vcc_18";
-+				regulator-suspend-mem-microvolt = <1800000>;
-+				regulator-state-mem {
-+					regulator-suspend-microvolt = <1800000>;
-+				};
- 			};
- 
- 			vcca_codec: LDO_REG8 {
-@@ -136,18 +171,27 @@
- 				regulator-min-microvolt = <3300000>;
- 				regulator-max-microvolt = <3300000>;
- 				regulator-name = "vcca_codec";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 
- 			vcc_wl: SWITCH_REG1 {
- 				regulator-always-on;
- 				regulator-boot-on;
- 				regulator-name = "vcc_wl";
-+				regulator-state-mem {
-+					regulator-on-in-suspend;
-+				};
- 			};
- 
- 			vcc_lcd: SWITCH_REG2 {
- 				regulator-always-on;
- 				regulator-boot-on;
- 				regulator-name = "vcc_lcd";
-+				regulator-state-mem {
-+					regulator-off-in-suspend;
-+				};
- 			};
- 		};
- 	};
+Comments are welcomed.
+
+Best regards,
+Krzysztof
+
+
+Krzysztof Kozlowski (2):
+  drm/exynos: Fix DSI resuming fail because power domain being off
+  drm/exynos/dsi: Add runtime PM so LCD power domain could be turned off
+
+ drivers/gpu/drm/exynos/exynos_drm_drv.c | 2 --
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c | 9 +++++++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
 -- 
 1.9.1
 
