@@ -1,115 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaKGS7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:59:32 -0500
-Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:59407 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752018AbaKGS7b (ORCPT
+	id S1753232AbaKGTAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:00:09 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:32856 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054AbaKGTAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:59:31 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:967:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2693:2828:2859:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:6119:6261:7903:8599:8603:9025:10004:10049:10400:10848:10913:11026:11232:11473:11658:11914:12043:12296:12517:12519:12555:12663:12740:12783:13018:13019:13846:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: spot23_6fd23f1ed6816
-X-Filterd-Recvd-Size: 3959
-Message-ID: <1415386767.23530.14.camel@perches.com>
-Subject: Re: [RFC][PATCH 03/12 v3] tracing: Create seq_buf layer in trace_seq
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Petr Mladek <pmladek@suse.cz>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 07 Nov 2014 10:59:27 -0800
-In-Reply-To: <20141107133017.0d0ecd2e@gandalf.local.home>
-References: <20141104155237.228431433@goodmis.org>
-	 <20141104160221.864997179@goodmis.org>
-	 <20141105142222.GC4570@pathway.suse.cz>
-	 <20141105134147.226a23ef@gandalf.local.home>
-	 <20141105150007.1c543b9e@gandalf.local.home>
-	 <20141105161720.71abdbdb@gandalf.local.home>
-	 <20141105162146.6edc1567@gandalf.local.home>
-	 <20141106163352.GJ2001@dhcp128.suse.cz>
-	 <20141107133017.0d0ecd2e@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Nov 2014 14:00:06 -0500
+Date: Fri, 7 Nov 2014 14:59:51 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thermal: exynos: use correct offset for TMU_CONTROL
+ register on Exynos5260
+Message-ID: <20141107185949.GA27266@developer>
+References: <1594947.1Ri7fFnV5h@amdc1032>
+ <17456984.pRSEMqiSfL@amdc1032>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+In-Reply-To: <17456984.pRSEMqiSfL@amdc1032>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 13:30 -0500, Steven Rostedt wrote:
-> I'm not going to waist bandwidth reposting the entire series. Here's a
-> new version of this patch. I'm getting ready to pull it into my next
-> queue.
 
-All this seems sensible enough though I think it'd
-be nicer if all the touch-ups were compressed into
-a single patch.
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-and some trivia:
+Hi Bartlomiej,
 
-> Create a seq_buf layer that trace_seq sits on. The seq_buf will not
-> be limited to page size. This will allow other usages of seq_buf
-> instead of a hard set PAGE_SIZE one that trace_seq has.
-> 
-> Link: http://lkml.kernel.org/r/20141104160221.864997179@goodmis.org
-[]
-> diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
-[]
-> +extern __printf(2, 3)
-> +int seq_buf_printf(struct seq_buf *s, const char *fmt, ...);
-> +extern __printf(2, 0)
-> +int seq_buf_vprintf(struct seq_buf *s, const char *fmt, va_list args);
-> +extern int
-> +seq_buf_bprintf(struct seq_buf *s, const char *fmt, const u32 *binary);
-> +extern int seq_buf_print_seq(struct seq_file *m, struct seq_buf *s);
-> +extern int seq_buf_to_user(struct seq_buf *s, char __user *ubuf,
-> +			   int cnt);
-> +extern int seq_buf_puts(struct seq_buf *s, const char *str);
-> +extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
-> +extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
-> +extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
-> +			      unsigned int len);
-> +extern int seq_buf_path(struct seq_buf *s, const struct path *path);
-> +
-> +extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
-> +			   int nmaskbits);
+On Mon, Oct 20, 2014 at 02:41:07PM +0200, Bartlomiej Zolnierkiewicz wrote:
+>=20
+> Hi,
+>=20
+> Eduardo, could you please merge this patch?
+>=20
 
-Maybe remove the extern bits from the function definitions?
-And maybe the unsigned int len/cnt could be size_t
+I queued this in my -fixes branch. It should appear also in linux-next.
 
-> diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
-[]
-> @@ -12,16 +12,14 @@
->  
->  struct trace_seq {
->  	unsigned char		buffer[PAGE_SIZE];
-> -	unsigned int		len;
-> -	unsigned int		readpos;
-> +	struct seq_buf		seq;
->  	int			full;
->  };
->  
->  static inline void
->  trace_seq_init(struct trace_seq *s)
->  {
-> -	s->len = 0;
-> -	s->readpos = 0;
-> +	seq_buf_init(&s->seq, s->buffer, PAGE_SIZE);
+Can you please refresh your patch series
+https://lkml.org/lkml/2014/9/18/305
 
-Maybe the PAGE_SIZE uses could be ARRAY_SIZE(s->buffer)
+based on my tree? Looks like something may be missing, as could not get
+all patches applied cleanly.
 
-> diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
-[]
->  /* How much buffer is written? */
-> -#define TRACE_SEQ_BUF_USED(s) min((s)->len, (unsigned int)(PAGE_SIZE - 1))
-> +#define TRACE_SEQ_BUF_USED(s) min((s)->seq.len, (unsigned int)(PAGE_SIZE - 1))
+Thanks
 
-min_t?
-maybe this should be FIELD_SIZEOF(struct trace_seq, buffer) - 1
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>=20
+> On Thursday, September 11, 2014 03:00:49 PM Bartlomiej Zolnierkiewicz wro=
+te:
+> > In exynos5260_tmu_registers tmu_ctrl entry is erroneously
+> > assigned twice.  The second assignment (to EXYNOS_TMU_REG_CONTROL1
+> > define which represents 0x24 value) overrides the first one
+> > (to EXYNOS_TMU_REG_CONTROL define which represents 0x20 value)
+> > which results in the wrong (according to the Exynos5260 SoC
+> > documentation that I have) offset being used for TMU_CONTROL
+> > register.  Fix it by removing the wrong assignment and then
+> > remove no longer used EXYNOS_TMU_REG_CONTROL1 define.
+> >=20
+> > Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> > Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> > Cc: Lukasz Majewski <l.majewski@samsung.com>
+> > Cc: Eduardo Valentin <edubezval@gmail.com>
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  drivers/thermal/samsung/exynos_tmu_data.c |    1 -
+> >  drivers/thermal/samsung/exynos_tmu_data.h |    1 -
+> >  2 files changed, 2 deletions(-)
+> >=20
+> > Index: b/drivers/thermal/samsung/exynos_tmu_data.c
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > --- a/drivers/thermal/samsung/exynos_tmu_data.c	2014-09-11 14:41:12.567=
+347442 +0200
+> > +++ b/drivers/thermal/samsung/exynos_tmu_data.c	2014-09-11 14:43:00.211=
+350284 +0200
+> > @@ -273,7 +273,6 @@ struct exynos_tmu_init_data const exynos
+> >  static const struct exynos_tmu_registers exynos5260_tmu_registers =3D {
+> >  	.triminfo_data =3D EXYNOS_TMU_REG_TRIMINFO,
+> >  	.tmu_ctrl =3D EXYNOS_TMU_REG_CONTROL,
+> > -	.tmu_ctrl =3D EXYNOS_TMU_REG_CONTROL1,
+> >  	.therm_trip_mode_shift =3D EXYNOS_TMU_TRIP_MODE_SHIFT,
+> >  	.therm_trip_mode_mask =3D EXYNOS_TMU_TRIP_MODE_MASK,
+> >  	.therm_trip_en_shift =3D EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
+> > Index: b/drivers/thermal/samsung/exynos_tmu_data.h
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > --- a/drivers/thermal/samsung/exynos_tmu_data.h	2014-09-11 14:41:12.243=
+347433 +0200
+> > +++ b/drivers/thermal/samsung/exynos_tmu_data.h	2014-09-11 14:43:36.167=
+351233 +0200
+> > @@ -83,7 +83,6 @@
+> >  #define EXYNOS_MAX_TRIGGER_PER_REG	4
+> > =20
+> >  /* Exynos5260 specific */
+> > -#define EXYNOS_TMU_REG_CONTROL1			0x24
+> >  #define EXYNOS5260_TMU_REG_INTEN		0xC0
+> >  #define EXYNOS5260_TMU_REG_INTSTAT		0xC4
+> >  #define EXYNOS5260_TMU_REG_INTCLEAR		0xC8
 
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUXRaeAAoJEMLUO4d9pOJW/AgIAJUePDVsqlCXHkboVJ0SFE04
+ZB04qQdWYaRIoDI/4pXB34X4eo2C/+wlF1hN2egLhiZTvyy7ykfSmvD4tcEP3hWz
+yzEKuGcAAQVIvKnZAFVbRtAQN/OLEHIlKsLPANbfGbWfF8VpWE3pAN/GKsog3xwh
+jV251sDYf6kam1pHceby5TXqbALq4PugLdPFym+oYR2BbGPmiPdwa+TSIR2Wn2Kh
+uhZKsQoocJ7ZVQsVRW41XtRZ+UyYJ+3yyKRD+8SQUBkmcmlkrA12l7MA5b/zhm7K
+9I+eo2e6viipmYRLgBkhSI6TpxrEmXXNmrCNTtAxxh0dDx+9VG6T9Mf/yv0i5Mg=
+=MrCn
+-----END PGP SIGNATURE-----
 
+--GvXjxJ+pjyke8COw--
