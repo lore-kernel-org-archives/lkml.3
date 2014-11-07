@@ -1,108 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaKGSph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:45:37 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:11422 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbaKGSpf (ORCPT
+	id S1752865AbaKGSsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:48:09 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:46393 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793AbaKGSsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:45:35 -0500
-X-IronPort-AV: E=Sophos;i="5.07,334,1413244800"; 
-   d="scan'208";a="190678429"
-Date: Fri, 7 Nov 2014 18:45:22 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-In-Reply-To: <20141107181430.GH29148@e104818-lin.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1411071834540.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com> <20141105165646.GN32700@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1411051757140.22875@kaball.uk.xensource.com> <20141106103337.GA19702@e104818-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1411061155200.22875@kaball.uk.xensource.com> <20141107110524.GA21875@localhost> <alpine.DEB.2.02.1411071212250.22875@kaball.uk.xensource.com> <20141107160006.GE29148@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1411071646170.22875@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1411071732550.22875@kaball.uk.xensource.com> <20141107181430.GH29148@e104818-lin.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	Fri, 7 Nov 2014 13:48:07 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, Joe Perches <joe@perches.com>,
+        stable@vger.kernel.org
+Subject: [PATCH v3 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
+Date: Fri,  7 Nov 2014 18:47:50 +0000
+Message-Id: <1415386070-18850-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Nov 2014, Catalin Marinas wrote:
-> On Fri, Nov 07, 2014 at 05:35:41PM +0000, Stefano Stabellini wrote:
-> > On Fri, 7 Nov 2014, Stefano Stabellini wrote:
-> > > On Fri, 7 Nov 2014, Catalin Marinas wrote:
-> > > > What I would like to see is xen_dma_map_page() also using hyp calls for
-> > > > cache maintenance when !pfn_valid(), for symmetry with unmap. You would
-> > > > need another argument to xen_dma_map_page() though to pass the real
-> > > > device address or mfn (and on the map side you could simply check for
-> > > > page_to_pfn(page) != mfn). For such cases, Xen swiotlb already handles
-> > > > bouncing so you don't need dom0 swiotlb involved as well.
-> > > 
-> > > I can see that it would be nice to have map_page and unmap_page be
-> > > symmetrical. However actually doing the map_page flush with an hypercall
-> > > would slow things down. Hypercalls are slower than function calls. It is
-> > > faster to do the cache flushing in dom0 if possible. In the map_page
-> > > case we have the struct page so we can easily do it by calling the
-> > > native dma_ops function.
-> > > 
-> > > Maybe I could just add a comment to explain the reason for the asymmetry?
-> > 
-> > Ah, but the problem is that map_page could allocate a swiotlb buffer
-> > (actually it does on arm64) that without a corresponding unmap_page
-> > call, would end up being leaked, right?
-> 
-> Yes. You could hack dma_capable() to always return true for dom0
-> (because the pfn/dma address here doesn't have anything to do with the
-> real mfn) but that's more of a hack assuming a lot about the swiotlb
-> implementation.
+Currently when kdb traps printk messages then the raw log level prefix
+(consisting of '\001' followed by a numeral) does not get stripped off
+before the message is issued to the various I/O handlers supported by
+kdb. This causes annoying visual noise as well as causing problems
+grepping for ^. It is also a change of behaviour compared to normal usage
+of printk() usage. For example <SysRq>-h ends up with different output to
+that of kdb's "sr h".
 
-Another idea would be to avoid calling the native map_page for foreign
-pages, but in the xen specific implementation instead of making the
-hypercall, we could call __dma_map_area on arm64 and map_page on arm.
+This patch addresses the problem by stripping log levels from messages
+before they are issued to the I/O handlers. printk() which can also
+act as an i/o handler in some cases is special cased; if the caller
+provided a log level then the prefix will be preserved when sent to
+printk().
 
-Something like this:
+The addition of non-printable characters to the output of kdb commands is a
+regression, albeit and extremely elderly one, introduced by commit
+04d2c8c83d0e ("printk: convert the format for KERN_<LEVEL> to a 2 byte
+pattern"). Note also that this patch does *not* restore the original
+behaviour from v3.5. Instead it makes printk() from within a kdb command
+display the message without any prefix (i.e. like printk() normally does).
 
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: stable@vger.kernel.org
+---
 
-In arch/arm/include/asm/xen/page-coherent.h:
+Notes:
+    This patch is tested both on arm (kgdboc=ttyAMA0) and x86_64
+    (kgdboc=kdb,ttyS0).
+    
+    v3:
+    
+    * Introduce enum kdb_msgsrc to further improve the fidelity of messages
+      that hit the log (Joe Perches). The output of "sr h" benefits a lot
+      from this change.
+    
+    v2:
+    
+    * Adopt printk_skip_level() to skip the header characters (Joe Perches).
+    
+    * Update patch description to describe the addition of non-printable
+      characters to kdb output as a regression and Cc: stable@ (Joe Perches).
+    
 
-static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
-	     dma_addr_t dev_addr, unsigned long offset, size_t size,
-	     enum dma_data_direction dir, struct dma_attrs *attrs)
-{
-	if (pfn_valid(PFN_DOWN(dev_addr))) {
-		if (__generic_dma_ops(hwdev)->map_page)
-			__generic_dma_ops(hwdev)->map_page(hwdev, page, offset, size, dir, attrs);
-	} else
-		__xen_dma_map_page(hwdev, page, dev_addr, offset, size, dir, attrs);
-}
+ include/linux/kdb.h       |  8 +++++++-
+ kernel/debug/kdb/kdb_io.c | 22 +++++++++++++---------
+ kernel/printk/printk.c    |  2 +-
+ 3 files changed, 21 insertions(+), 11 deletions(-)
 
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index 290db1269c4c..204901ae003a 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -112,8 +112,14 @@ typedef enum {
+ 	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
+ } kdb_reason_t;
 
++enum kdb_msgsrc {
++	KDB_MSGSRC_INTERNAL, /* direct call to kdb_printf() */
++	KDB_MSGSRC_PRINTK, /* trapped from printk() */
++};
++
+ extern int kdb_trap_printk;
+-extern __printf(1, 0) int vkdb_printf(const char *fmt, va_list args);
++extern __printf(2, 0) int vkdb_printf(enum kdb_msgsrc src, const char *fmt,
++				      va_list args);
+ extern __printf(1, 2) int kdb_printf(const char *, ...);
+ typedef __printf(1, 2) int (*kdb_printf_t)(const char *, ...);
 
-In arch/arm/xen/mm.c:
+diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+index 7c70812caea5..a550afb99ebe 100644
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -548,7 +548,7 @@ static int kdb_search_string(char *searched, char *searchfor)
+ 	return 0;
+ }
 
-void __xen_dma_map_page(struct device *hwdev, struct page *page,
-	     dma_addr_t dev_addr, unsigned long offset, size_t size,
-	     enum dma_data_direction dir, struct dma_attrs *attrs)
-{
-	if (is_device_dma_coherent(hwdev))
-		return;
-#ifdef CONFIG_ARM64
-	__dma_map_area(page_to_phys(page) + offset, size, dir);
-#else
-	__generic_dma_ops(hwdev)->map_page(hwdev, page, offset, size, dir, attrs);
-#endif
-}
+-int vkdb_printf(const char *fmt, va_list ap)
++int vkdb_printf(enum kdb_msgsrc src, const char *fmt, va_list ap)
+ {
+ 	int diag;
+ 	int linecount;
+@@ -691,19 +691,20 @@ kdb_printit:
+ 	 * Write to all consoles.
+ 	 */
+ 	retlen = strlen(kdb_buffer);
++	cp = (char *) printk_skip_level(kdb_buffer);
+ 	if (!dbg_kdb_mode && kgdb_connected) {
+-		gdbstub_msg_write(kdb_buffer, retlen);
++		gdbstub_msg_write(cp, retlen - (cp - kdb_buffer));
+ 	} else {
+ 		if (dbg_io_ops && !dbg_io_ops->is_console) {
+-			len = retlen;
+-			cp = kdb_buffer;
++			len = retlen - (cp - kdb_buffer);
++			cp2 = cp;
+ 			while (len--) {
+-				dbg_io_ops->write_char(*cp);
+-				cp++;
++				dbg_io_ops->write_char(*cp2);
++				cp2++;
+ 			}
+ 		}
+ 		while (c) {
+-			c->write(c, kdb_buffer, retlen);
++			c->write(c, cp, retlen - (cp - kdb_buffer));
+ 			touch_nmi_watchdog();
+ 			c = c->next;
+ 		}
+@@ -711,7 +712,10 @@ kdb_printit:
+ 	if (logging) {
+ 		saved_loglevel = console_loglevel;
+ 		console_loglevel = CONSOLE_LOGLEVEL_SILENT;
+-		printk(KERN_INFO "%s", kdb_buffer);
++		if (printk_get_level(kdb_buffer) || src == KDB_MSGSRC_PRINTK)
++			printk("%s", kdb_buffer);
++		else
++			pr_info("%s", kdb_buffer);
+ 	}
 
+ 	if (KDB_STATE(PAGER)) {
+@@ -844,7 +848,7 @@ int kdb_printf(const char *fmt, ...)
+ 	int r;
 
-It wouldn't be as nice as using the hypercall but it would be faster and
-wouldn't depend on the inner workings of the arm64 implementation of
-map_page, except for __dma_map_area.
+ 	va_start(ap, fmt);
+-	r = vkdb_printf(fmt, ap);
++	r = vkdb_printf(KDB_MSGSRC_INTERNAL, fmt, ap);
+ 	va_end(ap);
+
+ 	return r;
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index ced2b84b1cb7..3a884ab1b9cb 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1836,7 +1836,7 @@ asmlinkage __visible int printk(const char *fmt, ...)
+ #ifdef CONFIG_KGDB_KDB
+ 	if (unlikely(kdb_trap_printk)) {
+ 		va_start(args, fmt);
+-		r = vkdb_printf(fmt, args);
++		r = vkdb_printf(KDB_MSGSRC_PRINTK, fmt, args);
+ 		va_end(args);
+ 		return r;
+ 	}
+--
+1.9.3
+
