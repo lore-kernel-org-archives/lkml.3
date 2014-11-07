@@ -1,210 +1,645 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaKGLfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 06:35:53 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:38475 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaKGLfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 06:35:48 -0500
-Message-ID: <545CAE72.4000308@kapsi.fi>
-Date: Fri, 07 Nov 2014 13:35:14 +0200
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Rob Herring <robherring2@gmail.com>
-CC: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 04/13] of: document new emc-timings subnode in nvidia,tegra124-car
-References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com> <1414599796-30597-5-git-send-email-tomeu.vizoso@collabora.com> <545B172C.4060105@nvidia.com> <CAL_JsqKYSF3JVrXH_dkqRXQrgUU3igzvoK1C2k1Caz-4UuHX6Q@mail.gmail.com> <545C5927.3010001@nvidia.com>
-In-Reply-To: <545C5927.3010001@nvidia.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S1752147AbaKGLgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 06:36:48 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:54799 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaKGLgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 06:36:45 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <f032c3c916a68137f34d841207fa2656>
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com
+Subject: [PATCH V4 6/6] dw-hdmi: convert dw-hdmi to drm_bridge mode
+Date: Fri,  7 Nov 2014 19:36:23 +0800
+Message-Id: <1415360183-8704-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415360125-8655-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415360125-8655-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To better facilitate discussion, here's an outline of how the driver works:
+From: Yakir Yang <ykk@rock-chips.com>
 
-emc_set_rate (CAR) gets called
-   The current timing (= rate,parent pair) is checked along with the
-     target timing.
-   If the target timing has the same clock source (~parent, see
-     emc_parent_clk_sources in the clk driver), find a timing with a
-     different clock source. This is to prevent a situation where we
-     have switched to a new parent rate but the EMC has not yet been
-     reprogrammed. This new timing is called a backup timing.
-   If a backup timing was required, switch to it (using this same
-     procedure).
-   Set the rate of the new parent to the required rate and enable it. It
-     is important to use the correct parent for each timing, since in
-     addition to the rate requirements, there are jitter requirements.
-     The specified timings have been verified by a hardware team.
-   Call tegra_emc_prepare_timing_change. This does assorted things to
-     prepare the EMC block for a timing change and also tells the MC
-     driver to prepare for it.
-   Prepare the value that will be written to CLK_SOURCE_EMC in the CAR
-     block. This value contains the divisor to get from the parent rate
-     to the EMC rate and specifies the parent clock to use.
-   Write the value. This must be done in a single write, as it starts a
-     state machine that uses the written value.
-   Call tegra_emc_complete_timing_change. This will lead the state
-     machine to completion.
-   Tell CCF that our parent is now the specified one.
-   Disable the old parent.
+dw-hdmi is under drm/bridge, so it should be the bridge mode.
+hange off the encoder to dw_hdmi-imx.c, keep the connector &
+birdge in dw_hdmi.c
 
-Note that information about the parent is only needed within the CAR 
-driver and not in EMC or MC.
-Those drivers only need to map the EMC rate to a set of configuration 
-values.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+Signed-off-by: Yakir Yang <ykk@rock-chips.com>
+---
+ drivers/gpu/drm/bridge/dw_hdmi.c      | 228 +++++++++++++++-------------------
+ drivers/staging/imx-drm/dw_hdmi-imx.c | 143 ++++++++++++++-------
+ include/drm/bridge/dw_hdmi.h          |  13 +-
+ 3 files changed, 198 insertions(+), 186 deletions(-)
 
-If the parent clock information is moved under the EMC node, we have 
-some options:
-a) Add API to EMC that the CAR driver can use to query the parent 
-information.
-b) Add API to CAR that the EMC driver can use to write the rate and 
-parent information.
-c) Other?
-
-Cheers,
-Mikko.
-
-On 11/07/2014 07:31 AM, Alexandre Courbot wrote:
-> On 11/07/2014 12:12 AM, Rob Herring wrote:
->> On Thu, Nov 6, 2014 at 12:37 AM, Alexandre Courbot
->> <acourbot@nvidia.com> wrote:
->>> On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
->>>>
->>>> The EMC clock needs some extra information for changing its rate.
->>>>
->>>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>>> ---
->>>>    .../bindings/clock/nvidia,tegra124-car.txt         | 46
->>>> +++++++++++++++++++++-
->>>>    1 file changed, 44 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git
->>>> a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> index ded5d62..42e0588 100644
->>>> --- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> @@ -19,12 +19,35 @@ Required properties :
->>>>      In clock consumers, this cell represents the bit number in the
->>>> CAR's
->>>>      array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
->>>>
->>>> +The node should contain a "emc-timings" subnode for each supported RAM
->>>> type (see
->>>> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address
->>>> being its
->>>> +RAM_CODE.
->>>> +
->>>> +Required properties for "emc-timings" nodes :
->>>> +- nvidia,ram-code : Should contain the value of RAM_CODE this
->>>> timing set
->>>> +  is used for.
->>>> +
->>>> +Each "emc-timings" node should contain a "timing" subnode for every
->>>> supported
->>>> +EMC clock rate. The "timing" subnodes should have the clock rate in
->>>> Hz as
->>>> their
->>>> +unit address.
->>>
->>>
->>> This seems to be a quite liberal use of unit addresses (same in the next
->>> patch) - is this allowed by DT?
->>
->> No, unit address should match a reg property.
->
-> Mmm, would you have any suggestion as to how this can be fixed? Right
-> now what I can think of is either to replace the "clock-frequency"
-> property by "reg" (which would be confusing), or to use a different
-> naming scheme, e.g. timing-12750000. IIUC the naming is not essential
-> for properly parsing these nodes, so maybe the second solution is the
-> way to go?
->
->>
->>>> +
->>>> +Required properties for "timing" nodes :
->>>> +- clock-frequency : Should contain the memory clock rate to which this
->>>> timing
->>>> +relates.
->>>> +- nvidia,parent-clock-frequency : Should contain the rate at which the
->>>> current
->>>> +parent of the EMC clock should be running at this timing.
->>>> +- clocks : Must contain an entry for each entry in clock-names.
->>>> +  See ../clocks/clock-bindings.txt for details.
->>>> +- clock-names : Must include the following entries:
->>>> +  - emc-parent : the clock that should be the parent of the EMC
->>>> clock at
->>>> this
->>>> +timing.
->>>> +
->>>>    Example SoC include file:
->>>>
->>>>    / {
->>>> -       tegra_car: clock {
->>>> +       tegra_car: clock@0,60006000 {
->>
->> The comma here is wrong. Commas should be used when you have something
->> like PCI bus:dev:func for addressing.
->>
->>>>                  compatible = "nvidia,tegra124-car";
->>>> -               reg = <0x60006000 0x1000>;
->>>> +               reg = <0x0 0x60006000 0x0 0x1000>;
->>
->> The number of cell's is really irrelevant to the example.
->>
->>>>                  #clock-cells = <1>;
->>>>                  #reset-cells = <1>;
->>>>          };
->>>> @@ -60,4 +83,23 @@ Example board file:
->>>>          &tegra_car {
->>>>                  clocks = <&clk_32k> <&osc>;
->>>>          };
->>>> +
->>>> +       clock@0,60006000 {
->>>> +               emc-timings@3 {
->>>> +                       nvidia,ram-code = <3>;
->>>> +
->>>> +                       timing@12750000 {
->>>> +                               clock-frequency = <12750000>;
->>>> +                               nvidia,parent-clock-frequency =
->>>> <408000000>;
->>>> +                               clocks = <&tegra_car
->>>> TEGRA124_CLK_PLL_P>;
->>>> +                               clock-names = "emc-parent";
->>
->> Why do you need both clocks and hardcoded values? clock-frequency is
->> the desired freq you want to set TEGRA124_CLK_PLL_P to?
->
-> That would be nvidia,parent-clock-frequency IIUC, while clock-frequency
-> is the resulting EMC clock.
->
->>
->> The clocks property really belongs as part of the memory controller
->> node or a memory device node.
->
-> I would tend to agree here. Tomeu, does it make sense to move these
-> properties to the EMC driver instead?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index 9867642..4d25f8f 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -11,7 +11,6 @@
+  * Copyright (C) 2010, Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+  */
+ 
+-#include <linux/component.h>
+ #include <linux/irq.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
+@@ -102,7 +101,8 @@ struct hdmi_data_info {
+ 
+ struct dw_hdmi {
+ 	struct drm_connector connector;
+-	struct drm_encoder encoder;
++	struct drm_encoder *encoder;
++	struct drm_bridge *bridge;
+ 
+ 	enum dw_hdmi_devtype dev_type;
+ 	struct device *dev;
+@@ -1314,6 +1314,50 @@ static void dw_hdmi_poweroff(struct dw_hdmi *hdmi)
+ 	dw_hdmi_phy_disable(hdmi);
+ }
+ 
++static void dw_hdmi_bridge_mode_set(struct drm_bridge *bridge,
++				    struct drm_display_mode *mode,
++				    struct drm_display_mode *adjusted_mode)
++{
++	struct dw_hdmi *hdmi = bridge->driver_private;
++
++	dw_hdmi_setup(hdmi, mode);
++
++	/* Store the display mode for plugin/DKMS poweron events */
++	memcpy(&hdmi->previous_mode, mode, sizeof(hdmi->previous_mode));
++}
++
++static bool dw_hdmi_bridge_mode_fixup(struct drm_bridge *bridge,
++				      const struct drm_display_mode *mode,
++				      struct drm_display_mode *adjusted_mode)
++{
++	return true;
++}
++
++static void dw_hdmi_bridge_disable(struct drm_bridge *bridge)
++{
++	struct dw_hdmi *hdmi = bridge->driver_private;
++
++	dw_hdmi_poweroff(hdmi);
++}
++
++static void dw_hdmi_bridge_enable(struct drm_bridge *bridge)
++{
++	struct dw_hdmi *hdmi = bridge->driver_private;
++
++	dw_hdmi_poweron(hdmi);
++}
++
++static void dw_hdmi_bridge_destroy(struct drm_bridge *bridge)
++{
++	drm_bridge_cleanup(bridge);
++	kfree(bridge);
++}
++
++static void dw_hdmi_bridge_nope(struct drm_bridge *bridge)
++{
++	/* do nothing */
++}
++
+ static enum drm_connector_status dw_hdmi_connector_detect(struct drm_connector
+ 							*connector, bool force)
+ {
+@@ -1355,60 +1399,7 @@ static struct drm_encoder *dw_hdmi_connector_best_encoder(struct drm_connector
+ 	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi,
+ 					     connector);
+ 
+-	return &hdmi->encoder;
+-}
+-
+-static void dw_hdmi_encoder_mode_set(struct drm_encoder *encoder,
+-			struct drm_display_mode *mode,
+-			struct drm_display_mode *adjusted_mode)
+-{
+-	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
+-
+-	dw_hdmi_setup(hdmi, mode);
+-
+-	/* Store the display mode for plugin/DKMS poweron events */
+-	memcpy(&hdmi->previous_mode, mode, sizeof(hdmi->previous_mode));
+-}
+-
+-static bool dw_hdmi_encoder_mode_fixup(struct drm_encoder *encoder,
+-			const struct drm_display_mode *mode,
+-			struct drm_display_mode *adjusted_mode)
+-{
+-	return true;
+-}
+-
+-static void dw_hdmi_encoder_disable(struct drm_encoder *encoder)
+-{
+-}
+-
+-static void dw_hdmi_encoder_dpms(struct drm_encoder *encoder, int mode)
+-{
+-	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
+-
+-	if (mode)
+-		dw_hdmi_poweroff(hdmi);
+-	else
+-		dw_hdmi_poweron(hdmi);
+-}
+-
+-static void dw_hdmi_encoder_prepare(struct drm_encoder *encoder)
+-{
+-	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
+-
+-	dw_hdmi_poweroff(hdmi);
+-
+-	if (hdmi->plat_data->encoder_prepare)
+-		hdmi->plat_data->encoder_prepare(&hdmi->connector, encoder);
+-}
+-
+-static void dw_hdmi_encoder_commit(struct drm_encoder *encoder)
+-{
+-	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
+-
+-	if (hdmi->plat_data->encoder_commit)
+-		hdmi->plat_data->encoder_commit(hdmi->priv, encoder);
+-
+-	dw_hdmi_poweron(hdmi);
++	return hdmi->encoder;
+ }
+ 
+ void dw_hdmi_connector_destroy(struct drm_connector *connector)
+@@ -1417,19 +1408,6 @@ void dw_hdmi_connector_destroy(struct drm_connector *connector)
+ 	drm_connector_cleanup(connector);
+ }
+ 
+-static struct drm_encoder_funcs dw_hdmi_encoder_funcs = {
+-	.destroy = drm_encoder_cleanup,
+-};
+-
+-static struct drm_encoder_helper_funcs dw_hdmi_encoder_helper_funcs = {
+-	.dpms = dw_hdmi_encoder_dpms,
+-	.prepare = dw_hdmi_encoder_prepare,
+-	.commit = dw_hdmi_encoder_commit,
+-	.mode_set = dw_hdmi_encoder_mode_set,
+-	.mode_fixup = dw_hdmi_encoder_mode_fixup,
+-	.disable = dw_hdmi_encoder_disable,
+-};
+-
+ static struct drm_connector_funcs dw_hdmi_connector_funcs = {
+ 	.dpms = drm_helper_connector_dpms,
+ 	.fill_modes = drm_helper_probe_single_connector_modes,
+@@ -1442,6 +1420,16 @@ static struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
+ 	.best_encoder = dw_hdmi_connector_best_encoder,
+ };
+ 
++struct drm_bridge_funcs dw_hdmi_bridge_funcs = {
++	.enable = dw_hdmi_bridge_enable,
++	.disable = dw_hdmi_bridge_disable,
++	.pre_enable = dw_hdmi_bridge_nope,
++	.post_disable = dw_hdmi_bridge_nope,
++	.mode_set = dw_hdmi_bridge_mode_set,
++	.mode_fixup = dw_hdmi_bridge_mode_fixup,
++	.destroy = dw_hdmi_bridge_destroy,
++};
++
+ static irqreturn_t dw_hdmi_hardirq(int irq, void *dev_id)
+ {
+ 	struct dw_hdmi *hdmi = dev_id;
+@@ -1490,40 +1478,64 @@ static irqreturn_t dw_hdmi_irq(int irq, void *dev_id)
+ 
+ static int dw_hdmi_register(struct drm_device *drm, struct dw_hdmi *hdmi)
+ {
+-	struct drm_encoder *encoder = &hdmi->encoder;
+-	struct device *dev = hdmi->dev;
++	struct drm_encoder *encoder = hdmi->encoder;
++	struct drm_bridge *bridge;
++	int ret;
+ 
+-	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
++	bridge = devm_kzalloc(drm->dev, sizeof(*bridge), GFP_KERNEL);
++	if (!bridge) {
++		DRM_ERROR("Failed to allocate drm bridge\n");
++		return -ENOMEM;
++	}
+ 
+-	hdmi->connector.polled = DRM_CONNECTOR_POLL_HPD;
++	hdmi->bridge = bridge;
++	bridge->driver_private = hdmi;
+ 
+-	drm_encoder_helper_add(&hdmi->encoder, &dw_hdmi_encoder_helper_funcs);
+-	drm_encoder_init(drm, &hdmi->encoder, &dw_hdmi_encoder_funcs,
+-			 DRM_MODE_ENCODER_TMDS);
++	ret = drm_bridge_init(drm, bridge, &dw_hdmi_bridge_funcs);
++	if (ret) {
++		DRM_ERROR("Failed to initialize bridge with drm\n");
++		return -EINVAL;
++	}
++
++	encoder->bridge = bridge;
++	hdmi->connector.polled = DRM_CONNECTOR_POLL_HPD;
+ 
+ 	drm_connector_helper_add(&hdmi->connector,
+ 				 &dw_hdmi_connector_helper_funcs);
+ 	drm_connector_init(drm, &hdmi->connector, &dw_hdmi_connector_funcs,
+ 			   DRM_MODE_CONNECTOR_HDMIA);
+ 
+-	hdmi->connector.encoder = &hdmi->encoder;
++	hdmi->connector.encoder = encoder;
+ 
+-	drm_mode_connector_attach_encoder(&hdmi->connector, &hdmi->encoder);
++	drm_mode_connector_attach_encoder(&hdmi->connector, encoder);
+ 
+ 	return 0;
+ }
+ 
+-static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
++int dw_hdmi_bind(struct device *dev, struct device *master,
++		 void *data, struct drm_encoder *encoder,
++		 const struct dw_hdmi_plat_data *plat_data)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	struct dw_hdmi *hdmi = platform_get_drvdata(pdev);
+ 	struct drm_device *drm = data;
+ 	struct device_node *np = dev->of_node;
+ 	struct device_node *ddc_node;
+ 	struct resource *iores;
++	struct dw_hdmi *hdmi;
+ 	int ret, irq;
+ 	u32 val;
+ 
++	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
++	if (!hdmi)
++		return -ENOMEM;
++
++	hdmi->plat_data = plat_data;
++	hdmi->dev = &pdev->dev;
++	hdmi->dev_type = plat_data->dev_type;
++	hdmi->sample_rate = 48000;
++	hdmi->ratio = 100;
++	hdmi->encoder = encoder;
++
+ 	if (!of_property_read_u32(np, "reg-io-width", &val)) {
+ 		switch (val) {
+ 		case 4:
+@@ -1572,8 +1584,6 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
+ 	if (IS_ERR(hdmi->regs))
+ 		return PTR_ERR(hdmi->regs);
+ 
+-	if (hdmi->plat_data->setup)
+-		hdmi->priv = hdmi->plat_data->setup(pdev);
+ 	/* Product and revision IDs */
+ 	dev_info(dev,
+ 		 "Detected HDMI controller 0x%x:0x%x:0x%x:0x%x\n",
+@@ -1614,9 +1624,9 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(dw_hdmi_bind);
+ 
+-static void dw_hdmi_unbind(struct device *dev, struct device *master,
+-	void *data)
++void dw_hdmi_unbind(struct device *dev, struct device *master, void *data)
+ {
+ 	struct dw_hdmi *hdmi = dev_get_drvdata(dev);
+ 
+@@ -1624,57 +1634,15 @@ static void dw_hdmi_unbind(struct device *dev, struct device *master,
+ 	hdmi_writeb(hdmi, ~0, HDMI_IH_MUTE_PHY_STAT0);
+ 
+ 	hdmi->connector.funcs->destroy(&hdmi->connector);
+-	hdmi->encoder.funcs->destroy(&hdmi->encoder);
+-	if (hdmi->plat_data->exit)
+-		hdmi->plat_data->exit(hdmi->priv);
+-	i2c_put_adapter(hdmi->ddc);
+-}
+-
+-static const struct component_ops hdmi_ops = {
+-	.bind	= dw_hdmi_bind,
+-	.unbind	= dw_hdmi_unbind,
+-};
+-
+-static int dw_hdmi_platform_probe(struct platform_device *pdev)
+-{
+-	return component_add(&pdev->dev, &hdmi_ops);
+-}
+-
+-static int dw_hdmi_platform_remove(struct platform_device *pdev)
+-{
+-	component_del(&pdev->dev, &hdmi_ops);
+-	return 0;
+-}
+-
+-int dw_hdmi_platform_register(struct platform_device *pdev,
+-			      const struct dw_hdmi_plat_data *plat_data)
+-{
+-	struct dw_hdmi *hdmi;
+-
+-	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+-	if (!hdmi)
+-		return -ENOMEM;
+-
+-	hdmi->plat_data = plat_data;
+-	hdmi->dev = &pdev->dev;
+-	hdmi->dev_type = plat_data->dev_type;
+-	hdmi->sample_rate = 48000;
+-	hdmi->ratio = 100;
++	hdmi->encoder->funcs->destroy(hdmi->encoder);
+ 
+-	platform_set_drvdata(pdev, hdmi);
+-
+-	return dw_hdmi_platform_probe(pdev);
+-}
+-EXPORT_SYMBOL_GPL(dw_hdmi_platform_register);
+-
+-int dw_hdmi_platform_unregister(struct platform_device *pdev)
+-{
+-	return dw_hdmi_platform_remove(pdev);
++	i2c_put_adapter(hdmi->ddc);
+ }
+-EXPORT_SYMBOL_GPL(dw_hdmi_platform_unregister);
++EXPORT_SYMBOL_GPL(dw_hdmi_unbind);
+ 
+ MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
+ MODULE_AUTHOR("Andy Yan <andy.yan@rock-chips.com>");
++MODULE_AUTHOR("Yakir Yang <ykk@rock-chips.com>");
+ MODULE_DESCRIPTION("DW HDMI transmitter driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:imx-hdmi");
+diff --git a/drivers/staging/imx-drm/dw_hdmi-imx.c b/drivers/staging/imx-drm/dw_hdmi-imx.c
+index d205874..76cf406 100644
+--- a/drivers/staging/imx-drm/dw_hdmi-imx.c
++++ b/drivers/staging/imx-drm/dw_hdmi-imx.c
+@@ -5,12 +5,19 @@
+  */
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
++#include <linux/component.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
+ #include <drm/bridge/dw_hdmi.h>
+ #include <video/imx-ipu-v3.h>
+ #include <linux/regmap.h>
+ #include <linux/clk.h>
++#include <drm/drm_of.h>
++#include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
++#include <drm/drm_edid.h>
++#include <drm/drm_encoder_slave.h>
++#include <drm/bridge/dw_hdmi.h>
+ 
+ #include "imx-drm.h"
+ 
+@@ -19,6 +26,7 @@ struct imx_hdmi {
+ 	struct clk *isfr_clk;
+ 	struct clk *iahb_clk;
+ 	struct regmap *regmap;
++	struct drm_encoder encoder;
+ };
+ 
+ static const struct mpll_config imx_mpll_cfg[] = {
+@@ -91,48 +99,26 @@ static int dw_hdmi_parse_dt(struct imx_hdmi *hdmi)
+ 	return 0;
+ }
+ 
+-static void *dw_hdmi_imx_setup(struct platform_device *pdev)
++static void dw_hdmi_imx_disable(struct drm_encoder *encoder)
+ {
+-	struct imx_hdmi *hdmi;
+-	int ret;
+-
+-	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+-	if (!hdmi)
+-		return ERR_PTR(-ENOMEM);
+-	hdmi->dev = &pdev->dev;
+-
+-	ret = dw_hdmi_parse_dt(hdmi);
+-	if (ret < 0)
+-		return ERR_PTR(ret);
+-	ret = clk_prepare_enable(hdmi->isfr_clk);
+-	if (ret) {
+-		dev_err(hdmi->dev,
+-			"Cannot enable HDMI isfr clock: %d\n", ret);
+-		return ERR_PTR(ret);
+-	}
+-
+-	ret = clk_prepare_enable(hdmi->iahb_clk);
+-	if (ret) {
+-		dev_err(hdmi->dev,
+-			"Cannot enable HDMI iahb clock: %d\n", ret);
+-		return ERR_PTR(ret);
+-	}
+-
+-	return hdmi;
+ }
+ 
+-static void dw_hdmi_imx_exit(void *priv)
++static bool dw_hdmi_imx_mode_fixup(struct drm_encoder *encoder,
++				   const struct drm_display_mode *mode,
++				   struct drm_display_mode *adjusted_mode)
+ {
+-	struct imx_hdmi *hdmi = (struct imx_hdmi *)priv;
+-
+-	clk_disable_unprepare(hdmi->isfr_clk);
++	return true;
++}
+ 
+-	clk_disable_unprepare(hdmi->iahb_clk);
++static void dw_hdmi_imx_mode_set(struct drm_encoder *encoder,
++				 struct drm_display_mode *mode,
++				 struct drm_display_mode *adjusted_mode)
++{
+ }
+ 
+-static void dw_hdmi_imx_encoder_commit(void *priv, struct drm_encoder *encoder)
++static void dw_hdmi_imx_commit(struct drm_encoder *encoder)
+ {
+-	struct imx_hdmi *hdmi = (struct imx_hdmi *)priv;
++	struct imx_hdmi *hdmi = container_of(encoder, struct imx_hdmi, encoder);
+ 	int mux = imx_drm_encoder_get_mux_id(hdmi->dev->of_node, encoder);
+ 
+ 	regmap_update_bits(hdmi->regmap, IOMUXC_GPR3,
+@@ -140,27 +126,30 @@ static void dw_hdmi_imx_encoder_commit(void *priv, struct drm_encoder *encoder)
+ 			   mux << IMX6Q_GPR3_HDMI_MUX_CTL_SHIFT);
+ }
+ 
+-static void dw_hdmi_imx_encoder_prepare(struct drm_connector *connector,
+-					struct drm_encoder *encoder)
++static void dw_hdmi_imx_prepare(struct drm_encoder *encoder)
+ {
+ 	imx_drm_panel_format(encoder, V4L2_PIX_FMT_RGB24);
+ }
+ 
++static struct drm_encoder_helper_funcs imx_hdmi_encoder_helper_funcs = {
++	.mode_fixup = dw_hdmi_imx_mode_fixup,
++	.mode_set = dw_hdmi_imx_mode_set,
++	.prepare = dw_hdmi_imx_prepare,
++	.commit = dw_hdmi_imx_commit,
++	.disable = dw_hdmi_imx_disable,
++};
++
++static struct drm_encoder_funcs imx_hdmi_encoder_funcs = {
++	.destroy = drm_encoder_cleanup,
++};
++
+ static struct dw_hdmi_plat_data imx6q_hdmi_drv_data = {
+-	.setup			= dw_hdmi_imx_setup,
+-	.exit			= dw_hdmi_imx_exit,
+-	.encoder_commit		= dw_hdmi_imx_encoder_commit,
+-	.encoder_prepare	= dw_hdmi_imx_encoder_prepare,
+ 	.mpll_cfg		= imx_mpll_cfg,
+ 	.cur_ctr		= imx_cur_ctr,
+ 	.dev_type		= IMX6Q_HDMI,
+ };
+ 
+ static struct dw_hdmi_plat_data imx6dl_hdmi_drv_data = {
+-	.setup			= dw_hdmi_imx_setup,
+-	.exit			= dw_hdmi_imx_exit,
+-	.encoder_commit		= dw_hdmi_imx_encoder_commit,
+-	.encoder_prepare	= dw_hdmi_imx_encoder_prepare,
+ 	.mpll_cfg		= imx_mpll_cfg,
+ 	.cur_ctr		= imx_cur_ctr,
+ 	.dev_type		= IMX6DL_HDMI,
+@@ -177,23 +166,82 @@ static const struct of_device_id dw_hdmi_imx_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(of, dw_hdmi_imx_dt_ids);
+ 
+-static int dw_hdmi_imx_probe(struct platform_device *pdev)
++static int dw_hdmi_imx_bind(struct device *dev, struct device *master,
++			    void *data)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	const struct dw_hdmi_plat_data *plat_data;
+ 	const struct of_device_id *match;
++	struct drm_device *drm = data;
++	struct drm_encoder *encoder;
++	struct imx_hdmi *hdmi;
++	int ret;
+ 
+ 	if (!pdev->dev.of_node)
+ 		return -ENODEV;
+ 
++	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
++	if (!hdmi)
++		return -ENOMEM;
++
+ 	match = of_match_node(dw_hdmi_imx_ids, pdev->dev.of_node);
+ 	plat_data = match->data;
++	hdmi->dev = &pdev->dev;
++	encoder = &hdmi->encoder;
++	platform_set_drvdata(pdev, hdmi);
++
++	ret = dw_hdmi_parse_dt(hdmi);
++	if (ret < 0)
++		return ret;
++
++	ret = clk_prepare_enable(hdmi->isfr_clk);
++	if (ret) {
++		dev_err(dev, "Cannot enable HDMI isfr clock: %d\n", ret);
++		return ret;
++	}
++
++	ret = clk_prepare_enable(hdmi->iahb_clk);
++	if (ret) {
++		dev_err(dev, "Cannot enable HDMI iahb clock: %d\n", ret);
++		return ret;
++	}
++
++	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
++
++	drm_encoder_helper_add(encoder, &imx_hdmi_encoder_helper_funcs);
++	drm_encoder_init(drm, encoder, &imx_hdmi_encoder_funcs,
++			 DRM_MODE_ENCODER_TMDS);
+ 
+-	return dw_hdmi_platform_register(pdev, plat_data);
++	return dw_hdmi_bind(dev, master, data, encoder, plat_data);
++}
++
++static void dw_hdmi_imx_unbind(struct device *dev, struct device *master,
++			       void *data)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct imx_hdmi *hdmi = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(hdmi->isfr_clk);
++	clk_disable_unprepare(hdmi->iahb_clk);
++
++	return dw_hdmi_unbind(dev, master, data);
++}
++
++static const struct component_ops dw_hdmi_imx_ops = {
++	.bind	= dw_hdmi_imx_bind,
++	.unbind	= dw_hdmi_imx_unbind,
++};
++
++static int dw_hdmi_imx_probe(struct platform_device *pdev)
++{
++	return component_add(&pdev->dev, &dw_hdmi_imx_ops);
+ }
+ 
+ static int dw_hdmi_imx_remove(struct platform_device *pdev)
+ {
+-	return dw_hdmi_platform_unregister(pdev);
++	component_del(&pdev->dev, &dw_hdmi_imx_ops);
++
++	return 0;
+ }
+ 
+ static struct platform_driver dw_hdmi_imx_platform_driver = {
+@@ -209,6 +257,7 @@ static struct platform_driver dw_hdmi_imx_platform_driver = {
+ module_platform_driver(dw_hdmi_imx_platform_driver);
+ 
+ MODULE_AUTHOR("Andy Yan <andy.yan@rock-chips.com>");
++MODULE_AUTHOR("Yakir Yang <ykk@rock-chips.com>");
+ MODULE_DESCRIPTION("IMX6 Specific DW-HDMI Driver Extension");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:dwhdmi-imx");
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 6683b63..e26e61f 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -38,20 +38,15 @@ struct curr_ctrl {
+ };
+ 
+ struct dw_hdmi_plat_data {
+-	void * (*setup)(struct platform_device *pdev);
+-	void (*exit)(void *priv);
+-	void (*encoder_commit)(void *priv, struct drm_encoder *encoder);
+-	void (*encoder_prepare)(struct drm_connector *connector,
+-				struct drm_encoder *encoder);
+ 	enum drm_mode_status (*mode_valid)(struct drm_connector *connector,
+ 					   struct drm_display_mode *mode);
+ 	const struct mpll_config *mpll_cfg;
+ 	const struct curr_ctrl *cur_ctr;
+ 	enum dw_hdmi_devtype dev_type;
+-
+ };
+ 
+-int dw_hdmi_platform_register(struct platform_device *pdev,
+-			      const struct dw_hdmi_plat_data *plat_data);
+-int dw_hdmi_platform_unregister(struct platform_device *pdev);
++void dw_hdmi_unbind(struct device *dev, struct device *master, void *data);
++int dw_hdmi_bind(struct device *dev, struct device *master,
++		 void *data, struct drm_encoder *encoder,
++		 const struct dw_hdmi_plat_data *plat_data);
+ #endif /* __IMX_HDMI_H__ */
+-- 
+1.9.1
 
