@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaKGGsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 01:48:08 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:50508 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaKGGpG (ORCPT
+	id S1752635AbaKGGsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 01:48:19 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:35603 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaKGGsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 01:45:06 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: tglx@linutronix.de, jason@lakedaemon.net, linux-sh@vger.kernel.org
-Cc: arnd@arndb.de, f.fainelli@gmail.com, ralf@linux-mips.org,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: [PATCH V4 03/14] genirq: Generic chip: Allow irqchip drivers to override irq_reg_{readl,writel}
-Date: Thu,  6 Nov 2014 22:44:18 -0800
-Message-Id: <1415342669-30640-4-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
-References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
+	Fri, 7 Nov 2014 01:48:15 -0500
+From: "Bill Bonaparte" <programme110@gmail.com>
+To: "'Jesper Dangaard Brouer'" <brouer@redhat.com>
+Cc: <fw@strlen.de>, <linux-kernel@vger.kernel.org>,
+        "'Pablo Neira Ayuso'" <pablo@netfilter.org>,
+        "'Patrick McHardy'" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
+        <davem@davemloft.net>, "'Changli Gao'" <xiaosuo@gmail.com>,
+        "'Andrey Vagin'" <avagin@openvz.org>,
+        <netfilter-devel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: re: netfilter: nf_conntrack: there maybe a bug in __nf_conntrack_confirm, when it race against get_next_corpse
+Date: Fri, 7 Nov 2014 14:47:32 +0800
+Message-ID: <01dd01cffa56$bdb10460$39130d20$@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac/6UbrdX9f0ArEYTYiA3ElDpil5dA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, these I/O accessors always assume little endian 32-bit
-registers (readl/writel).  On some systems the IRQ registers need to be
-accessed in BE mode or using 16-bit loads/stores, so we will provide a
-way to override the default behavior.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- include/linux/irq.h | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+On Tue, 6 Nov 2014 21:01:00 
+"Jesper" <brouter@redhat.com> wrote:
+>There is several issues with your submission.  I'll take care of
+resubmitting a patch in your name (so you will get credit in the git log).
+>
+>If you care to know, issues are:
+>1. you are not sending to the appropriate mailing lists,  2. patch is as an
+attachment (should be inlined),  3. the patch have style and white-space
+issues.
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index ed1135d..0fecd95 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -686,6 +686,8 @@ struct irq_chip_type {
-  * struct irq_chip_generic - Generic irq chip data structure
-  * @lock:		Lock to protect register and cache data access
-  * @reg_base:		Register base address (virtual)
-+ * @reg_readl:		Alternate I/O accessor (defaults to readl if NULL)
-+ * @reg_writel:		Alternate I/O accessor (defaults to writel if NULL)
-  * @irq_base:		Interrupt base nr for this chip
-  * @irq_cnt:		Number of interrupts handled by this chip
-  * @mask_cache:		Cached mask register shared between all chip types
-@@ -710,6 +712,8 @@ struct irq_chip_type {
- struct irq_chip_generic {
- 	raw_spinlock_t		lock;
- 	void __iomem		*reg_base;
-+	u32			(*reg_readl)(void __iomem *addr);
-+	void			(*reg_writel)(u32 val, void __iomem *addr);
- 	unsigned int		irq_base;
- 	unsigned int		irq_cnt;
- 	u32			mask_cache;
-@@ -818,13 +822,19 @@ static inline void irq_gc_unlock(struct irq_chip_generic *gc) { }
- static inline void irq_reg_writel(struct irq_chip_generic *gc,
- 				  u32 val, int reg_offset)
- {
--	writel(val, gc->reg_base + reg_offset);
-+	if (gc->reg_writel)
-+		gc->reg_writel(val, gc->reg_base + reg_offset);
-+	else
-+		writel(val, gc->reg_base + reg_offset);
- }
- 
- static inline u32 irq_reg_readl(struct irq_chip_generic *gc,
- 				int reg_offset)
- {
--	return readl(gc->reg_base + reg_offset);
-+	if (gc->reg_readl)
-+		return gc->reg_readl(gc->reg_base + reg_offset);
-+	else
-+		return readl(gc->reg_base + reg_offset);
- }
- 
- #endif /* _LINUX_IRQ_H */
--- 
-2.1.1
+Thanks, Jesper. This is my first time to submit a patch, not know much about
+the rules.  I will get it soon.
+
+>> if there is a race at operating ct->status, there will be in 
+>> alternative
+>> case:
+>> 1) IPS_DYING bit which set in get_next_corpse override other bits (e.g.
+>> IPS_SRC_NAT_DONE_BIT), or
+>> 2) other bits (e.g. IPS_SRC_NAT_DONE_BIT) which set in 
+>> nf_nat_setup_info override IPS_DYING bit.
+
+> Notice the set_bit() is atomic, so we don't have these issues (of bits
+getting overridden).
+
+In most cases, we do the atomic operation on ct->status (with set_bit), but
+in function nf_nat_setup_info, we
+assume that unconfirmed ct is always holded by current cpu, and has no race
+against other cpus, so we don't
+use set_bit.  
+the following code is extracted from the nf_nat_setup_info:
+/* Non-atomic: we own this at the moment. */
+  if (maniptype == NF_NAT_MANIP_SRC)
+	ct->status |= IPS_SRC_NAT;
+  else
+	ct->status |= IPS_DST_NAT;
+
+--
+Best regards,
+  Bill Bonaparte
+
 
