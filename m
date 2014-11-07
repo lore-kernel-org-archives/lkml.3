@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaKGQ1F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:27:05 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48296 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752524AbaKGQ1D (ORCPT
+	id S1752323AbaKGQbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:31:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37341 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaKGQbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:27:03 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: [PATCH 02/11] perf: allow for PMU-specific event filtering
-Date: Fri,  7 Nov 2014 16:25:27 +0000
-Message-Id: <1415377536-12841-3-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
-References: <1415377536-12841-1-git-send-email-mark.rutland@arm.com>
+	Fri, 7 Nov 2014 11:31:44 -0500
+Date: Fri, 7 Nov 2014 08:31:43 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] core: Add generic object registry implementation
+Message-ID: <20141107163143.GD10256@kroah.com>
+References: <1415118568-18771-1-git-send-email-thierry.reding@gmail.com>
+ <20141104163845.GA369@kroah.com>
+ <20141105091351.GA12033@ulmo>
+ <20141106021815.GA17253@kroah.com>
+ <20141106102531.GI26297@ulmo>
+ <20141106161321.GB14873@ulmo.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106161321.GB14873@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In certain circumstances it may not be possible to schedule particular
-events due to constraints other than a lack of hardware counters (e.g.
-on big.LITTLE systems where CPUs support different events). The core
-perf event code does not distinguish these cases and pessimistically
-assumes that any failure to schedule an events is due to a lack of
-hardware counters, ending event group scheduling early despite hardware
-counters remaining available.
+On Thu, Nov 06, 2014 at 05:13:24PM +0100, Thierry Reding wrote:
+> On Thu, Nov 06, 2014 at 11:25:32AM +0100, Thierry Reding wrote:
+> > On Wed, Nov 05, 2014 at 06:18:15PM -0800, Greg Kroah-Hartman wrote:
+> [...]
+> > > Sure, document it better if you want, but I think something needs to be
+> > > done differently if at all possible.
+> > 
+> > try_module_get() is the only way I know of that ensures that the code of
+> > a module stays around. Everytime we give out a new reference to a record
+> > we also need to increment the module reference count accordingly to make
+> > sure the underlying code doesn't go away all of a sudden.
+> > 
+> > I guess that's not entirely accurate. The module reference count doesn't
+> > have to be increment for every record reference, it only needs to track
+> > each record. So the try_module_get() and module_put() could move into
+> > registry_add() and registry_get(), respectively. But the ->owner field
+> > would still be in the record structure.
+> 
+> On further thought I don't think this will work either. Given that the
+> record can be removed from the registry while somebody else still has a
+> reference to it, the module owning the record must stay around as long
+> as there's a reference to the record.
+> 
+> Maybe the module reference count needs to be incremented when the record
+> is initialized and decremented when the record is released.
 
-When such an unschedulable event exists in a ctx->flexible_groups list
-it can unnecessarily prevent event groups following it in the list from
-being scheduled until it is rotated to the end of the list. This can
-result in events being scheduled for only a portion of the time they
-would otherwise be eligible, and for short running programs unfortunate
-initial list ordering can result in no events being counted.
+The module reference count will never work as it is racy (you can't have
+the module itself do the incrementing, which is what is happening here).
 
-This patch adds a new (optional) filter_match function pointer to struct
-pmu which backends can use to tell the perf core whether or not it is
-worth attempting to schedule an event. This plugs into the existing
-event_filter_match logic, and makes it possible to avoid the scheduling
-problem described above.
+I'd argue that the module reference isn't needed at all, because if the
+module shuts down and wants to be removed, it will have properly cleaned
+up all of its data structures already, right?  So why use it?
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
----
- include/linux/perf_event.h | 5 +++++
- kernel/events/core.c       | 8 +++++++-
- 2 files changed, 12 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 893a0d0..80c5f5f 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -263,6 +263,11 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
-+
-+	/*
-+	 * Filter events for PMU-specific reasons.
-+	 */
-+	int (*filter_match)		(struct perf_event *event); /* optional */
- };
- 
- /**
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2b02c9f..770b276 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1428,11 +1428,17 @@ static int __init perf_workqueue_init(void)
- 
- core_initcall(perf_workqueue_init);
- 
-+static inline int pmu_filter_match(struct perf_event *event)
-+{
-+	struct pmu *pmu = event->pmu;
-+	return pmu->filter_match ? pmu->filter_match(event) : 1;
-+}
-+
- static inline int
- event_filter_match(struct perf_event *event)
- {
- 	return (event->cpu == -1 || event->cpu == smp_processor_id())
--	    && perf_cgroup_match(event);
-+	    && perf_cgroup_match(event) && pmu_filter_match(event);
- }
- 
- static void
--- 
-1.9.1
-
+greg k-h
