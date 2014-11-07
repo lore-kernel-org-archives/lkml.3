@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaKGNEA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:04:00 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44250 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaKGND5 (ORCPT
+	id S1752635AbaKGNEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:04:15 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:14323 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaKGNEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:03:57 -0500
-Message-ID: <545CC337.4020409@collabora.com>
-Date: Fri, 07 Nov 2014 14:03:51 +0100
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 7 Nov 2014 08:04:13 -0500
+X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
+   d="scan'208";a="190544217"
+Message-ID: <545CC349.8020006@citrix.com>
+Date: Fri, 7 Nov 2014 13:04:09 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Rob Herring <robherring2@gmail.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 04/13] of: document new emc-timings subnode in nvidia,tegra124-car
-References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com> <1414599796-30597-5-git-send-email-tomeu.vizoso@collabora.com> <545B172C.4060105@nvidia.com> <CAL_JsqKYSF3JVrXH_dkqRXQrgUU3igzvoK1C2k1Caz-4UuHX6Q@mail.gmail.com> <545C5927.3010001@nvidia.com>
-In-Reply-To: <545C5927.3010001@nvidia.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH V2 2/5] xen: Delay m2p_override initialization
+References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-3-git-send-email-jgross@suse.com>
+In-Reply-To: <1415252853-7106-3-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 06:31 AM, Alexandre Courbot wrote:
-> On 11/07/2014 12:12 AM, Rob Herring wrote:
->> On Thu, Nov 6, 2014 at 12:37 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->>> On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
->>>>
->>>> The EMC clock needs some extra information for changing its rate.
->>>>
->>>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>>> ---
->>>>    .../bindings/clock/nvidia,tegra124-car.txt         | 46
->>>> +++++++++++++++++++++-
->>>>    1 file changed, 44 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git
->>>> a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> index ded5d62..42e0588 100644
->>>> --- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
->>>> @@ -19,12 +19,35 @@ Required properties :
->>>>      In clock consumers, this cell represents the bit number in the CAR's
->>>>      array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
->>>>
->>>> +The node should contain a "emc-timings" subnode for each supported RAM
->>>> type (see
->>>> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address
->>>> being its
->>>> +RAM_CODE.
->>>> +
->>>> +Required properties for "emc-timings" nodes :
->>>> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
->>>> +  is used for.
->>>> +
->>>> +Each "emc-timings" node should contain a "timing" subnode for every
->>>> supported
->>>> +EMC clock rate. The "timing" subnodes should have the clock rate in Hz as
->>>> their
->>>> +unit address.
->>>
->>>
->>> This seems to be a quite liberal use of unit addresses (same in the next
->>> patch) - is this allowed by DT?
->>
->> No, unit address should match a reg property.
+On 06/11/14 05:47, Juergen Gross wrote:
+> The m2p overrides are used to be able to find the local pfn for a
+> foreign mfn mapped into the domain. They are used by driver backends
+> having to access frontend data.
 > 
-> Mmm, would you have any suggestion as to how this can be fixed? Right 
-> now what I can think of is either to replace the "clock-frequency" 
-> property by "reg" (which would be confusing), or to use a different 
-> naming scheme, e.g. timing-12750000. IIUC the naming is not essential 
-> for properly parsing these nodes, so maybe the second solution is the 
-> way to go?
+> As this functionality isn't used in early boot it makes no sense to
+> initialize the m2p override functions very early. It can be done
+> later without doing any harm, removing the need for allocating memory
+> via extend_brk().
+> 
+> While at it make some m2p override functions static as they are only
+> used internally.
+[...]
+>  		}
+>  		/* This should be the leafs allocated for identity from _brk. */
+>  	}
+> -	return (unsigned long)mfn_list;
+>  
+> +	m2p_override_init();
+> +	return (unsigned long)mfn_list;
+>  }
+>  #else
+>  unsigned long __init xen_revector_p2m_tree(void)
+>  {
+>  	use_brk = 0;
+> +	m2p_override_init();
+>  	return 0;
+>  }
 
-Yeah, there seems to be a precedent for embedding the frequency in the
-node name in the TI DTs, e.g.: virt_12000000_ck.
+This is mentioned in the description...
 
-Thanks,
+>  #endif
+> @@ -794,15 +794,16 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+>  #define M2P_OVERRIDE_HASH_SHIFT	10
+>  #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
+>  
+> -static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
+> +static struct list_head *m2p_overrides;
+>  static DEFINE_SPINLOCK(m2p_override_lock);
+>  
+>  static void __init m2p_override_init(void)
+>  {
+>  	unsigned i;
+>  
+> -	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
+> -				   sizeof(unsigned long));
+> +	m2p_overrides = alloc_bootmem_align(
+> +				sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
+> +				sizeof(unsigned long));
 
-Tomeu
+...as is this.
+
+> -int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
+> -			    struct gnttab_map_grant_ref *kmap_ops,
+> -			    struct page **pages, unsigned int count)
+> -{
+> -	int i, ret = 0;
+> -	bool lazy = false;
+> -	pte_t *pte;
+> -
+> -	if (xen_feature(XENFEAT_auto_translated_physmap))
+> -		return 0;
+> -
+> -	if (kmap_ops &&
+> -	    !in_interrupt() &&
+> -	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> -		arch_enter_lazy_mmu_mode();
+> -		lazy = true;
+> -	}
+
+... but, what's going on here.  What are the rest of these changes?
+
+I suppose this is the "make some functions static" but it's an
+unreviewable mess.  If you can't do this with some one line changes
+adding "static" and perhaps some forward declarations then please drop
+this bit.
+
+David
