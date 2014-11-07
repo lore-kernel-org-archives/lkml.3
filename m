@@ -1,138 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaKGJz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:55:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122AbaKGJzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:55:23 -0500
-Message-ID: <545C9705.3040605@suse.cz>
-Date: Fri, 07 Nov 2014 10:55:17 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751588AbaKGJzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:55:35 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:55355 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaKGJz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:55:29 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sA79tPpR019432, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Date: Fri, 7 Nov 2014 17:55:11 +0800
+Message-ID: <1394712342-15778-90-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-88-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm/debug-pagealloc: cleanup page guard code
-References: <1415345746-16666-1-git-send-email-iamjoonsoo.kim@lge.com> <1415345746-16666-2-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1415345746-16666-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 08:35 AM, Joonsoo Kim wrote:
-> Page guard is used by debug-pagealloc feature. Currently,
-> it is open-coded, but, I think that more abstraction of it makes
-> core page allocator code more readable.
->
-> There is no functional difference.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Submit all the rx buffers, even though a error occurs. Otherwise
+the buffers which are not submitted would be lost until next
+rtl_start_rx() is called. Besides, the fail buffer could be
+re-submitted later.
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-> ---
->   mm/page_alloc.c |   38 +++++++++++++++++++-------------------
->   1 file changed, 19 insertions(+), 19 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index d673f64..c0dbede 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -440,18 +440,29 @@ static int __init debug_guardpage_minorder_setup(char *buf)
->   }
->   __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
->
-> -static inline void set_page_guard_flag(struct page *page)
-> +static inline void set_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype)
->   {
->   	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
-> +	INIT_LIST_HEAD(&page->lru);
-> +	set_page_private(page, order);
-> +	/* Guard pages are not available for any usage */
-> +	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
->   }
->
-> -static inline void clear_page_guard_flag(struct page *page)
-> +static inline void clear_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype)
->   {
->   	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
-> +	set_page_private(page, 0);
-> +	if (!is_migrate_isolate(migratetype))
-> +		__mod_zone_freepage_state(zone, (1 << order), migratetype);
->   }
->   #else
-> -static inline void set_page_guard_flag(struct page *page) { }
-> -static inline void clear_page_guard_flag(struct page *page) { }
-> +static inline void set_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype) {}
-> +static inline void clear_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype) {}
->   #endif
->
->   static inline void set_page_order(struct page *page, unsigned int order)
-> @@ -582,12 +593,7 @@ static inline void __free_one_page(struct page *page,
->   		 * merge with it and move up one order.
->   		 */
->   		if (page_is_guard(buddy)) {
-> -			clear_page_guard_flag(buddy);
-> -			set_page_private(buddy, 0);
-> -			if (!is_migrate_isolate(migratetype)) {
-> -				__mod_zone_freepage_state(zone, 1 << order,
-> -							  migratetype);
-> -			}
-> +			clear_page_guard(zone, buddy, order, migratetype);
->   		} else {
->   			list_del(&buddy->lru);
->   			zone->free_area[order].nr_free--;
-> @@ -862,23 +868,17 @@ static inline void expand(struct zone *zone, struct page *page,
->   		size >>= 1;
->   		VM_BUG_ON_PAGE(bad_range(zone, &page[size]), &page[size]);
->
-> -#ifdef CONFIG_DEBUG_PAGEALLOC
-> -		if (high < debug_guardpage_minorder()) {
-> +		if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC) &&
-> +			high < debug_guardpage_minorder()) {
->   			/*
->   			 * Mark as guard pages (or page), that will allow to
->   			 * merge back to allocator when buddy will be freed.
->   			 * Corresponding page table entries will not be touched,
->   			 * pages will stay not present in virtual address space
->   			 */
-> -			INIT_LIST_HEAD(&page[size].lru);
-> -			set_page_guard_flag(&page[size]);
-> -			set_page_private(&page[size], high);
-> -			/* Guard pages are not available for any usage */
-> -			__mod_zone_freepage_state(zone, -(1 << high),
-> -						  migratetype);
-> +			set_page_guard(zone, &page[size], high, migratetype);
->   			continue;
->   		}
-> -#endif
->   		list_add(&page[size].lru, &area->free_list[migratetype]);
->   		area->nr_free++;
->   		set_page_order(&page[size], high);
->
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index ad62994..5e0386f 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1993,10 +1993,16 @@ static int rtl_start_rx(struct r8152 *tp)
+ 
+ 	INIT_LIST_HEAD(&tp->rx_done);
+ 	for (i = 0; i < RTL8152_MAX_RX; i++) {
++		int rr;
++
+ 		INIT_LIST_HEAD(&tp->rx_info[i].list);
+-		ret = r8152_submit_rx(tp, &tp->rx_info[i], GFP_KERNEL);
+-		if (ret)
+-			break;
++
++		rr = r8152_submit_rx(tp, &tp->rx_info[i], GFP_KERNEL);
++		if (rr)
++			netif_err(tp, rx_err, tp->netdev,
++				  "Couldn't submit rx[%d], ret = %d\n", i, rr);
++		if (!ret)
++			ret = rr;
+ 	}
+ 
+ 	return ret;
+-- 
+1.9.3
 
