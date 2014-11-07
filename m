@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaKGN2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:28:15 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:61089 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaKGN2M (ORCPT
+	id S1752827AbaKGN2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:28:22 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36176 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764AbaKGN2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:28:12 -0500
+	Fri, 7 Nov 2014 08:28:17 -0500
 From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com, bhelgaas@google.com,
         Liviu.Dudau@arm.com, tglx@linutronix.de, mingo@redhat.com,
@@ -15,51 +15,69 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         x86@kernel.org, linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
         linaro-acpi@lists.linaro.org,
         Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [RFC PATCH 0/4] MMCFG refactoring + PCI ACPI probing for ARM64
-Date: Fri,  7 Nov 2014 14:27:52 +0100
-Message-Id: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org>
+Subject: [RFC PATCH 2/4] x86, acpi, pci: Isolate new PCI mmconfig entry insertion.
+Date: Fri,  7 Nov 2014 14:27:54 +0100
+Message-Id: <1415366876-30811-3-git-send-email-tomasz.nowicki@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org>
+References: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch set can be break down into two logic parts:
-1. patch 1,2 - MMCONFIG code refacoring. MMCFG ACPI table has no arch
-dependencies so it can be used across other architectures.
-2. patch 3,4 aim for PCI ACPI probing on ARM64
+Add special pci_mmcfg_insert_lock mutex since pci_mmcfg_lock was moved
+to common file. No functional changes.
 
-Patches tested on Cavium ThunderX simulator with the latest ACPI ARM64 core set:
-http://www.serverphorums.com/read.php?12,997228
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+---
+ arch/x86/pci/mmconfig-shared.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Tomasz Nowicki (4):
-  x86, acpi, pci: Move arch-agnostic MMCFG code out of arch/x86/
-    directory.
-  x86, acpi, pci: Isolate new PCI mmconfig entry insertion.
-  arm64, acpi, pci: Add arch specific functions for mmconfig driver.
-  arm64, acpi, pci: Provide arch-specific calls for PCI host bridge
-    dirver (PNP0A03).
-
- arch/arm64/Kconfig             |   3 +
- arch/arm64/include/asm/pci.h   |   8 +
- arch/arm64/kernel/Makefile     |   1 +
- arch/arm64/kernel/mmconfig.c   |  69 +++++++
- arch/arm64/kernel/pci.c        | 401 +++++++++++++++++++++++++++++++++++++++--
- arch/x86/include/asm/pci_x86.h |  29 ---
- arch/x86/pci/acpi.c            |   1 +
- arch/x86/pci/init.c            |   1 +
- arch/x86/pci/mmconfig-shared.c | 176 +-----------------
- arch/x86/pci/mmconfig_32.c     |   1 +
- arch/x86/pci/mmconfig_64.c     |   1 +
- drivers/acpi/Makefile          |   1 +
- drivers/acpi/bus.c             |   1 +
- drivers/acpi/mmconfig.c        | 204 +++++++++++++++++++++
- include/linux/mmconfig.h       |  57 ++++++
- include/linux/pci.h            |   8 -
- 16 files changed, 738 insertions(+), 224 deletions(-)
- create mode 100644 arch/arm64/kernel/mmconfig.c
- create mode 100644 drivers/acpi/mmconfig.c
- create mode 100644 include/linux/mmconfig.h
-
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index 94c3d38..d1e45e7 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -28,6 +28,7 @@
+ /* Indicate if the mmcfg resources have been placed into the resource table. */
+ static bool pci_mmcfg_running_state;
+ static bool pci_mmcfg_arch_init_failed;
++static DEFINE_MUTEX(pci_mmcfg_insert_lock);
+ 
+ static const char *__init pci_mmcfg_e7520(void)
+ {
+@@ -566,7 +567,7 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+ 	if (start > end)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&pci_mmcfg_lock);
++	mutex_lock(&pci_mmcfg_insert_lock);
+ 	cfg = pci_mmconfig_lookup(seg, start);
+ 	if (cfg) {
+ 		if (cfg->end_bus < end)
+@@ -575,12 +576,12 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+ 				 "domain %04x [bus %02x-%02x] "
+ 				 "only partially covers this bridge\n",
+ 				  cfg->segment, cfg->start_bus, cfg->end_bus);
+-		mutex_unlock(&pci_mmcfg_lock);
++		mutex_unlock(&pci_mmcfg_insert_lock);
+ 		return -EEXIST;
+ 	}
+ 
+ 	if (!addr) {
+-		mutex_unlock(&pci_mmcfg_lock);
++		mutex_unlock(&pci_mmcfg_insert_lock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -621,7 +622,7 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+ 		kfree(cfg);
+ 	}
+ 
+-	mutex_unlock(&pci_mmcfg_lock);
++	mutex_unlock(&pci_mmcfg_insert_lock);
+ 
+ 	return rc;
+ }
 -- 
 1.9.1
 
