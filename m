@@ -1,211 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaKGPqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 10:46:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480AbaKGPql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 10:46:41 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: "Sharma\, Sanjeev" <Sanjeev_Sharma@mentor.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Larry.Finger\@lwfinger.net" <Larry.Finger@lwfinger.net>,
-        "devel\@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-wireless\@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging:rtl8723au: core: Fix Warning reported by checkpatch.
-References: <wrfjy4rxzk5b.fsf@redhat.com>
-	<1415255796-8471-1-git-send-email-sanjeev_sharma@mentor.com>
-	<20141106154301.GC19605@kroah.com>
-	<FDC088D3B5555644AE135ED28A7ABDE950E8B904@EU-MBX-02.mgc.mentorg.com>
-Date: Fri, 07 Nov 2014 10:46:18 -0500
-In-Reply-To: <FDC088D3B5555644AE135ED28A7ABDE950E8B904@EU-MBX-02.mgc.mentorg.com>
-	(Sanjeev Sharma's message of "Fri, 7 Nov 2014 12:00:19 +0000")
-Message-ID: <wrfj61er2eut.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751724AbaKGPtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 10:49:46 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:60151 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750993AbaKGPto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 10:49:44 -0500
+Date: Fri, 7 Nov 2014 16:49:40 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 06/11] memory: atmel-ebi: add DT bindings
+ documentation
+Message-ID: <20141107164940.663f5423@bbrezillon>
+In-Reply-To: <CAL_JsqJvT-gnr6AYHq42qfgS+ckZ1y6DFiPK5+-MBhHefB8_Sg@mail.gmail.com>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1415203287-21517-7-git-send-email-boris.brezillon@free-electrons.com>
+	<CAL_JsqJvT-gnr6AYHq42qfgS+ckZ1y6DFiPK5+-MBhHefB8_Sg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com> writes:
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org] 
-> Sent: Thursday, November 06, 2014 9:13 PM
-> To: Sharma, Sanjeev
-> Cc: Larry.Finger@lwfinger.net; Jes.Sorensen@redhat.com;
-> devel@driverdev.osuosl.org; linux-wireless@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] staging:rtl8723au: core: Fix Warning reported by
-> checkpatch.
->
-> On Thu, Nov 06, 2014 at 12:06:36PM +0530, Sanjeev Sharma wrote:
->> This is a patch to the rtw_cmd.c file that fixes following Warning by 
->> introducing temporary structure.
->> 
->> WARNING: line over 80 characters
->> 
->> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
->> ---
->>  drivers/staging/rtl8723au/core/rtw_cmd.c | 123 
->> +++++++++++++++----------------
->>  1 file changed, 60 insertions(+), 63 deletions(-)
->
-> Same as the other patch, give us a hint as to the warning in the subject.
->
-> This patch is Fix of Warning introduced in Previous patch while fixing " ERROR: spaces required around that '>' (ctx:WxV)".Can I mentioned dependency or hint in subject line or do we have
-> another way to described these type of fix.(One patch introduced another Warning/Error)
+On Fri, 7 Nov 2014 09:21:39 -0600
+Rob Herring <robherring2@gmail.com> wrote:
 
-When replying to these messages, please do it properly with proper
-quoting. Do NOT resend other peoples' emails with just an
-"-----Original Message-----" line and no comments and no indentation of
-the message you respond to.
+> On Wed, Nov 5, 2014 at 10:01 AM, Boris Brezillon
+> <boris.brezillon@free-electrons.com> wrote:
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> 
+> Perhaps some commit msg?
 
-If you have any questions, please read:
-https://www.ietf.org/rfc/rfc1855.txt
+Yes, I was just lazy and though this series would make another round
+anyway :-).
 
-Jes
+I'll add a commit log to all my commits...
 
->
->> 
->> diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c 
->> b/drivers/staging/rtl8723au/core/rtw_cmd.c
->> index 4eaa502..6186575 100644
->> --- a/drivers/staging/rtl8723au/core/rtw_cmd.c
->> +++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
->> @@ -919,34 +919,34 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
->>  	u8 bHigherBusyTxTraffic = false;
->>  	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
->>  	int BusyThreshold = 100;
->> +	struct rt_link_detect *ldi = &pmlmepriv->LinkDetectInfo;
->> +
->>  	/*  */
->>  	/*  Determine if our traffic is busy now */
->>  	/*  */
->>  	if (check_fwstate(pmlmepriv, _FW_LINKED)) {
->>  		if (rtl8723a_BT_coexist(padapter))
->>  			BusyThreshold = 50;
->> -		else if (pmlmepriv->LinkDetectInfo.bBusyTraffic)
->> +		else if (ldi->bBusyTraffic)
->>  			BusyThreshold = 75;
->>  		/*  if we raise bBusyTraffic in last watchdog, using
->>  		    lower threshold. */
->> -		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > BusyThreshold ||
->> -		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > BusyThreshold) {
->> +		if (ldi->NumRxOkInPeriod > BusyThreshold ||
->> +		    ldi->NumTxOkInPeriod > BusyThreshold) {
->>  			bBusyTraffic = true;
->>  
->> -			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
->> -			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
->> +			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
->>  				bRxBusyTraffic = true;
->>  			else
->>  				bTxBusyTraffic = true;
->>  		}
->>  
->>  		/*  Higher Tx/Rx data. */
->> -		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > 4000 ||
->> -		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > 4000) {
->> +		if (ldi->NumRxOkInPeriod > 4000 ||
->> +		    ldi->NumTxOkInPeriod > 4000) {
->>  			bHigherBusyTraffic = true;
->>  
->> -			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
->> -			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
->> +			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
->>  				bHigherBusyRxTraffic = true;
->>  			else
->>  				bHigherBusyTxTraffic = true;
->> @@ -955,9 +955,9 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
->>  		if (!rtl8723a_BT_coexist(padapter) ||
->>  		    !rtl8723a_BT_using_antenna_1(padapter)) {
->>  		/*  check traffic for  powersaving. */
->> -			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
->> -			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
->> -			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
->> +			if (((ldi->NumRxUnicastOkInPeriod +
->> +			      ldi->NumTxOkInPeriod) > 8) ||
->> +			    ldi->NumRxUnicastOkInPeriod > 2)
->>  				bEnterPS = false;
->>  			else
->>  				bEnterPS = true;
->> @@ -971,15 +971,15 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
->>  	} else
->>  		LPS_Leave23a(padapter);
->>  
->> -	pmlmepriv->LinkDetectInfo.NumRxOkInPeriod = 0;
->> -	pmlmepriv->LinkDetectInfo.NumTxOkInPeriod = 0;
->> -	pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod = 0;
->> -	pmlmepriv->LinkDetectInfo.bBusyTraffic = bBusyTraffic;
->> -	pmlmepriv->LinkDetectInfo.bTxBusyTraffic = bTxBusyTraffic;
->> -	pmlmepriv->LinkDetectInfo.bRxBusyTraffic = bRxBusyTraffic;
->> -	pmlmepriv->LinkDetectInfo.bHigherBusyTraffic = bHigherBusyTraffic;
->> -	pmlmepriv->LinkDetectInfo.bHigherBusyRxTraffic = bHigherBusyRxTraffic;
->> -	pmlmepriv->LinkDetectInfo.bHigherBusyTxTraffic = bHigherBusyTxTraffic;
->> +	ldi->NumRxOkInPeriod = 0;
->> +	ldi->NumTxOkInPeriod = 0;
->> +	ldi->NumRxUnicastOkInPeriod = 0;
->> +	ldi->bBusyTraffic = bBusyTraffic;
->> +	ldi->bTxBusyTraffic = bTxBusyTraffic;
->> +	ldi->bRxBusyTraffic = bRxBusyTraffic;
->> +	ldi->bHigherBusyTraffic = bHigherBusyTraffic;
->> +	ldi->bHigherBusyRxTraffic = bHigherBusyRxTraffic;
->> +	ldi->bHigherBusyTxTraffic = bHigherBusyTxTraffic;
->>  }
->>  
->>  static void dynamic_chk_wk_hdl(struct rtw_adapter *padapter, u8 
->> *pbuf, int sz) @@ -1017,46 +1017,44 @@ static void lps_ctrl_wk_hdl(struct rtw_adapter *padapter, u8 lps_ctrl_type)
->>  	    check_fwstate(pmlmepriv, WIFI_ADHOC_STATE))
->>  		return;
->>  
->> -	switch (lps_ctrl_type)
->> -	{
->> -		case LPS_CTRL_SCAN:
->> -			rtl8723a_BT_wifiscan_notify(padapter, true);
->> -			if (!rtl8723a_BT_using_antenna_1(padapter)) {
->> -				if (check_fwstate(pmlmepriv, _FW_LINKED))
->> -					LPS_Leave23a(padapter);
->> -			}
->> -			break;
->> -		case LPS_CTRL_JOINBSS:
->> -			LPS_Leave23a(padapter);
->> -			break;
->> -		case LPS_CTRL_CONNECT:
->> -			mstatus = 1;/* connect */
->> -			/*  Reset LPS Setting */
->> -			padapter->pwrctrlpriv.LpsIdleCount = 0;
->> -			rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
->> -			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
->> -			break;
->> -		case LPS_CTRL_DISCONNECT:
->> -			mstatus = 0;/* disconnect */
->> -			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
->> -			if (!rtl8723a_BT_using_antenna_1(padapter))
->> -				LPS_Leave23a(padapter);
->> -			rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
->> -			break;
->> -		case LPS_CTRL_SPECIAL_PACKET:
->> -			pwrpriv->DelayLPSLastTimeStamp = jiffies;
->> -			rtl8723a_BT_specialpacket_notify(padapter);
->> -			if (!rtl8723a_BT_using_antenna_1(padapter))
->> -				LPS_Leave23a(padapter);
->> -			break;
->> -		case LPS_CTRL_LEAVE:
->> -			rtl8723a_BT_lps_leave(padapter);
->> -			if (!rtl8723a_BT_using_antenna_1(padapter))
->> +	switch (lps_ctrl_type) {
->> +	case LPS_CTRL_SCAN:
->> +		rtl8723a_BT_wifiscan_notify(padapter, true);
->> +		if (!rtl8723a_BT_using_antenna_1(padapter)) {
->> +			if (check_fwstate(pmlmepriv, _FW_LINKED))
->>  				LPS_Leave23a(padapter);
->
-> You are doing more than one thing here, something you did not specify in your changelog above, which isn't ok :(
->
-> Please fix up and resend.
->
-> thanks,
->
-> greg k-h
+> 
+> While this binding seems mostly okay to me, this is the 2nd memory
+> controller binding I've looked at in the last day [1]. There are
+> probably some others already as well. This makes me think we need a
+> generic binding here. At least the node structure and how we define
+> chip selects should be common.
+
+Sure.
+Any suggestion ?
+
+BTW, I don't use any specific property to define the chip select
+associated to a device, because it's already encoded in the reg
+property.
+TI AEMIF binding define an ti,cs-chipselect property, is there any
+reason for doing that ?
+
+Moreover, IMHO it would even make sense to have some sort of
+framework/helper functions for those kind of interfaces to external
+memories, but this is another story :-).
+
+> 
+> While I like timing information in time units over magic register
+> values in the Tegra binding, the reality is converting timing info to
+> register values is generally very hard to get both correct and
+> optimal. In the end, you probably need to hand tweak the register
+> settings anyway. So I'm hesitant to say it must be done 1 way here.
+
+Well, I'm not a big fan of timings expressed in clock cycles, cause
+this implies changing your DT when you tweak your master/bus clk.
+Expressing those timings in nano or pico seconds let the driver figure
+out what's the best value according to the current source clk rate.
+
+Regards,
+
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
