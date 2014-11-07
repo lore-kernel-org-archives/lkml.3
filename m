@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaKGMuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:50:10 -0500
-Received: from lb2-smtp-cloud6.xs4all.net ([194.109.24.28]:49524 "EHLO
-	lb2-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752048AbaKGMuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:50:06 -0500
-Message-ID: <545CBFE6.3070201@xs4all.nl>
-Date: Fri, 07 Nov 2014 13:49:42 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752539AbaKGMu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:50:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449AbaKGMuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 07:50:24 -0500
+Date: Fri, 7 Nov 2014 06:50:16 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+Message-ID: <20141107125016.GB4071@treble.redhat.com>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411061607250.29198@pobox.suse.cz>
+ <20141106162049.GA14689@cerebellum.variantweb.net>
+ <alpine.LNX.2.00.1411062312220.29198@pobox.suse.cz>
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
-        linux-media@vger.kernel.org
-CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [RFCv2 0/8] [media] si4713 DT binding
-References: <1413904027-16767-1-git-send-email-sre@kernel.org>
-In-Reply-To: <1413904027-16767-1-git-send-email-sre@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411062312220.29198@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/14 17:06, Sebastian Reichel wrote:
-> Hi,
+On Thu, Nov 06, 2014 at 11:20:48PM +0100, Jiri Kosina wrote:
+> On Thu, 6 Nov 2014, Seth Jennings wrote:
 > 
-> This is the RFCv2 patchset adding DT support to the si4713
-> radio transmitter i2c driver. The changes can be summarized
-> as follows:
+> > > Thanks a lot for having started the work on this!
+> > > 
+> > > We will be reviewing it carefully in the coming days and will getting back 
+> > > to you (I was surprised to see that that diffstat indicates that it's 
+> > > actually more code than our whole kgraft implementation including the 
+> > > consistency model :) ).
+> > 
+> > The structure allocation and sysfs stuff is a lot of (mundane) code.
+> > Lots of boring error path handling too.
 > 
->  * Move regulator information back into the driver. The
->    regulators needed are documented in the chip and have
->    nothing to do with boarddata. Instead devm_regulator_get_optional
->    is used and errors are handled quite loosely now. Maybe the USB
->    driver should provide dummy regulators.
->  * GPIO handling is updated to gpiod consumer interface, resulting
->    in a driver cleanup and easy DT handling
->  * The driver is updated to use managed resources wherever possible
-> 
-> So much about the nice stuff. But there is also
-> 
->  * Instantiation of the platform device from the i2c (sub-)device. Since DT
->    is not supposed to contain linuxisms the device is a simple i2c node
->    resulting in the i2c probe function being called. Thus registering the main
->    v4l device must happen from there.
-> 
-> Tested:
->  * Compilation on torvalds/linux.git:master (based on 52d589a)
->  * Booting in DT mode
->  * Some simply driver queries using v4l2-ctl
-> 
-> Not tested:
->  * The USB driver, since I do not own the USB dongle
+> Also, lpc_create_object(), lpc_create_func(), lpc_create_patch(), 
+> lpc_create_objects(), lpc_create_funcs(), ... they all are pretty much 
+> alike, and are asking for some kind of unification ... perhaps iterator 
+> for generic structure initialization?
 
-I will test this on Monday for the USB device. It looks good, but I need
-to verify that it doesn't break the USB driver.
+The allocation and initialization code is very simple and
+straightforward.  I really don't see a problem there.
 
-Regards,
+Can you give an example of what you mean by "iterator for generic
+structure initialization"?
 
-	Hans
+> I am not also really fully convinced that we need the patch->object->funcs 
+> abstraction hierarchy (which also contributes to the structure allocation 
+> being rather a spaghetti copy/paste code) ... wouldn't patch->funcs be 
+> suffcient, with the "object" being made just a property of the function, 
+> for example?
+> 
+> > Plus, I show that kernel/kgraft.c + kernel/kgraft_files.c is
+> > 906+193=1099.  I'd say they are about the same size :)
+> 
+> Which is still seem to me to be a ratio worth thinking about improving :)
 
->  * The legacy platform code (only DT boot has been tested).
->    (The legacy platform code is supposed to removed in the near future anyways)
-> 
-> Changes since RFCv1 (requested by Hans Verkuil):
->  - splitted the patchset into more patches
->  - replaced dev_info with dev_dbg for missing regulators
->  - check for ENOSYS value from devm_gpiod_get (disabled GPIOLIB)
-> 
-> -- Sebastian
-> 
-> Sebastian Reichel (8):
->   [media] si4713: switch to devm regulator API
->   [media] si4713: switch reset gpio to devm_gpiod API
->   [media] si4713: use managed memory allocation
->   [media] si4713: use managed irq request
->   [media] si4713: add device tree support
->   [media] si4713: add DT binding documentation
->   ARM: OMAP2: RX-51: update si4713 platform data
->   [media] si4713: cleanup platform data
-> 
->  Documentation/devicetree/bindings/media/si4713.txt |  30 ++++
->  arch/arm/mach-omap2/board-rx51-peripherals.c       |  69 ++++-----
->  drivers/media/radio/si4713/radio-platform-si4713.c |  28 +---
->  drivers/media/radio/si4713/si4713.c                | 167 +++++++++++++--------
->  drivers/media/radio/si4713/si4713.h                |  15 +-
->  include/media/radio-si4713.h                       |  30 ----
->  include/media/si4713.h                             |   4 +-
->  7 files changed, 186 insertions(+), 157 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/media/si4713.txt
->  delete mode 100644 include/media/radio-si4713.h
-> 
+Yes, this code doesn't have a consistency model, but it does have some
+other non-kGraft things like dynamic relocations, deferred module
+patching, and a unified API.  There's really no point in comparing lines
+of code.
 
+-- 
+Josh
