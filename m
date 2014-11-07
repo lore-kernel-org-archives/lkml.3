@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaKGTer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:34:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601AbaKGTeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:34:46 -0500
-Message-ID: <1415388857.12094.2.camel@linux-t7sj.site>
-Subject: [PATCH -next] mm/rmap: calculate page offset when needed
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <dave@stgolabs.net>
-Date: Fri, 07 Nov 2014 11:34:17 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	id S1753279AbaKGTkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:40:43 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:39438 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaKGTkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 14:40:41 -0500
+Message-ID: <545D2036.9080205@amacapital.net>
+Date: Fri, 07 Nov 2014 11:40:38 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com> <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call page_to_pgoff() to get the page offset once we are
-sure we actually need it, and any very obvious initial
-function checks have passed. Trivial micro-optimization,
-and potentially save some cycles.
+On 11/06/2014 06:39 AM, Seth Jennings wrote:
+> This commit introduces code for the live patching core.  It implements
+> an ftrace-based mechanism and kernel interface for doing live patching
+> of kernel and kernel module functions.
+> 
+> It represents the greatest common functionality set between kpatch and
+> kgraft and can accept patches built using either method.
+> 
+> This first version does not implement any consistency mechanism that
+> ensures that old and new code do not run together.  In practice, ~90% of
+> CVEs are safe to apply in this way, since they simply add a conditional
+> check.  However, any function change that can not execute safely with
+> the old version of the function can _not_ be safely applied in this
+> version.
+> 
 
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
----
- mm/rmap.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+[...]
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index a5e9cc6..e3354b2 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1633,7 +1633,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
- static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- {
- 	struct anon_vma *anon_vma;
--	pgoff_t pgoff = page_to_pgoff(page);
-+	pgoff_t pgoff;
- 	struct anon_vma_chain *avc;
- 	int ret = SWAP_AGAIN;
- 
-@@ -1641,6 +1641,7 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- 	if (!anon_vma)
- 		return ret;
- 
-+	pgoff = page_to_pgoff(page);
- 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
- 		struct vm_area_struct *vma = avc->vma;
- 		unsigned long address = vma_address(page, vma);
-@@ -1674,7 +1675,7 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- {
- 	struct address_space *mapping = page->mapping;
--	pgoff_t pgoff = page_to_pgoff(page);
-+	pgoff_t pgoff;
- 	struct vm_area_struct *vma;
- 	int ret = SWAP_AGAIN;
- 
-@@ -1689,6 +1690,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- 	if (!mapping)
- 		return ret;
- 
-+	pgoff = page_to_pgoff(page);
- 	i_mmap_lock_read(mapping);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
--- 
-1.8.4.5
+> +/********************************************
+> + * Sysfs Interface
+> + *******************************************/
+> +/*
+> + * /sys/kernel/livepatch
+> + * /sys/kernel/livepatch/<patch>
+> + * /sys/kernel/livepatch/<patch>/enabled
+> + * /sys/kernel/livepatch/<patch>/<object>
+> + * /sys/kernel/livepatch/<patch>/<object>/<func>
+> + * /sys/kernel/livepatch/<patch>/<object>/<func>/new_addr
+> + * /sys/kernel/livepatch/<patch>/<object>/<func>/old_addr
+> + */
 
+Letting anyone read new_addr and old_addr is a kASLR leak, and I would
+argue that showing this information to non-root at all is probably a bad
+idea.
 
+Can you make new_addr and old_addr have mode 0600 and
+/sys/kernel/livepatch itself have mode 0500?  For the latter, an admin
+who wants unprivileged users to be able to see it can easily chmod it.
+
+--Andy
