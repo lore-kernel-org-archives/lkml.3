@@ -1,124 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaKGOLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:11:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49747 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078AbaKGOLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:11:20 -0500
-Message-ID: <545CD306.90001@suse.com>
-Date: Fri, 07 Nov 2014 15:11:18 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753177AbaKGOMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:12:12 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:59247 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493AbaKGOMJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 09:12:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
+   d="scan'208";a="190564540"
+Date: Fri, 7 Nov 2014 14:10:25 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
+In-Reply-To: <20141107110524.GA21875@localhost>
+Message-ID: <alpine.DEB.2.02.1411071212250.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-3-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1411031045340.22875@kaball.uk.xensource.com> <20141103105716.GC23162@arm.com>
+ <alpine.DEB.2.02.1411031101400.22875@kaball.uk.xensource.com> <20141105165646.GN32700@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1411051757140.22875@kaball.uk.xensource.com> <20141106103337.GA19702@e104818-lin.cambridge.arm.com>
+ <alpine.DEB.2.02.1411061155200.22875@kaball.uk.xensource.com> <20141107110524.GA21875@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Subject: Re: [Xen-devel] [PATCH V2 5/5] Xen: switch to linear virtual mapped
- sparse p2m list
-References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-6-git-send-email-jgross@suse.com> <545CCF15.4070402@citrix.com>
-In-Reply-To: <545CCF15.4070402@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 02:54 PM, David Vrabel wrote:
-> On 06/11/14 05:47, Juergen Gross wrote:
->> At start of the day the Xen hypervisor presents a contiguous mfn list
->> to a pv-domain. In order to support sparse memory this mfn list is
->> accessed via a three level p2m tree built early in the boot process.
->> Whenever the system needs the mfn associated with a pfn this tree is
->> used to find the mfn.
->>
->> Instead of using a software walked tree for accessing a specific mfn
->> list entry this patch is creating a virtual address area for the
->> entire possible mfn list including memory holes. The holes are
->> covered by mapping a pre-defined  page consisting only of "invalid
->> mfn" entries. Access to a mfn entry is possible by just using the
->> virtual base address of the mfn list and the pfn as index into that
->> list. This speeds up the (hot) path of determining the mfn of a
->> pfn.
->>
->> Kernel build on a Dell Latitude E6440 (2 cores, HT) in 64 bit Dom0
->> showed following improvements:
->>
->> Elapsed time: 32:50 ->  32:35
->> System:       18:07 ->  17:47
->> User:        104:00 -> 103:30
->
-> After implementing my suggestions below, please provided updated figure.
->   They should be better.
+On Fri, 7 Nov 2014, Catalin Marinas wrote:
+> On Thu, Nov 06, 2014 at 12:22:13PM +0000, Stefano Stabellini wrote:
+> > On Thu, 6 Nov 2014, Catalin Marinas wrote:
+> > > On Wed, Nov 05, 2014 at 06:15:38PM +0000, Stefano Stabellini wrote:
+> > > > On Wed, 5 Nov 2014, Catalin Marinas wrote:
+> > > > > Note that if !is_device_dma_coherent(), it doesn't always mean that
+> > > > > standard cache maintenance would be enough (but that's a Xen problem,
+> > > > > not sure how to solve).
+> > > > 
+> > > > It is a thorny issue indeed.
+> > > > Xen would need to know how to do non-standard cache maintenance
+> > > > operations.
+> > > 
+> > > Is EL2 hyp or EL1 dom0 doing such maintenance? If the latter, you could
+> > > just use the currently registered dma ops.
+> > 
+> > It is Xen, so El2 hypervisor.
+> 
+> So what is arch/arm/xen/mm32.c cache maintenance for? Doesn't it run in
+> dom0?
 
-In dom0? I don't think so.
-
->
->> Tested on 64 bit dom0 and 32 bit domU.
-> [...]
->> --- a/arch/x86/include/asm/xen/page.h
->> +++ b/arch/x86/include/asm/xen/page.h
->> @@ -59,6 +59,23 @@ extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
->>   				     struct page **pages, unsigned int count);
->>   extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
->>
->> +static inline unsigned long __pfn_to_mfn(unsigned long pfn)
->
-> These variations of pfn_to_mfn() (__pfn_to_mfn() and
-> get_phys_to_machine() and any others), need comments explaining their
-> differences.
->
-> Can you add __pfn_to_mfn() and the docs in a separate patch?
-
-Okay.
-
->
->> +	pr_notice("p2m virtual area at %p, size is %lx\n", vm.addr, vm.size);
->
-> pr_info().
->
->> @@ -526,23 +411,83 @@ unsigned long get_phys_to_machine(unsigned long pfn)
->>   		return IDENTITY_FRAME(pfn);
->>   	}
->>
->> -	topidx = p2m_top_index(pfn);
->> -	mididx = p2m_mid_index(pfn);
->> -	idx = p2m_index(pfn);
->> +	ptep = lookup_address((unsigned long)(xen_p2m_addr + pfn), &level);
->> +	BUG_ON(!ptep || level != PG_LEVEL_4K);
->>
->>   	/*
->>   	 * The INVALID_P2M_ENTRY is filled in both p2m_*identity
->>   	 * and in p2m_*missing, so returning the INVALID_P2M_ENTRY
->>   	 * would be wrong.
->>   	 */
->> -	if (p2m_top[topidx][mididx] == p2m_identity)
->> +	if (pte_pfn(*ptep) == PFN_DOWN(__pa(p2m_identity)))
->>   		return IDENTITY_FRAME(pfn);
->>
->> -	return p2m_top[topidx][mididx][idx];
->> +	return xen_p2m_addr[pfn];
->
-> You should test xen_p2m_addr[pfn] == INVALID_P2M_ENTRY before checking
-> if it's an identity entry.  This should skip the more expensive
-> lookup_address() in the common case.
-
-I do. The check is in __pfn_to_mfn(). get_phys_to_machine() is called in
-this case only.
-
->
->>   bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->
-> I think you should map p2m_missing and p2m_identity as read-only and do
-> the new page allocation on a write fault.
->
-> set_phys_to_machine() is used every grant map and unmap and in the
-> common case (already allocated array page) it must be a fast and simple:
->
->      xen_p2m_addr[pfn] = mfn;
-
-Nice idea. I'll try it.
+This patch series changes that code path specifically. As a matter of
+fact it removes mm32.c.
+Before this patch series, cache maintenance in dom0 was being done with
+XENFEAT_grant_map_identity (see explanation in previous email).
+After this patch series, an hypercall is made when foreign pages are
+involved, see patch 8/8, the if(!pfn_valid(pfn)) code path. Local pages
+are still flushed in dom0.
 
 
-Juergen
+> > > > Otherwise we would need to resurrect XENFEAT_grant_map_identity (that I
+> > > > am reverting in this series) and be content with having CONFIG_XEN_DOM0
+> > > > depend on CONFIG_ARM_LPAE.
+> > > 
+> > > So what does buy you? Is it just the hope that with LPAE you won't have
+> > > weird system caches?
+> > 
+> > Let me explain a bit more and let's assume there is no SMMU.
+> > 
+> > The problem is not normal dma originating in dom0, currently mapped 1:1
+> > (pseudo-physical == physical). The problem are dma operations that
+> > involve foreign pages (pages belonging to other virtual machines)
+> > currently mapped also in dom0 to do IO. It is common for the Xen PV
+> > network and block frontends to grant access to one or more pages to the
+> > network and block backends for IO. The backends, usually in dom0, map
+> > the pages and perform the actual IO. Sometimes the IO is a dma operation
+> > that involves one of the granted pages directly.
+> > 
+> > For these pages, the pseudo-physical address in dom0 is different from
+> > the physical address. Dom0 keeps track of the pseudo-physical to
+> > physical relationship (pfn_to_mfn in Xen terminology). The swiotlb-xen
+> > driver makes sure to return the right mfn from map_page and map_sg.
+> 
+> For my understanding, xen_dma_map_page() is called from dom0 and it
+> simply calls the __generic_dma_ops()->map_page(). The "page" argument
+> here is the dom0 page and it gets translated to dom0 phys and then to a
+> bus address via xen_phys_to_bus().
+> 
+> On arm64, __swiotlb_map_page() uses the page structure to get some
+> pseudo device address which gets converted back to a dom0 virtual
+> address. The latter is used for cache maintenance by VA in dom0. With
+> PIPT-like caches, that's fine, you don't need the actual machine PA
+> unless you have caches like PL310 (which are not compatible with
+> virtualisation anyway and the latest ARMv8 ARM even makes a clear
+> statement here).
+> 
+> (one potential problem here is the dma_capable() check in
+> swiotlb_map_page() (non-xen) which uses the pseudo device address)
+> 
+> The interesting part is that xen_swiotlb_map_page() returns the real
+> machine device address to dom0, which is different from what dom0 thinks
+> of a device address (phys_to_dma(phys_to_page(page))). Does dom0 use
+> such real/machine device address to program the device directly or there
+> is another layer where you could do the translation?
+
+No other layer. Dom0 uses the real/machine device address returned by
+xen_phys_to_bus to program the device directly.
+
+
+> > However some of the dma_ops give you only a dma_addr_t handle
+> > (unmap_page and unmap_sg), that is the physical address of the page.
+> 
+> OK, I started to get it now, the __swiotlb_unmap_page() on arm64, if
+> called from dom0, would get the machine device address and dma_to_phys()
+> does not work.
+
+Right!
+
+
+> > Dom0 doesn't know how to find the pseudo-physical address corresponding
+> > to it. Therefore it also doesn't know how to find the struct page for
+> > it. This is not a trivial problem to solve as the same page can be
+> > granted multiple times, therefore could have multiple pseudo-physical
+> > addresses and multiple struct pages corresponding to one physical
+> > address in dom0.
+> 
+> So what is mfn_to_pfn() and xen_bus_to_phys() used for?
+
+They are not used on ARM. But swiotlb-xen is not ARM specific and
+xen_bus_to_phys is still important on x86. It works differently there.
+
+
+> Isn't mfn_to_pfn(pfn_to_mfn(x)) an identity function?
+
+Yes, it should be and it is for local pages.
+However it is not an identity function for foreign pages, because
+mfn_to_pfn is broken and just returns pfn on ARM, while pfn_to_mfn works
+correctly.
+
+
+> > Fortunately these dma_ops don't actually need to do much. In fact they
+> > only need to flush caches if the device is not dma-coherent. So the
+> > current proposed solution is to issue an hypercall to ask Xen to do the
+> > flushing, passing the physical address dom0 knows.
+> 
+> I really don't like the dma_cache_maint() duplication you added in
+> arch/arm/xen/mm32.c just because you cannot call the host dma_ops when
+> the page is not available.
+
+I agree is bad, but this patch series is a big step forward removing the
+duplication. In fact now that I think about it, when a page is local (not a
+foreign page) I could just call the host dma_ops. mm.c:dma_cache_maint
+would only be used for foreign pages (pages for which !pfn_valid(pfn)).
+
+
+> You basically only need a VA that was mapped in dom0 when map_page() was
+> called and is still mapped when page_unmap() is called. You can free the
+> actual mapping after calling __generic_dma_ops()->unmap_page() in
+> xen_dma_unmap_page() (in xen_unmap_single()).
+
+That is true, but where would I store the mapping?
+
+I don't want to introduce another data structure to keep physical to va
+or physical to struct page mappings that I need to modify at every
+map_page and unmap_page. It wouldn't even be a trivial data structure as
+multiple dma operations involving the same mfn but different struct page
+can happen simultaneously.
+
+The performance hit of maintaining such a data structure would be
+significant.
+
+It would negatively impact any dma operations involving any devices,
+including dma coherent ones. While this series only requires special
+handling of dma operations involving non-coherent devices (resulting in
+an hypercall being made).
+
+In a way this series rewards hardware that makes life easier to software
+developers :-)
