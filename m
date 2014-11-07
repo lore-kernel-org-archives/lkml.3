@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaKGHvi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 02:51:38 -0500
+	id S1751458AbaKGHxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 02:53:36 -0500
 Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:52435 "EHLO
 	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbaKGHva convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750993AbaKGHxf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 02:51:30 -0500
+	Fri, 7 Nov 2014 02:53:35 -0500
 X-Greylist: delayed 2890 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 02:51:26 EST
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -17,13 +17,15 @@ CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH -mm v7 00/13] pagewalk: improve vma handling, apply to new
- users
-Thread-Topic: [PATCH -mm v7 00/13] pagewalk: improve vma handling, apply to
- new users
-Thread-Index: AQHP+li1iZ2fO4R45E+w2Cfr9CkvTQ==
-Date: Fri, 7 Nov 2014 07:01:51 +0000
-Message-ID: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH -mm v7 04/13] smaps: remove mem_size_stats->vma and use
+ walk_page_vma()
+Thread-Topic: [PATCH -mm v7 04/13] smaps: remove mem_size_stats->vma and use
+ walk_page_vma()
+Thread-Index: AQHP+li4vt3VQDfqCE2B8aDGVnyIsg==
+Date: Fri, 7 Nov 2014 07:01:56 +0000
+Message-ID: <1415343692-6314-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Accept-Language: ja-JP, en-US
 Content-Language: ja-JP
 X-MS-Has-Attach: 
@@ -36,45 +38,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is ver.7 of page table walker patchset.
+pagewalk.c can handle vma in itself, so we don't have to pass vma via
+walk->private. And show_smap() walks pages on vma basis, so using
+walk_page_vma() is preferable.
 
-I apologize about my long delay since previous version (I have moved to
-Japan last month and no machine access for a while.)
-I just rebased this onto mmotm-2014-11-05-16-01. I had some conflicts but
-the resolution was not hard.
-Trinity showed no bug at least in my environment.
-
-Thanks,
-Naoya Horiguchi
-
-Tree: git@github.com:Naoya-Horiguchi/linux.git
-Branch: mmotm-2014-11-05-16-01/page_table_walker.ver7
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-Summary:
+ fs/proc/task_mmu.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-Kirill A. Shutemov (1):
-      mm: /proc/pid/clear_refs: avoid split_huge_page()
-
-Naoya Horiguchi (12):
-      mm/pagewalk: remove pgd_entry() and pud_entry()
-      pagewalk: improve vma handling
-      pagewalk: add walk_page_vma()
-      smaps: remove mem_size_stats->vma and use walk_page_vma()
-      clear_refs: remove clear_refs_private->vma and introduce clear_refs_test_walk()
-      pagemap: use walk->vma instead of calling find_vma()
-      numa_maps: fix typo in gather_hugetbl_stats
-      numa_maps: remove numa_maps->vma
-      memcg: cleanup preparation for page table walk
-      arch/powerpc/mm/subpage-prot.c: use walk->vma and walk_page_vma()
-      mempolicy: apply page table walker on queue_pages_range()
-      mincore: apply page table walker on do_mincore()
-
- arch/powerpc/mm/subpage-prot.c |   6 +-
- fs/proc/task_mmu.c             | 206 ++++++++++++++++++-------------------
- include/linux/mm.h             |  22 ++--
- mm/huge_memory.c               |  20 ----
- mm/memcontrol.c                |  49 +++------
- mm/mempolicy.c                 | 228 +++++++++++++++++------------------------
- mm/mincore.c                   | 169 +++++++++++-------------------
- mm/pagewalk.c                  | 228 ++++++++++++++++++++++++-----------------
- 8 files changed, 419 insertions(+), 509 deletions(-)
+diff --git mmotm-2014-11-05-16-01.orig/fs/proc/task_mmu.c mmotm-2014-11-05-16-01/fs/proc/task_mmu.c
+index 2ab200d429be..c1b937095625 100644
+--- mmotm-2014-11-05-16-01.orig/fs/proc/task_mmu.c
++++ mmotm-2014-11-05-16-01/fs/proc/task_mmu.c
+@@ -433,7 +433,6 @@ const struct file_operations proc_tid_maps_operations = {
+ 
+ #ifdef CONFIG_PROC_PAGE_MONITOR
+ struct mem_size_stats {
+-	struct vm_area_struct *vma;
+ 	unsigned long resident;
+ 	unsigned long shared_clean;
+ 	unsigned long shared_dirty;
+@@ -480,7 +479,7 @@ static void smaps_pte_entry(pte_t *pte, unsigned long addr,
+ 		struct mm_walk *walk)
+ {
+ 	struct mem_size_stats *mss = walk->private;
+-	struct vm_area_struct *vma = mss->vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	pgoff_t pgoff = linear_page_index(vma, addr);
+ 	struct page *page = NULL;
+ 
+@@ -512,7 +511,7 @@ static void smaps_pmd_entry(pmd_t *pmd, unsigned long addr,
+ 		struct mm_walk *walk)
+ {
+ 	struct mem_size_stats *mss = walk->private;
+-	struct vm_area_struct *vma = mss->vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	struct page *page;
+ 
+ 	/* FOLL_DUMP will return -EFAULT on huge zero page */
+@@ -533,8 +532,7 @@ static void smaps_pmd_entry(pmd_t *pmd, unsigned long addr,
+ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 			   struct mm_walk *walk)
+ {
+-	struct mem_size_stats *mss = walk->private;
+-	struct vm_area_struct *vma = mss->vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+@@ -624,10 +622,8 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
+ 	};
+ 
+ 	memset(&mss, 0, sizeof mss);
+-	mss.vma = vma;
+ 	/* mmap_sem is held in m_start */
+-	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
+-		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
++	walk_page_vma(vma, &smaps_walk);
+ 
+ 	show_map_vma(m, vma, is_pid);
+ 
+-- 
+2.2.0.rc0.2.gf745acb
