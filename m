@@ -1,163 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaKGDAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 22:00:30 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:43668 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751393AbaKGDA2 (ORCPT
+	id S1751454AbaKGDBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 22:01:25 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38523 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaKGDBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 22:00:28 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="42999328"
-Message-ID: <545C368C.5040704@cn.fujitsu.com>
-Date: Fri, 7 Nov 2014 11:03:40 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Thu, 6 Nov 2014 22:01:21 -0500
+Message-ID: <545C35B3.30902@roeck-us.net>
+Date: Thu, 06 Nov 2014 19:00:03 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Dongsu Park <dongsu.park@profitbricks.com>
-CC: Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC] workqueue: allow rescuer thread to do more work.
-References: <20141029172608.39119c80@notabene.brown> <20141029143210.GA25226@htj.dyndns.org> <20141030101932.2241daa7@notabene.brown> <20141104142240.GD14459@htj.dyndns.org> <20141106165811.GA2338@gmail.com>
-In-Reply-To: <20141106165811.GA2338@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        =?UTF-8?B?UGhpbGlwcGUgUsOpdG9ybmF6?= <philippe.retornaz@gmail.com>,
+        Romain Perier <romain.perier@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v5 01/48] kernel: Add support for power-off handler call
+ chain
+References: <1415292213-28652-1-git-send-email-linux@roeck-us.net> <3183593.9HaIZKjCKr@vostro.rjw.lan> <20141106222703.GA6377@roeck-us.net> <6901931.ThbbTy3BuF@vostro.rjw.lan>
+In-Reply-To: <6901931.ThbbTy3BuF@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A02020A.545C3600.012E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 13
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/07/2014 12:58 AM, Dongsu Park wrote:
-> Hi Tejun & Neil,
-> 
-> On 04.11.2014 09:22, Tejun Heo wrote:
->> On Thu, Oct 30, 2014 at 10:19:32AM +1100, NeilBrown wrote:
->>>>                           Given that workder depletion is pool-wide
->>>> event, maybe it'd make sense to trigger rescuers immediately while
->>>> workers are in short supply?  e.g. while there's a manager stuck in
->>>> maybe_create_worker() with the mayday timer already triggered?
+On 11/06/2014 04:16 PM, Rafael J. Wysocki wrote:
+> On Thursday, November 06, 2014 02:27:03 PM Guenter Roeck wrote:
+>> On Thu, Nov 06, 2014 at 11:30:59PM +0100, Rafael J. Wysocki wrote:
+>>> On Thursday, November 06, 2014 08:42:45 AM Guenter Roeck wrote:
+>>>> Various drivers implement architecture and/or device specific means to
+>>>> power off the system.  For the most part, those drivers set the global
+>>>> variable pm_power_off to point to a function within the driver.
+>>>>
+>>>> This mechanism has a number of drawbacks.  Typically only one scheme
+>>>> to remove power is supported (at least if pm_power_off is used).
+>>>> At least in theory there can be multiple means remove power, some of
+>>>> which may be less desirable. For example, some mechanisms may only
+>>>> power off the CPU or the CPU card, while another may power off the
+>>>> entire system.  Others may really just execute a restart sequence
+>>>> or drop into the ROM monitor. Using pm_power_off can also be racy
+>>>> if the function pointer is set from a driver built as module, as the
+>>>> driver may be in the process of being unloaded when pm_power_off is
+>>>> called. If there are multiple power-off handlers in the system, removing
+>>>> a module with such a handler may inadvertently reset the pointer to
+>>>> pm_power_off to NULL, leaving the system with no means to remove power.
+>>>>
+>>>> Introduce a system power-off handler call chain to solve the described
+>>>> problems.  This call chain is expected to be executed from the architecture
+>>>> specific machine_power_off() function.  Drivers and architeceture code
+>>>> providing system power-off functionality are expected to register with
+>>>> this call chain.  When registering a power-off handler, callers can
+>>>> provide a priority to control power-off handler execution sequence
+>>>> and thus ensure that the power-off handler with the optimal capabilities
+>>>> to remove power for a given system is called first.
+>>>>
+>>>> Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+>>>> Cc: Alexander Graf <agraf@suse.de>
+>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>>> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+>>>> Cc: Heiko Stuebner <heiko@sntech.de>
+>>>> Cc: Lee Jones <lee.jones@linaro.org>
+>>>> Cc: Len Brown <len.brown@intel.com>
+>>>> Cc: Pavel Machek <pavel@ucw.cz>
+>>>> Cc: Philippe Rétornaz <philippe.retornaz@gmail.com>
+>>>> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+>>>> Cc: Romain Perier <romain.perier@gmail.com>
+>>>> Acked-by: Pavel Machek <pavel@ucw.cz>
+>>>> Acked-by: Heiko Stuebner <heiko@sntech.de>
+>>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>>>> ---
+>>>> v5:
+>>>> - Rebase to v3.18-rc3
+>>>> v4:
+>>>> - Do not use notifiers but internal functions and data structures to manage
+>>>>    the list of power-off handlers. Drop unused parameters from callbacks, and
+>>>>    make the power-off function type void.
+>>>>    Code to manage and walk the list of callbacks is derived from notifier.c.
+>>>> v3:
+>>>> - Rename new file to power_off_handler.c
+>>>> - Replace poweroff in all newly introduced variables and in text
+>>>>    with power_off or power-off as appropriate
+>>>> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+>>>> - Execute power-off handlers without any locks held
+>>>> v2:
+>>>> - poweroff -> power_off
+>>>> - Add defines for default priorities
+>>>> - Use raw notifiers protected by spinlocks instead of atomic notifiers
+>>>> - Add register_poweroff_handler_simple
+>>>> - Add devm_register_power_off_handler
+>>>>
+>>>>   include/linux/pm.h               |  28 ++++
+>>>>   kernel/power/Makefile            |   1 +
+>>>>   kernel/power/power_off_handler.c | 293 +++++++++++++++++++++++++++++++++++++++
+>>>>   3 files changed, 322 insertions(+)
+>>>>   create mode 100644 kernel/power/power_off_handler.c
+>>>>
+>>>> diff --git a/include/linux/pm.h b/include/linux/pm.h
+>>>> index 383fd68..a4d6bf8 100644
+>>>> --- a/include/linux/pm.h
+>>>> +++ b/include/linux/pm.h
+>>>> @@ -35,6 +35,34 @@ extern void (*pm_power_off)(void);
+>>>>   extern void (*pm_power_off_prepare)(void);
+>>>>
+>>>>   struct device; /* we have a circular dep with device.h */
+>>>> +
+>>>> +/*
+>>>> + * Data structures and callbacks to manage power-off handlers
+>>>> + */
+>>>> +
+>>>> +struct power_off_handler_block {
+>>>> +	void (*handler)(struct power_off_handler_block *);
+>>>> +	struct power_off_handler_block __rcu *next;
+>>>> +	int priority;
+>>>> +};
+>>>> +
+>>>> +int register_power_off_handler(struct power_off_handler_block *);
+>>>> +int devm_register_power_off_handler(struct device *,
+>>>> +				    struct power_off_handler_block *);
+>>>> +int register_power_off_handler_simple(void (*function)(void), int priority);
+>>>> +int unregister_power_off_handler(struct power_off_handler_block *);
+>>>> +void do_kernel_power_off(void);
+>>>> +bool have_kernel_power_off(void);
+>>>> +
+>>>> +/*
+>>>> + * Pre-defined power-off handler priorities
+>>>> + */
+>>>> +#define POWER_OFF_PRIORITY_FALLBACK	0
+>>>> +#define POWER_OFF_PRIORITY_LOW		64
+>>>> +#define POWER_OFF_PRIORITY_DEFAULT	128
+>>>> +#define POWER_OFF_PRIORITY_HIGH		192
+>>>> +#define POWER_OFF_PRIORITY_HIGHEST	255
 >>>
->>> So what if I change "need_more_worker" to "need_to_create_worker" ?
->>> Then it will stop as soon as there in an idle worker thread.
->>> That is the condition that keeps maybe_create_worker() looping.
->>> ??
+>>> I'm not sure why we need these gaps in the priority space.
+>>>
+>>> I guess it might be possible to use
+>>>
+>>> enum power_off_priority {
+>>> 	POWER_OFF_PRIORITY_FALLBACK = 0,
+>>> 	POWER_OFF_PRIORITY_LOW,
+>>> 	POWER_OFF_PRIORITY_DEFAULT,
+>>> 	POWER_OFF_PRIORITY_HIGH,
+>>> 	POWER_OFF_PRIORITY_HIGHEST,
+>>> 	POWER_OFF_PRIORITY_LIMIT,
+>>> };
 >>
->> Yeah, that'd be a better condition and can work out.  Can you please
->> write up a patch to do that and do some synthetic tests excercising
->> the code path?  Also please cc Lai Jiangshan <laijs@cn.fujitsu.com>
->> when posting the patch.
-> 
-> This issue looks exactly like what I've encountered occasionally in our test
-> setup. (with a custom kernel based on 3.12, MD/raid1, dm-multipath, etc.)
-> When a system suffers from high memory pressure, and at the same time
-> underlying devices of RAID arrays are repeatedly removed and re-added,
-> then sometimes the whole system gets locked up on a worker pool's lock.
-> So I had to fix our custom MD code to allocate a separate ordered workqueue
-> with WQ_MEM_RECLAIM, apart from md_wq or md_misc_wq.
-> Then the lockup seemed to have disappeared.
-> 
-> Now that I read the Neil's patch, which looks like an ultimate solution
-> to the problem I have seen. I'm really looking forward to seeing this
-> change in mainline.
-> 
-> How about the attached patch? Based on the Neil's patch, I replaced
-> need_more_worker() with need_to_create_worker() as Tejun suggested.
-> 
-> Test is running with this patch, which seems to be working for now.
-> But I'm going to observe the test result carefully for a few more days.
-> 
-> Regards,
-> Dongsu
-> 
-> ----
->>From de9aadd6fb742ea8acce4245a27946d3f233ab7f Mon Sep 17 00:00:00 2001
-> From: Dongsu Park <dongsu.park@profitbricks.com>
-> Date: Wed, 5 Nov 2014 17:28:07 +0100
-> Subject: [RFC PATCH] workqueue: allow rescuer thread to do more work
-> 
-> Original commit message from NeilBrown <neilb@suse.de>:
-> ====
-> When there is serious memory pressure, all workers in a pool could be
-> blocked, and a new thread cannot be created because it requires memory
-> allocation.
-> 
-> In this situation a WQ_MEM_RECLAIM workqueue will wake up the rescuer
-> thread to do some work.
-> 
-> The rescuer will only handle requests that are already on ->worklist.
-> If max_requests is 1, that means it will handle a single request.
-> 
-> The rescuer will be woken again in 100ms to handle another max_requests
-> requests.
+>> I retained the large number space on purpose, specifically to permit in-between
+>> priorities. In other words, I want people to be able to say "priority for this
+>> handler is higher than low but lower than default". After all, the defines were
+>> intended as hints, not as a "Thou shall use those and only those priorities".
+>
+> Problem with that is how they are supposed to know what priority to use then.
+>
+> How do I know if my priority is between DEFAULT and HIGH and whether it is
+> closer to HIGH or closer to DEFAULT?  What are the rules?
+>
+Guess there is too much of a Libertarian in me to make up such rules.
+Or, in other words, I didn't think that more explicit rules than the ones
+provided were needed.
 
+> The only rule that seems to be there is "this handler should be tried before
+> that one, so it needs to have a higher priority".  But now the question is
+> how people are going to know which handlers they are competing with and whether
+> or not they are more "important".
+>
+Keep in mind those are power-off handlers. The "rule", if one is needed,
+would be that the power-off handler which powers off more parts of the system
+should get higher priority. Which one that is is depends on the platform.
+I would think that it is in people's interest not to shoot themselves
+into the foot, but maybe I am wrong.
 
-I also observed this problem by review when I was developing
-the per-pwq-worklist patchset which has a side-affect that it also naturally
-fix the problem.
+>> Having said that, the important part is to get the series accepted, so I won't
+>> argue if that is what it takes to get an Ack. Let me know.
+>
+> This isn't worth fighting over in my view, so I won't if everyone else is fine
+> with it.
+>
 
-However, it is nothing about correctness and I made promise to Frederic Weisbecker
-for working on unbound pool for power-saving, then the per-pwq-worklist patchset
-is put off. So I have to ack it.
+Linus raised pretty much the same or a similar concern. Everyone else, as far
+as I can see, doesn't seem to care. Given that, and since I don't have a strong
+opinion either, I'll change it to an enum in the next version. If there is anyone
+who disagrees with that, the time to speak up is now.
 
-> 
-> I've seen a machine (running a 3.0 based "enterprise" kernel) with
-> thousands of requests queued for xfslogd, which has a max_requests of 1,
-> and is needed for retiring all 'xfs' write requests.  When one of the
-> worker pools gets into this state, it progresses extremely slowly and
-> possibly never recovers (only waited an hour or two).
-> 
-> So if, after handling everything on worklist, there is again something
-> on worklist (counted in nr_active), and if the queue is still congested,
-> keep processing instead of waiting for the next wake-up.
-> ====
-> 
-> Dongsu Park: replaced need_more_worker() with need_to_create_worker(),
-> as suggested by Tejun.
-> 
-> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-> Link: https://lkml.org/lkml/2014/10/29/55
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Original-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->  kernel/workqueue.c | 23 +++++++++++++----------
->  1 file changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 09b685d..4d20225 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2244,16 +2244,19 @@ repeat:
->  		spin_lock_irq(&pool->lock);
->  		rescuer->pool = pool;
->  
-> -		/*
-> -		 * Slurp in all works issued via this workqueue and
-> -		 * process'em.
-> -		 */
-> -		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
-> -		list_for_each_entry_safe(work, n, &pool->worklist, entry)
-> -			if (get_work_pwq(work) == pwq)
-> -				move_linked_works(work, scheduled, &n);
-> -
-> -		process_scheduled_works(rescuer);
-> +		do {
-> +			/*
-> +			 * Slurp in all works issued via this workqueue and
-> +			 * process'em.
-> +			 */
-> +			WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
-> +			list_for_each_entry_safe(work, n, &pool->worklist,
-> +					entry)
-> +				if (get_work_pwq(work) == pwq)
-> +					move_linked_works(work, scheduled, &n);
-> +
-> +			process_scheduled_works(rescuer);
-> +		} while (need_to_create_worker(pool) && pwq->nr_active);
->  
->  		/*
->  		 * Put the reference grabbed by send_mayday().  @pool won't
+Please let me know if you have any other concerns.
+
+Thanks,
+Guenter
 
