@@ -1,136 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaKGSsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:48:39 -0500
-Received: from mail.windriver.com ([147.11.1.11]:57184 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaKGSsh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:48:37 -0500
-Message-ID: <545D13FF.6090306@windriver.com>
-Date: Fri, 7 Nov 2014 12:48:31 -0600
-From: Chris Friesen <chris.friesen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753130AbaKGStA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:49:00 -0500
+Received: from tex.lwn.net ([70.33.254.29]:54677 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752972AbaKGSs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:48:58 -0500
+Date: Fri, 7 Nov 2014 13:48:54 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Daniel Dressler <danieru.dressler@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Ted Mielczarek <ted@mielczarek.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Frank Razenberg <frank@zzattack.org>,
+        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
+        Petr Sebor <petr@scssoft.com>,
+        Thomaz de Oliveira dos Reis <thor27@gmail.com>,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list), linux-input@vger.kernel.org
+Subject: Re: [PATCH 1/1] Input: xpad - update docs to reflect current state
+Message-ID: <20141107134854.56305dbb@lwn.net>
+In-Reply-To: <1415004836-22871-1-git-send-email-danieru.dressler@gmail.com>
+References: <1415004836-22871-1-git-send-email-danieru.dressler@gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com> <yq1bnoj9dvu.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1bnoj9dvu.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.116.14]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 10:25 AM, Martin K. Petersen wrote:
->>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+On Mon,  3 Nov 2014 17:53:06 +0900
+Daniel Dressler <danieru.dressler@gmail.com> wrote:
+
+> The last time this documentation was accurate was
+> just over 8 years ago. In this time we've added
+> support for two new generations of Xbox console
+> controllers and dozens of third-party controllers.
 > 
-> Chris,
-> 
-> Chris> Also, I think it's wrong for filesystems and userspace to use it
-> Chris> for alignment.  In E.4 and E.5 in the "sbc3r25.pdf" doc, it looks
-> Chris> like they use the optimal granularity field for alignment, not
-> Chris> the optimal transfer length.
-> 
-> The original rationale behind the OTLG and OTL values was to be able to
-> express stripe chunk size and stripe width. And to encourage aligned,
-> full stripe writes but nothing bigger than that. Obviously the wording
-> went through the usual standards body process to be vague/generic enough
-> to be used for anything. It has changed several times since sbc3r25,
-> btw.
+> This patch unifies terminology and makes it explicit
+> which model of controller a sentence refers to.
 
-You've obviously been involved in this area a lot more closely than me,
-so I'll defer to your experience. :)
+So this seems like a useful update, and I was looking at pulling it into
+the docs tree.  But this hunk:
 
-I think that if that's the intended use case, then the spec wording could
-be improved.  Looking at "sbc3r36.pdf", it still only explicitly mentions
-performance penalties for transfers that are larger than the "optimal
-transfer length", not for transfers that are smaller.
+> diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+> index 2ed7905..7e2e047 100644
+> --- a/drivers/input/joystick/xpad.c
+> +++ b/drivers/input/joystick/xpad.c
+> @@ -40,8 +40,8 @@
+>   *
+>   * TODO:
+>   *  - fine tune axes (especially trigger axes)
+> - *  - fix "analog" buttons (reported as digital now)
+> - *  - get rumble working
+> + *  - add original xbox rumble pack support
+> + *  - add xbox one rumble support
+>   *  - need USB IDs for other dance pads
+>   *
+>   * History:
 
+Seems like a different change that shouldn't be mixed up with the doc
+update.  Send me a version without that change and, in the absence
+of complaints, I'll apply it.
 
+Thanks,
 
-On 11/07/2014 12:03 PM, Martin K. Petersen wrote:
->>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
-> 
-> Chris> Apparently there's a new firmware available, dated Oct 13 but
-> Chris> with no release notes.  We just tried updating the firmware on
-> Chris> one of the drives in question and it failed from two different
-> Chris> versions of linux,
-> 
-> Did you use sg_write_buffer or some special firmware update tool?
-
-Both.  I didn't do it myself, but the guy who did sent me the following:
-
-
-localhost:~$ ./dl_sea_fw-0.2.3_64 -m ST900MM0026 -d /dev/sda -f Lightningbug10K6-SED-0003.LOD 
-================================================================================
- Seagate Firmware Download Utility v0.2.3 Build Date: Jan  9 2013
- Copyright (c) 2012 Seagate Technology LLC, All Rights Reserved
- Fri Nov  7 14:51:21 2014
-================================================================================
-Downloading file Lightningbug10K6-SED-0003.LOD to /dev/sda
-send_io: Input/output error
-send_io: Input/output error
- !
-FW Download FAILED
-
-
-This log is from a different system running Debian:
-
- root@bricklane-2:/home/cgcs# sg_write_buffer -vvv --in=Lightningbug10K6-SED-0003.LOD --length=1752576 --mode=5 /dev/sdb
-
-open /dev/sdb with flags=0x802
-
-sending single write buffer, mode=0x5, mpsec=0, id=0, offset=0, len=1752576
-
-    Write buffer cmd: 3b 05 00 00 00 00 1a be 00 00 
-
-    Write buffer parameter list (first 256 bytes):
-
-e7 1a 0e 59 01 00 02 00  00 00 00 00 00 00 19 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 be 1a 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 d5 cd
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 07 00
-
-80 01 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 bc 1a 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 5f 42
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-
-ioctl(SG_IO v3) failed: Invalid argument (errno=22)
-
-write buffer: pass through os error: Invalid argument
-
-Write buffer failed: Sense category: -1, try '-v' option for more information
-
-
-Apparently the "hdparm -I" command is giving bogus data as well.
-I've seen that happen if the drive is on a RAID controller--I assume
-that could cause problems with firmware updates too?
-
-Chris
+jon
