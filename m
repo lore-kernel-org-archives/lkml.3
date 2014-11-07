@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaKGKX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:23:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44695 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122AbaKGKX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:23:27 -0500
-Message-ID: <1415355810.2671.18.camel@linux-0dmf.site>
-Subject: Re: [PATCH] USB: cdc-acm: add quirk for control-line state requests
-From: Oliver Neukum <oneukum@suse.de>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        Nix <nix@esperi.org.uk>, Paul Martin <pm@debian.org>,
-        Daniel Silverstone <dsilvers@debian.org>, linux-kernel@vger.kernel.org,
-        stable <stable@vger.kernel.org>
-Date: Fri, 07 Nov 2014 11:23:30 +0100
-In-Reply-To: <20141107091615.GC27326@localhost>
-References: <20141106170456.GC26196@localhost>
-	 <1415293713-3051-1-git-send-email-johan@kernel.org>
-	 <1415351112.2671.9.camel@linux-0dmf.site>
-	 <20141107091615.GC27326@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751398AbaKGK3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:29:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34417 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaKGK3F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 05:29:05 -0500
+Date: Fri, 7 Nov 2014 11:28:55 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Subbaraman Narayanamurthy <subbaram@codeaurora.org>, daniel@numascale.com,
+        yuyang.du@intel.com, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH]: kthread: Fix memory ordering in __kthread_parkme
+Message-ID: <20141107102855.GA29390@twins.programming.kicks-ass.net>
+References: <20141106150150.GT10501@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1411071037440.3789@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411071037440.3789@nanos>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 10:16 +0100, Johan Hovold wrote:
-> On Fri, Nov 07, 2014 at 10:05:12AM +0100, Oliver Neukum wrote:
-> > On Thu, 2014-11-06 at 18:08 +0100, Johan Hovold wrote:
-> > > Add new quirk for devices that cannot handle control-line state
-> > > requests.
-> > > 
-> > > Note that we currently send these requests to all devices, regardless
-> > > of
-> > > whether they claim to support it, but that errors are only logged if
-> > > support is claimed.
+On Fri, Nov 07, 2014 at 10:39:48AM +0100, Thomas Gleixner wrote:
+> > 2) the usage of __set_current_state(TASK_PARKED) in __kthread_parkme()
+> >    is wrong AFAICT, one should always use set_current_state() for
+> >    setting !TASK_RUNNING state. The comment with set_current_state()
+> >    explains why.
 > > 
-> > That makes me wonder whether we should do this. What do you think?
+> >    This would've allowed the test_bit(KTHREAD_SHOULD_PARK) load to have
+> >    been satisfied before the store of TASK_PARKED.
 > 
-> My interpretation was that it's done this way as there may be devices
-> with broken CDC headers which fail to set the corresponding capability
-> bits, but still support the request (c.f. our recent not-a-modem
-> discussion).
+> My bad. Can you send a proper patch addressing that issue please? That
+> should be tagged stable as well I guess.
 
-Oh well, yes I don't like it, but we can't risk the change.
+Sure thing, something like so then?
 
-> In that case, always attempting the request, but only reporting errors
-> if support was claimed, makes sense.
-> 
-> As changing this behaviour now would risk breaking such devices, I
-> think black-listing (i.e. this patch) is preferred moving forward.
+---
+Subject: kthread: Fix memory ordering in __kthread_parkme
 
-Unfortunately, yes.
+One should always use set_current_state() to set !TASK_RUNNING states.
 
-	Regards
-		Oliver
+	set_current_state(TASK_*);		cond = true;
+	/* mb */				/* wmb */
+	if (!cond)				wake_up_state(, TASK_*);
+		schedule();
 
+By not having the mb we allow for the cond load to be satisfied before
+the state store, this can result in:
 
+	if (!cond)
+						cond = true;
+						wake_up_state(, TASK_*);
+	__set_current_state(TASK_*);
+		schedule();
+
+Which would block 'forever', since the cond is still false and the
+wakeup would not have seen the !TASK_RUNNING state.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ kernel/kthread.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 10e489c448fe..9787244d43ec 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -156,12 +156,12 @@ void *probe_kthread_data(struct task_struct *task)
+ 
+ static void __kthread_parkme(struct kthread *self)
+ {
+-	__set_current_state(TASK_PARKED);
++	set_current_state(TASK_PARKED);
+ 	while (test_bit(KTHREAD_SHOULD_PARK, &self->flags)) {
+ 		if (!test_and_set_bit(KTHREAD_IS_PARKED, &self->flags))
+ 			complete(&self->parked);
+ 		schedule();
+-		__set_current_state(TASK_PARKED);
++		set_current_state(TASK_PARKED);
+ 	}
+ 	clear_bit(KTHREAD_IS_PARKED, &self->flags);
+ 	__set_current_state(TASK_RUNNING);
