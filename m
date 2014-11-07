@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaKGJk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:40:27 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:56897 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaKGJkY (ORCPT
+	id S1751522AbaKGJln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:41:43 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:44741 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaKGJlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:40:24 -0500
+	Fri, 7 Nov 2014 04:41:40 -0500
+Message-ID: <545C9244.6040508@linaro.org>
+Date: Fri, 07 Nov 2014 10:35:00 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1415352966.14686.101.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <20141107054741.GB30507@yliu-dev.sh.intel.com>
-	<CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
-	<20141107073720.GB24745@yliu-dev.sh.intel.com>
-	<CAKv+Gu-rRMmcP4LF3oo5=6hf8m7fjzkzV14hfkjBPbPn34OZGA@mail.gmail.com>
-	<20141107081344.GC24745@yliu-dev.sh.intel.com>
-	<CAKv+Gu9u5ojSWarm2A5MeWOj1r1+W8U0d+icnx2rfAmiSaL8Ww@mail.gmail.com>
-	<20141107084604.GD24745@yliu-dev.sh.intel.com>
-	<CAKv+Gu_Xx9aKzNU2CfP20WR1ojwjUEvTKyD7L-S9bR_C8EOogQ@mail.gmail.com>
-	<20141107092651.GE24745@yliu-dev.sh.intel.com>
-	<1415352966.14686.101.camel@mfleming-mobl1.ger.corp.intel.com>
-Date: Fri, 7 Nov 2014 10:40:22 +0100
-Message-ID: <CAKv+Gu_YzZUqZBGAb+U8MGEfUQ8-yyCPj=QMeEbamKxSi8Wb5A@mail.gmail.com>
-Subject: Re: [LKP] [dmi] PANIC: early exception 0e rip 10:ffffffff81899e6b
- error 9 cr2 ffffffffff240000
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, LKP <lkp@01.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        patches@linaro.org
+Subject: Re: [PATCH V2 1/5] sched: idle: cpuidle: Check the latency req before
+ idle
+References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOg1GFW82WD8b6Vas5xhYQrQtdP1STGxyzYtrBNSa+-Pw@mail.gmail.com> <544FE787.8090108@linaro.org> <54504A60.2090908@linux.vnet.ibm.com> <545A3414.7030500@linaro.org> <545AF424.2070302@linux.vnet.ibm.com> <545B7AAC.3020309@linaro.org> <545C4AA4.7010904@linux.vnet.ibm.com>
+In-Reply-To: <545C4AA4.7010904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 November 2014 10:36, Matt Fleming <matt.fleming@intel.com> wrote:
-> On Fri, 2014-11-07 at 17:26 +0800, Yuanhan Liu wrote:
+On 11/07/2014 05:29 AM, Preeti U Murthy wrote:
+> On 11/06/2014 07:12 PM, Daniel Lezcano wrote:
 >>
->> Here is the output:
+>> Preeti,
 >>
->> [    0.000000] NX (Execute Disable) protection: active
->> [    0.000000] ====== Decoding _DMI_ header:
->> [    0.000000] 5f 44 4d 49 5f 48 a3 0b 00 20 60 8f 3e 00 25 00
->> [    0.000000] ====== Remapped SMBIOS table 0xffffffff8f602000 at ffffffffff240000, size 0xba3, num 0x3e
+>> I am wondering if we aren't going to a false debate.
+>>
+>> If the latency_req is 0, we should just poll and not enter in any idle
+>> state even if one has zero exit latency. With a zero latency req, we
+>> want full reactivity on the system, not enter an idle state with all the
+>> computation in the menu governor, no ?
+>>
+>> I agree this patch changes the behavior on PowerPC, but only if the
+>> latency_req is set to zero. I don't think we are worried about power
+>> saving when setting this value.
+>>
+>> Couldn't the patch accepted as it is for the sake of consistency on all
+>> the platform and then we optimize cleanly for the special latency zero
+>> case ?
 >
-> Smells like a sign extension issue. Previously how could dmi_base (u32)
-> hold 0xffffffff8f602000?
+> Alright Daniel, you can go ahead. I was thinking this patch through and
+> now realize that, like you point out the logic will only get complicated
+> with all the additional hack.
 >
+> But would it be possible to add the weak arch_cpu_idle_loop() call for
+> the cases where latency requirement is 0 like you had suggested earlier
+> ? This would ensure the polling logic does not break on PowerPC and we
+> don't bother the governor even. I will add the function in the core
+> PowerPC code. If arch does not define this function it will fall back to
+> cpu_idle_loop(). Fair enough?
 
-Exactly. And note that we already found (and fixed, or so we thought)
-this issue.
+Yes, sounds good.
 
-I.e, on the ARM you get
+I will add the weak function as the first patch in the series.
 
->>> ====== Remapped SMBIOS table 0xfe8ac000 at ffffff800001e000, size 0x262, num 0xc
+Thanks for your reviews.
 
-which has the top bit set as well, but is handled correctly, whereas
-with the original code (i.e., before adding the get_unaligned_le32()),
-we were hitting the same problem.
+   -- Daniel
 
 -- 
-Ard.
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
