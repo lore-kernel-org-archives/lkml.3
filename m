@@ -1,82 +1,2514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaKGQL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:11:56 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44465 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaKGQLy (ORCPT
+	id S1752347AbaKGQMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:12:25 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:47319 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095AbaKGQMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:11:54 -0500
-Message-ID: <545CEF45.1000503@collabora.co.uk>
-Date: Fri, 07 Nov 2014 17:11:49 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Fri, 7 Nov 2014 11:12:22 -0500
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Mark Brown <broonie@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 3/5] regulator: of: Add regulator desc param to of_get_regulator_init_data()
-References: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk> <1415365205-27630-4-git-send-email-javier.martinez@collabora.co.uk> <1415373792.31102.27.camel@AMDC1943>
-In-Reply-To: <1415373792.31102.27.camel@AMDC1943>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141106122149.GC3863@zorro.zusammrottung.local>
+References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1414599796-30597-9-git-send-email-tomeu.vizoso@collabora.com> <20141106122149.GC3863@zorro.zusammrottung.local>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Fri, 7 Nov 2014 17:12:01 +0100
+X-Google-Sender-Auth: eRI4lhZT_tS9nYm2aBmU9aSinuU
+Message-ID: <CAAObsKA5bh7_yzuxaUB7gaUpfQcpStCt=Y7eW3XnCyxEkHbGxg@mail.gmail.com>
+Subject: Re: [PATCH v3 08/13] ARM: tegra: Add EMC timings to Jetson TK1 device tree
+To: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
-
-On 11/07/2014 04:23 PM, Krzysztof Kozlowski wrote:
->>  
->>  static struct fan53555_platform_data *fan53555_parse_dt(struct device *dev,
->> -							struct device_node *np)
->> +						struct device_node *np,
->> +						struct regulator_desc *desc)
-> 
-> Not a const? Why not?
+On 6 November 2014 13:21, Nikolaus Schulz
+<nikolaus.schulz@avionic-design.de> wrote:
+> On Wed, Oct 29, 2014 at 05:22:26PM +0100, Tomeu Vizoso wrote:
+>> From: Mikko Perttunen <mperttunen@nvidia.com>
+>>
+>> This adds a new file, tegra124-jetson-tk1-emc.dtsi that contains
+>> valid timings for the EMC memory clock. The file is included to the
+>> main Jetson TK1 device tree.
+>>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>>
+>> ---
+>>
+>> v2:   * Fix the unit addresses of the timings and timing nodes
 >
+> This is not completely fixed yet, see FIXMEs below.
 
-Right, I removed all your other mentions to the same issue but I'll double
-check all the drivers to be sure that use const.
- 
->>  {
->>  	struct fan53555_platform_data *pdata;
->>  	int ret;
->> @@ -312,7 +313,7 @@ static struct fan53555_platform_data *fan53555_parse_dt(struct device *dev,
->>  	if (!pdata)
->>  		return NULL;
->>  
->> -	pdata->regulator = of_get_regulator_init_data(dev, np);
->> +	pdata->regulator = of_get_regulator_init_data(dev, np, desc);
-> 
-> Desc would be always NULL here which is safe (check in patch 5/5) but if
-> someone puts "regulator-initial-mode" in DTS then this will always print
-> warning. Just wonder - is it actually what you wanted?
-> 
-> This applies also for tps51632 and tps62360.
+Thanks a lot for checking.
+
+Tomeu
+
 >
-
-In an early version of the series I just passed NULL for all drivers but
-Mark said that is more future proof to pass the descriptor and I agree.
-
-I guess I should just remove the warning and only show an error if the
-descriptor is not NULL and also the map mode function is defined but
-the callback returns an error.
- 
-> (...)
-> 
-> Rest looks fine.
+>> ---
+>>  arch/arm/boot/dts/tegra124-jetson-tk1-emc.dtsi | 2412 ++++++++++++++++++++++++
+>>  arch/arm/boot/dts/tegra124-jetson-tk1.dts      |    2 +
+>>  2 files changed, 2414 insertions(+)
+>>  create mode 100644 arch/arm/boot/dts/tegra124-jetson-tk1-emc.dtsi
+>>
+>> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1-emc.dtsi b/arch/arm/boot/dts/tegra124-jetson-tk1-emc.dtsi
+>> new file mode 100644
+>> index 0000000..f1f391a
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1-emc.dtsi
+>> @@ -0,0 +1,2412 @@
+>> +/ {
+>> +     clock@0,60006000 {
+>> +             emc-timings@3 {
+>> +                     nvidia,ram-code = <3>;
+>> +
+>> +                     timing@12750000 {
+>> +                             clock-frequency = <12750000>;
+>> +                             nvidia,parent-clock-frequency = <408000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@20400000 {
+>> +                             clock-frequency = <20400000>;
+>> +                             nvidia,parent-clock-frequency = <408000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@40800000 {
+>> +                             clock-frequency = <40800000>;
+>> +                             nvidia,parent-clock-frequency = <408000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@68000000 {
+>> +                             clock-frequency = <68000000>;
+>> +                             nvidia,parent-clock-frequency = <408000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@102000000 {
+>> +                             clock-frequency = <102000000>;
+>> +                             nvidia,parent-clock-frequency = <408000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@204000000 {
+>> +                             clock-frequency = <204000000>;
+>> +                             nvidia,parent-clock-frequency = <408000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@300000000 {
+>> +                             clock-frequency = <300000000>;
+>> +                             nvidia,parent-clock-frequency = <600000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_C>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@396000000 {
+>> +                             clock-frequency = <396000000>;
+>> +                             nvidia,parent-clock-frequency = <792000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_M>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@528000000 {
+>> +                             clock-frequency = <528000000>;
+>> +                             nvidia,parent-clock-frequency = <528000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_M_UD>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@600000000 {
+>> +                             clock-frequency = <600000000>;
+>> +                             nvidia,parent-clock-frequency = <600000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_C_UD>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@792000000 {
+>> +                             clock-frequency = <792000000>;
+>> +                             nvidia,parent-clock-frequency = <792000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_M_UD>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +                     timing@924000000 {
+>> +                             clock-frequency = <924000000>;
+>> +                             nvidia,parent-clock-frequency = <924000000>;
+>> +                             clocks = <&tegra_car TEGRA124_CLK_PLL_M_UD>;
+>> +                             clock-names = "emc-parent";
+>> +                     };
+>> +             };
+>> +     };
+>> +
+>> +     emc@0,7001b000 {
+>> +             timings@3 {
+>> +                     nvidia,ram-code = <3>;
+>> +
+>> +                     timing@12750000 {
+>> +                             clock-frequency = <12750000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73240000>;
+>> +                             nvidia,emc-cfg-2 = <0x000008c5>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040128>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000008>;
+>> +                             nvidia,emc-auto-cal-config = <0xa1430000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0x00000000>;
+>> +                             nvidia,emc-mode-reset = <0x80001221>;
+>> +                             nvidia,emc-mode-1 = <0x80100003>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000000 /* EMC_RC */
+>> +                                     0x00000003 /* EMC_RFC */
+>> +                                     0x00000000 /* EMC_RFC_SLR */
+>> +                                     0x00000000 /* EMC_RAS */
+>> +                                     0x00000000 /* EMC_RP */
+>> +                                     0x00000004 /* EMC_R2W */
+>> +                                     0x0000000a /* EMC_W2R */
+>> +                                     0x00000003 /* EMC_R2P */
+>> +                                     0x0000000b /* EMC_W2P */
+>> +                                     0x00000000 /* EMC_RD_RCD */
+>> +                                     0x00000000 /* EMC_WR_RCD */
+>> +                                     0x00000003 /* EMC_RRD */
+>> +                                     0x00000003 /* EMC_REXT */
+>> +                                     0x00000000 /* EMC_WEXT */
+>> +                                     0x00000006 /* EMC_WDV */
+>> +                                     0x00000006 /* EMC_WDV_MASK */
+>> +                                     0x00000006 /* EMC_QUSE */
+>> +                                     0x00000002 /* EMC_QUSE_WIDTH */
+>> +                                     0x00000000 /* EMC_IBDLY */
+>> +                                     0x00000005 /* EMC_EINPUT */
+>> +                                     0x00000005 /* EMC_EINPUT_DURATION */
+>> +                                     0x00010000 /* EMC_PUTERM_EXTRA */
+>> +                                     0x00000003 /* EMC_PUTERM_WIDTH */
+>> +                                     0x00000000 /* EMC_PUTERM_ADJ */
+>> +                                     0x00000000 /* EMC_CDB_CNTL_1 */
+>> +                                     0x00000000 /* EMC_CDB_CNTL_2 */
+>> +                                     0x00000000 /* EMC_CDB_CNTL_3 */
+>> +                                     0x00000004 /* EMC_QRST */
+>> +                                     0x0000000c /* EMC_QSAFE */
+>> +                                     0x0000000d /* EMC_RDV */
+>> +                                     0x0000000f /* EMC_RDV_MASK */
+>> +                                     0x00000060 /* EMC_REFRESH */
+>> +                                     0x00000000 /* EMC_BURST_REFRESH_NUM */
+>> +                                     0x00000018 /* EMC_PRE_REFRESH_REQ_CNT */
+>> +                                     0x00000002 /* EMC_PDEX2WR */
+>> +                                     0x00000002 /* EMC_PDEX2RD */
+>> +                                     0x00000001 /* EMC_PCHG2PDEN */
+>> +                                     0x00000000 /* EMC_ACT2PDEN */
+>> +                                     0x00000007 /* EMC_AR2PDEN */
+>> +                                     0x0000000f /* EMC_RW2PDEN */
+>> +                                     0x00000005 /* EMC_TXSR */
+>> +                                     0x00000005 /* EMC_TXSRDLL */
+>> +                                     0x00000004 /* EMC_TCKE */
+>> +                                     0x00000005 /* EMC_TCKESR */
+>> +                                     0x00000004 /* EMC_TPD */
+>> +                                     0x00000000 /* EMC_TFAW */
+>> +                                     0x00000000 /* EMC_TRPAB */
+>> +                                     0x00000005 /* EMC_TCLKSTABLE */
+>> +                                     0x00000005 /* EMC_TCLKSTOP */
+>> +                                     0x00000064 /* EMC_TREFBW */
+>> +                                     0x00000000 /* EMC_FBIO_CFG6 */
+>> +                                     0x00000000 /* EMC_ODT_WRITE */
+>> +                                     0x00000000 /* EMC_ODT_READ */
+>> +                                     0x106aa298 /* EMC_FBIO_CFG5 */
+>> +                                     0x002c00a0 /* EMC_CFG_DIG_DLL */
+>> +                                     0x00008000 /* EMC_CFG_DIG_DLL_PERIOD */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS0 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS1 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS2 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS3 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS4 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS5 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS6 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS7 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS8 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS9 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS10 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS11 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS12 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS13 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS14 */
+>> +                                     0x00064000 /* EMC_DLL_XFORM_DQS15 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE0 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE1 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE2 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE3 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE4 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE5 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE6 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE7 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_ADDR0 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_ADDR1 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_ADDR2 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_ADDR3 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_ADDR4 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_ADDR5 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE8 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE9 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE10 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE11 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE12 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE13 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE14 */
+>> +                                     0x00000000 /* EMC_DLL_XFORM_QUSE15 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS0 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS1 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS2 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS3 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS4 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS5 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS6 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS7 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS8 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS9 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS10 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS11 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS12 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS13 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS14 */
+>> +                                     0x00000000 /* EMC_DLI_TRIM_TXDQS15 */
+>> +                                     0x000fc000 /* EMC_DLL_XFORM_DQ0 */
+>> +                                     0x000fc000 /* EMC_DLL_XFORM_DQ1 */
+>> +                                     0x000fc000 /* EMC_DLL_XFORM_DQ2 */
+>> +                                     0x000fc000 /* EMC_DLL_XFORM_DQ3 */
+>> +                                     0x0000fc00 /* EMC_DLL_XFORM_DQ4 */
+>> +                                     0x0000fc00 /* EMC_DLL_XFORM_DQ5 */
+>> +                                     0x0000fc00 /* EMC_DLL_XFORM_DQ6 */
+>> +                                     0x0000fc00 /* EMC_DLL_XFORM_DQ7 */
+>> +                                     0x10000280 /* EMC_XM2CMDPADCTRL */
+>> +                                     0x00000000 /* EMC_XM2CMDPADCTRL4 */
+>> +                                     0x00111111 /* EMC_XM2CMDPADCTRL5 */
+>> +                                     0x0130b118 /* EMC_XM2DQSPADCTRL2 */
+>> +                                     0x00000000 /* EMC_XM2DQPADCTRL2 */
+>> +                                     0x00000000 /* EMC_XM2DQPADCTRL3 */
+>> +                                     0x77ffc081 /* EMC_XM2CLKPADCTRL */
+>> +                                     0x00000e0e /* EMC_XM2CLKPADCTRL2 */
+>> +                                     0x81f1f108 /* EMC_XM2COMPPADCTRL */
+>> +                                     0x07070004 /* EMC_XM2VTTGENPADCTRL */
+>> +                                     0x0000003f /* EMC_XM2VTTGENPADCTRL2 */
+>> +                                     0x016eeeee /* EMC_XM2VTTGENPADCTRL3 */
+>> +                                     0x51451400 /* EMC_XM2DQSPADCTRL3 */
+>> +                                     0x00514514 /* EMC_XM2DQSPADCTRL4 */
+>> +                                     0x00514514 /* EMC_XM2DQSPADCTRL5 */
+>> +                                     0x51451400 /* EMC_XM2DQSPADCTRL6 */
+>> +                                     0x0000003f /* EMC_DSR_VTTGEN_DRV */
+>> +                                     0x00000007 /* EMC_TXDSRVTTGEN */
+>> +                                     0x00000000 /* EMC_FBIO_SPARE */
+>> +                                     0x00000000 /* EMC_ZCAL_INTERVAL */
+>> +                                     0x00000042 /* EMC_ZCAL_WAIT_CNT */
+>> +                                     0x000e000e /* EMC_MRS_WAIT_CNT */
+>> +                                     0x000e000e /* EMC_MRS_WAIT_CNT2 */
+>> +                                     0x00000000 /* EMC_CTT */
+>> +                                     0x00000003 /* EMC_CTT_DURATION */
+>> +                                     0x0000f2f3 /* EMC_CFG_PIPE */
+>> +                                     0x800001c5 /* EMC_DYN_SELF_REF_CONTROL */
+>> +                                     0x0000000a /* EMC_QPOP */
+>> +                             >;
+>> +                     };
+>> +
+>> +                     timing@20400000 {
+>> +                             clock-frequency = <20400000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73240000>;
+>> +                             nvidia,emc-cfg-2 = <0x000008c5>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040128>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000008>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80001221>;
+>> +                             nvidia,emc-mode-1 = <0x80100003>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000a
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00010000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000c
+>> +                                     0x0000000d
+>> +                                     0x0000000f
+>> +                                     0x0000009a
+>> +                                     0x00000000
+>> +                                     0x00000026
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000007
+>> +                                     0x0000000f
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x000000a0
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x106aa298
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0130b118
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000e0e
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x0000003f
+>> +                                     0x016eeeee
+>> +                                     0x51451400
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x0000000b
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000042
+>> +                                     0x000e000e
+>> +                                     0x000e000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000f2f3
+>> +                                     0x8000023a
+>> +                                     0x0000000a
+>> +                             >;
+>> +                     };
+>> +                     timing@2 {
 >
-
-Thanks a lot for the review.
- 
-> Krzysztof
-> 
-> 
-
-Best regards,
-Javier
+> FIXME: this should be timing@40800000
+>
+>> +                             clock-frequency = <40800000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73240000>;
+>> +                             nvidia,emc-cfg-2 = <0x000008c5>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040128>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000008>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80001221>;
+>> +                             nvidia,emc-mode-1 = <0x80100003>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000001
+>> +                                     0x0000000a
+>> +                                     0x00000000
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000a
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00010000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000c
+>> +                                     0x0000000d
+>> +                                     0x0000000f
+>> +                                     0x00000134
+>> +                                     0x00000000
+>> +                                     0x0000004d
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000008
+>> +                                     0x0000000f
+>> +                                     0x0000000c
+>> +                                     0x0000000c
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x0000013f
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x106aa298
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0130b118
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000e0e
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x0000003f
+>> +                                     0x016eeeee
+>> +                                     0x51451400
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x00000015
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000042
+>> +                                     0x000e000e
+>> +                                     0x000e000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000f2f3
+>> +                                     0x80000370
+>> +                                     0x0000000a
+>> +                             >;
+>> +                     };
+>> +                     timing@3 {
+>
+> FIXME: should be timing@68000000
+>
+>> +                             clock-frequency = <68000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73240000>;
+>> +                             nvidia,emc-cfg-2 = <0x000008c5>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040128>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000008>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80001221>;
+>> +                             nvidia,emc-mode-1 = <0x80100003>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000003
+>> +                                     0x00000011
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000a
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00010000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000c
+>> +                                     0x0000000d
+>> +                                     0x0000000f
+>> +                                     0x00000202
+>> +                                     0x00000000
+>> +                                     0x00000080
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x0000000f
+>> +                                     0x0000000f
+>> +                                     0x00000013
+>> +                                     0x00000013
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000213
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x106aa298
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0130b118
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000e0e
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x0000003f
+>> +                                     0x016eeeee
+>> +                                     0x51451400
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x00000022
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000042
+>> +                                     0x000e000e
+>> +                                     0x000e000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000f2f3
+>> +                                     0x8000050e
+>> +                                     0x0000000a
+>> +                             >;
+>> +                     };
+>> +                     timing@4 {
+>
+> FIXME: timing@102000000
+>
+>> +                             clock-frequency = <102000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73240000>;
+>> +                             nvidia,emc-cfg-2 = <0x000008c5>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040128>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000008>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80001221>;
+>> +                             nvidia,emc-mode-1 = <0x80100003>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000004
+>> +                                     0x0000001a
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000001
+>> +                                     0x00000004
+>> +                                     0x0000000a
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00000001
+>> +                                     0x00000001
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00010000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x0000000c
+>> +                                     0x0000000d
+>> +                                     0x0000000f
+>> +                                     0x00000304
+>> +                                     0x00000000
+>> +                                     0x000000c1
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000018
+>> +                                     0x0000000f
+>> +                                     0x0000001c
+>> +                                     0x0000001c
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x0000031c
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x106aa298
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x000fc000
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x0000fc00
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0130b118
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000e0e
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x0000003f
+>> +                                     0x016eeeee
+>> +                                     0x51451400
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x00000033
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000042
+>> +                                     0x000e000e
+>> +                                     0x000e000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000f2f3
+>> +                                     0x80000713
+>> +                                     0x0000000a
+>> +                             >;
+>> +                     };
+>> +                     timing@204000000 {
+>> +                             clock-frequency = <204000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73240000>;
+>> +                             nvidia,emc-cfg-2 = <0x0000088d>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040008>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000008>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80001221>;
+>> +                             nvidia,emc-mode-1 = <0x80100003>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000009
+>> +                                     0x00000035
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000005
+>> +                                     0x0000000a
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x00000006
+>> +                                     0x00010000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000000d
+>> +                                     0x0000000f
+>> +                                     0x00000011
+>> +                                     0x00000607
+>> +                                     0x00000000
+>> +                                     0x00000181
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000032
+>> +                                     0x0000000f
+>> +                                     0x00000038
+>> +                                     0x00000038
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000007
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000638
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x106aa298
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00064000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00008000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00008000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00090000
+>> +                                     0x00090000
+>> +                                     0x00090000
+>> +                                     0x00090000
+>> +                                     0x00009000
+>> +                                     0x00009000
+>> +                                     0x00009000
+>> +                                     0x00009000
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0130b118
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000707
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x0000003f
+>> +                                     0x016eeeee
+>> +                                     0x51451400
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x00000066
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000100
+>> +                                     0x000e000e
+>> +                                     0x000e000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000d2b3
+>> +                                     0x80000d22
+>> +                                     0x0000000a
+>> +                             >;
+>> +                     };
+>> +                     timing@300000000 {
+>> +                             clock-frequency = <300000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73340000>;
+>> +                             nvidia,emc-cfg-2 = <0x000008d5>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040128>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80000321>;
+>> +                             nvidia,emc-mode-1 = <0x80100002>;
+>> +                             nvidia,emc-mode-2 = <0x80200000>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x0000000d
+>> +                                     0x0000004d
+>> +                                     0x00000000
+>> +                                     0x00000009
+>> +                                     0x00000003
+>> +                                     0x00000004
+>> +                                     0x00000008
+>> +                                     0x00000002
+>> +                                     0x00000009
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000005
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000007
+>> +                                     0x00020000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000001
+>> +                                     0x0000000e
+>> +                                     0x00000010
+>> +                                     0x00000012
+>> +                                     0x000008e4
+>> +                                     0x00000000
+>> +                                     0x00000239
+>> +                                     0x00000001
+>> +                                     0x00000008
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x0000004b
+>> +                                     0x0000000e
+>> +                                     0x00000052
+>> +                                     0x00000200
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000009
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000924
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x104ab098
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00098000
+>> +                                     0x00098000
+>> +                                     0x00000000
+>> +                                     0x00098000
+>> +                                     0x00098000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00060000
+>> +                                     0x00060000
+>> +                                     0x00060000
+>> +                                     0x00060000
+>> +                                     0x00006000
+>> +                                     0x00006000
+>> +                                     0x00006000
+>> +                                     0x00006000
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x01231339
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000505
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x00000000
+>> +                                     0x016eeeee
+>> +                                     0x51451420
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x00000096
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000100
+>> +                                     0x0173000e
+>> +                                     0x0173000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x000052a3
+>> +                                     0x800012d7
+>> +                                     0x00000009
+>> +                             >;
+>> +                     };
+>> +                     timing@396000000 {
+>> +                             clock-frequency = <396000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73340000>;
+>> +                             nvidia,emc-cfg-2 = <0x00000895>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040008>;
+>> +                             nvidia,emc-cfg-dig-dll = <0x002c0068>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80000521>;
+>> +                             nvidia,emc-mode-1 = <0x80100002>;
+>> +                             nvidia,emc-mode-2 = <0x80200000>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000011
+>> +                                     0x00000066
+>> +                                     0x00000000
+>> +                                     0x0000000c
+>> +                                     0x00000004
+>> +                                     0x00000004
+>> +                                     0x00000008
+>> +                                     0x00000002
+>> +                                     0x0000000a
+>> +                                     0x00000004
+>> +                                     0x00000004
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000005
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000001
+>> +                                     0x00000008
+>> +                                     0x00020000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x0000000f
+>> +                                     0x00000010
+>> +                                     0x00000012
+>> +                                     0x00000bd1
+>> +                                     0x00000000
+>> +                                     0x000002f4
+>> +                                     0x00000001
+>> +                                     0x00000008
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000063
+>> +                                     0x0000000f
+>> +                                     0x0000006c
+>> +                                     0x00000200
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x0000000d
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000c11
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x104ab098
+>> +                                     0x002c00a0
+>> +                                     0x00008000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00030000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00070000
+>> +                                     0x00070000
+>> +                                     0x00000000
+>> +                                     0x00070000
+>> +                                     0x00070000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00038000
+>> +                                     0x00038000
+>> +                                     0x00038000
+>> +                                     0x00038000
+>> +                                     0x00003800
+>> +                                     0x00003800
+>> +                                     0x00003800
+>> +                                     0x00003800
+>> +                                     0x10000280
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x01231339
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc081
+>> +                                     0x00000505
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x00000000
+>> +                                     0x016eeeee
+>> +                                     0x51451420
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0000003f
+>> +                                     0x000000c6
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000100
+>> +                                     0x015b000e
+>> +                                     0x015b000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x000052a3
+>> +                                     0x8000188b
+>> +                                     0x00000009
+>> +                             >;
+>> +                     };
+>> +                     timing@528000000 {
+>> +                             clock-frequency = <528000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73300000>;
+>> +                             nvidia,emc-cfg-2 = <0x0000089d>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040008>;
+>> +                             nvidia,emc-cfg-dig-dll = <0xe0120069>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80000941>;
+>> +                             nvidia,emc-mode-1 = <0x80100002>;
+>> +                             nvidia,emc-mode-2 = <0x80200008>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000018
+>> +                                     0x00000088
+>> +                                     0x00000000
+>> +                                     0x00000010
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000009
+>> +                                     0x00000002
+>> +                                     0x0000000d
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x00000003
+>> +                                     0x00000006
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000001
+>> +                                     0x00000009
+>> +                                     0x00030000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000010
+>> +                                     0x00000012
+>> +                                     0x00000014
+>> +                                     0x00000fd6
+>> +                                     0x00000000
+>> +                                     0x000003f5
+>> +                                     0x00000002
+>> +                                     0x0000000b
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000085
+>> +                                     0x00000012
+>> +                                     0x00000090
+>> +                                     0x00000200
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000013
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00001017
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x104ab098
+>> +                                     0xe01200b1
+>> +                                     0x00008000
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00054000
+>> +                                     0x00054000
+>> +                                     0x00000000
+>> +                                     0x00054000
+>> +                                     0x00054000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x0000000e
+>> +                                     0x100002a0
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0123133d
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc085
+>> +                                     0x00000505
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x00000000
+>> +                                     0x016eeeee
+>> +                                     0x51451420
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0606003f
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000100
+>> +                                     0x0139000e
+>> +                                     0x0139000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x000042a0
+>> +                                     0x80002062
+>> +                                     0x0000000a
+>> +                             >;
+>> +                     };
+>> +                     timing@600000000 {
+>> +                             clock-frequency = <600000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73300000>;
+>> +                             nvidia,emc-cfg-2 = <0x0000089d>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040008>;
+>> +                             nvidia,emc-cfg-dig-dll = <0xe00e0069>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80000b61>;
+>> +                             nvidia,emc-mode-1 = <0x80100002>;
+>> +                             nvidia,emc-mode-2 = <0x80200010>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x0000001b
+>> +                                     0x0000009b
+>> +                                     0x00000000
+>> +                                     0x00000013
+>> +                                     0x00000007
+>> +                                     0x00000007
+>> +                                     0x0000000b
+>> +                                     0x00000003
+>> +                                     0x00000010
+>> +                                     0x00000007
+>> +                                     0x00000007
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x0000000a
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00070000
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000012
+>> +                                     0x00000016
+>> +                                     0x00000018
+>> +                                     0x00001208
+>> +                                     0x00000000
+>> +                                     0x00000482
+>> +                                     0x00000002
+>> +                                     0x0000000d
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x00000097
+>> +                                     0x00000015
+>> +                                     0x000000a3
+>> +                                     0x00000200
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000004
+>> +                                     0x00000015
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x00001248
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x104ab098
+>> +                                     0xe00e00b1
+>> +                                     0x00008000
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00048000
+>> +                                     0x00048000
+>> +                                     0x00000000
+>> +                                     0x00048000
+>> +                                     0x00048000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x0000000d
+>> +                                     0x100002a0
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0121113d
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc085
+>> +                                     0x00000505
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x00000000
+>> +                                     0x016eeeee
+>> +                                     0x51451420
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x51451400
+>> +                                     0x0606003f
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000100
+>> +                                     0x0127000e
+>> +                                     0x0127000e
+>> +                                     0x00000000
+>> +                                     0x00000003
+>> +                                     0x000040a0
+>> +                                     0x800024a9
+>> +                                     0x0000000e
+>> +                             >;
+>> +                     };
+>> +                     timing@792000000 {
+>> +                             clock-frequency = <792000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x00000042>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73300000>;
+>> +                             nvidia,emc-cfg-2 = <0x0000089d>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040000>;
+>> +                             nvidia,emc-cfg-dig-dll = <0xe0070069>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430000>;
+>> +                             nvidia,emc-mode-reset = <0x80000d71>;
+>> +                             nvidia,emc-mode-1 = <0x80100002>;
+>> +                             nvidia,emc-mode-2 = <0x80200018>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x00000024
+>> +                                     0x000000cd
+>> +                                     0x00000000
+>> +                                     0x00000019
+>> +                                     0x0000000a
+>> +                                     0x00000008
+>> +                                     0x0000000d
+>> +                                     0x00000004
+>> +                                     0x00000013
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000006
+>> +                                     0x00000006
+>> +                                     0x0000000b
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x0000000d
+>> +                                     0x00080000
+>> +                                     0x00000004
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000001
+>> +                                     0x00000014
+>> +                                     0x00000018
+>> +                                     0x0000001a
+>> +                                     0x000017e2
+>> +                                     0x00000000
+>> +                                     0x000005f8
+>> +                                     0x00000003
+>> +                                     0x00000011
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x000000c7
+>> +                                     0x00000018
+>> +                                     0x000000d7
+>> +                                     0x00000200
+>> +                                     0x00000005
+>> +                                     0x00000006
+>> +                                     0x00000005
+>> +                                     0x0000001d
+>> +                                     0x00000000
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00001822
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x104ab098
+>> +                                     0xe00700b1
+>> +                                     0x00008000
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00034000
+>> +                                     0x00034000
+>> +                                     0x00000000
+>> +                                     0x00034000
+>> +                                     0x00034000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x100002a0
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0120113d
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc085
+>> +                                     0x00000000
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x00000000
+>> +                                     0x016eeeee
+>> +                                     0x61861820
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x61861800
+>> +                                     0x0606003f
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000100
+>> +                                     0x00f7000e
+>> +                                     0x00f7000e
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x00004080
+>> +                                     0x80003012
+>> +                                     0x0000000f
+>> +                             >;
+>> +                     };
+>> +                     timing@924000000 {
+>> +                             clock-frequency = <924000000>;
+>> +
+>> +                             nvidia,emc-zcal-cnt-long = <0x0000004c>;
+>> +                             nvidia,emc-auto-cal-interval = <0x001fffff>;
+>> +                             nvidia,emc-ctt-term-ctrl = <0x00000802>;
+>> +                             nvidia,emc-cfg = <0x73300000>;
+>> +                             nvidia,emc-cfg-2 = <0x0000089d>;
+>> +                             nvidia,emc-sel-dpd-ctrl = <0x00040000>;
+>> +                             nvidia,emc-cfg-dig-dll = <0xe0040069>;
+>> +                             nvidia,emc-bgbias-ctl0 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config2 = <0x00000000>;
+>> +                             nvidia,emc-auto-cal-config3 = <0xa1430303>;
+>> +                             nvidia,emc-mode-reset = <0x80000f15>;
+>> +                             nvidia,emc-mode-1 = <0x80100002>;
+>> +                             nvidia,emc-mode-2 = <0x80200020>;
+>> +                             nvidia,emc-mode-4 = <0x00000000>;
+>> +
+>> +                             nvidia,emc-configuration = <
+>> +                                     0x0000002b
+>> +                                     0x000000f0
+>> +                                     0x00000000
+>> +                                     0x0000001e
+>> +                                     0x0000000b
+>> +                                     0x00000009
+>> +                                     0x0000000f
+>> +                                     0x00000005
+>> +                                     0x00000016
+>> +                                     0x0000000b
+>> +                                     0x0000000b
+>> +                                     0x00000004
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000007
+>> +                                     0x00000007
+>> +                                     0x0000000d
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x0000000f
+>> +                                     0x000a0000
+>> +                                     0x00000004
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000001
+>> +                                     0x00000016
+>> +                                     0x0000001a
+>> +                                     0x0000001c
+>> +                                     0x00001be7
+>> +                                     0x00000000
+>> +                                     0x000006f9
+>> +                                     0x00000004
+>> +                                     0x00000015
+>> +                                     0x00000001
+>> +                                     0x00000000
+>> +                                     0x000000e7
+>> +                                     0x0000001b
+>> +                                     0x000000fb
+>> +                                     0x00000200
+>> +                                     0x00000006
+>> +                                     0x00000007
+>> +                                     0x00000006
+>> +                                     0x00000022
+>> +                                     0x00000000
+>> +                                     0x0000000a
+>> +                                     0x0000000a
+>> +                                     0x00001c28
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x104ab898
+>> +                                     0xe00400b1
+>> +                                     0x00008000
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x007f800a
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x0002c000
+>> +                                     0x0002c000
+>> +                                     0x00000000
+>> +                                     0x0002c000
+>> +                                     0x0002c000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000005
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x00000008
+>> +                                     0x100002a0
+>> +                                     0x00000000
+>> +                                     0x00111111
+>> +                                     0x0120113d
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x77ffc085
+>> +                                     0x00000000
+>> +                                     0x81f1f108
+>> +                                     0x07070004
+>> +                                     0x00000000
+>> +                                     0x016eeeee
+>> +                                     0x5d75d720
+>> +                                     0x00514514
+>> +                                     0x00514514
+>> +                                     0x5d75d700
+>> +                                     0x0606003f
+>> +                                     0x00000000
+>> +                                     0x00000000
+>> +                                     0x00020000
+>> +                                     0x00000128
+>> +                                     0x00cd000e
+>> +                                     0x00cd000e
+>> +                                     0x00000000
+>> +                                     0x00000004
+>> +                                     0x00004080
+>> +                                     0x800037ea
+>> +                                     0x00000011
+>> +                             >;
+>> +                     };
+>> +             };
+>> +     };
+>> +
+>> +     memory-controller@0,70019000 {
+>> +             timings@3 {
+>> +                     nvidia,ram-code = <3>;
+>> +
+>> +                     timing@12750000 {
+>> +                             clock-frequency = <12750000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x40040001 /* MC_EMEM_ARB_CFG */
+>> +                                     0x8000000a /* MC_EMEM_ARB_OUTSTANDING_REQ */
+>> +                                     0x00000001 /* MC_EMEM_ARB_TIMING_RCD */
+>> +                                     0x00000001 /* MC_EMEM_ARB_TIMING_RP */
+>> +                                     0x00000002 /* MC_EMEM_ARB_TIMING_RC */
+>> +                                     0x00000000 /* MC_EMEM_ARB_TIMING_RAS */
+>> +                                     0x00000002 /* MC_EMEM_ARB_TIMING_FAW */
+>> +                                     0x00000001 /* MC_EMEM_ARB_TIMING_RRD */
+>> +                                     0x00000002 /* MC_EMEM_ARB_TIMING_RAP2PRE */
+>> +                                     0x00000008 /* MC_EMEM_ARB_TIMING_WAP2PRE */
+>> +                                     0x00000003 /* MC_EMEM_ARB_TIMING_R2R */
+>> +                                     0x00000002 /* MC_EMEM_ARB_TIMING_W2W */
+>> +                                     0x00000003 /* MC_EMEM_ARB_TIMING_R2W */
+>> +                                     0x00000006 /* MC_EMEM_ARB_TIMING_W2R */
+>> +                                     0x06030203 /* MC_EMEM_ARB_DA_TURNS */
+>> +                                     0x000a0402 /* MC_EMEM_ARB_DA_COVERS */
+>> +                                     0x77e30303 /* MC_EMEM_ARB_MISC0 */
+>> +                                     0x70000f03 /* MC_EMEM_ARB_MISC1 */
+>> +                                     0x001f0000 /* MC_EMEM_ARB_RING1_THROTTLE */
+>> +                             >;
+>> +                     };
+>> +
+>> +                     timing@20400000 {
+>> +                             clock-frequency = <20400000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x40020001
+>> +                                     0x80000012
+>> +                                     0x00000001
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000008
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x00000006
+>> +                                     0x06030203
+>> +                                     0x000a0402
+>> +                                     0x76230303
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@40800000 {
+>> +                             clock-frequency = <40800000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0xa0000001
+>> +                                     0x80000017
+>> +                                     0x00000001
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000008
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x00000006
+>> +                                     0x06030203
+>> +                                     0x000a0402
+>> +                                     0x74a30303
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@68000000 {
+>> +                             clock-frequency = <68000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x00000001
+>> +                                     0x8000001e
+>> +                                     0x00000001
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000008
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x00000006
+>> +                                     0x06030203
+>> +                                     0x000a0402
+>> +                                     0x74230403
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@102000000 {
+>> +                             clock-frequency = <102000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x08000001
+>> +                                     0x80000026
+>> +                                     0x00000001
+>> +                                     0x00000001
+>> +                                     0x00000003
+>> +                                     0x00000000
+>> +                                     0x00000002
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000008
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x00000006
+>> +                                     0x06030203
+>> +                                     0x000a0403
+>> +                                     0x73c30504
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@204000000 {
+>> +                             clock-frequency = <204000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x01000003
+>> +                                     0x80000040
+>> +                                     0x00000001
+>> +                                     0x00000001
+>> +                                     0x00000004
+>> +                                     0x00000002
+>> +                                     0x00000004
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000008
+>> +                                     0x00000003
+>> +                                     0x00000002
+>> +                                     0x00000004
+>> +                                     0x00000006
+>> +                                     0x06040203
+>> +                                     0x000a0404
+>> +                                     0x73840a05
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@300000000 {
+>> +                             clock-frequency = <300000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x08000004
+>> +                                     0x80000040
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000007
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000007
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000004
+>> +                                     0x00000006
+>> +                                     0x06040202
+>> +                                     0x000b0607
+>> +                                     0x77450e08
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@396000000 {
+>> +                             clock-frequency = <396000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x0f000005
+>> +                                     0x80000040
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000009
+>> +                                     0x00000005
+>> +                                     0x00000007
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000008
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000004
+>> +                                     0x00000006
+>> +                                     0x06040202
+>> +                                     0x000d0709
+>> +                                     0x7586120a
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@528000000 {
+>> +                             clock-frequency = <528000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x0f000007
+>> +                                     0x80000040
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x0000000c
+>> +                                     0x00000007
+>> +                                     0x0000000a
+>> +                                     0x00000001
+>> +                                     0x00000002
+>> +                                     0x00000009
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000005
+>> +                                     0x00000006
+>> +                                     0x06050202
+>> +                                     0x0010090c
+>> +                                     0x7428180d
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@600000000 {
+>> +                             clock-frequency = <600000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x00000009
+>> +                                     0x80000040
+>> +                                     0x00000003
+>> +                                     0x00000004
+>> +                                     0x0000000e
+>> +                                     0x00000009
+>> +                                     0x0000000b
+>> +                                     0x00000001
+>> +                                     0x00000003
+>> +                                     0x0000000b
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000005
+>> +                                     0x00000007
+>> +                                     0x07050202
+>> +                                     0x00130b0e
+>> +                                     0x73a91b0f
+>> +                                     0x70000f03
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@792000000 {
+>> +                             clock-frequency = <792000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x0e00000b
+>> +                                     0x80000040
+>> +                                     0x00000004
+>> +                                     0x00000005
+>> +                                     0x00000013
+>> +                                     0x0000000c
+>> +                                     0x0000000f
+>> +                                     0x00000002
+>> +                                     0x00000003
+>> +                                     0x0000000c
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000006
+>> +                                     0x00000008
+>> +                                     0x08060202
+>> +                                     0x00170e13
+>> +                                     0x736c2414
+>> +                                     0x70000f02
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +                     timing@924000000 {
+>> +                             clock-frequency = <924000000>;
+>> +
+>> +                             nvidia,emem-configuration = <
+>> +                                     0x0e00000d
+>> +                                     0x80000040
+>> +                                     0x00000005
+>> +                                     0x00000006
+>> +                                     0x00000016
+>> +                                     0x0000000e
+>> +                                     0x00000011
+>> +                                     0x00000002
+>> +                                     0x00000004
+>> +                                     0x0000000e
+>> +                                     0x00000002
+>> +                                     0x00000002
+>> +                                     0x00000006
+>> +                                     0x00000009
+>> +                                     0x09060202
+>> +                                     0x001a1016
+>> +                                     0x734e2a17
+>> +                                     0x70000f02
+>> +                                     0x001f0000
+>> +                             >;
+>> +                     };
+>> +             };
+>> +     };
+>> +};
+>> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>> index 029c9a02..96de17e 100644
+>> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>> @@ -3,6 +3,8 @@
+>>  #include <dt-bindings/input/input.h>
+>>  #include "tegra124.dtsi"
+>>
+>> +#include "tegra124-jetson-tk1-emc.dtsi"
+>> +
+>>  / {
+>>       model = "NVIDIA Tegra124 Jetson TK1";
+>>       compatible = "nvidia,jetson-tk1", "nvidia,tegra124";
+>> --
+>> 1.9.3
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
