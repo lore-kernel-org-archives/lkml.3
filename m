@@ -1,119 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaKGNyd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:54:33 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:15872 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaKGNyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:54:17 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-be-545ccf0640ce
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Inki Dae <inki.dae@samsung.com>, Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 2/2] drm/exynos/dsi: Add runtime PM so LCD power domain
- could be turned off
-Date: Fri, 07 Nov 2014 14:53:59 +0100
-Message-id: <1415368439-23642-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1415368439-23642-1-git-send-email-k.kozlowski@samsung.com>
-References: <1415368439-23642-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/xy7ps52NCDBa+V7S4te4cq0XvuZNM
-	FhtnrGe1uPL1PZvFyiksFpPuT2CxeHHvIovF6xeGFr0LrrJZPN38mMnibNMbdotNj6+xWlze
-	NYfNYsb5fUwWa4/cZbeYMfklm4OAx6ZVnWwe2789YPW4332cyWPzknqPvi2rGD2O39jO5PF5
-	k1wAexSXTUpqTmZZapG+XQJXxsX7F9gLGoUqHsw6ztTAOIGvi5GDQ0LAROLFd+cuRk4gU0zi
-	wr31bF2MXBxCAksZJT50XmKGcPqYJI5fm8sKUsUmYCyxefkSsCoRge9MElOerGcHSTALTGGS
-	mHqmAsQWFkiQ+NexhAVkA4uAqsSao9kgYV4Bd4lLW6eyQGyTkzh5bDLYTE4BD4nejvdgthBQ
-	zavj01knMPIuYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESvF92MC4+ZnWIUYCDUYmH
-	t1MoJkSINbGsuDL3EKMEB7OSCO+N40Ah3pTEyqrUovz4otKc1OJDjEwcnFINjNM53/1S3mY/
-	W5f/XnCM2C3TVr5FHleqFK/8zBPZX6PMPfc5u37lzP5Vz9/vcDQJn/w+ii1Ac8PE1F0tKyac
-	divtL8r69H9i7yw9Ltate1In7HqW99iOocl49vKfdxaG6q2NE5rZk1sTGs124pZ/TuuLtpUf
-	jL4cujdJeV3wvXwZ0b/b2nrjDyuxFGckGmoxFxUnAgC0zb7bPAIAAA==
+	id S1752797AbaKGNyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:54:41 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:55147 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937AbaKGNyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 08:54:35 -0500
+X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
+   d="scan'208";a="189129741"
+Message-ID: <545CCF15.4070402@citrix.com>
+Date: Fri, 7 Nov 2014 13:54:29 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH V2 5/5] Xen: switch to linear virtual mapped
+ sparse p2m list
+References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-6-git-send-email-jgross@suse.com>
+In-Reply-To: <1415252853-7106-6-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add runtime Power Management to the Exynos DSI driver so the LCD power
-domain could be turned off.
+On 06/11/14 05:47, Juergen Gross wrote:
+> At start of the day the Xen hypervisor presents a contiguous mfn list
+> to a pv-domain. In order to support sparse memory this mfn list is
+> accessed via a three level p2m tree built early in the boot process.
+> Whenever the system needs the mfn associated with a pfn this tree is
+> used to find the mfn.
+> 
+> Instead of using a software walked tree for accessing a specific mfn
+> list entry this patch is creating a virtual address area for the
+> entire possible mfn list including memory holes. The holes are
+> covered by mapping a pre-defined  page consisting only of "invalid
+> mfn" entries. Access to a mfn entry is possible by just using the
+> virtual base address of the mfn list and the pfn as index into that
+> list. This speeds up the (hot) path of determining the mfn of a
+> pfn.
+> 
+> Kernel build on a Dell Latitude E6440 (2 cores, HT) in 64 bit Dom0
+> showed following improvements:
+> 
+> Elapsed time: 32:50 ->  32:35
+> System:       18:07 ->  17:47
+> User:        104:00 -> 103:30
 
-This slightly reduces the energy consumption when screen is completely
-turned off. On Trats2 board when the system was idle the energy
-consumption dropped by 1% (from 92.2 mA to 91.1 mA).
+After implementing my suggestions below, please provided updated figure.
+ They should be better.
 
-Before the patch:
-$ cat cat /sys/kernel/debug/pm_genpd/pm_genpd_summary
-lcd0-power-domain               on
-    /devices/11c00000.fimd                              suspended
-    /devices/11c80000.dsi                               unsupported
+> Tested on 64 bit dom0 and 32 bit domU.
+[...]
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -59,6 +59,23 @@ extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
+>  				     struct page **pages, unsigned int count);
+>  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+>  
+> +static inline unsigned long __pfn_to_mfn(unsigned long pfn)
 
-After applying the patch:
-lcd0-power-domain               off
-    /devices/11c00000.fimd                              suspended
-    /devices/11c80000.dsi                               suspended
+These variations of pfn_to_mfn() (__pfn_to_mfn() and
+get_phys_to_machine() and any others), need comments explaining their
+differences.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_dsi.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Can you add __pfn_to_mfn() and the docs in a separate patch?
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-index 24741d8758e8..19ed36d2d557 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-@@ -21,6 +21,7 @@
- #include <linux/of_device.h>
- #include <linux/of_gpio.h>
- #include <linux/phy/phy.h>
-+#include <linux/pm_runtime.h>
- #include <linux/regulator/consumer.h>
- #include <linux/component.h>
- 
-@@ -1356,6 +1357,8 @@ static int exynos_dsi_enable(struct exynos_dsi *dsi)
- 	if (dsi->state & DSIM_STATE_ENABLED)
- 		return 0;
- 
-+	pm_runtime_get_sync(dsi->dev);
-+
- 	ret = exynos_dsi_poweron(dsi);
- 	if (ret < 0)
- 		return ret;
-@@ -1392,6 +1395,8 @@ static void exynos_dsi_disable(struct exynos_dsi *dsi)
- 	drm_panel_unprepare(dsi->panel);
- 	exynos_dsi_poweroff(dsi);
- 
-+	pm_runtime_put_sync(dsi->dev);
-+
- 	dsi->state &= ~DSIM_STATE_ENABLED;
- }
- 
-@@ -1772,6 +1777,8 @@ static int exynos_dsi_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto err_del_component;
- 
-+	pm_runtime_enable(&pdev->dev);
-+
- 	return ret;
- 
- err_del_component:
-@@ -1781,6 +1788,8 @@ err_del_component:
- 
- static int exynos_dsi_remove(struct platform_device *pdev)
- {
-+	pm_runtime_disable(&pdev->dev);
-+
- 	component_del(&pdev->dev, &exynos_dsi_component_ops);
- 	exynos_drm_component_del(&pdev->dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
- 
--- 
-1.9.1
+> +	pr_notice("p2m virtual area at %p, size is %lx\n", vm.addr, vm.size);
 
+pr_info().
+
+> @@ -526,23 +411,83 @@ unsigned long get_phys_to_machine(unsigned long pfn)
+>  		return IDENTITY_FRAME(pfn);
+>  	}
+>  
+> -	topidx = p2m_top_index(pfn);
+> -	mididx = p2m_mid_index(pfn);
+> -	idx = p2m_index(pfn);
+> +	ptep = lookup_address((unsigned long)(xen_p2m_addr + pfn), &level);
+> +	BUG_ON(!ptep || level != PG_LEVEL_4K);
+>  
+>  	/*
+>  	 * The INVALID_P2M_ENTRY is filled in both p2m_*identity
+>  	 * and in p2m_*missing, so returning the INVALID_P2M_ENTRY
+>  	 * would be wrong.
+>  	 */
+> -	if (p2m_top[topidx][mididx] == p2m_identity)
+> +	if (pte_pfn(*ptep) == PFN_DOWN(__pa(p2m_identity)))
+>  		return IDENTITY_FRAME(pfn);
+>  
+> -	return p2m_top[topidx][mididx][idx];
+> +	return xen_p2m_addr[pfn];
+
+You should test xen_p2m_addr[pfn] == INVALID_P2M_ENTRY before checking
+if it's an identity entry.  This should skip the more expensive
+lookup_address() in the common case.
+
+>  bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+
+I think you should map p2m_missing and p2m_identity as read-only and do
+the new page allocation on a write fault.
+
+set_phys_to_machine() is used every grant map and unmap and in the
+common case (already allocated array page) it must be a fast and simple:
+
+    xen_p2m_addr[pfn] = mfn;
+
+David
