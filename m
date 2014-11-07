@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaKGFaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:30:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57829 "EHLO
+	id S1751999AbaKGFap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:30:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57840 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaKGFa3 (ORCPT
+	with ESMTP id S1751881AbaKGFal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:30:29 -0500
-Date: Thu, 6 Nov 2014 21:29:34 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-758008b262f70be41104e4e33ba99181ac03775d@git.kernel.org>
-Cc: jolsa@redhat.com, tglx@linutronix.de, hpa@zytor.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, dsahern@gmail.com,
-        adrian.hunter@intel.com, namhyung@gmail.com, acme@redhat.com,
-        paulus@samba.org, peterz@infradead.org, mingo@kernel.org,
-        eranian@google.com
-Reply-To: hpa@zytor.com, fweisbec@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, paulus@samba.org,
-        acme@redhat.com, namhyung@gmail.com, eranian@google.com,
-        mingo@kernel.org
-In-Reply-To: <1414678188-14946-8-git-send-email-adrian.hunter@intel.com>
-References: <1414678188-14946-8-git-send-email-adrian.hunter@intel.com>
+	Fri, 7 Nov 2014 00:30:41 -0500
+Date: Thu, 6 Nov 2014 21:30:24 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-714c9c4a98f722115e10d021ea80600f4427b71e@git.kernel.org>
+Cc: adrian.hunter@intel.com, tglx@linutronix.de, dsahern@gmail.com,
+        paulus@samba.org, mingo@kernel.org, namhyung.kim@lge.com,
+        hpa@zytor.com, namhyung@kernel.org, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        a.p.zijlstra@chello.nl
+Reply-To: adrian.hunter@intel.com, tglx@linutronix.de, dsahern@gmail.com,
+        namhyung@kernel.org, namhyung.kim@lge.com, paulus@samba.org,
+        mingo@kernel.org, hpa@zytor.com, eranian@google.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl
+In-Reply-To: <1415063674-17206-4-git-send-email-namhyung@kernel.org>
+References: <1415063674-17206-4-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Defer export of comms that were not '
- set'
-Git-Commit-ID: 758008b262f70be41104e4e33ba99181ac03775d
+Subject: [tip:perf/core] perf build-id: Rename dsos__write_buildid_table()
+Git-Commit-ID: 714c9c4a98f722115e10d021ea80600f4427b71e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,165 +36,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  758008b262f70be41104e4e33ba99181ac03775d
-Gitweb:     http://git.kernel.org/tip/758008b262f70be41104e4e33ba99181ac03775d
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 30 Oct 2014 16:09:48 +0200
+Commit-ID:  714c9c4a98f722115e10d021ea80600f4427b71e
+Gitweb:     http://git.kernel.org/tip/714c9c4a98f722115e10d021ea80600f4427b71e
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 4 Nov 2014 10:14:29 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 3 Nov 2014 18:11:59 -0300
+CommitDate: Wed, 5 Nov 2014 10:14:07 -0300
 
-perf tools: Defer export of comms that were not 'set'
+perf build-id: Rename dsos__write_buildid_table()
 
-Tracing for a workload begins before the comm event is seen, which
-results in the initial comm having a string of the form ":<pid>" (e.g.
-":12345").
+The dsos__write_buildid_table() is not use struct dso and it mostly
+uses perf_session struct.
 
-In order to export the correct string, defer the export until the new
-script 'flush' callback.
+So rename it to perf_session__write_buildid_ table() so that it
+corresponds to other related functions such as
+perf_session__read_build_ids() and perf_session__cache_build_ids().
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1414678188-14946-8-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1415063674-17206-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/db-export.c                        | 62 +++++++++++++++++++++-
- tools/perf/util/db-export.h                        |  3 ++
- .../util/scripting-engines/trace-event-python.c    |  4 +-
- 3 files changed, 67 insertions(+), 2 deletions(-)
+ tools/perf/util/header.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-index 017ecbb..c81dae3 100644
---- a/tools/perf/util/db-export.c
-+++ b/tools/perf/util/db-export.c
-@@ -21,17 +21,74 @@
- #include "comm.h"
- #include "symbol.h"
- #include "event.h"
-+#include "util.h"
- #include "thread-stack.h"
- #include "db-export.h"
- 
-+struct deferred_export {
-+	struct list_head node;
-+	struct comm *comm;
-+};
-+
-+static int db_export__deferred(struct db_export *dbe)
-+{
-+	struct deferred_export *de;
-+	int err;
-+
-+	while (!list_empty(&dbe->deferred)) {
-+		de = list_entry(dbe->deferred.next, struct deferred_export,
-+				node);
-+		err = dbe->export_comm(dbe, de->comm);
-+		list_del(&de->node);
-+		free(de);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static void db_export__free_deferred(struct db_export *dbe)
-+{
-+	struct deferred_export *de;
-+
-+	while (!list_empty(&dbe->deferred)) {
-+		de = list_entry(dbe->deferred.next, struct deferred_export,
-+				node);
-+		list_del(&de->node);
-+		free(de);
-+	}
-+}
-+
-+static int db_export__defer_comm(struct db_export *dbe, struct comm *comm)
-+{
-+	struct deferred_export *de;
-+
-+	de = zalloc(sizeof(struct deferred_export));
-+	if (!de)
-+		return -ENOMEM;
-+
-+	de->comm = comm;
-+	list_add_tail(&de->node, &dbe->deferred);
-+
-+	return 0;
-+}
-+
- int db_export__init(struct db_export *dbe)
- {
- 	memset(dbe, 0, sizeof(struct db_export));
-+	INIT_LIST_HEAD(&dbe->deferred);
- 	return 0;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 0ecf4a3..be8d02e 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -297,10 +297,8 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
+ 	return err;
  }
  
-+int db_export__flush(struct db_export *dbe)
-+{
-+	return db_export__deferred(dbe);
-+}
-+
- void db_export__exit(struct db_export *dbe)
+-static int dsos__write_buildid_table(struct perf_header *header, int fd)
++static int perf_session__write_buildid_table(struct perf_session *session, int fd)
  {
-+	db_export__free_deferred(dbe);
- 	call_return_processor__free(dbe->crp);
- 	dbe->crp = NULL;
- }
-@@ -115,7 +172,10 @@ int db_export__comm(struct db_export *dbe, struct comm *comm,
- 	comm->db_id = ++dbe->comm_last_db_id;
+-	struct perf_session *session = container_of(header,
+-			struct perf_session, header);
+ 	struct rb_node *nd;
+ 	int err = machine__write_buildid_table(&session->machines.host, fd);
  
- 	if (dbe->export_comm) {
--		err = dbe->export_comm(dbe, comm);
-+		if (main_thread->comm_set)
-+			err = dbe->export_comm(dbe, comm);
-+		else
-+			err = db_export__defer_comm(dbe, comm);
- 		if (err)
- 			return err;
- 	}
-diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-index dd5ac2a..adbd22d 100644
---- a/tools/perf/util/db-export.h
-+++ b/tools/perf/util/db-export.h
-@@ -17,6 +17,7 @@
- #define __PERF_DB_EXPORT_H
+@@ -523,7 +521,7 @@ static int write_build_id(int fd, struct perf_header *h,
+ 	if (!perf_session__read_build_ids(session, true))
+ 		return -1;
  
- #include <linux/types.h>
-+#include <linux/list.h>
- 
- struct perf_evsel;
- struct machine;
-@@ -74,9 +75,11 @@ struct db_export {
- 	u64 sample_last_db_id;
- 	u64 call_path_last_db_id;
- 	u64 call_return_last_db_id;
-+	struct list_head deferred;
- };
- 
- int db_export__init(struct db_export *dbe);
-+int db_export__flush(struct db_export *dbe);
- void db_export__exit(struct db_export *dbe);
- int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
- int db_export__machine(struct db_export *dbe, struct machine *machine);
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cb1d960..118bc62 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -1030,7 +1030,9 @@ error:
- 
- static int python_flush_script(void)
- {
--	return 0;
-+	struct tables *tables = &tables_global;
-+
-+	return db_export__flush(&tables->dbe);
- }
- 
- /*
+-	err = dsos__write_buildid_table(h, fd);
++	err = perf_session__write_buildid_table(session, fd);
+ 	if (err < 0) {
+ 		pr_debug("failed to write buildid table\n");
+ 		return err;
