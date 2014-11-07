@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaKGQPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:15:47 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44477 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaKGQPp (ORCPT
+	id S1752484AbaKGQQf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:16:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37229 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677AbaKGQQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:15:45 -0500
-Message-ID: <545CF02A.9060500@collabora.co.uk>
-Date: Fri, 07 Nov 2014 17:15:38 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Fri, 7 Nov 2014 11:16:33 -0500
+Date: Fri, 7 Nov 2014 08:16:32 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: stable@vger.kernel.org, lwn@lwn.net, kernel-team@lists.ubuntu.com,
+        linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
+Subject: Re: [ANNOUNCE] Linux 3.16.y.z extended stable support
+Message-ID: <20141107161632.GB12566@kroah.com>
+References: <20141030181701.GD9032@hercules>
+ <20141107104328.GC8365@hercules>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 5/5] regulator: of: Add support for parsing initial
- and suspend modes
-References: <1415365205-27630-1-git-send-email-javier.martinez@collabora.co.uk> <1415365205-27630-6-git-send-email-javier.martinez@collabora.co.uk> <20141107154743.GT8509@sirena.org.uk>
-In-Reply-To: <20141107154743.GT8509@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107104328.GC8365@hercules>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 04:47 PM, Mark Brown wrote:
-> On Fri, Nov 07, 2014 at 02:00:05PM +0100, Javier Martinez Canillas wrote:
+On Fri, Nov 07, 2014 at 10:43:28AM +0000, Luis Henriques wrote:
+> On Thu, Oct 30, 2014 at 06:17:01PM +0000, Luis Henriques wrote:
+> > The Ubuntu kernel team is pleased to announce that we will be
+> > providing extended stable support for the Linux 3.16 kernel until
+> > April 2016 as a third party effort maintained on our infrastructure.
+> > The team will pick up stable maintenance where Greg KH left off with
+> > v3.16.7 [1].  Thank you, Greg.
+> > 
+> > In addition to the Ubuntu 14.10 "Utopic Unicorn" release, the Debian 8
+> > "Jessie" release will also be based on this kernel [2].  Since the
+> > regular support for "Jessie" will go beyond April 2016, after this
+> > date Ben Hutchings (or myself) will continue the Linux 3.16 kernel
+> > maintenance.
+> > 
+> > Our linux-3.16.y{-queue,-review} stable branches will fork from
+> > v3.16.7
+> > and will be published here:
+> > 
+> >     git://kernel.ubuntu.com/ubuntu/linux.git
+> > 
+> > We will use the same stable request/review workflow and follow the
+> > standard upstream stable kernel rules.  More details are available
+> > here [3].
+> > 
 > 
->> +	if (!of_property_read_u32(np, "regulator-initial-mode", &pval)) {
->> +		if (desc && desc->map_modes)
->> +			constraints->initial_mode = desc->map_modes(pval);
->> +		else
->> +			pr_warn("%s: failed to parse regulator-initial-mode\n",
->> +				np->name);
->> +	}
-> 
-> This is ignoring any error return from map_modes(), it's possible the DT
-> might have an invalid value.  The error message could also use some
-> improvement, it's more that the kernel doesn't understand how to parse
-> it even if it is valid.
-> 
+> In addition, I would like to announce a change in the kernel numbering
+> scheme that we will be using: we are adding the string '-ckt'
+> ('Canonical Kernel Team') to the kernel version.  So, for example,
+> kernel '3.16.7.1' becomes '3.16.7-ckt1'.
 
-Right, as I mentioned to Krzysztof in a previous email, I'll remove the
-warning message and add an error message instead if the map mode callback
-function fails and also show the error code as you suggest.
+Thank you for doing this.
 
-Best regards,
-Javier
+greg k-h
