@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaKGFco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:32:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57911 "EHLO
+	id S1752177AbaKGFcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:32:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57920 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772AbaKGFcj (ORCPT
+	with ESMTP id S1751772AbaKGFcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:32:39 -0500
-Date: Thu, 6 Nov 2014 21:31:43 -0800
+	Fri, 7 Nov 2014 00:32:46 -0500
+Date: Thu, 6 Nov 2014 21:31:58 -0800
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-416c419cc3799ddf7ea467c9adcb4cd038bd94a4@git.kernel.org>
-Cc: paulus@samba.org, acme@redhat.com, mingo@kernel.org, dsahern@gmail.com,
-        namhyung@gmail.com, jolsa@kernel.org, fweisbec@gmail.com,
-        mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        adrian.hunter@intel.com, hpa@zytor.com, peterz@infradead.org
-Reply-To: dsahern@gmail.com, acme@redhat.com, mingo@kernel.org,
-        paulus@samba.org, mingo@redhat.com, fweisbec@gmail.com,
-        namhyung@gmail.com, jolsa@kernel.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        adrian.hunter@intel.com, hpa@zytor.com
-In-Reply-To: <1414363445-22370-1-git-send-email-jolsa@kernel.org>
-References: <1414363445-22370-1-git-send-email-jolsa@kernel.org>
+Message-ID: <tip-cdae2d1e936457bf72673cb77e7f5f4b9d4c451e@git.kernel.org>
+Cc: namhyung@gmail.com, adrian.hunter@intel.com, jolsa@kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        peterz@infradead.org, hpa@zytor.com, acme@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        dsahern@gmail.com, acme@redhat.com, hpa@zytor.com,
+        peterz@infradead.org, paulus@samba.org, mingo@redhat.com,
+        fweisbec@gmail.com, jolsa@kernel.org, namhyung@gmail.com,
+        adrian.hunter@intel.com
+In-Reply-To: <1414363445-22370-2-git-send-email-jolsa@kernel.org>
+References: <1414363445-22370-2-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add test_and_set_bit function
-Git-Commit-ID: 416c419cc3799ddf7ea467c9adcb4cd038bd94a4
+Subject: [tip:perf/core] perf script perl: Removing event cache as it'
+ s no longer needed
+Git-Commit-ID: cdae2d1e936457bf72673cb77e7f5f4b9d4c451e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,17 +38,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  416c419cc3799ddf7ea467c9adcb4cd038bd94a4
-Gitweb:     http://git.kernel.org/tip/416c419cc3799ddf7ea467c9adcb4cd038bd94a4
+Commit-ID:  cdae2d1e936457bf72673cb77e7f5f4b9d4c451e
+Gitweb:     http://git.kernel.org/tip/cdae2d1e936457bf72673cb77e7f5f4b9d4c451e
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Sun, 26 Oct 2014 23:44:03 +0100
+AuthorDate: Sun, 26 Oct 2014 23:44:04 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 6 Nov 2014 17:42:13 -0300
+CommitDate: Thu, 6 Nov 2014 17:42:47 -0300
 
-perf tools: Add test_and_set_bit function
+perf script perl: Removing event cache as it's no longer needed
 
-Set a bit and return its old value. Stolen from kernel sources, will be
-used in next patches.
+We don't need to maintain cache of 'struct event_format' objects.
+Currently the 'struct perf_evsel' holds this reference already.
+
+Adding events_defined bitmap to keep track of defined events, which is
+much cheaper than array of pointers.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Acked-by: Namhyung Kim <namhyung@gmail.com>
@@ -57,49 +62,85 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1414363445-22370-1-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1414363445-22370-2-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/include/linux/bitmap.h | 17 +++++++++++++++++
- tools/perf/util/include/linux/bitops.h |  2 ++
- 2 files changed, 19 insertions(+)
+ .../perf/util/scripting-engines/trace-event-perl.c | 29 +++++-----------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/util/include/linux/bitmap.h b/tools/perf/util/include/linux/bitmap.h
-index 01ffd12..40bd214 100644
---- a/tools/perf/util/include/linux/bitmap.h
-+++ b/tools/perf/util/include/linux/bitmap.h
-@@ -46,4 +46,21 @@ static inline void bitmap_or(unsigned long *dst, const unsigned long *src1,
- 		__bitmap_or(dst, src1, src2, nbits);
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 0a01bac..22ebc46 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -24,6 +24,7 @@
+ #include <string.h>
+ #include <ctype.h>
+ #include <errno.h>
++#include <linux/bitmap.h>
+ 
+ #include "../util.h"
+ #include <EXTERN.h>
+@@ -57,7 +58,7 @@ INTERP my_perl;
+ #define FTRACE_MAX_EVENT				\
+ 	((1 << (sizeof(unsigned short) * 8)) - 1)
+ 
+-struct event_format *events[FTRACE_MAX_EVENT];
++static DECLARE_BITMAP(events_defined, FTRACE_MAX_EVENT);
+ 
+ extern struct scripting_context *scripting_context;
+ 
+@@ -238,35 +239,15 @@ static void define_event_symbols(struct event_format *event,
+ 		define_event_symbols(event, ev_name, args->next);
  }
  
-+/**
-+ * test_and_set_bit - Set a bit and return its old value
-+ * @nr: Bit to set
-+ * @addr: Address to count from
-+ */
-+static inline int test_and_set_bit(int nr, unsigned long *addr)
-+{
-+	unsigned long mask = BIT_MASK(nr);
-+	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	unsigned long old;
-+
-+	old = *p;
-+	*p = old | mask;
-+
-+	return (old & mask) != 0;
-+}
-+
- #endif /* _PERF_BITOPS_H */
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index dadfa7e..c329416 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -15,6 +15,8 @@
- #define BITS_TO_U64(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
- #define BITS_TO_U32(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
- #define BITS_TO_BYTES(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE)
-+#define BIT_WORD(nr)            ((nr) / BITS_PER_LONG)
-+#define BIT_MASK(nr)            (1UL << ((nr) % BITS_PER_LONG))
+-static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
+-{
+-	static char ev_name[256];
+-	struct event_format *event;
+-	int type = evsel->attr.config;
+-
+-	if (events[type])
+-		return events[type];
+-
+-	events[type] = event = evsel->tp_format;
+-	if (!event)
+-		return NULL;
+-
+-	sprintf(ev_name, "%s::%s", event->system, event->name);
+-
+-	define_event_symbols(event, ev_name, event->print_fmt.args);
+-
+-	return event;
+-}
+-
+ static void perl_process_tracepoint(struct perf_sample *sample,
+ 				    struct perf_evsel *evsel,
+ 				    struct thread *thread)
+ {
++	struct event_format *event = evsel->tp_format;
+ 	struct format_field *field;
+ 	static char handler[256];
+ 	unsigned long long val;
+ 	unsigned long s, ns;
+-	struct event_format *event;
+ 	int pid;
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+@@ -278,7 +259,6 @@ static void perl_process_tracepoint(struct perf_sample *sample,
+ 	if (evsel->attr.type != PERF_TYPE_TRACEPOINT)
+ 		return;
  
- #define for_each_set_bit(bit, addr, size) \
- 	for ((bit) = find_first_bit((addr), (size));		\
+-	event = find_cache_event(evsel);
+ 	if (!event)
+ 		die("ug! no event found for type %" PRIu64, (u64)evsel->attr.config);
+ 
+@@ -286,6 +266,9 @@ static void perl_process_tracepoint(struct perf_sample *sample,
+ 
+ 	sprintf(handler, "%s::%s", event->system, event->name);
+ 
++	if (!test_and_set_bit(event->id, events_defined))
++		define_event_symbols(event, handler, event->print_fmt.args);
++
+ 	s = nsecs / NSECS_PER_SEC;
+ 	ns = nsecs - s * NSECS_PER_SEC;
+ 
