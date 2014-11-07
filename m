@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbaKGKk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:40:58 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41875 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751249AbaKGKkz (ORCPT
+	id S1751728AbaKGKlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:41:09 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47531 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659AbaKGKlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:40:55 -0500
-Date: Fri, 7 Nov 2014 10:40:26 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kernel: Copy register_persistent_clock() to arm64
- source subtree
-Message-ID: <20141107104025.GC4585@leverpostej>
-References: <1415319665-21701-1-git-send-email-anatol.pomozov@gmail.com>
- <CAOMFOmXDqhwCk1pRf_9yGycboMqt-ZE33y=kZrhbqXOjVcrxYQ@mail.gmail.com>
- <545C4783.8070506@nvidia.com>
+	Fri, 7 Nov 2014 05:41:04 -0500
+Date: Fri, 7 Nov 2014 11:40:12 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch Part2 v5 21/31] PCI/MSI: Enhance core to support hierarchy
+ irqdomain
+In-Reply-To: <1415283644-2559-22-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1411071139260.3789@nanos>
+References: <1415283644-2559-1-git-send-email-jiang.liu@linux.intel.com> <1415283644-2559-22-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545C4783.8070506@nvidia.com>
-Thread-Topic: [PATCH] arm64: kernel: Copy register_persistent_clock() to
- arm64 source subtree
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 04:16:03AM +0000, Stephen Warren wrote:
-> On 11/06/2014 05:25 PM, Anatol Pomozov wrote:
-> > +Stephen
-> > 
-> > This patch is for tegra20_timer that uses register_persistent_clock().
-> > I did not find any way to share the same arch code for arm/arm64.
-> > 
-> > Actually this register_persistent_clock() does not look arm specific
-> > at all. Would it be better to move it somewhere outside of arch/?
-> 
-> No CC to linux-tegra@ or the other Tegra maintainers?
-> 
-> Yes, I think it'd be best not to have arch-specific APIs, or cut/paste
-> the same code into multiple places.
+On Thu, 6 Nov 2014, Jiang Liu wrote:
 
-Agreed. This looks in no way architecture specific, and having this in
-common code would be preferable to copying.
+> Enhance PCI MSI core to support hierarchy irqdomain, so the common
+> code could be shared among architectures.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+> Hi Thomas,
+> 	These changes are a temporary solution, I'm working on another
+> patch set which will refine these interfaces, especially kill 
+> arch_msi_irq_domain_{set|get}_hwirq().
 
-Mark.
+Ok. Please don't forget the irq_chip change :)
+
+Thanks,
+
+	tglx
