@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaKGStA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:49:00 -0500
-Received: from tex.lwn.net ([70.33.254.29]:54677 "EHLO vena.lwn.net"
+	id S1753149AbaKGSt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:49:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51411 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752972AbaKGSs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:48:58 -0500
-Date: Fri, 7 Nov 2014 13:48:54 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: Daniel Dressler <danieru.dressler@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Ted Mielczarek <ted@mielczarek.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Frank Razenberg <frank@zzattack.org>,
-        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
-        Petr Sebor <petr@scssoft.com>,
-        Thomaz de Oliveira dos Reis <thor27@gmail.com>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-kernel@vger.kernel.org (open list), linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/1] Input: xpad - update docs to reflect current state
-Message-ID: <20141107134854.56305dbb@lwn.net>
-In-Reply-To: <1415004836-22871-1-git-send-email-danieru.dressler@gmail.com>
-References: <1415004836-22871-1-git-send-email-danieru.dressler@gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751708AbaKGSt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:49:57 -0500
+Message-ID: <545D1435.90505@redhat.com>
+Date: Fri, 07 Nov 2014 13:49:25 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, peterz@infradead.org,
+        mingo@redhat.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: core: fix out of bounds read in sched_init_numa()
+References: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 Nov 2014 17:53:06 +0900
-Daniel Dressler <danieru.dressler@gmail.com> wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> The last time this documentation was accurate was
-> just over 8 years ago. In this time we've added
-> support for two new generations of Xbox console
-> controllers and dozens of third-party controllers.
+On 11/07/2014 09:53 AM, Andrey Ryabinin wrote:
+
+> Zero 'level' (e.g. on non-NUMA system) causing out of bounds
+> access in this line:
 > 
-> This patch unifies terminology and makes it explicit
-> which model of controller a sentence refers to.
+> sched_max_numa_distance = sched_domains_numa_distance[level - 1];
+> 
+> Fix this by exiting from sched_init_numa() earlier.
+> 
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com> Fixes:
+> 9942f79ba ("sched/numa: Export info needed for NUMA balancing on
+> complex topologies")
 
-So this seems like a useful update, and I was looking at pulling it into
-the docs tree.  But this hunk:
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-> diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-> index 2ed7905..7e2e047 100644
-> --- a/drivers/input/joystick/xpad.c
-> +++ b/drivers/input/joystick/xpad.c
-> @@ -40,8 +40,8 @@
->   *
->   * TODO:
->   *  - fine tune axes (especially trigger axes)
-> - *  - fix "analog" buttons (reported as digital now)
-> - *  - get rumble working
-> + *  - add original xbox rumble pack support
-> + *  - add xbox one rumble support
->   *  - need USB IDs for other dance pads
->   *
->   * History:
+> Another option would be to not call sched_init_numa() if
+> nr_node_ids == 1, but I'm not sure that there is no such
+> configuration where nr_node_ids > 1 and node_distance(i, j) =
+> node_distance(0, 0) for any i and j.
 
-Seems like a different change that shouldn't be mixed up with the doc
-update.  Send me a version without that change and, in the absence
-of complaints, I'll apply it.
+When there is only one node, the distance from the node to itself
+will always be equal to node_distance(0, 0)
 
-Thanks,
+I am somewhat surprised we go through all of sched_init_numa on
+a non-numa system, though :)
 
-jon
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUXRQ1AAoJEM553pKExN6D+h4H/jWfrFnEJFJMIrZU/nK5EcHg
+CiUGVJH2f4jL6qCSRIIduxyyu9qggsQ5Qp7Ci5bfGm98Sj89DNnXUv4sarPWT3zA
+KIDM+BuKFjKSXfCjcwrCkBP6x8gIYgCLR3hSThmq/MPrbNULy+1SUslb77i3kmBK
+OhLrjSC0SQty5yvGkCfWYGGh7rRboRcfVyckvODRRdhwHtBP1p/seDNWHadAeX+d
+WRNqdqJkvwwJ+eW9e7e009+OqB2EmS9xKBjXGIc7zEehfgOaeROQZ8sL7exs2g3n
+6gtnWpn4firR15BSaHdK8kaEmsReWUZdrIebNVsUDmErN97O/AJ9UygJ5wUenzQ=
+=YPeU
+-----END PGP SIGNATURE-----
