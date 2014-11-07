@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaKGNEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:04:15 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:14323 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaKGNEN (ORCPT
+	id S1752588AbaKGNEu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:04:50 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:53675 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaKGNEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:04:13 -0500
-X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
-   d="scan'208";a="190544217"
-Message-ID: <545CC349.8020006@citrix.com>
-Date: Fri, 7 Nov 2014 13:04:09 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
-        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH V2 2/5] xen: Delay m2p_override initialization
-References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-3-git-send-email-jgross@suse.com>
-In-Reply-To: <1415252853-7106-3-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+	Fri, 7 Nov 2014 08:04:47 -0500
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+To: rtc-linux@googlegroups.com
+Cc: shawn.guo@linaro.org, linux@arm.linux.org.uk, kernel@pengutronix.de,
+        stefan@agner.ch, b35083@freescale.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sanchayan Maity <maitysanchayan@gmail.com>
+Subject: [[PATCHv2] 0/3] Add SNVS clock gating and clock support to rtc-snvs driver
+Date: Fri,  7 Nov 2014 18:34:25 +0530
+Message-Id: <cover.1415364391.git.maitysanchayan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/14 05:47, Juergen Gross wrote:
-> The m2p overrides are used to be able to find the local pfn for a
-> foreign mfn mapped into the domain. They are used by driver backends
-> having to access frontend data.
-> 
-> As this functionality isn't used in early boot it makes no sense to
-> initialize the m2p override functions very early. It can be done
-> later without doing any harm, removing the need for allocating memory
-> via extend_brk().
-> 
-> While at it make some m2p override functions static as they are only
-> used internally.
-[...]
->  		}
->  		/* This should be the leafs allocated for identity from _brk. */
->  	}
-> -	return (unsigned long)mfn_list;
->  
-> +	m2p_override_init();
-> +	return (unsigned long)mfn_list;
->  }
->  #else
->  unsigned long __init xen_revector_p2m_tree(void)
->  {
->  	use_brk = 0;
-> +	m2p_override_init();
->  	return 0;
->  }
+The first version of the patches were send quiet a 
+while back. 
+https://lkml.org/lkml/2014/9/26/492
 
-This is mentioned in the description...
+The reason for sending this v2 of the patches late was to
+prevent any changes midway to the VF dts patches being tried
+with the below commit.
+https://lkml.org/lkml/2014/10/22/605
 
->  #endif
-> @@ -794,15 +794,16 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  #define M2P_OVERRIDE_HASH_SHIFT	10
->  #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
->  
-> -static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
-> +static struct list_head *m2p_overrides;
->  static DEFINE_SPINLOCK(m2p_override_lock);
->  
->  static void __init m2p_override_init(void)
->  {
->  	unsigned i;
->  
-> -	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
-> -				   sizeof(unsigned long));
-> +	m2p_overrides = alloc_bootmem_align(
-> +				sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
-> +				sizeof(unsigned long));
+Changes since v1:
+The clock enable and disable functions for the SNVS are
+now optional and only enable/disable it, if it has been
+defined in the device tree node. Instead of failing and 
+returning error as in the earlier set of patches, this
+makes sure that the driver does not break for the other
+i.MX devices for which the clock has not been defined and
+enabled elsewhere.
 
-...as is this.
+Sanchayan Maity (3):
+  ARM: imx: clk-vf610: Add clock for SNVS
+  ARM: dts: vfxxx: Add SNVS node
+  drivers/rtc/rtc-snvs: Add clock support
 
-> -int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
-> -			    struct gnttab_map_grant_ref *kmap_ops,
-> -			    struct page **pages, unsigned int count)
-> -{
-> -	int i, ret = 0;
-> -	bool lazy = false;
-> -	pte_t *pte;
-> -
-> -	if (xen_feature(XENFEAT_auto_translated_physmap))
-> -		return 0;
-> -
-> -	if (kmap_ops &&
-> -	    !in_interrupt() &&
-> -	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-> -		arch_enter_lazy_mmu_mode();
-> -		lazy = true;
-> -	}
+ arch/arm/boot/dts/vfxxx.dtsi            |   15 ++++++++++++++
+ arch/arm/mach-imx/clk-vf610.c           |    1 +
+ drivers/rtc/rtc-snvs.c                  |   34 +++++++++++++++++++++++++++++--
+ include/dt-bindings/clock/vf610-clock.h |    3 ++-
+ 4 files changed, 50 insertions(+), 3 deletions(-)
 
-... but, what's going on here.  What are the rest of these changes?
+-- 
+1.7.9.5
 
-I suppose this is the "make some functions static" but it's an
-unreviewable mess.  If you can't do this with some one line changes
-adding "static" and perhaps some forward declarations then please drop
-this bit.
-
-David
