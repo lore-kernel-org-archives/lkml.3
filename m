@@ -1,131 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaKGRIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:08:37 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:46451 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565AbaKGRIf (ORCPT
+	id S1752397AbaKGRJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:09:35 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40248 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaKGRJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:08:35 -0500
-From: David Drysdale <drysdale@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
-        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
-        David Drysdale <drysdale@google.com>
-Subject: [PATCHv7 0/3] syscalls,x86: Add execveat() system call
-Date: Fri,  7 Nov 2014 17:01:01 +0000
-Message-Id: <1415379664-31555-1-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Fri, 7 Nov 2014 12:09:33 -0500
+Date: Fri, 07 Nov 2014 12:09:26 -0500 (EST)
+Message-Id: <20141107.120926.297493918093719160.davem@davemloft.net>
+To: festevam@gmail.com
+Cc: LW@karo-electronics.de, netdev@vger.kernel.org,
+        fabio.estevam@freescale.com, Frank.Li@freescale.com,
+        linux-kernel@vger.kernel.org, rmk+kernel@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, stefan.wahren@i2se.com
+Subject: Re: [PATCHv4 1/1] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAOMZO5Cb1=Nvzu8EHqmV+K+W+ZJxzL1=5MnK6hDSstwh9ruweA@mail.gmail.com>
+References: <1415350967-2238-1-git-send-email-LW@KARO-electronics.de>
+	<1415350967-2238-2-git-send-email-LW@KARO-electronics.de>
+	<CAOMZO5Cb1=Nvzu8EHqmV+K+W+ZJxzL1=5MnK6hDSstwh9ruweA@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 07 Nov 2014 09:09:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fabio Estevam <festevam@gmail.com>
+Date: Fri, 7 Nov 2014 10:26:15 -0200
 
-This patch set adds execveat(2) for x86, and is derived from Meredydd
-Luff's patch from Sept 2012 (https://lkml.org/lkml/2012/9/11/528).
+> On Fri, Nov 7, 2014 at 7:02 AM, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
+>> commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+>> introduced a regression for i.MX28. The swap_buffer() function doing
+>> the endian conversion of the received data on i.MX28 may access memory
+>> beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+>> does not copy those bytes, so that the last bytes of a packet may be
+>> filled with invalid data after swapping.
+>> This will likely lead to checksum errors on received packets.
+>> E.g. when trying to mount an NFS rootfs:
+>> UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+>>
+>> Do the byte swapping and copying to the new skb in one go if
+>> necessary.
+>>
+>> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+> 
+> With this patch I am able to NFS mount on mx28 again. Thanks, Lothar!
+> 
+> Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-The primary aim of adding an execveat syscall is to allow an
-implementation of fexecve(3) that does not rely on the /proc
-filesystem, at least for executables (rather than scripts).  The
-current glibc version of fexecve(3) is implemented via /proc, which
-causes problems in sandboxed or otherwise restricted environments.
-
-Given the desire for a /proc-free fexecve() implementation, HPA
-suggested (https://lkml.org/lkml/2006/7/11/556) that an execveat(2)
-syscall would be an appropriate generalization.
-
-Also, having a new syscall means that it can take a flags argument
-without back-compatibility concerns.  The current implementation just
-defines the AT_EMPTY_PATH and AT_SYMLINK_NOFOLLOW flags, but other
-flags could be added in future -- for example, flags for new namespaces
-(as suggested at https://lkml.org/lkml/2006/7/11/474).
-
-Related history:
- - https://lkml.org/lkml/2006/12/27/123 is an example of someone
-   realizing that fexecve() is likely to fail in a chroot environment.
- - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=514043 covered
-   documenting the /proc requirement of fexecve(3) in its manpage, to
-   "prevent other people from wasting their time".
- - https://bugzilla.redhat.com/show_bug.cgi?id=241609 described a
-   problem where a process that did setuid() could not fexecve()
-   because it no longer had access to /proc/self/fd; this has since
-   been fixed.
-
-
-Changes since v6:
- - Remove special case for O_PATH file descriptors [Andy Lutomirski]
- - Use kasprintf rather than error-prone arithmetic [Kees Cook]
- - Add test for long name [Kees Cook]
- - Add test for non-executable O_PATH fd [Andy Lutomirski]
-
-Changes since v5:
- - Set new flag in bprm->interp_flags for O_CLOEXEC fds, so that binfmts
-   that invoke an interpreter fail the exec (as they will not be able
-   to access the invoked file). [Andy Lutomirski]
- - Don't truncate long paths. [Andy Lutomirski]
- - Commonize code to open the executed file. [Eric W. Biederman]
- - Mark O_PATH file descriptors so they cannot be fexecve()ed.
- - Make self-test more helpful, and add additional cases:
-     - file offset non-zero
-     - binary file without execute bit
-     - O_CLOEXEC fds
-
-Changes since v4, suggested by Eric W. Biederman:
- - Use empty filename with AT_EMPTY_PATH flag rather than NULL
-   pathname to request fexecve-like behaviour.
- - Build pathname as "/dev/fd/<fd>/<filename>" (or "/dev/fd/<fd>")
-   rather than using d_path().
- - Patch against v3.17 (bfe01a5ba249)
-
-Changes since Meredydd's v3 patch:
- - Added a selftest.
- - Added a man page.
- - Left open_exec() signature untouched to reduce patch impact
-   elsewhere (as suggested by Al Viro).
- - Filled in bprm->filename with d_path() into a buffer, to avoid use
-   of potentially-ephemeral dentry->d_name.
- - Patch against v3.14 (455c6fdbd21916).
-
-
-David Drysdale (2):
-  syscalls,x86: implement execveat() system call
-  syscalls,x86: add selftest for execveat(2)
-
- arch/x86/ia32/audit.c                   |   1 +
- arch/x86/ia32/ia32entry.S               |   1 +
- arch/x86/kernel/audit_64.c              |   1 +
- arch/x86/kernel/entry_64.S              |  28 +++
- arch/x86/syscalls/syscall_32.tbl        |   1 +
- arch/x86/syscalls/syscall_64.tbl        |   2 +
- arch/x86/um/sys_call_table_64.c         |   1 +
- fs/binfmt_em86.c                        |   4 +
- fs/binfmt_misc.c                        |   4 +
- fs/binfmt_script.c                      |  10 +
- fs/exec.c                               | 110 +++++++--
- fs/namei.c                              |   2 +-
- include/linux/binfmts.h                 |   4 +
- include/linux/compat.h                  |   3 +
- include/linux/fs.h                      |   1 +
- include/linux/sched.h                   |   4 +
- include/linux/syscalls.h                |   4 +
- include/uapi/asm-generic/unistd.h       |   4 +-
- kernel/sys_ni.c                         |   3 +
- lib/audit.c                             |   3 +
- tools/testing/selftests/Makefile        |   1 +
- tools/testing/selftests/exec/.gitignore |   9 +
- tools/testing/selftests/exec/Makefile   |  25 ++
- tools/testing/selftests/exec/execveat.c | 397 ++++++++++++++++++++++++++++++++
- 24 files changed, 608 insertions(+), 15 deletions(-)
- create mode 100644 tools/testing/selftests/exec/.gitignore
- create mode 100644 tools/testing/selftests/exec/Makefile
- create mode 100644 tools/testing/selftests/exec/execveat.c
-
---
-2.1.0.rc2.206.gedb03e5
+Applied, thanks everyone.
