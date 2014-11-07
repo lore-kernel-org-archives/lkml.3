@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaKGCxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 21:53:13 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37408 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348AbaKGCwO (ORCPT
+	id S1751745AbaKGCxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 21:53:33 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:27654 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaKGCwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 21:52:14 -0500
-X-AuditID: cbfee68d-f79296d000004278-ed-545c33d9a751
+	Thu, 6 Nov 2014 21:52:13 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-e3-545c33d9da12
 From: Beomho Seo <beomho.seo@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         devicetree@vger.kernel.org
@@ -19,39 +19,40 @@ Cc: sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
         jonghwa3.lee@samsung.com, geunsik.lim@samsung.com,
         inki.dae@samsung.com, sw0312.kim@samsung.com,
         Beomho Seo <beomho.seo@samsung.com>
-Subject: [PATCH 3/5] power: rt5033_battery: Add RT5033 Fuel gauge device driver
-Date: Fri, 07 Nov 2014 11:52:05 +0900
-Message-id: <1415328727-16245-4-git-send-email-beomho.seo@samsung.com>
+Subject: [PATCH 2/5] regulator: rt5033: Add RT5033 Regulator device driver
+Date: Fri, 07 Nov 2014 11:52:04 +0900
+Message-id: <1415328727-16245-3-git-send-email-beomho.seo@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1415328727-16245-1-git-send-email-beomho.seo@samsung.com>
 References: <1415328727-16245-1-git-send-email-beomho.seo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsWyRsSkQPeWcUyIQW+6xelP29gtpj58wmZx
-	/ctzVotJT94zW8w/co7VYuLKycwW/W8Wslr8mdDKZnHu1UpGi0n3J7BYdJ59wmxxtukNu8X9
-	r0cZLb5d6WCyuLxrDpvF594jjBZLr19kspgwfS2LReveI+wWp7tZLU7vLrGYMfklm4OYx5p5
-	axg9Lvf1MnnsnHWX3WPl8i9sHptXaHlsWtXJ5nHn2h42j3knAz36tqxi9Pi8SS6AK4rLJiU1
-	J7MstUjfLoEr49ETg4J9VhX7OnYxNzAuM+xi5OSQEDCRONK/hRHCFpO4cG89WxcjF4eQwFJG
-	iR2fWthginpuHGOFSExnlNj8axojhNPGJHF03juwKjYBTYn3U66wgNgiAhESZ5fNYgEpYhY4
-	xSyx/vQfsISwgL/E+htXmEBsFgFViT1/t4Ht5hVwk5i/bztQDQfQOgWJOZNsQMKcAu4Szx9v
-	YwaxhYBK9q49CDZTQmAlh8T7HxvYIOYISHybfAiqV1Zi0wFmiKslJQ6uuMEygVF4ASPDKkbR
-	1ILkguKk9CJDveLE3OLSvHS95PzcTYzAKD3971nvDsbbB6wPMQpwMCrx8N7gjQkRYk0sK67M
-	PcRoCrRhIrOUaHI+MBXklcQbGpsZWZiamBobmVuaKYnzKkr9DBYSSE8sSc1OTS1ILYovKs1J
-	LT7EyMTBKdXAeINP7e5fwXMFPJ+YkgpcQ58XT2v59jFYK+hgBJ/uGSdmnzXb7fO+H3i43YJ/
-	ghVnefq8f1y1ZeyHguM8dJK5zgpOtHLL3vC4btnpF/M7m9N4JDS+W4asXbn478ppcno7XTgu
-	8yj0P+wsvLyuX+uZpfzXNR949m8P6Frc9lzGoF/+t/22grtzlViKMxINtZiLihMBFvrXXs0C	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+xoO5N45gQg1MfjCxOf9rGbjH14RM2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsWyRsSkUPemcUyIwdO/NhanP21jt5j68Amb
+	xfUvz1ktJj15z2wx/8g5VouJKyczW/S/Wchq8WdCK5vFuVcrGS0m3Z/AYtF59gmzxdmmN+wW
+	978eZbT4dqWDyeLyrjlsFp97jzBaLL1+kcliwvS1LBate4+wW5zuZrU4vbvEYsbkl2wOYh5r
+	5q1h9Ljc18vksXPWXXaPlcu/sHlsXqHlsWlVJ5vHnWt72DzmnQz06NuyitHj8ya5AK4oLpuU
+	1JzMstQifbsErox553YyFXSYVax4vp69gbFTt4uRk0NCwERi1eMtrBC2mMSFe+vZuhi5OIQE
+	ljJK9E5ZzAxTdH/zTiYQW0hgOqPEqRdGEEVtTBJH571jA0mwCWhKvJ9yhQXEFhGIkDi7bBYL
+	SBGzwClmifWn/4AlhAW8JL6vXskIYrMIqEocWdQLZvMKuEn0bl4FtI0DaJuCxJxJNiBhTgF3
+	ieePtzFDLHaT2Lv2IAvEQSs5JBq++0CMEZD4NvkQC0SrrMSmA1A3S0ocXHGDZQKj8AJGhlWM
+	oqkFyQXFSelFpnrFibnFpXnpesn5uZsYgVF6+t+ziTsY7x+wPsQowMGoxMN7gzcmRIg1say4
+	MvcQoynQhonMUqLJ+cBUkFcSb2hsZmRhamJqbGRuaaYkzqsj/TNYSCA9sSQ1OzW1ILUovqg0
+	J7X4ECMTB6dUA6MKq6W86bHHx1epLQ2zm3/2+Yl/Oodf6Uqp/pjqupj/6lMezi6ZAxde2a/7
+	WRCz1e/T0c8zzTh7hO3e5Rrtesb/QdOotih8ohqfi5/kQ02Oms7eV/aJu4pN+zY+2v3KOOaR
+	aVbjtgOHfuQKVNc8uLUqQypj7WZBsRLb6swHQQxTL02LeL6C658SS3FGoqEWc1FxIgCrwlYW
+	zQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+xoO5N45gQgy2PDS1Of9rGbjH14RM2
 	i+tfnrNaTHryntli/pFzrBYTV05mtuh/s5DV4s+EVjaLc69WMlpMuj+BxaLz7BNmi7NNb9gt
 	7n89ymjx7UoHk8XlXXPYLD73HmG0WHr9IpPFhOlrWSxa9x5htzjdzWpxeneJxYzJL9kcxDzW
 	zFvD6HG5r5fJY+esu+weK5d/YfPYvELLY9OqTjaPO9f2sHnMOxno0bdlFaPH501yAVxRDYw2
 	GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB/KimUJeaU
-	AoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzHj0xKNhnVbGvYxdzA+Mywy5GTg4J
-	AROJnhvHWCFsMYkL99azdTFycQgJTGeU2PxrGiOE08YkcXTeOzaQKjYBTYn3U66wgNgiAhES
-	Z5fNYgEpYhY4xSyx/vQfsISwgL/E+htXmEBsFgFViT1/tzGC2LwCbhLz920HquEAWqcgMWeS
-	DUiYU8Bd4vnjbcwgthBQyd61B1kmMPIuYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGc
-	BJ5J7WBc2WBxiFGAg1GJh/cmb0yIEGtiWXFl7iFGCQ5mJRFeG3agEG9KYmVValF+fFFpTmrx
-	IUZToKMmMkuJJucDE1ReSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5O
-	qQbGAKfl9V2nxM0c63asXv52r8k73pl1FbI8XrpZmw177uz5X+BgsMbtRrX/nsyXVfyaHSW/
-	DedwB84TXpx5qkDZ8fzOOXpSRSpPV8RWB0fpeR1cvv5ZUuAcm7/fDNmXzuK7u/7NceOvO9bN
-	+Sy82ruVUUaviY3bamK3z91815U3fjLdzHbbutNYiaU4I9FQi7moOBEAtqJ2YhgDAAA=
+	AoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz5p3byVTQYVax4vl69gbGTt0uRk4O
+	CQETifubdzJB2GISF+6tZwOxhQSmM0qcemHUxcgFZLcxSRyd9w4swSagKfF+yhUWEFtEIELi
+	7LJZLCBFzAKnmCXWn/4DlhAW8JL4vnolI4jNIqAqcWRRL5jNK+Am0bt5FXMXIwfQNgWJOZNs
+	QMKcAu4Szx9vY4ZY7Caxd+1BlgmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBCeB
+	Z1I7GFc2WBxiFOBgVOLhvckbEyLEmlhWXJl7iFGCg1lJhNeGHSjEm5JYWZValB9fVJqTWnyI
+	0RToqInMUqLJ+cAElVcSb2hsYmZkaWRuaGFkbK4kznug1TpQSCA9sSQ1OzW1ILUIpo+Jg1Oq
+	gVHfwkXHWWD6FemV8ywtZ++dmZHceO1H1/U77ZeULgj//PV9TsqbP2798ufuZNfq/zkq//ne
+	4Qzn/w6Kem//XKh/6/78xP71Ya/2u0slKpU3XU7Y9zoh23X/rYod0h3RLSH6N64sz//VqKg5
+	6fTFmpvS78VW/mn6KvzOS/HK/9MrSwIdL54/8rheiaU4I9FQi7moOBEANG3TrBgDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,63 +60,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device driver of Richtek PMIC.
-The driver support battery fuel gange. Fuel gauge calculates and determines the
-battery state of charge(SOC) according to battery open circuit voltage(OCV).
-Also, this driver provides battery average voltage, voltage and bettery present
-property.
+This patch add device driver of Richtek RT5033 PMIC.
+The driver support multiple regulator like LDO and synchronous Buck.
+The integrated synchronous buck converter is designed to provide 0.6 A
+application with high efficiency. Two LDOs are integrated. One safe LDO is
+for 60mA and the other one LDO is for 150 mA.
 
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
 Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/power/Kconfig          |    8 ++
- drivers/power/Makefile         |    1 +
- drivers/power/rt5033_battery.c |  189 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 198 insertions(+)
- create mode 100644 drivers/power/rt5033_battery.c
+ drivers/regulator/Kconfig            |    8 ++
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/rt5033-regulator.c |  154 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 163 insertions(+)
+ create mode 100644 drivers/regulator/rt5033-regulator.c
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 0108c2a..da6981f 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -397,6 +397,14 @@ config BATTERY_GOLDFISH
- 	  Say Y to enable support for the battery and AC power in the
- 	  Goldfish emulator.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 55d7b7b..8558e1b 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -521,6 +521,14 @@ config REGULATOR_RN5T618
+ 	help
+ 	  Say y here to support the regulators found on Ricoh RN5T618 PMIC.
  
-+config BATTERY_RT5033
-+	tristate "RT5033 fuel gauge support"
++config REGULATOR_RT5033
++	tristate "Richtek RT5033 Regulators"
 +	depends on MFD_RT5033
 +	help
-+	  This adds support for battery fuel gauge in Richtek RT5033 PMIC.
-+	  The fuelgauge calculates and determines the battery state of charge
-+	  according to battery open circuit voltage.
++	  This adds support for voltage and current regulators in Richtek
++	  RT5033 PMIC. The device supports multiple regulators like
++	  current source, LDO and Buck.
 +
- source "drivers/power/reset/Kconfig"
- 
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index dfa8942..b83a0c7 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
- obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
- obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
- obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
-+obj-$(CONFIG_BATTERY_RT5033)	+= rt5033_battery.o
- obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
- obj-$(CONFIG_BATTERY_TWL4030_MADC)	+= twl4030_madc_battery.o
- obj-$(CONFIG_CHARGER_88PM860X)	+= 88pm860x_charger.o
-diff --git a/drivers/power/rt5033_battery.c b/drivers/power/rt5033_battery.c
+ config REGULATOR_S2MPA01
+ 	tristate "Samsung S2MPA01 voltage regulator"
+ 	depends on MFD_SEC_CORE
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 1029ed3..1f28ebf 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+ obj-$(CONFIG_REGULATOR_RK808)   += rk808-regulator.o
+ obj-$(CONFIG_REGULATOR_RN5T618) += rn5t618-regulator.o
++obj-$(CONFIG_REGULATOR_RT5033)	+= rt5033-regulator.o
+ obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
+ obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
+ obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
+diff --git a/drivers/regulator/rt5033-regulator.c b/drivers/regulator/rt5033-regulator.c
 new file mode 100644
-index 0000000..660f039
+index 0000000..87571d8
 --- /dev/null
-+++ b/drivers/power/rt5033_battery.c
-@@ -0,0 +1,189 @@
++++ b/drivers/regulator/rt5033-regulator.c
+@@ -0,0 +1,154 @@
 +/*
-+ * Fuel gauge driver for Richtek RT5033
++ * Regulator driver for the Richtek RT5033
 + *
 + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
 + * Beomho Seo <beomho.seo@samsung.com>
@@ -127,180 +127,145 @@ index 0000000..660f039
 +
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/mfd/rt5033-private.h>
++#include <linux/regulator/driver.h>
 +#include <linux/mfd/rt5033.h>
++#include <linux/mfd/rt5033-private.h>
++#include <linux/regulator/of_regulator.h>
 +
-+static int rt5033_battery_get_capacity(struct i2c_client *client)
++static struct regulator_ops rt5033_safe_ldo_ops = {
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
++	.list_voltage		= regulator_list_voltage_linear,
++};
++
++static struct regulator_ops rt5033_buck_ops = {
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++};
++
++static const struct regulator_desc rt5033_supported_regulators[] = {
++	[RT5033_BUCK] = {
++		.name		= "BUCK",
++		.id		= RT5033_BUCK,
++		.ops		= &rt5033_buck_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= RT5033_REGULATOR_BUCK_VOLTAGE_STEP_NUM,
++		.min_uV		= RT5033_REGULATOR_BUCK_VOLTAGE_MIN,
++		.uV_step	= RT5033_REGULATOR_BUCK_VOLTAGE_STEP,
++		.enable_reg	= RT5033_REG_CTRL,
++		.enable_mask	= RT5033_CTRL_EN_BUCK_MASK,
++		.vsel_reg	= RT5033_REG_BUCK_CTRL,
++		.vsel_mask	= RT5033_BUCK_CTRL_MASK,
++	},
++	[RT5033_LDO] = {
++		.name		= "LDO",
++		.id		= RT5033_LDO,
++		.ops		= &rt5033_buck_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= RT5033_REGULATOR_LDO_VOLTAGE_STEP_NUM,
++		.min_uV		= RT5033_REGULATOR_LDO_VOLTAGE_MIN,
++		.uV_step	= RT5033_REGULATOR_LDO_VOLTAGE_STEP,
++		.enable_reg	= RT5033_REG_CTRL,
++		.enable_mask	= RT5033_CTRL_EN_LDO_MASK,
++		.vsel_reg	= RT5033_REG_LDO_CTRL,
++		.vsel_mask	= RT5033_LDO_CTRL_MASK,
++	},
++	[RT5033_SAFE_LDO] = {
++		.name		= "SAFE_LDO",
++		.id		= RT5033_SAFE_LDO,
++		.ops		= &rt5033_safe_ldo_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= 1,
++		.min_uV		= RT5033_REGULATOR_SAFE_LDO_VOLTAGE,
++		.enable_reg	= RT5033_REG_CTRL,
++		.enable_mask	= RT5033_CTRL_EN_SAFE_LDO_MASK,
++	},
++};
++
++static struct of_regulator_match rt5033_regulator_matches[] = {
++	{ .name = "BUCK", },
++	{ .name = "LDO", },
++	{ .name = "SAFE_LDO", },
++};
++
++static int rt5033_regulator_dt_parse_data(struct device *dev)
 +{
-+	struct rt5033_battery *battery = i2c_get_clientdata(client);
-+	u32 msb;
-+
-+	regmap_read(battery->regmap, RT5033_FUEL_REG_SOC_H, &msb);
-+
-+	return msb;
-+}
-+
-+static int rt5033_battery_get_present(struct i2c_client *client)
-+{
-+	struct rt5033_battery *battery = i2c_get_clientdata(client);
-+	u32 val;
-+
-+	regmap_read(battery->regmap, RT5033_FUEL_REG_CONFIG_L, &val);
-+
-+	return (val & RT5033_FUEL_BAT_PRESENT) ? true : false;
-+}
-+
-+static int rt5033_battery_get_watt_prop(struct i2c_client *client,
-+		enum power_supply_property psp)
-+{
-+	struct rt5033_battery *battery = i2c_get_clientdata(client);
-+	unsigned int regh, regl;
 +	int ret;
-+	u32 msb, lsb;
++	struct device_node *np;
 +
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		regh = RT5033_FUEL_REG_VBAT_H;
-+		regl = RT5033_FUEL_REG_VBAT_L;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+		regh = RT5033_FUEL_REG_AVG_VOLT_H;
-+		regl = RT5033_FUEL_REG_AVG_VOLT_L;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
-+		regh = RT5033_FUEL_REG_AVG_VOLT_H;
-+		regl = RT5033_FUEL_REG_AVG_VOLT_L;
-+		break;
-+	default:
++	np = of_get_child_by_name(dev->parent->of_node, "regulators");
++	if  (!np) {
++		dev_err(dev, "Failed to get child node for regulators\n");
 +		return -EINVAL;
 +	}
 +
-+	regmap_read(battery->regmap, regh, &msb);
-+	regmap_read(battery->regmap, regl, &lsb);
-+
-+	ret = ((msb << 4) + (lsb >> 4)) * 1250 / 1000;
++	ret = of_regulator_match(dev, np, rt5033_regulator_matches,
++					ARRAY_SIZE(rt5033_regulator_matches));
++	if (ret < 0)
++		return ret;
 +
 +	return ret;
 +}
 +
-+static int rt5033_battery_get_property(struct power_supply *psy,
-+		enum power_supply_property psp,
-+		union power_supply_propval *val)
++static int rt5033_regulator_probe(struct platform_device *pdev)
 +{
-+	struct rt5033_battery *battery = container_of(psy,
-+				struct rt5033_battery, psy);
++	struct rt5033_dev *rt5033 = dev_get_drvdata(pdev->dev.parent);
++	int ret, i;
++	struct regulator_config config = {};
 +
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
-+		val->intval = rt5033_battery_get_watt_prop(battery->client,
-+									psp);
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = rt5033_battery_get_present(battery->client);
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		val->intval = rt5033_battery_get_capacity(battery->client);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static enum power_supply_property rt5033_battery_props[] = {
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_VOLTAGE_OCV,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+};
-+
-+static bool rt5033_battery_bolatile_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case RT5033_FUEL_REG_OCV_H ... RT5033_FUEL_REG_SOC_L:
-+	case RT5033_FUEL_REG_CRATE ... RT5033_FUEL_REG_AVG_VOLT_L:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
-+static struct regmap_config rt5033_battery_regmap_config = {
-+	.reg_bits	= 8,
-+	.val_bits	= 8,
-+	.volatile_reg	= rt5033_battery_bolatile_reg,
-+	.max_register	= RT5033_FUEL_REG_END,
-+};
-+
-+static int rt5033_battery_probe(struct i2c_client *client,
-+		const struct i2c_device_id *id)
-+{
-+	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
-+	struct rt5033_battery *battery;
-+	u32 ret;
-+
-+	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE))
-+		return -EIO;
-+
-+	battery = devm_kzalloc(&client->dev, sizeof(*battery), GFP_KERNEL);
-+	if (!battery)
-+		return -EINVAL;
-+
-+	battery->client = client;
-+	battery->regmap = devm_regmap_init_i2c(client,
-+			&rt5033_battery_regmap_config);
-+	if (IS_ERR(battery->regmap)) {
-+		dev_err(&client->dev, "Failed to initialize regmap\n");
-+		return -EINVAL;
-+	}
-+
-+	i2c_set_clientdata(client, battery);
-+
-+	battery->psy.name		= "rt5033-battery";
-+	battery->psy.type		= POWER_SUPPLY_TYPE_BATTERY;
-+	battery->psy.get_property	= rt5033_battery_get_property;
-+	battery->psy.properties		= rt5033_battery_props;
-+	battery->psy.num_properties	= ARRAY_SIZE(rt5033_battery_props);
-+
-+	ret = power_supply_register(&client->dev, &battery->psy);
-+	if (ret) {
-+		dev_err(&client->dev, "Failed to register power supply\n");
++	ret = rt5033_regulator_dt_parse_data(&pdev->dev);
++	if (ret < 0)
 +		return ret;
++
++	config.dev = &pdev->dev;
++	config.driver_data = rt5033;
++
++	for (i = 0; i < ARRAY_SIZE(rt5033_supported_regulators); i++) {
++		struct regulator_dev *regulator;
++
++		config.init_data = rt5033_regulator_matches[i].init_data;
++		config.of_node = rt5033_regulator_matches[i].of_node;
++		config.regmap = rt5033->regmap;
++
++		regulator = devm_regulator_register(&pdev->dev,
++				&rt5033_supported_regulators[i], &config);
++		if (IS_ERR(regulator)) {
++			ret = PTR_ERR(regulator);
++			dev_err(&pdev->dev,
++				"Regulator init failed %d: with error: %d\n",
++				i, ret);
++			return ret;
++		}
 +	}
 +
 +	return 0;
 +}
 +
-+static int rt5033_battery_remove(struct i2c_client *client)
-+{
-+	struct rt5033_battery *battery = i2c_get_clientdata(client);
-+
-+	power_supply_unregister(&battery->psy);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id rt5033_battery_id[] = {
-+	{ "rt5033-battery", },
++static const struct platform_device_id rt5033_regulator_id[] = {
++	{ "rt5033-regulator", },
 +	{ }
 +};
-+MODULE_DEVICE_TABLE(platform, rt5033_battery_id);
++MODULE_DEVICE_TABLE(platform, rt5033_regulator_id);
 +
-+static struct i2c_driver rt5033_battery_driver = {
++static struct platform_driver rt5033_regulator_driver = {
 +	.driver = {
-+		.name = "rt5033-battery",
++		.name = "rt5033-regulator",
 +	},
-+	.probe = rt5033_battery_probe,
-+	.remove = rt5033_battery_remove,
-+	.id_table = rt5033_battery_id,
++	.probe		= rt5033_regulator_probe,
++	.id_table	= rt5033_regulator_id,
 +};
-+module_i2c_driver(rt5033_battery_driver);
++module_platform_driver(rt5033_regulator_driver);
 +
-+MODULE_DESCRIPTION("Richtek RT5033 fuel gauge driver");
++MODULE_DESCRIPTION("Richtek RT5033 Regulator driver");
 +MODULE_AUTHOR("Beomho Seo <beomho.seo@samsung.com>");
 +MODULE_LICENSE("GPL");
 -- 
