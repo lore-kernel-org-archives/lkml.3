@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaKGE1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 23:27:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46584 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348AbaKGE1m (ORCPT
+	id S1751659AbaKGE3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 23:29:40 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52923 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaKGE3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 23:27:42 -0500
-Message-ID: <545C4A36.9050702@oracle.com>
-Date: Thu, 06 Nov 2014 23:27:34 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 6 Nov 2014 23:29:38 -0500
+Message-ID: <545C4AA4.7010904@linux.vnet.ibm.com>
+Date: Fri, 07 Nov 2014 09:59:24 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: mm: shmem: freeing mlocked page
-Content-Type: text/plain; charset=utf-8
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        patches@linaro.org
+Subject: Re: [PATCH V2 1/5] sched: idle: cpuidle: Check the latency req before
+ idle
+References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOg1GFW82WD8b6Vas5xhYQrQtdP1STGxyzYtrBNSa+-Pw@mail.gmail.com> <544FE787.8090108@linaro.org> <54504A60.2090908@linux.vnet.ibm.com> <545A3414.7030500@linaro.org> <545AF424.2070302@linux.vnet.ibm.com> <545B7AAC.3020309@linaro.org>
+In-Reply-To: <545B7AAC.3020309@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110704-0005-0000-0000-0000062EBE2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 11/06/2014 07:12 PM, Daniel Lezcano wrote:
+> 
+> Preeti,
+> 
+> I am wondering if we aren't going to a false debate.
+> 
+> If the latency_req is 0, we should just poll and not enter in any idle
+> state even if one has zero exit latency. With a zero latency req, we
+> want full reactivity on the system, not enter an idle state with all the
+> computation in the menu governor, no ?
+> 
+> I agree this patch changes the behavior on PowerPC, but only if the
+> latency_req is set to zero. I don't think we are worried about power
+> saving when setting this value.
+> 
+> Couldn't the patch accepted as it is for the sake of consistency on all
+> the platform and then we optimize cleanly for the special latency zero
+> case ?
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel, I've stumbled on the following spew:
+Alright Daniel, you can go ahead. I was thinking this patch through and
+now realize that, like you point out the logic will only get complicated
+with all the additional hack.
 
-[ 1441.564471] BUG: Bad page state in process trinity-c612  pfn:12593a
-[ 1441.564476] page:ffffea0006e175c0 count:0 mapcount:0 mapping:          (null) index:
-0x49
-[ 1441.564488] flags: 0xafffff8028000c(referenced|uptodate|swapbacked|mlocked)
-[ 1441.564491] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
-[ 1441.564493] bad because of flags:
-[ 1441.564498] flags: 0x200000(mlocked)
-[ 1441.564503] Modules linked in:
-[ 1441.564511] CPU: 2 PID: 11657 Comm: trinity-c612 Not tainted 3.18.0-rc3-next-20141106-sasha-00054-g09b7ccf-dirty #1447
-[ 1441.564519]  0000000000000000 0000000000000000 1ffffffff3b44e48 ffff8805c969b868
-[ 1441.564526]  ffffffff9c085024 0000000000000000 ffffea0006e175c0 ffff8805c969b898
-[ 1441.564532]  ffffffff925fd0a1 ffffea0006e17628 dfffe90000000000 0000000000000000
-[ 1441.564534] Call Trace:
-[ 1441.568496] dump_stack (lib/dump_stack.c:52)
-[ 1441.568516] bad_page (mm/page_alloc.c:338)
-[ 1441.568523] free_pages_prepare (mm/page_alloc.c:649 mm/page_alloc.c:755)
-[ 1441.568531] free_hot_cold_page (mm/page_alloc.c:1436)
-[ 1441.568541] free_hot_cold_page_list (mm/page_alloc.c:1482 (discriminator 3))
-[ 1441.568555] release_pages (mm/swap.c:961)
-[ 1441.568566] __pagevec_release (include/linux/pagevec.h:44 mm/swap.c:978)
-[ 1441.568579] shmem_undo_range (include/linux/pagevec.h:69 mm/shmem.c:451)
-[ 1441.568591] shmem_truncate_range (mm/shmem.c:546)
-[ 1441.568599] shmem_fallocate (include/linux/spinlock.h:309 mm/shmem.c:2092)
-[ 1441.568612] ? __sb_start_write (fs/super.c:1208)
-[ 1441.568622] ? __sb_start_write (fs/super.c:1208)
-[ 1441.568633] do_fallocate (fs/open.c:297)
-[ 1441.568648] SyS_madvise (mm/madvise.c:332 mm/madvise.c:381 mm/madvise.c:531 mm/madvise.c:462)
-[ 1441.568660] ? syscall_trace_enter_phase1 (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1486)
-[ 1441.568672] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+But would it be possible to add the weak arch_cpu_idle_loop() call for
+the cases where latency requirement is 0 like you had suggested earlier
+? This would ensure the polling logic does not break on PowerPC and we
+don't bother the governor even. I will add the function in the core
+PowerPC code. If arch does not define this function it will fall back to
+cpu_idle_loop(). Fair enough?
 
-I'm slightly confused here, because the page is mapcount==0, not LOCKED but still MLOCKED...
+Regards
+Preeti U Murthy
 
-Thanks,
-Sasha
