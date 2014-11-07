@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411AbaKGDvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 22:51:43 -0500
-Received: from mail-bl2on0102.outbound.protection.outlook.com ([65.55.169.102]:41896
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1751422AbaKGEAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 23:00:08 -0500
+Received: from mail-bn1bn0108.outbound.protection.outlook.com ([157.56.110.108]:23424
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751249AbaKGDvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 22:51:41 -0500
-Date: Thu, 6 Nov 2014 21:50:08 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Vitaly Bordug <vitb@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: powerpc/8xx: Remove Kconfig symbol FADS
-Message-ID: <20141107035008.GA25204@home.buserror.net>
-References: <1411545979.19525.5.camel@x220>
+	id S1751225AbaKGEAE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Nov 2014 23:00:04 -0500
+X-WSS-ID: 0NENHRX-08-UXM-02
+X-M-MSG: 
+Message-ID: <545C4279.5080104@amd.com>
+Date: Fri, 7 Nov 2014 11:54:33 +0800
+From: David Zhou <david1.zhou@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1411545979.19525.5.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [2601:2:5800:3f7:5c04:72f8:a6ec:82b5]
-X-ClientProxiedBy: BLUPR08CA0032.namprd08.prod.outlook.com (10.141.200.12) To
- DM2PR0301MB0735.namprd03.prod.outlook.com (25.160.97.143)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
+To: Alex Pilon <alp+linux@alexpilon.ca>, David Airlie <airlied@linux.ie>
+CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
+        <trivial@kernel.org>
+Subject: Re: [PATCH] drm: Fix spelling.
+References: <20141107003505.GA3491@alexpilon.ca>
+In-Reply-To: <20141107003505.GA3491@alexpilon.ca>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-Originating-IP: [10.237.74.94]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(51704005)(24454002)(101416001)(120916001)(92566001)(76176999)(59896002)(106466001)(33656002)(92726001)(47776003)(46102003)(20776003)(83506001)(87266999)(95666004)(65956001)(107046002)(54356999)(64706001)(23676002)(99396003)(62966003)(65816999)(21056001)(50986999)(87936001)(19580395003)(64126003)(36756003)(19580405001)(50466002)(68736004)(80316001)(102836001)(105586002)(97736003)(77156002)(84676001)(44976005)(4396001)(31966008)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0735;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 03883BD916
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(199003)(51704005)(189002)(19580405001)(87976001)(54356999)(120916001)(76176999)(42186005)(50466002)(110136001)(46406003)(83506001)(86362001)(95666004)(69596002)(19580395003)(50986999)(33656002)(77096003)(46102003)(101416001)(97756001)(31966008)(97736003)(21056001)(64706001)(106356001)(105586002)(20776003)(122386002)(77156002)(99396003)(53416004)(92566001)(81156004)(23726002)(47776003)(102836001)(107046002)(40100003)(92726001)(62966003)(4396001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0735;H:home.buserror.net;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=David1.Zhou@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:06:19AM +0200, Paul Bolle wrote:
-> Commit 39eb56da2b53 ("pcmcia: Remove m8xx_pcmcia driver") removed the
-> only driver that used CONFIG_FADS. Setting the Kconfig symbol FADS is
-> pointless since that commit. Remove it.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+ok to fix.
+
+Regards,
+David
+On 2014年11月07日 08:36, Alex Pilon wrote:
+> Fix spelling of 'ioctl'.
+>
+> Signed-off-by: Alex Pilon <alp+linux@alexpilon.ca>
 > ---
-> Done on top of next-20140923. Tested with "git grep" only.
-> 
-> Another cleanup might be to remove MPC8XXFADS (or "FADS") from the "8xx
-> Machine Type" choice. Is there any reason left to pick "FADS" as a
-> machine type?
+>   drivers/gpu/drm/drm_crtc.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> index e79c8d3..3d274c1 100644
+> --- a/drivers/gpu/drm/drm_crtc.c
+> +++ b/drivers/gpu/drm/drm_crtc.c
+> @@ -2943,7 +2943,7 @@ EXPORT_SYMBOL(drm_mode_legacy_fb_format);
+>    * @file_priv: drm file for the ioctl call
+>    *
+>    * Add a new FB to the specified CRTC, given a user request. This is the
+> - * original addfb ioclt which only supported RGB formats.
+> + * original addfb ioctl which only supported RGB formats.
+>    *
+>    * Called by the user via ioctl.
+>    *
 
-Nothing references MPC8XXFADS, so yes, it can be removed.
-
--Scott
