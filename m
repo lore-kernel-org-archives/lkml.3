@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaKGE3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 23:29:40 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52923 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346AbaKGE3i (ORCPT
+	id S1751500AbaKGEoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 23:44:24 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:34905 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaKGEoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 23:29:38 -0500
-Message-ID: <545C4AA4.7010904@linux.vnet.ibm.com>
-Date: Fri, 07 Nov 2014 09:59:24 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 6 Nov 2014 23:44:21 -0500
+Message-ID: <545C4E1F.4060401@gmail.com>
+Date: Thu, 06 Nov 2014 20:44:15 -0800
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        patches@linaro.org
-Subject: Re: [PATCH V2 1/5] sched: idle: cpuidle: Check the latency req before
- idle
-References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOg1GFW82WD8b6Vas5xhYQrQtdP1STGxyzYtrBNSa+-Pw@mail.gmail.com> <544FE787.8090108@linaro.org> <54504A60.2090908@linux.vnet.ibm.com> <545A3414.7030500@linaro.org> <545AF424.2070302@linux.vnet.ibm.com> <545B7AAC.3020309@linaro.org>
-In-Reply-To: <545B7AAC.3020309@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
+References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110704-0005-0000-0000-0000062EBE2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 07:12 PM, Daniel Lezcano wrote:
-> 
-> Preeti,
-> 
-> I am wondering if we aren't going to a false debate.
-> 
-> If the latency_req is 0, we should just poll and not enter in any idle
-> state even if one has zero exit latency. With a zero latency req, we
-> want full reactivity on the system, not enter an idle state with all the
-> computation in the menu governor, no ?
-> 
-> I agree this patch changes the behavior on PowerPC, but only if the
-> latency_req is set to zero. I don't think we are worried about power
-> saving when setting this value.
-> 
-> Couldn't the patch accepted as it is for the sake of consistency on all
-> the platform and then we optimize cleanly for the special latency zero
-> case ?
+From: Frank Rowand <frank.rowand@sonymobile.com>
 
-Alright Daniel, you can go ahead. I was thinking this patch through and
-now realize that, like you point out the logic will only get complicated
-with all the additional hack.
+Update devicetree binding for msm_serial to reflect msm_serial_probe()
+getting line id from the serial alias.
 
-But would it be possible to add the weak arch_cpu_idle_loop() call for
-the cases where latency requirement is 0 like you had suggested earlier
-? This would ensure the polling logic does not break on PowerPC and we
-don't bother the governor even. I will add the function in the core
-PowerPC code. If arch does not define this function it will fall back to
-cpu_idle_loop(). Fair enough?
+Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+---
+ Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt |   15 +++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-Regards
-Preeti U Murthy
-
+Index: b/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
+===================================================================
+--- a/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
++++ b/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
+@@ -27,11 +27,18 @@ Optional properties:
+ - dmas: Should contain dma specifiers for transmit and receive channels
+ - dma-names: Should contain "tx" for transmit and "rx" for receive channels
+ 
++Additional requirements:
++- Each UART port must have an alias correctly numbered in "aliases" node.
++
+ Examples:
+ 
+ A uartdm v1.4 device with dma capabilities.
+ 
+-serial@f991e000 {
++aliases {
++	serial0 = &serial0;
++};
++
++serial0: serial@f991e000 {
+ 	compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
+ 	reg = <0xf991e000 0x1000>;
+ 	interrupts = <0 108 0x0>;
+@@ -43,7 +50,11 @@ serial@f991e000 {
+ 
+ A uartdm v1.3 device without dma capabilities and part of a GSBI complex.
+ 
+-serial@19c40000 {
++aliases {
++	serial0 = &serial0;
++};
++
++serial0: serial@19c40000 {
+ 	compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
+ 	reg = <0x19c40000 0x1000>,
+ 	      <0x19c00000 0x1000>;
