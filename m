@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaKGRvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:51:50 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:40700 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaKGRvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:51:49 -0500
-Message-ID: <545D06AC.7000606@windriver.com>
-Date: Fri, 7 Nov 2014 11:51:40 -0600
-From: Chris Friesen <chris.friesen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752095AbaKGR4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:56:50 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39036 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459AbaKGR4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 12:56:49 -0500
+Date: Fri, 7 Nov 2014 18:56:45 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 6/8] x86, microcode, intel: use cpuid explicitly instead
+ of sync_core
+Message-ID: <20141107175645.GC5180@pd.tnic>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-7-git-send-email-hmh@hmh.eng.br>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com>	<yq1bnoj9dvu.fsf@sermon.lab.mkp.net> <yq1ioiq9abc.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1ioiq9abc.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [147.11.116.14]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1410197875-19252-7-git-send-email-hmh@hmh.eng.br>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 11:42 AM, Martin K. Petersen wrote:
->>>>>> "Martin" == Martin K Petersen <martin.petersen@oracle.com> writes:
->
-> Martin> I know there was a bug open with Seagate. I assume it has been
-> Martin> fixed in their latest firmware.
->
-> Seagate confirms that this issue was fixed about a year ago. Will
-> provide more data when I have it.
+On Mon, Sep 08, 2014 at 02:37:52PM -0300, Henrique de Moraes Holschuh wrote:
+> The protocol to safely read MSR 8BH, described in the Intel SDM vol 3A,
+> section 9.11.7.1, explicitly determines that cpuid with EAX=1 must be
+> used between the wrmsr(0x8B, 0); and the rdmsr(0x8B).
+> 
+> The microcode driver was abusing sync_core() to do this, probably
+> because it predates by nearly a decade the current "asm volatile
+> (:::"memory")" implementation of native_cpuid(), which is required for
+> the Intel MSR 8BH access protocol.
 
-Okay, thanks for the clarification (for this and the spec itself).
+Huh, what? Have you taken a look at sync_core() first?
 
-Apparently there's a new firmware available, dated Oct 13 but with no 
-release notes.  We just tried updating the firmware on one of the drives 
-in question and it failed from two different versions of linux, while 
-Windows won't install because it doesn't like our SSD apparently.  Joy.
+> sync_core() semanthics are that of being a speculative execution
+> barrier, and not "run cpuid with EAX=1".
 
-Chris
+Again, what?
 
+Hmm, let's see:
+
+static inline void sync_core(void)
+{
+ ...
+
+        asm volatile("cpuid"
+                     : "=a" (tmp)
+                     : "0" (1)
+                     : "ebx", "ecx", "edx", "memory");
+
+What is the problem again?
+
+I'm sorry but I don't understand what you're trying to fix here...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
