@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaKGF3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:29:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57773 "EHLO
+	id S1751878AbaKGFaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:30:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57809 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaKGF3p (ORCPT
+	with ESMTP id S1750945AbaKGFaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:29:45 -0500
-Date: Thu, 6 Nov 2014 21:28:49 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-c29414f5cfd641d956c5287848fdd8f25bb2afa3@git.kernel.org>
-Cc: namhyung@gmail.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        dsahern@gmail.com, fweisbec@gmail.com, jolsa@redhat.com,
-        mingo@kernel.org, hpa@zytor.com, adrian.hunter@intel.com,
-        peterz@infradead.org, tglx@linutronix.de, eranian@google.com,
-        paulus@samba.org
-Reply-To: namhyung@gmail.com, acme@redhat.com, linux-kernel@vger.kernel.org,
-        jolsa@redhat.com, mingo@kernel.org, dsahern@gmail.com,
-        fweisbec@gmail.com, hpa@zytor.com, adrian.hunter@intel.com,
-        peterz@infradead.org, tglx@linutronix.de, eranian@google.com,
-        paulus@samba.org
-In-Reply-To: <1414678188-14946-4-git-send-email-adrian.hunter@intel.com>
-References: <1414678188-14946-4-git-send-email-adrian.hunter@intel.com>
+	Fri, 7 Nov 2014 00:30:13 -0500
+Date: Thu, 6 Nov 2014 21:29:52 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-c00c48fc6e6ef63d83a7417923a06b08089bb34b@git.kernel.org>
+Cc: namhyung.kim@lge.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, hpa@zytor.com, acme@redhat.com,
+        adrian.hunter@intel.com, tglx@linutronix.de, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, dsahern@gmail.com, eranian@google.com,
+        jolsa@redhat.com, namhyung@kernel.org
+Reply-To: namhyung@kernel.org, tglx@linutronix.de, adrian.hunter@intel.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
+        eranian@google.com, dsahern@gmail.com, jolsa@kernel.org, hpa@zytor.com,
+        acme@redhat.com, namhyung.kim@lge.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1415063674-17206-2-git-send-email-namhyung@kernel.org>
+References: <1415063674-17206-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add branch_type and in_tx to Python export
-Git-Commit-ID: c29414f5cfd641d956c5287848fdd8f25bb2afa3
+Subject: [tip:perf/core] perf symbols:
+  Preparation for compressed kernel module support
+Git-Commit-ID: c00c48fc6e6ef63d83a7417923a06b08089bb34b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,204 +38,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c29414f5cfd641d956c5287848fdd8f25bb2afa3
-Gitweb:     http://git.kernel.org/tip/c29414f5cfd641d956c5287848fdd8f25bb2afa3
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 30 Oct 2014 16:09:44 +0200
+Commit-ID:  c00c48fc6e6ef63d83a7417923a06b08089bb34b
+Gitweb:     http://git.kernel.org/tip/c00c48fc6e6ef63d83a7417923a06b08089bb34b
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 4 Nov 2014 10:14:27 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 3 Nov 2014 18:07:34 -0300
+CommitDate: Tue, 4 Nov 2014 10:15:53 -0300
 
-perf tools: Add branch_type and in_tx to Python export
+perf symbols: Preparation for compressed kernel module support
 
-Add branch_type and in_tx to Python db export and the
-export-to-postgresql.py script.
+This patch adds basic support to handle compressed kernel module as some
+distro (such as Archlinux) carries on it now.  The actual work using
+compression library will be added later.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1414678188-14946-4-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1415063674-17206-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/scripts/python/export-to-postgresql.py  | 32 ++++++++++++++++++----
- .../util/scripting-engines/trace-event-python.c    | 30 +++++++++++++++++++-
- 2 files changed, 55 insertions(+), 7 deletions(-)
+ tools/perf/util/dso.c        | 75 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/dso.h        |  7 +++++
+ tools/perf/util/machine.c    | 19 ++++++++++-
+ tools/perf/util/symbol-elf.c | 35 ++++++++++++++++++++-
+ tools/perf/util/symbol.c     |  8 ++++-
+ 5 files changed, 141 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
-index d8f6df0..bb79aec 100644
---- a/tools/perf/scripts/python/export-to-postgresql.py
-+++ b/tools/perf/scripts/python/export-to-postgresql.py
-@@ -123,6 +123,10 @@ do_query(query, 'CREATE TABLE symbols ('
- 		'sym_end	bigint,'
- 		'binding	integer,'
- 		'name		varchar(2048))')
-+do_query(query, 'CREATE TABLE branch_types ('
-+		'id		integer		NOT NULL,'
-+		'name		varchar(80))')
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 0247acf..36a607c 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -21,8 +21,10 @@ char dso__symtab_origin(const struct dso *dso)
+ 		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]		= 'b',
+ 		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]		= 'd',
+ 		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]		= 'K',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP]	= 'm',
+ 		[DSO_BINARY_TYPE__GUEST_KALLSYMS]		= 'g',
+ 		[DSO_BINARY_TYPE__GUEST_KMODULE]		= 'G',
++		[DSO_BINARY_TYPE__GUEST_KMODULE_COMP]		= 'M',
+ 		[DSO_BINARY_TYPE__GUEST_VMLINUX]		= 'V',
+ 	};
+ 
+@@ -112,11 +114,13 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 		break;
+ 
+ 	case DSO_BINARY_TYPE__GUEST_KMODULE:
++	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
+ 		path__join3(filename, size, symbol_conf.symfs,
+ 			    root_dir, dso->long_name);
+ 		break;
+ 
+ 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
++	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
+ 		__symbol__join_symfs(filename, size, dso->long_name);
+ 		break;
+ 
+@@ -137,6 +141,77 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 	return ret;
+ }
+ 
++static int decompress_dummy(const char *input __maybe_unused,
++			    int output __maybe_unused)
++{
++	return -1;
++}
 +
- if branches:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -139,7 +143,9 @@ if branches:
- 		'to_dso_id	bigint,'
- 		'to_symbol_id	bigint,'
- 		'to_sym_offset	bigint,'
--		'to_ip		bigint)')
-+		'to_ip		bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- else:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -160,7 +166,9 @@ else:
- 		'period		bigint,'
- 		'weight		bigint,'
- 		'transaction	bigint,'
--		'data_src	bigint)')
-+		'data_src	bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- 
- do_query(query, 'CREATE VIEW samples_view AS '
- 	'SELECT '
-@@ -178,7 +186,9 @@ do_query(query, 'CREATE VIEW samples_view AS '
- 		'to_hex(to_ip) AS to_ip_hex,'
- 		'(SELECT name FROM symbols WHERE id = to_symbol_id) AS to_symbol,'
- 		'to_sym_offset,'
--		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name'
-+		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name,'
-+		'(SELECT name FROM branch_types WHERE id = branch_type) AS branch_type_name,'
-+		'in_tx'
- 	' FROM samples')
- 
- 
-@@ -234,6 +244,7 @@ comm_file		= open_output_file("comm_table.bin")
- comm_thread_file	= open_output_file("comm_thread_table.bin")
- dso_file		= open_output_file("dso_table.bin")
- symbol_file		= open_output_file("symbol_table.bin")
-+branch_type_file	= open_output_file("branch_type_table.bin")
- sample_file		= open_output_file("sample_table.bin")
- 
- def trace_begin():
-@@ -257,6 +268,7 @@ def trace_end():
- 	copy_output_file(comm_thread_file,	"comm_threads")
- 	copy_output_file(dso_file,		"dsos")
- 	copy_output_file(symbol_file,		"symbols")
-+	copy_output_file(branch_type_file,	"branch_types")
- 	copy_output_file(sample_file,		"samples")
- 
- 	print datetime.datetime.today(), "Removing intermediate files..."
-@@ -267,6 +279,7 @@ def trace_end():
- 	remove_output_file(comm_thread_file)
- 	remove_output_file(dso_file)
- 	remove_output_file(symbol_file)
-+	remove_output_file(branch_type_file)
- 	remove_output_file(sample_file)
- 	os.rmdir(output_dir_name)
- 	print datetime.datetime.today(), "Adding primary keys"
-@@ -277,6 +290,7 @@ def trace_end():
- 	do_query(query, 'ALTER TABLE comm_threads    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE dsos            ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
- 
- 	print datetime.datetime.today(), "Adding foreign keys"
-@@ -352,9 +366,15 @@ def symbol_table(symbol_id, dso_id, sym_start, sym_end, binding, symbol_name, *x
- 	value = struct.pack(fmt, 6, 8, symbol_id, 8, dso_id, 8, sym_start, 8, sym_end, 4, binding, n, symbol_name)
- 	symbol_file.write(value)
- 
--def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, *x):
-+def branch_type_table(branch_type, name, *x):
-+	n = len(name)
-+	fmt = "!hiii" + str(n) + "s"
-+	value = struct.pack(fmt, 2, 4, branch_type, n, name)
-+	branch_type_file.write(value)
++static const struct {
++	const char *fmt;
++	int (*decompress)(const char *input, int output);
++} compressions[] = {
++	{ "gz", decompress_dummy },
++	{ NULL, },
++};
 +
-+def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, branch_type, in_tx, *x):
- 	if branches:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiq", 15, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiiiB", 17, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 4, branch_type, 1, in_tx)
- 	else:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiq", 19, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
- 	sample_file.write(value)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 2fd7ee8..f3ca779 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -66,6 +66,7 @@ struct tables {
- 	PyObject		*comm_thread_handler;
- 	PyObject		*dso_handler;
- 	PyObject		*symbol_handler;
-+	PyObject		*branch_type_handler;
- 	PyObject		*sample_handler;
- 	bool			db_export_mode;
- };
-@@ -664,13 +665,31 @@ static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
++bool is_supported_compression(const char *ext)
++{
++	unsigned i;
++
++	for (i = 0; compressions[i].fmt; i++) {
++		if (!strcmp(ext, compressions[i].fmt))
++			return true;
++	}
++	return false;
++}
++
++bool is_kmodule_extension(const char *ext)
++{
++	if (strncmp(ext, "ko", 2))
++		return false;
++
++	if (ext[2] == '\0' || (ext[2] == '.' && is_supported_compression(ext+3)))
++		return true;
++
++	return false;
++}
++
++bool is_kernel_module(const char *pathname, bool *compressed)
++{
++	const char *ext = strrchr(pathname, '.');
++
++	if (ext == NULL)
++		return false;
++
++	if (is_supported_compression(ext + 1)) {
++		if (compressed)
++			*compressed = true;
++		ext -= 3;
++	} else if (compressed)
++		*compressed = false;
++
++	return is_kmodule_extension(ext + 1);
++}
++
++bool decompress_to_file(const char *ext, const char *filename, int output_fd)
++{
++	unsigned i;
++
++	for (i = 0; compressions[i].fmt; i++) {
++		if (!strcmp(ext, compressions[i].fmt))
++			return !compressions[i].decompress(filename,
++							   output_fd);
++	}
++	return false;
++}
++
++bool dso__needs_decompress(struct dso *dso)
++{
++	return dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
++		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
++}
++
+ /*
+  * Global list of open DSOs and the counter.
+  */
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index a316e4a..3782c82 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -22,7 +22,9 @@ enum dso_binary_type {
+ 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
+ 	DSO_BINARY_TYPE__GUEST_KMODULE,
++	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
+ 	DSO_BINARY_TYPE__KCORE,
+ 	DSO_BINARY_TYPE__GUEST_KCORE,
+ 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+@@ -185,6 +187,11 @@ int dso__kernel_module_get_build_id(struct dso *dso, const char *root_dir);
+ char dso__symtab_origin(const struct dso *dso);
+ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
+ 				   char *root_dir, char *filename, size_t size);
++bool is_supported_compression(const char *ext);
++bool is_kmodule_extension(const char *ext);
++bool is_kernel_module(const char *pathname, bool *compressed);
++bool decompress_to_file(const char *ext, const char *filename, int output_fd);
++bool dso__needs_decompress(struct dso *dso);
+ 
+ /*
+  * The dso__data_* external interface provides following functions:
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 51a6303..946c7d6 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -464,6 +464,7 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ {
+ 	struct map *map;
+ 	struct dso *dso = __dsos__findnew(&machine->kernel_dsos, filename);
++	bool compressed;
+ 
+ 	if (dso == NULL)
+ 		return NULL;
+@@ -476,6 +477,11 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ 		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
+ 	else
+ 		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
++
++	/* _KMODULE_COMP should be next to _KMODULE */
++	if (is_kernel_module(filename, &compressed) && compressed)
++		dso->symtab_type++;
++
+ 	map_groups__insert(&machine->kmaps, map);
+ 	return map;
+ }
+@@ -861,8 +867,14 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
+ 			struct map *map;
+ 			char *long_name;
+ 
+-			if (dot == NULL || strcmp(dot, ".ko"))
++			if (dot == NULL)
+ 				continue;
++
++			/* On some system, modules are compressed like .ko.gz */
++			if (is_supported_compression(dot + 1) &&
++			    is_kmodule_extension(dot - 2))
++				dot -= 3;
++
+ 			snprintf(dso_name, sizeof(dso_name), "[%.*s]",
+ 				 (int)(dot - dent->d_name), dent->d_name);
+ 
+@@ -1044,6 +1056,11 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 			dot = strrchr(name, '.');
+ 			if (dot == NULL)
+ 				goto out_problem;
++			/* On some system, modules are compressed like .ko.gz */
++			if (is_supported_compression(dot + 1))
++				dot -= 3;
++			if (!is_kmodule_extension(dot + 1))
++				goto out_problem;
+ 			snprintf(short_module_name, sizeof(short_module_name),
+ 					"[%.*s]", (int)(dot - name), name);
+ 			strxfrchar(short_module_name, '-', '_');
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 1e23a5b..efc7eb6 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -546,6 +546,35 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
  	return 0;
  }
  
-+static int python_export_branch_type(struct db_export *dbe, u32 branch_type,
-+				     const char *name)
++static int decompress_kmodule(struct dso *dso, const char *name,
++			      enum dso_binary_type type)
 +{
-+	struct tables *tables = container_of(dbe, struct tables, dbe);
-+	PyObject *t;
++	int fd;
++	const char *ext = strrchr(name, '.');
++	char tmpbuf[] = "/tmp/perf-kmod-XXXXXX";
 +
-+	t = tuple_new(2);
++	if ((type != DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP &&
++	     type != DSO_BINARY_TYPE__GUEST_KMODULE_COMP) ||
++	    type != dso->symtab_type)
++		return -1;
 +
-+	tuple_set_s32(t, 0, branch_type);
-+	tuple_set_string(t, 1, name);
++	if (!ext || !is_supported_compression(ext + 1))
++		return -1;
 +
-+	call_object(tables->branch_type_handler, t, "branch_type_table");
++	fd = mkstemp(tmpbuf);
++	if (fd < 0)
++		return -1;
 +
-+	Py_DECREF(t);
-+
-+	return 0;
-+}
-+
- static int python_export_sample(struct db_export *dbe,
- 				struct export_sample *es)
- {
- 	struct tables *tables = container_of(dbe, struct tables, dbe);
- 	PyObject *t;
- 
--	t = tuple_new(19);
-+	t = tuple_new(21);
- 
- 	tuple_set_u64(t, 0, es->db_id);
- 	tuple_set_u64(t, 1, es->evsel->db_id);
-@@ -691,6 +710,8 @@ static int python_export_sample(struct db_export *dbe,
- 	tuple_set_u64(t, 16, es->sample->weight);
- 	tuple_set_u64(t, 17, es->sample->transaction);
- 	tuple_set_u64(t, 18, es->sample->data_src);
-+	tuple_set_s32(t, 19, es->sample->flags & PERF_BRANCH_MASK);
-+	tuple_set_s32(t, 20, !!(es->sample->flags & PERF_IP_FLAG_IN_TX));
- 
- 	call_object(tables->sample_handler, t, "sample_table");
- 
-@@ -861,6 +882,7 @@ static void set_table_handlers(struct tables *tables)
- 	SET_TABLE_HANDLER(comm_thread);
- 	SET_TABLE_HANDLER(dso);
- 	SET_TABLE_HANDLER(symbol);
-+	SET_TABLE_HANDLER(branch_type);
- 	SET_TABLE_HANDLER(sample);
- }
- 
-@@ -910,6 +932,12 @@ static int python_start_script(const char *script, int argc, const char **argv)
- 
- 	set_table_handlers(tables);
- 
-+	if (tables->db_export_mode) {
-+		err = db_export__branch_types(&tables->dbe);
-+		if (err)
-+			goto error;
++	if (!decompress_to_file(ext + 1, name, fd)) {
++		close(fd);
++		fd = -1;
 +	}
 +
- 	return err;
- error:
- 	Py_Finalize();
++	unlink(tmpbuf);
++
++	return fd;
++}
++
+ bool symsrc__possibly_runtime(struct symsrc *ss)
+ {
+ 	return ss->dynsym || ss->opdsec;
+@@ -571,7 +600,11 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 	Elf *elf;
+ 	int fd;
+ 
+-	fd = open(name, O_RDONLY);
++	if (dso__needs_decompress(dso))
++		fd = decompress_kmodule(dso, name, type);
++	else
++		fd = open(name, O_RDONLY);
++
+ 	if (fd < 0)
+ 		return -1;
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 0783311..c69915c 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -51,7 +51,9 @@ static enum dso_binary_type binary_type_symtab[] = {
+ 	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
+ 	DSO_BINARY_TYPE__GUEST_KMODULE,
++	DSO_BINARY_TYPE__GUEST_KMODULE_COMP,
+ 	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP,
+ 	DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO,
+ 	DSO_BINARY_TYPE__NOT_FOUND,
+ };
+@@ -1300,7 +1302,9 @@ static bool dso__is_compatible_symtab_type(struct dso *dso, bool kmod,
+ 		return dso->kernel == DSO_TYPE_GUEST_KERNEL;
+ 
+ 	case DSO_BINARY_TYPE__GUEST_KMODULE:
++	case DSO_BINARY_TYPE__GUEST_KMODULE_COMP:
+ 	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
++	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP:
+ 		/*
+ 		 * kernel modules know their symtab type - it's set when
+ 		 * creating a module dso in machine__new_module().
+@@ -1368,7 +1372,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 		return -1;
+ 
+ 	kmod = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
+-		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
++		dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
++		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE ||
++		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE_COMP;
+ 
+ 	/*
+ 	 * Iterate over candidate debug images.
