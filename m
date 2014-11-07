@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaKGSTH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:19:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42550 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaKGSTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:19:05 -0500
-Date: Fri, 7 Nov 2014 10:19:04 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matej =?utf-8?Q?Mu=C5=BEila?= <mmuzila@redhat.com>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        kys@microsoft.com, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        dan.carpenter@oracle.com
-Subject: Re: [PATCH v2 1/3] tools: hv: fcopy_daemon: Check buffer limits
-Message-ID: <20141107181904.GA11874@kroah.com>
-References: <544658CE.8050704@redhat.com>
- <544671E2.3000905@redhat.com>
+	id S1752623AbaKGSVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:21:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54828 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278AbaKGSVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 13:21:06 -0500
+Date: Fri, 7 Nov 2014 19:21:03 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+Message-ID: <20141107182103.GE1136@dhcp128.suse.cz>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+ <545B98E6.2070009@suse.cz>
+ <20141106165748.GB14689@cerebellum.variantweb.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <544671E2.3000905@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141106165748.GB14689@cerebellum.variantweb.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 04:46:58PM +0200, Matej Mužila wrote:
-> From: Matej Mužila <mmuzila@redhat.com>
+On Thu 2014-11-06 10:57:48, Seth Jennings wrote:
+> On Thu, Nov 06, 2014 at 04:51:02PM +0100, Jiri Slaby wrote:
+> > On 11/06/2014, 03:39 PM, Seth Jennings wrote:
+> > > +/*************************************
+> > > + * Core structures
+> > > + ************************************/
+> > > +
+> > > +/*
+> > > + * lp_ structs vs lpc_ structs
+> > > + *
+> > > + * For each element (patch, object, func) in the live-patching code,
+> > > + * there are two types with two different prefixes: lp_ and lpc_.
+> > > + *
+> > > + * Structures used by the live-patch modules to register with this core module
+> > > + * are prefixed with lp_ (live patching).  These structures are part of the
+> > > + * registration API and are defined in livepatch.h.  The structures used
+> > > + * internally by this core module are prefixed with lpc_ (live patching core).
+> > > + */
+> > 
+> > I am not sure if the separation and the allocations/kobj handling are
+> > worth it. It makes the code really less understandable. Can we have just
+> > struct lip_function (don't unnecessarily abbreviate), lip_objectfile
+> > (object is too generic, like Java object) and lip_patch containing all
+> > the needed information? It would clean up the code a lot. (Yes, we would
+> > have profited from c++ here.)
 > 
-> Check if cpmsg->size is in limits of DATA_FRAGMENT
-> 
-> Signed-off-by: Matej Mužila <mmuzila@redhat.com>
-> ---
-> 
-> If corrupted data are read from /dev/vmbus/hv_fcopy, pwrite can
-> read from memory outside of the buffer (defined at line 138).
-> Added check. 
-> 
-> Changes made since v1:
-> 	* max value of cmesg->size is now derived from structure
-> 	  definition in sources/include/uapi/linux/hyperv.h
-> 	* Fixed comments
-> 
-> 
-> diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-> index 6f27e2f..1fc2dc2 100644
-> --- a/tools/hv/hv_fcopy_daemon.c
-> +++ b/tools/hv/hv_fcopy_daemon.c
-> @@ -104,6 +104,10 @@ static int hv_copy_data(struct hv_do_fcopy *cpmsg)
->  {
->  	ssize_t bytes_written;
->  
-> +	/* Check if the cpmsg->size is in limits of DATA_FRAGMENT */
-> +	if (cpmsg->size > sizeof(cpmsg->data)) 
-> +		return HV_E_FAIL;
-> +
->  	bytes_written = pwrite(target_fd, cpmsg->data, cpmsg->size,
->  				cpmsg->offset);
-> 
+> I looked at doing this and this is actually what we did in kpatch.  We
+> made one structure that had "private" members that the user wasn't
+> suppose to access that were only used in the core.  This was messy
+> though.  Every time you wanted to add a "private" field to the struct so
+> the core could do something new, you were changing the API to the patch
+> modules as well.  While copying the data into an internal structure does
+> add code and opportunity for errors, that functionality is localized
+> into functions that are specifically tasked with taking care of that.
+> So the risk is minimized and we gain flexibility within the core and
+> more self-documenting API structures.
 
-ALWAYS run your patches through checkpatch before sending them, so you
-don't get grumpy emails from maintainers telling you to do the same
-thing...
+I am not sure if the modified API is really such a big limit. The
+modules initialize the needed members using ".member = value".
+Also we do not need to take care of API/ABI backward compatibility because
+there is very strict dependency between patches and the patched
+kernel.
 
-Please fix this up and resend the whole series.
+Well, I have to think more about it.
 
-thanks,
-
-greg k-h
+Best Regards,
+Petr
