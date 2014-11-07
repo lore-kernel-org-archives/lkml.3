@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaKGNs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:48:28 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58783 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752445AbaKGNs0 (ORCPT
+	id S1752622AbaKGNtu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:49:50 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:59321 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960AbaKGNtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:48:26 -0500
-Date: Fri, 7 Nov 2014 14:45:10 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+	Fri, 7 Nov 2014 08:49:47 -0500
+From: Chris Zhong <zyw@rock-chips.com>
+To: heiko@sntech.de, dianders@chromium.org
+Cc: mturquette@linaro.org, Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 01/11] mfd: syscon: Add atmel-matrix registers
- definition
-Message-ID: <20141107134510.GC4068@piout.net>
-References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
- <1415203287-21517-2-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415203287-21517-2-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        Linus Walleij <linus.walleij@linaro.org>, khilman@kernel.org,
+        linux-rockchip@lists.infradead.org, Chris Zhong <zyw@rock-chips.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, Tony Xie <xxx@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v7 0/5] This is the 1st version of suspend for RK3288.
+Date: Fri,  7 Nov 2014 21:49:32 +0800
+Message-Id: <1415368177-6637-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2014 at 17:01:17 +0100, Boris Brezillon wrote :
-> AT91 SoCs have a memory range reserved for internal bus configuration.
-> Expose those registers so that drivers can make use of the matrix syscon
-> declared in at91 DTs.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->  include/linux/mfd/syscon/atmel-matrix.h | 114 ++++++++++++++++++++++++++++++++
+RK3288 can shut down the cpu, gpu and other device controllers in suspend,
+and it will pull the GLOBAL_PWROFF pin to high in the final stage of the
+process of suspend, pull the pin to low again when resume.
 
-I think we should stop cluttering the include/linux directory and start
-doing what has been done for tegra and create an include/soc/atmel or
-include/soc/at91 directory. that's what I was planning to do in my
-sdramc/reset series but I didn't get any comment on it.
+Changes in v7:
+- get rid all of unused code
+- add regulator-state-mem sub node for suspend
+
+Changes in v6:
+- modify comments
+- get rid of the save/restore of SRAM
+- doing the copy of resume code once at init time
+- remove ROCKCHIP_ARM_OFF_LOGIC_DEEP from rk3288_fill_in_bootram
+- add of_platform_populate in rockchip_dt_init
+- change pmu_intmem@ff720000 to sram@ff720000
+- change pmu_intmem@ff720000 to sram@ff720000
+
+Changes in v5:
+- modify comments
+- use rk3288_bootram_sz for memcpy size
+- fixed error of sram save and restore
+- change the size of sram in example
+- change size to 4k
+
+Changes in v4:
+- remove grf regmap
+
+Changes in v3:
+- move the pinmux of gpio6_c6 save and restore to pinctrl-rockchip
+
+Changes in v2:
+- __raw_readl/__raw_writel replaced by readl_relaxed/writel_relaxed
+- add the regulator calls in prepare and finish.
+- add the pinmux of gpio6_c6 save and restore
+- put "rockchip,rk3288-pmu-sram" to first
+
+Chris Zhong (5):
+  clk: rockchip: RK3288: add suspend and resume
+  ARM: rockchip: add suspend and resume for RK3288
+  ARM: rockchip: Add pmu-sram binding
+  ARM: dts: add RK3288 suspend support
+  ARM: dts: add suspend voltage setting for RK808
+
+ .../devicetree/bindings/arm/rockchip/pmu-sram.txt  |  16 ++
+ arch/arm/boot/dts/rk3288-evb-rk808.dts             |  46 +++-
+ arch/arm/boot/dts/rk3288.dtsi                      |  11 +
+ arch/arm/mach-rockchip/Makefile                    |   1 +
+ arch/arm/mach-rockchip/pm.c                        | 264 +++++++++++++++++++++
+ arch/arm/mach-rockchip/pm.h                        |  99 ++++++++
+ arch/arm/mach-rockchip/rockchip.c                  |   2 +
+ arch/arm/mach-rockchip/sleep.S                     |  73 ++++++
+ drivers/clk/rockchip/clk-rk3288.c                  |  60 +++++
+ 9 files changed, 571 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/pmu-sram.txt
+ create mode 100644 arch/arm/mach-rockchip/pm.c
+ create mode 100644 arch/arm/mach-rockchip/pm.h
+ create mode 100644 arch/arm/mach-rockchip/sleep.S
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.1
+
