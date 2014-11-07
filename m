@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaKGCAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 21:00:35 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:53777 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaKGCAc (ORCPT
+	id S1751317AbaKGCWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 21:22:07 -0500
+Received: from regular1.263xmail.com ([211.150.99.132]:50569 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaKGCWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 21:00:32 -0500
-Date: Fri, 7 Nov 2014 10:00:25 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: viro@ZenIV.linux.org.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org, nakam@linux-ipv6.org,
-        yoshfuji@linux-ipv6.org
-Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
-Message-ID: <20141107020025.GC9101@gondor.apana.org.au>
-References: <20141106055023.GA28865@gondor.apana.org.au>
- <20141106064318.GW7996@ZenIV.linux.org.uk>
- <20141106064629.GA29321@gondor.apana.org.au>
- <20141106.162808.1546139916210194279.davem@davemloft.net>
+	Thu, 6 Nov 2014 21:22:04 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: l.stach@pengutronix.de
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <bec00c5049c7b79050fa847925c19a67>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <545C2CB0.3090901@rock-chips.com>
+Date: Fri, 07 Nov 2014 10:21:36 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106.162808.1546139916210194279.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk, devel@driverdev.osuosl.org,
+        devicetree@vger.kernel.org, Zubair.Kakakhel@imgtec.com,
+        Arnd Bergmann <arnd@arndb.de>, Josh Boyer <jwboyer@redhat.com>,
+        ykk@rock-chips.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Inki Dae <inki.dae@samsung.com>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Sean Paul <seanpaul@chromium.org>, djkurtz@google.com,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Dave Airlie <airlied@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, jay.xu@rock-chips.com,
+        Lucas Stach <l.stach@pengutronix.de>
+Subject: Re: [PATCH V3 4/4] dw-hdmi: convert dw-hdmi to drm_bridge mode
+References: <1415273118-57045-1-git-send-email-andy.yan@rock-chips.com> <1415273176-57096-1-git-send-email-andy.yan@rock-chips.com> <20141106155410.GB19811@kroah.com>
+In-Reply-To: <20141106155410.GB19811@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 04:28:08PM -0500, David Miller wrote:
-> From: Herbert Xu <herbert@gondor.apana.org.au>
-> Date: Thu, 6 Nov 2014 14:46:29 +0800
-> 
-> > On Thu, Nov 06, 2014 at 06:43:18AM +0000, Al Viro wrote:
-> >> On Thu, Nov 06, 2014 at 01:50:23PM +0800, Herbert Xu wrote:
-> >> > +	/* We only need the first two bytes. */
-> >> > +	err = memcpy_fromiovecend((void *)&icmph, msg->msg_iov, 0, 2);
-> >> > +	if (err)
-> >> > +		return err;
-> >> > +
-> >> > +	fl4->fl4_icmp_type = icmph.type;
-> >> > +	fl4->fl4_icmp_code = icmph.code;
-> >> 
-> >> That's more readable, but that exposes another problem in there - we read
-> >> the same piece of userland data twice, with no promise whatsoever that we'll
-> >> get the same value both times...
-> > 
-> > Sure, but you have to be root anyway to write to raw sockets.
-> > 
-> > Patches are welcome :)
-> 
-> I'd agree with this root-only argument maybe 15 years ago, but with
-> containers and stuff like that we want to prevent root X from messing
-> up the machine for root Y.
-> 
-> This is a recurring topic, and I'd strongly like to avoid adding new
-> ways that these kinds of problems can happen.
-> 
-> For example, I'm still on the hook to address the AF_NETLINK mmap TX
-> code, which has a similarly abusable issue.
 
-Fair enough.  Even though the bug existed prior to my patch I'll
-see if we could get rid of it.
+On 2014年11月06日 23:54, Greg Kroah-Hartman wrote:
+> On Thu, Nov 06, 2014 at 07:26:16PM +0800, Andy Yan wrote:
+>> From: ykk <ykk@rock-chips.com>
+> We need a "real" name here, sorry.
+>
+>> dw-hdmi is under drm/bridge, so it should be the bridge mode.
+>> hange off the encoder to dw_hdmi-imx.c, keep the connector &
+>> birdge in dw_hdmi.c
+>>
+>> Signed-off-by: ykk <ykk@rock-chips.com>
+> Same here.
+>
+> thanks,
+>
+> greg k-h
+>
+>
+>
+Sorry, these will be fixed in V4. And tks for you pointing it out.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
