@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaKGMEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:04:32 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:57035 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281AbaKGMEb (ORCPT
+	id S1752190AbaKGMGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:06:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35085 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaKGMGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:04:31 -0500
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
-Subject: [PATCH 04/13] ARM: multi_v7_defconfig: Enable st ohci and ehci HCD drivers.
-Date: Fri,  7 Nov 2014 11:57:46 +0000
-Message-Id: <1415361475-6218-5-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
-References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
+	Fri, 7 Nov 2014 07:06:22 -0500
+Date: Fri, 7 Nov 2014 13:06:12 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v3 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20141107120612.GB3337@twins.programming.kicks-ass.net>
+References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
+ <1415276602-10337-11-git-send-email-matt@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415276602-10337-11-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the ehci and ohci drivers in the multi_v7_defconfig so that
-the USB controllers on stih41x work by default.
+On Thu, Nov 06, 2014 at 12:23:21PM +0000, Matt Fleming wrote:
+> +/*
+> + * Exchange the RMID of a group of events.
+> + */
+> +static unsigned int
+> +intel_cqm_xchg_rmid(struct perf_event *group, unsigned int rmid)
+> +{
+> +	struct perf_event *event;
+> +	unsigned int old_rmid = group->hw.cqm_rmid;
+> +	struct list_head *head = &group->hw.cqm_group_entry;
+> +
+> +	lockdep_assert_held(&cache_mutex);
+> +
+> +	/*
+> +	 * If our RMID is being deallocated, perform a read now.
+> +	 */
+> +	if (__rmid_valid(old_rmid) && !__rmid_valid(rmid)) {
+> +		struct intel_cqm_count_info info;
+> +
+> +		local64_set(&group->count, 0);
+> +		info.event = group;
+> +
+> +		preempt_disable();
+> +		smp_call_function_many(&cqm_cpumask, __intel_cqm_event_count,
+> +				       &info, 1);
+> +		preempt_enable();
+> +	}
 
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- arch/arm/configs/multi_v7_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
+This suffers the same issue as before, why not call that one function
+and not reimplement it?
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 491b7d5..c7a9517 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -318,9 +318,11 @@ CONFIG_USB_XHCI_HCD=y
- CONFIG_USB_XHCI_MVEBU=y
- CONFIG_USB_EHCI_HCD=y
- CONFIG_USB_EHCI_TEGRA=y
-+CONFIG_USB_EHCI_HCD_STI=y
- CONFIG_USB_EHCI_HCD_PLATFORM=y
- CONFIG_USB_ISP1760_HCD=y
- CONFIG_USB_OHCI_HCD=y
-+CONFIG_USB_OHCI_HCD_STI=y
- CONFIG_USB_OHCI_HCD_PLATFORM=y
- CONFIG_USB_STORAGE=y
- CONFIG_USB_CHIPIDEA=y
--- 
-1.9.1
+Also, I don't think we'd ever swap an rmid for another valid one, right?
+So we could do this read/update unconditionally.
 
+> +
+> +	raw_spin_lock_irq(&cache_lock);
+> +
+> +	group->hw.cqm_rmid = rmid;
+> +	list_for_each_entry(event, head, hw.cqm_group_entry)
+> +		event->hw.cqm_rmid = rmid;
+> +
+> +	raw_spin_unlock_irq(&cache_lock);
+> +
+> +	return old_rmid;
+> +}
