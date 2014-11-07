@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaKGO5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:57:48 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43513 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571AbaKGO5r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:57:47 -0500
-Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms
- on NO_LIBELF=1
-From: Namhyung Kim <namhyung@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>
-In-Reply-To: <20141107082723.GB23531@worktop.programming.kicks-ass.net>
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
-	 <20141107082723.GB23531@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Nov 2014 23:57:39 +0900
-Message-ID: <1415372259.1648.51.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1751415AbaKGO6U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:58:20 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:11044 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141AbaKGO6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 09:58:19 -0500
+X-IronPort-AV: E=Sophos;i="5.07,332,1413244800"; 
+   d="scan'208";a="189152120"
+Message-ID: <545CDDF6.9080902@citrix.com>
+Date: Fri, 7 Nov 2014 14:57:58 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH V2 1/5] Xen: Delay remapping memory of pv-domain
+References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-2-git-send-email-jgross@suse.com>
+In-Reply-To: <1415252853-7106-2-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-2014-11-07 (금), 09:27 +0100, Peter Zijlstra:
-> On Fri, Nov 07, 2014 at 02:20:04PM +0900, Namhyung Kim wrote:
-> > When libelf is not used, perf cannot not show symbol names since it
-> > doesn't access the ELF symbol table.  But kernel is different as it
-> > can fallback to kallsyms.
-> > 
-> > It worked w/o libelf, but recent change to use vmlinux for kernel
-> > symbols break it.
-> > 
-> > With this change, it now can show kernel symbols again:
-> > 
-> >   # Overhead  Command  Shared Object      Symbol
-> >   # ........  .......  .................  ........................
-> >   #
-> >       34.51%  swapper  [kernel.kallsyms]  [k] intel_idle
-> >       12.54%  perf     [kernel.kallsyms]  [k] generic_exec_single
-> >       10.11%  swapper  [kernel.kallsyms]  [k] int_sqrt
-> >        9.83%  swapper  [kernel.kallsyms]  [k] hrtimer_interrupt
-> >        7.25%  emacs    [kernel.kallsyms]  [k] __switch_to
-> >        7.06%  sleep    [kernel.kallsyms]  [k] find_next_iomem_res
-> >        7.02%  swapper  [kernel.kallsyms]  [k] run_timer_softirq
-> >        2.55%  swapper  [kernel.kallsyms]  [k] _raw_spin_unlock_irq
-> >        1.90%  swapper  [kernel.kallsyms]  [k] lapic_next_deadline
-> >        1.75%  swapper  [kernel.kallsyms]  [k] native_sched_clock
-> >        1.49%  swapper  [kernel.kallsyms]  [k] __schedule
-> >        1.20%  swapper  [kernel.kallsyms]  [k] read_tsc
-> >        1.10%  sleep    [kernel.kallsyms]  [k] current_kernel_time
-> >        0.99%  swapper  [kernel.kallsyms]  [k] pick_next_task_rt
-> >        0.36%  swapper  [kernel.kallsyms]  [k] group_sched_in
-> >        0.24%  swapper  [kernel.kallsyms]  [k] x86_pmu_commit_txn
-> >        0.06%  swapper  [kernel.kallsyms]  [k] intel_pmu_enable_all
-> >        0.03%  perf     [kernel.kallsyms]  [k] intel_pmu_enable_all
-> > 
-> > Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Adrian Hunter <adrian.hunter@intel.com>
-> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> >  tools/perf/util/symbol-minimal.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-> > index c9541fea9514..226cf41ed7e6 100644
-> > --- a/tools/perf/util/symbol-minimal.c
-> > +++ b/tools/perf/util/symbol-minimal.c
-> > @@ -335,6 +335,9 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
-> >  	unsigned char *build_id[BUILD_ID_SIZE];
-> >  	int ret;
-> >  
-> > +	if (dso->kernel)
-> > +		return 0;  /* always use kallsyms */
-> > +
-> >  	ret = fd__is_64_bit(ss->fd);
-> >  	if (ret >= 0)
-> >  		dso->is_64_bit = ret;
+On 06/11/14 05:47, Juergen Gross wrote:
+> Early in the boot process the memory layout of a pv-domain is changed
+> to match the E820 map (either the host one for Dom0 or the Xen one)
+> regarding placement of RAM and PCI holes. This requires removing memory
+> pages initially located at positions not suitable for RAM and adding
+> them later at higher addresses where no restrictions apply.
 > 
-> Why does this live in the minimal implementation; should we not always
-> discard ELF files with 0 symbols?
+> To be able to operate on the hypervisor supported p2m list until a
+> virtual mapped linear p2m list can be constructed, remapping must
+> be delayed until virtual memory management is initialized, as the
+> initial p2m list can't be extended unlimited at physical memory
+> initialization time due to it's fixed structure.
 > 
-> Suppose I have a vmlinux but removed all symbols from it; I want it to
-> fall back to kallsyms too.
+> A further advantage is the reduction in complexity and code volume as
+> we don't have to be careful regarding memory restrictions during p2m
+> updates.
 
-I'm not sure I understood what you said correctly.  With this change,
-dso__load_kernel_sym() always ends up calling dso__load_kallsyms() since
-dso__load_vmlinux() will always return 0;
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-So I think you'll fall back to kallsyms even though you have a vmlinux
-with symbol.  This makes dso__load_sym() in the patch 2/3 simpler IMHO.
+But I would like a second reviewed-by.
 
-Thanks,
-Namhyung
-
-
+David
