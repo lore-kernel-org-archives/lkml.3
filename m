@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaKGIAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:00:52 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47833 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaKGIAp (ORCPT
+	id S1751592AbaKGIBQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:01:16 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:53774 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbaKGIBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:00:45 -0500
-Date: Fri, 7 Nov 2014 09:00:34 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
+	Fri, 7 Nov 2014 03:01:13 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-1d-545c7c46955c
+Message-id: <1415347269.8532.1.camel@AMDC1943>
+Subject: Re: [PATCH v10 3/5] amba: Don't unprepare the clocks if device driver
+ wants IRQ safe runtime PM
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
         Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        devicetree@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jan Kardell <jan.kardell@telliq.com>, linux-iio@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, Hartmut Knaack <knaack.h@gmx.de>,
-        linux-omap@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Brad Griffis <bgriffis@ti.com>
-Subject: Re: [PATCH 1/4] input: touchscreen: ti_am335x_tsc Interchange
- touchscreen and ADC steps
-Message-ID: <20141107080033.GA6455@netboy>
-References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
- <1414408111-2631-2-git-send-email-vigneshr@ti.com>
- <20141106141916.GA17151@netboy>
- <545C59CD.3070707@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545C59CD.3070707@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Fri, 07 Nov 2014 09:01:09 +0100
+In-reply-to: <3262760.d60MN56YDG@vostro.rjw.lan>
+References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com>
+ <1415263010-7992-4-git-send-email-k.kozlowski@samsung.com>
+ <3262760.d60MN56YDG@vostro.rjw.lan>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t/xq7puNTEhBjuXmFhsnLGe1WL61AuM
+	Fqun/mW1eLr5MZPF2aY37BZLJs9nteicuITdYtaUvUwWl3fNYbP43HuE0eL2ZV6LtUfuslu8
+	exlhcffUUTaLM6cvsVpM+H2BzeL42nCLl337WRyEPFqae9g8ZnfMZPVYvOclk8emVZ1sHneu
+	7WHzWPLmEKvHlqvtLB6z7/5g9OjbsorRY8Xq7+wenzfJeez9/JslgCeKyyYlNSezLLVI3y6B
+	K2PShIdMBR/FKtas2cbSwPhPsIuRk0NCwERi9b8eZghbTOLCvfVsILaQwFJGieaO5C5GLiD7
+	M6PEjaVLmUASvAJ6Eu0/5jOC2MICWRLPtp9jAbHZBIwlNi9fAtYsIqAtMbfnFDNIM7PAXFaJ
+	S9N3gxWxCKhK3GhZBVbEKWAgcXzhRlaIDSsZJW6dawXbwCygLjFp3iKgbg6gk5QlGvvdIBYL
+	SvyYfI8FokReYvOat8wTGAVmIemYhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNz
+	NzFCovLrDsalx6wOMQpwMCrx8D4QiQkRYk0sK67MPcQowcGsJMIrFQQU4k1JrKxKLcqPLyrN
+	SS0+xMjEwSnVwMgotk1CRaNW9fmeVOvMi1+mPXp9ospr+rqJHxuPStUfSuQL2qXK4P1i+pno
+	0NdLGVs4FS9kSvlpKrFs3OSkILJNuMl7wr8FTUvTa3PeZAQz9T8x1I+2YmC+/vX+u7kH2ZO3
+	pcR4L1VSXXnpBqfsp9xrqasszu1aVpYf0S/sujklXuCGJKPsYiWW4oxEQy3mouJEAAhVXlOo	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 11:04:05AM +0530, Vignesh R wrote:
+On czw, 2014-11-06 at 23:52 +0100, Rafael J. Wysocki wrote:
+> On Thursday, November 06, 2014 09:36:48 AM Krzysztof Kozlowski wrote:
+> > The AMBA bus driver defines runtime Power Management functions which
+> > disable and unprepare AMBA bus clock. This is problematic for runtime PM
+> > because unpreparing a clock might sleep so it is not interrupt safe.
+> > 
+> > However some drivers may want to implement runtime PM functions in
+> > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
+> > bus driver should only disable/enable the clock in runtime suspend and
+> > resume callbacks.
+> > 
+> > Detect the device driver behavior during runtime suspend. During runtime
+> > resume deal with clocks according to stored value.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  drivers/amba/bus.c       | 17 +++++++++++++----
+> >  include/linux/amba/bus.h |  1 +
+> >  2 files changed, 14 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+> > index 47bbdc1b5be3..356f906c6966 100644
+> > --- a/drivers/amba/bus.c
+> > +++ b/drivers/amba/bus.c
+> > @@ -95,8 +95,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
+> >  	struct amba_device *pcdev = to_amba_device(dev);
+> >  	int ret = pm_generic_runtime_suspend(dev);
+> >  
+> > -	if (ret == 0 && dev->driver)
+> > -		clk_disable_unprepare(pcdev->pclk);
+> > +	if (ret == 0 && dev->driver) {
+> > +		pcdev->irq_safe = dev->power.irq_safe;
+> > +
+> > +		if (pcdev->irq_safe)
+> > +			clk_disable(pcdev->pclk);
+> > +		else
+> > +			clk_disable_unprepare(pcdev->pclk);
+> > +	}
+> >  
+> >  	return ret;
+> >  }
+> > @@ -107,7 +113,10 @@ static int amba_pm_runtime_resume(struct device *dev)
+> >  	int ret;
+> >  
+> >  	if (dev->driver) {
+> > -		ret = clk_prepare_enable(pcdev->pclk);
+> > +		if (pcdev->irq_safe)
+> > +			ret = clk_enable(pcdev->pclk);
+> > +		else
+> > +			ret = clk_prepare_enable(pcdev->pclk);
+> >  		/* Failure is probably fatal to the system, but... */
+> >  		if (ret)
+> >  			return ret;
+> > @@ -115,7 +124,7 @@ static int amba_pm_runtime_resume(struct device *dev)
+> >  
+> >  	return pm_generic_runtime_resume(dev);
+> >  }
+> > -#endif
+> > +#endif /* CONFIG_PM */
+> >  
+> >  static const struct dev_pm_ops amba_pm = {
+> >  	.suspend	= pm_generic_suspend,
+> > diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+> > index ac02f9bd63dc..c4bae79851fb 100644
+> > --- a/include/linux/amba/bus.h
+> > +++ b/include/linux/amba/bus.h
+> > @@ -32,6 +32,7 @@ struct amba_device {
+> >  	struct clk		*pclk;
+> >  	unsigned int		periphid;
+> >  	unsigned int		irq[AMBA_NR_IRQS];
+> > +	unsigned int		irq_safe:1;
 > 
-> Currently, there is too much noise in the TSC hardware that is being
-> removed by delta filtering.
+> Why do we need the new flag?  Seems redundant to me.
 
-The so called "filter" was only programmed because the fifo entries
-were being mixed up. Sebastian fixed that.
+Some poorly written driver could set irq_safe somewhere between suspend
+and resume (e.g. in suspend callback).
 
-> I tested TSC unit by removing filtering
-> logic, the performance was not at all satisfactory. The cursor jumps
-> wayward and smooth circles cannot be drawn. Looks like delta filtering
-> cannot be removed as of now. May be I will try and address it in future.
+Best regards,
+Krzysztof
 
-The "filter" code is nonsensical. It picks the two values in seqeunce
-that are closest to one and another. How is that supposed to work?
 
-Did you look at the "noise"? What kind of properties did you see?
-
-A median filter makes more sense. Or sort, remove outliers, and
-average. But choosing the two closest in series is silly.
-
-Thanks,
-Richard
