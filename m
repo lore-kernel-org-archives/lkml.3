@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250AbaKGQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:38:56 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48593 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751225AbaKGQiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:38:54 -0500
-Date: Fri, 7 Nov 2014 16:38:36 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kernel: Copy register_persistent_clock() to arm64
- source subtree
-Message-ID: <20141107163836.GB5586@leverpostej>
-References: <1415319665-21701-1-git-send-email-anatol.pomozov@gmail.com>
- <CAOMFOmXDqhwCk1pRf_9yGycboMqt-ZE33y=kZrhbqXOjVcrxYQ@mail.gmail.com>
- <545C4783.8070506@nvidia.com>
- <20141107104025.GC4585@leverpostej>
- <CAOMFOmWfgtN+Q-sbQUS8-90pTrtk5Du8xkDVXaed=teVPb8sbw@mail.gmail.com>
+	id S1751930AbaKGQnr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:43:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555AbaKGQnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 11:43:45 -0500
+Date: Fri, 7 Nov 2014 17:43:37 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, namit@cs.technion.ac.il
+Subject: Re: [PATCH] KVM: x86: save a bit in the decoding flags
+Message-ID: <20141107164337.GA22459@potion.brq.redhat.com>
+References: <1415296011-15062-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOMFOmWfgtN+Q-sbQUS8-90pTrtk5Du8xkDVXaed=teVPb8sbw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415296011-15062-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 04:24:19PM +0000, Anatol Pomozov wrote:
-> Hi
+2014-11-06 18:46+0100, Paolo Bonzini:
+> AVX instructions are just tweaks of the operand length and the alignment
+> restrictions of SSE instructions, and in fact the Avx bit is just a
+> duplicate of Unaligned.  Drop it.
 > 
-> On Fri, Nov 7, 2014 at 2:40 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> > On Fri, Nov 07, 2014 at 04:16:03AM +0000, Stephen Warren wrote:
-> >> On 11/06/2014 05:25 PM, Anatol Pomozov wrote:
-> >> > +Stephen
-> >> >
-> >> > This patch is for tegra20_timer that uses register_persistent_clock().
-> >> > I did not find any way to share the same arch code for arm/arm64.
-> >> >
-> >> > Actually this register_persistent_clock() does not look arm specific
-> >> > at all. Would it be better to move it somewhere outside of arch/?
-> >>
-> >> No CC to linux-tegra@ or the other Tegra maintainers?
-> >>
-> >> Yes, I think it'd be best not to have arch-specific APIs, or cut/paste
-> >> the same code into multiple places.
-> >
-> > Agreed. This looks in no way architecture specific, and having this in
-> > common code would be preferable to copying.
+> Suggested-by: Nadav Amit <namit@cs.technion.ac.il>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+
+I think this forces our future AVX implementation to be very hacky,
+we couldn't tell explicitly (un)aligned SSE2/AVX apart.
+
+>  arch/x86/kvm/emulate.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
 > 
-> Where the code common for arm and arm64 should go?
-> drivers/???/arm_timekeeping.c ?
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 9cc476f..87c9431 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -157,7 +157,7 @@
+>  #define Mmx         ((u64)1 << 40)  /* MMX Vector instruction */
+>  #define Aligned     ((u64)1 << 41)  /* Explicitly aligned (e.g. MOVDQA) */
+>  #define Unaligned   ((u64)1 << 42)  /* Explicitly unaligned (e.g. MOVDQU) */
+> -#define Avx         ((u64)1 << 43)  /* Advanced Vector Extensions */
+> +#define No16        ((u64)1 << 43)  /* No 16 bit operand */
+>  #define Fastop      ((u64)1 << 44)  /* Use opcode::u.fastop */
+>  #define NoWrite     ((u64)1 << 45)  /* No writeback */
+>  #define SrcWrite    ((u64)1 << 46)  /* Write back src operand */
+> @@ -167,7 +167,6 @@
+>  #define NoBigReal   ((u64)1 << 50)  /* No big real mode */
+>  #define PrivUD      ((u64)1 << 51)  /* #UD instead of #GP on CPL > 0 */
+>  #define NearBranch  ((u64)1 << 52)  /* Near branches */
+> -#define No16	    ((u64)1 << 53)  /* No 16 bit operand */
+>  
+>  #define DstXacc     (DstAccLo | SrcAccHi | SrcWrite)
+>  
+> @@ -646,8 +645,6 @@ static bool insn_aligned(struct x86_emulate_ctxt *ctxt, unsigned size)
+>  		return true;
+>  	else if (ctxt->d & Unaligned)
+>  		return false;
+> -	else if (ctxt->d & Avx)
+> -		return false;
+>  	else
+>  		return true;
 
-I'd argue that this is in no way specific to ARM, and the current weak
-functions live in kernel/time/timekeeping.c, so this should too.
+(return !(ctxt->d & Unaligned);)
 
-Thanks,
-Mark.
+>  }
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
