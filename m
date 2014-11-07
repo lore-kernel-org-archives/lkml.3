@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328AbaKGB40 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 20:56:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42745 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaKGB4X (ORCPT
+	id S1751384AbaKGB5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 20:57:35 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53583 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaKGB5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 20:56:23 -0500
-To: Chris Friesen <chris.friesen@windriver.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
-Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
-	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>
-	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>
-Date: Thu, 06 Nov 2014 20:56:14 -0500
-In-Reply-To: <545BC88A.7060706@windriver.com> (Chris Friesen's message of
-	"Thu, 6 Nov 2014 13:14:18 -0600")
-Message-ID: <yq1zjc3ai4h.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 6 Nov 2014 20:57:33 -0500
+Date: Thu, 6 Nov 2014 17:57:28 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Caesar Wang <caesar.wang@rock-chips.com>, heiko@sntech.de,
+        rui.zhang@intel.com, zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
+        cjf@rock-chips.com, zhengsq@rock-chips.com, fzf@rock-chips.com
+Subject: Re: [PATCH v17 1/5] thermal: rockchip: add driver for thermal
+Message-ID: <20141107015728.GF34214@dtor-ws>
+References: <1414809873-32227-1-git-send-email-caesar.wang@rock-chips.com>
+ <1414809873-32227-2-git-send-email-caesar.wang@rock-chips.com>
+ <20141107013017.GA10180@developer>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107013017.GA10180@developer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+Hi Eduardo,
 
-Chris,
+On Thu, Nov 06, 2014 at 09:30:20PM -0400, Eduardo Valentin wrote:
+> Hello Caesar,
+> 
+> On Sat, Nov 01, 2014 at 10:44:29AM +0800, Caesar Wang wrote:
+> > Thermal is TS-ADC Controller module supports
+> > user-defined mode and automatic mode.
+> > 
+> > User-defined mode refers,TSADC all the control signals entirely by
+> > software writing to register for direct control.
+> > 
+> > Automaic mode refers to the module automatically poll TSADC output,
+> > and the results were checked.If you find that the temperature High
+> > in a period of time,an interrupt is generated to the processor
+> > down-measures taken;If the temperature over a period of time High,
+> > the resulting TSHUT gave CRU module,let it reset the entire chip,
+> > or via GPIO give PMIC.
+> > 
+> 
+> First thing, very good progress in this driver! 
+> 
+> > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> > Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> 
+> Just for the sake of code / documentation history, this patch, which
+> adds the driver, should come after patch 2, which adds dt documentation.
+> 
+> > ---
+> >  drivers/thermal/Kconfig            |   9 +
+> >  drivers/thermal/Makefile           |   1 +
+> >  drivers/thermal/rockchip_thermal.c | 711 +++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 721 insertions(+)
+> >  create mode 100644 drivers/thermal/rockchip_thermal.c
+> 
+> <big cut>
+> 
+> > +static int
+> > +rockchip_thermal_register_sensor(struct platform_device *pdev,
+> > +				 struct rockchip_thermal_data *thermal,
+> > +				 struct rockchip_thermal_sensor *sensor,
+> > +				 enum sensor_id id)
+> > +{
+> > +	const struct rockchip_tsadc_chip *tsadc = thermal->chip;
+> > +	int error;
+> > +
+> > +	tsadc->set_tshut_mode(id, thermal->regs, thermal->tshut_mode);
+> > +	tsadc->set_tshut_temp(id, thermal->regs, thermal->tshut_temp);
+> > +
+> > +	sensor->thermal = thermal;
+> > +	sensor->id = id;
+> > +	sensor->tzd = thermal_zone_of_sensor_register(&pdev->dev, id, sensor,
+> > +						rockchip_thermal_get_temp,
+> > +						NULL,
+> > +						rockchip_thermal_set_trips);
+> 
+> So, did I miss something here? Looks like you have extended the of
+> thermal, and I haven't seen the patch.
+>   CC [M]  drivers/thermal/rockchip_thermal.o
+>   drivers/thermal/rockchip_thermal.c: In function
+>   `rockchip_thermal_register_sensor':
+>   drivers/thermal/rockchip_thermal.c:482:7: error: too many arguments to
+>   function `thermal_zone_of_sensor_register'
+>          rockchip_thermal_set_trips);
 
-Chris> For a RAID card I expect it would be related to chunk size or
-Chris> stripe width or something...but even then I would expect to be
-Chris> able to cap it at 100MB or so.  Or are there storage systems on
-Chris> really fast interfaces that could legitimately want a hundred meg
-Chris> of data at a time?
+Yes, it relies on patch by Mikko Perttunen adding support for
+hardware-supported trip points. It allows us to reduce polling frequency
+while still being able to react when we cross the tripping point.
 
-Well, there are several devices that report their capacity to indicate
-that they don't suffer any performance (RMW) penalties for large
-commands regardless of size. I would personally prefer them to report 0
-in that case.
+See https://lkml.org/lkml/2014/6/27/76
 
-Chris> Yep, in all three wonky cases so far "optimal_io_size" ended up
-Chris> as 4294966784, which is 0xfffffe00.  Does something mask out the
-Chris> lower bits?
-
-Ignoring reported values of UINT_MAX and 0xfffffe000 only works until
-the next spec-dyslexic firmware writer comes along.
-
-I also think that singling out the OPTIMAL TRANSFER LENGTH is a bit of a
-red herring. A vendor could mess up any value in that VPD and it would
-still cause us grief. There's no rational explanation for why OTL would
-be more prone to being filled out incorrectly than any of the other
-parameters in that page.
-
-I do concur, though, that io_opt is problematic by virtue of being
-32-bits and that gets multiplied by the sector size. So things can
-easily get out of whack for fdisk and friends (by comparison the value
-that we use for io_min is only 16 bits).
-
-I'm still partial to just blacklisting that entire Seagate family. We
-don't have any details on the alleged SSD having the same problem. For
-all we know it could be the same SAS disk drive and not an SSD at all.
-
-If there are compelling arguments or other supporting data for sanity
-checking OTL I'd suggest the following patch that caps it at 1GB. I know
-of a few devices that prefer alignment at that granularity.
+Thanks.
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
-
-commit 87c0103ea3f96615b8a9816b8aee8a7ccdf55d50
-Author: Martin K. Petersen <martin.petersen@oracle.com>
-Date:   Thu Nov 6 12:31:43 2014 -0500
-
-    [SCSI] sd: Sanity check the optimal I/O size
-    
-    We have come across a couple of devices that report crackpot values in
-    the optimal I/O size in the Block Limits VPD page. Since this is a
-    32-bit entity that gets multiplied by the logical block size we can get
-    disproportionately large values reported to the block layer.
-    
-    Cap io_opt at 1 GB.
-    
-    Reported-by: Chris Friesen <chris.friesen@windriver.com>
-    Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-    Cc: stable@vger.kernel.org
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index b041eca8955d..806e06c2575f 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2591,7 +2591,8 @@ static void sd_read_block_limits(struct scsi_disk *sdkp)
- 	blk_queue_io_min(sdkp->disk->queue,
- 			 get_unaligned_be16(&buffer[6]) * sector_sz);
- 	blk_queue_io_opt(sdkp->disk->queue,
--			 get_unaligned_be32(&buffer[12]) * sector_sz);
-+			 min_t(unsigned int, SD_MAX_IO_OPT_BYTES,
-+			       get_unaligned_be32(&buffer[12]) * sector_sz));
- 
- 	if (buffer[3] == 0x3c) {
- 		unsigned int lba_count, desc_count;
-diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-index 63ba5ca7f9a1..3492779d9d3e 100644
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -44,10 +44,11 @@ enum {
- };
- 
- enum {
--	SD_DEF_XFER_BLOCKS = 0xffff,
--	SD_MAX_XFER_BLOCKS = 0xffffffff,
--	SD_MAX_WS10_BLOCKS = 0xffff,
--	SD_MAX_WS16_BLOCKS = 0x7fffff,
-+	SD_DEF_XFER_BLOCKS	= 0xffff,
-+	SD_MAX_XFER_BLOCKS	= 0xffffffff,
-+	SD_MAX_WS10_BLOCKS	= 0xffff,
-+	SD_MAX_WS16_BLOCKS	= 0x7fffff,
-+	SD_MAX_IO_OPT_BYTES	= 1024 * 1024 * 1024,
- };
- 
- enum {
+Dmitry
