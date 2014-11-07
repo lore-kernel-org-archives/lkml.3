@@ -1,170 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaKGBrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 20:47:21 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:52764 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaKGBrS (ORCPT
+	id S1751328AbaKGB40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 20:56:26 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42745 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaKGB4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 20:47:18 -0500
-Message-ID: <545C2408.60703@huawei.com>
-Date: Fri, 7 Nov 2014 09:44:40 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 6 Nov 2014 20:56:23 -0500
+To: Chris Friesen <chris.friesen@windriver.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>
+	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>
+	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>
+Date: Thu, 06 Nov 2014 20:56:14 -0500
+In-Reply-To: <545BC88A.7060706@windriver.com> (Chris Friesen's message of
+	"Thu, 6 Nov 2014 13:14:18 -0600")
+Message-ID: <yq1zjc3ai4h.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        Weng Meiling <wengmeiling.weng@huawei.com>, <stable@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: driver core: Fix glue dir race condition
-References: <1415261798-9671-1-git-send-email-wangyijing@huawei.com> <20141106165547.GG25642@htj.dyndns.org> <20141106172246.GA20192@kroah.com>
-In-Reply-To: <20141106172246.GA20192@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.545C24A4.0182,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 3ea8af9f1b4f92a978deeeaae8527107
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/7 1:22, Greg KH wrote:
-> On Thu, Nov 06, 2014 at 11:55:47AM -0500, Tejun Heo wrote:
->> Maybe "fix glue dir race condition by not removing them" is a better
->> title?
->>
->> On Thu, Nov 06, 2014 at 04:16:38PM +0800, Yijing Wang wrote:
->>> There is a race condition when removing glue directory.
->>> It can be reproduced in following test:
->>>
->>> path 1: Add first child device
->>> device_add()
->>> 	get_device_parent()
->>> 		/*find parent from glue_dirs.list*/
->>> 		list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
->>> 			if (k->parent == parent_kobj) {
->>> 				kobj = kobject_get(k);
->>> 				break;
->>> 			}
->>> 		....
->>> 		class_dir_create_and_add()
->>>
->>> path2: Remove last child device under glue dir
->>> device_del()
->>> 	cleanup_device_parent()
->>> 		cleanup_glue_dir()
->>> 			kobject_put(glue_dir);
->>>
->>> If path2 has been called cleanup_glue_dir(), but not
->>> call kobject_put(glue_dir), the glue dir is still
->>> in parent's kset list. Meanwhile, path1 find the glue
->>> dir from the glue_dirs.list. Path2 may release glue dir
->>> before path1 call kobject_get(). So kernel will report
->>> the warning and bug_on.
->>>
->>> This fix keep glue dir around once it created suggested
->>> by Tejun Heo.
->>
->> I think you prolly want to explain why this is okay / desired.
->> e.g. list how the glue dir is used and how many of them are there and
->> explain that there's no real benefit in removing them.
-> 
-> I'd really _like_ to remove them if at all possible, as if there isn't
-> any "children" in the subdirectory, there shouldn't be a need for that
-> directory to be there.
-> 
-> This seems to be the "classic" problem we have of a kref in a list that
-> can be found while the last instance could be removed at the same time.
-> I hate to just throw another lock at the problem, but wouldn't a lock to
-> protect the list of glue_dirs be the answer here?
+>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
 
-Hi Greg, in this case, we need to protect the race condition between traverse dev->class->p->glue_dirs.list
-and kobject_put(glue_dir) in cleanup_glue_dir().
+Chris,
 
-glue_dirs.list_lock only used to protect glue_dirs.list, but what we want to protect is
-don't call kobject_put(glue_dir) to decrease glue_dir ref count during we traverse
-dev->class->p->glue_dirs.list.
+Chris> For a RAID card I expect it would be related to chunk size or
+Chris> stripe width or something...but even then I would expect to be
+Chris> able to cap it at 100MB or so.  Or are there storage systems on
+Chris> really fast interfaces that could legitimately want a hundred meg
+Chris> of data at a time?
 
+Well, there are several devices that report their capacity to indicate
+that they don't suffer any performance (RMW) penalties for large
+commands regardless of size. I would personally prefer them to report 0
+in that case.
 
----------------------------------------------------------------------------
-		/* find our class-directory at the parent and reference it */
-		spin_lock(&dev->class->p->glue_dirs.list_lock);
-		list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)     ------>A
-			if (k->parent == parent_kobj) {
-				kobj = kobject_get(k);
-				break;
-			}
-		spin_unlock(&dev->class->p->glue_dirs.list_lock);
-------------------------------------------------------------------------------
-static void cleanup_glue_dir(struct device *dev, struct kobject *glue_dir)
-{
-	/* see if we live in a "glue" directory */
-	if (!glue_dir || !dev->class ||
-	    glue_dir->kset != &dev->class->p->glue_dirs)
-		return;
+Chris> Yep, in all three wonky cases so far "optimal_io_size" ended up
+Chris> as 4294966784, which is 0xfffffe00.  Does something mask out the
+Chris> lower bits?
 
-	kobject_put(glue_dir);   --------------->B
-}
-------------------------------------------------------------------------------
+Ignoring reported values of UINT_MAX and 0xfffffe000 only works until
+the next spec-dyslexic firmware writer comes along.
 
+I also think that singling out the OPTIMAL TRANSFER LENGTH is a bit of a
+red herring. A vendor could mess up any value in that VPD and it would
+still cause us grief. There's no rational explanation for why OTL would
+be more prone to being filled out incorrectly than any of the other
+parameters in that page.
 
-Tejun introduced a mutex gdp_mutex in commit 77d3d7c1d561f49 to fix the race condition in get_device_parent().
-We could reuse the mutex to fix the race condition between glue_dirs.list traverse and kobject_put(glue_dir).
+I do concur, though, that io_opt is problematic by virtue of being
+32-bits and that gets multiplied by the sector size. So things can
+easily get out of whack for fdisk and friends (by comparison the value
+that we use for io_min is only 16 bits).
 
-Greg, the two solutions (reuse the gdp_mutex and don't remove glue_dir), which one do you prefer ?
+I'm still partial to just blacklisting that entire Seagate family. We
+don't have any details on the alleged SSD having the same problem. For
+all we know it could be the same SAS disk drive and not an SSD at all.
 
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 28b808c..645eacf 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -724,12 +724,12 @@ class_dir_create_and_add(struct class *class, struct kobject *parent_kobj)
- 	return &dir->kobj;
- }
-
-+static DEFINE_MUTEX(gdp_mutex);
-
- static struct kobject *get_device_parent(struct device *dev,
- 					 struct device *parent)
- {
- 	if (dev->class) {
--		static DEFINE_MUTEX(gdp_mutex);
- 		struct kobject *kobj = NULL;
- 		struct kobject *parent_kobj;
- 		struct kobject *k;
-@@ -793,7 +793,9 @@ static void cleanup_glue_dir(struct device *dev, struct kobject *glue_dir)
- 	    glue_dir->kset != &dev->class->p->glue_dirs)
- 		return;
-
-+	mutex_lock(&gdp_mutex);
- 	kobject_put(glue_dir);
-+	mutex_unlock(&gdp_mutex);
- }
-
- static void cleanup_device_parent(struct device *dev)
-
-
-
-
-
-
-
-
-
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> .
-> 
-
+If there are compelling arguments or other supporting data for sanity
+checking OTL I'd suggest the following patch that caps it at 1GB. I know
+of a few devices that prefer alignment at that granularity.
 
 -- 
-Thanks!
-Yijing
+Martin K. Petersen	Oracle Linux Engineering
 
+commit 87c0103ea3f96615b8a9816b8aee8a7ccdf55d50
+Author: Martin K. Petersen <martin.petersen@oracle.com>
+Date:   Thu Nov 6 12:31:43 2014 -0500
+
+    [SCSI] sd: Sanity check the optimal I/O size
+    
+    We have come across a couple of devices that report crackpot values in
+    the optimal I/O size in the Block Limits VPD page. Since this is a
+    32-bit entity that gets multiplied by the logical block size we can get
+    disproportionately large values reported to the block layer.
+    
+    Cap io_opt at 1 GB.
+    
+    Reported-by: Chris Friesen <chris.friesen@windriver.com>
+    Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+    Cc: stable@vger.kernel.org
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index b041eca8955d..806e06c2575f 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2591,7 +2591,8 @@ static void sd_read_block_limits(struct scsi_disk *sdkp)
+ 	blk_queue_io_min(sdkp->disk->queue,
+ 			 get_unaligned_be16(&buffer[6]) * sector_sz);
+ 	blk_queue_io_opt(sdkp->disk->queue,
+-			 get_unaligned_be32(&buffer[12]) * sector_sz);
++			 min_t(unsigned int, SD_MAX_IO_OPT_BYTES,
++			       get_unaligned_be32(&buffer[12]) * sector_sz));
+ 
+ 	if (buffer[3] == 0x3c) {
+ 		unsigned int lba_count, desc_count;
+diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
+index 63ba5ca7f9a1..3492779d9d3e 100644
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -44,10 +44,11 @@ enum {
+ };
+ 
+ enum {
+-	SD_DEF_XFER_BLOCKS = 0xffff,
+-	SD_MAX_XFER_BLOCKS = 0xffffffff,
+-	SD_MAX_WS10_BLOCKS = 0xffff,
+-	SD_MAX_WS16_BLOCKS = 0x7fffff,
++	SD_DEF_XFER_BLOCKS	= 0xffff,
++	SD_MAX_XFER_BLOCKS	= 0xffffffff,
++	SD_MAX_WS10_BLOCKS	= 0xffff,
++	SD_MAX_WS16_BLOCKS	= 0x7fffff,
++	SD_MAX_IO_OPT_BYTES	= 1024 * 1024 * 1024,
+ };
+ 
+ enum {
