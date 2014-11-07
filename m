@@ -1,175 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaKGSsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 13:48:09 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:46393 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaKGSsH (ORCPT
+	id S1753071AbaKGSsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 13:48:39 -0500
+Received: from mail.windriver.com ([147.11.1.11]:57184 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaKGSsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 13:48:07 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, Joe Perches <joe@perches.com>,
-        stable@vger.kernel.org
-Subject: [PATCH v3 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
-Date: Fri,  7 Nov 2014 18:47:50 +0000
-Message-Id: <1415386070-18850-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 7 Nov 2014 13:48:37 -0500
+Message-ID: <545D13FF.6090306@windriver.com>
+Date: Fri, 7 Nov 2014 12:48:31 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: absurdly high "optimal_io_size" on Seagate SAS disk
+References: <545BA625.40308@windriver.com> <545BAD05.3050800@windriver.com>	<yq1k338b5d5.fsf@sermon.lab.mkp.net> <545BB3AB.8070409@windriver.com>	<yq1fvdwb3lq.fsf@sermon.lab.mkp.net> <545BC88A.7060706@windriver.com>	<yq1zjc3ai4h.fsf@sermon.lab.mkp.net> <545C5A1B.9020206@windriver.com> <yq1bnoj9dvu.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1bnoj9dvu.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.116.14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when kdb traps printk messages then the raw log level prefix
-(consisting of '\001' followed by a numeral) does not get stripped off
-before the message is issued to the various I/O handlers supported by
-kdb. This causes annoying visual noise as well as causing problems
-grepping for ^. It is also a change of behaviour compared to normal usage
-of printk() usage. For example <SysRq>-h ends up with different output to
-that of kdb's "sr h".
+On 11/07/2014 10:25 AM, Martin K. Petersen wrote:
+>>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+> 
+> Chris,
+> 
+> Chris> Also, I think it's wrong for filesystems and userspace to use it
+> Chris> for alignment.  In E.4 and E.5 in the "sbc3r25.pdf" doc, it looks
+> Chris> like they use the optimal granularity field for alignment, not
+> Chris> the optimal transfer length.
+> 
+> The original rationale behind the OTLG and OTL values was to be able to
+> express stripe chunk size and stripe width. And to encourage aligned,
+> full stripe writes but nothing bigger than that. Obviously the wording
+> went through the usual standards body process to be vague/generic enough
+> to be used for anything. It has changed several times since sbc3r25,
+> btw.
 
-This patch addresses the problem by stripping log levels from messages
-before they are issued to the I/O handlers. printk() which can also
-act as an i/o handler in some cases is special cased; if the caller
-provided a log level then the prefix will be preserved when sent to
-printk().
+You've obviously been involved in this area a lot more closely than me,
+so I'll defer to your experience. :)
 
-The addition of non-printable characters to the output of kdb commands is a
-regression, albeit and extremely elderly one, introduced by commit
-04d2c8c83d0e ("printk: convert the format for KERN_<LEVEL> to a 2 byte
-pattern"). Note also that this patch does *not* restore the original
-behaviour from v3.5. Instead it makes printk() from within a kdb command
-display the message without any prefix (i.e. like printk() normally does).
+I think that if that's the intended use case, then the spec wording could
+be improved.  Looking at "sbc3r36.pdf", it still only explicitly mentions
+performance penalties for transfers that are larger than the "optimal
+transfer length", not for transfers that are smaller.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: stable@vger.kernel.org
----
 
-Notes:
-    This patch is tested both on arm (kgdboc=ttyAMA0) and x86_64
-    (kgdboc=kdb,ttyS0).
-    
-    v3:
-    
-    * Introduce enum kdb_msgsrc to further improve the fidelity of messages
-      that hit the log (Joe Perches). The output of "sr h" benefits a lot
-      from this change.
-    
-    v2:
-    
-    * Adopt printk_skip_level() to skip the header characters (Joe Perches).
-    
-    * Update patch description to describe the addition of non-printable
-      characters to kdb output as a regression and Cc: stable@ (Joe Perches).
-    
 
- include/linux/kdb.h       |  8 +++++++-
- kernel/debug/kdb/kdb_io.c | 22 +++++++++++++---------
- kernel/printk/printk.c    |  2 +-
- 3 files changed, 21 insertions(+), 11 deletions(-)
+On 11/07/2014 12:03 PM, Martin K. Petersen wrote:
+>>>>>> "Chris" == Chris Friesen <chris.friesen@windriver.com> writes:
+> 
+> Chris> Apparently there's a new firmware available, dated Oct 13 but
+> Chris> with no release notes.  We just tried updating the firmware on
+> Chris> one of the drives in question and it failed from two different
+> Chris> versions of linux,
+> 
+> Did you use sg_write_buffer or some special firmware update tool?
 
-diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index 290db1269c4c..204901ae003a 100644
---- a/include/linux/kdb.h
-+++ b/include/linux/kdb.h
-@@ -112,8 +112,14 @@ typedef enum {
- 	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
- } kdb_reason_t;
+Both.  I didn't do it myself, but the guy who did sent me the following:
 
-+enum kdb_msgsrc {
-+	KDB_MSGSRC_INTERNAL, /* direct call to kdb_printf() */
-+	KDB_MSGSRC_PRINTK, /* trapped from printk() */
-+};
-+
- extern int kdb_trap_printk;
--extern __printf(1, 0) int vkdb_printf(const char *fmt, va_list args);
-+extern __printf(2, 0) int vkdb_printf(enum kdb_msgsrc src, const char *fmt,
-+				      va_list args);
- extern __printf(1, 2) int kdb_printf(const char *, ...);
- typedef __printf(1, 2) int (*kdb_printf_t)(const char *, ...);
 
-diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-index 7c70812caea5..a550afb99ebe 100644
---- a/kernel/debug/kdb/kdb_io.c
-+++ b/kernel/debug/kdb/kdb_io.c
-@@ -548,7 +548,7 @@ static int kdb_search_string(char *searched, char *searchfor)
- 	return 0;
- }
+localhost:~$ ./dl_sea_fw-0.2.3_64 -m ST900MM0026 -d /dev/sda -f Lightningbug10K6-SED-0003.LOD 
+================================================================================
+ Seagate Firmware Download Utility v0.2.3 Build Date: Jan  9 2013
+ Copyright (c) 2012 Seagate Technology LLC, All Rights Reserved
+ Fri Nov  7 14:51:21 2014
+================================================================================
+Downloading file Lightningbug10K6-SED-0003.LOD to /dev/sda
+send_io: Input/output error
+send_io: Input/output error
+ !
+FW Download FAILED
 
--int vkdb_printf(const char *fmt, va_list ap)
-+int vkdb_printf(enum kdb_msgsrc src, const char *fmt, va_list ap)
- {
- 	int diag;
- 	int linecount;
-@@ -691,19 +691,20 @@ kdb_printit:
- 	 * Write to all consoles.
- 	 */
- 	retlen = strlen(kdb_buffer);
-+	cp = (char *) printk_skip_level(kdb_buffer);
- 	if (!dbg_kdb_mode && kgdb_connected) {
--		gdbstub_msg_write(kdb_buffer, retlen);
-+		gdbstub_msg_write(cp, retlen - (cp - kdb_buffer));
- 	} else {
- 		if (dbg_io_ops && !dbg_io_ops->is_console) {
--			len = retlen;
--			cp = kdb_buffer;
-+			len = retlen - (cp - kdb_buffer);
-+			cp2 = cp;
- 			while (len--) {
--				dbg_io_ops->write_char(*cp);
--				cp++;
-+				dbg_io_ops->write_char(*cp2);
-+				cp2++;
- 			}
- 		}
- 		while (c) {
--			c->write(c, kdb_buffer, retlen);
-+			c->write(c, cp, retlen - (cp - kdb_buffer));
- 			touch_nmi_watchdog();
- 			c = c->next;
- 		}
-@@ -711,7 +712,10 @@ kdb_printit:
- 	if (logging) {
- 		saved_loglevel = console_loglevel;
- 		console_loglevel = CONSOLE_LOGLEVEL_SILENT;
--		printk(KERN_INFO "%s", kdb_buffer);
-+		if (printk_get_level(kdb_buffer) || src == KDB_MSGSRC_PRINTK)
-+			printk("%s", kdb_buffer);
-+		else
-+			pr_info("%s", kdb_buffer);
- 	}
 
- 	if (KDB_STATE(PAGER)) {
-@@ -844,7 +848,7 @@ int kdb_printf(const char *fmt, ...)
- 	int r;
+This log is from a different system running Debian:
 
- 	va_start(ap, fmt);
--	r = vkdb_printf(fmt, ap);
-+	r = vkdb_printf(KDB_MSGSRC_INTERNAL, fmt, ap);
- 	va_end(ap);
+ root@bricklane-2:/home/cgcs# sg_write_buffer -vvv --in=Lightningbug10K6-SED-0003.LOD --length=1752576 --mode=5 /dev/sdb
 
- 	return r;
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ced2b84b1cb7..3a884ab1b9cb 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1836,7 +1836,7 @@ asmlinkage __visible int printk(const char *fmt, ...)
- #ifdef CONFIG_KGDB_KDB
- 	if (unlikely(kdb_trap_printk)) {
- 		va_start(args, fmt);
--		r = vkdb_printf(fmt, args);
-+		r = vkdb_printf(KDB_MSGSRC_PRINTK, fmt, args);
- 		va_end(args);
- 		return r;
- 	}
---
-1.9.3
+open /dev/sdb with flags=0x802
 
+sending single write buffer, mode=0x5, mpsec=0, id=0, offset=0, len=1752576
+
+    Write buffer cmd: 3b 05 00 00 00 00 1a be 00 00 
+
+    Write buffer parameter list (first 256 bytes):
+
+e7 1a 0e 59 01 00 02 00  00 00 00 00 00 00 19 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 be 1a 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 d5 cd
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 07 00
+
+80 01 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 bc 1a 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 5f 42
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+ioctl(SG_IO v3) failed: Invalid argument (errno=22)
+
+write buffer: pass through os error: Invalid argument
+
+Write buffer failed: Sense category: -1, try '-v' option for more information
+
+
+Apparently the "hdparm -I" command is giving bogus data as well.
+I've seen that happen if the drive is on a RAID controller--I assume
+that could cause problems with firmware updates too?
+
+Chris
