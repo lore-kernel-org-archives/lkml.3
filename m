@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaKGTkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 14:40:43 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39438 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaKGTkl (ORCPT
+	id S1753298AbaKGTku (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 14:40:50 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:40145 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248AbaKGTks convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 14:40:41 -0500
-Message-ID: <545D2036.9080205@amacapital.net>
-Date: Fri, 07 Nov 2014 11:40:38 -0800
-From: Andy Lutomirski <luto@amacapital.net>
+	Fri, 7 Nov 2014 14:40:48 -0500
+Message-ID: <545D2043.1080703@arm.com>
+Date: Fri, 07 Nov 2014 19:40:51 +0000
+From: Sudeep Holla <sudeep.holla@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] kernel: add support for live patching
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com> <1415284748-14648-3-git-send-email-sjenning@redhat.com>
-In-Reply-To: <1415284748-14648-3-git-send-email-sjenning@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+Subject: Re: [PATCH v5 00/11] drivers: cacheinfo support
+References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com> <5445587B.8090203@arm.com> <20141020184932.GA25398@kroah.com> <544626AD.403@arm.com> <20141107192310.GB30923@kroah.com>
+In-Reply-To: <20141107192310.GB30923@kroah.com>
+X-OriginalArrivalTime: 07 Nov 2014 19:40:44.0160 (UTC) FILETIME=[B86A3000:01CFFAC2]
+X-MC-Unique: 114110719404603101
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 06:39 AM, Seth Jennings wrote:
-> This commit introduces code for the live patching core.  It implements
-> an ftrace-based mechanism and kernel interface for doing live patching
-> of kernel and kernel module functions.
-> 
-> It represents the greatest common functionality set between kpatch and
-> kgraft and can accept patches built using either method.
-> 
-> This first version does not implement any consistency mechanism that
-> ensures that old and new code do not run together.  In practice, ~90% of
-> CVEs are safe to apply in this way, since they simply add a conditional
-> check.  However, any function change that can not execute safely with
-> the old version of the function can _not_ be safely applied in this
-> version.
-> 
 
-[...]
 
-> +/********************************************
-> + * Sysfs Interface
-> + *******************************************/
-> +/*
-> + * /sys/kernel/livepatch
-> + * /sys/kernel/livepatch/<patch>
-> + * /sys/kernel/livepatch/<patch>/enabled
-> + * /sys/kernel/livepatch/<patch>/<object>
-> + * /sys/kernel/livepatch/<patch>/<object>/<func>
-> + * /sys/kernel/livepatch/<patch>/<object>/<func>/new_addr
-> + * /sys/kernel/livepatch/<patch>/<object>/<func>/old_addr
-> + */
+On 07/11/14 19:23, Greg Kroah-Hartman wrote:
+> On Tue, Oct 21, 2014 at 10:26:05AM +0100, Sudeep Holla wrote:
+>> Hi Greg,
+>>
+>> On 20/10/14 19:49, Greg Kroah-Hartman wrote:
+>>> On Mon, Oct 20, 2014 at 07:46:19PM +0100, Sudeep Holla wrote:
+>>>> Hi Greg,
+>>>>
+>>>> On 30/09/14 14:48, Sudeep Holla wrote:
+>>>>> This series adds a generic cacheinfo support similar to topology. The
+>>>>> implementation is based on x86 cacheinfo support. Currently x86, powerpc,
+>>>>> ia64 and s390 have their own implementations. While adding similar support
+>>>>> to ARM and ARM64, here is the attempt to make it generic quite similar to
+>>>>> topology info support. It also adds the missing ABI documentation for
+>>>>> the cacheinfo sysfs which is already being used.
+>>>>>
+>>>>> It moves all the existing different implementations on x86, ia64, powerpc
+>>>>> and s390 to use the generic cacheinfo infrastructure introduced here.
+>>>>> These changes on non-ARM platforms are only compile tested and tested on x86.
+>>>>>
+>>>>> This series also adds support for ARM and ARM64 architectures based on
+>>>>> the generic support.
+>>>>>
+>>>>> The code can be fetched from:
+>>>>>   git://linux-arm.org/linux-skn cacheinfo
+>>>>>
+>>>>
+>>>> I am hoping to target this for v3.19 if possible, it would be good if
+>>>> you can review and provide feedback.
+>>>
+>>> 3.18-rc1 just came out a few _hours_ ago, and now we can start worrying
+>>> about what goes into 3.19.  I have 1257 emails in my "to-review" queue
+>>> for 3.19, please give me a chance to catch up in a few weeks to get to
+>>> this code.
+>>>
+>>
+>> I completely understand and I am sorry if that was a noise.
+>> I just wanted to ensure it's not lost, thanks for letting me know it's
+>> in your list.
+>
+> Do you want me to take this through my tree?  If so, I will, otherwise,
+> feel free to add:
 
-Letting anyone read new_addr and old_addr is a kASLR leak, and I would
-argue that showing this information to non-root at all is probably a bad
-idea.
+I have not got it tested on AMD, IA64 and PPC. Probably they were
+waiting for the core driver to settle down. I have only tested on
+ARM{32,64} and x86. Heiko Carstens tested on s390 long back some
+previous version.
 
-Can you make new_addr and old_addr have mode 0600 and
-/sys/kernel/livepatch itself have mode 0500?  For the latter, an admin
-who wants unprivileged users to be able to see it can easily chmod it.
+If it fine with you, I would like to break the first 4 patches and
+target it for v3.19, and take up the arch-specific patches (i.e.5-11)
+after that, so that I can get them tested on all architectures.
 
---Andy
+>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> to the series.
+
+Thanks, I will rebase on v3.18-rc4 and repost first 4 patches  on Monday 
+which you can take it through your tree *iff you agree with me* on above 
+flow.
+
+Regards,
+Sudeep
+
