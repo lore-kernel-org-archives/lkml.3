@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaKGOOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 09:14:47 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:62964 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaKGOOn (ORCPT
+	id S1752788AbaKGOPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 09:15:00 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:59307 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752708AbaKGOO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 09:14:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-acpi@lists.linaro.org
-Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>, catalin.marinas@arm.com,
-        will.deacon@arm.com, bhelgaas@google.com, Liviu.Dudau@arm.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rjw@rjwysocki.net,
-        linux-pci@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-acpi] [RFC PATCH 3/4] arm64, acpi, pci: Add arch specific functions for mmconfig driver.
-Date: Fri, 07 Nov 2014 15:12:45 +0100
-Message-ID: <16660879.6KxQndPqBW@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415366876-30811-4-git-send-email-tomasz.nowicki@linaro.org>
-References: <1415366876-30811-1-git-send-email-tomasz.nowicki@linaro.org> <1415366876-30811-4-git-send-email-tomasz.nowicki@linaro.org>
+	Fri, 7 Nov 2014 09:14:58 -0500
+Date: Fri, 7 Nov 2014 15:14:55 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 01/11] mfd: syscon: Add atmel-matrix registers
+ definition
+Message-ID: <20141107151455.75c73416@bbrezillon>
+In-Reply-To: <20141107134510.GC4068@piout.net>
+References: <1415203287-21517-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1415203287-21517-2-git-send-email-boris.brezillon@free-electrons.com>
+	<20141107134510.GC4068@piout.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:on6N9WnydhixsC3TF5T2ZQSs/Lia/2NW+kUooAkxDBE
- y1UBX4/GkTAs/O63WZVpOU+ap00rt0tkOE8EP7flJe2957Z/nF
- nILTZbp3hrKRuEbfDFXtpQ6AuoI2VUsUGOfbzG64zzbuYww+cy
- qXMvSXVTXWidSJ3vKOKqDN3BNilI/EqD+6X91wiOgANjtvBhlh
- TQTiuJ6J1lGGovO2EdWAHBETLeUcPotXS9vVwhwySk6OesKkhG
- aQoT/WVhUFfK3vNGOXiUGG6CuXlkO1v0GXyLkW365hD4hT6kU6
- YLHLaMgRplZkEut1vdQebHAzFuDHQJmbhVhH+pyZKMFK3Fktby
- yG2F675fwRL6jlt9o6jA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 November 2014 14:27:55 Tomasz Nowicki wrote:
-> These calls allow to map/unmap PCI config space ranges (which are specified in
-> MMCFG ACPI table).
+Hi Alexandre,
+
+On Fri, 7 Nov 2014 14:45:10 +0100
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+
+> On 05/11/2014 at 17:01:17 +0100, Boris Brezillon wrote :
+> > AT91 SoCs have a memory range reserved for internal bus configuration.
+> > Expose those registers so that drivers can make use of the matrix syscon
+> > declared in at91 DTs.
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > ---
+> >  include/linux/mfd/syscon/atmel-matrix.h | 114 ++++++++++++++++++++++++++++++++
 > 
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> I think we should stop cluttering the include/linux directory and start
+> doing what has been done for tegra and create an include/soc/atmel or
+> include/soc/at91 directory. that's what I was planning to do in my
+> sdramc/reset series but I didn't get any comment on it.
 > 
 
-Nothing in this patch looks arm64 specific, and most of it looks like a
-copy of the x86 code.
+I'll let MFD and ARM maintainers decide, but other syscon drivers are
+using this directory to define their registers...
 
-	Arnd
+Regards,
+
+Boris
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
