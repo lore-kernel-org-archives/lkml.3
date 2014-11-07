@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899AbaKGXLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:11:23 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:53985 "HELO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751764AbaKGXLV (ORCPT
+	id S1753095AbaKGXMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:12:21 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47383 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaKGXMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:11:21 -0500
-From: Joe Stringer <joestringer@nicira.com>
-To: "Vick, Matthew" <matthew.vick@intel.com>
-Subject: Re: [PATCH net 3/5] fm10k: Implement ndo_gso_check()
-Date: Fri, 7 Nov 2014 14:35:56 -0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "alexander.duyck@gmail.com" <alexander.duyck@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Dept-GELinuxNICDev@qlogic.com" <Dept-GELinuxNICDev@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sathya.perla@emulex.com" <sathya.perla@emulex.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Linux NICS <Linux-nics@intel.com>,
-        "amirv@mellanox.com" <amirv@mellanox.com>,
-        "shahed.shaikh@qlogic.com" <shahed.shaikh@qlogic.com>,
-        "therbert@google.com" <therbert@google.com>,
-        "Or Gerlitz" <gerlitz.or@gmail.com>
-References: <1415138202-1197-1-git-send-email-joestringer@nicira.com> <201411071805.18119.joestringer@nicira.com> <D0825758.5EC90%matthew.vick@intel.com>
-In-Reply-To: <D0825758.5EC90%matthew.vick@intel.com>
+	Fri, 7 Nov 2014 18:12:20 -0500
+Message-ID: <545D51D1.4050906@codeaurora.org>
+Date: Fri, 07 Nov 2014 17:12:17 -0600
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Grant Likely <grant.likely@secretlab.ca>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] pinctrl: Intel Cherryview/Braswell support
+References: <1415012493-134561-1-git-send-email-mika.westerberg@linux.intel.com> <545912D2.5090708@codeaurora.org> <CACxGe6t=nK83pGNDKmZJ28BZJqgNjGZgckrzVrBiFko1AcT0xg@mail.gmail.com> <1632312.tiWezf5I7W@vostro.rjw.lan> <CACxGe6sVXkiFpXaJccbYP+3ErmvVvZtL=FqkaJQ5FnnsKJ95Fw@mail.gmail.com>
+In-Reply-To: <CACxGe6sVXkiFpXaJccbYP+3ErmvVvZtL=FqkaJQ5FnnsKJ95Fw@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201411071435.56628.joestringer@nicira.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 07, 2014 11:49:38 Vick, Matthew wrote:
-> On 11/6/14, 9:05 PM, "Joe Stringer" <joestringer@nicira.com> wrote:
-> >Let's merge both discussions into one thread (pick here or there). We
-> >have
-> >this suggestion or the one which simply checks for tunnels and
-> >inner+outer
-> >header lengths. Do you have a preference between them?
-> 
-> Agreed with merging the thread--consider it merged!
-> 
-> Reflecting on this some more, I prefer the latter option (checking tunnels
-> and header lengths). I'm leaning towards pushing the header length check
-> into fm10k_tx_encap_offload and then making fm10k_gso_check call that with
-> the gso_type. So, it's really the most recent version of the patch you
-> proposed:
-> 
-> static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)
-> {
-> 	if ((skb_shinfo(skb)->gso_type & (SKB_GSO_UDP_TUNNEL | SKB_GSO_GRE)) &&
-> 	    !fm10k_tx_encap_offload(skb))
-> 		return false;
-> 
-> 	return true;
-> }
-> 
-> 
-> plus the header length being checked in fm10k_tx_encap_offload. The only
-> nit would be that I'd just return the conditional instead of having
-> "return true" or "return false" lines.
+On 11/06/2014 11:37 AM, Grant Likely wrote:
+> 1) The base assumption must be that firmware sets up the pinctrl
+> hardware into a usable state at boot and ACPI is used to adjust it as
+> part of the normal OSPM runtime PM operations on devices.
 
-OK, that sounds reasonable.
+On some SOCs, the GPIO controller and the pin control controller are the 
+same device.  So if the Linux driver owns GPIO, we can't have the UEFI 
+runtime talk to the same hardware.
 
-> The tunnel length check really should be there in fm10k_tx_encap_offload
-> anyway, so I'll get a patch together for that one.
-
-Thanks.
-
-> >We could introduce an "skb_is_gso_encap()" or similar for this purpose.
-> >Checking for SKB_GSO_UDP_TUNNEL or SKB_GSO_GRE is pretty closely tied to
-> >what
-> >fm10k_tx_encap_offload() checks for though; it might not even make sense
-> >to call
-> >it if some of the other SKB_GSO_* flags are raised.
-> 
-> A fair point. On the other hand, we have to check the header length both
-> in the GSO and non-GSO cases anyway, so only having the check in
-> fm10k_tx_encap_offload and calling it from fm10k_gso_check wouldn't be as
-> duplicative. What do you think about that approach?
-
-Sure, I think fm10k_tx_encap_offload() is a good place for the header length 
-check. Separately, my question above was regarding the idea of a helper for 
-SKB_GSO_{GRE,UDP_TUNNEL}. The only reason it might be useful for the fm10k 
-driver is because all encap is checked in the fm10k_tx_encap_offload() function. 
-Other drivers don't seem to handle different tunnels together like this though, 
-so I'm inclined to stick with the below for now.
-                                                                                
-static bool fm10k_gso_check(struct sk_buff *skb, struct net_device *dev)        
-{                                                                               
-        return (!(skb_shinfo(skb)->gso_type &                                   
-                  (SKB_GSO_UDP_TUNNEL | SKB_GSO_GRE)) ||                        
-                fm10k_tx_encap_offload(skb));                                   
-}
-
-Cheers,
-Joe
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, a Linux Foundation Collaborative Project.
