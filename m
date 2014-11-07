@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaKGB5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 20:57:35 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:53583 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaKGB5d (ORCPT
+	id S1751392AbaKGB62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 20:58:28 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:33376 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaKGB60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 20:57:33 -0500
-Date: Thu, 6 Nov 2014 17:57:28 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Caesar Wang <caesar.wang@rock-chips.com>, heiko@sntech.de,
-        rui.zhang@intel.com, zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com, fzf@rock-chips.com
-Subject: Re: [PATCH v17 1/5] thermal: rockchip: add driver for thermal
-Message-ID: <20141107015728.GF34214@dtor-ws>
-References: <1414809873-32227-1-git-send-email-caesar.wang@rock-chips.com>
- <1414809873-32227-2-git-send-email-caesar.wang@rock-chips.com>
- <20141107013017.GA10180@developer>
+	Thu, 6 Nov 2014 20:58:26 -0500
+Date: Fri, 7 Nov 2014 09:58:15 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141107015815.GA9101@gondor.apana.org.au>
+References: <20141106082704.GB29800@gondor.apana.org.au>
+ <E1XmIQU-0007m1-2e@gondolin.me.apana.org.au>
+ <20141106173012.GY7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141107013017.GA10180@developer>
+In-Reply-To: <20141106173012.GY7996@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+On Thu, Nov 06, 2014 at 05:30:12PM +0000, Al Viro wrote:
+> On Thu, Nov 06, 2014 at 04:28:18PM +0800, Herbert Xu wrote:
+> > +		if (copy_to_iter(skb->data + offset, copy, to))
+> > +			goto fault;
+> 
+> Sorry, no - copy_to_iter() returns the number of bytes copied, not 0 or -EFAULT.
+>
+> > +			vaddr = kmap(page);
+> > +			err = copy_to_iter(vaddr + frag->page_offset +
+> > +					   offset - start, copy, to);
+> > +			kunmap(page);
+> > +			if (err)
+> > +				goto fault;
+> 
+> And that one should be
+> 			copied = copy_page_to_iter(page, frag->page_offset +
+> 					   offset - start, copy, to);
+> 			if (copied != copy)
+> 				goto fault;
+> 
+> Don't bother with kmap(), vaddr and all that shite.  The primitive is
+> 	copy_page_to_iter(page, offset_in_page, nbytes, iter)
+> it does all needed kmap itself and it's smart enough to use kmap_atomic
+> when it can get away with that.  Similar for copy_page_from_iter().
+> 
+> Both of those (as well as copy_{to,from}_iter()) advance iov_iter and return
+> the number of bytes actually copied.  So the check for EFAULT is "it has copied
+> less than you've asked it to copy *and* you haven't run out that iov_iter".
+> The second part is guaranteed to be true in this case - your code makes sure
+> that 'copy' is no more than the space left in iterator.
+> 
+> In general, this check would be spelled
+> 			if (copied != copy && iov_iter_count(to))
+> 				goto fault;
 
-On Thu, Nov 06, 2014 at 09:30:20PM -0400, Eduardo Valentin wrote:
-> Hello Caesar,
-> 
-> On Sat, Nov 01, 2014 at 10:44:29AM +0800, Caesar Wang wrote:
-> > Thermal is TS-ADC Controller module supports
-> > user-defined mode and automatic mode.
-> > 
-> > User-defined mode refers,TSADC all the control signals entirely by
-> > software writing to register for direct control.
-> > 
-> > Automaic mode refers to the module automatically poll TSADC output,
-> > and the results were checked.If you find that the temperature High
-> > in a period of time,an interrupt is generated to the processor
-> > down-measures taken;If the temperature over a period of time High,
-> > the resulting TSHUT gave CRU module,let it reset the entire chip,
-> > or via GPIO give PMIC.
-> > 
-> 
-> First thing, very good progress in this driver! 
-> 
-> > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> > Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> Just for the sake of code / documentation history, this patch, which
-> adds the driver, should come after patch 2, which adds dt documentation.
-> 
-> > ---
-> >  drivers/thermal/Kconfig            |   9 +
-> >  drivers/thermal/Makefile           |   1 +
-> >  drivers/thermal/rockchip_thermal.c | 711 +++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 721 insertions(+)
-> >  create mode 100644 drivers/thermal/rockchip_thermal.c
-> 
-> <big cut>
-> 
-> > +static int
-> > +rockchip_thermal_register_sensor(struct platform_device *pdev,
-> > +				 struct rockchip_thermal_data *thermal,
-> > +				 struct rockchip_thermal_sensor *sensor,
-> > +				 enum sensor_id id)
-> > +{
-> > +	const struct rockchip_tsadc_chip *tsadc = thermal->chip;
-> > +	int error;
-> > +
-> > +	tsadc->set_tshut_mode(id, thermal->regs, thermal->tshut_mode);
-> > +	tsadc->set_tshut_temp(id, thermal->regs, thermal->tshut_temp);
-> > +
-> > +	sensor->thermal = thermal;
-> > +	sensor->id = id;
-> > +	sensor->tzd = thermal_zone_of_sensor_register(&pdev->dev, id, sensor,
-> > +						rockchip_thermal_get_temp,
-> > +						NULL,
-> > +						rockchip_thermal_set_trips);
-> 
-> So, did I miss something here? Looks like you have extended the of
-> thermal, and I haven't seen the patch.
->   CC [M]  drivers/thermal/rockchip_thermal.o
->   drivers/thermal/rockchip_thermal.c: In function
->   `rockchip_thermal_register_sensor':
->   drivers/thermal/rockchip_thermal.c:482:7: error: too many arguments to
->   function `thermal_zone_of_sensor_register'
->          rockchip_thermal_set_trips);
-
-Yes, it relies on patch by Mikko Perttunen adding support for
-hardware-supported trip points. It allows us to reduce polling frequency
-while still being able to react when we cross the tripping point.
-
-See https://lkml.org/lkml/2014/6/27/76
-
-Thanks.
-
+Thanks, I'll redo the patches.
 -- 
-Dmitry
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
