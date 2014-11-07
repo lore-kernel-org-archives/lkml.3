@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472AbaKGHsC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 02:48:02 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43418 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaKGHr5 (ORCPT
+	id S1751312AbaKGHv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 02:51:29 -0500
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:52435 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaKGHv1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 02:47:57 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: roland@hack.frob.com, oleg@redhat.com
-Cc: linux@arm.linux.org.uk, will.deacon@arm.com, dsaxena@linaro.org,
-        keescook@chromium.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [RFC] ptrace: add generic SET_SYSCALL request
-Date: Fri,  7 Nov 2014 16:47:23 +0900
-Message-Id: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 7 Nov 2014 02:51:27 -0500
+X-Greylist: delayed 2890 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Nov 2014 02:51:26 EST
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Peter Feiner <pfeiner@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH -mm v7 10/13] arch/powerpc/mm/subpage-prot.c: use walk->vma
+ and walk_page_vma()
+Thread-Topic: [PATCH -mm v7 10/13] arch/powerpc/mm/subpage-prot.c: use
+ walk->vma and walk_page_vma()
+Thread-Index: AQHP+li7NvyVivzQXUeOx1wxzCbmpw==
+Date: Fri, 7 Nov 2014 07:02:02 +0000
+Message-ID: <1415343692-6314-11-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.22]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new generic ptrace request, PTRACE_SET_SYSCALL.
-It can be used to change a system call number as follows:
-    ret = ptrace(pid, PTRACE_SET_SYSCALL, null, new_syscall_no);
-'new_syscall_no' can be -1 to skip this system call, you need to modify
-a register's value, in arch-specific way, as return value though.
+We don't have to use mm_walk->private to pass vma to the callback function
+because of mm_walk->vma. And walk_page_vma() is useful if we walk over a
+single vma.
 
-Please note that we can't define PTRACE_SET_SYSCALL macro in
-uapi/linux/ptrace.h partly because its value on arm, 23, is used as another
-request on sparc.
-
-This patch also contains an example of change on arch side, arm.
-Only syscall_set_nr() is required to be defined in asm/syscall.h.
-
-Currently only arm has this request, while arm64 would also have it
-once my patch series of seccomp for arm64 is merged. It will also be
-usable for most of other arches.
-See the discussions in lak-ml:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/300167.html
-
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/arm/include/asm/syscall.h |    7 +++++++
- arch/arm/kernel/ptrace.c       |    5 -----
- kernel/ptrace.c                |    6 ++++++
- 3 files changed, 13 insertions(+), 5 deletions(-)
+ arch/powerpc/mm/subpage-prot.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-index e86c985..3e1d9c0 100644
---- a/arch/arm/include/asm/syscall.h
-+++ b/arch/arm/include/asm/syscall.h
-@@ -24,6 +24,13 @@ static inline int syscall_get_nr(struct task_struct *task,
- 	return task_thread_info(task)->syscall;
- }
- 
-+static inline int syscall_set_nr(struct task_struct *task,
-+				 struct pt_regs *regs, int syscall)
-+{
-+	task_thread_info(task)->syscall = syscall;
-+	return 0;
-+}
-+
- static inline void syscall_rollback(struct task_struct *task,
- 				    struct pt_regs *regs)
+diff --git mmotm-2014-11-05-16-01.orig/arch/powerpc/mm/subpage-prot.c mmotm-2014-11-05-16-01/arch/powerpc/mm/subpage-prot.c
+index 6c0b1f5f8d2c..fa9fb5b4c66c 100644
+--- mmotm-2014-11-05-16-01.orig/arch/powerpc/mm/subpage-prot.c
++++ mmotm-2014-11-05-16-01/arch/powerpc/mm/subpage-prot.c
+@@ -134,7 +134,7 @@ static void subpage_prot_clear(unsigned long addr, unsigned long len)
+ static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
+ 				  unsigned long end, struct mm_walk *walk)
  {
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index ef9119f..908bae8 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -853,11 +853,6 @@ long arch_ptrace(struct task_struct *child, long request,
- 				       datap);
+-	struct vm_area_struct *vma = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 	split_huge_page_pmd(vma, addr, pmd);
+ 	return 0;
+ }
+@@ -163,9 +163,7 @@ static void subpage_mark_vma_nohuge(struct mm_struct *mm, unsigned long addr,
+ 		if (vma->vm_start >= (addr + len))
  			break;
- 
--		case PTRACE_SET_SYSCALL:
--			task_thread_info(child)->syscall = data;
--			ret = 0;
--			break;
--
- #ifdef CONFIG_CRUNCH
- 		case PTRACE_GETCRUNCHREGS:
- 			ret = ptrace_getcrunchregs(child, datap);
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 54e7522..d7048fa 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -1001,6 +1001,12 @@ int ptrace_request(struct task_struct *child, long request,
- 		break;
+ 		vma->vm_flags |= VM_NOHUGEPAGE;
+-		subpage_proto_walk.private = vma;
+-		walk_page_range(vma->vm_start, vma->vm_end,
+-				&subpage_proto_walk);
++		walk_page_vma(vma, &subpage_proto_walk);
+ 		vma = vma->vm_next;
  	}
- #endif
-+
-+#ifdef PTRACE_SET_SYSCALL
-+	case PTRACE_SET_SYSCALL:
-+		ret = syscall_set_nr(child, task_pt_regs(child), data);
-+		break;
-+#endif
- 	default:
- 		break;
- 	}
+ }
 -- 
-1.7.9.5
-
+2.2.0.rc0.2.gf745acb
