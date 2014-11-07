@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaKGFvD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:51:03 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34719 "EHLO arroyo.ext.ti.com"
+	id S1752064AbaKGFvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:51:06 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34717 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981AbaKGFu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:50:56 -0500
+	id S1751194AbaKGFuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 00:50:55 -0500
 From: Vignesh R <vigneshr@ti.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -27,9 +27,9 @@ CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
         <linux-input@vger.kernel.org>
-Subject: [PATCH 2/5] input: touchscreen: ti_am335x_tsc: Remove udelay in interrupt handler
-Date: Fri, 7 Nov 2014 11:19:07 +0530
-Message-ID: <1415339350-17679-3-git-send-email-vigneshr@ti.com>
+Subject: [PATCH 3/5] mfd: ti_am335x_tscadc: Remove unwanted reg_se_cache save
+Date: Fri, 7 Nov 2014 11:19:08 +0530
+Message-ID: <1415339350-17679-4-git-send-email-vigneshr@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415339350-17679-1-git-send-email-vigneshr@ti.com>
 References: <1415339350-17679-1-git-send-email-vigneshr@ti.com>
@@ -39,144 +39,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brad Griffis <bgriffis@ti.com>
-
-TSC interrupt handler had udelay to avoid reporting of false pen-up
-interrupt to user space. This patch implements workaround suggesting in
-Advisory 1.0.31 of silicon errata for am335x, thus eliminating udelay
-and touchscreen lag. This also improves performance of touchscreen and
-eliminates sudden jump of cursor at touch release.
-
-IDLECONFIG and CHARGECONFIG registers are to be configured
-with same values in order to eliminate false pen-up events. This
-workaround may result in false pen-down to be detected, hence considerable
-charge step delay needs to be added. The charge delay is set to 0xB000
-(in terms of ADC clock cycles) by default.
-
-TSC steps are disabled at the end of every sampling cycle and EOS bit is
-set. Once the EOS bit is set, the TSC steps need to be re-enabled to begin
-next sampling cycle.
-
-Signed-off-by: Brad Griffis <bgriffis@ti.com>
-[vigneshr@ti.com: Ported the patch from v3.12 to v3.18rc2]
+In one shot mode, sequencer automatically disables all enabled steps at
+the end of each cycle. (both ADC steps and TSC steps) Hence these steps
+need not be saved in reg_se_cache for clearing these steps at a later
+stage.
+Also, when ADC wakes up Sequencer should not be busy executing any of the
+config steps except for the charge step. Previously charge step was 1 ADC
+clock cycle and hence it was ignored.
 
 Signed-off-by: Vignesh R <vigneshr@ti.com>
 ---
- drivers/input/touchscreen/ti_am335x_tsc.c | 56 ++++++++++++-------------------
- include/linux/mfd/ti_am335x_tscadc.h      |  3 +-
- 2 files changed, 24 insertions(+), 35 deletions(-)
+ drivers/mfd/ti_am335x_tscadc.c       | 7 +++++--
+ include/linux/mfd/ti_am335x_tscadc.h | 1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 1aeac9675fe7..483fd97c0e0c 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -173,11 +173,9 @@ static void titsc_step_config(struct titsc *ts_dev)
- 		titsc_writel(ts_dev, REG_STEPDELAY(i), STEPCONFIG_OPENDLY);
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index d877e777cce6..94ef8992f46b 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -86,8 +86,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+ 		spin_lock_irq(&tsadc->reg_lock);
+ 		finish_wait(&tsadc->reg_se_wait, &wait);
+ 
++		/*
++		 * Sequencer should either be idle or
++		 * busy applying the charge step.
++		 */
+ 		reg = tscadc_readl(tsadc, REG_ADCFSM);
+-		WARN_ON(reg & SEQ_STATUS);
++		WARN_ON(reg & SEQ_STATUS & (!CHARGE_STEP));
+ 		tsadc->adc_waiting = false;
  	}
+ 	tsadc->adc_in_use = true;
+@@ -96,7 +100,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+ void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
+ {
+ 	spin_lock_irq(&tsadc->reg_lock);
+-	tsadc->reg_se_cache |= val;
+ 	am335x_tscadc_need_adc(tsadc);
  
--	/* Charge step configuration */
--	config = ts_dev->bit_xp | ts_dev->bit_yn |
--			STEPCHARGE_RFP_XPUL | STEPCHARGE_RFM_XNUR |
--			STEPCHARGE_INM_AN1 | STEPCHARGE_INP(ts_dev->inp_yp);
-+	/* Make CHARGECONFIG same as IDLECONFIG */
- 
-+	config = titsc_readl(ts_dev, REG_IDLECONFIG);
- 	titsc_writel(ts_dev, REG_CHARGECONFIG, config);
- 	titsc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
- 
-@@ -264,9 +262,26 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 	unsigned int status, irqclr = 0;
- 	unsigned int x = 0, y = 0;
- 	unsigned int z1, z2, z;
--	unsigned int fsm;
- 
--	status = titsc_readl(ts_dev, REG_IRQSTATUS);
-+	status = titsc_readl(ts_dev, REG_RAWIRQSTATUS);
-+	if (status & IRQENB_HW_PEN) {
-+		ts_dev->pen_down = true;
-+		titsc_writel(ts_dev, REG_IRQWAKEUP, 0x00);
-+		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
-+		irqclr |= IRQENB_HW_PEN;
-+	}
-+
-+	if (status & IRQENB_PENUP) {
-+		ts_dev->pen_down = false;
-+		input_report_key(input_dev, BTN_TOUCH, 0);
-+		input_report_abs(input_dev, ABS_PRESSURE, 0);
-+		input_sync(input_dev);
-+		irqclr |= IRQENB_PENUP;
-+	}
-+
-+	if (status & IRQENB_EOS)
-+		irqclr |= IRQENB_EOS;
-+
- 	/*
- 	 * ADC and touchscreen share the IRQ line.
- 	 * FIFO1 interrupts are used by ADC. Handle FIFO0 IRQs here only
-@@ -297,34 +312,6 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 		}
- 		irqclr |= IRQENB_FIFO0THRES;
- 	}
--
--	/*
--	 * Time for sequencer to settle, to read
--	 * correct state of the sequencer.
--	 */
--	udelay(SEQ_SETTLE);
--
--	status = titsc_readl(ts_dev, REG_RAWIRQSTATUS);
--	if (status & IRQENB_PENUP) {
--		/* Pen up event */
--		fsm = titsc_readl(ts_dev, REG_ADCFSM);
--		if (fsm == ADCFSM_STEPID) {
--			ts_dev->pen_down = false;
--			input_report_key(input_dev, BTN_TOUCH, 0);
--			input_report_abs(input_dev, ABS_PRESSURE, 0);
--			input_sync(input_dev);
--		} else {
--			ts_dev->pen_down = true;
--		}
--		irqclr |= IRQENB_PENUP;
--	}
--
--	if (status & IRQENB_HW_PEN) {
--
--		titsc_writel(ts_dev, REG_IRQWAKEUP, 0x00);
--		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
--	}
--
- 	if (irqclr) {
- 		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
- 		am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
-@@ -417,6 +404,7 @@ static int titsc_probe(struct platform_device *pdev)
- 	}
- 
- 	titsc_writel(ts_dev, REG_IRQENABLE, IRQENB_FIFO0THRES);
-+	titsc_writel(ts_dev, REG_IRQENABLE, IRQENB_EOS);
- 	err = titsc_config_wires(ts_dev);
- 	if (err) {
- 		dev_err(&pdev->dev, "wrong i/p wire configuration\n");
+ 	tscadc_writel(tsadc, REG_SE, val);
 diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index e2e70053470e..c99be5dc0f5c 100644
+index c99be5dc0f5c..fcce182e4a35 100644
 --- a/include/linux/mfd/ti_am335x_tscadc.h
 +++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -52,6 +52,7 @@
+@@ -128,6 +128,7 @@
  
- /* IRQ enable */
- #define IRQENB_HW_PEN		BIT(0)
-+#define IRQENB_EOS		BIT(1)
- #define IRQENB_FIFO0THRES	BIT(2)
- #define IRQENB_FIFO0OVRRUN	BIT(3)
- #define IRQENB_FIFO0UNDRFLW	BIT(4)
-@@ -107,7 +108,7 @@
- /* Charge delay */
- #define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
- #define CHARGEDLY_OPEN(val)	((val) << 0)
--#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
-+#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(0xB000)
+ /* Sequencer Status */
+ #define SEQ_STATUS BIT(5)
++#define CHARGE_STEP		0x11
  
- /* Control register */
- #define CNTRLREG_TSCSSENB	BIT(0)
+ #define ADC_CLK			3000000
+ #define TOTAL_STEPS		16
 -- 
 1.9.1
 
