@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553AbaKGJkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:40:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46958 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaKGJkD (ORCPT
+	id S1751590AbaKGJk1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:40:27 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:56897 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaKGJkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:40:03 -0500
-Date: Fri, 7 Nov 2014 10:39:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Subbaraman Narayanamurthy <subbaram@codeaurora.org>, daniel@numascale.com,
-        yuyang.du@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: hotplug thread issues
-In-Reply-To: <20141106150150.GT10501@worktop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.11.1411071037440.3789@nanos>
-References: <20141106150150.GT10501@worktop.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 7 Nov 2014 04:40:24 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1415352966.14686.101.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <20141107054741.GB30507@yliu-dev.sh.intel.com>
+	<CAKv+Gu9_ipZe-BV_CxhYVdv2mPrab3EXdznJUd-Unbw3usmckw@mail.gmail.com>
+	<20141107073720.GB24745@yliu-dev.sh.intel.com>
+	<CAKv+Gu-rRMmcP4LF3oo5=6hf8m7fjzkzV14hfkjBPbPn34OZGA@mail.gmail.com>
+	<20141107081344.GC24745@yliu-dev.sh.intel.com>
+	<CAKv+Gu9u5ojSWarm2A5MeWOj1r1+W8U0d+icnx2rfAmiSaL8Ww@mail.gmail.com>
+	<20141107084604.GD24745@yliu-dev.sh.intel.com>
+	<CAKv+Gu_Xx9aKzNU2CfP20WR1ojwjUEvTKyD7L-S9bR_C8EOogQ@mail.gmail.com>
+	<20141107092651.GE24745@yliu-dev.sh.intel.com>
+	<1415352966.14686.101.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Fri, 7 Nov 2014 10:40:22 +0100
+Message-ID: <CAKv+Gu_YzZUqZBGAb+U8MGEfUQ8-yyCPj=QMeEbamKxSi8Wb5A@mail.gmail.com>
+Subject: Re: [LKP] [dmi] PANIC: early exception 0e rip 10:ffffffff81899e6b
+ error 9 cr2 ffffffffff240000
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, LKP <lkp@01.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Nov 2014, Peter Zijlstra wrote:
+On 7 November 2014 10:36, Matt Fleming <matt.fleming@intel.com> wrote:
+> On Fri, 2014-11-07 at 17:26 +0800, Yuanhan Liu wrote:
+>>
+>> Here is the output:
+>>
+>> [    0.000000] NX (Execute Disable) protection: active
+>> [    0.000000] ====== Decoding _DMI_ header:
+>> [    0.000000] 5f 44 4d 49 5f 48 a3 0b 00 20 60 8f 3e 00 25 00
+>> [    0.000000] ====== Remapped SMBIOS table 0xffffffff8f602000 at ffffffffff240000, size 0xba3, num 0x3e
+>
+> Smells like a sign extension issue. Previously how could dmi_base (u32)
+> hold 0xffffffff8f602000?
+>
 
-> Hi Thomas,
-> 
-> So there have been some reports on hitting:
-> 
->   BUG_ON(td->cpu != smp_processor_id());
-> 
-> in smpboot_thread_fn.
-> 
-> Now I've been staring at this for a wee bit today and I've found two
-> issues, but I'm not sure either are enough to explain the observed.
-> 
-> 1) smpboot_register_percpu_thread() seems to lack serialization against
->    hotplug. It has a for_each_online() loop, but no get_online_cpus() --
->    unlike smpboot_unregister_percpu_thread, which does.
-> 
->    Typical usage like spawn_ksoftirqd() should be fine, they're early
->    init calls and those run before we bring up the other CPUs. Therefore
->    this does not explain the observation that its ksoftirqd/n triggering
->    the BUG.
-> 
->    However, the usage in proc_dowatchdog() is susceptible to this race
->    and its entirely possible to go wrong there.
+Exactly. And note that we already found (and fixed, or so we thought)
+this issue.
 
-Hmm. Need to have a look.
- 
-> 
-> 2) the usage of __set_current_state(TASK_PARKED) in __kthread_parkme()
->    is wrong AFAICT, one should always use set_current_state() for
->    setting !TASK_RUNNING state. The comment with set_current_state()
->    explains why.
-> 
->    This would've allowed the test_bit(KTHREAD_SHOULD_PARK) load to have
->    been satisfied before the store of TASK_PARKED.
+I.e, on the ARM you get
 
-My bad. Can you send a proper patch addressing that issue please? That
-should be tagged stable as well I guess.
+>>> ====== Remapped SMBIOS table 0xfe8ac000 at ffffff800001e000, size 0x262, num 0xc
 
-Thanks,
+which has the top bit set as well, but is handled correctly, whereas
+with the original code (i.e., before adding the get_unaligned_le32()),
+we were hitting the same problem.
 
-	tglx
-
-
+-- 
+Ard.
