@@ -1,379 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaKGRaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:30:07 -0500
-Received: from mga03.intel.com ([134.134.136.65]:64275 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847AbaKGR35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:29:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,333,1413270000"; 
-   d="scan'208";a="604238436"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Cc: Len Brown <len.brown@intel.com>,
-        Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>,
-        Noor U Mubeen <noor.u.mubeen@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v2 2/3] powercap/rapl: handle atom and core differences
-Date: Fri,  7 Nov 2014 09:29:26 -0800
-Message-Id: <1415381367-16693-3-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1752676AbaKGRaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:30:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35640 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587AbaKGRaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 12:30:15 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 115/165 corrected] usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
+Date: Fri,  7 Nov 2014 09:29:54 -0800
+Message-Id: <1415381397-21898-1-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415381367-16693-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1415381367-16693-1-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+References: <1415313426-9622-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RAPL implementation on Atom has made some changes that are not compatible
-with Core CPUs. Specifically, it is different in the way units are computed
-as well as floor frequency is enforced.
+3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
 
-This patch uses the per CPU model functions to handle the differences. Intel
-Software Developers' Manual has also been updated to reflect the changes in
-Table 35-7 V3C.
+------------------
 
-Signed-off-by: Ajay Thomas <ajay.thomas.david.rajamanickam@intel.com>
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+From: Felipe Balbi <balbi@ti.com>
+
+commit 52ec49a5e56a27c5b6f8217708783eff39f24c16 upstream.
+
+During Halt Endpoint Test, our interrupt endpoint
+will be disabled, which will clear out ep->desc
+to NULL. Unless we call config_ep_by_speed() again,
+we will not be able to enable this endpoint which
+will make us fail that test.
+
+Fixes: f9c56cd (usb: gadget: Clear usb_endpoint_descriptor
+	inside the struct usb_ep on disable)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/powercap/intel_rapl.c | 216 +++++++++++++++++++++++++++---------------
- 1 file changed, 139 insertions(+), 77 deletions(-)
+ drivers/usb/gadget/f_acm.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-index 256efed..4631696 100644
---- a/drivers/powercap/intel_rapl.c
-+++ b/drivers/powercap/intel_rapl.c
-@@ -29,6 +29,7 @@
- #include <linux/sysfs.h>
- #include <linux/cpu.h>
- #include <linux/powercap.h>
-+#include <asm/iosf_mbi.h>
- 
- #include <asm/processor.h>
- #include <asm/cpu_device_id.h>
-@@ -70,11 +71,6 @@
- #define RAPL_PRIMITIVE_DERIVED       BIT(1) /* not from raw data */
- #define RAPL_PRIMITIVE_DUMMY         BIT(2)
- 
--/* scale RAPL units to avoid floating point math inside kernel */
--#define POWER_UNIT_SCALE     (1000000)
--#define ENERGY_UNIT_SCALE    (1000000)
--#define TIME_UNIT_SCALE      (1000000)
--
- #define TIME_WINDOW_MAX_MSEC 40000
- #define TIME_WINDOW_MIN_MSEC 250
- 
-@@ -175,9 +171,9 @@ struct rapl_package {
- 	unsigned int id; /* physical package/socket id */
- 	unsigned int nr_domains;
- 	unsigned long domain_map; /* bit map of active domains */
--	unsigned int power_unit_divisor;
--	unsigned int energy_unit_divisor;
--	unsigned int time_unit_divisor;
-+	unsigned int power_unit;
-+	unsigned int energy_unit;
-+	unsigned int time_unit;
- 	struct rapl_domain *domains; /* array of domains, sized at runtime */
- 	struct powercap_zone *power_zone; /* keep track of parent zone */
- 	int nr_cpus; /* active cpus on the package, topology info is lost during
-@@ -197,6 +193,9 @@ struct rapl_defaults {
- };
- static struct rapl_defaults *rapl_defaults;
- 
-+/* Sideband MBI registers */
-+#define IOSF_CPU_POWER_BUDGET_CTL (0x2)
-+
- #define PACKAGE_PLN_INT_SAVED   BIT(0)
- #define MAX_PRIM_NAME (32)
- 
-@@ -348,23 +347,13 @@ static int find_nr_power_limit(struct rapl_domain *rd)
- static int set_domain_enable(struct powercap_zone *power_zone, bool mode)
- {
- 	struct rapl_domain *rd = power_zone_to_rapl_domain(power_zone);
--	int nr_powerlimit;
- 
- 	if (rd->state & DOMAIN_STATE_BIOS_LOCKED)
- 		return -EACCES;
-+
- 	get_online_cpus();
--	nr_powerlimit = find_nr_power_limit(rd);
--	/* here we activate/deactivate the hardware for power limiting */
- 	rapl_write_data_raw(rd, PL1_ENABLE, mode);
--	/* always enable clamp such that p-state can go below OS requested
--	 * range. power capping priority over guranteed frequency.
--	 */
--	rapl_write_data_raw(rd, PL1_CLAMP, mode);
--	/* some domains have pl2 */
--	if (nr_powerlimit > 1) {
--		rapl_write_data_raw(rd, PL2_ENABLE, mode);
--		rapl_write_data_raw(rd, PL2_CLAMP, mode);
--	}
-+	rapl_defaults->set_floor_freq(rd, mode);
- 	put_online_cpus();
- 
- 	return 0;
-@@ -662,9 +651,7 @@ static void rapl_init_domains(struct rapl_package *rp)
- static u64 rapl_unit_xlate(int package, enum unit_type type, u64 value,
- 			int to_raw)
- {
--	u64 divisor = 1;
--	int scale = 1; /* scale to user friendly data without floating point */
--	u64 f, y; /* fraction and exp. used for time unit */
-+	u64 units = 1;
- 	struct rapl_package *rp;
- 
- 	rp = find_package_by_id(package);
-@@ -673,42 +660,24 @@ static u64 rapl_unit_xlate(int package, enum unit_type type, u64 value,
- 
- 	switch (type) {
- 	case POWER_UNIT:
--		divisor = rp->power_unit_divisor;
--		scale = POWER_UNIT_SCALE;
-+		units = rp->power_unit;
- 		break;
- 	case ENERGY_UNIT:
--		scale = ENERGY_UNIT_SCALE;
--		divisor = rp->energy_unit_divisor;
-+		units = rp->energy_unit;
- 		break;
- 	case TIME_UNIT:
--		divisor = rp->time_unit_divisor;
--		scale = TIME_UNIT_SCALE;
--		/* special processing based on 2^Y*(1+F)/4 = val/divisor, refer
--		 * to Intel Software Developer's manual Vol. 3a, CH 14.7.4.
--		 */
--		if (!to_raw) {
--			f = (value & 0x60) >> 5;
--			y = value & 0x1f;
--			value = (1 << y) * (4 + f) * scale / 4;
--			return div64_u64(value, divisor);
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index ab1065a..3384486 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -430,11 +430,12 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ 		if (acm->notify->driver_data) {
+ 			VDBG(cdev, "reset acm control interface %d\n", intf);
+ 			usb_ep_disable(acm->notify);
 -		} else {
--			do_div(value, scale);
--			value *= divisor;
--			y = ilog2(value);
--			f = div64_u64(4 * (value - (1 << y)), 1 << y);
--			value = (y & 0x1f) | ((f & 0x3) << 5);
--			return value;
+-			VDBG(cdev, "init acm ctrl interface %d\n", intf);
++		}
++
++		if (!acm->notify->desc)
+ 			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
+ 				return -EINVAL;
 -		}
--		break;
-+		return rapl_defaults->compute_time_window(rp, value, to_raw);
- 	case ARBITRARY_UNIT:
- 	default:
- 		return value;
- 	};
++
+ 		usb_ep_enable(acm->notify);
+ 		acm->notify->driver_data = acm;
  
- 	if (to_raw)
--		return div64_u64(value * divisor, scale);
--	else
--		return div64_u64(value * scale, divisor);
-+		return div64_u64(value, units);
-+
-+	value *= units;
-+
-+	return value;
- }
- 
- /* in the order of enum rapl_primitives */
-@@ -842,12 +811,18 @@ static int rapl_write_data_raw(struct rapl_domain *rd,
- 	return 0;
- }
- 
--static const struct x86_cpu_id energy_unit_quirk_ids[] = {
--	{ X86_VENDOR_INTEL, 6, 0x37},/* Valleyview */
--	{}
--};
--
--static int rapl_check_unit(struct rapl_package *rp, int cpu)
-+/*
-+ * Raw RAPL data stored in MSRs are in certain scales. We need to
-+ * convert them into standard units based on the units reported in
-+ * the RAPL unit MSRs. This is specific to CPUs as the method to
-+ * calculate units differ on different CPUs.
-+ * We convert the units to below format based on CPUs.
-+ * i.e.
-+ * energy unit: microJoules : Represented in microJoules by default
-+ * power unit : microWatts  : Represented in milliWatts by default
-+ * time unit  : microseconds: Represented in seconds by default
-+ */
-+static int rapl_check_unit_core(struct rapl_package *rp, int cpu)
- {
- 	u64 msr_val;
- 	u32 value;
-@@ -858,36 +833,47 @@ static int rapl_check_unit(struct rapl_package *rp, int cpu)
- 		return -ENODEV;
- 	}
- 
--	/* Raw RAPL data stored in MSRs are in certain scales. We need to
--	 * convert them into standard units based on the divisors reported in
--	 * the RAPL unit MSRs.
--	 * i.e.
--	 * energy unit: 1/enery_unit_divisor Joules
--	 * power unit: 1/power_unit_divisor Watts
--	 * time unit: 1/time_unit_divisor Seconds
--	 */
- 	value = (msr_val & ENERGY_UNIT_MASK) >> ENERGY_UNIT_OFFSET;
--	/* some CPUs have different way to calculate energy unit */
--	if (x86_match_cpu(energy_unit_quirk_ids))
--		rp->energy_unit_divisor = 1000000 / (1 << value);
--	else
--		rp->energy_unit_divisor = 1 << value;
-+	rp->energy_unit = 1000000 / (1 << value);
- 
- 	value = (msr_val & POWER_UNIT_MASK) >> POWER_UNIT_OFFSET;
--	rp->power_unit_divisor = 1 << value;
-+	rp->power_unit = 1000000 / (1 << value);
- 
- 	value = (msr_val & TIME_UNIT_MASK) >> TIME_UNIT_OFFSET;
--	rp->time_unit_divisor = 1 << value;
-+	rp->time_unit = 1000000 / (1 << value);
- 
--	pr_debug("Physical package %d units: energy=%d, time=%d, power=%d\n",
--		rp->id,
--		rp->energy_unit_divisor,
--		rp->time_unit_divisor,
--		rp->power_unit_divisor);
-+	pr_debug("Core CPU package %d energy=%duJ, time=%dus, power=%duW\n",
-+		rp->id, rp->energy_unit, rp->time_unit, rp->power_unit);
- 
- 	return 0;
- }
- 
-+static int rapl_check_unit_atom(struct rapl_package *rp, int cpu)
-+{
-+	u64 msr_val;
-+	u32 value;
-+
-+	if (rdmsrl_safe_on_cpu(cpu, MSR_RAPL_POWER_UNIT, &msr_val)) {
-+		pr_err("Failed to read power unit MSR 0x%x on CPU %d, exit.\n",
-+			MSR_RAPL_POWER_UNIT, cpu);
-+		return -ENODEV;
-+	}
-+	value = (msr_val & ENERGY_UNIT_MASK) >> ENERGY_UNIT_OFFSET;
-+	rp->energy_unit = 1 << value;
-+
-+	value = (msr_val & POWER_UNIT_MASK) >> POWER_UNIT_OFFSET;
-+	rp->power_unit = (1 << value) * 1000;
-+
-+	value = (msr_val & TIME_UNIT_MASK) >> TIME_UNIT_OFFSET;
-+	rp->time_unit = 1000000 / (1 << value);
-+
-+	pr_debug("Atom package %d energy=%duJ, time=%dus, power=%duW\n",
-+		rp->id, rp->energy_unit, rp->time_unit, rp->power_unit);
-+
-+	return 0;
-+}
-+
-+
- /* REVISIT:
-  * When package power limit is set artificially low by RAPL, LVT
-  * thermal interrupt for package power limit should be ignored
-@@ -955,10 +941,86 @@ static void package_power_limit_irq_restore(int package_id)
- 	wrmsr_on_cpu(cpu, MSR_IA32_PACKAGE_THERM_INTERRUPT, l, h);
- }
- 
-+static void set_floor_freq_default(struct rapl_domain *rd, bool mode)
-+{
-+	int nr_powerlimit = find_nr_power_limit(rd);
-+
-+	/* always enable clamp such that p-state can go below OS requested
-+	 * range. power capping priority over guranteed frequency.
-+	 */
-+	rapl_write_data_raw(rd, PL1_CLAMP, mode);
-+
-+	/* some domains have pl2 */
-+	if (nr_powerlimit > 1) {
-+		rapl_write_data_raw(rd, PL2_ENABLE, mode);
-+		rapl_write_data_raw(rd, PL2_CLAMP, mode);
-+	}
-+}
-+
-+static void set_floor_freq_atom(struct rapl_domain *rd, bool enable)
-+{
-+	static u32 power_ctrl_orig_val;
-+	u32 mdata;
-+
-+	if (!power_ctrl_orig_val)
-+		iosf_mbi_read(BT_MBI_UNIT_PMC, BT_MBI_PMC_READ,
-+			IOSF_CPU_POWER_BUDGET_CTL, &power_ctrl_orig_val);
-+	mdata = power_ctrl_orig_val;
-+	if (enable) {
-+		mdata &= ~(0x7f << 8);
-+		mdata |= 1 << 8;
-+	}
-+	iosf_mbi_write(BT_MBI_UNIT_PMC, BT_MBI_PMC_WRITE,
-+		IOSF_CPU_POWER_BUDGET_CTL, mdata);
-+}
-+
-+static u64 rapl_compute_time_window_core(struct rapl_package *rp, u64 value,
-+					bool to_raw)
-+{
-+	u64 f, y; /* fraction and exp. used for time unit */
-+
-+	/*
-+	 * Special processing based on 2^Y*(1+F/4), refer
-+	 * to Intel Software Developer's manual Vol.3B: CH 14.9.3.
-+	 */
-+	if (!to_raw) {
-+		f = (value & 0x60) >> 5;
-+		y = value & 0x1f;
-+		value = (1 << y) * (4 + f) * rp->time_unit / 4;
-+	} else {
-+		do_div(value, rp->time_unit);
-+		y = ilog2(value);
-+		f = div64_u64(4 * (value - (1 << y)), 1 << y);
-+		value = (y & 0x1f) | ((f & 0x3) << 5);
-+	}
-+	return value;
-+}
-+
-+static u64 rapl_compute_time_window_atom(struct rapl_package *rp, u64 value,
-+					bool to_raw)
-+{
-+	/*
-+	 * Atom time unit encoding is straight forward val * time_unit,
-+	 * where time_unit is default to 1 sec. Never 0.
-+	 */
-+	if (!to_raw)
-+		return (value) ? value *= rp->time_unit : rp->time_unit;
-+	else
-+		value = div64_u64(value, rp->time_unit);
-+
-+	return value;
-+}
-+
- static const struct rapl_defaults rapl_defaults_core = {
-+	.check_unit = rapl_check_unit_core,
-+	.set_floor_freq = set_floor_freq_default,
-+	.compute_time_window = rapl_compute_time_window_core,
- };
- 
- static const struct rapl_defaults rapl_defaults_atom = {
-+	.check_unit = rapl_check_unit_atom,
-+	.set_floor_freq = set_floor_freq_atom,
-+	.compute_time_window = rapl_compute_time_window_atom,
- };
- 
- #define RAPL_CPU(_model, _ops) {			\
-@@ -1262,7 +1324,7 @@ static int rapl_detect_topology(void)
- 
- 			/* check if the package contains valid domains */
- 			if (rapl_detect_domains(new_package, i) ||
--				rapl_check_unit(new_package, i)) {
-+				rapl_defaults->check_unit(new_package, i)) {
- 				kfree(new_package->domains);
- 				kfree(new_package);
- 				/* free up the packages already initialized */
-@@ -1317,7 +1379,7 @@ static int rapl_add_package(int cpu)
- 	rp->nr_cpus = 1;
- 	/* check if the package contains valid domains */
- 	if (rapl_detect_domains(rp, cpu) ||
--		rapl_check_unit(rp, cpu)) {
-+		rapl_defaults->check_unit(rp, cpu)) {
- 		ret = -ENODEV;
- 		goto err_free_package;
- 	}
 -- 
 1.9.1
 
