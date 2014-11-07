@@ -1,159 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaKGFbf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 00:31:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57873 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348AbaKGFb3 (ORCPT
+	id S1752112AbaKGFbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 00:31:40 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16715 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaKGFbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 00:31:29 -0500
-Date: Thu, 6 Nov 2014 21:31:11 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-b837a8bdc48925e6512412973b845c53cbe2b412@git.kernel.org>
-Cc: paulus@samba.org, mingo@kernel.org, namhyung.kim@lge.com, jolsa@redhat.com,
-        acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, namhyung@kernel.org,
-        tglx@linutronix.de, a.p.zijlstra@chello.nl, hpa@zytor.com
-Reply-To: namhyung@kernel.org, dsahern@gmail.com, adrian.hunter@intel.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, paulus@samba.org,
-        acme@redhat.com, mingo@kernel.org, namhyung.kim@lge.com,
-        jolsa@redhat.com
-In-Reply-To: <1415063674-17206-8-git-send-email-namhyung@kernel.org>
-References: <20140924073356.GB1962@gmail.com>
-	<1415063674-17206-8-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix build-id matching on vmlinux
-Git-Commit-ID: b837a8bdc48925e6512412973b845c53cbe2b412
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 7 Nov 2014 00:31:35 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 06 Nov 2014 21:30:39 -0800
+Message-ID: <545C5927.3010001@nvidia.com>
+Date: Fri, 7 Nov 2014 14:31:19 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Rob Herring <robherring2@gmail.com>
+CC: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 04/13] of: document new emc-timings subnode in nvidia,tegra124-car
+References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com> <1414599796-30597-5-git-send-email-tomeu.vizoso@collabora.com> <545B172C.4060105@nvidia.com> <CAL_JsqKYSF3JVrXH_dkqRXQrgUU3igzvoK1C2k1Caz-4UuHX6Q@mail.gmail.com>
+In-Reply-To: <CAL_JsqKYSF3JVrXH_dkqRXQrgUU3igzvoK1C2k1Caz-4UuHX6Q@mail.gmail.com>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: HKMAIL104.nvidia.com (10.18.16.13) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b837a8bdc48925e6512412973b845c53cbe2b412
-Gitweb:     http://git.kernel.org/tip/b837a8bdc48925e6512412973b845c53cbe2b412
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 4 Nov 2014 10:14:33 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Nov 2014 10:14:08 -0300
+On 11/07/2014 12:12 AM, Rob Herring wrote:
+> On Thu, Nov 6, 2014 at 12:37 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> On 10/30/2014 01:22 AM, Tomeu Vizoso wrote:
+>>>
+>>> The EMC clock needs some extra information for changing its rate.
+>>>
+>>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>>> ---
+>>>    .../bindings/clock/nvidia,tegra124-car.txt         | 46
+>>> +++++++++++++++++++++-
+>>>    1 file changed, 44 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git
+>>> a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>>> b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>>> index ded5d62..42e0588 100644
+>>> --- a/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>>> +++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-car.txt
+>>> @@ -19,12 +19,35 @@ Required properties :
+>>>      In clock consumers, this cell represents the bit number in the CAR's
+>>>      array of CLK_RST_CONTROLLER_RST_DEVICES_* registers.
+>>>
+>>> +The node should contain a "emc-timings" subnode for each supported RAM
+>>> type (see
+>>> +field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address
+>>> being its
+>>> +RAM_CODE.
+>>> +
+>>> +Required properties for "emc-timings" nodes :
+>>> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
+>>> +  is used for.
+>>> +
+>>> +Each "emc-timings" node should contain a "timing" subnode for every
+>>> supported
+>>> +EMC clock rate. The "timing" subnodes should have the clock rate in Hz as
+>>> their
+>>> +unit address.
+>>
+>>
+>> This seems to be a quite liberal use of unit addresses (same in the next
+>> patch) - is this allowed by DT?
+>
+> No, unit address should match a reg property.
 
-perf tools: Fix build-id matching on vmlinux
+Mmm, would you have any suggestion as to how this can be fixed? Right 
+now what I can think of is either to replace the "clock-frequency" 
+property by "reg" (which would be confusing), or to use a different 
+naming scheme, e.g. timing-12750000. IIUC the naming is not essential 
+for properly parsing these nodes, so maybe the second solution is the 
+way to go?
 
-There's a problem on finding correct kernel symbols when perf report
-runs on a different kernel.  Although a part of the problem was solved
-by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
-version when finding vmlinux"), there's a remaining problem still.
+>
+>>> +
+>>> +Required properties for "timing" nodes :
+>>> +- clock-frequency : Should contain the memory clock rate to which this
+>>> timing
+>>> +relates.
+>>> +- nvidia,parent-clock-frequency : Should contain the rate at which the
+>>> current
+>>> +parent of the EMC clock should be running at this timing.
+>>> +- clocks : Must contain an entry for each entry in clock-names.
+>>> +  See ../clocks/clock-bindings.txt for details.
+>>> +- clock-names : Must include the following entries:
+>>> +  - emc-parent : the clock that should be the parent of the EMC clock at
+>>> this
+>>> +timing.
+>>> +
+>>>    Example SoC include file:
+>>>
+>>>    / {
+>>> -       tegra_car: clock {
+>>> +       tegra_car: clock@0,60006000 {
+>
+> The comma here is wrong. Commas should be used when you have something
+> like PCI bus:dev:func for addressing.
+>
+>>>                  compatible = "nvidia,tegra124-car";
+>>> -               reg = <0x60006000 0x1000>;
+>>> +               reg = <0x0 0x60006000 0x0 0x1000>;
+>
+> The number of cell's is really irrelevant to the example.
+>
+>>>                  #clock-cells = <1>;
+>>>                  #reset-cells = <1>;
+>>>          };
+>>> @@ -60,4 +83,23 @@ Example board file:
+>>>          &tegra_car {
+>>>                  clocks = <&clk_32k> <&osc>;
+>>>          };
+>>> +
+>>> +       clock@0,60006000 {
+>>> +               emc-timings@3 {
+>>> +                       nvidia,ram-code = <3>;
+>>> +
+>>> +                       timing@12750000 {
+>>> +                               clock-frequency = <12750000>;
+>>> +                               nvidia,parent-clock-frequency =
+>>> <408000000>;
+>>> +                               clocks = <&tegra_car TEGRA124_CLK_PLL_P>;
+>>> +                               clock-names = "emc-parent";
+>
+> Why do you need both clocks and hardcoded values? clock-frequency is
+> the desired freq you want to set TEGRA124_CLK_PLL_P to?
 
-When perf records samples, it synthesizes the kernel map using
-machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
-You can easily see it using 'perf report -D' command.
+That would be nvidia,parent-clock-frequency IIUC, while clock-frequency 
+is the resulting EMC clock.
 
-After finishing record, it goes through the recorded events to find
-maps/dsos actually used.  And then record build-id info of them.
+>
+> The clocks property really belongs as part of the memory controller
+> node or a memory device node.
 
-During this process, it needs to load symbols in a dso and it'd call
-dso__load_vmlinux_path() since the default value of the symbol_conf.
-try_vmlinux_path is true.  However it changes dso->long_name to a real
-path of the vmlinux file (e.g. /lib/modules/3.16.4/build/vmlinux) if one
-is running on a custom kernel.
-
-It resulted in that perf report reads the build-id of the vmlinux, but
-cannot use it since it only knows about the [kernel.kallsyms] map.  It
-then falls back to possible vmlinux paths by using the recorded kernel
-version (in case of a recent version) or a running kernel silently.
-
-Even with the recent tools, this still has a possibility of breaking
-the result.  As the build directory is a symbolic link, if one built a
-new kernel in the same directory with different source/config, the old
-link to vmlinux will point the new file.  So it's absolutely needed to
-use build-id when finding a kernel image.
-
-In this patch, it's now changed to try to search a kernel dso in the
-existing dso list which was constructed during build-id table parsing
-so it'll always have a build-id.  If not found, search "[kernel.kallsyms]".
-
-Before:
-
-  $ perf report
-  # Children      Self  Command  Shared Object      Symbol
-  # ........  ........  .......  .................  ...............................
-  #
-      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
-      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
-      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
-      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
-   ...
-
-After (for the same perf.data):
-
-      72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
-      72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
-      72.15%     0.00%  swapper  vmlinux  [k] default_idle
-      71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
-   ...
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/20140924073356.GB1962@gmail.com
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1415063674-17206-8-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/header.c  |  2 +-
- tools/perf/util/machine.c | 16 ++++++++++++++--
- 2 files changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 3e2c156..76442ca 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1269,7 +1269,7 @@ static int __event_process_build_id(struct build_id_event *bev,
- 
- 		dso__set_build_id(dso, &bev->build_id);
- 
--		if (filename[0] == '[')
-+		if (!is_kernel_module(filename, NULL))
- 			dso->kernel = dso_type;
- 
- 		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 946c7d6..53f90e9 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1085,8 +1085,20 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
- 		 * Should be there already, from the build-id table in
- 		 * the header.
- 		 */
--		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
--						     kmmap_prefix);
-+		struct dso *kernel = NULL;
-+		struct dso *dso;
-+
-+		list_for_each_entry(dso, &machine->kernel_dsos.head, node) {
-+			if (is_kernel_module(dso->long_name, NULL))
-+				continue;
-+
-+			kernel = dso;
-+			break;
-+		}
-+
-+		if (kernel == NULL)
-+			kernel = __dsos__findnew(&machine->kernel_dsos,
-+						 kmmap_prefix);
- 		if (kernel == NULL)
- 			goto out_problem;
- 
+I would tend to agree here. Tomeu, does it make sense to move these 
+properties to the EMC driver instead?
