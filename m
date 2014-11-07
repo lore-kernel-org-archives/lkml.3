@@ -1,645 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaKGLgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 06:36:48 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:54799 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaKGLgp (ORCPT
+	id S1751769AbaKGLoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 06:44:11 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:42632 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751299AbaKGLoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 06:36:45 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <f032c3c916a68137f34d841207fa2656>
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com
-Subject: [PATCH V4 6/6] dw-hdmi: convert dw-hdmi to drm_bridge mode
-Date: Fri,  7 Nov 2014 19:36:23 +0800
-Message-Id: <1415360183-8704-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415360125-8655-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415360125-8655-1-git-send-email-andy.yan@rock-chips.com>
+	Fri, 7 Nov 2014 06:44:06 -0500
+Date: Fri, 7 Nov 2014 13:43:59 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-api@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v2 01/10] [media] Move mediabus format definition to a
+ more standard place
+Message-ID: <20141107114358.GB3136@valkosipuli.retiisi.org.uk>
+References: <1415267829-4177-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1415267829-4177-2-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415267829-4177-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yakir Yang <ykk@rock-chips.com>
+Hi Boris,
 
-dw-hdmi is under drm/bridge, so it should be the bridge mode.
-hange off the encoder to dw_hdmi-imx.c, keep the connector &
-birdge in dw_hdmi.c
+Thank you for the update.
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-Signed-off-by: Yakir Yang <ykk@rock-chips.com>
----
- drivers/gpu/drm/bridge/dw_hdmi.c      | 228 +++++++++++++++-------------------
- drivers/staging/imx-drm/dw_hdmi-imx.c | 143 ++++++++++++++-------
- include/drm/bridge/dw_hdmi.h          |  13 +-
- 3 files changed, 198 insertions(+), 186 deletions(-)
+On Thu, Nov 06, 2014 at 10:56:59AM +0100, Boris Brezillon wrote:
+> Rename mediabus formats and move the enum into a separate header file so
+> that it can be used by DRM/KMS subsystem without any reference to the V4L2
+> subsystem.
+> 
+> Old v4l2_mbus_pixelcode now points to media_bus_format.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+>  include/uapi/linux/Kbuild             |   1 +
+>  include/uapi/linux/media-bus-format.h | 131 ++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/v4l2-mediabus.h    | 114 +----------------------------
+>  3 files changed, 134 insertions(+), 112 deletions(-)
+>  create mode 100644 include/uapi/linux/media-bus-format.h
+> 
+> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+> index b70237e..b2c23f8 100644
+> --- a/include/uapi/linux/Kbuild
+> +++ b/include/uapi/linux/Kbuild
+> @@ -414,6 +414,7 @@ header-y += veth.h
+>  header-y += vfio.h
+>  header-y += vhost.h
+>  header-y += videodev2.h
+> +header-y += media-bus-format.h
 
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index 9867642..4d25f8f 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -11,7 +11,6 @@
-  * Copyright (C) 2010, Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-  */
- 
--#include <linux/component.h>
- #include <linux/irq.h>
- #include <linux/delay.h>
- #include <linux/err.h>
-@@ -102,7 +101,8 @@ struct hdmi_data_info {
- 
- struct dw_hdmi {
- 	struct drm_connector connector;
--	struct drm_encoder encoder;
-+	struct drm_encoder *encoder;
-+	struct drm_bridge *bridge;
- 
- 	enum dw_hdmi_devtype dev_type;
- 	struct device *dev;
-@@ -1314,6 +1314,50 @@ static void dw_hdmi_poweroff(struct dw_hdmi *hdmi)
- 	dw_hdmi_phy_disable(hdmi);
- }
- 
-+static void dw_hdmi_bridge_mode_set(struct drm_bridge *bridge,
-+				    struct drm_display_mode *mode,
-+				    struct drm_display_mode *adjusted_mode)
-+{
-+	struct dw_hdmi *hdmi = bridge->driver_private;
-+
-+	dw_hdmi_setup(hdmi, mode);
-+
-+	/* Store the display mode for plugin/DKMS poweron events */
-+	memcpy(&hdmi->previous_mode, mode, sizeof(hdmi->previous_mode));
-+}
-+
-+static bool dw_hdmi_bridge_mode_fixup(struct drm_bridge *bridge,
-+				      const struct drm_display_mode *mode,
-+				      struct drm_display_mode *adjusted_mode)
-+{
-+	return true;
-+}
-+
-+static void dw_hdmi_bridge_disable(struct drm_bridge *bridge)
-+{
-+	struct dw_hdmi *hdmi = bridge->driver_private;
-+
-+	dw_hdmi_poweroff(hdmi);
-+}
-+
-+static void dw_hdmi_bridge_enable(struct drm_bridge *bridge)
-+{
-+	struct dw_hdmi *hdmi = bridge->driver_private;
-+
-+	dw_hdmi_poweron(hdmi);
-+}
-+
-+static void dw_hdmi_bridge_destroy(struct drm_bridge *bridge)
-+{
-+	drm_bridge_cleanup(bridge);
-+	kfree(bridge);
-+}
-+
-+static void dw_hdmi_bridge_nope(struct drm_bridge *bridge)
-+{
-+	/* do nothing */
-+}
-+
- static enum drm_connector_status dw_hdmi_connector_detect(struct drm_connector
- 							*connector, bool force)
- {
-@@ -1355,60 +1399,7 @@ static struct drm_encoder *dw_hdmi_connector_best_encoder(struct drm_connector
- 	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi,
- 					     connector);
- 
--	return &hdmi->encoder;
--}
--
--static void dw_hdmi_encoder_mode_set(struct drm_encoder *encoder,
--			struct drm_display_mode *mode,
--			struct drm_display_mode *adjusted_mode)
--{
--	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
--
--	dw_hdmi_setup(hdmi, mode);
--
--	/* Store the display mode for plugin/DKMS poweron events */
--	memcpy(&hdmi->previous_mode, mode, sizeof(hdmi->previous_mode));
--}
--
--static bool dw_hdmi_encoder_mode_fixup(struct drm_encoder *encoder,
--			const struct drm_display_mode *mode,
--			struct drm_display_mode *adjusted_mode)
--{
--	return true;
--}
--
--static void dw_hdmi_encoder_disable(struct drm_encoder *encoder)
--{
--}
--
--static void dw_hdmi_encoder_dpms(struct drm_encoder *encoder, int mode)
--{
--	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
--
--	if (mode)
--		dw_hdmi_poweroff(hdmi);
--	else
--		dw_hdmi_poweron(hdmi);
--}
--
--static void dw_hdmi_encoder_prepare(struct drm_encoder *encoder)
--{
--	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
--
--	dw_hdmi_poweroff(hdmi);
--
--	if (hdmi->plat_data->encoder_prepare)
--		hdmi->plat_data->encoder_prepare(&hdmi->connector, encoder);
--}
--
--static void dw_hdmi_encoder_commit(struct drm_encoder *encoder)
--{
--	struct dw_hdmi *hdmi = container_of(encoder, struct dw_hdmi, encoder);
--
--	if (hdmi->plat_data->encoder_commit)
--		hdmi->plat_data->encoder_commit(hdmi->priv, encoder);
--
--	dw_hdmi_poweron(hdmi);
-+	return hdmi->encoder;
- }
- 
- void dw_hdmi_connector_destroy(struct drm_connector *connector)
-@@ -1417,19 +1408,6 @@ void dw_hdmi_connector_destroy(struct drm_connector *connector)
- 	drm_connector_cleanup(connector);
- }
- 
--static struct drm_encoder_funcs dw_hdmi_encoder_funcs = {
--	.destroy = drm_encoder_cleanup,
--};
--
--static struct drm_encoder_helper_funcs dw_hdmi_encoder_helper_funcs = {
--	.dpms = dw_hdmi_encoder_dpms,
--	.prepare = dw_hdmi_encoder_prepare,
--	.commit = dw_hdmi_encoder_commit,
--	.mode_set = dw_hdmi_encoder_mode_set,
--	.mode_fixup = dw_hdmi_encoder_mode_fixup,
--	.disable = dw_hdmi_encoder_disable,
--};
--
- static struct drm_connector_funcs dw_hdmi_connector_funcs = {
- 	.dpms = drm_helper_connector_dpms,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
-@@ -1442,6 +1420,16 @@ static struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
- 	.best_encoder = dw_hdmi_connector_best_encoder,
- };
- 
-+struct drm_bridge_funcs dw_hdmi_bridge_funcs = {
-+	.enable = dw_hdmi_bridge_enable,
-+	.disable = dw_hdmi_bridge_disable,
-+	.pre_enable = dw_hdmi_bridge_nope,
-+	.post_disable = dw_hdmi_bridge_nope,
-+	.mode_set = dw_hdmi_bridge_mode_set,
-+	.mode_fixup = dw_hdmi_bridge_mode_fixup,
-+	.destroy = dw_hdmi_bridge_destroy,
-+};
-+
- static irqreturn_t dw_hdmi_hardirq(int irq, void *dev_id)
- {
- 	struct dw_hdmi *hdmi = dev_id;
-@@ -1490,40 +1478,64 @@ static irqreturn_t dw_hdmi_irq(int irq, void *dev_id)
- 
- static int dw_hdmi_register(struct drm_device *drm, struct dw_hdmi *hdmi)
- {
--	struct drm_encoder *encoder = &hdmi->encoder;
--	struct device *dev = hdmi->dev;
-+	struct drm_encoder *encoder = hdmi->encoder;
-+	struct drm_bridge *bridge;
-+	int ret;
- 
--	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
-+	bridge = devm_kzalloc(drm->dev, sizeof(*bridge), GFP_KERNEL);
-+	if (!bridge) {
-+		DRM_ERROR("Failed to allocate drm bridge\n");
-+		return -ENOMEM;
-+	}
- 
--	hdmi->connector.polled = DRM_CONNECTOR_POLL_HPD;
-+	hdmi->bridge = bridge;
-+	bridge->driver_private = hdmi;
- 
--	drm_encoder_helper_add(&hdmi->encoder, &dw_hdmi_encoder_helper_funcs);
--	drm_encoder_init(drm, &hdmi->encoder, &dw_hdmi_encoder_funcs,
--			 DRM_MODE_ENCODER_TMDS);
-+	ret = drm_bridge_init(drm, bridge, &dw_hdmi_bridge_funcs);
-+	if (ret) {
-+		DRM_ERROR("Failed to initialize bridge with drm\n");
-+		return -EINVAL;
-+	}
-+
-+	encoder->bridge = bridge;
-+	hdmi->connector.polled = DRM_CONNECTOR_POLL_HPD;
- 
- 	drm_connector_helper_add(&hdmi->connector,
- 				 &dw_hdmi_connector_helper_funcs);
- 	drm_connector_init(drm, &hdmi->connector, &dw_hdmi_connector_funcs,
- 			   DRM_MODE_CONNECTOR_HDMIA);
- 
--	hdmi->connector.encoder = &hdmi->encoder;
-+	hdmi->connector.encoder = encoder;
- 
--	drm_mode_connector_attach_encoder(&hdmi->connector, &hdmi->encoder);
-+	drm_mode_connector_attach_encoder(&hdmi->connector, encoder);
- 
- 	return 0;
- }
- 
--static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
-+int dw_hdmi_bind(struct device *dev, struct device *master,
-+		 void *data, struct drm_encoder *encoder,
-+		 const struct dw_hdmi_plat_data *plat_data)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
--	struct dw_hdmi *hdmi = platform_get_drvdata(pdev);
- 	struct drm_device *drm = data;
- 	struct device_node *np = dev->of_node;
- 	struct device_node *ddc_node;
- 	struct resource *iores;
-+	struct dw_hdmi *hdmi;
- 	int ret, irq;
- 	u32 val;
- 
-+	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
-+	if (!hdmi)
-+		return -ENOMEM;
-+
-+	hdmi->plat_data = plat_data;
-+	hdmi->dev = &pdev->dev;
-+	hdmi->dev_type = plat_data->dev_type;
-+	hdmi->sample_rate = 48000;
-+	hdmi->ratio = 100;
-+	hdmi->encoder = encoder;
-+
- 	if (!of_property_read_u32(np, "reg-io-width", &val)) {
- 		switch (val) {
- 		case 4:
-@@ -1572,8 +1584,6 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	if (IS_ERR(hdmi->regs))
- 		return PTR_ERR(hdmi->regs);
- 
--	if (hdmi->plat_data->setup)
--		hdmi->priv = hdmi->plat_data->setup(pdev);
- 	/* Product and revision IDs */
- 	dev_info(dev,
- 		 "Detected HDMI controller 0x%x:0x%x:0x%x:0x%x\n",
-@@ -1614,9 +1624,9 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(dw_hdmi_bind);
- 
--static void dw_hdmi_unbind(struct device *dev, struct device *master,
--	void *data)
-+void dw_hdmi_unbind(struct device *dev, struct device *master, void *data)
- {
- 	struct dw_hdmi *hdmi = dev_get_drvdata(dev);
- 
-@@ -1624,57 +1634,15 @@ static void dw_hdmi_unbind(struct device *dev, struct device *master,
- 	hdmi_writeb(hdmi, ~0, HDMI_IH_MUTE_PHY_STAT0);
- 
- 	hdmi->connector.funcs->destroy(&hdmi->connector);
--	hdmi->encoder.funcs->destroy(&hdmi->encoder);
--	if (hdmi->plat_data->exit)
--		hdmi->plat_data->exit(hdmi->priv);
--	i2c_put_adapter(hdmi->ddc);
--}
--
--static const struct component_ops hdmi_ops = {
--	.bind	= dw_hdmi_bind,
--	.unbind	= dw_hdmi_unbind,
--};
--
--static int dw_hdmi_platform_probe(struct platform_device *pdev)
--{
--	return component_add(&pdev->dev, &hdmi_ops);
--}
--
--static int dw_hdmi_platform_remove(struct platform_device *pdev)
--{
--	component_del(&pdev->dev, &hdmi_ops);
--	return 0;
--}
--
--int dw_hdmi_platform_register(struct platform_device *pdev,
--			      const struct dw_hdmi_plat_data *plat_data)
--{
--	struct dw_hdmi *hdmi;
--
--	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
--	if (!hdmi)
--		return -ENOMEM;
--
--	hdmi->plat_data = plat_data;
--	hdmi->dev = &pdev->dev;
--	hdmi->dev_type = plat_data->dev_type;
--	hdmi->sample_rate = 48000;
--	hdmi->ratio = 100;
-+	hdmi->encoder->funcs->destroy(hdmi->encoder);
- 
--	platform_set_drvdata(pdev, hdmi);
--
--	return dw_hdmi_platform_probe(pdev);
--}
--EXPORT_SYMBOL_GPL(dw_hdmi_platform_register);
--
--int dw_hdmi_platform_unregister(struct platform_device *pdev)
--{
--	return dw_hdmi_platform_remove(pdev);
-+	i2c_put_adapter(hdmi->ddc);
- }
--EXPORT_SYMBOL_GPL(dw_hdmi_platform_unregister);
-+EXPORT_SYMBOL_GPL(dw_hdmi_unbind);
- 
- MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
- MODULE_AUTHOR("Andy Yan <andy.yan@rock-chips.com>");
-+MODULE_AUTHOR("Yakir Yang <ykk@rock-chips.com>");
- MODULE_DESCRIPTION("DW HDMI transmitter driver");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:imx-hdmi");
-diff --git a/drivers/staging/imx-drm/dw_hdmi-imx.c b/drivers/staging/imx-drm/dw_hdmi-imx.c
-index d205874..76cf406 100644
---- a/drivers/staging/imx-drm/dw_hdmi-imx.c
-+++ b/drivers/staging/imx-drm/dw_hdmi-imx.c
-@@ -5,12 +5,19 @@
-  */
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/component.h>
- #include <linux/mfd/syscon.h>
- #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
- #include <drm/bridge/dw_hdmi.h>
- #include <video/imx-ipu-v3.h>
- #include <linux/regmap.h>
- #include <linux/clk.h>
-+#include <drm/drm_of.h>
-+#include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
-+#include <drm/drm_edid.h>
-+#include <drm/drm_encoder_slave.h>
-+#include <drm/bridge/dw_hdmi.h>
- 
- #include "imx-drm.h"
- 
-@@ -19,6 +26,7 @@ struct imx_hdmi {
- 	struct clk *isfr_clk;
- 	struct clk *iahb_clk;
- 	struct regmap *regmap;
-+	struct drm_encoder encoder;
- };
- 
- static const struct mpll_config imx_mpll_cfg[] = {
-@@ -91,48 +99,26 @@ static int dw_hdmi_parse_dt(struct imx_hdmi *hdmi)
- 	return 0;
- }
- 
--static void *dw_hdmi_imx_setup(struct platform_device *pdev)
-+static void dw_hdmi_imx_disable(struct drm_encoder *encoder)
- {
--	struct imx_hdmi *hdmi;
--	int ret;
--
--	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
--	if (!hdmi)
--		return ERR_PTR(-ENOMEM);
--	hdmi->dev = &pdev->dev;
--
--	ret = dw_hdmi_parse_dt(hdmi);
--	if (ret < 0)
--		return ERR_PTR(ret);
--	ret = clk_prepare_enable(hdmi->isfr_clk);
--	if (ret) {
--		dev_err(hdmi->dev,
--			"Cannot enable HDMI isfr clock: %d\n", ret);
--		return ERR_PTR(ret);
--	}
--
--	ret = clk_prepare_enable(hdmi->iahb_clk);
--	if (ret) {
--		dev_err(hdmi->dev,
--			"Cannot enable HDMI iahb clock: %d\n", ret);
--		return ERR_PTR(ret);
--	}
--
--	return hdmi;
- }
- 
--static void dw_hdmi_imx_exit(void *priv)
-+static bool dw_hdmi_imx_mode_fixup(struct drm_encoder *encoder,
-+				   const struct drm_display_mode *mode,
-+				   struct drm_display_mode *adjusted_mode)
- {
--	struct imx_hdmi *hdmi = (struct imx_hdmi *)priv;
--
--	clk_disable_unprepare(hdmi->isfr_clk);
-+	return true;
-+}
- 
--	clk_disable_unprepare(hdmi->iahb_clk);
-+static void dw_hdmi_imx_mode_set(struct drm_encoder *encoder,
-+				 struct drm_display_mode *mode,
-+				 struct drm_display_mode *adjusted_mode)
-+{
- }
- 
--static void dw_hdmi_imx_encoder_commit(void *priv, struct drm_encoder *encoder)
-+static void dw_hdmi_imx_commit(struct drm_encoder *encoder)
- {
--	struct imx_hdmi *hdmi = (struct imx_hdmi *)priv;
-+	struct imx_hdmi *hdmi = container_of(encoder, struct imx_hdmi, encoder);
- 	int mux = imx_drm_encoder_get_mux_id(hdmi->dev->of_node, encoder);
- 
- 	regmap_update_bits(hdmi->regmap, IOMUXC_GPR3,
-@@ -140,27 +126,30 @@ static void dw_hdmi_imx_encoder_commit(void *priv, struct drm_encoder *encoder)
- 			   mux << IMX6Q_GPR3_HDMI_MUX_CTL_SHIFT);
- }
- 
--static void dw_hdmi_imx_encoder_prepare(struct drm_connector *connector,
--					struct drm_encoder *encoder)
-+static void dw_hdmi_imx_prepare(struct drm_encoder *encoder)
- {
- 	imx_drm_panel_format(encoder, V4L2_PIX_FMT_RGB24);
- }
- 
-+static struct drm_encoder_helper_funcs imx_hdmi_encoder_helper_funcs = {
-+	.mode_fixup = dw_hdmi_imx_mode_fixup,
-+	.mode_set = dw_hdmi_imx_mode_set,
-+	.prepare = dw_hdmi_imx_prepare,
-+	.commit = dw_hdmi_imx_commit,
-+	.disable = dw_hdmi_imx_disable,
-+};
-+
-+static struct drm_encoder_funcs imx_hdmi_encoder_funcs = {
-+	.destroy = drm_encoder_cleanup,
-+};
-+
- static struct dw_hdmi_plat_data imx6q_hdmi_drv_data = {
--	.setup			= dw_hdmi_imx_setup,
--	.exit			= dw_hdmi_imx_exit,
--	.encoder_commit		= dw_hdmi_imx_encoder_commit,
--	.encoder_prepare	= dw_hdmi_imx_encoder_prepare,
- 	.mpll_cfg		= imx_mpll_cfg,
- 	.cur_ctr		= imx_cur_ctr,
- 	.dev_type		= IMX6Q_HDMI,
- };
- 
- static struct dw_hdmi_plat_data imx6dl_hdmi_drv_data = {
--	.setup			= dw_hdmi_imx_setup,
--	.exit			= dw_hdmi_imx_exit,
--	.encoder_commit		= dw_hdmi_imx_encoder_commit,
--	.encoder_prepare	= dw_hdmi_imx_encoder_prepare,
- 	.mpll_cfg		= imx_mpll_cfg,
- 	.cur_ctr		= imx_cur_ctr,
- 	.dev_type		= IMX6DL_HDMI,
-@@ -177,23 +166,82 @@ static const struct of_device_id dw_hdmi_imx_ids[] = {
- };
- MODULE_DEVICE_TABLE(of, dw_hdmi_imx_dt_ids);
- 
--static int dw_hdmi_imx_probe(struct platform_device *pdev)
-+static int dw_hdmi_imx_bind(struct device *dev, struct device *master,
-+			    void *data)
- {
-+	struct platform_device *pdev = to_platform_device(dev);
- 	const struct dw_hdmi_plat_data *plat_data;
- 	const struct of_device_id *match;
-+	struct drm_device *drm = data;
-+	struct drm_encoder *encoder;
-+	struct imx_hdmi *hdmi;
-+	int ret;
- 
- 	if (!pdev->dev.of_node)
- 		return -ENODEV;
- 
-+	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
-+	if (!hdmi)
-+		return -ENOMEM;
-+
- 	match = of_match_node(dw_hdmi_imx_ids, pdev->dev.of_node);
- 	plat_data = match->data;
-+	hdmi->dev = &pdev->dev;
-+	encoder = &hdmi->encoder;
-+	platform_set_drvdata(pdev, hdmi);
-+
-+	ret = dw_hdmi_parse_dt(hdmi);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = clk_prepare_enable(hdmi->isfr_clk);
-+	if (ret) {
-+		dev_err(dev, "Cannot enable HDMI isfr clock: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = clk_prepare_enable(hdmi->iahb_clk);
-+	if (ret) {
-+		dev_err(dev, "Cannot enable HDMI iahb clock: %d\n", ret);
-+		return ret;
-+	}
-+
-+	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
-+
-+	drm_encoder_helper_add(encoder, &imx_hdmi_encoder_helper_funcs);
-+	drm_encoder_init(drm, encoder, &imx_hdmi_encoder_funcs,
-+			 DRM_MODE_ENCODER_TMDS);
- 
--	return dw_hdmi_platform_register(pdev, plat_data);
-+	return dw_hdmi_bind(dev, master, data, encoder, plat_data);
-+}
-+
-+static void dw_hdmi_imx_unbind(struct device *dev, struct device *master,
-+			       void *data)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct imx_hdmi *hdmi = platform_get_drvdata(pdev);
-+
-+	clk_disable_unprepare(hdmi->isfr_clk);
-+	clk_disable_unprepare(hdmi->iahb_clk);
-+
-+	return dw_hdmi_unbind(dev, master, data);
-+}
-+
-+static const struct component_ops dw_hdmi_imx_ops = {
-+	.bind	= dw_hdmi_imx_bind,
-+	.unbind	= dw_hdmi_imx_unbind,
-+};
-+
-+static int dw_hdmi_imx_probe(struct platform_device *pdev)
-+{
-+	return component_add(&pdev->dev, &dw_hdmi_imx_ops);
- }
- 
- static int dw_hdmi_imx_remove(struct platform_device *pdev)
- {
--	return dw_hdmi_platform_unregister(pdev);
-+	component_del(&pdev->dev, &dw_hdmi_imx_ops);
-+
-+	return 0;
- }
- 
- static struct platform_driver dw_hdmi_imx_platform_driver = {
-@@ -209,6 +257,7 @@ static struct platform_driver dw_hdmi_imx_platform_driver = {
- module_platform_driver(dw_hdmi_imx_platform_driver);
- 
- MODULE_AUTHOR("Andy Yan <andy.yan@rock-chips.com>");
-+MODULE_AUTHOR("Yakir Yang <ykk@rock-chips.com>");
- MODULE_DESCRIPTION("IMX6 Specific DW-HDMI Driver Extension");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:dwhdmi-imx");
-diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
-index 6683b63..e26e61f 100644
---- a/include/drm/bridge/dw_hdmi.h
-+++ b/include/drm/bridge/dw_hdmi.h
-@@ -38,20 +38,15 @@ struct curr_ctrl {
- };
- 
- struct dw_hdmi_plat_data {
--	void * (*setup)(struct platform_device *pdev);
--	void (*exit)(void *priv);
--	void (*encoder_commit)(void *priv, struct drm_encoder *encoder);
--	void (*encoder_prepare)(struct drm_connector *connector,
--				struct drm_encoder *encoder);
- 	enum drm_mode_status (*mode_valid)(struct drm_connector *connector,
- 					   struct drm_display_mode *mode);
- 	const struct mpll_config *mpll_cfg;
- 	const struct curr_ctrl *cur_ctr;
- 	enum dw_hdmi_devtype dev_type;
--
- };
- 
--int dw_hdmi_platform_register(struct platform_device *pdev,
--			      const struct dw_hdmi_plat_data *plat_data);
--int dw_hdmi_platform_unregister(struct platform_device *pdev);
-+void dw_hdmi_unbind(struct device *dev, struct device *master, void *data);
-+int dw_hdmi_bind(struct device *dev, struct device *master,
-+		 void *data, struct drm_encoder *encoder,
-+		 const struct dw_hdmi_plat_data *plat_data);
- #endif /* __IMX_HDMI_H__ */
+Could you arrange this to the list alphabetically, please?
+
+>  header-y += virtio_9p.h
+>  header-y += virtio_balloon.h
+>  header-y += virtio_blk.h
+> diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
+> new file mode 100644
+> index 0000000..251a902
+> --- /dev/null
+> +++ b/include/uapi/linux/media-bus-format.h
+> @@ -0,0 +1,131 @@
+> +/*
+> + * Media Bus API header
+> + *
+> + * Copyright (C) 2009, Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __LINUX_MEDIA_BUS_FORMAT_H
+> +#define __LINUX_MEDIA_BUS_FORMAT_H
+> +
+> +/*
+> + * These bus formats uniquely identify data formats on the data bus. Format 0
+> + * is reserved, MEDIA_BUS_FMT_FIXED shall be used by host-client pairs, where
+> + * the data format is fixed. Additionally, "2X8" means that one pixel is
+> + * transferred in two 8-bit samples, "BE" or "LE" specify in which order those
+> + * samples are transferred over the bus: "LE" means that the least significant
+> + * bits are transferred first, "BE" means that the most significant bits are
+> + * transferred first, and "PADHI" and "PADLO" define which bits - low or high,
+> + * in the incomplete high byte, are filled with padding bits.
+> + *
+> + * The bus formats are grouped by type, bus_width, bits per component, samples
+> + * per pixel and order of subsamples. Numerical values are sorted using generic
+> + * numerical sort order (8 thus comes before 10).
+> + *
+> + * As their value can't change when a new bus format is inserted in the
+> + * enumeration, the bus formats are explicitly given a numerical value. The next
+> + * free values for each category are listed below, update them when inserting
+> + * new pixel codes.
+> + */
+> +
+> +#define MEDIA_BUS_FMT_ENTRY(name, val)	\
+> +	MEDIA_BUS_FMT_ ## name = val,	\
+> +	V4L2_MBUS_FMT_ ## name = val
+> +
+> +enum media_bus_format {
+
+There's no really a need to keep the definitions inside the enum. It looks a
+little bit confusing to me. That made me realise something I missed
+yesterday.
+
+There's a difference: the enum in C++ is a different thing than in C, and
+the enum type isn't able to contain any other values than those defined in
+the enumeration.
+
+So what I propose is the following. Keep enum v4l2_mbus_pixelcode around,
+including the enum values. Define new values for MEDIA_BUS_* equivalents
+using preprocessor macros, as you've done below. Drop the definition of enum
+media_bus_format, and use u32 (or uint32_t) type for the variables.
+
+This way the enum stays intact for existing C++ applications, and new
+applications will have to use a 32-bit type.
+
+I'd like to get an ok from Hans to this as well.
+
+> +	MEDIA_BUS_FMT_ENTRY(FIXED, 0x0001),
+> +
+> +	/* RGB - next is 0x100e */
+> +	MEDIA_BUS_FMT_ENTRY(RGB444_2X8_PADHI_BE, 0x1001),
+> +	MEDIA_BUS_FMT_ENTRY(RGB444_2X8_PADHI_LE, 0x1002),
+> +	MEDIA_BUS_FMT_ENTRY(RGB555_2X8_PADHI_BE, 0x1003),
+> +	MEDIA_BUS_FMT_ENTRY(RGB555_2X8_PADHI_LE, 0x1004),
+> +	MEDIA_BUS_FMT_ENTRY(BGR565_2X8_BE, 0x1005),
+> +	MEDIA_BUS_FMT_ENTRY(BGR565_2X8_LE, 0x1006),
+> +	MEDIA_BUS_FMT_ENTRY(RGB565_2X8_BE, 0x1007),
+> +	MEDIA_BUS_FMT_ENTRY(RGB565_2X8_LE, 0x1008),
+> +	MEDIA_BUS_FMT_ENTRY(RGB666_1X18, 0x1009),
+> +	MEDIA_BUS_FMT_ENTRY(RGB888_1X24, 0x100a),
+> +	MEDIA_BUS_FMT_ENTRY(RGB888_2X12_BE, 0x100b),
+> +	MEDIA_BUS_FMT_ENTRY(RGB888_2X12_LE, 0x100c),
+> +	MEDIA_BUS_FMT_ENTRY(ARGB8888_1X32, 0x100d),
+> +
+> +	/* YUV (including grey) - next is 0x2024 */
+> +	MEDIA_BUS_FMT_ENTRY(Y8_1X8, 0x2001),
+> +	MEDIA_BUS_FMT_ENTRY(UV8_1X8, 0x2015),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY8_1_5X8, 0x2002),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY8_1_5X8, 0x2003),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV8_1_5X8, 0x2004),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU8_1_5X8, 0x2005),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY8_2X8, 0x2006),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY8_2X8, 0x2007),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV8_2X8, 0x2008),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU8_2X8, 0x2009),
+> +	MEDIA_BUS_FMT_ENTRY(Y10_1X10, 0x200a),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY10_2X10, 0x2018),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY10_2X10, 0x2019),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV10_2X10, 0x200b),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU10_2X10, 0x200c),
+> +	MEDIA_BUS_FMT_ENTRY(Y12_1X12, 0x2013),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY8_1X16, 0x200f),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY8_1X16, 0x2010),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV8_1X16, 0x2011),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU8_1X16, 0x2012),
+> +	MEDIA_BUS_FMT_ENTRY(YDYUYDYV8_1X16, 0x2014),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY10_1X20, 0x201a),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY10_1X20, 0x201b),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV10_1X20, 0x200d),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU10_1X20, 0x200e),
+> +	MEDIA_BUS_FMT_ENTRY(YUV10_1X30, 0x2016),
+> +	MEDIA_BUS_FMT_ENTRY(AYUV8_1X32, 0x2017),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY12_2X12, 0x201c),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY12_2X12, 0x201d),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV12_2X12, 0x201e),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU12_2X12, 0x201f),
+> +	MEDIA_BUS_FMT_ENTRY(UYVY12_1X24, 0x2020),
+> +	MEDIA_BUS_FMT_ENTRY(VYUY12_1X24, 0x2021),
+> +	MEDIA_BUS_FMT_ENTRY(YUYV12_1X24, 0x2022),
+> +	MEDIA_BUS_FMT_ENTRY(YVYU12_1X24, 0x2023),
+> +
+> +	/* Bayer - next is 0x3019 */
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR8_1X8, 0x3001),
+> +	MEDIA_BUS_FMT_ENTRY(SGBRG8_1X8, 0x3013),
+> +	MEDIA_BUS_FMT_ENTRY(SGRBG8_1X8, 0x3002),
+> +	MEDIA_BUS_FMT_ENTRY(SRGGB8_1X8, 0x3014),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_ALAW8_1X8, 0x3015),
+> +	MEDIA_BUS_FMT_ENTRY(SGBRG10_ALAW8_1X8, 0x3016),
+> +	MEDIA_BUS_FMT_ENTRY(SGRBG10_ALAW8_1X8, 0x3017),
+> +	MEDIA_BUS_FMT_ENTRY(SRGGB10_ALAW8_1X8, 0x3018),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_DPCM8_1X8, 0x300b),
+> +	MEDIA_BUS_FMT_ENTRY(SGBRG10_DPCM8_1X8, 0x300c),
+> +	MEDIA_BUS_FMT_ENTRY(SGRBG10_DPCM8_1X8, 0x3009),
+> +	MEDIA_BUS_FMT_ENTRY(SRGGB10_DPCM8_1X8, 0x300d),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_2X8_PADHI_BE, 0x3003),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_2X8_PADHI_LE, 0x3004),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_2X8_PADLO_BE, 0x3005),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_2X8_PADLO_LE, 0x3006),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR10_1X10, 0x3007),
+> +	MEDIA_BUS_FMT_ENTRY(SGBRG10_1X10, 0x300e),
+> +	MEDIA_BUS_FMT_ENTRY(SGRBG10_1X10, 0x300a),
+> +	MEDIA_BUS_FMT_ENTRY(SRGGB10_1X10, 0x300f),
+> +	MEDIA_BUS_FMT_ENTRY(SBGGR12_1X12, 0x3008),
+> +	MEDIA_BUS_FMT_ENTRY(SGBRG12_1X12, 0x3010),
+> +	MEDIA_BUS_FMT_ENTRY(SGRBG12_1X12, 0x3011),
+> +	MEDIA_BUS_FMT_ENTRY(SRGGB12_1X12, 0x3012),
+> +
+> +	/* JPEG compressed formats - next is 0x4002 */
+> +	MEDIA_BUS_FMT_ENTRY(JPEG_1X8, 0x4001),
+> +
+> +	/* Vendor specific formats - next is 0x5002 */
+> +
+> +	/* S5C73M3 sensor specific interleaved UYVY and JPEG */
+> +	MEDIA_BUS_FMT_ENTRY(S5C_UYVY_JPEG_1X8, 0x5001),
+> +
+> +	/* HSV - next is 0x6002 */
+> +	MEDIA_BUS_FMT_ENTRY(AHSV8888_1X32, 0x6001),
+> +};
+> +
+> +#endif /* __LINUX_MEDIA_BUS_FORMAT_H */
+> diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
+> index 1445e85..d30526c 100644
+> --- a/include/uapi/linux/v4l2-mediabus.h
+> +++ b/include/uapi/linux/v4l2-mediabus.h
+> @@ -13,119 +13,9 @@
+>  
+>  #include <linux/types.h>
+>  #include <linux/videodev2.h>
+> +#include <linux/media-bus-format.h>
+>  
+> -/*
+> - * These pixel codes uniquely identify data formats on the media bus. Mostly
+> - * they correspond to similarly named V4L2_PIX_FMT_* formats, format 0 is
+> - * reserved, V4L2_MBUS_FMT_FIXED shall be used by host-client pairs, where the
+> - * data format is fixed. Additionally, "2X8" means that one pixel is transferred
+> - * in two 8-bit samples, "BE" or "LE" specify in which order those samples are
+> - * transferred over the bus: "LE" means that the least significant bits are
+> - * transferred first, "BE" means that the most significant bits are transferred
+> - * first, and "PADHI" and "PADLO" define which bits - low or high, in the
+> - * incomplete high byte, are filled with padding bits.
+> - *
+> - * The pixel codes are grouped by type, bus_width, bits per component, samples
+> - * per pixel and order of subsamples. Numerical values are sorted using generic
+> - * numerical sort order (8 thus comes before 10).
+> - *
+> - * As their value can't change when a new pixel code is inserted in the
+> - * enumeration, the pixel codes are explicitly given a numerical value. The next
+> - * free values for each category are listed below, update them when inserting
+> - * new pixel codes.
+> - */
+> -enum v4l2_mbus_pixelcode {
+> -	V4L2_MBUS_FMT_FIXED = 0x0001,
+> -
+> -	/* RGB - next is 0x100e */
+> -	V4L2_MBUS_FMT_RGB444_2X8_PADHI_BE = 0x1001,
+> -	V4L2_MBUS_FMT_RGB444_2X8_PADHI_LE = 0x1002,
+> -	V4L2_MBUS_FMT_RGB555_2X8_PADHI_BE = 0x1003,
+> -	V4L2_MBUS_FMT_RGB555_2X8_PADHI_LE = 0x1004,
+> -	V4L2_MBUS_FMT_BGR565_2X8_BE = 0x1005,
+> -	V4L2_MBUS_FMT_BGR565_2X8_LE = 0x1006,
+> -	V4L2_MBUS_FMT_RGB565_2X8_BE = 0x1007,
+> -	V4L2_MBUS_FMT_RGB565_2X8_LE = 0x1008,
+> -	V4L2_MBUS_FMT_RGB666_1X18 = 0x1009,
+> -	V4L2_MBUS_FMT_RGB888_1X24 = 0x100a,
+> -	V4L2_MBUS_FMT_RGB888_2X12_BE = 0x100b,
+> -	V4L2_MBUS_FMT_RGB888_2X12_LE = 0x100c,
+> -	V4L2_MBUS_FMT_ARGB8888_1X32 = 0x100d,
+> -
+> -	/* YUV (including grey) - next is 0x2024 */
+> -	V4L2_MBUS_FMT_Y8_1X8 = 0x2001,
+> -	V4L2_MBUS_FMT_UV8_1X8 = 0x2015,
+> -	V4L2_MBUS_FMT_UYVY8_1_5X8 = 0x2002,
+> -	V4L2_MBUS_FMT_VYUY8_1_5X8 = 0x2003,
+> -	V4L2_MBUS_FMT_YUYV8_1_5X8 = 0x2004,
+> -	V4L2_MBUS_FMT_YVYU8_1_5X8 = 0x2005,
+> -	V4L2_MBUS_FMT_UYVY8_2X8 = 0x2006,
+> -	V4L2_MBUS_FMT_VYUY8_2X8 = 0x2007,
+> -	V4L2_MBUS_FMT_YUYV8_2X8 = 0x2008,
+> -	V4L2_MBUS_FMT_YVYU8_2X8 = 0x2009,
+> -	V4L2_MBUS_FMT_Y10_1X10 = 0x200a,
+> -	V4L2_MBUS_FMT_UYVY10_2X10 = 0x2018,
+> -	V4L2_MBUS_FMT_VYUY10_2X10 = 0x2019,
+> -	V4L2_MBUS_FMT_YUYV10_2X10 = 0x200b,
+> -	V4L2_MBUS_FMT_YVYU10_2X10 = 0x200c,
+> -	V4L2_MBUS_FMT_Y12_1X12 = 0x2013,
+> -	V4L2_MBUS_FMT_UYVY8_1X16 = 0x200f,
+> -	V4L2_MBUS_FMT_VYUY8_1X16 = 0x2010,
+> -	V4L2_MBUS_FMT_YUYV8_1X16 = 0x2011,
+> -	V4L2_MBUS_FMT_YVYU8_1X16 = 0x2012,
+> -	V4L2_MBUS_FMT_YDYUYDYV8_1X16 = 0x2014,
+> -	V4L2_MBUS_FMT_UYVY10_1X20 = 0x201a,
+> -	V4L2_MBUS_FMT_VYUY10_1X20 = 0x201b,
+> -	V4L2_MBUS_FMT_YUYV10_1X20 = 0x200d,
+> -	V4L2_MBUS_FMT_YVYU10_1X20 = 0x200e,
+> -	V4L2_MBUS_FMT_YUV10_1X30 = 0x2016,
+> -	V4L2_MBUS_FMT_AYUV8_1X32 = 0x2017,
+> -	V4L2_MBUS_FMT_UYVY12_2X12 = 0x201c,
+> -	V4L2_MBUS_FMT_VYUY12_2X12 = 0x201d,
+> -	V4L2_MBUS_FMT_YUYV12_2X12 = 0x201e,
+> -	V4L2_MBUS_FMT_YVYU12_2X12 = 0x201f,
+> -	V4L2_MBUS_FMT_UYVY12_1X24 = 0x2020,
+> -	V4L2_MBUS_FMT_VYUY12_1X24 = 0x2021,
+> -	V4L2_MBUS_FMT_YUYV12_1X24 = 0x2022,
+> -	V4L2_MBUS_FMT_YVYU12_1X24 = 0x2023,
+> -
+> -	/* Bayer - next is 0x3019 */
+> -	V4L2_MBUS_FMT_SBGGR8_1X8 = 0x3001,
+> -	V4L2_MBUS_FMT_SGBRG8_1X8 = 0x3013,
+> -	V4L2_MBUS_FMT_SGRBG8_1X8 = 0x3002,
+> -	V4L2_MBUS_FMT_SRGGB8_1X8 = 0x3014,
+> -	V4L2_MBUS_FMT_SBGGR10_ALAW8_1X8 = 0x3015,
+> -	V4L2_MBUS_FMT_SGBRG10_ALAW8_1X8 = 0x3016,
+> -	V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8 = 0x3017,
+> -	V4L2_MBUS_FMT_SRGGB10_ALAW8_1X8 = 0x3018,
+> -	V4L2_MBUS_FMT_SBGGR10_DPCM8_1X8 = 0x300b,
+> -	V4L2_MBUS_FMT_SGBRG10_DPCM8_1X8 = 0x300c,
+> -	V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 = 0x3009,
+> -	V4L2_MBUS_FMT_SRGGB10_DPCM8_1X8 = 0x300d,
+> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_BE = 0x3003,
+> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADHI_LE = 0x3004,
+> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_BE = 0x3005,
+> -	V4L2_MBUS_FMT_SBGGR10_2X8_PADLO_LE = 0x3006,
+> -	V4L2_MBUS_FMT_SBGGR10_1X10 = 0x3007,
+> -	V4L2_MBUS_FMT_SGBRG10_1X10 = 0x300e,
+> -	V4L2_MBUS_FMT_SGRBG10_1X10 = 0x300a,
+> -	V4L2_MBUS_FMT_SRGGB10_1X10 = 0x300f,
+> -	V4L2_MBUS_FMT_SBGGR12_1X12 = 0x3008,
+> -	V4L2_MBUS_FMT_SGBRG12_1X12 = 0x3010,
+> -	V4L2_MBUS_FMT_SGRBG12_1X12 = 0x3011,
+> -	V4L2_MBUS_FMT_SRGGB12_1X12 = 0x3012,
+> -
+> -	/* JPEG compressed formats - next is 0x4002 */
+> -	V4L2_MBUS_FMT_JPEG_1X8 = 0x4001,
+> -
+> -	/* Vendor specific formats - next is 0x5002 */
+> -
+> -	/* S5C73M3 sensor specific interleaved UYVY and JPEG */
+> -	V4L2_MBUS_FMT_S5C_UYVY_JPEG_1X8 = 0x5001,
+> -
+> -	/* HSV - next is 0x6002 */
+> -	V4L2_MBUS_FMT_AHSV8888_1X32 = 0x6001,
+> -};
+> +#define v4l2_mbus_pixelcode media_bus_format
+>  
+>  /**
+>   * struct v4l2_mbus_framefmt - frame format on the media bus
+
 -- 
-1.9.1
+Kind regards,
 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
