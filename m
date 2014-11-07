@@ -1,91 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaKGMJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:09:07 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:60766 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739AbaKGMJG (ORCPT
+	id S1752083AbaKGMKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:10:14 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43680 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317AbaKGMKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:09:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Peter Griffin <peter.griffin@linaro.org>, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, devicetree@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH 03/13] ARM: STi: DT: STiH416: Add DT nodes for the ehci and ohci usb controllers.
-Date: Fri, 07 Nov 2014 13:08:57 +0100
-Message-ID: <2945908.5UNg8NaKcc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415361475-6218-4-git-send-email-peter.griffin@linaro.org>
-References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org> <1415361475-6218-4-git-send-email-peter.griffin@linaro.org>
+	Fri, 7 Nov 2014 07:10:09 -0500
+Date: Fri, 7 Nov 2014 12:09:33 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alban Bedel <albeu@free.fr>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH] OF: Add support for built in FDT blob
+Message-ID: <20141107120933.GA5487@leverpostej>
+References: <1415358849-25879-1-git-send-email-albeu@free.fr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:o0403HRZwBkkSgO6MgbVS+P0s9Nt9/wngJjBRcG99jn
- nj1ZzjnYVeKzgdjFaspBRp+b5j/FmwxBXFrgzGlr30+N0cy18U
- 8S8IlREUumtw1glAnesX0Y//p1g7wwliacL33O0Wq4Yr5gKCSR
- 330IiFSvSsz9uss6tZep1t9+Bgys6NCKS7X7wxPoOAShbivEP1
- 3lKJhy6XCDhv6LX40MD4PrJcV1iUNnoPZlWNIVJ5KMa+9Ks9Zl
- gbc6lm/7S+oLfadxUvLHfv87KiHU2CGbIquqehY9YVoeifn2Tl
- 5UB14iqnlQAuiYmwz2DlWpqDRm7kdta9/aqouAPDDA+F/MLctc
- +kKr2CWSspT0kpV9FVmc=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415358849-25879-1-git-send-email-albeu@free.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 November 2014 11:57:45 Peter Griffin wrote:
-> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-> index 0f3019a..6238d9e 100644
-> --- a/arch/arm/boot/dts/stih416.dtsi
-> +++ b/arch/arm/boot/dts/stih416.dtsi
-> @@ -325,5 +325,149 @@
->                         clock-names = "osc_phy";
+Hi,
+
+On Fri, Nov 07, 2014 at 11:14:09AM +0000, Alban Bedel wrote:
+> Allow embedding an FDT blob in the kernel image, this is mostly
+> useful to run new kernels on boards with old bootloaders.
+
+I am very much not keen on embedding a DTB within a kernel. It's far
+nicer for the two to remain separate blobs, with a small shim to set up
+the DTB address.
+
+On ARM we have appended DTB for this purpose, which is at least better
+than embedding the DT inside of the kernel.
+
+What architecture and bootloader are you using that necessitate this?
+
+Thanks,
+Mark.
+
+> Signed-off-by: Alban Bedel <albeu@free.fr>
+> ---
+>  drivers/of/Kconfig    | 16 ++++++++++++++++
+>  drivers/of/Makefile   |  8 ++++++++
+>  drivers/of/fdt.c      |  8 ++++++++
+>  drivers/of/fdt_blob.S | 17 +++++++++++++++++
+>  4 files changed, 49 insertions(+)
+>  create mode 100644 drivers/of/fdt_blob.S
+> 
+> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+> index 1a13f5b..97c5d18 100644
+> --- a/drivers/of/Kconfig
+> +++ b/drivers/of/Kconfig
+> @@ -83,4 +83,20 @@ config OF_RESERVED_MEM
+>  config OF_RESOLVE
+>  	bool
 >  
->                 };
+> +config OF_BUILTIN_FDT
+> +	bool "Include a FDT blob in the kernel"
+> +	help
+> +	  Include a FDT blob in the kernel to use as default when
+> +	  no blob has been passed by the bootloader. This is useful
+> +	  to use devicetree on boards with old bootloaders.
 > +
-> +               ehci0: usb@0xfe1ffe00 {
-
-Please drop the '0x' from the unit address in all instances.
-
-> +                       compatible = "st,st-ehci-300x";
-> +                       reg = <0xfe1ffe00 0x100>;
-> +                       interrupts = <GIC_SPI 148 IRQ_TYPE_NONE>;
-> +                       pinctrl-names = "default";
-> +                       pinctrl-0 = <&pinctrl_usb0>;
-> +                       clocks = <&clk_s_a1_ls 0>,
-> +                                <&clockgen_b0 0>;
-> +                       clock-names = "ic", "clk48";
+> +	  If unsure, say N.
 > +
-> +                       phys = <&usb2_phy>;
-> +                       phy-names = "usb";
-> +                       status = "okay";
-
-No need to list 'status="okay"', it's the default. It might
-make sense to change this to 'status="disabled"' though, if the ports
-might be unused on some boards.
-
->                 mmc0: sdhci@fe81e000 {
->                         bus-width = <8>;
->                 };
+> +config OF_BUILTIN_FDT_BLOB
+> +	string "FDT Blob name"
+> +	depends on OF_BUILTIN_FDT
+> +	help
+> +	  Name of the FDT blob to build in the kernel, from one of the
+> +	  dtbs available for the current platform.
 > +
-> +               usb0: usb@fe100000 {
-> +                       status = "okay";
-> +               };
+>  endmenu # OF
+> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+> index ca9209c..b96c6e9 100644
+> --- a/drivers/of/Makefile
+> +++ b/drivers/of/Makefile
+> @@ -14,6 +14,14 @@ obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+>  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+>  obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
+>  obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+> +obj-$(CONFIG_OF_BUILTIN_FDT) += fdt_blob.o
+>  
+>  CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
+>  CFLAGS_fdt_address.o = -I$(src)/../../scripts/dtc/libfdt
 > +
-> +               usb1: usb@fe200000 {
-> +                       status = "okay";
-> +               };
+> +# The FDT blob to include
+> +FDT_BLOB := arch/$(ARCH)/boot/dts/$(CONFIG_OF_BUILTIN_FDT_BLOB:"%"=%).dtb
+> +# Undefine ARCH to avoid breaking the FDT path
+> +AFLAGS_fdt_blob.o += -U$(ARCH) -DFDT_BLOB=$(FDT_BLOB)
+> +# This dependency can't be automatically tracked
+> +$(obj)/fdt_blob.o: $(obj)/../../$(FDT_BLOB)
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index d1ffca8..ffb86a7 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -26,6 +26,9 @@
+>  #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
+>  #include <asm/page.h>
+>  
+> +extern char __fdt_blob_start[];
+> +extern unsigned long __fdt_blob_size;
 > +
-> +               usb2: usb@fe300000 {
-> +                       status = "okay";
-> +               };
-
-I don't understand this part: why do you add extra nodes here that only
-contain a status property?
-
-Note that if you add the devices to the per-soc file instead of the
-per-board file, you can just access the nodes by label.
-
-	Arnd
+>  /*
+>   * of_fdt_limit_memory - limit the number of regions in the /memory node
+>   * @limit: maximum entries
+> @@ -1064,6 +1067,11 @@ void __init unflatten_and_copy_device_tree(void)
+>  	int size;
+>  	void *dt;
+>  
+> +#ifdef CONFIG_OF_BUILTIN_FDT
+> +	if (!initial_boot_params && __fdt_blob_size > 0)
+> +		initial_boot_params = __fdt_blob_start;
+> +#endif
+> +
+>  	if (!initial_boot_params) {
+>  		pr_warn("No valid device tree found, continuing without\n");
+>  		return;
+> diff --git a/drivers/of/fdt_blob.S b/drivers/of/fdt_blob.S
+> new file mode 100644
+> index 0000000..fcaa2aa
+> --- /dev/null
+> +++ b/drivers/of/fdt_blob.S
+> @@ -0,0 +1,17 @@
+> +#include <linux/stringify.h>
+> +#include <asm-generic/vmlinux.lds.h>
+> +
+> +.align 4
+> +.section .init.fdt_blob,"a"
+> +.globl VMLINUX_SYMBOL(__fdt_blob_start)
+> +VMLINUX_SYMBOL(__fdt_blob_start):
+> +.incbin __stringify(FDT_BLOB)
+> +__fdt_blob_end:
+> +.section .init.fdt_blob.info,"a"
+> +.globl VMLINUX_SYMBOL(__fdt_blob_size)
+> +VMLINUX_SYMBOL(__fdt_blob_size):
+> +#ifdef CONFIG_64BIT
+> +        .quad __fdt_blob_end - __fdt_blob_start
+> +#else
+> +        .long __fdt_blob_end - __fdt_blob_start
+> +#endif
+> -- 
+> 2.0.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
