@@ -1,61 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaKGIHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:07:33 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:52224 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaKGIHc (ORCPT
+	id S1751454AbaKGIJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:09:43 -0500
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:53990 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaKGIJm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:07:32 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f956d000005ed7-50-545c7dc2be8a
-Content-transfer-encoding: 8BIT
-Message-id: <1415347649.8532.8.camel@AMDC1943>
-Subject: Re: [PATCH v2 3/3] mfd: max77686/802: Remove support for board files
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Fri, 07 Nov 2014 09:07:29 +0100
-In-reply-to: <545C01FF.3090101@collabora.co.uk>
-References: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
- <1415180871-25293-4-git-send-email-k.kozlowski@samsung.com>
- <545C01FF.3090101@collabora.co.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xq7qHamNCDNbN0rDYOGM9q8XUh0/Y
-	LI7+LrA42/SG3eL+16OMFt+udDBZXN41h81i7ZG77Banu1kdOD3+Pr/O4rFz1l12j02rOtk8
-	7lzbw+Yx72SgR9+WVYwenzfJBbBHcdmkpOZklqUW6dslcGWsWLKBqeAES8WCRydYGxjvMHcx
-	cnJICJhI7D/1jQnCFpO4cG89WxcjF4eQwFJGiTtLjrKBJHgFBCV+TL7H0sXIwcEsIC9x5FI2
-	SJhZQF1i0rxFYHOEBD4zSjx/IQdRrifx8NN3VhBbWMBX4umfLYwgNpuAscTm5UvARooI2Enc
-	WP2QGWQXs8ARJok937tYQBIsAqoSOye8BBvKKaAvcfzLUSaIg1YxSvydeJYZ5AgJAWWJxn63
-	CYwCs5CcNwvhvFlIzlvAyLyKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyQKvu5gXHrM6hCj
-	AAejEg/vA5GYECHWxLLiytxDjBIczEoivFJBQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MV4PF
-	WTwmCcbGbDXYWP6VPczw98d1Jm33N1nP7V7fppyR6cg/6+ynOQVNF9KSPKRuOVqu9hB++ZDl
-	d8yuefy+Ky7N1sqdKqbOmZz5S+0tX0vMh6PyFU8PVjyN6PXfrvXr2ey/PXyXw1mUNopcirzn
-	pG/kOnFLxsJe3rXtp7S2K2fUV8//yianxFKckWioxVxUnAgAAenozmACAAA=
+	Fri, 7 Nov 2014 03:09:42 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Peter Feiner <pfeiner@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH -mm v7 12/13] mm: /proc/pid/clear_refs: avoid
+ split_huge_page()
+Thread-Topic: [PATCH -mm v7 12/13] mm: /proc/pid/clear_refs: avoid
+ split_huge_page()
+Thread-Index: AQHP+li88MGFXt7/EE6v216VrmnROQ==
+Date: Fri, 7 Nov 2014 07:02:05 +0000
+Message-ID: <1415343692-6314-13-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.22]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-11-07 at 00:19 +0100, Javier Martinez Canillas wrote:
-> On 11/05/2014 10:47 AM, Krzysztof Kozlowski wrote:
-> > The driver is used only on Exynos based boards with DTS support.
-> > After removal of board file support from max77686 and max77802 regulator
-> > drivers, the MFD driver can be converted to DTS-only version. This
-> > simplifies a little the code:
-> 
-> Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Thanks very much!
-Best regards,
-Krzysztof
+Currently pagewalker splits all THP pages on any clear_refs request.  It's
+not necessary.  We can handle this on PMD level.
 
+One side effect is that soft dirty will potentially see more dirty memory,
+since we will mark whole THP page dirty at once.
 
+Sanity checked with CRIU test suite. More testing is required.
 
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ChangeLog:
+- move code for thp to clear_refs_pte_range()
+---
+ fs/proc/task_mmu.c | 47 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 44 insertions(+), 3 deletions(-)
+
+diff --git mmotm-2014-11-05-16-01.orig/fs/proc/task_mmu.c mmotm-2014-11-05-16-01/fs/proc/task_mmu.c
+index e7d86b97598b..a6c1b75ed3c2 100644
+--- mmotm-2014-11-05-16-01.orig/fs/proc/task_mmu.c
++++ mmotm-2014-11-05-16-01/fs/proc/task_mmu.c
+@@ -744,10 +744,10 @@ struct clear_refs_private {
+ 	enum clear_refs_types type;
+ };
+ 
++#ifdef CONFIG_MEM_SOFT_DIRTY
+ static inline void clear_soft_dirty(struct vm_area_struct *vma,
+ 		unsigned long addr, pte_t *pte)
+ {
+-#ifdef CONFIG_MEM_SOFT_DIRTY
+ 	/*
+ 	 * The soft-dirty tracker uses #PF-s to catch writes
+ 	 * to pages, so write-protect the pte as well. See the
+@@ -766,9 +766,35 @@ static inline void clear_soft_dirty(struct vm_area_struct *vma,
+ 	}
+ 
+ 	set_pte_at(vma->vm_mm, addr, pte, ptent);
+-#endif
+ }
+ 
++static inline void clear_soft_dirty_pmd(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t *pmdp)
++{
++	pmd_t pmd = *pmdp;
++
++	pmd = pmd_wrprotect(pmd);
++	pmd = pmd_clear_flags(pmd, _PAGE_SOFT_DIRTY);
++
++	if (vma->vm_flags & VM_SOFTDIRTY)
++		vma->vm_flags &= ~VM_SOFTDIRTY;
++
++	set_pmd_at(vma->vm_mm, addr, pmdp, pmd);
++}
++
++#else
++
++static inline void clear_soft_dirty(struct vm_area_struct *vma,
++		unsigned long addr, pte_t *pte)
++{
++}
++
++static inline void clear_soft_dirty_pmd(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t *pmdp)
++{
++}
++#endif
++
+ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 				unsigned long end, struct mm_walk *walk)
+ {
+@@ -778,7 +804,22 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 	spinlock_t *ptl;
+ 	struct page *page;
+ 
+-	split_huge_page_pmd(vma, addr, pmd);
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
++		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
++			clear_soft_dirty_pmd(vma, addr, pmd);
++			goto out;
++		}
++
++		page = pmd_page(*pmd);
++
++		/* Clear accessed and referenced bits. */
++		pmdp_test_and_clear_young(vma, addr, pmd);
++		ClearPageReferenced(page);
++out:
++		spin_unlock(ptl);
++		return 0;
++	}
++
+ 	if (pmd_trans_unstable(pmd))
+ 		return 0;
+ 
+-- 
+2.2.0.rc0.2.gf745acb
