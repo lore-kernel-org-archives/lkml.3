@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923AbaKGRNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 12:13:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbaKGRNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 12:13:10 -0500
-Date: Fri, 7 Nov 2014 18:13:07 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: module notifier: was Re: [PATCH 2/2] kernel: add support for live
- patching
-Message-ID: <20141107171307.GC1136@dhcp128.suse.cz>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
- <1415284748-14648-3-git-send-email-sjenning@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415284748-14648-3-git-send-email-sjenning@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752561AbaKGRQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 12:16:57 -0500
+Received: from smtprelay0006.hostedemail.com ([216.40.44.6]:51992 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751655AbaKGRQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 12:16:55 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4470:5007:6119:6261:7903:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:14096:14097:21063:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: flock20_59050b7004938
+X-Filterd-Recvd-Size: 2108
+Message-ID: <1415380610.23530.12.camel@perches.com>
+Subject: Re: [PATCH v2 3.18-rc3] kdb: Avoid printing KERN_ levels to consoles
+From: Joe Perches <joe@perches.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, stable@vger.kernel.org
+Date: Fri, 07 Nov 2014 09:16:50 -0800
+In-Reply-To: <545CF847.3020409@linaro.org>
+References: <1415287626-25802-1-git-send-email-daniel.thompson@linaro.org>
+	 <1415361686-3797-1-git-send-email-daniel.thompson@linaro.org>
+	 <1415376272.23530.10.camel@perches.com> <545CF847.3020409@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-11-06 08:39:08, Seth Jennings wrote:
-> This commit introduces code for the live patching core.  It implements
-> an ftrace-based mechanism and kernel interface for doing live patching
-> of kernel and kernel module functions.
+On Fri, 2014-11-07 at 16:50 +0000, Daniel Thompson wrote:
+> On 07/11/14 16:04, Joe Perches wrote:
+> > why insert KERN_INFO?
 > 
-> It represents the greatest common functionality set between kpatch and
-> kgraft and can accept patches built using either method.
-> 
-> This first version does not implement any consistency mechanism that
-> ensures that old and new code do not run together.  In practice, ~90% of
-> CVEs are safe to apply in this way, since they simply add a conditional
-> check.  However, any function change that can not execute safely with
-> the old version of the function can _not_ be safely applied in this
-> version.
+> vkdb_printf() and  printk() can appear either way round in a stack
+> trace. Each is capable of calling the other and a flag (kdb_trap_printk)
+> is used to prevent mutual recursion.
 
-[...]
- 
-> +/******************************
-> + * module notifier
-> + *****************************/
-> +
-> +static int lp_module_notify(struct notifier_block *nb, unsigned long action,
-> +			    void *data)
-> +{
-> +	struct module *mod = data;
-> +	struct lpc_patch *patch;
-> +	struct lpc_object *obj;
-> +	int ret = 0;
-> +
-> +	if (action != MODULE_STATE_COMING)
-> +		return 0;
+I see.
 
-IMHO, we should handle also MODULE_STATE_GOING. We should unregister
-the ftrace handlers and update the state of the affected objects
-(ENABLED -> DISABLED)
+> A complete solution would require a means to know whether vkdb_printf()
+> were entered directly or from printk(). A flag passed to vkdb_printf()
+> would achieve this. I'll take a look.
 
-> +	down(&lpc_mutex);
-> +
-> +	list_for_each_entry(patch, &lpc_patches, list) {
-> +		if (patch->state == DISABLED)
-> +			continue;
-> +		list_for_each_entry(obj, &patch->objs, list) {
-> +			if (strcmp(obj->name, mod->name))
-> +				continue;
-> +			pr_notice("load of module '%s' detected, applying patch '%s'\n",
-> +				  mod->name, patch->mod->name);
-> +			obj->mod = mod;
-> +			ret = lpc_enable_object(patch->mod, obj);
-> +			if (ret)
-> +				goto out;
-> +			break;
-> +		}
-> +	}
-> +
-> +	up(&lpc_mutex);
-> +	return 0;
-> +out:
+That bit seems pretty simple and sensible.
 
-I would name this err_our or so to make it clear that it is used when
-something fails.
+I don't know this code at all but would it be better if
+the kdb_trap_printk accesses were converted to atomic_<foo>?
 
-> +	up(&lpc_mutex);
-> +	WARN("failed to apply patch '%s' to module '%s'\n",
-> +		patch->mod->name, mod->name);
-> +	return 0;
-> +}
-> +
-> +static struct notifier_block lp_module_nb = {
-> +	.notifier_call = lp_module_notify,
-> +	.priority = INT_MIN, /* called last */
+Might this bit in vkdb_printf:
 
-The handler for MODULE_STATE_COMMING would need have higger priority,
-if we want to cleanly unregister the ftrace handlers.
+	saved_trap_printk = kdb_trap_printk;
+	kdb_trap_printk = 0;
 
-Best Regards,
-Petr
+be better atomic_xchg?
+
+and the kdb_trap_printk++ bits as atomic_inc, etc...
+
