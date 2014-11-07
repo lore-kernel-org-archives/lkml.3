@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaKGQr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 11:47:27 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48704 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752337AbaKGQrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 11:47:25 -0500
-Date: Fri, 7 Nov 2014 16:47:01 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Alban <albeu@free.fr>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1752491AbaKGQsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 11:48:31 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:15395 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751761AbaKGQs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 11:48:29 -0500
+X-IronPort-AV: E=Sophos;i="5.07,333,1413244800"; 
+   d="scan'208";a="189206495"
+Date: Fri, 7 Nov 2014 16:46:14 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH] OF: Add support for built in FDT blob
-Message-ID: <20141107164701.GC5586@leverpostej>
-References: <1415358849-25879-1-git-send-email-albeu@free.fr>
- <20141107120933.GA5487@leverpostej>
- <20141107135931.376caf98@tock>
- <CAL_Jsq+n8owZz6yas=surm4fTaGWgUuCLLEKXYKm8_02S8DdYA@mail.gmail.com>
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 6/8] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+In-Reply-To: <20141107160306.GF29148@e104818-lin.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1411071645480.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com> <1414422568-19103-6-git-send-email-stefano.stabellini@eu.citrix.com> <20141107142205.GD29148@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1411071523170.22875@kaball.uk.xensource.com>
+ <20141107160306.GF29148@e104818-lin.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+n8owZz6yas=surm4fTaGWgUuCLLEKXYKm8_02S8DdYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 02:56:32PM +0000, Rob Herring wrote:
-> On Fri, Nov 7, 2014 at 6:59 AM, Alban <albeu@free.fr> wrote:
-> > On Fri, 7 Nov 2014 12:09:33 +0000
-> > Mark Rutland <mark.rutland@arm.com> wrote:
-> >
-> >> Hi,
-> >>
-> >> On Fri, Nov 07, 2014 at 11:14:09AM +0000, Alban Bedel wrote:
-> >> > Allow embedding an FDT blob in the kernel image, this is mostly
-> >> > useful to run new kernels on boards with old bootloaders.
-> >>
-> >> I am very much not keen on embedding a DTB within a kernel. It's far
-> >> nicer for the two to remain separate blobs, with a small shim to set
-> >> up the DTB address.
-> >>
-> >> On ARM we have appended DTB for this purpose, which is at least better
-> >> than embedding the DT inside of the kernel.
-> >
-> > I looked at that but that seemed quiet complicated to implement, not to
-> > mention that it needed quiet a lot of arch specific code. On the other
-> > hand having the DTB built in like this was trivial and would be portable
-> > to every architecture, so that seemed like the best way to me.
-> >
-> >> What architecture and bootloader are you using that necessitate this?
-> >
-> > MIPS with an antic u-boot version patched by the board vendor to use
-> > some non standard image format. Updating the boot loader is currently
-> > not an option because of the lack of documentation for the board/SoC.
+On Fri, 7 Nov 2014, Catalin Marinas wrote:
+> On Fri, Nov 07, 2014 at 03:28:38PM +0000, Stefano Stabellini wrote:
+> > On Fri, 7 Nov 2014, Catalin Marinas wrote:
+> > > On Mon, Oct 27, 2014 at 03:09:26PM +0000, Stefano Stabellini wrote:
+> > > > Merge xen/mm32.c into xen/mm.c.
+> > > > As a consequence the code gets compiled on arm64 too: introduce a few
+> > > > compat functions to actually be able to compile it.
+> > > > 
+> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> > > 
+> > > Since I missed the commit introducing mm32.c (340720be32d4 xen/arm:
+> > > reimplement xen_dma_unmap_page & friends), I'll add a retrospective NAK ;).
+> > > 
+> > > The main reason is the asymmetry between dma map and unmap. With host
+> > > swiotlb somehow getting !dma_capable(dev), you even risk leaking dom0
+> > > swiotlb bounce buffers (on arm64).
+> > > 
+> > > > --- a/arch/arm/xen/mm.c
+> > > > +++ b/arch/arm/xen/mm.c
+> > > [...]
+> > > > +/* functions called by SWIOTLB */
+> > > > +
+> > > > +static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
+> > > > +       size_t size, enum dma_data_direction dir,
+> > > > +       void (*op)(const void *, size_t, int))
+> > > > +{
+> > > > +       unsigned long pfn;
+> > > > +       size_t left = size;
+> > > > +
+> > > > +       pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
+> > > > +       offset %= PAGE_SIZE;
+> > > > +
+> > > > +       do {
+> > > > +               size_t len = left;
+> > > > +               void *vaddr;
+> > > > +
+> > > > +               if (!pfn_valid(pfn))
+> > > 
+> > > Is this the pfn or the mfn? As you said in the previous email, there is
+> > > no mfn_to_pfn() conversion, so that's actually in another address space
+> > > where dom0 pfn_valid() would not make sense.
+> > 
+> > That is actually the mfn. The check works because dom0 is mapped 1:1, so
+> > if the mfn is a valid pfn, then it means that it is a local page.
 > 
-> MIPS and a few other arches already have built-in dtb support. We
-> don't need another way to do it, but I would welcome any clean-up that
-> makes it arch independent and available to any arch.
-> 
-> While Mark is right, I could envision other uses such as embedding
-> overlay dtbs in the kernel either for add-on boards or just as fixups.
+> So the Xen DMA ops would never be called on anything other than dom0?
 
-I don't see how embedding a DTB in this manner helps with overlays and
-fixups.
+That's right.
 
-I'm rather worried about this turning into a shoddy board file, and
-making it painful to build/distribute/boot a generic kernel for an
-arbitrary platform.
 
-On arm64 the kernel and DTB have always been separate, and I'm not keen
-on allowing the two to be tightly coupled in this way. There are already
-container formats (e.g. FIT) that can be used to hold both if that's
-what the bootloader desires.
+> If that's correct, the pfn_valid() check would work. But add some big
+> comments as it's not clear at all to someone not familiar with Xen.
 
-Thanks,
-Mark.
+Yeah...
