@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaKGLxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 06:53:20 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:59422 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751281AbaKGLxQ (ORCPT
+	id S1751954AbaKGL4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 06:56:13 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:54459 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaKGL4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 06:53:16 -0500
-Message-ID: <1415361193.4390.46.camel@x220>
-Subject: Re: [REGRESSION] in 3.18-rc1: ppp crashes kernel
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 07 Nov 2014 12:53:13 +0100
-In-Reply-To: <545CA8B6.2060608@message-id.googlemail.com>
-References: <545CA8B6.2060608@message-id.googlemail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Nov 2014 11:53:14.0281 (UTC) FILETIME=[69625190:01CFFA81]
-X-RcptDomain: vger.kernel.org
+	Fri, 7 Nov 2014 06:56:11 -0500
+Date: Fri, 7 Nov 2014 11:55:51 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "roland@hack.frob.com" <roland@hack.frob.com>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>
+Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
+Message-ID: <20141107115551.GC18916@arm.com>
+References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org>
+ <1977974.l97vvy7Y8b@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1977974.l97vvy7Y8b@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 12:10 +0100, Stefan Seyfried wrote:
-> I bisected the issue multiple times and always arrived at
+On Fri, Nov 07, 2014 at 09:30:53AM +0000, Arnd Bergmann wrote:
+> On Friday 07 November 2014 16:47:23 AKASHI Takahiro wrote:
+> > This patch adds a new generic ptrace request, PTRACE_SET_SYSCALL.
+> > It can be used to change a system call number as follows:
+> >     ret = ptrace(pid, PTRACE_SET_SYSCALL, null, new_syscall_no);
+> > 'new_syscall_no' can be -1 to skip this system call, you need to modify
+> > a register's value, in arch-specific way, as return value though.
+> > 
+> > Please note that we can't define PTRACE_SET_SYSCALL macro in
+> > uapi/linux/ptrace.h partly because its value on arm, 23, is used as another
+> > request on sparc.
+> > 
+> > This patch also contains an example of change on arch side, arm.
+> > Only syscall_set_nr() is required to be defined in asm/syscall.h.
+> > 
+> > Currently only arm has this request, while arm64 would also have it
+> > once my patch series of seccomp for arm64 is merged. It will also be
+> > usable for most of other arches.
+> > See the discussions in lak-ml:
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/300167.html
+> > 
+> > Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> > 
 > 
-> # first bad commit: [d6dd50e07c5bec00db2005969b1a01f8ca3d25ef] Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> 
-> which is a merge commit unfortunately.
+> Can you describe why you are moving the implementation? Is this a feature
+> that we want to have on all architectures in the future? As you say,
+> only arm32 implements is at the moment.
 
-That merge commit actually does add some code:
+We need this for arm64 and, since all architectures seem to have a mechanism
+for setting a system call via ptrace, moving it to generic code should make
+sense for new architectures too, no?
 
-git show d6dd50e07c5bec00db2005969b1a01f8ca3d25ef
-[...]
-diff --cc init/main.c
-index 8af2f1abfe38,e3c4cdd94d5b..c5c11da6c4e1
---- a/init/main.c
-+++ b/init/main.c
-@@@ -583,6 -585,6 +583,7 @@@ asmlinkage __visible void __init start_
-  	early_irq_init();
-  	init_IRQ();
-  	tick_init();
-++	rcu_init_nohz();
-  	init_timers();
-  	hrtimers_init();
-  	softirq_init();
+We don't have any arch-specific ptrace requests on arm64, so it would be
+a shame if we had to add one now, especially since there's nothing
+conceptually arch-specific about setting a syscall number.
 
-Wild guess: is CONFIG_RCU_NOCB_CPU perhaps set in your
-v3.18-rc3 .config?
-
-
-Paul Bolle
-
+Will
