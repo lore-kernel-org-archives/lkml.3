@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaKGKeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:34:46 -0500
-Received: from mga03.intel.com ([134.134.136.65]:40881 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249AbaKGKeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:34:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,331,1413270000"; 
-   d="scan'208";a="633217738"
-Message-ID: <1415356480.958.315.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/4] UBIFS: fix a couple bugs in UBIFS xattr length
- calculation
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ben Shelton <ben.shelton@ni.com>
-Cc: linux-mtd@lists.infradead.org, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Subodh Nijsure <snijsure@grid-net.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Date: Fri, 07 Nov 2014 12:34:40 +0200
-In-Reply-To: <1414781431-2911-2-git-send-email-ben.shelton@ni.com>
-References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
-	 <1414781431-2911-2-git-send-email-ben.shelton@ni.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751626AbaKGKgV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:36:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48170 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaKGKgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 05:36:19 -0500
+Date: Fri, 7 Nov 2014 10:34:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sameo@linux.intel.com,
+        lee.jones@linaro.org, lgirdwood@gmail.com, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        jonghwa3.lee@samsung.com, geunsik.lim@samsung.com,
+        inki.dae@samsung.com, sw0312.kim@samsung.com
+Message-ID: <20141107103440.GD8509@sirena.org.uk>
+References: <1415328727-16245-1-git-send-email-beomho.seo@samsung.com>
+ <1415328727-16245-6-git-send-email-beomho.seo@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="c9D8mOo1KWOdrF7C"
+Content-Disposition: inline
+In-Reply-To: <1415328727-16245-6-git-send-email-beomho.seo@samsung.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.165.192
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 5/5] Documentation: Add documentation for rt5033
+ multifunction device
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-31 at 13:50 -0500, Ben Shelton wrote:
-> From: Subodh Nijsure <snijsure@grid-net.com>
-> 
-> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
-> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-> Signed-off-by: Ben Shelton <ben.shelton@ni.com>
-> Acked-by: Brad Mouring <brad.mouring@ni.com>
-> Acked-by: Gratian Crisan <gratian.crisan@ni.com>
 
-It looks like these patches are against an old kernel. In the new kernel
-"dir_ui" was renamed to "host_ui", to show that this is not just a
-directory inode, but a directory or an xattr inode (we call the "host"
-inodes, since the "host" the xattr value).
+--c9D8mOo1KWOdrF7C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I've pushed this patch in a modified form.
+On Fri, Nov 07, 2014 at 11:52:07AM +0900, Beomho Seo wrote:
 
-Do you have a possibility to test this series with a newer kernel?
+> +Required properties:
+> +- compatible = Must be "richtek,rt5033-regulator"
+> +
+> +	regulators {
+> +		compatible = "richtek,rt5033-regulator";
 
-Here is the patch I pushed:
+There should be no need for this extra compatible, it's not adding
+anything we didn't know from the fact that it's part of the MFD.
 
+> +		regulator-name {
+> +			regulator-name = LDO/BUCK
+> +			standard regulator constraints...
+> +		};
 
->From a76284e6f89b2ae37d413fe793752257be01765a Mon Sep 17 00:00:00 2001
-From: Subodh Nijsure <snijsure@grid-net.com>
-Date: Fri, 31 Oct 2014 13:50:28 -0500
-Subject: [PATCH] UBIFS: fix a couple bugs in UBIFS xattr length calculation
+Better to just say something like "regulator subnodes called X, Y and Z"
+described using the standard regulator binding in...
 
-The journal update function did not work for extended attributes properly,
-because extended attribute inodes carry the xattr data, and the size of this
-data was not taken into account.
+--c9D8mOo1KWOdrF7C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Artem: improved commit message, amended the patch a bit.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Ben Shelton <ben.shelton@ni.com>
-Acked-by: Brad Mouring <brad.mouring@ni.com>
-Acked-by: Gratian Crisan <gratian.crisan@ni.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ubifs/journal.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+iQEcBAEBAgAGBQJUXKA/AAoJECTWi3JdVIfQY6UH/A8e87VSq+PaEhtP9e5W4t15
+HAHi/FjSL9yhX8N3I1Inh1UHmJc2Vjy+U9nN2h1+Zb1izihrMRozYkEg2JL5n0X7
+GMAE7KftmbZj+mTaemTcVL5GCzTO4i067iA0f38FTq11fhB+YCeIIu+xIglRvEj1
+dSzkr456EWUS5XenR/i2oJQ+eTg47FVudF01HD68A80p00weI0iYwrqQCHvYPCnI
+YV+mY7YpG6crGGmlXadxxu7v70rakHFjRwLdUme5tWWA2KwGEUT1Iv8ryN9Hxu8S
+EAfmN92Dj8ZpePXn6RJVR3LLW40Wco+OYPIoxomX9+68ZsyylVNGf3UqelL94eY=
+=28B+
+-----END PGP SIGNATURE-----
 
-diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
-index fb166e2..f6ac3f2 100644
---- a/fs/ubifs/journal.c
-+++ b/fs/ubifs/journal.c
-@@ -571,7 +571,11 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
- 
- 	aligned_dlen = ALIGN(dlen, 8);
- 	aligned_ilen = ALIGN(ilen, 8);
-+
- 	len = aligned_dlen + aligned_ilen + UBIFS_INO_NODE_SZ;
-+	/* Make sure to also account for extended attributes */
-+	len += host_ui->data_len;
-+
- 	dent = kmalloc(len, GFP_NOFS);
- 	if (!dent)
- 		return -ENOMEM;
-@@ -648,7 +652,8 @@ int ubifs_jnl_update(struct ubifs_info *c, const struct inode *dir,
- 
- 	ino_key_init(c, &ino_key, dir->i_ino);
- 	ino_offs += aligned_ilen;
--	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs, UBIFS_INO_NODE_SZ);
-+	err = ubifs_tnc_add(c, &ino_key, lnum, ino_offs,
-+			    UBIFS_INO_NODE_SZ + host_ui->data_len);
- 	if (err)
- 		goto out_ro;
- 
--- 
-1.9.3
-
-Artem.
-
+--c9D8mOo1KWOdrF7C--
