@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaKGJIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:08:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33758 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaKGJIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:08:14 -0500
-Date: Fri, 7 Nov 2014 10:08:04 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 09/11] perf/x86/intel: Support task events with Intel CQM
-Message-ID: <20141107090804.GA3337@twins.programming.kicks-ass.net>
-References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
- <1415276602-10337-10-git-send-email-matt@console-pimps.org>
+	id S1751405AbaKGJKn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:10:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52156 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962AbaKGJKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:10:36 -0500
+Date: Fri, 7 Nov 2014 10:10:26 +0100
+From: Karel Zak <kzak@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Boaz Harrosh <boaz@plexistor.com>, Jens Axboe <axboe@fb.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] brd: Request from fdisk 4k alignment
+Message-ID: <20141107091026.GG6880@x2.net.home>
+References: <545A2D69.8090003@plexistor.com>
+ <545A2F52.3040303@plexistor.com>
+ <yq1k339enl5.fsf@sermon.lab.mkp.net>
+ <545A379D.30608@plexistor.com>
+ <yq1sihwb5qz.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415276602-10337-10-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <yq1sihwb5qz.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 12:23:20PM +0000, Matt Fleming wrote:
-> +static void __intel_cqm_event_count(void *info)
-> +{
-> +	struct perf_event *event = info;
-> +	u64 val;
-> +
-> +	val = __rmid_read(event->hw.cqm_rmid);
-> +
-> +	if (val & (RMID_VAL_ERROR | RMID_VAL_UNAVAIL))
-> +		return;
-> +
-> +	local64_add(val, &event->count);
-> +}
-> +
-> +static inline bool cqm_group_leader(struct perf_event *event)
-> +{
-> +	return !list_empty(&event->hw.cqm_groups_entry);
-> +}
-> +
-> +static u64 intel_cqm_event_count(struct perf_event *event)
-> +{
-> +	/*
-> +	 * We only need to worry about task events. System-wide events
-> +	 * are handled like usual, i.e. entirely with
-> +	 * intel_cqm_event_read().
-> +	 */
-> +	if (event->cpu != -1)
-> +		return __perf_event_count(event);
-> +
-> +	/*
-> +	 * Only the group leader gets to report values. This stops us
-> +	 * reporting duplicate values to userspace, and gives us a clear
-> +	 * rule for which task gets to report the values.
-> +	 *
-> +	 * Note that it is impossible to attribute these values to
-> +	 * specific packages - we forfeit that ability when we create
-> +	 * task events.
-> +	 */
-> +	if (!cqm_group_leader(event))
-> +		return 0;
-> +
-> +	local64_set(&event->count, 0);
-> +
-> +	preempt_disable()
-> +	smp_call_function_many(&cqm_cpumask, __intel_cqm_event_count, event, 1);
-> +	preempt_enable();
-> +
-> +	return __perf_event_count(event);
-> +}
+On Thu, Nov 06, 2014 at 12:25:56PM -0500, Martin K. Petersen wrote:
+> >>>>> "Boaz" == Boaz Harrosh <boaz@plexistor.com> writes:
+> 
+> Boaz,
+> 
+> Boaz> Note that blk_queue_physical_block_size() also trashes io_min, but
+> Boaz> we can leave this one to be 512. io_min as opposed to
+> Boaz> physical_block_size will actually change Kernel behavior
+> 
+> >> Care to elaborate?
+> 
+> I wanted you to elaborate on how io_min changes kernel behavior.
+> 
+> >> Also, fdisk and parted should be aligning on 1MB by default
+> >> regardless of block size. So I'm also not sure why you need to trick
+> >> fdisk to align by setting the pbs.
+> 
+> Boaz> fdisk will not align partition-start on 1M, only the very
+> Boaz> first-sector, libgparted and cfdisk are as you say, but with fdisk
+> Boaz> if you put any odd numbered partition-size, the next start-sector
+> Boaz> will just be the sum, but with this patch it will offer a small
+> Boaz> hole and will align the partition-start on 4K.  (And even with
+> Boaz> this patch user can enter bad values)
+> 
+> It really sounds like either your fdisk is way too old or you are
+> running it in DOS compat mode.
+> 
+> I don't have a fundamental issue reporting pbs of 4K. But if you are
+> only doing it to force a certain partition alignment then it sounds like
+> a kernel fix for a userland problem.
+> 
+> I've CC:ed Karel who can comment on fdisk partition alignment issues.
 
-How is that supposed to work? You call __intel_cqm_event_count() on the
-one cpu per socket, but then you use a local_add, not an atomic_add,
-even though these adds can happen concurrently as per IPI broadcast.
+fdisk by default aligns partitions and uses 1MiB offset (for first
+primary and all logical partitions). It's low-level tool for experts,
+so if you ask for non-aligned offsets it will follow your wishes of
+course. The default values in dialogs are always aligned. All
+misaligned partitions are always reported (by warning messages).
 
-Also, I think smp_call_function_many() ignores the current cpu, if this
-cpu happens to be the cpu for this socket, you're up some creek without
-no paddle, right?
+Boaz, it would be nice to have any example (copy & past fdisk output).
 
-Thirdly, there is no serialization around calling perf_event_count() [or
-your pmu::count method] so you cannot temporarily put it to 0.
+    Karel
+
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
