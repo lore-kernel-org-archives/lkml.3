@@ -1,166 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaKGWGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 17:06:40 -0500
-Received: from mout.gmx.net ([212.227.15.18]:64619 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534AbaKGWGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 17:06:39 -0500
-Date: Fri, 7 Nov 2014 23:06:21 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Philipp Zabel <p.zabel@pengutronix.de>
-cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
-Subject: Re: [PATCH v5 1/6] of: Decrement refcount of previous endpoint in
- of_graph_get_next_endpoint
-In-Reply-To: <1412013819-29181-2-git-send-email-p.zabel@pengutronix.de>
-Message-ID: <Pine.LNX.4.64.1411072255130.4252@axis700.grange>
-References: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
- <1412013819-29181-2-git-send-email-p.zabel@pengutronix.de>
+	id S1753331AbaKGWHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 17:07:44 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52185 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752886AbaKGWHm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 17:07:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aho5ABxCXVR5LbBUPGdsb2JhbABbgw5UWYc9sEwBAQEBAQEGk0GBZYVsBAKBHBcBAQEBAQYBAQEBODuEQxwjGCQ0BSUDBy2IQM9xGIYgilmEUgWGN5BEhEqCVIEzEoM8iiqLPykvgksBAQE
+Date: Sat, 8 Nov 2014 09:07:31 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: [GIT PULL] xfs: fixes for 3.18-rc3
+Message-ID: <20141107220731.GK23575@dastard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V03:K0:05Qtlnx9xJeckAm7VETYPEtHplYilEZNG5wggosA2erUBYtx+um
- 0Swsy+8SwjA8CI3gjAk3/tZJwd4reBzbUSNRupRfdk8mLXBdOM+VuIgVi4/noib5kEVLYFl
- HRg/cAl997b3vssXJAo0HsB8JpvIZ5pQYxF76eu/j7aUr+h3WYhHwI1T8+L45KwhiZGhYkg
- EqpxWjveVTHU//vDgUTXA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+Hi Linus,
 
-Thanks for the patch and sorry for a late reply. I did look at your 
-patches earlier too, but maybe not attentively enough, or maybe I'm 
-misunderstanding something now. In the scan_of_host() function in 
-soc_camera.c as of current -next I see:
+Can you please pull from the tag listed below? This update fixes
+a warning in the new pagecache_isize_extended() and updates some
+related comments, another fix for zero-range misbehaviour, and an
+unforntuately large set of fixes for regressions in the bulkstat
+code.
 
-		epn = of_graph_get_next_endpoint(np, epn);
+The bulkstat fixes are large but necessary.  I wouldn't normally
+push such a rework for a -rcX update, but right now xfsdump can
+silently create incomplete dumps on 3.17 and it's possible that
+even xfsrestore won't notice that the dumps were incomplete. Hence
+we need to get this update into 3.17-stable kernels ASAP.
 
-which already looks like a refcount leak to me. If epn != NULL, its 
-refcount is incremented, but then immediately the variable gets 
-overwritten, and there's no extra copy of that variable to fix this. If 
-I'm right, then that bug in itself should be fixed, ideally before your 
-patch is applied. But in fact, your patch fixes this, since it modifies 
-of_graph_get_next_endpoint() to return with prev's refcount not 
-incremented, right? Whereas the of_node_put(epn) later down in 
-scan_of_host() decrements refcount of the _next_ endpoint, not the 
-previous one, so, it should be left alone? I.e. AFAICT your modification 
-to of_graph_get_next_endpoint() fixes soc_camera.c with no further 
-modifications to it required?
+In more detail, the refactoring work I committed in 3.17 has exposed
+a major hole in our QA coverage. With both xfsdump (the major user
+of bulkstat) and xfsrestore silently ignoring missing files in the
+dump/restore process, incomplete dumps were going unnoticed if they
+were being triggered. Many of the dump/restore filesets were so
+small that they didn't evenhave a chance of triggering the loop
+iteration bugs we introduced in 3.17, so we didn't exercise the code
+sufficiently, either.
 
-Thanks
-Guennadi
+We have already taken steps to improve QA coverage in xfstests to
+avoid this happening again, and I've done a lot of manual
+verification of dump/restore on very large data sets (tens of
+millions of inodes) of the past week to verify this patch set
+results in bulkstat behaving the same way as it does on 3.16.
 
-On Mon, 29 Sep 2014, Philipp Zabel wrote:
+Unfortunately, the fixes are not exactly simple - in tracking down
+the problem historic API warts were discovered (e.g xfsdump has been
+working around a 20 year old bug in the bulkstat API for the past 10
+years) and so that complicated the process of diagnosing and fixing
+the problems. i.e. we had to fix bugs in the code as well as
+discover and re-introduce the userspace visible API bugs that we
+unwittingly "fixed" in 3.17 that xfsdump relied on to work
+correctly.
 
-> Decrementing the reference count of the previous endpoint node allows to
-> use the of_graph_get_next_endpoint function in a for_each_... style macro.
-> All current users of this function that pass a non-NULL prev parameter
-> (that is, soc_camera and imx-drm) are changed to not decrement the passed
-> prev argument's refcount themselves.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
-> Changes since v4:
->  - Folded patches 1-3 into this one
-> ---
->  drivers/media/platform/soc_camera/soc_camera.c |  3 ++-
->  drivers/of/base.c                              |  9 +--------
->  drivers/staging/imx-drm/imx-drm-core.c         | 12 ++----------
->  3 files changed, 5 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
-> index f4308fe..619b2d4 100644
-> --- a/drivers/media/platform/soc_camera/soc_camera.c
-> +++ b/drivers/media/platform/soc_camera/soc_camera.c
-> @@ -1696,7 +1696,6 @@ static void scan_of_host(struct soc_camera_host *ici)
->  		if (!i)
->  			soc_of_bind(ici, epn, ren->parent);
->  
-> -		of_node_put(epn);
->  		of_node_put(ren);
->  
->  		if (i) {
-> @@ -1704,6 +1703,8 @@ static void scan_of_host(struct soc_camera_host *ici)
->  			break;
->  		}
->  	}
-> +
-> +	of_node_put(epn);
->  }
->  
->  #else
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 293ed4b..f7a9aa8 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2070,8 +2070,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
->   * @prev: previous endpoint node, or NULL to get first
->   *
->   * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-> - * of the passed @prev node is not decremented, the caller have to use
-> - * of_node_put() on it when done.
-> + * of the passed @prev node is decremented.
->   */
->  struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  					struct device_node *prev)
-> @@ -2107,12 +2106,6 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
->  			      __func__, prev->full_name))
->  			return NULL;
-> -
-> -		/*
-> -		 * Avoid dropping prev node refcount to 0 when getting the next
-> -		 * child below.
-> -		 */
-> -		of_node_get(prev);
->  	}
->  
->  	while (1) {
-> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-> index 6b22106..12303b3 100644
-> --- a/drivers/staging/imx-drm/imx-drm-core.c
-> +++ b/drivers/staging/imx-drm/imx-drm-core.c
-> @@ -434,14 +434,6 @@ static uint32_t imx_drm_find_crtc_mask(struct imx_drm_device *imxdrm,
->  	return 0;
->  }
->  
-> -static struct device_node *imx_drm_of_get_next_endpoint(
-> -		const struct device_node *parent, struct device_node *prev)
-> -{
-> -	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
-> -	of_node_put(prev);
-> -	return node;
-> -}
-> -
->  int imx_drm_encoder_parse_of(struct drm_device *drm,
->  	struct drm_encoder *encoder, struct device_node *np)
->  {
-> @@ -453,7 +445,7 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
->  	for (i = 0; ; i++) {
->  		u32 mask;
->  
-> -		ep = imx_drm_of_get_next_endpoint(np, ep);
-> +		ep = of_graph_get_next_endpoint(np, ep);
->  		if (!ep)
->  			break;
->  
-> @@ -502,7 +494,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
->  		return -EINVAL;
->  
->  	do {
-> -		ep = imx_drm_of_get_next_endpoint(node, ep);
-> +		ep = of_graph_get_next_endpoint(node, ep);
->  		if (!ep)
->  			break;
->  
-> -- 
-> 2.1.0
-> 
+-Dave.
+
+The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+
+  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/linux-xfs tags/xfs-for-linus-3.18-rc3
+
+for you to fetch changes up to 002758992693ae63c04122603ea9261a0a58d728:
+
+  xfs: track bulkstat progress by agino (2014-11-07 08:33:52 +1100)
+
+----------------------------------------------------------------
+xfs: fixes for v3.18-rc3
+
+This update fixes:
+
+- incorrect warnings about i_mutex locking in
+  pagecache_isize_extended() and updates comments to match expected
+  locking
+- another zero-range bug fix for stray file size updates
+- a bunch of fixes for regression in the bulkstat code introduced in
+  3.17.
+
+----------------------------------------------------------------
+Brian Foster (1):
+      xfs: rework zero range to prevent invalid i_size updates
+
+Dave Chinner (7):
+      xfs: bulkstat doesn't release AGI buffer on error
+      xfs: bulkstat btree walk doesn't terminate
+      xfs: bulkstat chunk formatting cursor is broken
+      xfs: bulkstat chunk-formatter has issues
+      xfs: bulkstat main loop logic is a mess
+      xfs: bulkstat error handling is broken
+      xfs: track bulkstat progress by agino
+
+Jan Kara (3):
+      xfs: Check error during inode btree iteration in xfs_bulkstat()
+      mm: Remove false WARN_ON from pagecache_isize_extended()
+      mm: Fix comment before truncate_setsize()
+
+ fs/xfs/xfs_bmap_util.c |   72 ++++----------
+ fs/xfs/xfs_itable.c    |  250 +++++++++++++++++++++++-------------------------
+ fs/xfs/xfs_itable.h    |   16 ----
+ mm/truncate.c          |    6 +-
+ 4 files changed, 145 insertions(+), 199 deletions(-)
+-- 
+Dave Chinner
+david@fromorbit.com
