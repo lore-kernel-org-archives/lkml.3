@@ -1,40 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaKGNP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:15:29 -0500
-Received: from mga03.intel.com ([134.134.136.65]:9685 "EHLO mga03.intel.com"
+	id S1752261AbaKGNTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:19:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48674 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993AbaKGNP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:15:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="485388063"
-Message-ID: <1415366123.958.331.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: Fix invalid vfree()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Fri, 07 Nov 2014 15:15:23 +0200
-In-Reply-To: <1414367171-4657-1-git-send-email-richard@nod.at>
-References: <1414367171-4657-1-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751317AbaKGNTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 08:19:23 -0500
+Message-ID: <545CC6D8.80100@suse.com>
+Date: Fri, 07 Nov 2014 14:19:20 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: Re: [Xen-devel] [PATCH V2 2/5] xen: Delay m2p_override initialization
+References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-3-git-send-email-jgross@suse.com> <545CC349.8020006@citrix.com>
+In-Reply-To: <545CC349.8020006@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 00:46 +0100, Richard Weinberger wrote:
-> The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
-> In ubi_start_update() vol->updating is set long before vmalloc()'ing
-> vol->upd_buf. If we encounter a write failure in ubi_start_update()
-> before vmalloc() the UBI device release function will try to vfree()
-> vol->upd_buf because vol->updating is set.
-> Fix this by allocating vol->upd_buf directly after setting vol->updating.
+On 11/07/2014 02:04 PM, David Vrabel wrote:
+> On 06/11/14 05:47, Juergen Gross wrote:
+>> The m2p overrides are used to be able to find the local pfn for a
+>> foreign mfn mapped into the domain. They are used by driver backends
+>> having to access frontend data.
+>>
+>> As this functionality isn't used in early boot it makes no sense to
+>> initialize the m2p override functions very early. It can be done
+>> later without doing any harm, removing the need for allocating memory
+>> via extend_brk().
+>>
+>> While at it make some m2p override functions static as they are only
+>> used internally.
+> [...]
+>>   		}
+>>   		/* This should be the leafs allocated for identity from _brk. */
+>>   	}
+>> -	return (unsigned long)mfn_list;
+>>
+>> +	m2p_override_init();
+>> +	return (unsigned long)mfn_list;
+>>   }
+>>   #else
+>>   unsigned long __init xen_revector_p2m_tree(void)
+>>   {
+>>   	use_brk = 0;
+>> +	m2p_override_init();
+>>   	return 0;
+>>   }
+>
+> This is mentioned in the description...
+>
+>>   #endif
+>> @@ -794,15 +794,16 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+>>   #define M2P_OVERRIDE_HASH_SHIFT	10
+>>   #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
+>>
+>> -static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
+>> +static struct list_head *m2p_overrides;
+>>   static DEFINE_SPINLOCK(m2p_override_lock);
+>>
+>>   static void __init m2p_override_init(void)
+>>   {
+>>   	unsigned i;
+>>
+>> -	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
+>> -				   sizeof(unsigned long));
+>> +	m2p_overrides = alloc_bootmem_align(
+>> +				sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
+>> +				sizeof(unsigned long));
+>
+> ...as is this.
+>
+>> -int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
+>> -			    struct gnttab_map_grant_ref *kmap_ops,
+>> -			    struct page **pages, unsigned int count)
+>> -{
+>> -	int i, ret = 0;
+>> -	bool lazy = false;
+>> -	pte_t *pte;
+>> -
+>> -	if (xen_feature(XENFEAT_auto_translated_physmap))
+>> -		return 0;
+>> -
+>> -	if (kmap_ops &&
+>> -	    !in_interrupt() &&
+>> -	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>> -		arch_enter_lazy_mmu_mode();
+>> -		lazy = true;
+>> -	}
+>
+> ... but, what's going on here.  What are the rest of these changes?
+>
+> I suppose this is the "make some functions static" but it's an
+> unreviewable mess.  If you can't do this with some one line changes
+> adding "static" and perhaps some forward declarations then please drop
+> this bit.
 
-Pushed, thanks!
+Do you really prefer forward declarations instead of pure code movement?
+I can do as you request, but just want to make sure.
 
+While I agree that the diff output is really ugly, comparing the old and
+new code by looking at it in two editor windows side by side should show
+the pure movement of functions easily.
+
+Juergen
