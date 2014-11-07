@@ -1,355 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaKGI2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:28:08 -0500
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:55297 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaKGI1w convert rfc822-to-8bit (ORCPT
+	id S1751292AbaKGIcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:32:14 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50684 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750962AbaKGIcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:27:52 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Peter Feiner <pfeiner@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH -mm v7 11/13] mempolicy: apply page table walker on
- queue_pages_range()
-Thread-Topic: [PATCH -mm v7 11/13] mempolicy: apply page table walker on
- queue_pages_range()
-Thread-Index: AQHP+li8VyS7zXagCECiSxirDK+i2g==
-Date: Fri, 7 Nov 2014 07:02:03 +0000
-Message-ID: <1415343692-6314-12-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.22]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 Nov 2014 03:32:08 -0500
+Message-ID: <545C835D.1050008@arm.com>
+Date: Fri, 07 Nov 2014 08:31:25 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>, airlied@linux.ie,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "moinejf@free.fr" <moinejf@free.fr>, liviu Dudau <Liviu.Dudau@arm.com>
+Subject: [PATCH v2] drm/i2c: tda998x: Set the CEC I2C address based on the
+ slave I2C address.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-queue_pages_range() does page table walking in its own way now, but there
-is some code duplicate. This patch applies page table walker to reduce
-lines of code.
+The I2C address for the TDA9989 and TDA19989 is fixed at 0x34
+but the two LSBs of the TDA19988's address are set by two configuration
+pins on the chip.  Irrespective of the chip, the associated CEC
+peripheral's I2C address is based upon the main I2C address.
 
-queue_pages_range() has to do some precheck to determine whether we really
-walk over the vma or just skip it. Now we have test_walk() callback in
-mm_walk for this purpose, so we can do this replacement cleanly.
-queue_pages_test_walk() depends on not only the current vma but also the
-previous one, so queue_pages->prev is introduced to remember it.
+This patch avoids any special handling required to support
+systems that contain multiple TDA19988 devices on the same
+I2C bus.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 ---
-ChangeLog v4:
-- rebase to v3.16-rc3, where the return value of queue_pages_range()
-  becomes 0 in success instead of the first found vma, and use -EFAILT
-  instead of ERR_PTR() in failure.
----
- mm/mempolicy.c | 228 +++++++++++++++++++++++----------------------------------
- 1 file changed, 92 insertions(+), 136 deletions(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git mmotm-2014-11-05-16-01.orig/mm/mempolicy.c mmotm-2014-11-05-16-01/mm/mempolicy.c
-index e58725aff7e9..2c7c4e296386 100644
---- mmotm-2014-11-05-16-01.orig/mm/mempolicy.c
-+++ mmotm-2014-11-05-16-01/mm/mempolicy.c
-@@ -477,24 +477,34 @@ static const struct mempolicy_operations mpol_ops[MPOL_MAX] = {
- static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 				unsigned long flags);
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index d476279..eeab17a 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -1255,6 +1255,7 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
+ 	struct device_node *np = client->dev.of_node;
+ 	u32 video;
+ 	int rev_lo, rev_hi, ret;
++	unsigned short cec_addr;
  
-+struct queue_pages {
-+	struct list_head *pagelist;
-+	unsigned long flags;
-+	nodemask_t *nmask;
-+	struct vm_area_struct *prev;
-+};
-+
- /*
-  * Scan through pages checking if pages follow certain conditions,
-  * and move them to the pagelist if they do.
-  */
--static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
-+static int queue_pages_pte_range(pmd_t *pmd, unsigned long addr,
-+			unsigned long end, struct mm_walk *walk)
- {
--	pte_t *orig_pte;
-+	struct vm_area_struct *vma = walk->vma;
-+	struct page *page;
-+	struct queue_pages *qp = walk->private;
-+	unsigned long flags = qp->flags;
-+	int nid;
- 	pte_t *pte;
- 	spinlock_t *ptl;
+ 	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
+ 	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
+@@ -1262,7 +1263,9 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
  
--	orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	do {
--		struct page *page;
--		int nid;
-+	split_huge_page_pmd(vma, addr, pmd);
-+	if (pmd_trans_unstable(pmd))
-+		return 0;
+ 	priv->current_page = 0xff;
+ 	priv->hdmi = client;
+-	priv->cec = i2c_new_dummy(client->adapter, 0x34);
++	/* CEC I2C address bound to TDA998x I2C addr by configuration pins */
++	cec_addr = 0x34 + (client->addr & 0x03);
++	priv->cec = i2c_new_dummy(client->adapter, cec_addr);
+ 	if (!priv->cec)
+ 		return -ENODEV;
  
-+	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-+	for (; addr != end; pte++, addr += PAGE_SIZE) {
- 		if (!pte_present(*pte))
- 			continue;
- 		page = vm_normal_page(vma, addr, *pte);
-@@ -507,114 +517,46 @@ static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		if (PageReserved(page))
- 			continue;
- 		nid = page_to_nid(page);
--		if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-+		if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
- 			continue;
- 
- 		if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
--			migrate_page_add(page, private, flags);
--		else
--			break;
--	} while (pte++, addr += PAGE_SIZE, addr != end);
--	pte_unmap_unlock(orig_pte, ptl);
--	return addr != end;
-+			migrate_page_add(page, qp->pagelist, flags);
-+	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+	return 0;
- }
- 
--static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
--		pmd_t *pmd, const nodemask_t *nodes, unsigned long flags,
--				    void *private)
-+static int queue_pages_hugetlb(pte_t *pte, unsigned long hmask,
-+			       unsigned long addr, unsigned long end,
-+			       struct mm_walk *walk)
- {
- #ifdef CONFIG_HUGETLB_PAGE
-+	struct queue_pages *qp = walk->private;
-+	unsigned long flags = qp->flags;
- 	int nid;
- 	struct page *page;
- 	spinlock_t *ptl;
- 	pte_t entry;
- 
--	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
--	entry = huge_ptep_get((pte_t *)pmd);
-+	ptl = huge_pte_lock(hstate_vma(walk->vma), walk->mm, pte);
-+	entry = huge_ptep_get(pte);
- 	if (!pte_present(entry))
- 		goto unlock;
- 	page = pte_page(entry);
- 	nid = page_to_nid(page);
--	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-+	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
- 		goto unlock;
- 	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
- 	if (flags & (MPOL_MF_MOVE_ALL) ||
- 	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
--		isolate_huge_page(page, private);
-+		isolate_huge_page(page, qp->pagelist);
- unlock:
- 	spin_unlock(ptl);
- #else
- 	BUG();
- #endif
--}
--
--static inline int queue_pages_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pmd_t *pmd;
--	unsigned long next;
--
--	pmd = pmd_offset(pud, addr);
--	do {
--		next = pmd_addr_end(addr, end);
--		if (!pmd_present(*pmd))
--			continue;
--		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
--			queue_pages_hugetlb_pmd_range(vma, pmd, nodes,
--						flags, private);
--			continue;
--		}
--		split_huge_page_pmd(vma, addr, pmd);
--		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			continue;
--		if (queue_pages_pte_range(vma, pmd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pmd++, addr = next, addr != end);
--	return 0;
--}
--
--static inline int queue_pages_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pud_t *pud;
--	unsigned long next;
--
--	pud = pud_offset(pgd, addr);
--	do {
--		next = pud_addr_end(addr, end);
--		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
--			continue;
--		if (pud_none_or_clear_bad(pud))
--			continue;
--		if (queue_pages_pmd_range(vma, pud, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pud++, addr = next, addr != end);
--	return 0;
--}
--
--static inline int queue_pages_pgd_range(struct vm_area_struct *vma,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pgd_t *pgd;
--	unsigned long next;
--
--	pgd = pgd_offset(vma->vm_mm, addr);
--	do {
--		next = pgd_addr_end(addr, end);
--		if (pgd_none_or_clear_bad(pgd))
--			continue;
--		if (queue_pages_pud_range(vma, pgd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pgd++, addr = next, addr != end);
- 	return 0;
- }
- 
-@@ -647,6 +589,46 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
- }
- #endif /* CONFIG_NUMA_BALANCING */
- 
-+static int queue_pages_test_walk(unsigned long start, unsigned long end,
-+				struct mm_walk *walk)
-+{
-+	struct vm_area_struct *vma = walk->vma;
-+	struct queue_pages *qp = walk->private;
-+	unsigned long endvma = vma->vm_end;
-+	unsigned long flags = qp->flags;
-+
-+	if (endvma > end)
-+		endvma = end;
-+	if (vma->vm_start > start)
-+		start = vma->vm_start;
-+
-+	if (!(flags & MPOL_MF_DISCONTIG_OK)) {
-+		if (!vma->vm_next && vma->vm_end < end)
-+			return -EFAULT;
-+		if (qp->prev && qp->prev->vm_end < vma->vm_start)
-+			return -EFAULT;
-+	}
-+
-+	qp->prev = vma;
-+
-+	if (vma->vm_flags & VM_PFNMAP)
-+		return 1;
-+
-+	if (flags & MPOL_MF_LAZY) {
-+		/* Similar to task_numa_work, skip inaccessible VMAs */
-+		if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
-+			change_prot_numa(vma, start, endvma);
-+		return 1;
-+	}
-+
-+	if ((flags & MPOL_MF_STRICT) ||
-+	    ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
-+	     vma_migratable(vma)))
-+		/* queue pages from current vma */
-+		return 0;
-+	return 1;
-+}
-+
- /*
-  * Walk through page tables and collect pages to be migrated.
-  *
-@@ -656,50 +638,24 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
-  */
- static int
- queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags, void *private)
--{
--	int err = 0;
--	struct vm_area_struct *vma, *prev;
--
--	vma = find_vma(mm, start);
--	if (!vma)
--		return -EFAULT;
--	prev = NULL;
--	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
--		unsigned long endvma = vma->vm_end;
--
--		if (endvma > end)
--			endvma = end;
--		if (vma->vm_start > start)
--			start = vma->vm_start;
--
--		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
--			if (!vma->vm_next && vma->vm_end < end)
--				return -EFAULT;
--			if (prev && prev->vm_end < vma->vm_start)
--				return -EFAULT;
--		}
--
--		if (flags & MPOL_MF_LAZY) {
--			/* Similar to task_numa_work, skip inaccessible VMAs */
--			if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
--				change_prot_numa(vma, start, endvma);
--			goto next;
--		}
--
--		if ((flags & MPOL_MF_STRICT) ||
--		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
--		      vma_migratable(vma))) {
--
--			err = queue_pages_pgd_range(vma, start, endvma, nodes,
--						flags, private);
--			if (err)
--				break;
--		}
--next:
--		prev = vma;
--	}
--	return err;
-+		nodemask_t *nodes, unsigned long flags,
-+		struct list_head *pagelist)
-+{
-+	struct queue_pages qp = {
-+		.pagelist = pagelist,
-+		.flags = flags,
-+		.nmask = nodes,
-+		.prev = NULL,
-+	};
-+	struct mm_walk queue_pages_walk = {
-+		.hugetlb_entry = queue_pages_hugetlb,
-+		.pmd_entry = queue_pages_pte_range,
-+		.test_walk = queue_pages_test_walk,
-+		.mm = mm,
-+		.private = &qp,
-+	};
-+
-+	return walk_page_range(start, end, &queue_pages_walk);
- }
- 
- /*
 -- 
-2.2.0.rc0.2.gf745acb
+1.7.1
+
