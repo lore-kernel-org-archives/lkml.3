@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaKGNTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 08:19:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48674 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbaKGNTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 08:19:23 -0500
-Message-ID: <545CC6D8.80100@suse.com>
-Date: Fri, 07 Nov 2014 14:19:20 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Subject: Re: [Xen-devel] [PATCH V2 2/5] xen: Delay m2p_override initialization
-References: <1415252853-7106-1-git-send-email-jgross@suse.com> <1415252853-7106-3-git-send-email-jgross@suse.com> <545CC349.8020006@citrix.com>
-In-Reply-To: <545CC349.8020006@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S1752497AbaKGNTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 08:19:42 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63964 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751880AbaKGNTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 08:19:41 -0500
+Message-ID: <1415366378.4390.48.camel@x220>
+Subject: Re: [REGRESSION] in 3.18-rc1: ppp crashes kernel
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 07 Nov 2014 14:19:38 +0100
+In-Reply-To: <545CC0E8.4070102@message-id.googlemail.com>
+References: <545CA8B6.2060608@message-id.googlemail.com>
+	 <1415361193.4390.46.camel@x220>
+	 <545CB37C.6080804@message-id.googlemail.com>
+	 <545CC0E8.4070102@message-id.googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Nov 2014 13:19:38.0074 (UTC) FILETIME=[7B2A5BA0:01CFFA8D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 02:04 PM, David Vrabel wrote:
-> On 06/11/14 05:47, Juergen Gross wrote:
->> The m2p overrides are used to be able to find the local pfn for a
->> foreign mfn mapped into the domain. They are used by driver backends
->> having to access frontend data.
->>
->> As this functionality isn't used in early boot it makes no sense to
->> initialize the m2p override functions very early. It can be done
->> later without doing any harm, removing the need for allocating memory
->> via extend_brk().
->>
->> While at it make some m2p override functions static as they are only
->> used internally.
-> [...]
->>   		}
->>   		/* This should be the leafs allocated for identity from _brk. */
->>   	}
->> -	return (unsigned long)mfn_list;
->>
->> +	m2p_override_init();
->> +	return (unsigned long)mfn_list;
->>   }
->>   #else
->>   unsigned long __init xen_revector_p2m_tree(void)
->>   {
->>   	use_brk = 0;
->> +	m2p_override_init();
->>   	return 0;
->>   }
->
-> This is mentioned in the description...
->
->>   #endif
->> @@ -794,15 +794,16 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->>   #define M2P_OVERRIDE_HASH_SHIFT	10
->>   #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
->>
->> -static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
->> +static struct list_head *m2p_overrides;
->>   static DEFINE_SPINLOCK(m2p_override_lock);
->>
->>   static void __init m2p_override_init(void)
->>   {
->>   	unsigned i;
->>
->> -	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
->> -				   sizeof(unsigned long));
->> +	m2p_overrides = alloc_bootmem_align(
->> +				sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
->> +				sizeof(unsigned long));
->
-> ...as is this.
->
->> -int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
->> -			    struct gnttab_map_grant_ref *kmap_ops,
->> -			    struct page **pages, unsigned int count)
->> -{
->> -	int i, ret = 0;
->> -	bool lazy = false;
->> -	pte_t *pte;
->> -
->> -	if (xen_feature(XENFEAT_auto_translated_physmap))
->> -		return 0;
->> -
->> -	if (kmap_ops &&
->> -	    !in_interrupt() &&
->> -	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->> -		arch_enter_lazy_mmu_mode();
->> -		lazy = true;
->> -	}
->
-> ... but, what's going on here.  What are the rest of these changes?
->
-> I suppose this is the "make some functions static" but it's an
-> unreviewable mess.  If you can't do this with some one line changes
-> adding "static" and perhaps some forward declarations then please drop
-> this bit.
+On Fri, 2014-11-07 at 13:54 +0100, Stefan Seyfried wrote:
+> JFTR, this did not help:
+> tux@linux:~/linux> zgrep CONFIG_RCU_NOCB_CPU /proc/config.gz
+> # CONFIG_RCU_NOCB_CPU is not set
+> 
+> neither did:
+> 
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -583,7 +583,7 @@ asmlinkage __visible void __init start_kernel(void)
+>         early_irq_init();
+>         init_IRQ();
+>         tick_init();
+> -       rcu_init_nohz();
+> +//     rcu_init_nohz();
+>         init_timers();
+>         hrtimers_init();
+>         softirq_init();
 
-Do you really prefer forward declarations instead of pure code movement?
-I can do as you request, but just want to make sure.
+Thanks. I guess this is not my lucky day. I won't be visiting a casino
+tonight...
 
-While I agree that the diff output is really ugly, comparing the old and
-new code by looking at it in two editor windows side by side should show
-the pure movement of functions easily.
 
-Juergen
+Paul Bolle
+
