@@ -1,121 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaKGXbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 18:31:51 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53103 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751965AbaKGXbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 18:31:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v10 3/5] amba: Don't unprepare the clocks if device driver wants IRQ safe runtime PM
-Date: Sat, 08 Nov 2014 00:52:38 +0100
-Message-ID: <1582300.GC6cj61ZAD@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415347269.8532.1.camel@AMDC1943>
-References: <1415263010-7992-1-git-send-email-k.kozlowski@samsung.com> <3262760.d60MN56YDG@vostro.rjw.lan> <1415347269.8532.1.camel@AMDC1943>
+	id S1753225AbaKGXc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 18:32:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59373 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018AbaKGXc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 18:32:58 -0500
+Date: Sat, 8 Nov 2014 10:32:49 +1100
+From: NeilBrown <neilb@suse.de>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>
+Subject: [PATCH] w1: support auto-load of w1_bq27000 module.
+Message-ID: <20141108103249.4f86786c@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/5K64Eh+R94GOCIh=ZN+=6LQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 07, 2014 09:01:09 AM Krzysztof Kozlowski wrote:
-> On czw, 2014-11-06 at 23:52 +0100, Rafael J. Wysocki wrote:
-> > On Thursday, November 06, 2014 09:36:48 AM Krzysztof Kozlowski wrote:
-> > > The AMBA bus driver defines runtime Power Management functions which
-> > > disable and unprepare AMBA bus clock. This is problematic for runtime PM
-> > > because unpreparing a clock might sleep so it is not interrupt safe.
-> > > 
-> > > However some drivers may want to implement runtime PM functions in
-> > > interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-> > > bus driver should only disable/enable the clock in runtime suspend and
-> > > resume callbacks.
-> > > 
-> > > Detect the device driver behavior during runtime suspend. During runtime
-> > > resume deal with clocks according to stored value.
-> > > 
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > ---
-> > >  drivers/amba/bus.c       | 17 +++++++++++++----
-> > >  include/linux/amba/bus.h |  1 +
-> > >  2 files changed, 14 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-> > > index 47bbdc1b5be3..356f906c6966 100644
-> > > --- a/drivers/amba/bus.c
-> > > +++ b/drivers/amba/bus.c
-> > > @@ -95,8 +95,14 @@ static int amba_pm_runtime_suspend(struct device *dev)
-> > >  	struct amba_device *pcdev = to_amba_device(dev);
-> > >  	int ret = pm_generic_runtime_suspend(dev);
-> > >  
-> > > -	if (ret == 0 && dev->driver)
-> > > -		clk_disable_unprepare(pcdev->pclk);
-> > > +	if (ret == 0 && dev->driver) {
-> > > +		pcdev->irq_safe = dev->power.irq_safe;
-> > > +
-> > > +		if (pcdev->irq_safe)
-> > > +			clk_disable(pcdev->pclk);
-> > > +		else
-> > > +			clk_disable_unprepare(pcdev->pclk);
-> > > +	}
-> > >  
-> > >  	return ret;
-> > >  }
-> > > @@ -107,7 +113,10 @@ static int amba_pm_runtime_resume(struct device *dev)
-> > >  	int ret;
-> > >  
-> > >  	if (dev->driver) {
-> > > -		ret = clk_prepare_enable(pcdev->pclk);
-> > > +		if (pcdev->irq_safe)
-> > > +			ret = clk_enable(pcdev->pclk);
-> > > +		else
-> > > +			ret = clk_prepare_enable(pcdev->pclk);
-> > >  		/* Failure is probably fatal to the system, but... */
-> > >  		if (ret)
-> > >  			return ret;
-> > > @@ -115,7 +124,7 @@ static int amba_pm_runtime_resume(struct device *dev)
-> > >  
-> > >  	return pm_generic_runtime_resume(dev);
-> > >  }
-> > > -#endif
-> > > +#endif /* CONFIG_PM */
-> > >  
-> > >  static const struct dev_pm_ops amba_pm = {
-> > >  	.suspend	= pm_generic_suspend,
-> > > diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-> > > index ac02f9bd63dc..c4bae79851fb 100644
-> > > --- a/include/linux/amba/bus.h
-> > > +++ b/include/linux/amba/bus.h
-> > > @@ -32,6 +32,7 @@ struct amba_device {
-> > >  	struct clk		*pclk;
-> > >  	unsigned int		periphid;
-> > >  	unsigned int		irq[AMBA_NR_IRQS];
-> > > +	unsigned int		irq_safe:1;
-> > 
-> > Why do we need the new flag?  Seems redundant to me.
-> 
-> Some poorly written driver could set irq_safe somewhere between suspend
-> and resume (e.g. in suspend callback).
+--Sig_/5K64Eh+R94GOCIh=ZN+=6LQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It could also modify your bus type irq_safe flag to hide the fact.  In my
-opinion, it doesn't really help.
 
-Rafael
 
+1/ change request_module call to zero-pad single digit
+   family numbers.  This appears to be the intention of
+   the code, but not what it actually does.
+
+   This means that the alias created for W1_FAMILY_SMEM_01
+   might actually be useful.
+
+2/ Define a family name for the BQ27000 battery charge monitor.
+   Unfortunately this is the same number as W1_FAMILY_SMEM_01
+   so if both a compiled on a system, one module might need to
+   be blacklisted.
+
+3/ Add a MODULE_ALIAS for the bq27000.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/drivers/w1/slaves/w1_bq27000.c b/drivers/w1/slaves/w1_bq27000.c
+index afbefed5f2c9..caafb1722783 100644
+--- a/drivers/w1/slaves/w1_bq27000.c
++++ b/drivers/w1/slaves/w1_bq27000.c
+@@ -88,7 +88,7 @@ static struct w1_family_ops w1_bq27000_fops =3D {
+ };
+=20
+ static struct w1_family w1_bq27000_family =3D {
+-	.fid =3D 1,
++	.fid =3D W1_FAMILY_BQ27000,
+ 	.fops =3D &w1_bq27000_fops,
+ };
+=20
+@@ -111,7 +111,7 @@ module_exit(w1_bq27000_exit);
+=20
+ module_param(F_ID, int, S_IRUSR);
+ MODULE_PARM_DESC(F_ID, "1-wire slave FID for BQ device");
+-
++MODULE_ALIAS("w1-family-" __stringify(W1_FAMILY_BQ27000));
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Texas Instruments Ltd");
+ MODULE_DESCRIPTION("HDQ/1-wire slave driver bq27000 battery monitor chip");
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 592f7edc671e..181f41cb960b 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -727,7 +727,7 @@ int w1_attach_slave_device(struct w1_master *dev, struc=
+t w1_reg_num *rn)
+=20
+ 	/* slave modules need to be loaded in a context with unlocked mutex */
+ 	mutex_unlock(&dev->mutex);
+-	request_module("w1-family-0x%0x", rn->family);
++	request_module("w1-family-0x%02x", rn->family);
+ 	mutex_lock(&dev->mutex);
+=20
+ 	spin_lock(&w1_flock);
+diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
+index 0d18365b61ad..ed5dcb80a1f7 100644
+--- a/drivers/w1/w1_family.h
++++ b/drivers/w1/w1_family.h
+@@ -27,6 +27,7 @@
+ #include <linux/atomic.h>
+=20
+ #define W1_FAMILY_DEFAULT	0
++#define W1_FAMILY_BQ27000	0x01
+ #define W1_FAMILY_SMEM_01	0x01
+ #define W1_FAMILY_SMEM_81	0x81
+ #define W1_THERM_DS18S20 	0x10
+
+--Sig_/5K64Eh+R94GOCIh=ZN+=6LQ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVF1WoTnsnt1WYoG5AQK7TRAAp8p1G0OwaJf5n0dqoiTaXSShUgocaj7k
+J6ulEZUC+zFCVn4gsSAHarfRrpPP4ioPSwt31Te6RxRDG7F1hTexuqSynI3kUf4R
+9B5AeRJHf3nGI7js96OQJzPmdLuAKMEmmnOn9Hus72qwE6ZLCI2f7bCAVFPBQnaV
+3jP9U9cLVEXYb/EfLGVBOjlYBxdiCS+HH+xQNoZjYNPhQrcxAaTVjZ866y1z0u8p
+zWfB3gpsyDoKvUOQF6z4a+BFnCuBXFsABz8vBM3DO0Ab1+IlrW35Y8ASlu19RchJ
+S4toeIIebVJmwAr7kMKLtjVqrALf6dDctKmC5PLQ3fo/kUe/UIfEDmBDBqjHmoJY
+00iJqkxG0U4EUeltCiV2lTOkuK1lz2/BPpYJxI8rFX0tvaL2bMcnnZLOxPIBXGnO
+SCwVLqNBdqJynGQbcElpaqvQvUlr5mZhpELaPSV3bDA+vqBMxXuWvP5YfyM5RGja
+48lL1cCttlOua7AwXFf1CdXGWilfZm9NOkg/Q5RLXx+G0V702Ahe1Z3N5EmEtJgX
+rQsL95gdkXyEhrVQ4z7H1OGc1YXCEe3J9YNTliunmKqmpz7O2N4SkQ+p0n4n8k9h
+Hzi9MinHSM5XgLRCSvHL2s+M/vIj1Ga0xiAJWSDO7n8qCvOZOfQARaHDvjXlIvJC
+Q3gjdESlmck=
+=Dx7l
+-----END PGP SIGNATURE-----
+
+--Sig_/5K64Eh+R94GOCIh=ZN+=6LQ--
