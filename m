@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaKGMMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 07:12:47 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57957 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299AbaKGMMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 07:12:43 -0500
-Date: Fri, 7 Nov 2014 13:12:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Chen Yucong <slaoub@gmail.com>, "ak@linux.intel.com" <ak@linux.intel.com>,
-        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 v2] x86, mce, severity: extend the the mce_severity
-Message-ID: <20141107121239.GA19142@pd.tnic>
-References: <1415162873-1874-1-git-send-email-slaoub@gmail.com>
- <1415162873-1874-2-git-send-email-slaoub@gmail.com>
- <20141106153539.GC4318@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F329240AE@ORSMSX114.amr.corp.intel.com>
- <20141106182206.GG4318@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3292433C@ORSMSX114.amr.corp.intel.com>
- <20141106185638.GH4318@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F329246B2@ORSMSX114.amr.corp.intel.com>
+	id S1752166AbaKGMMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 07:12:53 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50287 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751579AbaKGMMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 07:12:46 -0500
+Message-ID: <545CB6C4.8010201@arm.com>
+Date: Fri, 07 Nov 2014 12:10:44 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F329246B2@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Baruch Siach <baruch@tkos.co.il>, "Du, Wenkai" <wenkai.du@intel.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>,
+        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] i2c: designware: prevent early stop on TX FIFO empty
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 09:24:01PM +0000, Luck, Tony wrote:
-> Architecturally it is true that MCIP will be set when machine check is
-> signaled. But, sometimes there are bugs. BIOS has a hook to get an SMI
-> to see the event before the OS sees the machine check - which gives
-> lots of scope for things to not happen by the book. If MCIP isn't set
-> correctly, I'd like to get on and panic quickly - because all sorts
-> of bad things will happen if a nested machine check happens and isn't
-> caught because MCIP wasn't set in the first machine check.
+If the Designware core is configured with IC_EMPTYFIFO_HOLD_MASTER_EN
+set to zero, allowing the TX FIFO to become empty causes a STOP
+condition to be generated on the I2C bus. If the transmit FIFO
+threshold is set too high, an erroneous STOP condition can be
+generated on long transfers - particularly where the interrupt
+latency is extended.
 
-I won't even ask about your actual experience with stuff not setting
-MCIP :-)
+Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Anyway, noted. So for the mce_severity rewrite we should make sure to
-note from which context we're being called as the more reliable method,
-instead of looking at MCGSTATUS.MCIP.
-
-Thanks.
-
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 3c20e4b..e070edd 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -363,7 +363,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+ 	}
+ 
+ 	/* Configure Tx/Rx FIFO threshold levels */
+-	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
++	dw_writel(dev, dev->tx_fifo_depth / 2, DW_IC_TX_TL);
+ 	dw_writel(dev, 0, DW_IC_RX_TL);
+ 
+ 	/* configure the i2c master */
 -- 
-Regards/Gruss,
-    Boris.
+1.7.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
