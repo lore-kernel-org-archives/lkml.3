@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751AbaKGJro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 04:47:44 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:57091 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaKGJrm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 04:47:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org, frowand.list@gmail.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-Date: Fri, 07 Nov 2014 10:47:05 +0100
-Message-ID: <2747100.M77UGx4AmB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <545C69E7.6010909@gmail.com>
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <545C694D.1030204@gmail.com> <545C69E7.6010909@gmail.com>
+	id S1751329AbaKGJxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 04:53:46 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957AbaKGJxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 04:53:42 -0500
+Message-ID: <545C96A1.40304@nod.at>
+Date: Fri, 07 Nov 2014 10:53:37 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:UarXcyt1GzudMAEWqRzJ44Q3M3+zhPpOSv+/PiDczMv
- FYePgRr7/NjfgbHGs/XwjjCdmOrwrurk8cRO8lS4Hirx1u6mTV
- KmiyT3ma43FAFakk+o3lh7nf1lzpWHjnChTwNHH7o4LBYxQ4nr
- iRcbWRlTeWZtHxOpOF59nRLyZiPdOeBa/9iwPJNpfqUp3SKLm0
- bUkSlYpnieC4LT0EqEdSDTpPbOJj1ME63Xz5ES6t6QsIZgsV+t
- Np2OJbcNJ9edxYFt8aWUZmA3Cm+LojjLTnpfa4SucVqtJ0xZN5
- MmxgsM3QjqiLGPRq4+pSH6qIYZ/XhdSfDm5BgXRduqRXKnjjiH
- U0LXE6ABoGNRLd1mIvAU=
-X-UI-Out-Filterresults: notjunk:1;
+To: dedekind1@gmail.com
+CC: Christoph Hellwig <hch@infradead.org>, axboe@fb.com,
+        ezequiel.garcia@free-electrons.com, dwmw2@infradead.org,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UBI: Block: Add blk-mq support
+References: <1414933255-3795-1-git-send-email-richard@nod.at>	 <20141103081821.GA5261@infradead.org> <54573B72.1060600@nod.at> <1415353596.958.302.camel@sauron.fi.intel.com>
+In-Reply-To: <1415353596.958.302.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 November 2014 22:42:47 Frank Rowand wrote:
-> This same change is also needed in:
+Am 07.11.2014 um 10:46 schrieb Artem Bityutskiy:
+> On Mon, 2014-11-03 at 09:23 +0100, Richard Weinberger wrote:
+>> Am 03.11.2014 um 09:18 schrieb Christoph Hellwig:
+>>> On Sun, Nov 02, 2014 at 02:00:55PM +0100, Richard Weinberger wrote:
+>>>> +#define UBIBLOCK_SG_COUNT 64
+>>>
+>>>
+>>> Can you document why you choose this number? The default nr_request
+>>> for the old code would be 128.
+>>
+>> Is 64 a problem? Beside of the fact that I forgot to set blk_queue_max_segments().
+>> I used this number because 128 seemed a bit high and my goal was to
+>> keep the memory footprint small.
+>> This is also why I've set tag_set.queue_depth to 64.
 > 
->   qcom-ipq8064.dtsi
->   qcom-msm8960.dtsi
->   qcom-apq8084.dtsi
->   qcom-apq8064.dtsi
->   qcom-msm8660.dtsi
-> 
-> but I did not want to just blindly apply those changes without testing.
-> 
+> The request was to document, so lets' document the choice.
 
-Is there only one uart on each of these?
+Of course I'll document it. But so far I had no time to do a
+v2 of this patch.
 
-If not, it would be better to put the aliases in the board specific file,
-pointing to whichever ports are in use, in the order that makes sense
-for that board.
-
-	Arnd
+Thanks,
+//richard
