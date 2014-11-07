@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaKGERH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Nov 2014 23:17:07 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58302 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaKGERE (ORCPT
+	id S1751587AbaKGESA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Nov 2014 23:18:00 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:60581 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaKGER6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Nov 2014 23:17:04 -0500
-Message-ID: <545C47BC.4050207@nvidia.com>
-Date: Thu, 06 Nov 2014 21:17:00 -0700
-From: Stephen Warren <swarren@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-CC: pdeschrijver@nvidia.com, marc.zyngier@arm.com,
-        linux-kernel@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] clocksource: tegra: Port tegra20 clocksource to arm64
-References: <1415319715-21757-1-git-send-email-anatol.pomozov@gmail.com>
-In-Reply-To: <1415319715-21757-1-git-send-email-anatol.pomozov@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Nov 2014 23:17:58 -0500
+From: Michael Marineau <michael.marineau@coreos.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Marineau <michael.marineau@coreos.com>,
+        David Howells <dhowells@redhat.com>,
+        James Solner <solner@alcatel-lucent.com>
+Subject: [PATCH] Document correct module signature kernel parameter
+Date: Thu,  6 Nov 2014 20:17:27 -0800
+Message-Id: <1415333847-14543-1-git-send-email-michael.marineau@coreos.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 05:21 PM, Anatol Pomozov wrote:
-> register_persistent_clock() are in different headers in arm/arm64
-> 
-> Tested: Compiled the driver on 64bit platform and make sure that
-> it works
+The parameter is module.sig_enforce, not enforcemodulesig. The latter
+appears to be from before this functionality was merged into mainline.
 
-I assume "it works" refers to "it compiles" not "it executes successfully"?
+Signed-off-by: Michael Marineau <michael.marineau@coreos.com>
+---
+ Documentation/module-signing.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think it'd be better to make the same APIs available on arm and arm64,
-or even across all architectures.
-
-> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-> ---
->  drivers/clocksource/tegra20_timer.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
-> index d2616ef..e0123c7 100644
-> --- a/drivers/clocksource/tegra20_timer.c
-> +++ b/drivers/clocksource/tegra20_timer.c
-> @@ -29,8 +29,12 @@
->  #include <linux/sched_clock.h>
->  #include <linux/delay.h>
->  
-> +#ifdef CONFIG_ARM64
-> +#include <asm/time.h>
-> +#else
->  #include <asm/mach/time.h>
->  #include <asm/smp_twd.h>
-> +#endif
->  
->  #define RTC_SECONDS            0x08
->  #define RTC_SHADOW_SECONDS     0x0c
-> 
+diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+index 09c2382..6e5262e 100644
+--- a/Documentation/module-signing.txt
++++ b/Documentation/module-signing.txt
+@@ -222,7 +222,7 @@ signature checking is all done within the kernel.
+ NON-VALID SIGNATURES AND UNSIGNED MODULES
+ =========================================
+ 
+-If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
++If CONFIG_MODULE_SIG_FORCE is enabled or module.sig_enforce=1 is supplied on
+ the kernel command line, the kernel will only load validly signed modules
+ for which it has a public key.   Otherwise, it will also load modules that are
+ unsigned.   Any module for which the kernel has a key, but which proves to have
+-- 
+2.0.4
 
