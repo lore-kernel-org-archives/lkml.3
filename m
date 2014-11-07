@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaKGK3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 05:29:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34417 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaKGK3F (ORCPT
+	id S1751565AbaKGK3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 05:29:36 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48094 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaKGK3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 05:29:05 -0500
-Date: Fri, 7 Nov 2014 11:28:55 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Subbaraman Narayanamurthy <subbaram@codeaurora.org>, daniel@numascale.com,
-        yuyang.du@intel.com, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH]: kthread: Fix memory ordering in __kthread_parkme
-Message-ID: <20141107102855.GA29390@twins.programming.kicks-ass.net>
-References: <20141106150150.GT10501@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.11.1411071037440.3789@nanos>
+	Fri, 7 Nov 2014 05:29:32 -0500
+Date: Fri, 7 Nov 2014 10:27:52 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sameo@linux.intel.com,
+        lee.jones@linaro.org, lgirdwood@gmail.com, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        jonghwa3.lee@samsung.com, geunsik.lim@samsung.com,
+        inki.dae@samsung.com, sw0312.kim@samsung.com
+Message-ID: <20141107102752.GC8509@sirena.org.uk>
+References: <1415328727-16245-1-git-send-email-beomho.seo@samsung.com>
+ <1415328727-16245-3-git-send-email-beomho.seo@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wrbmJCjDMpeEYJph"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411071037440.3789@nanos>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1415328727-16245-3-git-send-email-beomho.seo@samsung.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.165.192
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] regulator: rt5033: Add RT5033 Regulator device driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 10:39:48AM +0100, Thomas Gleixner wrote:
-> > 2) the usage of __set_current_state(TASK_PARKED) in __kthread_parkme()
-> >    is wrong AFAICT, one should always use set_current_state() for
-> >    setting !TASK_RUNNING state. The comment with set_current_state()
-> >    explains why.
-> > 
-> >    This would've allowed the test_bit(KTHREAD_SHOULD_PARK) load to have
-> >    been satisfied before the store of TASK_PARKED.
-> 
-> My bad. Can you send a proper patch addressing that issue please? That
-> should be tagged stable as well I guess.
 
-Sure thing, something like so then?
+--wrbmJCjDMpeEYJph
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
-Subject: kthread: Fix memory ordering in __kthread_parkme
+On Fri, Nov 07, 2014 at 11:52:04AM +0900, Beomho Seo wrote:
 
-One should always use set_current_state() to set !TASK_RUNNING states.
+> +static int rt5033_regulator_dt_parse_data(struct device *dev)
+> +{
+> +	int ret;
+> +	struct device_node *np;
+> +
+> +	np = of_get_child_by_name(dev->parent->of_node, "regulators");
+> +	if  (!np) {
+> +		dev_err(dev, "Failed to get child node for regulators\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = of_regulator_match(dev, np, rt5033_regulator_matches,
+> +					ARRAY_SIZE(rt5033_regulator_matches));
+> +	if (ret < 0)
+> +		return ret;
 
-	set_current_state(TASK_*);		cond = true;
-	/* mb */				/* wmb */
-	if (!cond)				wake_up_state(, TASK_*);
-		schedule();
+Please convert this to use regulators_node in the descriptor to match
+the regulators, then you don't need any specific code.
 
-By not having the mb we allow for the cond load to be satisfied before
-the state store, this can result in:
+--wrbmJCjDMpeEYJph
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	if (!cond)
-						cond = true;
-						wake_up_state(, TASK_*);
-	__set_current_state(TASK_*);
-		schedule();
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Which would block 'forever', since the cond is still false and the
-wakeup would not have seen the !TASK_RUNNING state.
+iQEcBAEBAgAGBQJUXJ6oAAoJECTWi3JdVIfQUkoH/ifR7qwAjlZHw8+a1r4K0rQF
+100JcX1rnNiWYQx5zXGCcFPkFz2YRKhSgE4Qxis50AjeZD3kAyylg4W7u6C3IQqs
+aoXGfeRk/G8KhuFVwrvN36LOcLiF3vPj1iAgMYVZCoDSnX586eW8570zrTXv55xu
+eBkLj8esRI/2Zc565QDdpNVTa91JpB960jXsvKk2M2uBy+aLsWGWnEqOQEbMd3zI
+FmaxjkI16TD91xB8ExH4PFDGjeYTo3/Rvsc53S/NanoMot2D1rlUZTSeqiAbP3DC
+tA2oLNjfqbJ4RM29dgUzwIRe3j03hKYMsKnUzNODt1MoHj3QQ3/gf5HZ3L0PK6c=
+=GEe3
+-----END PGP SIGNATURE-----
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
----
- kernel/kthread.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 10e489c448fe..9787244d43ec 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -156,12 +156,12 @@ void *probe_kthread_data(struct task_struct *task)
- 
- static void __kthread_parkme(struct kthread *self)
- {
--	__set_current_state(TASK_PARKED);
-+	set_current_state(TASK_PARKED);
- 	while (test_bit(KTHREAD_SHOULD_PARK, &self->flags)) {
- 		if (!test_and_set_bit(KTHREAD_IS_PARKED, &self->flags))
- 			complete(&self->parked);
- 		schedule();
--		__set_current_state(TASK_PARKED);
-+		set_current_state(TASK_PARKED);
- 	}
- 	clear_bit(KTHREAD_IS_PARKED, &self->flags);
- 	__set_current_state(TASK_RUNNING);
+--wrbmJCjDMpeEYJph--
