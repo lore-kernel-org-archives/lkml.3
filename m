@@ -1,119 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaKGI1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 03:27:32 -0500
-Received: from smtp.eu2.fugro.com ([46.34.88.152]:36197 "EHLO
-	smtp.eu2.fugro.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaKGI1a convert rfc822-to-8bit (ORCPT
+	id S1751568AbaKGI1x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 03:27:53 -0500
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:55297 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345AbaKGI1u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 03:27:30 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqsEAOaBXFQKCmUW/2dsb2JhbABbhDvTFwKBLwEBAQEBAXyEAgEBAQEDMAo/DAQCAQgNAQMEAQELBhcBBgEeAiUJCAEBBAESCIgkA8ggDYZZAQEBAQEBAQEBAQEBAQEBAQEBAQEBF45XggkxBwaDJ4EeBYY3i20DiVwBg0SDToJfQRKEToJrimprAYEFI4EiAQEB
-X-IPAS-Result: AqsEAOaBXFQKCmUW/2dsb2JhbABbhDvTFwKBLwEBAQEBAXyEAgEBAQEDMAo/DAQCAQgNAQMEAQELBhcBBgEeAiUJCAEBBAESCIgkA8ggDYZZAQEBAQEBAQEBAQEBAQEBAQEBAQEBF45XggkxBwaDJ4EeBYY3i20DiVwBg0SDToJfQRKEToJrimprAYEFI4EiAQEB
-X-IronPort-AV: E=Sophos;i="5.07,330,1413244800"; 
-   d="scan'208";a="20365331"
-X-IRP-Internal: 1
-X-IRP-FugroSender: 200661
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] asix: Do full reset during ax88772_bind
-Date: Fri, 7 Nov 2014 09:27:26 +0100
-Message-ID: <C89EFD3CD56F64468D3D206D683A8D22039FFEDE@ldam-msx2.fugro-nl.local>
-In-Reply-To: <1415288981-3862-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 7 Nov 2014 03:27:50 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Peter Feiner <pfeiner@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH -mm v7 13/13] mincore: apply page table walker on
+ do_mincore()
+Thread-Topic: [PATCH -mm v7 13/13] mincore: apply page table walker on
+ do_mincore()
+Thread-Index: AQHP+li91W5LhhxKZU+zFGNRZEie6A==
+Date: Fri, 7 Nov 2014 07:02:06 +0000
+Message-ID: <1415343692-6314-14-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] asix: Do full reset during ax88772_bind
-Thread-Index: Ac/52lqdaJd1R/E0TLem8bL+OsPgHgAij0xw
-References: <1415288981-3862-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-From: "Stam, Michel [FINT]" <M.Stam@fugro.nl>
-To: "Charles Keepax" <ckeepax@opensource.wolfsonmicro.com>,
-        <davem@davemloft.net>
-Cc: <jeffrey.t.kirsher@intel.com>, <emilgoode@gmail.com>,
-        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
+x-originating-ip: [10.128.101.22]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please add;
+This patch makes do_mincore() use walk_page_vma(), which reduces many lines
+of code by using common page table walk code.
 
-Tested-by: Michel Stam  <m.stam@fugro.nl>
-
-Kind regards,
-
-Michel Stam
-
------Original Message-----
-From: Charles Keepax [mailto:ckeepax@opensource.wolfsonmicro.com] 
-Sent: Thursday, November 06, 2014 16:50 PM
-To: davem@davemloft.net
-Cc: jeffrey.t.kirsher@intel.com; Stam, Michel [FINT];
-emilgoode@gmail.com; linux-usb@vger.kernel.org; netdev@vger.kernel.org;
-linux-kernel@vger.kernel.org
-Subject: [PATCH] asix: Do full reset during ax88772_bind
-
-commit 3cc81d85ee01 ("asix: Don't reset PHY on if_up for ASIX 88772")
-causes the ethernet on Arndale to no longer function. This appears to be
-because the Arndale ethernet requires a full reset before it will
-function correctly, however simply reverting the above patch causes
-problems with ethtool settings getting reset.
-
-It seems the problem is that the ethernet is not properly reset during
-bind, and indeed the code in ax88772_bind that resets the device is a
-very small subset of the actual ax88772_reset function. This patch uses
-ax88772_reset in place of the existing reset code in ax88772_bind which
-removes some code duplication and fixes the ethernet on Arndale.
-
-It is still possible that the original patch causes some issues with
-suspend and resume but that seems like a separate issue and I haven't
-had a chance to test that yet.
-
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Tested-by: Riku Voipio <riku.voipio@linaro.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
+ChangeLog v5:
+- fix buffer overflow
 
-Hi,
+ChangeLog v4:
+- remove redundant vma
 
-I wasn't 100% sure which branch to base this off so I based it on Dave
-Miller's net-next branch, which seemed logical.
+ChangeLog v3:
+- add NULL vma check in mincore_unmapped_range()
+- don't use pte_entry()
 
-Thanks,
-Charles
+ChangeLog v2:
+- change type of args of callbacks to void *
+- move definition of mincore_walk to the start of the function to fix compiler
+  warning
+---
+ mm/huge_memory.c |  20 -------
+ mm/mincore.c     | 169 +++++++++++++++++++------------------------------------
+ 2 files changed, 59 insertions(+), 130 deletions(-)
 
- drivers/net/usb/asix_devices.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/net/usb/asix_devices.c
-b/drivers/net/usb/asix_devices.c index 2c05f6c..816d511 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -465,19 +465,7 @@ static int ax88772_bind(struct usbnet *dev, struct
-usb_interface *intf)
- 		return ret;
+diff --git mmotm-2014-11-05-16-01.orig/mm/huge_memory.c mmotm-2014-11-05-16-01/mm/huge_memory.c
+index ff1ecea8c0d7..a81a0b917068 100644
+--- mmotm-2014-11-05-16-01.orig/mm/huge_memory.c
++++ mmotm-2014-11-05-16-01/mm/huge_memory.c
+@@ -1422,26 +1422,6 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 	return ret;
+ }
+ 
+-int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, unsigned long end,
+-		unsigned char *vec)
+-{
+-	spinlock_t *ptl;
+-	int ret = 0;
+-
+-	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+-		/*
+-		 * All logical pages in the range are present
+-		 * if backed by a huge page.
+-		 */
+-		spin_unlock(ptl);
+-		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+-		ret = 1;
+-	}
+-
+-	return ret;
+-}
+-
+ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		  unsigned long old_addr,
+ 		  unsigned long new_addr, unsigned long old_end,
+diff --git mmotm-2014-11-05-16-01.orig/mm/mincore.c mmotm-2014-11-05-16-01/mm/mincore.c
+index 725c80961048..0e548fbce19e 100644
+--- mmotm-2014-11-05-16-01.orig/mm/mincore.c
++++ mmotm-2014-11-05-16-01/mm/mincore.c
+@@ -19,38 +19,26 @@
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ 
+-static void mincore_hugetlb_page_range(struct vm_area_struct *vma,
+-				unsigned long addr, unsigned long end,
+-				unsigned char *vec)
++static int mincore_hugetlb(pte_t *pte, unsigned long hmask, unsigned long addr,
++			unsigned long end, struct mm_walk *walk)
+ {
++	int err = 0;
+ #ifdef CONFIG_HUGETLB_PAGE
+-	struct hstate *h;
++	unsigned char present;
++	unsigned char *vec = walk->private;
+ 
+-	h = hstate_vma(vma);
+-	while (1) {
+-		unsigned char present;
+-		pte_t *ptep;
+-		/*
+-		 * Huge pages are always in RAM for now, but
+-		 * theoretically it needs to be checked.
+-		 */
+-		ptep = huge_pte_offset(current->mm,
+-				       addr & huge_page_mask(h));
+-		present = ptep && !huge_pte_none(huge_ptep_get(ptep));
+-		while (1) {
+-			*vec = present;
+-			vec++;
+-			addr += PAGE_SIZE;
+-			if (addr == end)
+-				return;
+-			/* check hugepage border */
+-			if (!(addr & ~huge_page_mask(h)))
+-				break;
+-		}
+-	}
++	/*
++	 * Hugepages under user process are always in RAM and never
++	 * swapped out, but theoretically it needs to be checked.
++	 */
++	present = pte && !huge_pte_none(huge_ptep_get(pte));
++	for (; addr != end; vec++, addr += PAGE_SIZE)
++		*vec = present;
++	walk->private = vec;
+ #else
+ 	BUG();
+ #endif
++	return err;
+ }
+ 
+ /*
+@@ -94,14 +82,15 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
+ 	return present;
+ }
+ 
+-static void mincore_unmapped_range(struct vm_area_struct *vma,
+-				unsigned long addr, unsigned long end,
+-				unsigned char *vec)
++static int mincore_unmapped_range(unsigned long addr, unsigned long end,
++				   struct mm_walk *walk)
+ {
++	struct vm_area_struct *vma = walk->vma;
++	unsigned char *vec = walk->private;
+ 	unsigned long nr = (end - addr) >> PAGE_SHIFT;
+ 	int i;
+ 
+-	if (vma->vm_file) {
++	if (vma && vma->vm_file) {
+ 		pgoff_t pgoff;
+ 
+ 		pgoff = linear_page_index(vma, addr);
+@@ -111,25 +100,40 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
+ 		for (i = 0; i < nr; i++)
+ 			vec[i] = 0;
  	}
++	walk->private += nr;
++	return 0;
+ }
  
--	ret = asix_sw_reset(dev, AX_SWRESET_IPPD | AX_SWRESET_PRL);
--	if (ret < 0)
--		return ret;
--
--	msleep(150);
--
--	ret = asix_sw_reset(dev, AX_SWRESET_CLEAR);
--	if (ret < 0)
--		return ret;
--
--	msleep(150);
--
--	ret = asix_sw_reset(dev, embd_phy ? AX_SWRESET_IPRL :
-AX_SWRESET_PRTE);
-+	ax88772_reset(dev);
+-static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
++static int mincore_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
++			struct mm_walk *walk)
+ {
+-	unsigned long next;
+ 	spinlock_t *ptl;
++	struct vm_area_struct *vma = walk->vma;
+ 	pte_t *ptep;
  
- 	/* Read PHYID register *AFTER* the PHY was reset properly */
- 	phyid = asix_get_phyid(dev);
---
-1.7.2.5
-
+-	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	do {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
++		memset(walk->private, 1, (end - addr) >> PAGE_SHIFT);
++		walk->private += (end - addr) >> PAGE_SHIFT;
++		spin_unlock(ptl);
++		return 0;
++	}
++
++	if (pmd_trans_unstable(pmd)) {
++		mincore_unmapped_range(addr, end, walk);
++		return 0;
++	}
++
++	ptep = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
++	for (; addr != end; ptep++, addr += PAGE_SIZE) {
+ 		pte_t pte = *ptep;
+ 		pgoff_t pgoff;
++		unsigned char *vec = walk->private;
+ 
+-		next = addr + PAGE_SIZE;
+-		if (pte_none(pte))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else if (pte_present(pte))
++		if (pte_none(pte)) {
++			mincore_unmapped_range(addr, addr + PAGE_SIZE, walk);
++			continue;
++		}
++		if (pte_present(pte))
+ 			*vec = 1;
+ 		else if (pte_file(pte)) {
+ 			pgoff = pte_to_pgoff(pte);
+@@ -151,70 +155,11 @@ static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ #endif
+ 			}
+ 		}
+-		vec++;
+-	} while (ptep++, addr = next, addr != end);
++		walk->private++;
++	}
+ 	pte_unmap_unlock(ptep - 1, ptl);
+-}
+-
+-static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
+-{
+-	unsigned long next;
+-	pmd_t *pmd;
+-
+-	pmd = pmd_offset(pud, addr);
+-	do {
+-		next = pmd_addr_end(addr, end);
+-		if (pmd_trans_huge(*pmd)) {
+-			if (mincore_huge_pmd(vma, pmd, addr, next, vec)) {
+-				vec += (next - addr) >> PAGE_SHIFT;
+-				continue;
+-			}
+-			/* fall through */
+-		}
+-		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else
+-			mincore_pte_range(vma, pmd, addr, next, vec);
+-		vec += (next - addr) >> PAGE_SHIFT;
+-	} while (pmd++, addr = next, addr != end);
+-}
+-
+-static void mincore_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
+-{
+-	unsigned long next;
+-	pud_t *pud;
+-
+-	pud = pud_offset(pgd, addr);
+-	do {
+-		next = pud_addr_end(addr, end);
+-		if (pud_none_or_clear_bad(pud))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else
+-			mincore_pmd_range(vma, pud, addr, next, vec);
+-		vec += (next - addr) >> PAGE_SHIFT;
+-	} while (pud++, addr = next, addr != end);
+-}
+-
+-static void mincore_page_range(struct vm_area_struct *vma,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
+-{
+-	unsigned long next;
+-	pgd_t *pgd;
+-
+-	pgd = pgd_offset(vma->vm_mm, addr);
+-	do {
+-		next = pgd_addr_end(addr, end);
+-		if (pgd_none_or_clear_bad(pgd))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else
+-			mincore_pud_range(vma, pgd, addr, next, vec);
+-		vec += (next - addr) >> PAGE_SHIFT;
+-	} while (pgd++, addr = next, addr != end);
++	cond_resched();
++	return 0;
+ }
+ 
+ /*
+@@ -226,18 +171,22 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned long end;
++	int err;
++	struct mm_walk mincore_walk = {
++		.pmd_entry = mincore_pte_range,
++		.pte_hole = mincore_unmapped_range,
++		.hugetlb_entry = mincore_hugetlb,
++		.private = vec,
++	};
+ 
+ 	vma = find_vma(current->mm, addr);
+ 	if (!vma || addr < vma->vm_start)
+ 		return -ENOMEM;
+-
++	mincore_walk.mm = vma->vm_mm;
+ 	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+-
+-	if (is_vm_hugetlb_page(vma))
+-		mincore_hugetlb_page_range(vma, addr, end, vec);
+-	else
+-		mincore_page_range(vma, addr, end, vec);
+-
++	err = walk_page_range(addr, end, &mincore_walk);
++	if (err < 0)
++		return err;
+ 	return (end - addr) >> PAGE_SHIFT;
+ }
+ 
+-- 
+2.2.0.rc0.2.gf745acb
