@@ -1,205 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624AbaKHJr2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 04:47:28 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:58746 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486AbaKHJrY (ORCPT
+	id S1753568AbaKHKRA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 05:17:00 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:32014 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397AbaKHKQ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 04:47:24 -0500
-Subject: [PATCH] ACPI/osl: speedup grace period in acpi_os_map_cleanup
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Cc: Tom Boshoven <tomboshoven@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, x86@kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Alexander Monakov <amonakov@gmail.com>
-Date: Sat, 08 Nov 2014 12:47:17 +0400
-Message-ID: <20141108094717.9388.34638.stgit@zurg>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Sat, 8 Nov 2014 05:16:57 -0500
+X-AuditID: cbfee68d-f79296d000004278-1d-545ded967a12
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>, "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'BartlomiejZolnierkiewicz'" <b.zolnierkie@samsung.com>
+References: <1415360662-30390-1-git-send-email-k.kozlowski@samsung.com>
+ <545CB220.9030007@samsung.com> <1415361564.31102.2.camel@AMDC1943>
+In-reply-to: <1415361564.31102.2.camel@AMDC1943>
+Subject: RE: [PATCH] ARM: dts: Fix booting on Rinato market device
+Date: Sat, 08 Nov 2014 19:16:54 +0900
+Message-id: <004701cffb3d$1edef9e0$5c9ceda0$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFseshRFCu65dPQTNbGeTE91r9GzgInje8CAdInaKac/bar0A==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+Zvu60t7EhBtOmmFtsnLGe1WLSugNM
+	Fte/PGe1mH/kHKtF/5uFrBbnXq1ktHj9wtDibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWiy9
+	fpHJYsL0tSwWrXuPsDvwe6yZt4bRo6W5h83jcl8vk8ffVS+YPVYu/8LmsWlVJ5vH5iX1Hn1b
+	VjF6fN4kF8AZxWWTkpqTWZZapG+XwJVxp7WdpeCYcMWzS94NjGf4uxg5OSQETCRePH/ADGGL
+	SVy4t56ti5GLQ0hgGaPE8i0NzDBFOxsWQCWmM0q86LzHAuH8ZZS49/IykMPBwSagLNHYpA/S
+	ICygJbFwSxNYWEQgVmLCCxuQcmaBNhaJs58boQb1MEpc2NDDAtLAKWAgsaZhBztEs5PE3Rtr
+	wTazCKhKvH4xFayGV8BCYur066wQtqDEj8n3wOLMAuoSk+YtYoawtSWevLvACnG1gsSOs68Z
+	QWwRoJnzZuyCqhGR2PfiHSNEzREOib6uZIhdAhLfJh8CO1pCQFZi0wGo5yUlDq64wTKBUXIW
+	ks2zkGyehWTzLCQbFjCyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQISSO9OxhvH7A+xCjA
+	wajEw3ujJTZEiDWxrLgy9xCjKdBFE5mlRJPzgckqryTe0NjMyMLUxNTYyNzSTEmcV1HqZ7CQ
+	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGRtEJef0mEwOy1K9ULjy25On1ry8kHtj7fNpd+TP5
+	Y+u9zfNmXtL//ejD0urTbxivpPWrusWevshvuDhx6bT5CW+c3xY5N/1Z/TfmGMuTpc87696z
+	MT8yXy977vgH04f8utumb+t75l897//G47s/Jm2J/NW8qTL568W52x2633KHC4gvXWT84shr
+	JZbijERDLeai4kQAB+ZCUR4DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGKsWRmVeSWpSXmKPExsVy+t9jQd1pb2NDDH4dMLTYOGM9q8WkdQeY
+	LK5/ec5qMf/IOVaL/jcLWS3OvVrJaPH6haHF2aY37BabHl9jtbi8aw6bxYzz+5gsbl/mtVh6
+	/SKTxYTpa1ksWvceYXfg91gzbw2jR0tzD5vH5b5eJo+/q14we6xc/oXNY9OqTjaPzUvqPfq2
+	rGL0+LxJLoAzqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUn
+	QNctMwfoASWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxp3WdpaCY8IV
+	zy55NzCe4e9i5OSQEDCR2NmwgA3CFpO4cG89kM3FISQwnVHiRec9FgjnL6PEvZeXgRwODjYB
+	ZYnGJn2QBmEBLYmFW5rAwiICsRITXtiAlDMLtLFInP3cCDWoh1HiwoYeFpAGTgEDiTUNO9gh
+	mp0k7t5YywxiswioSrx+MRWshlfAQmLq9OusELagxI/J98DizALqEpPmLWKGsLUlnry7wApx
+	tYLEjrOvGUFsEaCZ82bsgqoRkdj34h3jBEbhWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSe
+	a6RXnJhbXJqXrpecn7uJEZymnknvYFzVYHGIUYCDUYmH90ZLbIgQa2JZcWXuIUYJDmYlEd7e
+	80Ah3pTEyqrUovz4otKc1OJDjKZAn05klhJNzgem0LySeENjEzMjSyMzCyMTc3Mlcd6DrdaB
+	QgLpiSWp2ampBalFMH1MHJxSDYzbvpy4vM7nRrESX+XD1Z4MFz8ePDLFxDRrnc+TcqPHXyIW
+	/3kiffA2f/e3HimZ56lvORhWytV8f+V+Kcn+tbDw1SJVfZG5HybahquJXdvuvn1zdrr0VoNN
+	MqlS+RPPm2kvCTTWmain3TORY+e3qLvb76X+YdkS8Mc5xVQ1v0xislyH1xoTdT0lluKMREMt
+	5qLiRABIqPThaQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI maintains cache of ioremap regions to speed up operations and
-access to them from irq context where ioremap() calls aren't allowed.
-This code abuses synchronize_rcu() on unmap path for synchronization
-with fast-path in acpi_os_read/write_memory which uses this cache.
+Krzysztof Kozlowski wrote:
+> 
+> On pią, 2014-11-07 at 20:50 +0900, Chanwoo Choi wrote:
+> > Hi Krzysztof,
+> >
+> > On 11/07/2014 08:44 PM, Krzysztof Kozlowski wrote:
+> > > The bootloader on market Rinato (Gear 2) device checks for revision in
+> > > compatible field of DTB. If it is not present or lower than required
+> > > then booting fails with: "Could not do normal boot. (no DTB found)".
+> > >
+> > > Log of bootloader in case of failure:
+> > > h/w: revision  = 0x06
+> > > h/w: schematic = SM-R380_Rev0.5_Final_0205
+> > > date = 2000/01/01 12:00:21 (UTC)
+> > > cmu_div:4, div:5, src_clk:800000000, pixel_clk:31860720
+> > > load_kernel: loading boot image from 57344.. (BOOT)
+> > > load_kernel: found zImage, size: 0x3267e8
+> > > 0xbc Error!
+> > > Verify_Binary_Signature: failed.
+> > > pit_check_signature (BOOT) invalid.
+> > > load_kernel: found custom kernel (ret:-2147483647)
+> > >  No need to update kernel type.
+> > > Detected board: samsung,rinato-rev06
+> > > Could not do normal boot. (no DTB found)
+> > > : Entering usb mode for SM-R380_EUR_XX (65535)..
+> > >
+> > > Add a "rev06" suffix to compatible to satisfy the bootloader.
+> > >
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > ---
+> > >  arch/arm/boot/dts/exynos3250-rinato.dts | 3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
+> > > index 84380fa13e37..f72ba0a1d915 100644
+> > > --- a/arch/arm/boot/dts/exynos3250-rinato.dts
+> > > +++ b/arch/arm/boot/dts/exynos3250-rinato.dts
+> > > @@ -18,7 +18,8 @@
+> > >
+> > >  / {
+> > >  	model = "Samsung Rinato board";
+> > > -	compatible = "samsung,rinato", "samsung,exynos3250", "samsung,exynos3";
+> > > +	compatible = "samsung,rinato", "samsung,rinato-rev06",
+> > > +			"samsung,exynos3250", "samsung,exynos3";
+> >
+> > I think it is wrong. The released bootloader from Samsung is not u-boot.
+> > Instead, you have to update u-boot to support Exynos3250-basd Rinato board.
+> 
+> The bootloader on device also was not a u-boot. So the fix is for native
+> bootloader delivered on device.
+> 
+> I do not insist that this is proper fix. It was just needed to boot the
+> device with custom kernel.
+> 
+> Anyway, thanks for comments!
+> 
+Hi Krzysztof and Chanwoo,
 
-Since v3.10 CPUs are allowed to enter idle state even if they have RCU
-callbacks queued, see commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
-("rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks").
-That change caused problems with nvidia proprietary driver which calls
-acpi_os_map/unmap_generic_address several times during initialization.
-Each unmap calls synchronize_rcu and adds significant delay. Totally
-initialization is slowed for a couple of seconds and that is enough to
-trigger timeout in hardware, gpu decides to "fell off the bus". Widely
-spread workaround is reducing "rcu_idle_gp_delay" from 4 to 1 jiffy.
+So, we don’t need this to fix the problem Krzysztof said? OK.
 
-This patch replaces synchronize_rcu with per-acpi_ioremap atomic counter
-of side users and wait-queue which signals when counter falls to zero.
-List of struct acpi_ioremap is still protected by RCU but they're freed
-asynchronously using kfree_rcu.
-
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Reported-and-tested-by: Alexander Monakov <amonakov@gmail.com>
-Tested-by: Tom Boshoven <tomboshoven@gmail.com>
-Link: https://devtalk.nvidia.com/default/topic/567297/linux/linux-3-10-driver-crash/
----
- drivers/acpi/osl.c |   71 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 36 insertions(+), 35 deletions(-)
-
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 9964f70..222252a 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -94,10 +94,13 @@ struct acpi_ioremap {
- 	acpi_physical_address phys;
- 	acpi_size size;
- 	unsigned long refcount;
-+	atomic_t active;
-+	struct rcu_head rcu_head;
- };
- 
- static LIST_HEAD(acpi_ioremaps);
- static DEFINE_MUTEX(acpi_ioremap_lock);
-+static DECLARE_WAIT_QUEUE_HEAD(acpi_ioremap_wq);
- 
- static void __init acpi_osi_setup_late(void);
- 
-@@ -293,17 +296,31 @@ acpi_map_lookup(acpi_physical_address phys, acpi_size size)
- 	return NULL;
- }
- 
--/* Must be called with 'acpi_ioremap_lock' or RCU read lock held. */
--static void __iomem *
--acpi_map_vaddr_lookup(acpi_physical_address phys, unsigned int size)
-+static void __iomem *acpi_get_ioremap(acpi_physical_address phys,
-+				acpi_size size, struct acpi_ioremap **pmap)
- {
- 	struct acpi_ioremap *map;
- 
-+	rcu_read_lock();
- 	map = acpi_map_lookup(phys, size);
--	if (map)
-+	if (map && atomic_inc_not_zero(&map->active)) {
-+		rcu_read_unlock();
-+		*pmap = map;
- 		return map->virt + (phys - map->phys);
-+	}
-+	rcu_read_unlock();
- 
--	return NULL;
-+	*pmap = NULL;
-+	return acpi_os_ioremap(phys, size);
-+}
-+
-+static void acpi_put_ioremap(void __iomem *virt, struct acpi_ioremap *map)
-+{
-+	if (map) {
-+		if (atomic_dec_and_test(&map->active))
-+			wake_up_all(&acpi_ioremap_wq);
-+	} else
-+		iounmap(virt);
- }
- 
- void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size)
-@@ -411,6 +428,7 @@ acpi_os_map_iomem(acpi_physical_address phys, acpi_size size)
- 	map->phys = pg_off;
- 	map->size = pg_sz;
- 	map->refcount = 1;
-+	atomic_set(&map->active, 1);
- 
- 	list_add_tail_rcu(&map->list, &acpi_ioremaps);
- 
-@@ -436,9 +454,10 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
- static void acpi_os_map_cleanup(struct acpi_ioremap *map)
- {
- 	if (!map->refcount) {
--		synchronize_rcu();
-+		atomic_dec(&map->active);
-+		wait_event(acpi_ioremap_wq, !atomic_read(&map->active));
- 		acpi_unmap(map->phys, map->virt);
--		kfree(map);
-+		kfree_rcu(map, rcu_head);
- 	}
- }
- 
-@@ -947,20 +966,14 @@ static inline u64 read64(const volatile void __iomem *addr)
- acpi_status
- acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
- {
-+	struct acpi_ioremap *map;
- 	void __iomem *virt_addr;
- 	unsigned int size = width / 8;
--	bool unmap = false;
- 	u64 dummy;
- 
--	rcu_read_lock();
--	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
--	if (!virt_addr) {
--		rcu_read_unlock();
--		virt_addr = acpi_os_ioremap(phys_addr, size);
--		if (!virt_addr)
--			return AE_BAD_ADDRESS;
--		unmap = true;
--	}
-+	virt_addr = acpi_get_ioremap(phys_addr, size, &map);
-+	if (!virt_addr)
-+		return AE_BAD_ADDRESS;
- 
- 	if (!value)
- 		value = &dummy;
-@@ -982,10 +995,7 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
- 		BUG();
- 	}
- 
--	if (unmap)
--		iounmap(virt_addr);
--	else
--		rcu_read_unlock();
-+	acpi_put_ioremap(virt_addr, map);
- 
- 	return AE_OK;
- }
-@@ -1006,19 +1016,13 @@ static inline void write64(u64 val, volatile void __iomem *addr)
- acpi_status
- acpi_os_write_memory(acpi_physical_address phys_addr, u64 value, u32 width)
- {
-+	struct acpi_ioremap *map;
- 	void __iomem *virt_addr;
- 	unsigned int size = width / 8;
--	bool unmap = false;
- 
--	rcu_read_lock();
--	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
--	if (!virt_addr) {
--		rcu_read_unlock();
--		virt_addr = acpi_os_ioremap(phys_addr, size);
--		if (!virt_addr)
--			return AE_BAD_ADDRESS;
--		unmap = true;
--	}
-+	virt_addr = acpi_get_ioremap(phys_addr, size, &map);
-+	if (!virt_addr)
-+		return AE_BAD_ADDRESS;
- 
- 	switch (width) {
- 	case 8:
-@@ -1037,10 +1041,7 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u64 value, u32 width)
- 		BUG();
- 	}
- 
--	if (unmap)
--		iounmap(virt_addr);
--	else
--		rcu_read_unlock();
-+	acpi_put_ioremap(virt_addr, map);
- 
- 	return AE_OK;
- }
+- Kukjin
 
