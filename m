@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaKHAWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:22:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60025 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764AbaKHAWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:22:37 -0500
-Date: Sat, 8 Nov 2014 11:22:27 +1100
-From: NeilBrown <neilb@suse.de>
-To: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>
-Subject: [PATCH] mfd: twl4030-power: Support compatible = "ti,twl4030-power"
- again.
-Message-ID: <20141108112227.256f93ce@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+	id S1753370AbaKHAXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:23:09 -0500
+Received: from mail-by2on0107.outbound.protection.outlook.com ([207.46.100.107]:43232
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752857AbaKHAXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 19:23:08 -0500
+Message-ID: <1415406169.3805.48.camel@snotra.buserror.net>
+Subject: Re: powerpc/8xx: Remove Kconfig symbol FADS
+From: Scott Wood <scottwood@freescale.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Vitaly Bordug <vitb@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Michael Ellerman" <mpe@ellerman.id.au>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Date: Fri, 7 Nov 2014 18:22:49 -0600
+In-Reply-To: <1415350123.4390.43.camel@x220>
+References: <1411545979.19525.5.camel@x220>
+	 <20141107035008.GA25204@home.buserror.net> <1415350123.4390.43.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/cq09/Z+29dLrLUzHxY=9//p"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:39d9:e257:9f3c:9dae]
+X-ClientProxiedBy: BLUPR08CA0054.namprd08.prod.outlook.com (10.141.200.34) To
+ BN1PR0301MB0723.namprd03.prod.outlook.com (25.160.78.142)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0723;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0389EDA07F
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(51704005)(377424004)(199003)(92726001)(20776003)(47776003)(23676002)(50466002)(46102003)(40100003)(50226001)(87976001)(86362001)(62966003)(64706001)(103116003)(106356001)(95666004)(97736003)(104166001)(77096003)(102836001)(76176999)(107046002)(110136001)(42186005)(120916001)(87286001)(101416001)(50986999)(33646002)(105586002)(122386002)(21056001)(89996001)(92566001)(31966008)(77156002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0723;H:[IPv6:2601:2:5800:3f7:39d9:e257:9f3c:9dae];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0689;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cq09/Z+29dLrLUzHxY=9//p
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-11-07 at 09:48 +0100, Paul Bolle wrote:
+> On Thu, 2014-11-06 at 21:50 -0600, Scott Wood wrote:
+> > On Wed, Sep 24, 2014 at 10:06:19AM +0200, Paul Bolle wrote: 
+> > > Another cleanup might be to remove MPC8XXFADS (or "FADS") from the "8xx
+> > > Machine Type" choice. Is there any reason left to pick "FADS" as a
+> > > machine type?
+> > 
+> > Nothing references MPC8XXFADS, so yes, it can be removed.
+> 
+> I'll try to look into this. For the (verbose) reasons below I'll do that
+> in a separate patch, if I ever get that far. What follows is mostly a
+> note to self.
+
+Yes, make it a separate patch -- I've already got this patch queued up.
+
+> MPC8XXFADS is indeed not referenced anywhere. But it's one of the
+> entries in the "8xx Machine Type" choice. And it's common for choice
+> blocks the have a "none of the above" entry. Ie, an entry that allows to
+> configure nothing. There's a chance MPC8XXFADS is currently used for
+> that role. (This is easier to determine for people that - unlike me -
+> know what all the symbols in this choice mean. To me they 're basically
+> random strings.)
+
+It's not a "none of the above" option.  It's a board type that was
+supported in arch/ppc, and only some remnants made it over to
+arch/powerpc.  If you don't pick a machine type that results in a
+define_machine() struct (with a probe function that matches the device
+tree), the kernel will not boot.
+
+-Scott
 
 
-commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
-    mfd: twl4030-power: Add generic reset configuration
-
-claims:
-    Let's add device tree support and configure things for warm reset
-    as the default when compatible =3D "ti,twl4030-power".
-and
-    Documentation/devicetree/bindings/mfd/twl4030-power.txt
-claims that "ti,twl4030-power" is still a valid "compatible" setting.
-
-However the current driver fails to probe with that 'compatible'
-setting.
-Restore the old default.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-index 4d3ff3771491..1a7794f6be15 100644
---- a/drivers/mfd/twl4030-power.c
-+++ b/drivers/mfd/twl4030-power.c
-@@ -776,6 +776,10 @@ static struct twl4030_power_data osc_off_idle =3D {
-=20
- static struct of_device_id twl4030_power_of_match[] =3D {
- 	{
-+		.compatible =3D "ti,twl4030-power",
-+		.data =3D NULL,
-+	},
-+	{
- 		.compatible =3D "ti,twl4030-power-reset",
- 		.data =3D &omap3_reset,
- 	},
-
---Sig_/cq09/Z+29dLrLUzHxY=9//p
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVF1iQznsnt1WYoG5AQJe6w//T2X8r6OoiUx10lZB7NOECJCoRU3tdgIV
-5BWHSe8pfsnDb5EXBKFG+UMPSOmKC7QkmT2bY5s4mOqV+E7kHGOWnLOuMbDQ4TnS
-V1qhw45dojq4un+AYL2JD5FEFWWXdvWtKlQAI9hfKEDZhJ/b/FxW2+RBQ7PokPda
-GPJV8tj4NzOwjhsgKKGwn25K1JZzbGzvhARXZDbBvublPY4u8fnSA413OMgyHZki
-0ed8FOCoiNDDWdKbSpRXF4b1kBATjsd58WAyvAI0uRlFT/yK4ktzgOUkucjqohy3
-Nw7g4bx/ZV0XlDeFi0o9Ckz52IkgjOs8t0g+K/YRCmEKYPOhdVbJwYOxa22agYUV
-05Obe3msp2Z5QlTYfZh7uXR88tNkdpdzV2Je4fvobwR1V7bFdACLdgu8gDzvjIf9
-yT0NoGrJpABXrDgQFAXeYZHJvMUvK4k582/G7Ty637XeG6GpI/pMSLQ3TigF7dSY
-4EF5Ex3AvE/i+AMl30A/INqp1oqS1LLRNrN0183puYuh0p/MiAvYEIjZu6VgMBJl
-WeHWmupIZX7VwH+cwTdtWfPBrSaajSVW1lfSWrSVEZ8H2Cqd4Sv/VGxOL1pL2qRL
-/kWuMlZRzpCRyqQUM0c1LdhyM1xgcd2usXvuNSiK1cC73pnPoImr9lZovMCn9xD1
-LIQHLFdx0p0=
-=TVOe
------END PGP SIGNATURE-----
-
---Sig_/cq09/Z+29dLrLUzHxY=9//p--
