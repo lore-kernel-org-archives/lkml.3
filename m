@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaKHMlK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 07:41:10 -0500
-Received: from 70.subnet118-97-84.static.astinet.telkom.net.id ([118.97.84.70]:41050
-	"EHLO mail.pelni.co.id" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654AbaKHMlI convert rfc822-to-8bit (ORCPT
+	id S1753728AbaKHNGB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 08:06:01 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:43285 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbaKHNF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 07:41:08 -0500
-X-Greylist: delayed 722 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Nov 2014 07:41:07 EST
-Date: Sat, 8 Nov 2014 19:28:57 +0700 (WIT)
-From: DIAMOND SWISS LOAN COMPANY <junarto@pelni.co.id>
-Reply-To: "diamondswissloans51@gmail.com" <diamondswissloans51@gmail.com>
-Message-ID: <398378470.818454.1415449737905.JavaMail.root@pelni.co.id>
-Subject: Darlehen anbieten
+	Sat, 8 Nov 2014 08:05:59 -0500
+Date: Sat, 8 Nov 2014 13:05:56 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: Re: [PATCH v2 3/3] efi: Capsule update with user helper interface
+Message-ID: <20141108130556.GM3592@console-pimps.org>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-4-git-send-email-hock.leong.kweh@intel.com>
+ <20141104043247.GA23418@kroah.com>
+ <CALCETrXjJju+cMWJfB6W5kSD=Ox5y+Hj_AfmbbbOTOh8CV8eaQ@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80EAE4@PGSMSX102.gar.corp.intel.com>
+ <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
+ <1415110688.26277.36.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CALCETrW1UaOCcb-32SOUhi_Zh5vLzV+VwyffThVvso23z04SHA@mail.gmail.com>
+ <20141104154017.GA28113@kroah.com>
+ <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.220.69.184]
-X-Mailer: Zimbra 7.2.6_GA_2926 (zclient/7.2.6_GA_2926)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag,
+On Tue, 04 Nov, at 08:35:40AM, Andy Lutomirski wrote:
+> 
+> Am I missing something here?  The current proposal is missing the
+> success/failure part, unless you count the loaded count (in a
+> different sysfs directory) as a useful interface for that.
+ 
+As Wilson pointed out, you only get the ability to make meaningful
+success/failure declarations once you've performed the reboot.
 
- Wir sind Diamant Swiss Darlehen Unternehmen geben Kredite per Post Anzeige. Wir bieten verschiedene Arten von Darlehen (kurz- und langfristige Darlehen, persönliche Darlehen, Kredite an Unternehmen etc.) um 3% Zins. Wir geben Darlehen an Menschen in Not nicht unabhängig von ihrem Standort, Geschlecht, Familienstand, Bildung, Job-Status, sondern muss eine rechtliche Mittel der Rückzahlung haben. Unsere Kredite liegen zwischen 5.000,00 bis 10.000.000,00 US-Dollar oder Euro oder Pfund mit einer Laufzeit von maximal 20 Jahren. Wenn Sie an weiteren Informationen interessiert sind, füllen Sie bitte das folgende Formular aus und schicken Sie es an unsere E-Mail-Adresse: diamondswissloans51@gmail.com
+I know of no firmware that will hot-patch itself when you call
+UpdateCapsule(). A reboot is always required. Certainly that's the way
+Windows will work from what I've read, which means that for x86 it's
+pretty much set in stone.
 
- Bitte ausfüllen:
+Which means there's only so much info you can return to userspace once
+you've handed the blob to the firmware. I don't see a huge problem with
+printing things in kernel buffer, since that's how other
+firmware-related things work today.
 
- Name:
-
- Adresse:
-
- Alter:
-
- Geschlecht:
-
- Kontakt-Telefon:
-
- Beruf:
-
- Monatliches Einkommen:
-
- Die erforderliche Höhe des Darlehens:
-
- Laufzeit des Darlehens:
-
- Der Zweck des Darlehens:
-
- Land:
-
- PLZ:
-
-
- "Wir zeigen Ihnen einen besseren Weg, um Ihre finanzielle Freiheit"
-
- Mit freundlichen Grüßen,
- Mr. Diamond Peters (Geschäftsführer).
- Mr. Bill Anthony (Marketing Manager).
+-- 
+Matt Fleming, Intel Open Source Technology Center
