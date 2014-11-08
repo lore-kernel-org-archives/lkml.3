@@ -1,63 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaKHBd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 20:33:29 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:41788 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaKHBd2 (ORCPT
+	id S1753485AbaKHBgy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 20:36:54 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62625 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752442AbaKHBgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 20:33:28 -0500
-Date: Fri, 7 Nov 2014 20:32:14 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] scripts/package: binrpm-pkg do not build source tar file
-Message-ID: <20141108013208.GA5977@gmail.com>
-References: <1414782331-7987-1-git-send-email-j.glisse@gmail.com>
+	Fri, 7 Nov 2014 20:36:53 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, robert.schoene@tu-dresden.de,
+        sboyd@codeaurora.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 3/5] cpufreq, dbs_data->usage count must be atomic
+Date: Sat, 08 Nov 2014 02:57:41 +0100
+Message-ID: <11902650.Ha3YdDNSQe@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1415199239-19019-4-git-send-email-prarit@redhat.com>
+References: <1415199239-19019-1-git-send-email-prarit@redhat.com> <1415199239-19019-4-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414782331-7987-1-git-send-email-j.glisse@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 31, 2014 at 03:05:31PM -0400, j.glisse@gmail.com wrote:
-> From: Jérôme Glisse <jglisse@redhat.com>
-> 
-> When doing make binrpm-pkg we do not want to build the source tar
-> file. This patch avoid doing the gigantic tar file.
-> 
-> Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
-> Cc: linux-kbuild@vger.kernel.org
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+On Wednesday, November 05, 2014 09:53:57 AM Prarit Bhargava wrote:
+> The usage_count value can be modified from several cpus concurrently if
+> !CPUFREQ_HAVE_GOVERNOR_PER_POLICY.  This leads to a variety of panics in
+> which the usage_count is negative or exceeds the number of cpus in the
+> system.  It must be switched to atomic_t and protected with a mutex to make sure
+> that future read/writes obtain the correct data.
 
-Anyone ? Bueller ?
+Why do you need to use a new mutex and atomic_t at the same time?  Most likely
+one of them is redundant.
 
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: linux-pm@vger.kernel.org
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 > ---
->  scripts/package/mkspec | 2 ++
->  1 file changed, 2 insertions(+)
+>  drivers/cpufreq/cpufreq_governor.c |   16 ++++++++++++----
+>  drivers/cpufreq/cpufreq_governor.h |    3 ++-
+>  2 files changed, 14 insertions(+), 5 deletions(-)
 > 
-> diff --git a/scripts/package/mkspec b/scripts/package/mkspec
-> index 1395760..b6f5e31 100755
-> --- a/scripts/package/mkspec
-> +++ b/scripts/package/mkspec
-> @@ -119,8 +119,10 @@ echo "%endif"
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 1b44496..32ad9db 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -265,7 +265,9 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  		if (have_governor_per_policy()) {
+>  			WARN_ON(dbs_data);
+>  		} else if (dbs_data) {
+> -			dbs_data->usage_count++;
+> +			mutex_lock(&dbs_data->usage_count_mutex);
+> +			atomic_inc(&dbs_data->usage_count);
+> +			mutex_unlock(&dbs_data->usage_count_mutex);
+>  			policy->governor_data = dbs_data;
+>  			return 0;
+>  		}
+> @@ -277,7 +279,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  		}
 >  
->  echo 'rm -f $RPM_BUILD_ROOT'"/lib/modules/$KERNELRELEASE/{build,source}"
->  echo "mkdir -p "'$RPM_BUILD_ROOT'"/usr/src/kernels/$KERNELRELEASE"
-> +if ! $PREBUILT; then
->  echo "EXCLUDES=\"$RCS_TAR_IGNORE --exclude .tmp_versions --exclude=*vmlinux* --exclude=*.o --exclude=*.ko --exclude=*.cmd --exclude=Documentation --exclude=firmware --exclude .config.old --exclude .missing-syscalls.d\""
->  echo "tar "'$EXCLUDES'" -cf- . | (cd "'$RPM_BUILD_ROOT'"/usr/src/kernels/$KERNELRELEASE;tar xvf -)"
-> +fi
->  echo 'cd $RPM_BUILD_ROOT'"/lib/modules/$KERNELRELEASE"
->  echo "ln -sf /usr/src/kernels/$KERNELRELEASE build"
->  echo "ln -sf /usr/src/kernels/$KERNELRELEASE source"
-> -- 
-> 1.9.3
+>  		dbs_data->cdata = cdata;
+> -		dbs_data->usage_count = 1;
+> +		mutex_init(&dbs_data->usage_count_mutex);
+> +		mutex_lock(&dbs_data->usage_count_mutex);
+> +		atomic_set(&dbs_data->usage_count, 1);
+> +		mutex_unlock(&dbs_data->usage_count_mutex);
+
+The locking here isn't necessary (if it was, someone could be using an
+uninitialized mutex).
+
+>  		rc = cdata->init(dbs_data);
+>  		if (rc) {
+>  			pr_err("%s: POLICY_INIT: init() failed\n", __func__);
+> @@ -322,7 +327,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  
+>  		return 0;
+>  	case CPUFREQ_GOV_POLICY_EXIT:
+> -		if (!--dbs_data->usage_count) {
+> +		mutex_lock(&dbs_data->usage_count_mutex);
+> +		if (atomic_dec_and_test(&dbs_data->usage_count)) {
+>  			sysfs_remove_group(get_governor_parent_kobj(policy),
+>  					get_sysfs_attr(dbs_data));
+>  
+> @@ -338,9 +344,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  			}
+>  
+>  			cdata->exit(dbs_data);
+> +			mutex_unlock(&dbs_data->usage_count_mutex);
+>  			kfree(dbs_data);
+>  			cdata->gdbs_data = NULL;
+> -		}
+> +		} else
+> +			mutex_unlock(&dbs_data->usage_count_mutex);
+>  
+>  		policy->governor_data = NULL;
+>  		return 0;
+> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+> index cc401d1..53ca449 100644
+> --- a/drivers/cpufreq/cpufreq_governor.h
+> +++ b/drivers/cpufreq/cpufreq_governor.h
+> @@ -219,7 +219,8 @@ struct common_dbs_data {
+>  struct dbs_data {
+>  	struct common_dbs_data *cdata;
+>  	unsigned int min_sampling_rate;
+> -	int usage_count;
+> +	struct mutex usage_count_mutex;
+> +	atomic_t usage_count;
+>  	void *tuners;
+>  
+>  	/* dbs_mutex protects dbs_enable in governor start/stop */
 > 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
