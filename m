@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaKHSKe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:10:34 -0500
-Received: from mga14.intel.com ([192.55.52.115]:16091 "EHLO mga14.intel.com"
+	id S1753981AbaKHSLS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:11:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:35071 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861AbaKHSKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:10:32 -0500
+	id S1753861AbaKHSLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:11:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="413533014"
+   d="scan'208";a="413533144"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -16,120 +16,142 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch Part3 v3 00/38] Enable hierarchy irqdomian on x86 platforms
-Date: Sun,  9 Nov 2014 02:13:00 +0800
-Message-Id: <1415470418-10874-1-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [Patch Part3 v3 01/38] x86, intel-mid: Delay initialization of APB timer
+Date: Sun,  9 Nov 2014 02:13:01 +0800
+Message-Id: <1415470418-10874-2-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415470418-10874-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1415470418-10874-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the last part to enable support of hierarchy domain on x86
-platforms.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-It first converts IOAPIC to support hierarchy irqdomain, then cleans
-up all unused code and interfaces. It also introduces a kernel boot
-parameter to configure CPU vector allocation policies.
+MID has no PIC, but depending on the platform it requires the
+abt_timer, which is connected to irq0. The timer is set up at
+late_time_init().
 
-It's based on my previous patch set at:
-https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg760868.html
-And you may access it at:
-https://github.com/jiangliu/linux.git irqdomain/p3v3
+But, looking at the MID code it seems, that there is no reason to do
+so. The only code which might need the timer working is the TSC
+calibration code, but thats a non issue on MID as that is using its
+own empty calibration function. And check_timer() is not invoked
+either because MID has no PIC and therefor no legacy irqs.
 
-It has been tested on Intel 64-bit server and 32-bit laptop. It also
-passes Fengguang's 0day tests. Helps are welcomed for testing:
-1) Intel MID platform
-2) Intel CE or OLPC platforms
+So if you look at intel_mid_time_init() then you'll see that in the
+ARAT case the timer setup is skipped already. So until the point where
+x86_init.timers.setup_percpu_clockev() is called for the boot cpu
+nothing really needs a timer on MID.
 
-Patch 1-3 kills pre_init_apic_IRQ0().
-Patch 4-9 convert IOAPIC to use hierarch irqdomain
-Patch 10-36 clean up code, unused interfaces etc.
-Patch 37-38 introduces a mechanism to configure CPU vector allocation
-	policies.
+According to the MID code the apbt horror is only used for moorestown.
+Medfield and later use the local apic timer without the apbt nonsense.
 
-Jiang Liu (37):
-  x86, intel-mid, trivial: Refine code syntax for sfi_parse_mtmr()
-  x86, irq: Kill unused pre_init_apic_IRQ0()
-  x86, irq: Prepare IOAPIC interfaces to support hierarchy irqdomain
-  x86, irq: Implement callbacks to enable hierarchy irqdomain on
-    IOAPICs
-  x86, irq: Refine the way to allocate irq_cfg for legacy IRQs
-  x86, irq: Simplify the way to print IOAPIC entry
-  x86, irq: Introduce helper functions to support hierarchy irqdomain
-    for IOAPIC
-  x86, irq: Convert IOAPIC to use hierarchy irqdomain interfaces
-  x86, irq: Kill unused old IOAPIC irqdomain interfaces
-  x86, irq: Kill unused struct mp_pin_info
-  x86, irq: Kill x86_io_apic_ops.print_entries and related interfaces
-  x86, irq: Kill x86_io_apic_ops.setup_entry and related interfaces
-  x86, irq: Kill x86_io_apic_ops.set_affinity and related interfaces
-  x86, irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
-  x86, irq: Kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
-  x86: Clean up unused forward declarations in x86_init.h
-  x86: irq_remapping: Clean up unsued code
-  iommu/vt-d: Clean up unsued code
-  iommu/amd: Clean up unsued code
-  x86: irq_remapping: Clean up unused interfaces
-  x86, irq: Kill irq_cfg.irq_remapped
-  iommu/vt-d: Move struct irq_2_iommu into intel_irq_remapping.c
-  iommu/amd: Move struct irq_2_irte into amd_iommu.c
-  x86, irq: Move irq_cfg.irq_2_pin into io_apic.c
-  x86, irq: Kill struct io_apic_irq_attr
-  x86, irq: Kill x86_io_apic_ops.write and x86_io_apic_ops.modify
-  x86, irq: Clean up io_apic.h
-  x86, irq: Use cached IOAPIC entry instead of reading from hardware
-  x86, irq: Kill unused alloc_irq_and_cfg_at()
-  x86, irq: Change functions only used in vector.c as static
-  x86, irq: Kill function apic_set_affinity()
-  x86, irq: Move check of cfg->move_in_progress into
-    send_cleanup_vector()
-  x86, irq: Move private data in struct irq_cfg into dedicated data
-    structure
-  x86, irq: Refine the way to calculate NR_IRQS
-  ACPI, irq, x86: Kill private function mp_register_gsi()/
-    mp_unregister_gsi()
-  x86, irq: Introduce mechanism to support different vector allocation
-    policies
-  x86, irq: Add kernel parameter vector_alloc to set CPU vector
-    allocation policy
+The best thing we can do is to drop moorestown support and get rid of
+that apbt nonsense alltogether.
 
-Thomas Gleixner (1):
-  x86, intel-mid: Delay initialization of APB timer
+I don't think anyone deeply cares about it not being supported from
+3.18 on. The number of devices which sport a moorestown should be
+pretty limited and the only relevant use case of those is to act as a
+pocket heater with short battery life time. Its pretty pointless to
+update kernels on pocket heaters except for bragging reasons.
 
- Documentation/kernel-parameters.txt                |    6 +
- arch/x86/Kconfig                                   |    1 -
- arch/x86/include/asm/hw_irq.h                      |   53 +-
- arch/x86/include/asm/io_apic.h                     |   81 +-
- arch/x86/include/asm/irq_remapping.h               |   36 -
- arch/x86/include/asm/irq_vectors.h                 |   18 +-
- arch/x86/include/asm/x86_init.h                    |   16 -
- arch/x86/kernel/acpi/boot.c                        |   69 +-
- arch/x86/kernel/apb_timer.c                        |    4 -
- arch/x86/kernel/apic/io_apic.c                     | 1071 +++++++++-----------
- arch/x86/kernel/apic/vector.c                      |  416 ++++----
- arch/x86/kernel/devicetree.c                       |   37 +-
- arch/x86/kernel/mpparse.c                          |    6 +-
- arch/x86/kernel/x86_init.c                         |    6 -
- arch/x86/pci/intel_mid_pci.c                       |    6 +-
- .../platform/intel-mid/device_libs/platform_wdt.c  |    5 +-
- arch/x86/platform/intel-mid/intel-mid.c            |   18 +-
- arch/x86/platform/intel-mid/sfi.c                  |   30 +-
- arch/x86/platform/sfi/sfi.c                        |    5 +-
- arch/x86/platform/uv/uv_irq.c                      |    3 +-
- drivers/iommu/amd_iommu.c                          |  153 +--
- drivers/iommu/intel_irq_remapping.c                |  206 +---
- drivers/iommu/irq_remapping.c                      |   84 --
- drivers/iommu/irq_remapping.h                      |   16 -
- 24 files changed, 876 insertions(+), 1470 deletions(-)
+If someone at Intel really thinks that we need to keep moorestown
+alive for other than documentary and sentimental reasons, then we can
+move the apbt setup to x86_init.timers.setup_percpu_clockev(). At that
+point the IOAPIC is setup already, so it should just work.
 
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ arch/x86/kernel/apb_timer.c             |    4 ----
+ arch/x86/platform/intel-mid/intel-mid.c |   18 +++++++++++++-----
+ arch/x86/platform/intel-mid/sfi.c       |    2 --
+ 3 files changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index b708738d016e..7cfdc5467922 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -179,10 +179,6 @@ static int __init apbt_clockevent_register(void)
+ 
+ static void apbt_setup_irq(struct apbt_dev *adev)
+ {
+-	/* timer0 irq has been setup early */
+-	if (adev->irq == 0)
+-		return;
+-
+ 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+ 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+ }
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index 1bbedc4b0f88..d8e23a622a33 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -81,26 +81,34 @@ static unsigned long __init intel_mid_calibrate_tsc(void)
+ 	return 0;
+ }
+ 
++static void __init intel_mid_setup_bp_timer(void)
++{
++	apbt_time_init();
++	setup_boot_APIC_clock();
++}
++
+ static void __init intel_mid_time_init(void)
+ {
+ 	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
++
+ 	switch (intel_mid_timer_options) {
+ 	case INTEL_MID_TIMER_APBT_ONLY:
+ 		break;
+ 	case INTEL_MID_TIMER_LAPIC_APBT:
+-		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
++		/* Use apbt and local apic */
++		x86_init.timers.setup_percpu_clockev = intel_mid_setup_bp_timer;
+ 		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
+-		break;
++		return;
+ 	default:
+ 		if (!boot_cpu_has(X86_FEATURE_ARAT))
+ 			break;
++		/* Lapic only, no apbt */
+ 		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
+ 		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
+ 		return;
+ 	}
+-	/* we need at least one APB timer */
+-	pre_init_apic_IRQ0();
+-	apbt_time_init();
++
++	x86_init.timers.setup_percpu_clockev = apbt_time_init;
+ }
+ 
+ static void intel_mid_arch_setup(void)
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index c14ad34776c4..aa59f88868f8 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -95,8 +95,6 @@ int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 		pr_debug("timer[%d]: paddr = 0x%08x, freq = %dHz, irq = %d\n",
+ 			totallen, (u32)pentry->phys_addr,
+ 			pentry->freq_hz, pentry->irq);
+-			if (!pentry->irq)
+-				continue;
+ 			mp_irq.type = MP_INTSRC;
+ 			mp_irq.irqtype = mp_INT;
+ /* triggering mode edge bit 2-3, active high polarity bit 0-1 */
 -- 
 1.7.10.4
 
