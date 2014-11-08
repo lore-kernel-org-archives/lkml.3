@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225AbaKHSoR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:44:17 -0500
-Received: from mail-bn1on0130.outbound.protection.outlook.com ([157.56.110.130]:38336
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1754241AbaKHSof (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:44:35 -0500
+Received: from mail-bl2on0111.outbound.protection.outlook.com ([65.55.169.111]:31758
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752395AbaKHSoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:44:14 -0500
-X-WSS-ID: 0NEQHDK-07-RGC-02
+	id S1754087AbaKHSoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:44:32 -0500
+X-WSS-ID: 0NEQHE3-07-RGF-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
         Jerome Glisse <j.glisse@gmail.com>
 CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
         "John Bridgman" <John.Bridgman@amd.com>, Ben Goz <ben.goz@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>, Jay Cornwall <jay.cornwall@amd.com>,
+        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
         Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        "Evgeny Pinchuk" <evgeny.pinchuk@amd.com>,
-        Jay Cornwall <jay.cornwall@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>
-Subject: [PATCH v5 16/24] amdkfd: Add packet manager module
-Date: Sat, 8 Nov 2014 20:37:37 +0200
-Message-ID: <1415471865-1893-17-git-send-email-oded.gabbay@amd.com>
+        "Alexey Skidanov" <Alexey.Skidanov@amd.com>
+Subject: [PATCH v5 17/24] amdkfd: Add process queue manager module
+Date: Sat, 8 Nov 2014 20:37:38 +0200
+Message-ID: <1415471865-1893-18-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
 References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
@@ -29,14 +28,15 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.180.168.240]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(51234002)(189002)(68736004)(50986999)(77156002)(62966003)(97736003)(87286001)(76176999)(77096003)(50466002)(36756003)(92726001)(19580395003)(92566001)(93916002)(87936001)(48376002)(19580405001)(44976005)(88136002)(106466001)(50226001)(101416001)(21056001)(53416004)(33646002)(64706001)(84676001)(104166001)(99396003)(95666004)(229853001)(102836001)(86362001)(20776003)(47776003)(89996001)(46102003)(120916001)(4396001)(31966008)(105586002)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(51234002)(64706001)(86362001)(33646002)(92566001)(36756003)(50226001)(77096003)(76176999)(50986999)(46102003)(87286001)(87936001)(50466002)(48376002)(31966008)(102836001)(47776003)(44976005)(19580395003)(89996001)(99396003)(120916001)(21056001)(105586002)(88136002)(107046002)(229853001)(106466001)(53416004)(97736003)(95666004)(4396001)(19580405001)(68736004)(62966003)(77156002)(101416001)(93916002)(92726001)(84676001)(104166001)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0201MB1002;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(1)(2);SRVR:BY2PR02MB201;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1002;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1002;
 X-Forefront-PRVS: 0389EDA07F
 Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1002;
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,53 +44,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Goz <ben.goz@amd.com>
 
-The packet manager module builds PM4 packets for the sole use of the CP
-scheduler. Those packets are used by the HIQ to submit runlists to the CP.
+The queue scheduler divides into two sections, one section is process bounded
+and the other section is device bounded.
+The process bounded section is handled by this module. The PQM handles usermode
+queue setup, updates and tear-down.
 
 v3:
 
-Removed include of cik_mqds.h
-Changed lower_32/upper_32 calls to use linux macros
-Used new gart allocation functions
-Added documentation
+Used kernel parameter to limit queues per process instead of define
+Added use of doorbell address from user
+
+v4:
+
+Modified pqm_create_queue so that only when creating usermode queues the
+driver should return the queue properties to the userspace.
+
+Added an info message print when no more queues can be opened because of the
+queue per process limitation
 
 v5:
 
 Move amdkfd from drm/radeon/ to drm/amd/
-Change format of mqd structure to match latest KV firmware
-Add support for AQL queues creation to enable working with open-source HSA
-runtime
-Always chain runlist if you have more than 1 process or if you have
-over-subscription over the number of queues.
-Various fixes (typos, style)
+Various fixes
 
 Signed-off-by: Ben Goz <ben.goz@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/amd/amdkfd/Makefile             |   2 +-
- drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c | 565 ++++++++++++++++++++++++
- drivers/gpu/drm/amd/amdkfd/kfd_priv.h           |  75 ++++
- 3 files changed, 641 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c
+ drivers/gpu/drm/amd/amdkfd/Makefile                |   3 +-
+ drivers/gpu/drm/amd/amdkfd/kfd_priv.h              |  26 ++
+ drivers/gpu/drm/amd/amdkfd/kfd_process.c           |  20 ++
+ .../gpu/drm/amd/amdkfd/kfd_process_queue_manager.c | 342 +++++++++++++++++++++
+ 4 files changed, 390 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/drm/amd/amdkfd/kfd_process_queue_manager.c
 
 diff --git a/drivers/gpu/drm/amd/amdkfd/Makefile b/drivers/gpu/drm/amd/amdkfd/Makefile
-index 047b834..1164a3a 100644
+index 1164a3a..104f279 100644
 --- a/drivers/gpu/drm/amd/amdkfd/Makefile
 +++ b/drivers/gpu/drm/amd/amdkfd/Makefile
-@@ -7,6 +7,6 @@ ccflags-y := -Iinclude/drm -Idrivers/gpu/drm/amd/include/
+@@ -7,6 +7,7 @@ ccflags-y := -Iinclude/drm -Idrivers/gpu/drm/amd/include/
  amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o \
  		kfd_pasid.o kfd_doorbell.o kfd_flat_memory.o \
  		kfd_process.o kfd_queue.o kfd_mqd_manager.o \
--		kfd_kernel_queue.o
-+		kfd_kernel_queue.o kfd_packet_manager.o
+-		kfd_kernel_queue.o kfd_packet_manager.o
++		kfd_kernel_queue.o kfd_packet_manager.o \
++		kfd_process_queue_manager.o
  
  obj-$(CONFIG_HSA_AMD)	+= amdkfd.o
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c b/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_priv.h b/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
+index 219c85a..72b2e27 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
+@@ -387,6 +387,9 @@ struct kfd_process_device {
+ 	struct kfd_dev *dev;
+ 
+ 
++	/* per-process-per device QCM data structure */
++	struct qcm_process_device qpd;
++
+ 	/*Apertures*/
+ 	uint64_t lds_base;
+ 	uint64_t lds_limit;
+@@ -432,6 +435,8 @@ struct kfd_process {
+ 	 */
+ 	struct list_head per_device_data;
+ 
++	struct process_queue_manager pqm;
++
+ 	/* The process's queues. */
+ 	size_t queue_array_size;
+ 
+@@ -501,12 +506,33 @@ inline uint32_t upper_32(uint64_t x);
+ 
+ int init_queue(struct queue **q, struct queue_properties properties);
+ void uninit_queue(struct queue *q);
++void print_queue_properties(struct queue_properties *q);
+ void print_queue(struct queue *q);
+ 
+ struct kernel_queue *kernel_queue_init(struct kfd_dev *dev,
+ 					enum kfd_queue_type type);
+ void kernel_queue_uninit(struct kernel_queue *kq);
+ 
++/* Process Queue Manager */
++struct process_queue_node {
++	struct queue *q;
++	struct kernel_queue *kq;
++	struct list_head process_queue_list;
++};
++
++int pqm_init(struct process_queue_manager *pqm, struct kfd_process *p);
++void pqm_uninit(struct process_queue_manager *pqm);
++int pqm_create_queue(struct process_queue_manager *pqm,
++			    struct kfd_dev *dev,
++			    struct file *f,
++			    struct queue_properties *properties,
++			    unsigned int flags,
++			    enum kfd_queue_type type,
++			    unsigned int *qid);
++int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid);
++int pqm_update_queue(struct process_queue_manager *pqm, unsigned int qid,
++			struct queue_properties *p);
++
+ /* Packet Manager */
+ 
+ #define KFD_HIQ_TIMEOUT (500)
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_process.c b/drivers/gpu/drm/amd/amdkfd/kfd_process.c
+index 5084794..a17e2dd 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_process.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_process.c
+@@ -222,6 +222,13 @@ static void kfd_process_notifier_release(struct mmu_notifier *mn,
+ 	mutex_unlock(&kfd_processes_mutex);
+ 	synchronize_srcu(&kfd_processes_srcu);
+ 
++	mutex_lock(&p->mutex);
++
++	/* In case our notifier is called before IOMMU notifier */
++	pqm_uninit(&p->pqm);
++
++	mutex_unlock(&p->mutex);
++
+ 	/*
+ 	 * Because we drop mm_count inside kfd_process_destroy_delayed
+ 	 * and because the mmu_notifier_unregister function also drop
+@@ -274,8 +281,16 @@ static struct kfd_process *create_process(const struct task_struct *thread)
+ 
+ 	INIT_LIST_HEAD(&process->per_device_data);
+ 
++	err = pqm_init(&process->pqm, process);
++	if (err != 0)
++		goto err_process_pqm_init;
++
+ 	return process;
+ 
++err_process_pqm_init:
++	hash_del_rcu(&process->kfd_processes);
++	synchronize_rcu();
++	mmu_notifier_unregister_no_release(&process->mmu_notifier, process->mm);
+ err_mmu_notifier:
+ 	kfd_pasid_free(process->pasid);
+ err_alloc_pasid:
+@@ -300,6 +315,9 @@ struct kfd_process_device *kfd_get_process_device_data(struct kfd_dev *dev,
+ 		pdd = kzalloc(sizeof(*pdd), GFP_KERNEL);
+ 		if (pdd != NULL) {
+ 			pdd->dev = dev;
++			INIT_LIST_HEAD(&pdd->qpd.queues_list);
++			INIT_LIST_HEAD(&pdd->qpd.priv_queue_list);
++			pdd->qpd.dqm = dev->dqm;
+ 			list_add(&pdd->per_device_list, &p->per_device_data);
+ 		}
+ 	}
+@@ -360,6 +378,8 @@ void kfd_unbind_process_from_device(struct kfd_dev *dev, unsigned int pasid)
+ 
+ 	mutex_lock(&p->mutex);
+ 
++	pqm_uninit(&p->pqm);
++
+ 	pdd = kfd_get_process_device_data(dev, p, 0);
+ 
+ 	/*
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_process_queue_manager.c b/drivers/gpu/drm/amd/amdkfd/kfd_process_queue_manager.c
 new file mode 100644
-index 0000000..5ce9233
+index 0000000..c7859fc
 --- /dev/null
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_packet_manager.c
-@@ -0,0 +1,565 @@
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_process_queue_manager.c
+@@ -0,0 +1,342 @@
 +/*
 + * Copyright 2014 Advanced Micro Devices, Inc.
 + *
@@ -115,660 +231,324 @@ index 0000000..5ce9233
 + */
 +
 +#include <linux/slab.h>
-+#include <linux/mutex.h>
++#include <linux/list.h>
 +#include "kfd_device_queue_manager.h"
-+#include "kfd_kernel_queue.h"
 +#include "kfd_priv.h"
-+#include "kfd_pm4_headers.h"
-+#include "kfd_pm4_opcodes.h"
++#include "kfd_kernel_queue.h"
 +
-+static inline void inc_wptr(unsigned int *wptr, unsigned int increment_bytes,
-+				unsigned int buffer_size_bytes)
++static inline struct process_queue_node *get_queue_by_qid(
++			struct process_queue_manager *pqm, unsigned int qid)
 +{
-+	unsigned int temp = *wptr + increment_bytes / sizeof(uint32_t);
++	struct process_queue_node *pqn;
 +
-+	BUG_ON((temp * sizeof(uint32_t)) > buffer_size_bytes);
-+	*wptr = temp;
-+}
++	BUG_ON(!pqm);
 +
-+static unsigned int build_pm4_header(unsigned int opcode, size_t packet_size)
-+{
-+	union PM4_MES_TYPE_3_HEADER header;
-+
-+	header.u32all = 0;
-+	header.opcode = opcode;
-+	header.count = packet_size/sizeof(uint32_t) - 2;
-+	header.type = PM4_TYPE_3;
-+
-+	return header.u32all;
-+}
-+
-+static void pm_calc_rlib_size(struct packet_manager *pm,
-+				unsigned int *rlib_size,
-+				bool *over_subscription)
-+{
-+	unsigned int process_count, queue_count;
-+
-+	BUG_ON(!pm || !rlib_size || !over_subscription);
-+
-+	process_count = pm->dqm->processes_count;
-+	queue_count = pm->dqm->queue_count;
-+
-+	/* check if there is over subscription*/
-+	*over_subscription = false;
-+	if ((process_count > 1) ||
-+		queue_count > PIPE_PER_ME_CP_SCHEDULING * QUEUES_PER_PIPE) {
-+		*over_subscription = true;
-+		pr_debug("kfd: over subscribed runlist\n");
++	list_for_each_entry(pqn, &pqm->queues, process_queue_list) {
++		if (pqn->q && pqn->q->properties.queue_id == qid)
++			return pqn;
++		if (pqn->kq && pqn->kq->queue->properties.queue_id == qid)
++			return pqn;
 +	}
 +
-+	/* calculate run list ib allocation size */
-+	*rlib_size = process_count * sizeof(struct pm4_map_process) +
-+		     queue_count * sizeof(struct pm4_map_queues);
-+
-+	/*
-+	 * Increase the allocation size in case we need a chained run list
-+	 * when over subscription
-+	 */
-+	if (*over_subscription)
-+		*rlib_size += sizeof(struct pm4_runlist);
-+
-+	pr_debug("kfd: runlist ib size %d\n", *rlib_size);
++	return NULL;
 +}
 +
-+static int pm_allocate_runlist_ib(struct packet_manager *pm,
-+				unsigned int **rl_buffer,
-+				uint64_t *rl_gpu_buffer,
-+				unsigned int *rl_buffer_size,
-+				bool *is_over_subscription)
++static int find_available_queue_slot(struct process_queue_manager *pqm,
++					unsigned int *qid)
++{
++	unsigned long found;
++
++	BUG_ON(!pqm || !qid);
++
++	pr_debug("kfd: in %s\n", __func__);
++
++	found = find_first_zero_bit(pqm->queue_slot_bitmap,
++			max_num_of_queues_per_process);
++
++	pr_debug("kfd: the new slot id %lu\n", found);
++
++	if (found >= max_num_of_queues_per_process) {
++		pr_info("amdkfd: Can not open more queues for process with pasid %d\n",
++				pqm->process->pasid);
++		return -ENOMEM;
++	}
++
++	set_bit(found, pqm->queue_slot_bitmap);
++	*qid = found;
++
++	return 0;
++}
++
++int pqm_init(struct process_queue_manager *pqm, struct kfd_process *p)
++{
++	BUG_ON(!pqm);
++
++	INIT_LIST_HEAD(&pqm->queues);
++	pqm->queue_slot_bitmap =
++			kzalloc(DIV_ROUND_UP(max_num_of_queues_per_process,
++					BITS_PER_BYTE), GFP_KERNEL);
++	if (pqm->queue_slot_bitmap == NULL)
++		return -ENOMEM;
++	pqm->process = p;
++
++	return 0;
++}
++
++void pqm_uninit(struct process_queue_manager *pqm)
++{
++	int retval;
++	struct process_queue_node *pqn, *next;
++
++	BUG_ON(!pqm);
++
++	pr_debug("In func %s\n", __func__);
++
++	list_for_each_entry_safe(pqn, next, &pqm->queues, process_queue_list) {
++		retval = pqm_destroy_queue(
++				pqm,
++				(pqn->q != NULL) ?
++					pqn->q->properties.queue_id :
++					pqn->kq->queue->properties.queue_id);
++
++		if (retval != 0) {
++			pr_err("kfd: failed to destroy queue\n");
++			return;
++		}
++	}
++	kfree(pqm->queue_slot_bitmap);
++	pqm->queue_slot_bitmap = NULL;
++}
++
++static int create_cp_queue(struct process_queue_manager *pqm,
++				struct kfd_dev *dev, struct queue **q,
++				struct queue_properties *q_properties,
++				struct file *f, unsigned int qid)
 +{
 +	int retval;
 +
-+	BUG_ON(!pm);
-+	BUG_ON(pm->allocated == true);
-+	BUG_ON(is_over_subscription == NULL);
++	retval = 0;
 +
-+	pm_calc_rlib_size(pm, rl_buffer_size, is_over_subscription);
++	/* Doorbell initialized in user space*/
++	q_properties->doorbell_ptr = NULL;
 +
-+	retval = kfd2kgd->allocate_mem(pm->dqm->dev->kgd,
-+					*rl_buffer_size,
-+					PAGE_SIZE,
-+					KFD_MEMPOOL_SYSTEM_WRITECOMBINE,
-+					(struct kgd_mem **) &pm->ib_buffer_obj);
++	q_properties->doorbell_off =
++			kfd_queue_id_to_doorbell(dev, pqm->process, qid);
 +
-+	if (retval != 0) {
-+		pr_err("kfd: failed to allocate runlist IB\n");
-+		return retval;
-+	}
++	/* let DQM handle it*/
++	q_properties->vmid = 0;
++	q_properties->queue_id = qid;
++	q_properties->type = KFD_QUEUE_TYPE_COMPUTE;
 +
-+	*(void **)rl_buffer = pm->ib_buffer_obj->cpu_ptr;
-+	*rl_gpu_buffer = pm->ib_buffer_obj->gpu_addr;
++	retval = init_queue(q, *q_properties);
++	if (retval != 0)
++		goto err_init_queue;
 +
-+	memset(*rl_buffer, 0, *rl_buffer_size);
-+	pm->allocated = true;
++	(*q)->device = dev;
++	(*q)->process = pqm->process;
++
++	pr_debug("kfd: PQM After init queue");
++
++	return retval;
++
++err_init_queue:
 +	return retval;
 +}
 +
-+static int pm_create_runlist(struct packet_manager *pm, uint32_t *buffer,
-+			uint64_t ib, size_t ib_size_in_dwords, bool chain)
++int pqm_create_queue(struct process_queue_manager *pqm,
++			    struct kfd_dev *dev,
++			    struct file *f,
++			    struct queue_properties *properties,
++			    unsigned int flags,
++			    enum kfd_queue_type type,
++			    unsigned int *qid)
 +{
-+	struct pm4_runlist *packet;
-+
-+	BUG_ON(!pm || !buffer || !ib);
-+
-+	packet = (struct pm4_runlist *)buffer;
-+
-+	memset(buffer, 0, sizeof(struct pm4_runlist));
-+	packet->header.u32all = build_pm4_header(IT_RUN_LIST,
-+						sizeof(struct pm4_runlist));
-+
-+	packet->bitfields4.ib_size = ib_size_in_dwords;
-+	packet->bitfields4.chain = chain ? 1 : 0;
-+	packet->bitfields4.offload_polling = 0;
-+	packet->bitfields4.valid = 1;
-+	packet->ordinal2 = lower_32_bits(ib);
-+	packet->bitfields3.ib_base_hi = upper_32_bits(ib);
-+
-+	return 0;
-+}
-+
-+static int pm_create_map_process(struct packet_manager *pm, uint32_t *buffer,
-+				struct qcm_process_device *qpd)
-+{
-+	struct pm4_map_process *packet;
-+	struct queue *cur;
-+	uint32_t num_queues;
-+
-+	BUG_ON(!pm || !buffer || !qpd);
-+
-+	packet = (struct pm4_map_process *)buffer;
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+
-+	memset(buffer, 0, sizeof(struct pm4_map_process));
-+
-+	packet->header.u32all = build_pm4_header(IT_MAP_PROCESS,
-+					sizeof(struct pm4_map_process));
-+	packet->bitfields2.diq_enable = (qpd->is_debug) ? 1 : 0;
-+	packet->bitfields2.process_quantum = 1;
-+	packet->bitfields2.pasid = qpd->pqm->process->pasid;
-+	packet->bitfields3.page_table_base = qpd->page_table_base;
-+	packet->bitfields10.gds_size = qpd->gds_size;
-+	packet->bitfields10.num_gws = qpd->num_gws;
-+	packet->bitfields10.num_oac = qpd->num_oac;
-+	num_queues = 0;
-+	list_for_each_entry(cur, &qpd->queues_list, list)
-+		num_queues++;
-+	packet->bitfields10.num_queues = num_queues;
-+
-+	packet->sh_mem_config = qpd->sh_mem_config;
-+	packet->sh_mem_bases = qpd->sh_mem_bases;
-+	packet->sh_mem_ape1_base = qpd->sh_mem_ape1_base;
-+	packet->sh_mem_ape1_limit = qpd->sh_mem_ape1_limit;
-+
-+	packet->gds_addr_lo = lower_32_bits(qpd->gds_context_area);
-+	packet->gds_addr_hi = upper_32_bits(qpd->gds_context_area);
-+
-+	return 0;
-+}
-+
-+static int pm_create_map_queue(struct packet_manager *pm, uint32_t *buffer,
-+				struct queue *q)
-+{
-+	struct pm4_map_queues *packet;
-+
-+	BUG_ON(!pm || !buffer || !q);
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+
-+	packet = (struct pm4_map_queues *)buffer;
-+	memset(buffer, 0, sizeof(struct pm4_map_queues));
-+
-+	packet->header.u32all = build_pm4_header(IT_MAP_QUEUES,
-+						sizeof(struct pm4_map_queues));
-+	packet->bitfields2.alloc_format =
-+				alloc_format__mes_map_queues__one_per_pipe;
-+	packet->bitfields2.num_queues = 1;
-+	packet->bitfields2.queue_sel =
-+		queue_sel__mes_map_queues__map_to_hws_determined_queue_slots;
-+
-+	packet->bitfields2.vidmem = (q->properties.is_interop) ?
-+			vidmem__mes_map_queues__uses_video_memory :
-+			vidmem__mes_map_queues__uses_no_video_memory;
-+
-+	switch (q->properties.type) {
-+	case KFD_QUEUE_TYPE_COMPUTE:
-+	case KFD_QUEUE_TYPE_DIQ:
-+		packet->bitfields2.engine_sel =
-+				engine_sel__mes_map_queues__compute;
-+		break;
-+	case KFD_QUEUE_TYPE_SDMA:
-+		packet->bitfields2.engine_sel =
-+				engine_sel__mes_map_queues__sdma0;
-+		break;
-+	default:
-+		BUG();
-+		break;
-+	}
-+
-+	packet->mes_map_queues_ordinals[0].bitfields3.doorbell_offset =
-+			q->properties.doorbell_off;
-+
-+	packet->mes_map_queues_ordinals[0].mqd_addr_lo =
-+			lower_32_bits(q->gart_mqd_addr);
-+
-+	packet->mes_map_queues_ordinals[0].mqd_addr_hi =
-+			upper_32_bits(q->gart_mqd_addr);
-+
-+	packet->mes_map_queues_ordinals[0].wptr_addr_lo =
-+			lower_32_bits((uint64_t)q->properties.write_ptr);
-+
-+	packet->mes_map_queues_ordinals[0].wptr_addr_hi =
-+			upper_32_bits((uint64_t)q->properties.write_ptr);
-+
-+	return 0;
-+}
-+
-+static int pm_create_runlist_ib(struct packet_manager *pm,
-+				struct list_head *queues,
-+				uint64_t *rl_gpu_addr,
-+				size_t *rl_size_bytes)
-+{
-+	unsigned int alloc_size_bytes;
-+	unsigned int *rl_buffer, rl_wptr, i;
-+	int retval, proccesses_mapped;
-+	struct device_process_node *cur;
-+	struct qcm_process_device *qpd;
++	int retval;
++	struct kfd_process_device *pdd;
++	struct queue_properties q_properties;
 +	struct queue *q;
++	struct process_queue_node *pqn;
 +	struct kernel_queue *kq;
-+	bool is_over_subscription;
 +
-+	BUG_ON(!pm || !queues || !rl_size_bytes || !rl_gpu_addr);
++	BUG_ON(!pqm || !dev || !properties || !qid);
 +
-+	rl_wptr = retval = proccesses_mapped = 0;
++	memset(&q_properties, 0, sizeof(struct queue_properties));
++	memcpy(&q_properties, properties, sizeof(struct queue_properties));
++	q = NULL;
++	kq = NULL;
 +
-+	retval = pm_allocate_runlist_ib(pm, &rl_buffer, rl_gpu_addr,
-+				&alloc_size_bytes, &is_over_subscription);
++	pdd = kfd_get_process_device_data(dev, pqm->process, 1);
++	BUG_ON(!pdd);
++
++	retval = find_available_queue_slot(pqm, qid);
 +	if (retval != 0)
 +		return retval;
 +
-+	*rl_size_bytes = alloc_size_bytes;
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+	pr_debug("kfd: building runlist ib process count: %d queues count %d\n",
-+		pm->dqm->processes_count, pm->dqm->queue_count);
-+
-+	/* build the run list ib packet */
-+	list_for_each_entry(cur, queues, list) {
-+		qpd = cur->qpd;
-+		/* build map process packet */
-+		if (proccesses_mapped >= pm->dqm->processes_count) {
-+			pr_debug("kfd: not enough space left in runlist IB\n");
-+			pm_release_ib(pm);
-+			return -ENOMEM;
-+		}
-+		retval = pm_create_map_process(pm, &rl_buffer[rl_wptr], qpd);
-+		if (retval != 0)
-+			return retval;
-+		proccesses_mapped++;
-+		inc_wptr(&rl_wptr, sizeof(struct pm4_map_process),
-+				alloc_size_bytes);
-+
-+		list_for_each_entry(kq, &qpd->priv_queue_list, list) {
-+			if (kq->queue->properties.is_active != true)
-+				continue;
-+			retval = pm_create_map_queue(pm, &rl_buffer[rl_wptr],
-+							kq->queue);
-+			if (retval != 0)
-+				return retval;
-+			inc_wptr(&rl_wptr, sizeof(struct pm4_map_queues),
-+					alloc_size_bytes);
-+		}
-+
-+		list_for_each_entry(q, &qpd->queues_list, list) {
-+			if (q->properties.is_active != true)
-+				continue;
-+			retval = pm_create_map_queue(pm,
-+						&rl_buffer[rl_wptr], q);
-+			if (retval != 0)
-+				return retval;
-+			inc_wptr(&rl_wptr, sizeof(struct pm4_map_queues),
-+					alloc_size_bytes);
-+		}
++	if (list_empty(&pqm->queues)) {
++		pdd->qpd.pqm = pqm;
++		dev->dqm->register_process(dev->dqm, &pdd->qpd);
 +	}
 +
-+	pr_debug("kfd: finished map process and queues to runlist\n");
-+
-+	if (is_over_subscription)
-+		pm_create_runlist(pm, &rl_buffer[rl_wptr], *rl_gpu_addr,
-+				alloc_size_bytes / sizeof(uint32_t), true);
-+
-+	for (i = 0; i < alloc_size_bytes / sizeof(uint32_t); i++)
-+		pr_debug("0x%2X ", rl_buffer[i]);
-+	pr_debug("\n");
-+
-+	return 0;
-+}
-+
-+int pm_init(struct packet_manager *pm, struct device_queue_manager *dqm)
-+{
-+	BUG_ON(!dqm);
-+
-+	pm->dqm = dqm;
-+	mutex_init(&pm->lock);
-+	pm->priv_queue = kernel_queue_init(dqm->dev, KFD_QUEUE_TYPE_HIQ);
-+	if (pm->priv_queue == NULL) {
-+		mutex_destroy(&pm->lock);
-+		return -ENOMEM;
-+	}
-+	pm->allocated = false;
-+
-+	return 0;
-+}
-+
-+void pm_uninit(struct packet_manager *pm)
-+{
-+	BUG_ON(!pm);
-+
-+	mutex_destroy(&pm->lock);
-+	kernel_queue_uninit(pm->priv_queue);
-+}
-+
-+int pm_send_set_resources(struct packet_manager *pm,
-+				struct scheduling_resources *res)
-+{
-+	struct pm4_set_resources *packet;
-+
-+	BUG_ON(!pm || !res);
-+
-+	pr_debug("kfd: In func %s\n", __func__);
-+
-+	mutex_lock(&pm->lock);
-+	pm->priv_queue->acquire_packet_buffer(pm->priv_queue,
-+					sizeof(*packet) / sizeof(uint32_t),
-+			(unsigned int **)&packet);
-+	if (packet == NULL) {
-+		mutex_unlock(&pm->lock);
-+		pr_err("kfd: failed to allocate buffer on kernel queue\n");
-+		return -ENOMEM;
++	pqn = kzalloc(sizeof(struct process_queue_node), GFP_KERNEL);
++	if (!pqn) {
++		retval = -ENOMEM;
++		goto err_allocate_pqn;
 +	}
 +
-+	memset(packet, 0, sizeof(struct pm4_set_resources));
-+	packet->header.u32all = build_pm4_header(IT_SET_RESOURCES,
-+					sizeof(struct pm4_set_resources));
-+
-+	packet->bitfields2.queue_type =
-+			queue_type__mes_set_resources__hsa_interface_queue_hiq;
-+	packet->bitfields2.vmid_mask = res->vmid_mask;
-+	packet->bitfields2.unmap_latency = KFD_UNMAP_LATENCY;
-+	packet->bitfields7.oac_mask = res->oac_mask;
-+	packet->bitfields8.gds_heap_base = res->gds_heap_base;
-+	packet->bitfields8.gds_heap_size = res->gds_heap_size;
-+
-+	packet->gws_mask_lo = lower_32_bits(res->gws_mask);
-+	packet->gws_mask_hi = upper_32_bits(res->gws_mask);
-+
-+	packet->queue_mask_lo = lower_32_bits(res->queue_mask);
-+	packet->queue_mask_hi = upper_32_bits(res->queue_mask);
-+
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
-+
-+	mutex_unlock(&pm->lock);
-+
-+	return 0;
-+}
-+
-+int pm_send_runlist(struct packet_manager *pm, struct list_head *dqm_queues)
-+{
-+	uint64_t rl_gpu_ib_addr;
-+	uint32_t *rl_buffer;
-+	size_t rl_ib_size, packet_size_dwords;
-+	int retval;
-+
-+	BUG_ON(!pm || !dqm_queues);
-+
-+	retval = pm_create_runlist_ib(pm, dqm_queues, &rl_gpu_ib_addr,
-+					&rl_ib_size);
-+	if (retval != 0)
-+		goto fail_create_runlist_ib;
-+
-+	pr_debug("kfd: runlist IB address: 0x%llX\n", rl_gpu_ib_addr);
-+
-+	packet_size_dwords = sizeof(struct pm4_runlist) / sizeof(uint32_t);
-+	mutex_lock(&pm->lock);
-+
-+	retval = pm->priv_queue->acquire_packet_buffer(pm->priv_queue,
-+					packet_size_dwords, &rl_buffer);
-+	if (retval != 0)
-+		goto fail_acquire_packet_buffer;
-+
-+	retval = pm_create_runlist(pm, rl_buffer, rl_gpu_ib_addr,
-+					rl_ib_size / sizeof(uint32_t), false);
-+	if (retval != 0)
-+		goto fail_create_runlist;
-+
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
-+
-+	mutex_unlock(&pm->lock);
-+
-+	return retval;
-+
-+fail_create_runlist:
-+	pm->priv_queue->rollback_packet(pm->priv_queue);
-+fail_acquire_packet_buffer:
-+	mutex_unlock(&pm->lock);
-+fail_create_runlist_ib:
-+	if (pm->allocated == true)
-+		pm_release_ib(pm);
-+	return retval;
-+}
-+
-+int pm_send_query_status(struct packet_manager *pm, uint64_t fence_address,
-+			uint32_t fence_value)
-+{
-+	int retval;
-+	struct pm4_query_status *packet;
-+
-+	BUG_ON(!pm || !fence_address);
-+
-+	mutex_lock(&pm->lock);
-+	retval = pm->priv_queue->acquire_packet_buffer(
-+			pm->priv_queue,
-+			sizeof(struct pm4_query_status) / sizeof(uint32_t),
-+			(unsigned int **)&packet);
-+	if (retval != 0)
-+		goto fail_acquire_packet_buffer;
-+
-+	packet->header.u32all = build_pm4_header(IT_QUERY_STATUS,
-+					sizeof(struct pm4_query_status));
-+
-+	packet->bitfields2.context_id = 0;
-+	packet->bitfields2.interrupt_sel =
-+			interrupt_sel__mes_query_status__completion_status;
-+	packet->bitfields2.command =
-+			command__mes_query_status__fence_only_after_write_ack;
-+
-+	packet->addr_hi = upper_32_bits((uint64_t)fence_address);
-+	packet->addr_lo = lower_32_bits((uint64_t)fence_address);
-+	packet->data_hi = upper_32_bits((uint64_t)fence_value);
-+	packet->data_lo = lower_32_bits((uint64_t)fence_value);
-+
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
-+	mutex_unlock(&pm->lock);
-+
-+	return 0;
-+
-+fail_acquire_packet_buffer:
-+	mutex_unlock(&pm->lock);
-+	return retval;
-+}
-+
-+int pm_send_unmap_queue(struct packet_manager *pm, enum kfd_queue_type type,
-+			enum kfd_preempt_type_filter mode,
-+			uint32_t filter_param, bool reset,
-+			unsigned int sdma_engine)
-+{
-+	int retval;
-+	uint32_t *buffer;
-+	struct pm4_unmap_queues *packet;
-+
-+	BUG_ON(!pm);
-+
-+	mutex_lock(&pm->lock);
-+	retval = pm->priv_queue->acquire_packet_buffer(
-+			pm->priv_queue,
-+			sizeof(struct pm4_unmap_queues) / sizeof(uint32_t),
-+			&buffer);
-+	if (retval != 0)
-+		goto err_acquire_packet_buffer;
-+
-+	packet = (struct pm4_unmap_queues *)buffer;
-+	memset(buffer, 0, sizeof(struct pm4_unmap_queues));
-+
-+	packet->header.u32all = build_pm4_header(IT_UNMAP_QUEUES,
-+					sizeof(struct pm4_unmap_queues));
 +	switch (type) {
 +	case KFD_QUEUE_TYPE_COMPUTE:
-+	case KFD_QUEUE_TYPE_DIQ:
-+		packet->bitfields2.engine_sel =
-+			engine_sel__mes_unmap_queues__compute;
++		/* check if there is over subscription */
++		if ((sched_policy == KFD_SCHED_POLICY_HWS_NO_OVERSUBSCRIPTION) &&
++		((dev->dqm->processes_count >= VMID_PER_DEVICE) ||
++		(dev->dqm->queue_count >= PIPE_PER_ME_CP_SCHEDULING * QUEUES_PER_PIPE))) {
++			pr_err("kfd: over-subscription is not allowed in radeon_kfd.sched_policy == 1\n");
++			retval = -EPERM;
++			goto err_create_queue;
++		}
++
++		retval = create_cp_queue(pqm, dev, &q, &q_properties, f, *qid);
++		if (retval != 0)
++			goto err_create_queue;
++		pqn->q = q;
++		pqn->kq = NULL;
++		retval = dev->dqm->create_queue(dev->dqm, q, &pdd->qpd,
++						&q->properties.vmid);
++		print_queue(q);
 +		break;
-+	case KFD_QUEUE_TYPE_SDMA:
-+		packet->bitfields2.engine_sel =
-+			engine_sel__mes_unmap_queues__sdma0 + sdma_engine;
++	case KFD_QUEUE_TYPE_DIQ:
++		kq = kernel_queue_init(dev, KFD_QUEUE_TYPE_DIQ);
++		if (kq == NULL) {
++			kernel_queue_uninit(kq);
++			goto err_create_queue;
++		}
++		kq->queue->properties.queue_id = *qid;
++		pqn->kq = kq;
++		pqn->q = NULL;
++		retval = dev->dqm->create_kernel_queue(dev->dqm, kq, &pdd->qpd);
 +		break;
 +	default:
 +		BUG();
 +		break;
 +	}
 +
-+	if (reset)
-+		packet->bitfields2.action =
-+				action__mes_unmap_queues__reset_queues;
-+	else
-+		packet->bitfields2.action =
-+				action__mes_unmap_queues__preempt_queues;
++	if (retval != 0) {
++		pr_err("kfd: error dqm create queue\n");
++		goto err_create_queue;
++	}
 +
-+	switch (mode) {
-+	case KFD_PREEMPT_TYPE_FILTER_SINGLE_QUEUE:
-+		packet->bitfields2.queue_sel =
-+				queue_sel__mes_unmap_queues__perform_request_on_specified_queues;
-+		packet->bitfields2.num_queues = 1;
-+		packet->bitfields3b.doorbell_offset0 = filter_param;
-+		break;
-+	case KFD_PREEMPT_TYPE_FILTER_BY_PASID:
-+		packet->bitfields2.queue_sel =
-+				queue_sel__mes_unmap_queues__perform_request_on_pasid_queues;
-+		packet->bitfields3a.pasid = filter_param;
-+		break;
-+	case KFD_PREEMPT_TYPE_FILTER_ALL_QUEUES:
-+		packet->bitfields2.queue_sel =
-+				queue_sel__mes_unmap_queues__perform_request_on_all_active_queues;
-+		break;
-+	default:
-+		BUG();
-+		break;
-+	};
++	pr_debug("kfd: PQM After DQM create queue\n");
 +
-+	pm->priv_queue->submit_packet(pm->priv_queue);
-+	pm->priv_queue->sync_with_hw(pm->priv_queue, KFD_HIQ_TIMEOUT);
++	list_add(&pqn->process_queue_list, &pqm->queues);
 +
-+	mutex_unlock(&pm->lock);
-+	return 0;
++	if (q) {
++		*properties = q->properties;
++		pr_debug("kfd: PQM done creating queue\n");
++		print_queue_properties(properties);
++	}
 +
-+err_acquire_packet_buffer:
-+	mutex_unlock(&pm->lock);
++	return retval;
++
++err_create_queue:
++	kfree(pqn);
++err_allocate_pqn:
++	clear_bit(*qid, pqm->queue_slot_bitmap);
 +	return retval;
 +}
 +
-+void pm_release_ib(struct packet_manager *pm)
++int pqm_destroy_queue(struct process_queue_manager *pqm, unsigned int qid)
 +{
-+	BUG_ON(!pm);
-+
-+	mutex_lock(&pm->lock);
-+	if (pm->allocated) {
-+		kfd2kgd->free_mem(pm->dqm->dev->kgd,
-+				(struct kgd_mem *) pm->ib_buffer_obj);
-+		pm->allocated = false;
-+	}
-+	mutex_unlock(&pm->lock);
-+}
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_priv.h b/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
-index 32bca8a..219c85a 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
-@@ -167,6 +167,23 @@ int kfd_chardev_init(void);
- void kfd_chardev_exit(void);
- struct device *kfd_chardev(void);
- 
-+/**
-+ * enum kfd_preempt_type_filter
-+ *
-+ * @KFD_PREEMPT_TYPE_FILTER_SINGLE_QUEUE: Preempts single queue.
-+ *
-+ * @KFD_PRERMPT_TYPE_FILTER_ALL_QUEUES: Preempts all queues in the
-+ *						running queues list.
-+ *
-+ * @KFD_PRERMPT_TYPE_FILTER_BY_PASID: Preempts queues that belongs to
-+ *						specific process.
-+ *
-+ */
-+enum kfd_preempt_type_filter {
-+	KFD_PREEMPT_TYPE_FILTER_SINGLE_QUEUE,
-+	KFD_PREEMPT_TYPE_FILTER_ALL_QUEUES,
-+	KFD_PREEMPT_TYPE_FILTER_BY_PASID
-+};
- 
- enum kfd_preempt_type {
- 	KFD_PREEMPT_TYPE_WAVEFRONT,
-@@ -313,6 +330,51 @@ enum KFD_MQD_TYPE {
- 	KFD_MQD_TYPE_MAX
- };
- 
-+struct scheduling_resources {
-+	unsigned int vmid_mask;
-+	enum kfd_queue_type type;
-+	uint64_t queue_mask;
-+	uint64_t gws_mask;
-+	uint32_t oac_mask;
-+	uint32_t gds_heap_base;
-+	uint32_t gds_heap_size;
-+};
-+
-+struct process_queue_manager {
-+	/* data */
-+	struct kfd_process	*process;
-+	unsigned int		num_concurrent_processes;
-+	struct list_head	queues;
-+	unsigned long		*queue_slot_bitmap;
-+};
-+
-+struct qcm_process_device {
-+	/* The Device Queue Manager that owns this data */
++	struct process_queue_node *pqn;
++	struct kfd_process_device *pdd;
 +	struct device_queue_manager *dqm;
-+	struct process_queue_manager *pqm;
-+	/* Device Queue Manager lock */
-+	struct mutex *lock;
-+	/* Queues list */
-+	struct list_head queues_list;
-+	struct list_head priv_queue_list;
++	struct kfd_dev *dev;
++	int retval;
 +
-+	unsigned int queue_count;
-+	unsigned int vmid;
-+	bool is_debug;
-+	/*
-+	 * All the memory management data should be here too
-+	 */
-+	uint64_t gds_context_area;
-+	uint32_t sh_mem_config;
-+	uint32_t sh_mem_bases;
-+	uint32_t sh_mem_ape1_base;
-+	uint32_t sh_mem_ape1_limit;
-+	uint32_t page_table_base;
-+	uint32_t gds_size;
-+	uint32_t num_gws;
-+	uint32_t num_oac;
-+};
++	dqm = NULL;
 +
- /* Data that is per-process-per device. */
- struct kfd_process_device {
- 	/*
-@@ -434,12 +496,23 @@ int kgd2kfd_resume(struct kfd_dev *dev);
- int kfd_init_apertures(struct kfd_process *process);
- 
- /* Queue Context Management */
-+inline uint32_t lower_32(uint64_t x);
-+inline uint32_t upper_32(uint64_t x);
++	BUG_ON(!pqm);
++	retval = 0;
 +
- int init_queue(struct queue **q, struct queue_properties properties);
- void uninit_queue(struct queue *q);
- void print_queue(struct queue *q);
- 
-+struct kernel_queue *kernel_queue_init(struct kfd_dev *dev,
-+					enum kfd_queue_type type);
-+void kernel_queue_uninit(struct kernel_queue *kq);
++	pr_debug("kfd: In Func %s\n", __func__);
 +
- /* Packet Manager */
- 
-+#define KFD_HIQ_TIMEOUT (500)
++	pqn = get_queue_by_qid(pqm, qid);
++	if (pqn == NULL) {
++		pr_err("kfd: queue id does not match any known queue\n");
++		return -EINVAL;
++	}
 +
-+#define KFD_UNMAP_LATENCY (150)
++	dev = NULL;
++	if (pqn->kq)
++		dev = pqn->kq->dev;
++	if (pqn->q)
++		dev = pqn->q->device;
++	BUG_ON(!dev);
 +
- struct packet_manager {
- 	struct device_queue_manager *dqm;
- 	struct kernel_queue *priv_queue;
-@@ -448,6 +521,8 @@ struct packet_manager {
- 	struct kfd_mem_obj *ib_buffer_obj;
- };
- 
-+void pm_release_ib(struct packet_manager *pm);
++	pdd = kfd_get_process_device_data(dev, pqm->process, 1);
++	BUG_ON(!pdd);
 +
- uint64_t kfd_get_number_elems(struct kfd_dev *kfd);
- phys_addr_t kfd_get_process_doorbells(struct kfd_dev *dev,
- 					struct kfd_process *process);
++	if (pqn->kq) {
++		/* destroy kernel queue (DIQ) */
++		dqm = pqn->kq->dev->dqm;
++		dqm->destroy_kernel_queue(dqm, pqn->kq, &pdd->qpd);
++		kernel_queue_uninit(pqn->kq);
++	}
++
++	if (pqn->q) {
++		dqm = pqn->q->device->dqm;
++		retval = dqm->destroy_queue(dqm, &pdd->qpd, pqn->q);
++		if (retval != 0)
++			return retval;
++
++		uninit_queue(pqn->q);
++	}
++
++	list_del(&pqn->process_queue_list);
++	kfree(pqn);
++	clear_bit(qid, pqm->queue_slot_bitmap);
++
++	if (list_empty(&pqm->queues))
++		dqm->unregister_process(dqm, &pdd->qpd);
++
++	return retval;
++}
++
++int pqm_update_queue(struct process_queue_manager *pqm, unsigned int qid,
++			struct queue_properties *p)
++{
++	int retval;
++	struct process_queue_node *pqn;
++
++	BUG_ON(!pqm);
++
++	pqn = get_queue_by_qid(pqm, qid);
++	BUG_ON(!pqn);
++
++	pqn->q->properties.queue_address = p->queue_address;
++	pqn->q->properties.queue_size = p->queue_size;
++	pqn->q->properties.queue_percent = p->queue_percent;
++	pqn->q->properties.priority = p->priority;
++
++	retval = pqn->q->device->dqm->update_queue(pqn->q->device->dqm, pqn->q);
++	if (retval != 0)
++		return retval;
++
++	return 0;
++}
++
++struct kernel_queue *pqm_get_kernel_queue(struct process_queue_manager *pqm,
++					unsigned int qid)
++{
++	struct process_queue_node *pqn;
++
++	BUG_ON(!pqm);
++
++	pqn = get_queue_by_qid(pqm, qid);
++	if (pqn && pqn->kq)
++		return pqn->kq;
++
++	return NULL;
++}
++
++
 -- 
 2.1.0
 
