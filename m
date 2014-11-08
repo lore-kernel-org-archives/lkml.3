@@ -1,136 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaKHRPP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 12:15:15 -0500
-Received: from sauhun.de ([89.238.76.85]:36635 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395AbaKHRPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 12:15:13 -0500
-Date: Sat, 8 Nov 2014 18:16:16 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] i2c for 3.18
-Message-ID: <20141108171611.GA6592@katana>
+	id S1753935AbaKHRQK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 12:16:10 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:50931 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838AbaKHRQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 12:16:08 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415452601-13078-3-git-send-email-amit.daniel@samsung.com>
+References: <1415452601-13078-1-git-send-email-amit.daniel@samsung.com> <1415452601-13078-3-git-send-email-amit.daniel@samsung.com>
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+Date: Sat, 8 Nov 2014 22:45:46 +0530
+X-Google-Sender-Auth: 7JC5IQo_kkqKq7cxvDQzVtLrTp8
+Message-ID: <CAGcde9HdX_sac3u554nwzk1ZcKLUmo69QG6CGPRkwT7uCNEX4Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/6] drivers: soc: Add support for Exynos PMU driver
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, lee.jones@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Amit,
 
---gBBFr7Ir9EOA20Yy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 8 November 2014 18:46, Amit Daniel Kachhap <amit.daniel@samsung.com> wrote:
+> This patch moves Exynos PMU driver implementation from "arm/mach-exynos"
+> to "drivers/soc/samsung". This driver is mainly used for setting misc bits of
+> register from PMU IP of Exynos SoC which will be required to configure
+> before Suspend/Resume. Currently all these settings are done in
+> "arch/arm/mach-exynos/pmu.c" but moving ahead for ARM64 based SoC
+> support,there is a need of DT based implementation of PMU driver.
+>
+> This driver uses already existing DT binding information.
+>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  arch/arm/mach-exynos/Makefile                      |    2 +-
+>  drivers/soc/Kconfig                                |    1 +
+>  drivers/soc/Makefile                               |    1 +
+>  drivers/soc/samsung/Kconfig                        |   19 +++++++++++++++++++
+>  drivers/soc/samsung/Makefile                       |    1 +
+>  .../pmu.c => drivers/soc/samsung/exynos-pmu.c      |    0
+>  6 files changed, 23 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/soc/samsung/Kconfig
+>  create mode 100644 drivers/soc/samsung/Makefile
+>  rename arch/arm/mach-exynos/pmu.c => drivers/soc/samsung/exynos-pmu.c (100%)
+>
+> diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
+> index bcefb54..b91b382 100644
+> --- a/arch/arm/mach-exynos/Makefile
+> +++ b/arch/arm/mach-exynos/Makefile
+> @@ -9,7 +9,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) += -I$(srctree)/$(src)/include -I$(srctree)
+>
+>  # Core
+>
+> -obj-$(CONFIG_ARCH_EXYNOS)      += exynos.o pmu.o exynos-smc.o firmware.o
+> +obj-$(CONFIG_ARCH_EXYNOS)      += exynos.o exynos-smc.o firmware.o
+>
+>  obj-$(CONFIG_EXYNOS_CPU_SUSPEND) += pm.o sleep.o
+>  obj-$(CONFIG_PM_SLEEP)         += suspend.o
+> diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
+> index 76d6bd4..90f33b9 100644
+> --- a/drivers/soc/Kconfig
+> +++ b/drivers/soc/Kconfig
+> @@ -3,5 +3,6 @@ menu "SOC (System On Chip) specific Drivers"
+>  source "drivers/soc/qcom/Kconfig"
+>  source "drivers/soc/ti/Kconfig"
+>  source "drivers/soc/versatile/Kconfig"
+> +source "drivers/soc/samsung/Kconfig"
+>
+>  endmenu
+> diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+> index 063113d..44d220d 100644
+> --- a/drivers/soc/Makefile
+> +++ b/drivers/soc/Makefile
+> @@ -6,3 +6,4 @@ obj-$(CONFIG_ARCH_QCOM)         += qcom/
+>  obj-$(CONFIG_ARCH_TEGRA)       += tegra/
+>  obj-$(CONFIG_SOC_TI)           += ti/
+>  obj-$(CONFIG_PLAT_VERSATILE)   += versatile/
+> +obj-$(CONFIG_ARCH_EXYNOS)      += samsung/
+> diff --git a/drivers/soc/samsung/Kconfig b/drivers/soc/samsung/Kconfig
+> new file mode 100644
+> index 0000000..beb6dfc
+> --- /dev/null
+> +++ b/drivers/soc/samsung/Kconfig
+> @@ -0,0 +1,19 @@
+> +#
+> +# SAMSUNG SOC drivers
+> +#
+> +menuconfig SOC_SAMSUNG
+> +       bool "Samsung SOC drivers support"
+> +
+> +if SOC_SAMSUNG
+> +
+> +config MFD_EXYNOS_PMU
 
-Linus,
+MFD_EXYNOS_PMU? I think it should be only EXYNOS_PMU,
+as we are moving here in drivers/soc giving reason as it does not fit
+into MFD.
 
-here is one bigger cleanup (FSF address removal) and two bugfixes for
-I2C. Please pull.
+> +       tristate "Support Exynos Power Management Unit"
 
-Thanks,
+I think this config should not be user visible config option, as I remember
+same was pointed out by Tomasz some times back.
 
-   Wolfram
+> +       depends on ARM || ARM64
 
+How about only making depends on ARCH_EXYNOS?
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
-
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
-
-for you to fetch changes up to e4df3a0b62285130ac0a35cf07678c154ffb649d:
-
-  i2c: core: Dispose OF IRQ mapping at client removal time (2014-11-07 19:03:18 +0100)
-
-----------------------------------------------------------------
-Laurent Pinchart (1):
-      i2c: core: Dispose OF IRQ mapping at client removal time
-
-Wolfram Sang (2):
-      i2c: remove FSF address
-      i2c: at91: don't account as iowait
-
- drivers/i2c/algos/i2c-algo-bit.c            |  5 -----
- drivers/i2c/algos/i2c-algo-pca.c            |  5 -----
- drivers/i2c/algos/i2c-algo-pcf.c            |  5 -----
- drivers/i2c/algos/i2c-algo-pcf.h            |  7 +------
- drivers/i2c/busses/i2c-ali1535.c            |  4 ----
- drivers/i2c/busses/i2c-ali15x3.c            |  4 ----
- drivers/i2c/busses/i2c-amd756-s4882.c       |  4 ----
- drivers/i2c/busses/i2c-amd756.c             |  4 ----
- drivers/i2c/busses/i2c-at91.c               |  2 +-
- drivers/i2c/busses/i2c-au1550.c             |  4 ----
- drivers/i2c/busses/i2c-cpm.c                |  4 ----
- drivers/i2c/busses/i2c-davinci.c            |  4 ----
- drivers/i2c/busses/i2c-designware-core.c    |  4 ----
- drivers/i2c/busses/i2c-designware-core.h    |  4 ----
- drivers/i2c/busses/i2c-designware-pcidrv.c  |  4 ----
- drivers/i2c/busses/i2c-designware-platdrv.c |  4 ----
- drivers/i2c/busses/i2c-eg20t.c              |  4 ----
- drivers/i2c/busses/i2c-elektor.c            |  6 +-----
- drivers/i2c/busses/i2c-hydra.c              |  4 ----
- drivers/i2c/busses/i2c-i801.c               |  4 ----
- drivers/i2c/busses/i2c-imx.c                |  5 -----
- drivers/i2c/busses/i2c-iop3xx.h             |  6 +-----
- drivers/i2c/busses/i2c-isch.c               |  4 ----
- drivers/i2c/busses/i2c-ismt.c               |  4 ----
- drivers/i2c/busses/i2c-nforce2-s4985.c      |  4 ----
- drivers/i2c/busses/i2c-nforce2.c            |  4 ----
- drivers/i2c/busses/i2c-omap.c               |  4 ----
- drivers/i2c/busses/i2c-parport-light.c      |  4 ----
- drivers/i2c/busses/i2c-parport.c            |  4 ----
- drivers/i2c/busses/i2c-parport.h            |  4 ----
- drivers/i2c/busses/i2c-pasemi.c             |  4 ----
- drivers/i2c/busses/i2c-pca-isa.c            |  4 ----
- drivers/i2c/busses/i2c-piix4.c              |  4 ----
- drivers/i2c/busses/i2c-pmcmsp.c             |  4 ----
- drivers/i2c/busses/i2c-powermac.c           |  4 ----
- drivers/i2c/busses/i2c-s3c2410.c            |  4 ----
- drivers/i2c/busses/i2c-sh_mobile.c          |  4 ----
- drivers/i2c/busses/i2c-sibyte.c             |  4 ----
- drivers/i2c/busses/i2c-simtec.c             |  4 ----
- drivers/i2c/busses/i2c-sis5595.c            |  4 ----
- drivers/i2c/busses/i2c-sis630.c             |  4 ----
- drivers/i2c/busses/i2c-sis96x.c             |  4 ----
- drivers/i2c/busses/i2c-taos-evm.c           |  4 ----
- drivers/i2c/busses/i2c-via.c                |  4 ----
- drivers/i2c/busses/i2c-viapro.c             |  4 ----
- drivers/i2c/busses/i2c-xiic.c               |  4 ----
- drivers/i2c/busses/scx200_acb.c             |  4 ----
- drivers/i2c/i2c-boardinfo.c                 |  5 -----
- drivers/i2c/i2c-core.c                      | 10 ++++------
- drivers/i2c/i2c-core.h                      |  5 -----
- drivers/i2c/i2c-dev.c                       |  5 -----
- drivers/i2c/i2c-smbus.c                     |  5 -----
- drivers/i2c/i2c-stub.c                      |  4 ----
- 53 files changed, 8 insertions(+), 223 deletions(-)
-
---gBBFr7Ir9EOA20Yy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUXk/bAAoJEBQN5MwUoCm20pcQALIWsxpMAu7/XZ5ZqiBmZ0QD
-fj8AtTN6JkwTYYy8vjx6HGlhHJrMZNwWixClOtpBpMvvc4ULREdXYFDV4HrSLtQ9
-n2Be4gv9XdghQhoZnpbds4QKfoy8jQYrZGdNyQ7I2ht0pmTvXNgfxEB/CsmY157L
-vHCvMclnt7osVHn7puhdl9zmYYwzpKZxLaO7KGxt1t3SECmC43RleSBRDTyqTh6Y
-jrZ9IYUyYV90T0Ja9661D8UVn72GE7cfAucDwq2DenZzXNBDvEpWMQRR2QujVpkx
-yOXjvPK8C5bfolRRcfEwRHHjsmydH/ygvbouAmzwRNRtYCy7TGeQjtZU/ua7LMa9
-FGEfLbkLQ+tPlw7XcpIhxcKW2d5f6Wm2YVP1O3NB/MFFlQxcJ+NDiqBzYN4NBVo3
-eQOhQE3kcDuRT/7SoO/AAfspg/joUewHW5+5AQkmUEMnkTJedlla5PWb1ZayTFD2
-kkK9lVbzP94aACiXMUojZrKeKOYuvGg4CqqShL/bHYKQuuEcPoF8ORPrwuky1qqq
-t/6CiB5MbiBDMq+2RCBtT8W/ChZ/EyRT+eS41uADDUl0Dj27+jRriOec7wzyMpk5
-e9s8POxrror8Sc8ammMMYwzwA5oLyaW2aTgqINaGDG2lj68819DIY32fR/xGetVE
-GFPRi087r6y72CUDOB+i
-=hVQV
------END PGP SIGNATURE-----
-
---gBBFr7Ir9EOA20Yy--
+> +       default y
+> +       help
+> +         Exynos SoC have Power Management Unit (PMU) which controls power and
+> +         operation state of Exynos SoC in two different ways. This driver
+> +         provides implementation of PMU driver and provides basic functionality
+> +         required during these operation state.
+> +
+> +endif #SOC_SAMSUNG
+> diff --git a/drivers/soc/samsung/Makefile b/drivers/soc/samsung/Makefile
+> new file mode 100644
+> index 0000000..9d30f61
+> --- /dev/null
+> +++ b/drivers/soc/samsung/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_MFD_EXYNOS_PMU)   += exynos-pmu.o
+> diff --git a/arch/arm/mach-exynos/pmu.c b/drivers/soc/samsung/exynos-pmu.c
+> similarity index 100%
+> rename from arch/arm/mach-exynos/pmu.c
+> rename to drivers/soc/samsung/exynos-pmu.c
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
