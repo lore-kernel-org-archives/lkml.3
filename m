@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaKHS7U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:59:20 -0500
-Received: from mail-bn1bon0142.outbound.protection.outlook.com ([157.56.111.142]:11625
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754049AbaKHS7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:59:18 -0500
-X-WSS-ID: 0NEQI2K-08-GKG-02
-X-M-MSG: 
-Message-ID: <545E67F4.4000706@amd.com>
-Date: Sat, 8 Nov 2014 20:59:00 +0200
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754120AbaKHS7b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:59:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51298 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989AbaKHS72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:59:28 -0500
+Date: Sat, 8 Nov 2014 10:58:12 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PULL] TTY/Serial fixes for 3.18-rc3
+Message-ID: <20141108185812.GA2200@kroah.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>, Jingoo Han <jg1.han@samsung.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        David Rientjes <rientjes@google.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Antti Palosaari <crope@iki.fi>
-Subject: Re: [PATCH v5 06/24] Update MAINTAINERS and CREDITS files with amdkfd
- info
-References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-	 <1415471865-1893-7-git-send-email-oded.gabbay@amd.com>
- <1415472403.23530.28.camel@perches.com>
-In-Reply-To: <1415472403.23530.28.camel@perches.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(479174003)(189002)(377454003)(377424004)(199003)(62966003)(99396003)(46102003)(65806001)(65956001)(77156002)(106466001)(31966008)(105586002)(21056001)(87936001)(20776003)(47776003)(120916001)(110136001)(107046002)(97736003)(87266999)(50986999)(54356999)(65816999)(102836001)(76176999)(33656002)(101416001)(44976005)(19580395003)(19580405001)(80316001)(59896002)(68736004)(84676001)(83506001)(23676002)(64126003)(92726001)(64706001)(95666004)(4396001)(50466002)(86362001)(36756003)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB202;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
-X-Forefront-PRVS: 0389EDA07F
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
-On 11/08/2014 08:46 PM, Joe Perches wrote:
-> On Sat, 2014-11-08 at 20:37 +0200, Oded Gabbay wrote:
-> []
->> diff --git a/MAINTAINERS b/MAINTAINERS
-> []
->> @@ -610,6 +610,16 @@ F:	drivers/crypto/geode*
->>  F:	drivers/video/fbdev/geode/
->>  F:	arch/x86/include/asm/geode.h
->>  
->> +AMD KFD (radeon extension)
->> +M:	Oded Gabbay <oded.gabbay@amd.com>
->> +L:	dri-devel@lists.freedesktop.org
->> +T:	git git://people.freedesktop.org/~gabbayo/linux.git
->> +S:	Supported
->> +F:	drivers/gpu/drm/radeon/amdkfd/*
->> +F:	drivers/gpu/drm/radeon/radeon_kfd.c
->> +F:	drivers/gpu/drm/radeon/radeon_kfd.h
->> +F:	include/linux/uapi/linux/kfd_ioctl.h
-> 
-> include/uapi/linux/kfd_ioctl.h
-> 
->> +
->>  AMD IOMMU (AMD-VI)
->>  M:	Joerg Roedel <joro@8bytes.org>
->>  L:	iommu@lists.linux-foundation.org
-> 
-> Please keep MAINTAINERS in alphabetical order too.
-> Move this new AMD KFD section after AMD IOMMU.
-> 
+are available in the git repository at:
 
-Thanks for the comments. Will be fixed in next version.
-I also noticed I forgot to modify drivers/gpu/drm/radeon/amdkfd/* to
-drivers/gpu/drm/amd/amdkfd/*
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.18-rc4
 
-	Oded
+for you to fetch changes up to c4dc304677e8d566572c4738d95c48be150c6606:
+
+  tty: Fix pty master poll() after slave closes v2 (2014-11-06 12:23:36 -0800)
+
+----------------------------------------------------------------
+TTY/Serial fixes for 3.18-rc4
+
+Here are some tiny serial/tty fixes for 3.18-rc4 that resolve some
+reported issues.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Francesco Ruggeri (1):
+      tty: Fix pty master poll() after slave closes v2
+
+Imre Deak (1):
+      tty/vt: don't set font mappings on vc not supporting this
+
+Jingchang Lu (1):
+      serial: of-serial: fix uninitialized kmalloc variable
+
+Matthias Brugger (1):
+      tty: serial: 8250_mtk: Fix quot calculation
+
+Peter Hurley (3):
+      serial: Fix divide-by-zero fault in uart_get_divisor()
+      tty: Fix high cpu load if tty is unreleaseable
+      tty: Prevent "read/write wait queue active!" log flooding
+
+ drivers/tty/n_tty.c                |  9 +++++++--
+ drivers/tty/serial/8250/8250_mtk.c |  2 +-
+ drivers/tty/serial/of_serial.c     |  2 +-
+ drivers/tty/serial/serial_core.c   |  2 +-
+ drivers/tty/tty_io.c               | 15 ++++++++++++---
+ drivers/tty/vt/consolemap.c        |  7 +++++++
+ 6 files changed, 29 insertions(+), 8 deletions(-)
