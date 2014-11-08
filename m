@@ -1,54 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaKHXBv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 18:01:51 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:60760 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaKHXBu (ORCPT
+	id S1753466AbaKHXB5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 18:01:57 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:65526 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330AbaKHXBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 18:01:50 -0500
+	Sat, 8 Nov 2014 18:01:53 -0500
 From: Timofey Titovets <nefelim4ag@gmail.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: nefelim4ag@gmail.com, marco.antonio.780@gmail.com
-Subject: [PATCH v2 0/3] KSM: Mark new vma for deduplication
-Date: Sun,  9 Nov 2014 02:01:40 +0300
-Message-Id: <1415487703-1824-1-git-send-email-nefelim4ag@gmail.com>
+Subject: [PATCH v2 2/3] KSM: Add to sysfs - mark_new_vma
+Date: Sun,  9 Nov 2014 02:01:42 +0300
+Message-Id: <1415487703-1824-3-git-send-email-nefelim4ag@gmail.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415487703-1824-1-git-send-email-nefelim4ag@gmail.com>
+References: <1415487703-1824-1-git-send-email-nefelim4ag@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good time of day List,
-this tiny series of patches implement feature for auto deduping all anonymous memory.
-mark_new_vma - new ksm sysfs interface
-Every time then new vma created and mark_new_vma set to 1, then will be vma marked as VM_MERGEABLE and added to ksm queue.
-This can produce small overheads
-(I have not catch any problems or slowdown)
+It allow for user to  control process of marking new vma as VM_MERGEABLE
+Create new sysfs interface /sys/kernel/mm/ksm/mark_new_vma
+1 - enabled - mark new allocated vma as VM_MERGEABLE and add it to ksm queue
+0 - disable it
 
-This is useful for:
-Android (CM) devs which implement ksm support with patching system.
-Users of tiny pc.
-Servers what not use KVM but use something very releated, like containers.
-
-For tests:
-I have tested it and it working very good. For testing apply it and enable ksm:
-echo 1 | sudo tee /sys/kernel/mm/ksm/run
-This show how much memory saved:
-echo $[$(cat /sys/kernel/mm/ksm/pages_shared)*$(getconf PAGE_SIZE)/1024 ]KB
-
-On my system i save ~1% of memory 26 Mb/2100 Mb (deduped)/(used)
-
-Timofey Titovets (3):
-  KSM: Add auto flag new VMA as VM_MERGEABLE
-  KSM: Add to sysfs - mark_new_vma
-  KSM: Add config to control mark_new_vma
-
- include/linux/ksm.h | 39 +++++++++++++++++++++++++++++++++++++++
- mm/Kconfig          |  7 +++++++
+Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
+---
+ include/linux/ksm.h | 10 +++++++++-
  mm/ksm.c            | 39 ++++++++++++++++++++++++++++++++++++++-
- mm/mmap.c           | 17 +++++++++++++++++
- 4 files changed, 101 insertions(+), 1 deletion(-)
+ 2 files changed, 47 insertions(+), 2 deletions(-)
 
---
+diff --git a/include/linux/ksm.h b/include/linux/ksm.h
+index c3fff64..deb60fc 100644
+--- a/include/linux/ksm.h
++++ b/include/linux/ksm.h
+@@ -76,6 +76,12 @@ struct page *ksm_might_need_to_copy(struct page *page,
+ int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc);
+ void ksm_migrate_page(struct page *newpage, struct page *oldpage);
+ 
++
++/* Mark new vma as mergeable */
++#define ALLOW	1
++#define DENY	0
++extern unsigned mark_new_vma __read_mostly;
++
+ /*
+  * Allow to mark new vma as VM_MERGEABLE
+  */
+@@ -84,6 +90,8 @@ void ksm_migrate_page(struct page *newpage, struct page *oldpage);
+ #endif
+ static inline void ksm_vm_flags_mod(unsigned long *vm_flags)
+ {
++	if (!mark_new_vma)
++		return;
+ 	if (*vm_flags & (VM_MERGEABLE | VM_SHARED  | VM_MAYSHARE   |
+ 			 VM_PFNMAP    | VM_IO      | VM_DONTEXPAND |
+ 			 VM_HUGETLB | VM_NONLINEAR | VM_MIXEDMAP   | VM_SAO) )
+@@ -94,7 +102,7 @@ static inline void ksm_vm_flags_mod(unsigned long *vm_flags)
+ static inline void ksm_vma_add_new(struct vm_area_struct *vma)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+-	if (!test_bit(MMF_VM_MERGEABLE, &mm->flags)) {
++	if (mark_new_vma && !test_bit(MMF_VM_MERGEABLE, &mm->flags)) {
+ 		__ksm_enter(mm);
+ 	}
+ }
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 6b2e337..7bfb616 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -223,6 +223,12 @@ static unsigned int ksm_thread_pages_to_scan = 100;
+ /* Milliseconds ksmd should sleep between batches */
+ static unsigned int ksm_thread_sleep_millisecs = 20;
+ 
++/* Mark new vma as mergeable */
++#ifndef CONFIG_KSM_MARK_NEW_VMA
++#define CONFIG_KSM_MARK_NEW_VMA DENY
++#endif
++unsigned mark_new_vma = CONFIG_KSM_MARK_NEW_VMA;
++
+ #ifdef CONFIG_NUMA
+ /* Zeroed when merging across nodes is not allowed */
+ static unsigned int ksm_merge_across_nodes = 1;
+@@ -2127,6 +2133,34 @@ static ssize_t pages_to_scan_store(struct kobject *kobj,
+ }
+ KSM_ATTR(pages_to_scan);
+ 
++static ssize_t mark_new_vma_show(struct kobject *kobj, struct kobj_attribute *attr,
++			char *buf)
++{
++	return sprintf(buf, "%u\n", mark_new_vma);
++}
++static ssize_t mark_new_vma_store(struct kobject *kobj,
++				  struct kobj_attribute *attr,
++				  const char *buf, size_t count)
++{
++	int err;
++	unsigned long flags;
++
++	err = kstrtoul(buf, 10, &flags);
++	if (err || flags > UINT_MAX || flags > ALLOW)
++		return -EINVAL;
++
++	/*
++	 * ALLOW = 1 - sets allow for mark new vma as
++	 * VM_MERGEABLE and adding it to ksm
++	 * DENY = 0 - disable it
++	 */
++	if (mark_new_vma != flags) {
++		mark_new_vma = flags;
++	}
++	return count;
++}
++KSM_ATTR(mark_new_vma);
++
+ static ssize_t run_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 			char *buf)
+ {
+@@ -2287,6 +2321,7 @@ static struct attribute *ksm_attrs[] = {
+ 	&pages_unshared_attr.attr,
+ 	&pages_volatile_attr.attr,
+ 	&full_scans_attr.attr,
++	&mark_new_vma_attr.attr,
+ #ifdef CONFIG_NUMA
+ 	&merge_across_nodes_attr.attr,
+ #endif
+@@ -2323,7 +2358,9 @@ static int __init ksm_init(void)
+ 		goto out_free;
+ 	}
+ #else
+-	ksm_run = KSM_RUN_MERGE;	/* no way for user to start it */
++	/* no way for user to start it */
++	mark_new_vma = ALLOW;
++	ksm_run = KSM_RUN_MERGE;
+ 
+ #endif /* CONFIG_SYSFS */
+ 
+-- 
 2.1.3
 
