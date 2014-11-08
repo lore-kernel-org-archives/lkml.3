@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099AbaKHSMx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:12:53 -0500
+	id S1754082AbaKHSMv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:12:51 -0500
 Received: from mga14.intel.com ([192.55.52.115]:8211 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753954AbaKHSMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753953AbaKHSMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 8 Nov 2014 13:12:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="413533371"
+   d="scan'208";a="413533361"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch Part3 v3 07/38] x86, irq: Simplify the way to print IOAPIC entry
-Date: Sun,  9 Nov 2014 02:13:07 +0800
-Message-Id: <1415470418-10874-8-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 v3 06/38] x86, irq: Refine the way to allocate irq_cfg for legacy IRQs
+Date: Sun,  9 Nov 2014 02:13:06 +0800
+Message-Id: <1415470418-10874-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415470418-10874-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415470418-10874-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,63 +35,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify the way to print IOAPIC entry content, so we could kill
-native_io_apic_print_entries(), intel_ir_io_apic_print_entries()
-and x86_io_apic_ops.print_entries() later.
+To support legacy ISA IRQs, we need to preallocate irq_cfg structures
+for legacy ISA IRQs. Refine the way to allocate irq_cfg for legacy ISA
+IRQs, so it's more friend to hierarchy irqdomain implementation.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   13 +------------
+ arch/x86/kernel/apic/vector.c  |   42 +++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 42 insertions(+), 13 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 74a0e95cfb3d..b2618d48d572 100644
+index e465171bcbf3..74a0e95cfb3d 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1424,6 +1424,33 @@ void ioapic_zap_locks(void)
- 	raw_spin_lock_init(&ioapic_lock);
+@@ -254,8 +254,7 @@ static void free_ioapic_saved_registers(int idx)
+ 
+ int __init arch_early_ioapic_init(void)
+ {
+-	struct irq_cfg *cfg;
+-	int i, node = cpu_to_node(0);
++	int i;
+ 
+ 	if (!nr_legacy_irqs())
+ 		io_apic_irqs = ~0UL;
+@@ -263,16 +262,6 @@ int __init arch_early_ioapic_init(void)
+ 	for_each_ioapic(i)
+ 		alloc_ioapic_saved_registers(i);
+ 
+-	/*
+-	 * For legacy IRQ's, start with assigning irq0 to irq15 to
+-	 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
+-	 */
+-	for (i = 0; i < nr_legacy_irqs(); i++) {
+-		cfg = alloc_irq_and_cfg_at(i, node);
+-		cfg->vector = IRQ0_VECTOR + i;
+-		cpumask_setall(cfg->domain);
+-	}
+-
+ 	return 0;
  }
  
-+static void io_apic_print_entries(unsigned int apic, unsigned int nr_entries)
-+{
-+	int i;
-+	char buf[256];
-+	struct IO_APIC_route_entry entry;
-+	struct IR_IO_APIC_route_entry *ir_entry = (void *)&entry;
-+
-+	printk(KERN_DEBUG "IOAPIC %d:\n", apic);
-+	for (i = 0; i <= nr_entries; i++) {
-+		entry = ioapic_read_entry(apic, i);
-+		snprintf(buf, sizeof(buf),
-+			 " pin%02x, %s, %s, %s, V(%02X), IRR(%1d), S(%1d)",
-+			 i, entry.mask ? "enabled" : "disabled",
-+			 entry.trigger ? "level" : "edge",
-+			 entry.polarity ? "high" : "low",
-+			 entry.vector, entry.irr, entry.delivery_status);
-+		if (ir_entry->format)
-+			printk(KERN_DEBUG "%s, remapped, I(%04X),  Z(%X)\n",
-+			       buf, (ir_entry->index << 15) | ir_entry->index,
-+			       ir_entry->zero);
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index bf4c61660f3d..2590a4b4179d 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -24,6 +24,9 @@
+ struct irq_domain *x86_vector_domain;
+ static DEFINE_RAW_SPINLOCK(vector_lock);
+ static struct irq_chip vector_chip;
++#ifdef	CONFIG_X86_IO_APIC
++static struct irq_cfg *legacy_irq_cfgs[NR_IRQS_LEGACY];
++#endif
+ 
+ void lock_vector_lock(void)
+ {
+@@ -283,6 +286,10 @@ static void x86_vector_free_irqs(struct irq_domain *domain,
+ 			free_remapped_irq(virq);
+ 			clear_irq_vector(virq + i, irq_data->chip_data);
+ 			free_irq_cfg(irq_data->chip_data);
++#ifdef	CONFIG_X86_IO_APIC
++			if (virq + i < nr_legacy_irqs())
++				legacy_irq_cfgs[virq + i] = NULL;
++#endif
+ 			irq_domain_reset_irq_data(irq_data);
+ 		}
+ 	}
+@@ -308,7 +315,12 @@ static int x86_vector_alloc_irqs(struct irq_domain *domain, unsigned int virq,
+ 	for (i = 0; i < nr_irqs; i++) {
+ 		irq_data = irq_domain_get_irq_data(domain, virq + i);
+ 		BUG_ON(!irq_data);
+-		cfg = alloc_irq_cfg(irq_data->node);
++#ifdef	CONFIG_X86_IO_APIC
++		if (virq + i < nr_legacy_irqs() && legacy_irq_cfgs[virq + i])
++			cfg = legacy_irq_cfgs[virq + i];
 +		else
-+			printk(KERN_DEBUG "%s, %s, D(%02X), M(%1d)\n",
-+			       buf, entry.dest_mode ? "logical" : "physical",
-+			       entry.dest, entry.delivery_mode);
++#endif
++			cfg = alloc_irq_cfg(irq_data->node);
+ 		if (!cfg) {
+ 			err = -ENOMEM;
+ 			goto error;
+@@ -357,8 +369,36 @@ int __init arch_probe_nr_irqs(void)
+ 	return nr_legacy_irqs();
+ }
+ 
++#ifdef	CONFIG_X86_IO_APIC
++static void init_legacy_irqs(void)
++{
++	int i, node = cpu_to_node(0);
++	struct irq_cfg *cfg;
++
++	/*
++	 * For legacy IRQ's, start with assigning irq0 to irq15 to
++	 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
++	 */
++	for (i = 0; i < nr_legacy_irqs(); i++) {
++		cfg = legacy_irq_cfgs[i] = alloc_irq_cfg(node);
++		BUG_ON(!cfg);
++		/*
++		 * For legacy IRQ's, start with assigning irq0 to irq15 to
++		 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
++		 */
++		cfg->vector = IRQ0_VECTOR + i;
++		cpumask_setall(cfg->domain);
++		irq_set_chip_data(i, cfg);
 +	}
 +}
++#else
++static void init_legacy_irqs(void) { }
++#endif
 +
- static void __init print_IO_APIC(int ioapic_idx)
+ int __init arch_early_irq_init(void)
  {
- 	union IO_APIC_reg_00 reg_00;
-@@ -1477,8 +1504,7 @@ static void __init print_IO_APIC(int ioapic_idx)
- 	}
- 
- 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
--
--	x86_io_apic_ops.print_entries(ioapic_idx, reg_01.bits.entries);
-+	io_apic_print_entries(ioapic_idx, reg_01.bits.entries);
- }
- 
- void __init print_IO_APICs(void)
++	init_legacy_irqs();
++
+ 	x86_vector_domain = irq_domain_add_tree(NULL, &x86_vector_domain_ops,
+ 						NULL);
+ 	BUG_ON(x86_vector_domain == NULL);
 -- 
 1.7.10.4
 
