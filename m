@@ -1,123 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaKHDT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 22:19:58 -0500
-Received: from regular1.263xmail.com ([211.150.99.130]:59243 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125AbaKHDT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 22:19:56 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: jay.xu@rock-chips.com
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <770c6e398cdaf048c9b6504cea7698fe>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <545D8BCE.1030202@rock-chips.com>
-Date: Sat, 08 Nov 2014 11:19:42 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753159AbaKHDq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 22:46:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470AbaKHDq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 22:46:26 -0500
+Date: Fri, 7 Nov 2014 21:45:53 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Vojtech Pavlik <vojtech@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel Live Patching
+Message-ID: <20141108034553.GA11663@treble.redhat.com>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
+ <20141106184446.GA12779@infradead.org>
+ <20141106185157.GB29272@suse.cz>
+ <20141106185857.GA7106@infradead.org>
+ <20141106202423.GB2266@suse.cz>
+ <20141107074745.GC22703@infradead.org>
+ <20141107131153.GD4071@treble.redhat.com>
+ <20141107140458.GA21774@suse.cz>
+ <20141107154500.GF4071@treble.redhat.com>
+ <20141107212735.GA21409@suse.cz>
 MIME-Version: 1.0
-To: Lucas Stach <l.stach@pengutronix.de>
-CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com
-Subject: Re: [PATCH V4 5/6] dw-hdmi: add support for multi byte register width
- access
-References: <1415360068-8606-1-git-send-email-andy.yan@rock-chips.com>	 <1415360125-8655-1-git-send-email-andy.yan@rock-chips.com> <1415360707.2776.1.camel@pengutronix.de>
-In-Reply-To: <1415360707.2776.1.camel@pengutronix.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141107212735.GA21409@suse.cz>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 07, 2014 at 10:27:35PM +0100, Vojtech Pavlik wrote:
+> On Fri, Nov 07, 2014 at 09:45:00AM -0600, Josh Poimboeuf wrote:
+> 
+> > > 	LEAVE_FUNCTION
+> > > 	LEAVE_PATCHED_SET
+> > > 	LEAVE_KERNEL
+> > > 
+> > > 	SWITCH_FUNCTION
+> > > 	SWITCH_THREAD
+> > > 	SWITCH_KERNEL
+> > > 
+> > > Now with those definitions:
+> > > 
+> > > 	livepatch (null model), as is, is LEAVE_FUNCTION and SWITCH_FUNCTION
+> > > 
+> > > 	kpatch, masami-refcounting and Ksplice are LEAVE_PATCHED_SET and SWITCH_KERNEL
+> > > 
+> > > 	kGraft is LEAVE_KERNEL and SWITCH_THREAD
+> > > 
+> > > 	CRIU/kexec is LEAVE_KERNEL and SWITCH_KERNEL
+> > 
+> > Thanks, nice analysis!
+> > 
+> > > By blending kGraft and masami-refcounting, we could create a consistency
+> > > engine capable of almost any combination of these properties and thus
+> > > all the consistency models.
+> > 
+> > Can you elaborate on what this would look like?
+> 
+> There would be the refcounting engine, counting entries/exits of the
+> area of interest (nothing for LEAVE_FUNCTION, patched functions for
+> LEAVE_PATCHED_SET - same as Masami's work now, or syscall entry/exit for
+> LEAVE_KERNEL), and it'd do the counting either per thread, flagging a
+> thread as 'new universe' when the count goes to zero, or flipping a
+> 'new universe' switch for the whole kernel when the count goes down to zero.
+> 
+> A patch would have flags which specify a combination of the above
+> properties that are needed for successful patching of that specific
+> patch.
 
-On 2014年11月07日 19:45, Lucas Stach wrote:
-> Am Freitag, den 07.11.2014, 19:35 +0800 schrieb Andy Yan:
->> On rockchip rk3288, only word(32-bit) accesses are
->> permitted for hdmi registers.  Byte width access (writeb,
->> readb) generates an imprecise external abort.
->>
->> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
->> ---
->>   drivers/gpu/drm/bridge/dw_hdmi.c | 49 +++++++++++++++++++++++++++++++++++++---
->>   1 file changed, 46 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
->> index df76a8c..9867642 100644
->> --- a/drivers/gpu/drm/bridge/dw_hdmi.c
->> +++ b/drivers/gpu/drm/bridge/dw_hdmi.c
->> @@ -126,19 +126,42 @@ struct dw_hdmi {
-> [...]
->> +	u32 val;
->> +
->> +	if (!of_property_read_u32(np, "reg-io-width", &val)) {
->> +		switch (val) {
->> +		case 4:
->> +			hdmi->write = dw_hdmi_writel;
->> +			hdmi->read = dw_hdmi_readl;
->> +			hdmi->reg_shift = 2;
->> +			break;
->> +		default:
->> +			hdmi->write = dw_hdmi_writeb;
->> +			hdmi->read = dw_hdmi_readb;
->> +			hdmi->reg_shift = 0;
->> +			break;
->> +		}
->> +	} else {
->> +		hdmi->write = dw_hdmi_writeb;
->> +		hdmi->read = dw_hdmi_readb;
->> +		hdmi->reg_shift = 0;
->> +	}
->>   
->>   	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
->>   	if (ddc_node) {
-> This should throw an error if the property value in devicetree is not
-> recognized. This could be simplified like this:
->
-> 	u32 val = 1;
->
-> 	// this won't touch val if it can't find the property
-> 	of_property_read_u32(np, "reg-io-width", &val)
->
->
-> 	switch (val) {
-> 	case 4:
-> 		hdmi->write = dw_hdmi_writel;
-> 		hdmi->read = dw_hdmi_readl;
-> 		hdmi->reg_shift = 2;
-> 		break;
-> 	case 1:
-> 		hdmi->write = dw_hdmi_writeb;
-> 		hdmi->read = dw_hdmi_readb;
-> 		hdmi->reg_shift = 0;
-> 		break;
-> 	default:
-> 		dev_err(dev, "unrecognized value for reg-io-width");
-> 		// error handling
-> 	}
->
-> Also the DT binding doc for this property is missing.
->
-> Regards,
-> Lucas
-thanks for your suggestion, I will take it.
-this properity is optional, I will add it to DT binding doc
+Would it really be necessary to support all possible permutations?  I
+think that would add a lot of complexity to the code.  Especially if we
+have to support LEAVE_KERNEL, which adds a lot of interdependencies with
+the rest of the kernel (kthreads, syscall, irq, etc).
 
+It seems to me that the two most interesting options are:
+- LEAVE_PATCHED_SET + SWITCH_THREAD (Masami-kGraft)
+- LEAVE_PATCHED_SET + SWITCH_KERNEL (kpatch and/or Masami-kpatch)
+
+I do see some appeal for the choose-your-own-consistency-model idea.
+But it wouldn't be practical for cumulative patch upgrades, which I
+think we both agreed at LPC seems to be safer than incremental patching.
+If you only ever have one patch module loaded at any given time, you
+only get one consistency model anyway.
+
+In order for multiple consistency models to be practical, I think we'd
+need to figure out how to make incremental patching safe.
+
+> > The big problem with SWITCH_THREAD is that it adds the possibility that
+> > old functions can run simultaneously with new ones.  When you change
+> > data or data semantics, which is roughly 10% of security patches, it
+> > creates some serious headaches:
+> > 
+> > - It makes patch safety analysis much harder by doubling the number of
+> >   permutations of scenarios you have to consider.  In addition to
+> >   considering newfunc/olddata and newfunc/newdata, you also have to
+> >   consider oldfunc/olddata and oldfunc/newdata.
+> > 
+> > - It requires two patches instead of one.  The first patch is needed to
+> >   modify the old functions to be able to deal with new data.  After the
+> >   first patch has been fully applied, then you apply the second patch
+> >   which can start creating new versions of data.
+> 
+> For data layout an semantic changes, there are two approaches:
+> 
+> 	1) TRANSFORM_WORLD
+> 
+> 	Stop the world, transform everything, resume. This is what Ksplice does
+> 	and what could work for kpatch, would be rather interesting (but
+> 	possible) for masami-refcounting and doesn't work at all for the
+> 	per-thread kGraft.
+> 
+> 	It allows to deallocate structures, allocate new ones, basically
+> 	rebuild the data structures of the kernel. No shadowing or using
+> 	of padding is needed.
+> 
+> 	The nice part is that the patch can stay pretty much the original patch
+> 	that fixes the bug when applied to normal kernel sources.
+> 
+> 	The most tricky part with this approach is writing the
+> 	additional transformation code. Finding all instances of a
+> 	changed data structure. It fails if only semantics are changed,
+> 	but that is easily fixed by making sure there is always a layout
+> 	change for any semantic change. All instances of a specific data
+> 	structure can be found, worst case with some compiler help: No
+> 	function can have pointers or instances of the structure on the
+> 	stack, or registers, as that would include it in the patched
+> 	set. So all have to be either global, or referenced by a
+> 	globally-rooted tree, linked list or any other structure.
+> 
+> 	This one is also possible to revert, if a reverse-transforming function
+> 	is provided.
+> 
+> 	masami-refcounting can be made to work with this by spinning in every
+> 	function entry ftrace/kprobe callback after a universe flip and calling
+> 	stop_kernel from the function exit callback that flipped the switch.
+
+I'm kind of surprised to hear that Ksplice does this.  I had considered
+this approach, but it sounds really tricky, if not impossible in many
+cases.
+
+Ahem, this would be an opportune time for a Ksplice person to chime in
+with their experiences...
+
+> 	2) TRANSFORM_ON_ACCESS
+> 
+> 	This requires structure versioning and/or shadowing. All 'new' functions
+> 	are written with this in mind and can both handle the old and new data formats
+> 	and transform the data to the new format. When universe transition is
+> 	completed for the whole system, a single flag is flipped for the
+> 	functions to start transforming.
+
+This is a variation on what we've been doing with kpatch, using shadow
+data fields to add data and/or version metadata to structures, with a
+few differences:
+
+First, we haven't been transforming existing data.  All existing data
+structures stay at v1.  Only new data structures are created as v2.  I
+suppose it depends on the nature of the patch as to whether it's safe to
+convert existing data.
+
+Second, we don't need to flip a flag, because with SWITCH_KERNEL the
+system universe transition happens instantly.
+
+> 	The advantage is to not have to look up every single instance of the
+> 	structure and not having to make sure you found them all.
+>
+> 	The disadvantages are that the patch now looks very different to what
+> 	goes into the kernel sources,
+
+In my experience, s/very different/slightly different/.
+
+>	that you never know whether the conversion
+> 	is complete and reverting the patch is tough, although can be helped by
+> 	keeping track of transformed functions at a cost of maintaining another
+> 	data structure for that.
+
+True, and we might even want to prevent or discourage such patches from
+being disabled somehow.
+
+> 	It works with any of the approaches (except null model) and while it
+> 	needs two steps (patch, then enable conversion), it doesn't require two
+> 	rounds of patching. Also, you don't have to consider oldfunc/newdata as
+> 	that will never happen. oldfunc/olddata obviously works, so you only
+> 	have to look at newfunc/olddata and newfunc/newdata as the
+> 	transformation goes on.
+
+Makes sense, I hadn't thought of the flag flipping approach for
+SWITCH_THREAD.  It's definitely a lot better than requiring an
+intermediate patch.
+
+> I don't see either of these as really that much simpler. But I do see value
+> in offering both.
+> 
+> > On the other hand, SWITCH_KERNEL doesn't have those problems.  It does
+> > have the problem you mentioned, roughly 2% of the time, where it can't
+> > patch functions which are always in use.  But in that case we can skip
+> > the backtrace check ~90% of the time.  
+> 
+> An interesting bit is that when you skip the backtrace check you're
+> actually reverting to LEAVE_FUNCION SWITCH_FUNCTION, forfeiting all
+> consistency and not LEAVE_FUNCTION SWITCH_KERNEL as one would expect.
+
+Hm, if we used stop machine (or ref counting), but without the backtrace
+check, wouldn't it be LEAVE_FUNCTION SWITCH_KERNEL?
+
+> Hence for those 2% of cases (going with your number, because it's a
+> guess anyway) LEAVE_PATCHED_SET SWITCH_THREAD would in fact be a safer
+> option.
+> 
+> > So it's really maybe something
+> > like 0.2% of patches which can't be patched with SWITCH_KERNEL.  But
+> > even then I think we could overcome that by getting creative, e.g. using
+> > the multiple patch approach.
+> > 
+> > So my perspective is that SWITCH_THREAD causes big headaches 10% of the
+> > time, whereas SWITCH_KERNEL causes small headaches 1.8% of the time, and
+> > big headaches 0.2% of the time :-)
+> 
+> My preferred way would be to go with SWITCH_THREAD for the simpler stuff
+> and do a SWITCH_KERNEL for the 10% of complex patches.
+
+You said above that neither SWITCH_KERNEL nor SWITCH_THREAD is much
+simpler than the other for the 10% case.  So why would you use
+SWITCH_KERNEL here?
+
+> This because (LEAVE_PATCHED_SET) SWITCH_THREAD finishes much quicker.
+> But I'm biased there. ;)
+
+Why would LEAVE_PATCHED_SET SWITCH_THREAD finish much quicker than
+LEAVE_PATCHED_SET SWITCH_KERNEL?  Wouldn't they be about the same?
+
+-- 
+Josh
