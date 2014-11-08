@@ -1,88 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaKHETR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 23:19:17 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58471 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341AbaKHETQ (ORCPT
+	id S1753233AbaKHE0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 23:26:46 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:48739 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773AbaKHE0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 23:19:16 -0500
-Message-ID: <545D99BA.5020707@roeck-us.net>
-Date: Fri, 07 Nov 2014 20:19:06 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 7 Nov 2014 23:26:45 -0500
+Message-ID: <545D9B7D.6070307@hitachi.com>
+Date: Sat, 08 Nov 2014 13:26:37 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Beniamino Galvani <b.galvani@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v5 20/48] mfd: rn5t618: Register power-off handler with
- kernel power-off handler
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net> <1415292213-28652-21-git-send-email-linux@roeck-us.net> <20141107210006.GA22111@gmail.com>
-In-Reply-To: <20141107210006.GA22111@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Mark Wielaard <mjw@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        aravinda@linux.vnet.ibm.com, penberg@iki.fi, brendan.d.gregg@gmail.com,
+        acme@kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [RFC] perf-cache command interface design
+References: <20141102105006.21708.28734.stgit@hemant-fedora> <20141102105557.21708.19032.stgit@hemant-fedora> <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com> <874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com> <545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com> <20141107143804.GA2137@redhat.com>
+In-Reply-To: <20141107143804.GA2137@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.545D99C3.0192,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 01:00 PM, Beniamino Galvani wrote:
-> On Thu, Nov 06, 2014 at 08:43:04AM -0800, Guenter Roeck wrote:
->> Register with kernel power-off handler instead of setting pm_power_off
->> directly. Register with low priority to reflect that the original code
->> only sets pm_power_off if it was not already set.
+(2014/11/07 23:38), Arnaldo Carvalho de Melo wrote:
+> Em Fri, Nov 07, 2014 at 05:21:08PM +0900, Masami Hiramatsu escreveu:
+>> Hello,
 >>
->> Cc: Beniamino Galvani <b.galvani@gmail.com>
->> Acked-by: Lee Jones <lee.jones@linaro.org>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->> v5:
->> - Rebase to v3.18-rc3
->> v4:
->> - Do not use notifiers but internal functions and data structures to manage
->>    the list of power-off handlers. Drop unused parameters from callbacks, and
->>    make the power-off function type void
->> v3:
->> - Replace poweroff in all newly introduced variables and in text
->>    with power_off or power-off as appropriate
->> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
->> v2:
->> - New patch
+>> Here, I've tried to describe my idea of perf-cache subcommand interface.
+>> It is just a design review, not implemented yet :)
+>> Please give me your comments/ideas!
 >>
->>   drivers/mfd/rn5t618.c       | 28 ++++++++++++----------------
->>   include/linux/mfd/rn5t618.h |  2 ++
->>   2 files changed, 14 insertions(+), 16 deletions(-)
->
-> Tested-by: Beniamino Galvani <b.galvani@gmail.com>
->
-Thanks!
+>> Command-line Synopsis
+>> =====================
+>>
+>> Current "perf buildid-cache [options]" are directly mapped to
+>> "perf cache --buildid [options]".
+>>
+>> And adding --sdt for managing SDT caches as below.
+> 
+> Can't we avoid having to specify the content? I.e. the tool can surely
+> be smart enough to figure that out, no?
+> 
+> We should, as much as possible, to make things more compact yet
+> unambiguous, IMHO.
 
-Guenter
+Agreed.
+
+>  
+>>   Add or update SDT events in <FILES>
+>>     perf cache --sdt --add|--update <FILES>
+> 
+> Can automagically figure this out, so, it would become just:
+> 
+> 	Add or update events in <FILES>
+> 
+> 	  perf cache --add/--update <FILES>
+
+Ah, nice idea :-)
+
+>  
+>>   Remove all SDT events for <FILES>
+>>     perf cache --sdt --remove <FILES>
+> 
+> Ditto.
+>  
+>>   List all SDT events
+>>     perf cache --sdt --list
+> 
+> That is ok, since the cache can hold different types of contents, but:
+> 
+> 	perf cache --list
+> 
+> should show everything, with some marking showing the content type.
+
+Yeah, as I replied to Hemant, --sdt/--probe can be unified.
+
+>  
+>> And --probes for managing probe-caches as below.
+>>
+>>   Add new probe-cache entries for kernel, <PATH> or <MOD>.
+>>     perf cache --probe [--exec <PATH>|--module <MOD>] --add <SPEC>
+> 
+> No need to specify --probe
+>  
+>>   Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
+>>     perf cache --probe --del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+> 
+> Ditto
+>  
+>>   Or remove all entires for given FILES
+>>     perf cache --probe --remove <FILES>
+> 
+> Ok
+>  
+>>   List the probe caches(including SDT) for kernel, <PATH>, or/and <BUILDID>.
+>>     perf cache --probe --list [@<PATH>][#<BUILDID>]
+> 
+> Can figure out the kind by the initial character, so no need to specify
+> --probe
+
+OK.
+
+>>   Query the probe definitions.
+>>     perf cache --probe --query [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+> 
+> Ditto
+>  
+>> Note that --probes also can be used for managing SDT events, which has % prefix
+>> e.g.
+>>   Add all SDT events for <PATH>
+>>     perf cache --probe --exec <PATH> --add '%*:*'
+> 
+> See? --probe is smart enough to deal with SDT and probe caches, it can
+> disambiguate by looking at the first char.
+
+OK, but --add already have FILES arguments (according to buildid-cache)
+So I'd like to move that pattern argument to --probe as I've described
+in previous reply to Hemant.
+
+>  
+>>   Remove some SDT events for <PATH>
+>>     perf cache --probe --del '%some:events@<PATH>'
+> 
+> No need for --probe
+>  
+>>   Or remove all SDT events for <BUILDID>
+>>     perf cache --probe --del '%*:*#<BUILDID>'
+> 
+> Ditto
+>  
+>>
+>> File Format
+>> ===========
+>> All the cache files are placed under ~/.debug/ by default.
+>> The paths of buildid cache of binary/symbols are not changed.
+>>
+>> The SDT/probe caches are placed under the ~/.debug/.probes/path/to/bin/bu/ildid
+> 
+> Here I think we could group everything related to a /path/to/bin into:
+> 
+> ~/.debug/path/to/bin/bu/ild/
+> 
+> With one file per content type:
+> 
+> ~/.debug/path/to/bin/bu/ild/elf
+> ~/.debug/path/to/bin/bu/ild/probe
+
+Ah, OK, this is good for me too. :)
+
+> 
+> That leaves room for us to add more file formats (CTF anyone? The Dtrace
+> one, Compact C Type Information, I mean).
+
+Perhaps.
+
+> So that if we wanted to pick everything related to a pathname we could
+> do:
+> 
+> tar cf gcc.debug.tar ~/.debug/usr/bin/gcc/
+> 
+> If we instead wanted to pick all files to a specific gcc build id, we
+> would do:
+> 
+> tar cf gcc.debug.tar ~/.debug/usr/bin/gcc/bu/ild/
+
+OK.
+
+>> and that is linked to ~/.debug/.probes/.buildid/bu/ildid
+> 
+> Since this would break compatibility with the existing cache format, we
+> could as well allow collecting everything related to a build id, by
+> making the link be also in this fashion:
+> 
+> tar cf bu.ildid.tar ~/.debug/.build-id/bu/ildid/
+> 
+> Because we would have:
+> 
+> ~/.debug/.build-id/bu/ildid/elf -> ~/.debug/usr/bin/gcc/bu/ild/elf
+> ~/.debug/.build-id/bu/ildid/probe -> ~/.debug/usr/bin/gcc/bu/ild/probe
+> 
+> And also links to the files that have no pathnames:
+> 
+> ~/.debug/.build-id/bu/ildid/vdso -> ~/.debug/[vdso]/bu/ild
+> ~/.debug/.build-id/bu/ildid/kallsyms -> ~/.debug/[kernel.kallsyms]/bu/ild
+> ~/.debug/.build-id/bu/ildid/kcore -> ~/.debug/[kcore]/bu/ild
+
+OK, so let's make bu/ildid to a directory :)
+
+Thank you!
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
