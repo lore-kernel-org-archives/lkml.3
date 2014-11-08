@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069AbaKHSzf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:55:35 -0500
-Received: from mail-bn1bon0138.outbound.protection.outlook.com ([157.56.111.138]:54240
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752519AbaKHSzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:55:33 -0500
-X-WSS-ID: 0NEQHWG-07-RKJ-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        "John Bridgman" <John.Bridgman@amd.com>,
-        Oded Gabbay <oded.gabbay@amd.com>,
-        Alexey Skidanov <Alexey.Skidanov@amd.com>,
-        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>, Ben Goz <ben.goz@amd.com>
-Subject: [PATCH v5 24/24] amdkfd: Implement the Get Version IOCTL
-Date: Sat, 8 Nov 2014 20:55:14 +0200
-Message-ID: <1415472917-4401-1-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
+	id S1754042AbaKHS67 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:58:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51296 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119AbaKHS65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:58:57 -0500
+Date: Sat, 8 Nov 2014 10:57:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PULL] USB driver fixes for 3.18-rc4
+Message-ID: <20141108185742.GA2138@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(46102003)(86362001)(36756003)(104166001)(50986999)(97736003)(31966008)(88136002)(87286001)(64706001)(87936001)(48376002)(89996001)(44976005)(47776003)(20776003)(93916002)(101416001)(21056001)(19580405001)(76176999)(92726001)(19580395003)(84676001)(92566001)(4396001)(106466001)(99396003)(50226001)(33646002)(50466002)(53416004)(77096003)(102836001)(68736004)(77156002)(120916001)(95666004)(62966003)(229853001)(105586002)(107046002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
-X-Forefront-PRVS: 0389EDA07F
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/gpu/drm/amd/amdkfd/kfd_chardev.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c b/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
-index 3130265..64c73ba 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
-@@ -123,7 +123,16 @@ static int kfd_open(struct inode *inode, struct file *filep)
- static long kfd_ioctl_get_version(struct file *filep, struct kfd_process *p,
- 					void __user *arg)
- {
--	return -ENODEV;
-+	struct kfd_ioctl_get_version_args args;
-+	int err = 0;
-+
-+	args.major_version = KFD_IOCTL_MAJOR_VERSION;
-+	args.minor_version = KFD_IOCTL_MINOR_VERSION;
-+
-+	if (copy_to_user(arg, &args, sizeof(args)))
-+		err = -EFAULT;
-+
-+	return err;
- }
- 
- static int set_queue_properties_from_user(struct queue_properties *q_properties,
--- 
-2.1.0
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.18-rc4
+
+for you to fetch changes up to 1910195423e7bea4c01c42bfe3f81792a6e969bb:
+
+  USB: Update default usb-storage delay_use value in kernel-parameters.txt (2014-11-07 08:54:53 -0800)
+
+----------------------------------------------------------------
+USB fixes for 3.18-rc4
+
+Here are some USB fixes for 3.18-rc4.
+
+Just a bunch of little fixes resolving reported issues and new device ids for
+existing drivers.  Full details are in the shortlog.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Adel Gadllah (2):
+      USB: quirks: enable device-qualifier quirk for another Elan touchscreen
+      USB: quirks: enable device-qualifier quirk for yet another Elan touchscreen
+
+Alan Stern (1):
+      usb-storage: handle a skipped data phase
+
+Dan Carpenter (1):
+      USB: HWA: fix a warning message
+
+Greg Kroah-Hartman (3):
+      Revert "storage: Replace magic number with define in usb_stor_euscsi_init()"
+      Merge tag 'usb-serial-3.18-rc4' of git://git.kernel.org/.../johan/usb-serial into usb-linus
+      Merge tag 'fixes-for-v3.18-rc4' of git://git.kernel.org/.../balbi/usb into usb-linus
+
+Hans de Goede (5):
+      usb: Do not allow usb_alloc_streams on unconfigured devices
+      uas: Add US_FL_NO_ATA_1X quirk for 1 more Seagate model
+      xhci: Disable streams on Asmedia 1042 xhci controllers
+      uas: Add NO_ATA_1X for VIA VL711 devices
+      uas: Add US_FL_NO_ATA_1X quirk for 2 more Seagate models
+
+Jim Paris (1):
+      cdc-acm: ensure that termios get set when the port is activated
+
+Johan Hovold (5):
+      USB: kobil_sct: fix non-atomic allocation in write path
+      USB: opticon: fix non-atomic allocation in write path
+      USB: cdc-acm: add device id for GW Instek AFG-2225
+      USB: cdc-acm: only raise DTR on transitions from B0
+      USB: cdc-acm: add quirk for control-line state requests
+
+Luis Henriques (1):
+      usb: storage: fix build warnings !CONFIG_PM
+
+Marek Szyprowski (1):
+      usb: dwc2: gadget: fix enumeration issues
+
+Mark Einon (1):
+      MAINTAINERS: Remove duplicate entry for usbip driver
+
+Mark Knibbs (2):
+      USB: storage: Fix timeout in usb_stor_euscsi_init() and usb_stor_huawei_e220_init()
+      USB: Update default usb-storage delay_use value in kernel-parameters.txt
+
+Oliver Neukum (1):
+      xhci: no switching back on non-ULT Haswell
+
+Oussama Ghorbel (1):
+      phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
+
+Peter Chen (1):
+      usb: core: notify disconnection when core detects disconnect
+
+Sylwester Nawrocki (1):
+      usb: Remove references to non-existent PLAT_S5P symbol
+
+Tony Zheng (1):
+      usb: core: need to call usb_phy_notify_connect after device setup
+
+ Documentation/kernel-parameters.txt |  2 +-
+ MAINTAINERS                         |  5 -----
+ drivers/phy/phy-omap-usb2.c         |  6 ++++--
+ drivers/usb/class/cdc-acm.c         | 25 +++++++++++++++++++++----
+ drivers/usb/class/cdc-acm.h         |  2 ++
+ drivers/usb/core/hcd.c              |  2 ++
+ drivers/usb/core/hub.c              | 10 +++++-----
+ drivers/usb/core/quirks.c           |  6 ++++++
+ drivers/usb/dwc2/gadget.c           |  2 +-
+ drivers/usb/host/Kconfig            |  4 ++--
+ drivers/usb/host/hwa-hc.c           |  2 +-
+ drivers/usb/host/xhci-pci.c         | 18 ++++--------------
+ drivers/usb/serial/kobil_sct.c      |  5 +++--
+ drivers/usb/serial/opticon.c        |  2 +-
+ drivers/usb/storage/initializers.c  |  4 ++--
+ drivers/usb/storage/realtek_cr.c    |  2 ++
+ drivers/usb/storage/transport.c     | 26 ++++++++++++++++++++++++++
+ drivers/usb/storage/unusual_uas.h   | 28 ++++++++++++++++++++++++++++
+ 18 files changed, 111 insertions(+), 40 deletions(-)
