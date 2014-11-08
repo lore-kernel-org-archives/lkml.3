@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636AbaKHKdX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 05:33:23 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51631 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550AbaKHKdV (ORCPT
+	id S1753605AbaKHKjZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 05:39:25 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40911 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476AbaKHKjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 05:33:21 -0500
-Date: Sat, 8 Nov 2014 10:33:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Laurentiu Palcu <laurentiu.palcu@intel.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20141108103302.GG2722@sirena.org.uk>
-References: <1415364314-30320-1-git-send-email-laurentiu.palcu@intel.com>
- <1415364314-30320-3-git-send-email-laurentiu.palcu@intel.com>
+	Sat, 8 Nov 2014 05:39:23 -0500
+Message-ID: <545DF2D3.6030108@linux.vnet.ibm.com>
+Date: Sat, 08 Nov 2014 16:09:15 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f5QefDQHtn8hx44O"
-Content-Disposition: inline
-In-Reply-To: <1415364314-30320-3-git-send-email-laurentiu.palcu@intel.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.164.249
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] mfd: dln2: add support for USB-SPI module
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, rjw@rjwysocki.net
+CC: nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
+Subject: Re: [PATCH V3 1/6] sched: idle: Add a weak arch_cpu_idle_poll function
+References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org> <1415370687-18688-2-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1415370687-18688-2-git-send-email-daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110810-0021-0000-0000-000005FE153C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/07/2014 08:01 PM, Daniel Lezcano wrote:
+> The poll function is called when a timer expired or if we force to poll when
+> the cpu_idle_force_poll option is set.
+> 
+> The poll function does:
+> 
+>        local_irq_enable();
+>        while (!tif_need_resched())
+>                cpu_relax();
+> 
+> This default poll function suits for the x86 arch because its rep; nop;
+> hardware power optimization. But on other archs, this optimization does not
+> exists and we are not saving power. The arch specific bits may want to
+> optimize this loop by adding their own optimization.
+> 
+> Give an opportunity to the different platform to specify their own polling
+> loop by adding a weak cpu_idle_poll_loop function.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  kernel/sched/idle.c | 29 +++++++++++++++++------------
+>  1 file changed, 17 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index c47fce7..ea65bbae 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -42,18 +42,6 @@ static int __init cpu_idle_nopoll_setup(char *__unused)
+>  __setup("hlt", cpu_idle_nopoll_setup);
+>  #endif
+> 
+> -static inline int cpu_idle_poll(void)
+> -{
+> -	rcu_idle_enter();
+> -	trace_cpu_idle_rcuidle(0, smp_processor_id());
+> -	local_irq_enable();
+> -	while (!tif_need_resched())
+> -		cpu_relax();
+> -	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+> -	rcu_idle_exit();
+> -	return 1;
+> -}
+> -
+>  /* Weak implementations for optional arch specific functions */
+>  void __weak arch_cpu_idle_prepare(void) { }
+>  void __weak arch_cpu_idle_enter(void) { }
+> @@ -65,6 +53,23 @@ void __weak arch_cpu_idle(void)
+>  	local_irq_enable();
+>  }
+> 
+> +void __weak arch_cpu_idle_poll(void)
+> +{
+> +	local_irq_enable();
+> +	while (!tif_need_resched())
+> +		cpu_relax();
+> +}
+> +
+> +static inline int cpu_idle_poll(void)
+> +{
+> +	rcu_idle_enter();
+> +	trace_cpu_idle_rcuidle(0, smp_processor_id());
+> +	arch_cpu_idle_poll();
+> +	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+> +	rcu_idle_exit();
+> +	return 1;
+> +}
+> +
+>  /**
+>   * cpuidle_idle_call - the main idle function
+>   *
+> 
 
---f5QefDQHtn8hx44O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks Daniel!
 
-On Fri, Nov 07, 2014 at 02:45:14PM +0200, Laurentiu Palcu wrote:
-> Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
+Reviewed-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
 
-Acked-by: Mark Brown <broonie@kernel.org>
-
---f5QefDQHtn8hx44O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUXfFdAAoJECTWi3JdVIfQbrEH/1VaxPLeHXvrK3B9eiLs5ssn
-hdhgdah0j6/k8UfEdcC+sTmmu6Y+ACgO4VLWWNCW5hpg36+3oZnC2px+MMCUtJVj
-B+eIA9+DBj8mQy0fzCiqX9FR/BMi1HHByqF+YYlW1PzGp0u2NfA6zK765jRV0YdR
-2eY4jgJayQBnGUbMV2DWPUha/qrnX5vR5c5FI7hh7i1l0wyhIYximJOGIDWPP+P6
-JsW/NNbHLZa/xcqEYQ/24Pguttnr0JtrV/URLxxuk2+CmrESNtKM71Zxou9pqGuu
-7H+S15+qNljtiisTvPZD2BwG8KdswCfWq+57IxwNxRkwDvQlUOLAKpDwETtXIQ8=
-=7jso
------END PGP SIGNATURE-----
-
---f5QefDQHtn8hx44O--
