@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaKHSie (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:38:34 -0500
-Received: from mail-bn1on0117.outbound.protection.outlook.com ([157.56.110.117]:60448
+	id S1754029AbaKHSi6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:38:58 -0500
+Received: from mail-bn1bon0112.outbound.protection.outlook.com ([157.56.111.112]:2198
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753914AbaKHSic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:38:32 -0500
-X-WSS-ID: 0NEQH42-07-RCW-02
+	id S1753914AbaKHSi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:38:57 -0500
+X-WSS-ID: 0NEQH4S-07-RD5-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
@@ -16,9 +16,9 @@ CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
         "John Bridgman" <John.Bridgman@amd.com>,
         Oded Gabbay <oded.gabbay@amd.com>,
         =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH v5 01/24] drm/radeon: reduce number of free VMIDs and pipes in KV
-Date: Sat, 8 Nov 2014 20:37:22 +0200
-Message-ID: <1415471865-1893-2-git-send-email-oded.gabbay@amd.com>
+Subject: [PATCH v5 02/24] drm/radeon/cik: Don't touch int of pipes 1-7
+Date: Sat, 8 Nov 2014 20:37:23 +0200
+Message-ID: <1415471865-1893-3-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
 References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
@@ -26,127 +26,138 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.180.168.240]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(50466002)(68736004)(87936001)(575784001)(93916002)(36756003)(19580405001)(19580395003)(86362001)(77156002)(89996001)(77096003)(97736003)(84676001)(31966008)(44976005)(4396001)(53416004)(88136002)(48376002)(33646002)(102836001)(50986999)(105586002)(50226001)(92726001)(120916001)(101416001)(76176999)(92566001)(107046002)(21056001)(87286001)(62966003)(64706001)(106466001)(46102003)(20776003)(229853001)(47776003)(104166001)(99396003)(95666004);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(64706001)(95666004)(50986999)(87286001)(93916002)(97736003)(106466001)(77096003)(84676001)(99396003)(62966003)(77156002)(33646002)(89996001)(86362001)(105586002)(19580405001)(53416004)(19580395003)(68736004)(36756003)(44976005)(92566001)(120916001)(87936001)(229853001)(46102003)(101416001)(47776003)(104166001)(50466002)(20776003)(88136002)(92726001)(48376002)(102836001)(31966008)(76176999)(50226001)(107046002)(4396001)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB208;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(1)(2);SRVR:BN1PR02MB197;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
 X-Forefront-PRVS: 0389EDA07F
 Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support HSA on KV, we need to limit the number of vmids and pipes
-that are available for radeon's use with KV.
-
-This patch reserves VMIDs 8-15 for amdkfd (so radeon can only use VMIDs
-0-7) and also makes radeon thinks that KV has only a single MEC with a single
-pipe in it
-
-v3: Use define for static vmid allocation in radeon
+amdkfd should set interrupts for pipes 1-7.
 
 Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/radeon/cik.c  | 48 +++++++++++++++++++++----------------------
- drivers/gpu/drm/radeon/cikd.h |  2 ++
- 2 files changed, 26 insertions(+), 24 deletions(-)
+ drivers/gpu/drm/radeon/cik.c | 71 +-------------------------------------------
+ 1 file changed, 1 insertion(+), 70 deletions(-)
 
 diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index d4dfb38..a7d73f9 100644
+index a7d73f9..b798aab 100644
 --- a/drivers/gpu/drm/radeon/cik.c
 +++ b/drivers/gpu/drm/radeon/cik.c
-@@ -4671,12 +4671,11 @@ static int cik_mec_init(struct radeon_device *rdev)
- 	/*
- 	 * KV:    2 MEC, 4 Pipes/MEC, 8 Queues/Pipe - 64 Queues total
- 	 * CI/KB: 1 MEC, 4 Pipes/MEC, 8 Queues/Pipe - 32 Queues total
-+	 * Nonetheless, we assign only 1 pipe because all other pipes will
-+	 * be handled by KFD
- 	 */
--	if (rdev->family == CHIP_KAVERI)
--		rdev->mec.num_mec = 2;
--	else
--		rdev->mec.num_mec = 1;
--	rdev->mec.num_pipe = 4;
-+	rdev->mec.num_mec = 1;
-+	rdev->mec.num_pipe = 1;
- 	rdev->mec.num_queue = rdev->mec.num_mec * rdev->mec.num_pipe * 8;
- 
- 	if (rdev->mec.hpd_eop_obj == NULL) {
-@@ -4818,28 +4817,24 @@ static int cik_cp_compute_resume(struct radeon_device *rdev)
- 
- 	/* init the pipes */
- 	mutex_lock(&rdev->srbm_mutex);
--	for (i = 0; i < (rdev->mec.num_pipe * rdev->mec.num_mec); i++) {
--		int me = (i < 4) ? 1 : 2;
--		int pipe = (i < 4) ? i : (i - 4);
- 
--		eop_gpu_addr = rdev->mec.hpd_eop_gpu_addr + (i * MEC_HPD_SIZE * 2);
-+	eop_gpu_addr = rdev->mec.hpd_eop_gpu_addr;
- 
--		cik_srbm_select(rdev, me, pipe, 0, 0);
-+	cik_srbm_select(rdev, 0, 0, 0, 0);
- 
--		/* write the EOP addr */
--		WREG32(CP_HPD_EOP_BASE_ADDR, eop_gpu_addr >> 8);
--		WREG32(CP_HPD_EOP_BASE_ADDR_HI, upper_32_bits(eop_gpu_addr) >> 8);
-+	/* write the EOP addr */
-+	WREG32(CP_HPD_EOP_BASE_ADDR, eop_gpu_addr >> 8);
-+	WREG32(CP_HPD_EOP_BASE_ADDR_HI, upper_32_bits(eop_gpu_addr) >> 8);
- 
--		/* set the VMID assigned */
--		WREG32(CP_HPD_EOP_VMID, 0);
-+	/* set the VMID assigned */
-+	WREG32(CP_HPD_EOP_VMID, 0);
-+
-+	/* set the EOP size, register value is 2^(EOP_SIZE+1) dwords */
-+	tmp = RREG32(CP_HPD_EOP_CONTROL);
-+	tmp &= ~EOP_SIZE_MASK;
-+	tmp |= order_base_2(MEC_HPD_SIZE / 8);
-+	WREG32(CP_HPD_EOP_CONTROL, tmp);
- 
--		/* set the EOP size, register value is 2^(EOP_SIZE+1) dwords */
--		tmp = RREG32(CP_HPD_EOP_CONTROL);
--		tmp &= ~EOP_SIZE_MASK;
--		tmp |= order_base_2(MEC_HPD_SIZE / 8);
--		WREG32(CP_HPD_EOP_CONTROL, tmp);
--	}
--	cik_srbm_select(rdev, 0, 0, 0, 0);
- 	mutex_unlock(&rdev->srbm_mutex);
- 
- 	/* init the queues.  Just two for now. */
-@@ -5893,8 +5888,13 @@ int cik_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib)
-  */
- int cik_vm_init(struct radeon_device *rdev)
+@@ -7281,8 +7281,7 @@ static int cik_irq_init(struct radeon_device *rdev)
+ int cik_irq_set(struct radeon_device *rdev)
  {
--	/* number of VMs */
--	rdev->vm_manager.nvm = 16;
-+	/*
-+	 * number of VMs
-+	 * VMID 0 is reserved for System
-+	 * radeon graphics/compute will use VMIDs 1-7
-+	 * amdkfd will use VMIDs 8-15
-+	 */
-+	rdev->vm_manager.nvm = RADEON_NUM_OF_VMIDS;
- 	/* base offset of vram pages */
- 	if (rdev->flags & RADEON_IS_IGP) {
- 		u64 tmp = RREG32(MC_VM_FB_OFFSET);
-diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
-index 0c6e1b5..fae4d0c 100644
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -30,6 +30,8 @@
- #define CIK_RB_BITMAP_WIDTH_PER_SH     2
- #define HAWAII_RB_BITMAP_WIDTH_PER_SH  4
+ 	u32 cp_int_cntl;
+-	u32 cp_m1p0, cp_m1p1, cp_m1p2, cp_m1p3;
+-	u32 cp_m2p0, cp_m2p1, cp_m2p2, cp_m2p3;
++	u32 cp_m1p0;
+ 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
+ 	u32 hpd1, hpd2, hpd3, hpd4, hpd5, hpd6;
+ 	u32 grbm_int_cntl = 0;
+@@ -7316,13 +7315,6 @@ int cik_irq_set(struct radeon_device *rdev)
+ 	dma_cntl1 = RREG32(SDMA0_CNTL + SDMA1_REGISTER_OFFSET) & ~TRAP_ENABLE;
  
-+#define RADEON_NUM_OF_VMIDS	8
-+
- /* DIDT IND registers */
- #define DIDT_SQ_CTRL0                                     0x0
- #       define DIDT_CTRL_EN                               (1 << 0)
+ 	cp_m1p0 = RREG32(CP_ME1_PIPE0_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m1p1 = RREG32(CP_ME1_PIPE1_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m1p2 = RREG32(CP_ME1_PIPE2_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m1p3 = RREG32(CP_ME1_PIPE3_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m2p0 = RREG32(CP_ME2_PIPE0_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m2p1 = RREG32(CP_ME2_PIPE1_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m2p2 = RREG32(CP_ME2_PIPE2_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+-	cp_m2p3 = RREG32(CP_ME2_PIPE3_INT_CNTL) & ~TIME_STAMP_INT_ENABLE;
+ 
+ 	if (rdev->flags & RADEON_IS_IGP)
+ 		thermal_int = RREG32_SMC(CG_THERMAL_INT_CTRL) &
+@@ -7344,33 +7336,6 @@ int cik_irq_set(struct radeon_device *rdev)
+ 			case 0:
+ 				cp_m1p0 |= TIME_STAMP_INT_ENABLE;
+ 				break;
+-			case 1:
+-				cp_m1p1 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 2:
+-				cp_m1p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 3:
+-				cp_m1p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			default:
+-				DRM_DEBUG("si_irq_set: sw int cp1 invalid pipe %d\n", ring->pipe);
+-				break;
+-			}
+-		} else if (ring->me == 2) {
+-			switch (ring->pipe) {
+-			case 0:
+-				cp_m2p0 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 1:
+-				cp_m2p1 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 2:
+-				cp_m2p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 3:
+-				cp_m2p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+ 			default:
+ 				DRM_DEBUG("si_irq_set: sw int cp1 invalid pipe %d\n", ring->pipe);
+ 				break;
+@@ -7387,33 +7352,6 @@ int cik_irq_set(struct radeon_device *rdev)
+ 			case 0:
+ 				cp_m1p0 |= TIME_STAMP_INT_ENABLE;
+ 				break;
+-			case 1:
+-				cp_m1p1 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 2:
+-				cp_m1p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 3:
+-				cp_m1p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			default:
+-				DRM_DEBUG("si_irq_set: sw int cp2 invalid pipe %d\n", ring->pipe);
+-				break;
+-			}
+-		} else if (ring->me == 2) {
+-			switch (ring->pipe) {
+-			case 0:
+-				cp_m2p0 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 1:
+-				cp_m2p1 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 2:
+-				cp_m2p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+-			case 3:
+-				cp_m2p2 |= TIME_STAMP_INT_ENABLE;
+-				break;
+ 			default:
+ 				DRM_DEBUG("si_irq_set: sw int cp2 invalid pipe %d\n", ring->pipe);
+ 				break;
+@@ -7502,13 +7440,6 @@ int cik_irq_set(struct radeon_device *rdev)
+ 	WREG32(SDMA0_CNTL + SDMA1_REGISTER_OFFSET, dma_cntl1);
+ 
+ 	WREG32(CP_ME1_PIPE0_INT_CNTL, cp_m1p0);
+-	WREG32(CP_ME1_PIPE1_INT_CNTL, cp_m1p1);
+-	WREG32(CP_ME1_PIPE2_INT_CNTL, cp_m1p2);
+-	WREG32(CP_ME1_PIPE3_INT_CNTL, cp_m1p3);
+-	WREG32(CP_ME2_PIPE0_INT_CNTL, cp_m2p0);
+-	WREG32(CP_ME2_PIPE1_INT_CNTL, cp_m2p1);
+-	WREG32(CP_ME2_PIPE2_INT_CNTL, cp_m2p2);
+-	WREG32(CP_ME2_PIPE3_INT_CNTL, cp_m2p3);
+ 
+ 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
+ 
 -- 
 2.1.0
 
