@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaKHAkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:40:00 -0500
-Received: from smtprelay0230.hostedemail.com ([216.40.44.230]:48942 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753415AbaKHAi4 (ORCPT
+	id S1753398AbaKHAqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:46:22 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:48209 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408AbaKHAqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:38:56 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:421:541:599:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3872:3874:4250:4321:5007:6119:6261:7903:8957:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: arch76_1381b1e7b815b
-X-Filterd-Recvd-Size: 2266
-Message-ID: <1415407132.23530.23.camel@perches.com>
-Subject: Re: [PATCH] checkpatch: Make SI unit tolerance more lenient with
- 3-character units
-From: Joe Perches <joe@perches.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Nov 2014 16:38:52 -0800
-In-Reply-To: <1415405880-8520-1-git-send-email-jwerner@chromium.org>
-References: <1415405880-8520-1-git-send-email-jwerner@chromium.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Nov 2014 19:46:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141108002334.GT4042@n2100.arm.linux.org.uk>
+References: <1415386312-23741-1-git-send-email-dianders@chromium.org>
+	<20141107185844.GR4042@n2100.arm.linux.org.uk>
+	<CAD=FV=WhWqMB=-ErD-59-z=y7OCZx4r7REkr3DpyYR=76SEJ6A@mail.gmail.com>
+	<20141107233607.GS4042@n2100.arm.linux.org.uk>
+	<CAD=FV=WCwGjuLNFPANqqq-+rEN_jhqi+Bfss2ugDJEgjf3z_Gg@mail.gmail.com>
+	<20141108002334.GT4042@n2100.arm.linux.org.uk>
+Date: Fri, 7 Nov 2014 16:46:20 -0800
+X-Google-Sender-Auth: ba0SxbaQ7fGteluHBDSZ8gSONUI
+Message-ID: <CAD=FV=V3RVrHR=T+_+7CP1jGBAR48MmV062_Xj=8bj00E_2VUA@mail.gmail.com>
+Subject: Re: [PATCH] clk: Propagate prepare and enable when reparenting orphans
+From: Doug Anderson <dianders@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 16:18 -0800, Julius Werner wrote:
-> Checkpatch flags CamelCase identifiers in strict mode, but it has a
-> feature to ignore parts with only two characters to allow for SI units
-> like mV or uA. Unfortunately, not all SI units fit in two characters,
-> and not all are lower case followed by upper case.
-> 
-> This patch changes the check from [a-z][A-Z] to [a-zA-Z]{1,3} (any
-> combination of up to three lower and upper case characters), so that it
-> will also allow units like MHz, As or KiB.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -4055,8 +4055,8 @@ sub process {
->  			    $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
->  #Ignore Page<foo> variants
->  			    $var !~ /^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
-> -#Ignore SI style variants like nS, mV and dB (ie: max_uV, regulator_min_uA_show)
-> -			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/) {
-> +#Ignore SI style variants like nS, mV, MHz and dB (ie: max_uV, regulator_min_uA_show)
-> +			    $var !~ /^(?:[a-z_]*?)_?[a-zA-Z]{1,3}(?:_[a-z_]+)?$/) {
->  				while ($var =~ m{($Ident)}g) {
->  					my $word = $1;
->  					next if ($word !~ /[A-Z][a-z]|[a-z][A-Z]/);
+Russell,
 
-I think this may miss too many uses like pDB and
-other variables used for hungarian notations.
+On Fri, Nov 7, 2014 at 4:23 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Nov 07, 2014 at 04:14:23PM -0800, Doug Anderson wrote:
+>> Russell,
+>> I guess I'm still confused.  My patch continues to be about orphans
+>> and I don't see the bug you are pointing to.
+>
+> Ah, in which case, the question changes: how can an orphaned clock be
+> succesfully prepared and enabled?
+>
+> Drivers expect that a clock for which clk_enable() has returned
+> successfully _will_ at that point be supplying the clock.  If we don't
+> yet know it's parent, how do we know that it will be supplying that
+> clock?
+>
+> What about a driver calling clk_set_rate() on an orphaned clock?
+>
+> From what I can see (__clk_reparent will re-set the child's clock when
+> reparenting) having a driver able to claim an orphaned clock, let
+> alone prepare and enable it, looks rather buggy to me.
 
-It may be better to enumerate the specific character
-sequences to exempt.
+Yes, it is pretty questionable.  I discussed some of this in my
+comment message in this patch.  Specifically, I said:
 
+> NOTE: this does bring up the question about whether the enable of the
+> orphan actually made sense.  If the orphan's parent wasn't enabled by
+> default (by the bootloader or the default state of the hardware) then
+> the original enable of the orphan probably didn't do what the caller
+> though it would.  Some users of the orphan might have preferred an
+> EPROBE_DEFER be returned until we had a full path to a root clock.
+> This patch doesn't address those concerns and really just syncs up the
+> state.
+
+I'm not sure I want to go all the way doing the above and adding the
+EPROBE_DEFER because I think that there are probably lots of users out
+there that are assuming that they can enable/disable an orphaned clock
+and I can't myself commit to fixing all of them.  If you want to
+propose such a patch and can get it landed then my patch would
+certainly not be necessarily.
+
+Also see the note in the original commit message:
+
+> Note that xin32k on rk808 is a clock that cannot be disabled in
+> hardware (it's an always on clock), so really all we needed to do was
+> to sync up the state.
+
+-Doug
