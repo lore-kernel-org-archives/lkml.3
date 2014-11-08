@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaKHJ2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 04:28:48 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51343 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619AbaKHJ2p (ORCPT
+	id S1753539AbaKHJhe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 04:37:34 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:35086 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753478AbaKHJhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 04:28:45 -0500
-Date: Sat, 8 Nov 2014 09:13:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Torsten Fleischer <torfl6749@gmail.com>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20141108091306.GA2722@sirena.org.uk>
-References: <1415380318-2065-1-git-send-email-torfl6749@gmail.com>
+	Sat, 8 Nov 2014 04:37:32 -0500
+Date: Sat, 8 Nov 2014 10:37:28 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] irqchip: atmel-aic: add RTT irq fixup
+Message-ID: <20141108103728.32341ce5@bbrezillon>
+In-Reply-To: <20141102022905.GT3698@titan.lakedaemon.net>
+References: <1409735271-15353-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140914054648.GJ21986@titan.lakedaemon.net>
+	<20140915214907.3ec49158@bbrezillon>
+	<20140915215356.4c332acd@bbrezillon>
+	<20141102022905.GT3698@titan.lakedaemon.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <1415380318-2065-1-git-send-email-torfl6749@gmail.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.164.249
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] spi: spi-gpio: Fix compiler warning when building
- for 64 bit systems
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jason,
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 1 Nov 2014 22:29:05 -0400
+Jason Cooper <jason@lakedaemon.net> wrote:
 
-On Fri, Nov 07, 2014 at 06:11:58PM +0100, Torsten Fleischer wrote:
-> From: Torsten Fleischer <torfl6749@gmail.com>
->=20
-> The assignment of SPI_GPIO_NO_CHIPSELECT to cs_gpios[0] causes the follow=
-ing
-> compiler warning, when building for 64 bit systems:
-> "warning: overflow in implicit constant conversion [-Woverflow]".
+> On Mon, Sep 15, 2014 at 09:53:56PM +0200, Boris BREZILLON wrote:
+> > On Mon, 15 Sep 2014 21:49:07 +0200
+> > Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+> > 
+> > > Hi,
+> > > 
+> > > On Sun, 14 Sep 2014 01:46:48 -0400
+> > > Jason Cooper <jason@lakedaemon.net> wrote:
+> > > 
+> > > > On Wed, Sep 03, 2014 at 11:07:46AM +0200, Boris BREZILLON wrote:
+> > > > > The series depends on the acceptation of the RTT DT bindings proposed here
+> > > > > [1].
+> > > > > 
+> > > > > Best Regards,
+> > > > > 
+> > > > > Boris
+> > > > > 
+> > > > > [1]https://lkml.org/lkml/2014/9/3/145
+> > > > 
+> > > > Hmm, the bindings, unfortunately, still seem to be in flux.  Any update?
+> > > 
+> > > Actually, all at91 developers seemed to agree on this binding [2], and
+> > > these changes do not impact the current series.
+> > > 
+> > > Anyway, I think it's safer to wait for an official approval before
+> > > taking this series into irqchip/next.
+> 
+> Care to resend against v3.18-rc1?
 
-Applied, thanks.
+Not sure if you noticed, but I have resent this series after rebasing it
+on 3.18-rc3:
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+http://comments.gmane.org/gmane.linux.kernel/1819609
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Regards,
 
-iQEcBAEBAgAGBQJUXd6hAAoJECTWi3JdVIfQQsUH/0m/2WUprZGi84dUf3wvAcve
-DCmv+/TVuZJaSP1bEV9Hg5URga+mf0HxLIHG3aeqV98aAqfsNk8U1mi0d30KIGsx
-3FvIMQmgrb21qPqfF+PFHK/K0NJuw34UoB1pXD1u0zPY6oAw8EbZjHPWeSgfaSDN
-m+nnFKblD5dvZx2TG60DrX2mMofcX6QQHCDvmQUyvApoLQmxBvc43BgSCQ2Md4+/
-Owqk3sPTQ14dzmXNhJt7Ou0fiBPtxeSL1L/SFkVdYVo+U2qpalFpCWO3AKqVBq2B
-jcULR3IIhdwqrHKX31htU/b8WxhPSKMcfeQlMBYKMPVnOeNu8iQOitum54eEiWE=
-=9s+C
------END PGP SIGNATURE-----
+Boris
 
---AqsLC8rIMeq19msA--
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
