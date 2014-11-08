@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaKHA2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:28:25 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56666 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752315AbaKHA2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:28:24 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: NeilBrown <neilb@suse.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>
-Subject: Re: [PATCH] Input: gpio_keys: Make sure wake-up buttons work.
-Date: Sat, 08 Nov 2014 01:49:06 +0100
-Message-ID: <23209922.Rp3elUvURv@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141108110058.6c5217e3@notabene.brown>
-References: <20141108103707.45bcc7e3@notabene.brown> <20141107234507.GB4439@dtor-ws> <20141108110058.6c5217e3@notabene.brown>
+	id S1753360AbaKHAch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:32:37 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54293 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752682AbaKHAcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 19:32:36 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: crypto: algif_skcipher: check for IV size superfluous?
+Date: Sat, 08 Nov 2014 01:32:30 +0100
+Message-ID: <8150359.mtACJVFlUb@tachyon.chronox.de>
+User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart4157272.3qoB0WeDaZ"; micalg="pgp-sha256"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Herbert,
 
---nextPart4157272.3qoB0WeDaZ
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+I am in the process to extend algif_skcipher to support AEAD ciphers as well. 
+The code already works but I want to run final tests before releasing it.
 
-On Saturday, November 08, 2014 11:00:58 AM NeilBrown wrote:
-> On Fri, 7 Nov 2014 15:45:07 -0800 Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> wrote:
-> 
-> > Hi Neil,
-> > 
-> > On Sat, Nov 08, 2014 at 10:37:07AM +1100, NeilBrown wrote:
-> > > 
-> > > 
-> > > If a key is to be used for wake-up, we must not disable
-> > > the interrupt during suspend.
-> > > 
-> > > Signed-off-by: NeilBrown <neilb@suse.de>
-> > > 
-> > > diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-> > > index 8c98e97f8e41..0b5e54ae343e 100644
-> > > --- a/drivers/input/keyboard/gpio_keys.c
-> > > +++ b/drivers/input/keyboard/gpio_keys.c
-> > > @@ -526,6 +526,8 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
-> > >  	 */
-> > >  	if (!button->can_disable)
-> > >  		irqflags |= IRQF_SHARED;
-> > > +	if (button->wakeup)
-> > > +		irqflags |= IRQF_NO_SUSPEND;
-> > 
-> > No, enable_irq_wake() should be enough. I believe Rafael has fixed that
-> > in the core, right?
-> > 
-> 
-> Interesting...  you seem to be right, but I was having wakeup problems until
-> I added that patch.
+In the course of the development I stumbled over the following code:
 
-This was a fairly recent change made in 3.18-rc1.
+static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
+			    struct msghdr *msg, size_t size)
+{
+...
+		if (con.iv && con.iv->ivlen != ivsize)
+			return -EINVAL;
 
-> I didn't test exhaustively, but the first time my device entered suspend, the
-> gpio-key didn't wake it up.  Subsequent suspends did...
-> 
-> After I applied this patch, it would reliably wake up even on the first
-> suspend.
-> 
-> So there seems to be something wrong, but maybe it is more subtle.
-> 
-> Is there a good reason why enable_irq_wake() is only called just as the
-> device is being suspended, and why disable_irq_wake() is called on resume?
-> To me it would make more sense to just enable it once (if required) and leave
-> it enabled....
+This code effectively requires that any user space code trying to use a cipher 
+must provide an IV that is equal to the blocksize of the cipher.
 
-On some platforms it actually changes the configuration of interrupt
-controllers in to a "suspend mode" which is not appropriate for run time
-AFAICS.
+I am wondering why this check is there or whether we can remove that.
 
-> I'll see what I can find.
+When using the kernel crypto API inside the kernel, there is no such 
+enforcement. One can take shorter IVs which are implicitly padded with 
+trailing zeros.
 
-Yes, please.
+I would like to allow such non-aligned IVs from user space as well. As the 
+user space interface invokes the kernel crypto API functions that allow the 
+non-aligned use inside the kernel, I would not anticipate a problem.
 
-Rafael
+However, if we conclude that the check should remain, then I am wondering 
+whether we have to move it to the various _setiv functions of the kernel 
+crypto API instead of leaving it in the skcipher interface. 
 
---nextPart4157272.3qoB0WeDaZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+During my testing, I removed the check and provided different sized IVs just 
+as I would in kernel space. The kernel crypto API processed them normally and 
+the resulting ciphertext / plaintext is as expected.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+An example that I used are the following parameters for a decryption operation 
+successfully taken from the FIPS 140-2 CAVS tool with an IV shorter than the 
+blocksize:
 
-iQIcBAABCAAGBQJUXWiIAAoJEILEb/54YlRxv5oP/2GEP9UtPaA/4esq9m0SiVo6
-WlEJCR9ZQDZW4nY5YJjqm0G2mXIKXaSlpdZ8Cu7FsUTBQrNMaeVD1KtD72EiU00u
-C5yo18Bj9Lpb8+ajtKy4MaFGXwRsE+Qe1zr2JEAEPelMunHdqv5WDl380Qs0VnEh
-JgxIuvCwiGvFrxUUZNWOy3+4SBw0CgrPrURIrYst+GTgrn0M1t6FaBR0kksBvHlw
-8xPy5kputzLgkImvN1IxlCFGipTlkCpUxUzz5IpkGbt5znETgf0z11+E/NkjJ2di
-CIcHSWciB0LGS9ogTqNJV29m3cp682K9LAQQA18PgGpezbYlgwR336RuUDVm3B7s
-ACyn6Mg/v190zCobSosX2vUM5cGczpsfGogQGdxA/RDqVIK9Wbf9kvM9rymNy9Ts
-LeOSaNe3V+cC3zNday30/XeQyYoyHwUBMVoomjm7Q+aRVbct+WLaaN5J+e3sCOsg
-H4VHWVs7swLi5RbrTHp+V/GSFYxFvzvTdZxUI/lCT6DwNYsO10TnOFPOa90tpqAY
-jiL8KlPD3O4ElpM0hPjFZZaVv0nNewVis2CsjMEsZdgBisCQwAp5hJbLC4be5+//
-IWcahIkgBYUPVC0mljqZWs+bn8uh0F8CZoygpuksT0xZ9fB1AhOVO7XYBcVrwC4H
-cFhEZoJIVXMk2x765o+P
-=wYwx
------END PGP SIGNATURE-----
+AEAD_name_1="gcm(aes)"
+AEAD_msg_1="d127b39d365d16246d2866b2ebabd201"	# Ciphertext
+AEAD_key_1="38bd9eb2cb29cc42ac38d6cdbe116760"	# key
+AEAD_iv_1="aac774c39e399e7d6371ec1d"		# IV
+AEAD_tag_1="34a21cc3562f0ba141d73242e5a3b666"	# Authentication Tag
+AEAD_taglen_1="16"
+AEAD_assoc_1="5dbb2884f3fe93664613e863c3bd2572855cf808765880ef1fa5787ceef8c793"
+						# Associated data
+AEAD_exp_1="8f9ec088580c23fc6f5fc011d52f061b"	# Expected plaintext
 
---nextPart4157272.3qoB0WeDaZ--
 
+Thank you
+-- 
+Ciao
+Stephan
