@@ -1,113 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaKHXQG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 18:16:06 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:51090 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaKHXQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 18:16:04 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: e1000-devel@lists.sourceforge.net
-Subject: e100: Laptop battery drain and WoL settings from EEPROM
-Date: Sun, 9 Nov 2014 00:15:41 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201411090015.41446.linux@rainbow-software.org>
+	id S1753444AbaKHXS3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 18:18:29 -0500
+Received: from mga02.intel.com ([134.134.136.20]:24797 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028AbaKHXS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 18:18:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,342,1413270000"; 
+   d="scan'208";a="604752736"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] scripts/ksize: Add kernel build size report
+Date: Sat,  8 Nov 2014 15:18:18 -0800
+Message-Id: <eda7fd84192e80829af62db0a6debe6f1987f98b.1415488698.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-there is long-standing problem with battery drain after turning off at least
-some Toshiba laptops, see
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
+ksize generates hierarchical build size reports from vmlinux, *.o, and
+built-in.o files.
 
-I have the same problem with Toshiba Portege R100. When I shut it down in
-Linux, the battery is drained to zero in a couple of days. I noticed that the
-LAN port is still active, even when AC disconnected.
+ksize is useful in preparing minimal configurations and comparing
+similar configurations across kernel versions.
 
-The WoL is enabled by default by e100 driver:
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+---
+ scripts/ksize | 345 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 345 insertions(+)
+ create mode 100755 scripts/ksize
 
-# ethtool eth0
-Settings for eth0:
-        Supported ports: [ TP MII ]
-        Supported link modes:   10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-        Supported pause frame use: No
-        Supports auto-negotiation: Yes
-        Advertised link modes:  10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-        Advertised pause frame use: Symmetric
-        Advertised auto-negotiation: Yes
-        Link partner advertised link modes:  10baseT/Half
-        Link partner advertised pause frame use: No
-        Link partner advertised auto-negotiation: No
-        Speed: 10Mb/s
-        Duplex: Half
-        Port: MII
-        PHYAD: 1
-        Transceiver: internal
-        Auto-negotiation: on
-        Supports Wake-on: g
-        Wake-on: g
-        Current message level: 0x00000007 (7)
-                               drv probe link
-        Link detected: yes
-
-By this code:
-        /* Wol magic packet can be enabled from eeprom */
-        if ((nic->mac >= mac_82558_D101_A4) &&
-           (nic->eeprom[eeprom_id] & eeprom_id_wol)) {
-                nic->flags |= wol_magic;
-                device_set_wakeup_enable(&pdev->dev, true);
-        }
-
-because the WoL bit is set in EEPROM ID word:
-
-# ethtool -e eth0
-Offset          Values
-------          ------
-0x0000:         xx xx xx xx xx xx 03 1b 00 00 01 02 01 47 00 00
-0x0010:         00 00 00 00 a2 49 01 00 79 11 7f 00 00 00 00 00
-                            ^^ bit 5 here
-0x0020:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-0x0030:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-0x0040:         00 00 00 00 00 00 3d 10 00 00 00 00 00 00 00 00
-0x0050:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-0x0060:         e4 00 3f 40 09 41 00 00 00 00 00 00 00 00 00 00
-0x0070:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 f7 fe
-
-Looks like this laptop is probably WoL-capable even on battery.
-
-Measured the current from AC adapter:
-around 20mA with WoL inactive (shut down from Windows or by power button in GRUB)
-around 40mA with WoL active (shut down from Linux)
-
-So to work-around this problem, users must disable WoL manually on each boot.
-
-Maybe the driver should ignore the EEPROM WoL bit on Toshiba susbsystem IDs?
-Or completely, like Windows driver does?
-
-Ethernet controller details:
-02:08.0 Ethernet controller [0200]: Intel Corporation 82801DB PRO/100 VE (MOB) Ethernet Controller [8086:103d] (rev 83)
-        Subsystem: Toshiba America Info Systems Device [1179:0001]
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 64 (2000ns min, 14000ns max), Cache Line Size: 32 bytes
-        Interrupt: pin A routed to IRQ 11
-        Region 0: Memory at dfdff000 (32-bit, non-prefetchable) [size=4K]
-        Region 1: I/O ports at cf40 [size=64]
-        Capabilities: [dc] Power Management version 2
-                Flags: PMEClk- DSI+ D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=2 PME-
-        Kernel driver in use: e100
-
+diff --git a/scripts/ksize b/scripts/ksize
+new file mode 100755
+index 0000000..103da2a
+--- /dev/null
++++ b/scripts/ksize
+@@ -0,0 +1,345 @@
++#!/usr/bin/env python
++#
++# Copyright (c) 2011-2014 Intel Corporation.
++# All rights reserved.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License version 2 as
++# published by the Free Software Foundation.
++#
++# This program is distributed in the hope that it will be useful, but
++# WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++# General Public License for more details.
++#
++# Author: Darren Hart <dvhart@linux.intel.com>
++#
++
++"""
++Display details of the kernel build size.
++
++The generated report is comprised of many sub-reports, starting with vmlinux,
++and descending into each component built-in.o.
++
++The first line of each report block is the table header, including the report
++title and the column labels. Next is the report totals for the top level file
++(vmlinux or built-in.o). This is followed by itemized sizes for any component
++*.o object files and all built-in.o files from one directory down (the
++built-in.o components are labeled with their parent directory to avoid
++displaying "built-in.o" on nearly every line). The final lines display the sum
++of all the itemized components and delta between the total and the sum.
++
++An example report from an x86_64 allnoconfig build follows in part:
++
++Linux (3.18.0-rc3+)                     total |       text       data        bss
++--------------------------------------------------------------------------------
++vmlinux                               2201904 |     864548     121612    1215744
++--------------------------------------------------------------------------------
++arch/x86                               282709 |     171021      65448      46240
++kernel                                 249960 |     234355       7201       8404
++mm                                     190369 |     154171      14154      22044
++fs                                     163867 |     160820       1351       1696
++drivers                                 44429 |      41353       2052       1024
++lib                                     37143 |      37053         85          5
++init                                    21535 |       5189      16285         61
++security                                 3674 |       3658          8          8
++net                                       122 |        122          0          0
++--------------------------------------------------------------------------------
++sum                                    993808 |     807742     106584      79482
++delta                                 1208096 |      56806      15028    1136262
++
++...
++
++drivers                                 total |       text       data        bss
++--------------------------------------------------------------------------------
++drivers/built-in.o                      44429 |      41353       2052       1024
++--------------------------------------------------------------------------------
++drivers/base                            32427 |      31267       1060        100
++drivers/char                             9980 |       8412        656        912
++drivers/rtc                              1155 |       1155          0          0
++drivers/clocksource                       674 |        406        256         12
++drivers/video                              62 |         46         16          0
++--------------------------------------------------------------------------------
++sum                                     44298 |      41286       1988       1024
++delta                                     131 |         67         64          0
++
++The report may optionally display an additional level of drivers/* reports:
++
++    drivers/base                        total |       text       data        bss
++    ----------------------------------------------------------------------------
++    drivers/base/built-in.o             32427 |      31267       1060        100
++    ----------------------------------------------------------------------------
++    drivers/base/*.o                    32253 |      31121       1032        100
++    ----------------------------------------------------------------------------
++    sum                                 32253 |      31121       1032        100
++    delta                                 174 |        146         28          0
++
++    ...
++"""
++
++import sys
++import getopt
++import os
++import struct
++import termios
++import fcntl
++import glob
++from subprocess import *
++
++
++def usage():
++    print 'Usage: ksize [OPTION]...'
++    print '  -d,                 display an additional level of drivers detail'
++    print '  -h, --help          display this help and exit'
++    print ''
++    print 'Run ksize from the top-level Linux kernel build directory. Always'
++    print 'perform a "make clean" before running a build to be measured by'
++    print 'ksize to avoid contaminating the report with unassociated build'
++    print 'artifacts'
++
++
++def term_width():
++    """
++    Determine the width of the terminal for formatting the report
++
++    Prefer the COLUMNS environment variable, and fall back to termios.
++    The width will be limited to the range of [70, 100], and will default to 80
++    if none can be determined, or if redirecting to a file.
++    """
++    minw = 70
++    maxw = 100
++
++    if os.environ.has_key('COLUMNS'):
++        return max(minw, min(int(os.environ['COLUMNS']), maxw))
++
++    try:
++        (rows,cols) = struct.unpack('hh', fcntl.ioctl(1, termios.TIOCGWINSZ, "CCRR"))
++        return max(minw, min(cols, maxw))
++    except IOError:
++        # Probably redirecting to a file
++        pass
++    except struct.error, err:
++        print "Error:", err
++        sys.exit(1)
++
++    return 80
++
++
++def fmt_title(title, maxw):
++    """
++    Format the title to fit within a maximum width
++
++    The title will be shifted left and prefixed with a '<' character as
++    necessary to fit within the maximum width.
++
++    Args:
++      title (str): Title to be formatted
++      maxw (int): Maximum width
++    """
++    if len(title) <= maxw:
++        return title
++    else:
++        return "<%s" % (title[-(maxw - 1):])
++
++
++class Sizes(object):
++    """
++    Storage class for 'size -t' output
++    """
++    def __init__(self, title="", files=None):
++        """
++        Create a new Sizes container and populate it with the sum of the sizes
++        from the files list.
++
++        Args:
++          title (str, optional): Title to display via the show method
++          files (list of str, optional): Files to pass to 'size -t'
++        """
++        self.title = title
++        self.text = self.data = self.bss = self.total = 0
++
++        if files:
++            p = Popen("size -t " + " ".join(files),
++                      shell=True, stdout=PIPE, stderr=PIPE)
++            output = p.communicate()[0].splitlines()
++
++            if len(output) > 2:
++                sizes = output[-1].split()[0:4]
++                self.text = int(sizes[0])
++                self.data = int(sizes[1])
++                self.bss = int(sizes[2])
++                self.total = int(sizes[3])
++
++    def __add__(self, that):
++        if not (isinstance(self, Sizes) and isinstance(that, Sizes)):
++            raise TypeError
++        sum = Sizes()
++        sum.text = self.text + that.text
++        sum.data = self.data + that.data
++        sum.bss = self.bss + that.bss
++        sum.total = self.total + that.total
++        return sum
++
++    def __sub__(self, that):
++        if not (isinstance(self, Sizes) and isinstance(that, Sizes)):
++            raise TypeError
++        diff = Sizes()
++        diff.text = self.text - that.text
++        diff.data = self.data - that.data
++        diff.bss = self.bss - that.bss
++        diff.total = self.total - that.total
++        return diff
++
++    def show(self, cols, indent="", alt_title=None):
++        """
++        Print a row in a report for sizes represented by this object
++
++        Args:
++          cols (int): Width of the report in characters
++          indent (str, optional): Literal indentation string, all spaces
++          alt_title (str, optional): An alternate title to display
++        """
++        max_title = cols - 46 - len(indent)
++        if alt_title is not None:
++            title = fmt_title(alt_title, max_title)
++        else:
++            title = fmt_title(self.title, max_title)
++        print "%s%-*s %10d | %10d %10d %10d" % (
++                indent, max_title, title, self.total,
++                self.text, self.data, self.bss)
++
++
++class Report(object):
++    """
++    Container of sizes and sub reports
++    """
++    @staticmethod
++    def create(title, filename, subglobs):
++        """
++        Named constructor to create hierarchies of Report objects
++
++        Args:
++          title (str): Title of the report
++          filename (str): Top level build object filename
++          subglobs (list of str): Shell globs matching the components of the top
++            level filename
++        """
++        r = Report(title, [filename])
++
++        # Create the .o object file report for this level
++        path = os.path.dirname(filename)
++        files = [p for p in glob.iglob(path + "/*.o") if not p.endswith("/built-in.o")]
++        r.parts.append(Report(path + "/*.o", files))
++
++        # Create the sub-reports based on each built-in.o
++        for g in subglobs:
++            for f in glob.glob(g):
++                path = os.path.dirname(f)
++                r.parts.append(Report.create(path, f, [path + "/*/built-in.o"]))
++
++        # Display in descending total size order
++        r.parts.sort(reverse=True)
++
++        # Calculate the sum and deltas from each component report
++        for b in r.parts:
++            r.totals += b.sizes
++        r.totals.title = "sum"
++
++        r.deltas = r.sizes - r.totals
++        r.deltas.title = "delta"
++
++        return r
++
++    def __init__(self, title, files):
++        """
++        Create a new singular Report object, only called by Report.create()
++
++        Args:
++          title (str, optional): Title to display via the show method
++          files (list of str, optional): Files to construct Sizes
++        """
++        self.files = files
++        self.title = title
++        self.parts = list()
++        self.sizes = Sizes(title, files)
++        self.totals = Sizes("sum")
++        self.deltas = Sizes("delta")
++
++    def show(self, cols, indent=""):
++        """
++        Print the Report as a table with Sizes as rows
++
++        Args:
++          cols (int): Width of the report in characters
++          indent (str, optional): Literal indentation string, all spaces
++        """
++        max_title = cols - 46 - len(indent)
++        title = fmt_title(self.title, max_title)
++        rule = str.ljust(indent, cols, '-')
++
++        # Print report table header
++        print "%s%-*s %10s | %10s %10s %10s" % (
++                indent, max_title, title, "total", "text", "data", "bss")
++
++        # Print top level report filename instead of title (usually path)
++        print rule
++        self.sizes.show(cols, indent, self.files[0])
++        print rule
++
++        # Print component sizes (*.o and */built-in.o)
++        for p in self.parts:
++            if p.sizes.total > 0:
++                p.sizes.show(cols, indent)
++        print rule
++
++        # Print the sum of the components, and the delta with the total
++        self.totals.show(cols, indent)
++        self.deltas.show(cols, indent)
++        print "\n"
++
++    def __cmp__(self, that):
++        if not isinstance(that, Report):
++            raise TypeError
++        return cmp(self.sizes.total, that.sizes.total)
++
++
++def main(argv):
++    try:
++        opts, args = getopt.getopt(argv[1:], "dh", ["help"])
++    except getopt.GetoptError, err:
++        print '%s' % str(err)
++        usage()
++        return 2
++
++    driver_detail = False
++    for o, a in opts:
++        if o == '-d':
++            driver_detail = True
++        elif o in ('-h', '--help'):
++            usage()
++            return 0
++        else:
++            assert False, "unhandled option"
++
++    cols = term_width()
++
++    # Determine kernel version
++    p = Popen("strings vmlinux | grep 'Linux version' | cut -d ' ' -f 3",
++              shell=True, stdout=PIPE, stderr=PIPE)
++    version = p.communicate()[0].strip()
++
++    globs = ["arch/*/built-in.o", "*/built-in.o"]
++    vmlinux = Report.create("Linux (%s)" % (version), "vmlinux", globs)
++
++    vmlinux.show(cols)
++    for b in vmlinux.parts:
++        if b.totals.total > 0 and len(b.parts) > 1:
++            b.show(cols)
++        if b.title == "drivers" and driver_detail:
++            for d in b.parts:
++                if d.totals.total > 0 and len(d.parts) > 1:
++                    d.show(cols, "    ")
++
++
++if __name__ == "__main__":
++    sys.exit(main(sys.argv))
 -- 
-Ondrej Zary
+2.1.1
+
