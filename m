@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaKHUhG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 15:37:06 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:46241 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaKHUhE (ORCPT
+	id S1753059AbaKHUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 15:45:09 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:35793 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaKHUpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 15:37:04 -0500
-Date: Sat, 8 Nov 2014 12:36:58 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        GTA04 owners <gta04-owner@goldelico.com>
-Subject: Re: [PATCH] Input: twl4030-pwrbutton: ensure a wakeup event is
- recorded.
-Message-ID: <20141108203658.GA40319@dtor-ws>
-References: <20141108104015.635a7388@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141108104015.635a7388@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 8 Nov 2014 15:45:08 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH v2 0/3] trace: Use simpler seq_file functions
+Date: Sat,  8 Nov 2014 21:42:09 +0100
+Message-Id: <1415479332-25944-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
+References: <1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 08, 2014 at 10:40:15AM +1100, NeilBrown wrote:
-> 
-> 
-> This button is treated as a wakeup source, so we need to initialise it
-> correctly.
-> 
-> Without the device_init_wakeup() call, dev->power.wakeup will
-> be NULL, and pm_wakeup_event() will do nothing.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+Using printf to print a simple string or puts to print a single
+character is more expensive than it needs to be. Also, consecutive
+puts calls can be replaced by a single call. These patches do this to
+kernel/trace/, saving ~256 bytes of .text.
 
-Applied, thank you.
+v2: Keep the original splitting of strings across lines.
 
-> 
-> diff --git a/drivers/input/misc/twl4030-pwrbutton.c b/drivers/input/misc/twl4030-pwrbutton.c
-> index fb3b63b2f85c..8400a1a34d87 100644
-> --- a/drivers/input/misc/twl4030-pwrbutton.c
-> +++ b/drivers/input/misc/twl4030-pwrbutton.c
-> @@ -85,6 +85,7 @@ static int twl4030_pwrbutton_probe(struct platform_device *pdev)
->  	}
->  
->  	platform_set_drvdata(pdev, pwr);
-> +	device_init_wakeup(&pdev->dev, true);
->  
->  	return 0;
->  }
+Rasmus Villemoes (3):
+  trace: Replace seq_printf by simpler equivalents
+  trace: Merge consecutive seq_puts calls
+  trace: Replace single-character seq_puts with seq_putc
 
-
+ kernel/trace/ftrace.c                | 30 +++++++-------
+ kernel/trace/trace.c                 | 78 ++++++++++++++++++------------------
+ kernel/trace/trace_branch.c          | 32 +++++++--------
+ kernel/trace/trace_events.c          |  4 +-
+ kernel/trace/trace_events_trigger.c  |  6 +--
+ kernel/trace/trace_functions.c       |  2 +-
+ kernel/trace/trace_functions_graph.c | 28 ++++++-------
+ kernel/trace/trace_kprobe.c          | 12 +++---
+ kernel/trace/trace_printk.c          |  2 +-
+ kernel/trace/trace_uprobe.c          |  4 +-
+ 10 files changed, 99 insertions(+), 99 deletions(-)
 
 -- 
-Dmitry
+2.0.4
+
