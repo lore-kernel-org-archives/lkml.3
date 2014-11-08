@@ -1,135 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaKHAIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:08:41 -0500
-Received: from mail-bl2on0145.outbound.protection.outlook.com ([65.55.169.145]:20016
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753230AbaKHAIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:08:40 -0500
-Message-ID: <1415405305.3805.45.camel@snotra.buserror.net>
-Subject: Re: [v4,17/21] powerpc/8xx: set PTE bit 22 off TLBmiss
-From: Scott Wood <scottwood@freescale.com>
-To: leroy christophe <christophe.leroy@c-s.fr>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Fri, 7 Nov 2014 18:08:25 -0600
-In-Reply-To: <545C7C2E.3060109@c-s.fr>
-References: <20140919083609.A92871AB040@localhost.localdomain>
-	 <20141107033745.GA23796@home.buserror.net> <545C7C2E.3060109@c-s.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1752917AbaKHAO0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:14:26 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:44945 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764AbaKHAOZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 19:14:25 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [2601:2:5800:3f7:39d9:e257:9f3c:9dae]
-X-ClientProxiedBy: DM2PR10CA0064.namprd10.prod.outlook.com (10.141.241.32) To
- BY2PR0301MB0726.namprd03.prod.outlook.com (25.160.63.16)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0726;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0389EDA07F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(199003)(24454002)(51704005)(479174003)(189002)(46102003)(21056001)(101416001)(50226001)(89996001)(102836001)(42186005)(92566001)(92726001)(33646002)(87286001)(19580405001)(97736003)(20776003)(107046002)(31966008)(50466002)(87976001)(122386002)(50986999)(105586002)(40100003)(77156002)(110136001)(86362001)(64706001)(23676002)(106356001)(575784001)(103116003)(104166001)(95666004)(120916001)(76176999)(77096003)(62966003)(47776003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0726;H:[IPv6:2601:2:5800:3f7:39d9:e257:9f3c:9dae];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0615;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20141107233607.GS4042@n2100.arm.linux.org.uk>
+References: <1415386312-23741-1-git-send-email-dianders@chromium.org>
+	<20141107185844.GR4042@n2100.arm.linux.org.uk>
+	<CAD=FV=WhWqMB=-ErD-59-z=y7OCZx4r7REkr3DpyYR=76SEJ6A@mail.gmail.com>
+	<20141107233607.GS4042@n2100.arm.linux.org.uk>
+Date: Fri, 7 Nov 2014 16:14:23 -0800
+X-Google-Sender-Auth: sS6D-nWkgrjHbmgHcClsZbNs40c
+Message-ID: <CAD=FV=WCwGjuLNFPANqqq-+rEN_jhqi+Bfss2ugDJEgjf3z_Gg@mail.gmail.com>
+Subject: Re: [PATCH] clk: Propagate prepare and enable when reparenting orphans
+From: Doug Anderson <dianders@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 09:00 +0100, leroy christophe wrote:
-> Le 07/11/2014 04:37, Scott Wood a écrit :
-> > On Fri, Sep 19, 2014 at 10:36:09AM +0200, LEROY Christophe wrote:
-> >> No need to re-set this bit at each TLB miss. Let's set it in the PTE.
-> >>
-> >> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> >> ---
-> >> Changes in v2:
-> >> - None
-> >>
-> >> Changes in v3:
-> >> - Removed PPC405 related macro from PPC8xx specific code
-> >> - PTE_NONE_MASK doesn't need PAGE_ACCESSED in Linux 2.6
-> >>
-> >> Changes in v4:
-> >> - None
-> >>
-> >>   arch/powerpc/include/asm/pgtable-ppc32.h | 20 ++++++++++++++++++++
-> >>   arch/powerpc/include/asm/pte-8xx.h       |  7 +++++--
-> >>   arch/powerpc/kernel/head_8xx.S           | 10 ++--------
-> >>   3 files changed, 27 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
-> >> index 47edde8..35a9b44 100644
-> >> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
-> >> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
-> >> @@ -172,6 +172,25 @@ static inline unsigned long pte_update(pte_t *p,
-> >>   #ifdef PTE_ATOMIC_UPDATES
-> >>   	unsigned long old, tmp;
-> >>   
-> >> +#ifdef CONFIG_PPC_8xx
-> >> +	unsigned long tmp2;
-> >> +
-> >> +	__asm__ __volatile__("\
-> >> +1:	lwarx	%0,0,%4\n\
-> >> +	andc	%1,%0,%5\n\
-> >> +	or	%1,%1,%6\n\
-> >> +	/* 0x200 == Extended encoding, bit 22 */ \
-> >> +	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
-> >> +	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
-> >> +	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
-> >> +	or	%1,%3,%1\n\
-> >> +	xori	%1,%1,0x200\n"
-> >> +"	stwcx.	%1,0,%4\n\
-> >> +	bne-	1b"
-> > Why do you need this...
-> >
-> >> diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
-> >> index d44826e..daa4616 100644
-> >> --- a/arch/powerpc/include/asm/pte-8xx.h
-> >> +++ b/arch/powerpc/include/asm/pte-8xx.h
-> >> @@ -48,19 +48,22 @@
-> >>    */
-> >>   #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
-> >>   #define _PAGE_USER	0x0800	/* msb PP bits */
-> >> +/* set when neither _PAGE_USER nor _PAGE_RW are set */
-> >> +#define _PAGE_KNLRO	0x0200
-> >>   
-> >>   #define _PMD_PRESENT	0x0001
-> >>   #define _PMD_BAD	0x0ff0
-> >>   #define _PMD_PAGE_MASK	0x000c
-> >>   #define _PMD_PAGE_8M	0x000c
-> >>   
-> >> -#define _PTE_NONE_MASK _PAGE_ACCESSED
-> >> +#define _PTE_NONE_MASK _PAGE_KNLRO
-> >>   
-> >>   /* Until my rework is finished, 8xx still needs atomic PTE updates */
-> >>   #define PTE_ATOMIC_UPDATES	1
-> >>   
-> >>   /* We need to add _PAGE_SHARED to kernel pages */
-> >> -#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
-> >> +#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
-> >> +#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
-> >>   #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
-> > ...if 0x200 is already being set in the PTE here?
-> >
-> If I understand well the way it works, those defines are used for 
-> setting the PTE the first time.
-> Then, pte_update() is used to modify the pte settings on an existing pte
-> 
-> 0x200 must be set when and only when the page is a RO kernel page. If 
-> later on pte_update() is called for instance to set the page to RW, the 
-> 0x200 has to be removed. Same, if pte_update() is called to remove 
-> _PAGE_RW (ptep_set_wrprotect() does this), 0x200 must be set back.
+Russell,
 
-OK, so the _PAGE_KERNEL_RO(X) stuff is because initially setting the PTE
-doesn't go through pte_update().
+On Fri, Nov 7, 2014 at 3:36 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> What I am saying is as follows.  Take this diagram - a mux.  clkc can
+> be sourced from either clkp1 or clkp2.  Initially, it is set to clkp1:
+>
+> clkp1 -----o
+>             \
+>              o--------> clkc
+>
+> clkp2 -----o
 
-I'll apply this, though it'd be cleaner to just have 8xx versions of the
-relevant PTE accessor functions to maintain the PTE the way the hardware
-wants (this would also eliminate the _PAGE_RW inversion that's still in
-the TLB miss handler).
-
--Scott
+OK.  This isn't my case at all.  In my case the clock being parented
+is an orphan.  By definition it had no previous parent.  ...but let's
+think about your scenario too.
 
 
+> Let's assume that none of these clocks are requested, prepared or
+> enabled.
+>
+> Now, if clkc is requested, and then prepared, clkp1 will be prepared,
+> but not clkp2.
+>
+> When clkc is re-parented to clkp2 in this state, there are three things
+> which must happen:
+>
+> 1. clkp2 needs to be prepared.
+> 2. clkc needs to be switched from clkp1 to clkp2.
+> 3. clkp1 needs to be unprepared.
+>
+> (the order is debatable.)
+>
+> The reason for step 3 is because of what happens if we unprepare clkc,
+> or switch back to clkp1.
+>
+> If we unprepare clkc, we _should_ end up with clkp1, clkp2 and clkc
+> _all_ back in their initial states - in other words, all unprepared.
+> clkp1 should not be left prepared by this sequence of events.
+>
+> If we switch back to clkp1, then the same three things need to happen
+> (just with the appropriate parent clocks):
+>
+> 1. clkp1 needs to be prepared.
+> 2. clkc needs to be switched from clkp2 to clkp1.
+> 3. clkp2 needs to be unprepared.
+>
+> And, having done that, we can see that we are in exactly the same state
+> as we were when we first prepared clkc in the beginning.
+>
+> If we omit the unprepare stage, then at this point, we will have prepared
+> clkp1 _twice_ and clkp2 _once_, which means when clkc is unprepared, both
+> clkp1 and clkp2 are left with a preparation count of one - which is
+> effectively a refcount leak.
+
+All of the above is clear and matches my understanding of how
+clk_set_parent() works.  You don't think it does?  ...or are you
+talking about some other API call?
+
+I see:
+
+clk_set_parent()
+-> __clk_set_parent()
+----> __clk_set_parent_before()
+------> prepare new parent
+------> enable new parent
+------> enable clk
+------> actually do the reparent in CCF
+----> call clk->ops->set_parent()
+----> clk_set_parent_after()
+------> disable clk
+------> disable old parent
+------> unprepare old parent
+
+clk_set_parent() is documented to temporarily enable clk during its operation.
+
+
+> Fixing the lack of prepare may fix the "clock not running" problem, but
+> without addressing the unprepare side, you are introducing a new bug
+> while fixing an existing bug.  Both issues need to be resolved together.
+
+I guess I'm still confused.  My patch continues to be about orphans
+and I don't see the bug you are pointing to.
+
+-Doug
