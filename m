@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaKHBlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 20:41:31 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:32802 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaKHBl3 (ORCPT
+	id S1753590AbaKHBlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 20:41:50 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49426 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569AbaKHBls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 20:41:29 -0500
+	Fri, 7 Nov 2014 20:41:48 -0500
 From: Chen Yucong <slaoub@gmail.com>
 To: bp@alien8.de, tony.luck@intel.com
 Cc: ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
         linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
         Chen Yucong <slaoub@gmail.com>
-Subject: [PATCH v3 1/2] x86, mce, severity: extend the the mce_severity mechanism to handle UCNA/DEFERRED error
-Date: Sat,  8 Nov 2014 09:40:20 +0800
-Message-Id: <1415410821-15063-2-git-send-email-slaoub@gmail.com>
+Subject: [PATCH v3 2/2] x86, mce: support memory error recovery for both UCNA and Deferred error in machine_check_poll
+Date: Sat,  8 Nov 2014 09:40:21 +0800
+Message-Id: <1415410821-15063-3-git-send-email-slaoub@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
 References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
@@ -22,204 +22,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, the mce_severity mechanism can only identify the severity
-of UCNA error as MCE_KEEP_SEVERITY. Meanwhile, it is not able to filter
-out DEFERRED error for ADM platform.
+Uncorrected no action required (UCNA) - is a uncorrected recoverable
+machine check error that is not signaled via a machine check exception
+and, instead, is reported to system software as a corrected machine
+check error. UCNA errors indicate that some data in the system is
+corrupted, but the data has not been consumed and the processor state
+is valid and you may continue execution on this processor. UCNA errors
+require no action from system software to continue execution. Note that
+UCNA errors are supported by the processor only when IA32_MCG_CAP[24]
+(MCG_SER_P) is set.
+                                               -- Intel SDM Volume 3B
 
-This patch aims to extend the mce_severity mechanism for handling
-UCNA/DEFERRED error. In order to do this, the patch introduces a new
-severity level - MCE_UCNA/DEFERRED_SEVERITY.
+Deferred errors are errors that cannot be corrected by hardware, but
+do not cause an immediate interruption in program flow, loss of data
+integrity, or corruption of processor state. These errors indicate
+that data has been corrupted but not consumed. Hardware writes information
+to the status and address registers in the corresponding bank that
+identifies the source of the error if deferred errors are enabled for
+logging. Deferred errors are not reported via machine check exceptions;
+they can be seen by polling the MCi_STATUS registers.
+                                                -- AMD64 APM Volume 2
 
-In addition, mce_severity is specific to machine check exception,
-and it will check MCIP/EIPV/RIPV bits. In order to use mce_severity
-mechanism in non-exception context, the patch also introduces a new
-argument (is_excp) for mce_severity. `is_excp' is used to explicitly
-specify the calling context of mce_severity.
+Above two items, both UCNA and Deferred errors belong to detected
+errors, but they can't be corrected by hardware, and this is very
+similar to Software Recoverable Action Optional (SRAO) errors.
+Therefore, we can take some actions that have been used for handling
+SRAO errors to handle UCNA and Deferred errors.
 
 Signed-off-by: Chen Yucong <slaoub@gmail.com>
 ---
- arch/x86/include/asm/mce.h                |    4 ++++
- arch/x86/kernel/cpu/mcheck/mce-internal.h |    4 +++-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   21 ++++++++++++++++-----
- arch/x86/kernel/cpu/mcheck/mce.c          |   14 ++++++++------
- drivers/edac/mce_amd.h                    |    3 ---
- 5 files changed, 31 insertions(+), 15 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   50 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 276392f..51b26e89 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -34,6 +34,10 @@
- #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
- #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
- 
-+/* AMD-specific bits */
-+#define MCI_STATUS_DEFERRED	(1ULL<<44)  /* declare an uncorrected error */
-+#define MCI_STATUS_POISON	(1ULL<<43)  /* access poisonous data */
-+
- /*
-  * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
-  * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index 09edd0b..10b4690 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -3,6 +3,8 @@
- 
- enum severity_level {
- 	MCE_NO_SEVERITY,
-+	MCE_DEFERRED_SEVERITY,
-+	MCE_UCNA_SEVERITY = MCE_DEFERRED_SEVERITY,
- 	MCE_KEEP_SEVERITY,
- 	MCE_SOME_SEVERITY,
- 	MCE_AO_SEVERITY,
-@@ -21,7 +23,7 @@ struct mce_bank {
- 	char			attrname[ATTR_LEN];	/* attribute name */
- };
- 
--int mce_severity(struct mce *a, int tolerant, char **msg);
-+int mce_severity(struct mce *a, int tolerant, char **msg, bool is_excp);
- struct dentry *mce_get_debugfs_dir(void);
- 
- extern struct mce_bank *mce_banks;
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index c370e1c..c61feb3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -31,6 +31,7 @@
- 
- enum context { IN_KERNEL = 1, IN_USER = 2 };
- enum ser { SER_REQUIRED = 1, NO_SER = 2 };
-+enum exception { EXCP_CONTEXT = 1, NO_EXCP = 2 };
- 
- static struct severity {
- 	u64 mask;
-@@ -40,6 +41,7 @@ static struct severity {
- 	unsigned char mcgres;
- 	unsigned char ser;
- 	unsigned char context;
-+	unsigned char excp;
- 	unsigned char covered;
- 	char *msg;
- } severities[] = {
-@@ -48,6 +50,8 @@ static struct severity {
- #define  USER		.context = IN_USER
- #define  SER		.ser = SER_REQUIRED
- #define  NOSER		.ser = NO_SER
-+#define  EXCP		.excp = EXCP_CONTEXT
-+#define  NOEXCP		.excp = NO_EXCP
- #define  BITCLR(x)	.mask = x, .result = 0
- #define  BITSET(x)	.mask = x, .result = x
- #define  MCGMASK(x, y)	.mcgmask = x, .mcgres = y
-@@ -71,16 +75,20 @@ static struct severity {
- 	/* When MCIP is not set something is very confused */
- 	MCESEV(
- 		PANIC, "MCIP not set in MCA handler",
--		MCGMASK(MCG_STATUS_MCIP, 0)
-+		EXCP, MCGMASK(MCG_STATUS_MCIP, 0)
- 		),
- 	/* Neither return not error IP -- no chance to recover -> PANIC */
- 	MCESEV(
- 		PANIC, "Neither restart nor error IP",
--		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
-+		EXCP, MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
- 		),
- 	MCESEV(
- 		PANIC, "In kernel and no restart IP",
--		KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
-+		EXCP, KERNEL, MCGMASK(MCG_STATUS_RIPV, 0)
-+		),
-+	MCESEV(
-+		DEFERRED, "Deferred error",
-+		NOSER, MASK(MCI_STATUS_UC|MCI_STATUS_DEFERRED|MCI_STATUS_POISON, MCI_STATUS_DEFERRED)
- 		),
- 	MCESEV(
- 		KEEP, "Corrected error",
-@@ -89,7 +97,7 @@ static struct severity {
- 
- 	/* ignore OVER for UCNA */
- 	MCESEV(
--		KEEP, "Uncorrected no action required",
-+		UCNA, "Uncorrected no action required",
- 		SER, MASK(MCI_UC_SAR, MCI_STATUS_UC)
- 		),
- 	MCESEV(
-@@ -178,8 +186,9 @@ static int error_context(struct mce *m)
- 	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
- }
- 
--int mce_severity(struct mce *m, int tolerant, char **msg)
-+int mce_severity(struct mce *m, int tolerant, char **msg, bool is_excp)
- {
-+	enum exception excp = (is_excp ? EXCP_CONTEXT : NO_EXCP);
- 	enum context ctx = error_context(m);
- 	struct severity *s;
- 
-@@ -194,6 +203,8 @@ int mce_severity(struct mce *m, int tolerant, char **msg)
- 			continue;
- 		if (s->context && ctx != s->context)
- 			continue;
-+		if (s->excp && excp != s->excp)
-+			continue;
- 		if (msg)
- 			*msg = s->msg;
- 		s->covered = 1;
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 61a9668ce..453e9bf 100644
+index 453e9bf..4b6e4cdf 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -668,7 +668,8 @@ static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
- 			if (quirk_no_way_out)
- 				quirk_no_way_out(i, m, regs);
- 		}
--		if (mce_severity(m, mca_cfg.tolerant, msg) >= MCE_PANIC_SEVERITY)
-+		if (mce_severity(m, mca_cfg.tolerant, msg, true) >=
-+		    MCE_PANIC_SEVERITY)
- 			ret = 1;
+@@ -575,6 +575,41 @@ static void mce_read_aux(struct mce *m, int i)
  	}
- 	return ret;
-@@ -754,7 +755,7 @@ static void mce_reign(void)
- 	for_each_possible_cpu(cpu) {
- 		int severity = mce_severity(&per_cpu(mces_seen, cpu),
- 					    mca_cfg.tolerant,
--					    &nmsg);
-+					    &nmsg, true);
- 		if (severity > global_worst) {
- 			msg = nmsg;
- 			global_worst = severity;
-@@ -1095,13 +1096,14 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		 */
- 		add_taint(TAINT_MACHINE_CHECK, LOCKDEP_NOW_UNRELIABLE);
+ }
  
--		severity = mce_severity(&m, cfg->tolerant, NULL);
-+		severity = mce_severity(&m, cfg->tolerant, NULL, true);
++static bool memory_error(struct mce *m)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	if (c->x86_vendor == X86_VENDOR_AMD) {
++		/*
++		 * AMD BKDGs - Machine Check Error Codes
++		 *
++		 * Bit 8 of ErrCode[15:0] of MCi_STATUS is used for indicating
++		 * a memory-specific error. Note that this field encodes info-
++		 * rmation about memory-hierarchy level involved in the error.
++		 */
++		return (m->status & 0xff00) == BIT(8);
++	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
++		/*
++		 * Intel SDM Volume 3B - 15.9.2 Compound Error Codes
++		 *
++		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
++		 * indicating a memory error. Bit 8 is used for indicating a
++		 * cache hierarchy error. The combination of bit 2 and bit 3
++		 * is used for indicating a `generic' cache hierarchy error
++		 * But we can't just blindly check the above bits, because if
++		 * bit 11 is set, then it is a bus/interconnect error - and
++		 * either way the above bits just gives more detail on what
++		 * bus/interconnect error happened. Note that bit 12 can be
++		 * ignored, as it's the "filter" bit.
++		 */
++		return (m->status & 0xef80) == BIT(7) ||
++		       (m->status & 0xef00) == BIT(8) ||
++		       (m->status & 0xeffc) == 0xc;
++	}
++
++	return false;
++}
++
+ DEFINE_PER_CPU(unsigned, mce_poll_count);
  
+ /*
+@@ -595,6 +630,7 @@ DEFINE_PER_CPU(unsigned, mce_poll_count);
+ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ {
+ 	struct mce m;
++	int severity;
+ 	int i;
+ 
+ 	this_cpu_inc(mce_poll_count);
+@@ -630,6 +666,20 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 
+ 		if (!(flags & MCP_TIMESTAMP))
+ 			m.tsc = 0;
++
++		severity = mce_severity(&m, mca_cfg.tolerant, NULL, false);
++
++		/*
++		 * In the cases where we don't have a valid address after all,
++		 * do not add it into the ring buffer.
++		 */
++		if (severity == MCE_DEFERRED_SEVERITY && memory_error(&m)) {
++			if (m.status & MCI_STATUS_ADDRV) {
++				mce_ring_add(m.addr >> PAGE_SHIFT);
++				mce_schedule_work();
++			}
++		}
++
  		/*
--		 * When machine check was for corrected handler don't touch,
--		 * unless we're panicing.
-+		 * When machine check was for corrected/deferred handler don't
-+		 * touch, unless we're panicing.
- 		 */
--		if (severity == MCE_KEEP_SEVERITY && !no_way_out)
-+		if ((severity == MCE_KEEP_SEVERITY ||
-+		     severity == MCE_UCNA_SEVERITY) && !no_way_out)
- 			continue;
- 		__set_bit(i, toclear);
- 		if (severity == MCE_NO_SEVERITY) {
-diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
-index 51b7e3a..c2359a1 100644
---- a/drivers/edac/mce_amd.h
-+++ b/drivers/edac/mce_amd.h
-@@ -32,9 +32,6 @@
- #define R4(x)				(((x) >> 4) & 0xf)
- #define R4_MSG(x)			((R4(x) < 9) ?  rrrr_msgs[R4(x)] : "Wrong R4!")
- 
--#define MCI_STATUS_DEFERRED		BIT_64(44)
--#define MCI_STATUS_POISON		BIT_64(43)
--
- extern const char * const pp_msgs[];
- 
- enum tt_ids {
+ 		 * Don't get the IP here because it's unlikely to
+ 		 * have anything to do with the actual error location.
 -- 
 1.7.10.4
 
