@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaKHKqh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 05:46:37 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51657 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476AbaKHKqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 05:46:36 -0500
-Date: Sat, 8 Nov 2014 10:46:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Laurentiu Palcu <laurentiu.palcu@intel.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20141108104606.GH2722@sirena.org.uk>
-References: <1415364314-30320-1-git-send-email-laurentiu.palcu@intel.com>
- <1415364314-30320-2-git-send-email-laurentiu.palcu@intel.com>
+	id S1753674AbaKHLAI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 06:00:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58155 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519AbaKHLAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 06:00:06 -0500
+Date: Sat, 8 Nov 2014 11:59:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Timothy McDaniel <timnboys@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: Via Nano fails and completely crashes on kvm
+Message-ID: <20141108105959.GA19594@pd.tnic>
+References: <CALL1ybn2scmOyKom3cphHu+kzJyGv+4OGPmrwJN60GU1QhFTyA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h3LYUU6HlUDSAOzy"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415364314-30320-2-git-send-email-laurentiu.palcu@intel.com>
-X-Cookie: Today is what happened to yesterday.
+In-Reply-To: <CALL1ybn2scmOyKom3cphHu+kzJyGv+4OGPmrwJN60GU1QhFTyA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.164.249
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi: add support for DLN-2 USB-SPI adapter
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 07, 2014 at 10:18:32PM -0500, Timothy McDaniel wrote:
+> Via Nano fails and completely crashes on kvm
+> 
+> here is my /proc/cpuinfo
+> 
+> processor       : 0
+> vendor_id       : CentaurHauls
+> cpu family      : 6
+> model           : 15
+> model name      : VIA Nano processor U2250 (1.6GHz Capable)
+> stepping        : 3
+> cpu MHz         : 800.000
+> cache size      : 1024 KB
+> fpu             : yes
+> fpu_exception   : yes
+> cpuid level     : 10
+> wp              : yes
+> flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
+> mca cmov pat clflush acpi mmx fxsr sse sse2 ss tm pbe syscall nx lm
+> constant_tsc up rep_good nopl pni monitor vmx est tm2 ssse3 cx16 xtpr
+> rng rng_en ace ace_en ace2 phe phe_en lahf_lm
+> bogomips        : 3191.62
+> clflush size    : 64
+> cache_alignment : 128
+> address sizes   : 36 bits physical, 48 bits virtual
+> power management:
+> 
+> also here is my uname -mrs
+> Linux 3.2.0-4-amd64 x86_64
+> 
+> here is uname -a
+> Linux sd-24793 3.2.0-4-amd64 #1 SMP Debian 3.2.63-2+deb7u1 x86_64 GNU/Linux
+> 
+> please tell me if you need anymore info on helping me get kvm to work.
 
---h3LYUU6HlUDSAOzy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ [ Quoting the whole mail for reference. ]
 
-On Fri, Nov 07, 2014 at 02:45:13PM +0200, Laurentiu Palcu wrote:
+Yes, please try a newer kernel first, say 3.17, for example. Then, if
+it still crashes, catch everything from the crash and add it here as a
+reply to this mail.
 
-> +static int dln2_spi_transfer_one_message(struct spi_master *master,
-> +					 struct spi_message *msg)
+Thanks.
 
-It's a bit sad not to do transfer_one() but it's reasonable not to
-because of the fun way /CS is being set.
+-- 
+Regards/Gruss,
+    Boris.
 
-> +	ret = dln2_spi_get_speed_range(dln2,
-> +					   &master->min_speed_hz,
-> +					   &master->max_speed_hz);
-
-Strange indentation here.
-
-> +static int dln2_spi_remove(struct platform_device *pdev)
-> +{
-> +	struct spi_master *master = spi_master_get(platform_get_drvdata(pdev));
-> +	struct dln2_spi *dln2 = spi_master_get_devdata(master);
-> +
-> +	if (dln2_spi_enable(dln2, false) < 0)
-> +		dev_err(&pdev->dev, "Failed to disable SPI module\n");
-> +
-> +	spi_master_put(master);
-
-You shouldn't need this _put(), it's defeating the purpose of having the
-devm_ registration.
-
---h3LYUU6HlUDSAOzy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUXfRtAAoJECTWi3JdVIfQeKgH/AzPYlV/+iFcPfPOiXEKPXzr
-GmURLOB+FzvIiV4sFHglMMJAdroggxqWJQrEB5PUKxOxtNS7RSBlqa18Nq7rBio9
-N0+p6uf7iiaxPYxL7sy2Wy7VdVl9cqAXdUiGrmbB7VJVyHp9DvMYhWKX87SChLL6
-lePUJwT9Wjb2CXURx4wl+MdZONJccHs9UINTbOiDHPKpK9TdQkE9m2SNguth0VgN
-BRi/kSmdBWh7TQPaqj1RJbpA3JO6yZh0nc0jSTJtuABOgsfGZcRQneiuJhRdQbIO
-xHiP8AtCitMahd5sgpDfLLlBeUf47VJ4zVzMsGrqVoa7jAoW6K5ZyQ9CXSSPCmo=
-=RriI
------END PGP SIGNATURE-----
-
---h3LYUU6HlUDSAOzy--
+Sent from a fat crate under my desk. Formatting is fine.
+--
