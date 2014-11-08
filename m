@@ -1,164 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaKHAjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:39:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60135 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699AbaKHAjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:39:10 -0500
-From: NeilBrown <neilb@suse.de>
-To: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@kernel.org>
-Date: Sat, 08 Nov 2014 11:38:03 +1100
-Subject: [PATCH 3/3] ASoC: twl4030: enable routing audio to 'voice'
- interface.
-Cc: GTA04 owners <gta04-owner@goldelico.com>, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20141108003803.6561.52497.stgit@notabene.brown>
-In-Reply-To: <20141108002637.6561.19002.stgit@notabene.brown>
-References: <20141108002637.6561.19002.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753510AbaKHAjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:39:23 -0500
+Received: from smtprelay0050.hostedemail.com ([216.40.44.50]:58788 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752699AbaKHAjT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 19:39:19 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:4250:4321:5007:6261:7903:8957:9040:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: truck19_16cf24f54d84c
+X-Filterd-Recvd-Size: 1986
+Message-ID: <1415407155.23530.24.camel@perches.com>
+Subject: Re: [PATCH v5] Move BTRFS RCU string to common library
+From: Joe Perches <joe@perches.com>
+To: Chris Mason <clm@fb.com>
+Cc: Omar Sandoval <osandov@osandov.com>, Josef Bacik <jbacik@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Date: Fri, 07 Nov 2014 16:39:15 -0800
+In-Reply-To: <1415391689.9491.0@mail.thefacebook.com>
+References: <1415391451-19108-1-git-send-email-osandov@osandov.com>
+	 <1415391689.9491.0@mail.thefacebook.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When 'voice' is some external connection, we power up
-the downlink when the downline amplifier is not muted,
-and power up the uplink when a new switch "Voice Uplink" is
-turned on.
+On Fri, 2014-11-07 at 15:21 -0500, Chris Mason wrote:
+> 
+> On Fri, Nov 7, 2014 at 3:17 PM, Omar Sandoval <osandov@osandov.com> 
+> wrote:
+> > The RCU-friendly string API used internally by BTRFS is generic 
+> > enough for
+> > common use. This doesn't add any new functionality, but instead just 
+> > moves the
+> > code and documents the existing API.
+> > 
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Omar Sandoval <osandov@osandov.com>
+> > ---
+> > Chris, could you take a look at this again? It's just been rebased 
+> > and should
+> > be good to go. Thanks!
+> 
+> Thanks Omar, I'm pulling this into a branch for the next merge window.  
+> Looks good to me.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- sound/soc/codecs/twl4030.c |   58 +++++++++++++++++++++++++++++++++-----------
- 1 file changed, 44 insertions(+), 14 deletions(-)
-
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index 39b6d24377e5..f51fb749087f 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -348,9 +348,9 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
- 		 * tri-state until enabled */
- 		twl4030_voice_set_codec_fmt(codec,
- 					    twl4030->pdata->voice_fmt);
--		twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
--				 TWL4030_VIF_TRI_EN,
--				 TWL4030_REG_VOICE_IF);
-+		/* These pins only relevant when voice_fmt set */
-+		snd_soc_dapm_disable_pin(&codec->dapm, "VOICEIN");
-+		snd_soc_dapm_disable_pin(&codec->dapm, "VOICEOUT");
- 	}
- 
- 	twl4030_codec_enable(codec, 0);
-@@ -985,15 +985,17 @@ static int snd_soc_put_twl4030_opmode_enum_double(struct snd_kcontrol *kcontrol,
- 		return -EBUSY;
- 	}
- 	if (twl4030->pdata->voice_fmt) {
--		/* There is no SND interface to voice, we need to control
--		 * it here.
--		 */
--		/* If 'val' then voice is disabled, so tri-state it as well */
--		snd_soc_update_bits(codec, TWL4030_REG_VOICE_IF,
--				    TWL4030_VIF_TRI_EN,
--				    val ? 0xff : 0);
-+		if (val) {
-+			/* Voice now disabled */
-+			snd_soc_dapm_disable_pin(&codec->dapm, "VOICEIN");
-+			snd_soc_dapm_disable_pin(&codec->dapm, "VOICEOUT");
-+		} else {
-+			/* Voice now enabled */
-+			snd_soc_dapm_enable_pin(&codec->dapm, "VOICEIN");
-+			snd_soc_dapm_enable_pin(&codec->dapm, "VOICEOUT");
-+		}
-+		snd_soc_dapm_sync(&codec->dapm);
- 	}
--
- 	return snd_soc_put_enum_double(kcontrol, ucontrol);
- }
- 
-@@ -1016,6 +1018,13 @@ static DECLARE_TLV_DB_SCALE(digital_coarse_tlv, 0, 600, 0);
-  */
- static DECLARE_TLV_DB_SCALE(digital_voice_downlink_tlv, -3700, 100, 1);
- 
-+static const struct snd_kcontrol_new twl4030_dapm_vdown_control =
-+	SOC_DAPM_SINGLE_TLV("Volume",
-+			    TWL4030_REG_VRXPGA, 0, 0x31, 0,
-+			    digital_voice_downlink_tlv);
-+
-+static const struct snd_kcontrol_new twl4030_dapm_vup_control =
-+	SOC_DAPM_SINGLE("Switch", TWL4030_REG_VOICE_IF, 5, 1, 0);
- /*
-  * Analog playback gain
-  * -24 dB to 12 dB in 2 dB steps
-@@ -1126,9 +1135,6 @@ static const struct snd_kcontrol_new twl4030_snd_controls[] = {
- 		TWL4030_REG_ARXL2_APGA_CTL, TWL4030_REG_ARXR2_APGA_CTL,
- 		1, 1, 0),
- 
--	/* Common voice downlink gain controls */
--	SOC_SINGLE_TLV("DAC Voice Digital Downlink Volume",
--		TWL4030_REG_VRXPGA, 0, 0x31, 0, digital_voice_downlink_tlv),
- 
- 	SOC_SINGLE_TLV("DAC Voice Analog Downlink Volume",
- 		TWL4030_REG_VDL_APGA_CTL, 3, 0x12, 1, analog_tlv),
-@@ -1188,6 +1194,7 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
- 	/* Digital microphones (Stereo) */
- 	SND_SOC_DAPM_INPUT("DIGIMIC0"),
- 	SND_SOC_DAPM_INPUT("DIGIMIC1"),
-+	SND_SOC_DAPM_INPUT("VOICEIN"),
- 
- 	/* Outputs */
- 	SND_SOC_DAPM_OUTPUT("EARPIECE"),
-@@ -1200,6 +1207,7 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
- 	SND_SOC_DAPM_OUTPUT("HFL"),
- 	SND_SOC_DAPM_OUTPUT("HFR"),
- 	SND_SOC_DAPM_OUTPUT("VIBRA"),
-+	SND_SOC_DAPM_OUTPUT("VOICEOUT"),
- 
- 	/* AIF and APLL clocks for running DAIs (including loopback) */
- 	SND_SOC_DAPM_OUTPUT("Virtual HiFi OUT"),
-@@ -1216,6 +1224,10 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
- 	SND_SOC_DAPM_AIF_IN("VAIFIN", "Voice Playback", 0,
- 			    TWL4030_REG_VOICE_IF, 6, 0),
- 
-+	SND_SOC_DAPM_SUPPLY("VoiceEnable", TWL4030_REG_VOICE_IF, 6, 0, NULL, 0),
-+	SND_SOC_DAPM_SUPPLY("VoicePlay", TWL4030_REG_OPTION, 4, 0, NULL, 0),
-+	SND_SOC_DAPM_SUPPLY("VoiceCapture", TWL4030_REG_OPTION, 2, 0, NULL, 0),
-+
- 	/* Analog bypasses */
- 	SND_SOC_DAPM_SWITCH("Right1 Analog Loopback", SND_SOC_NOPM, 0, 0,
- 			&twl4030_dapm_abypassr1_control),
-@@ -1395,9 +1407,27 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
- 			    TWL4030_REG_MICBIAS_CTL, 2, 0, NULL, 0),
- 
- 	SND_SOC_DAPM_SUPPLY("VIF Enable", TWL4030_REG_VOICE_IF, 0, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_SUPPLY("Voice NO-tri", TWL4030_REG_VOICE_IF, 2, 1, NULL, 0),
-+
-+	SND_SOC_DAPM_SWITCH("DAC Voice Digital Downlink", SND_SOC_NOPM,
-+			    0, 0, &twl4030_dapm_vdown_control),
-+	SND_SOC_DAPM_SWITCH("Voice Uplink", SND_SOC_NOPM,
-+			    0, 0, &twl4030_dapm_vup_control),
- };
- 
- static const struct snd_soc_dapm_route intercon[] = {
-+	{"DAC Voice", NULL, "DAC Voice Digital Downlink"},
-+	{"DAC Voice", NULL, "VoiceEnable"},
-+	{"DAC Voice", NULL, "VoicePlay"},
-+	{"DAC Voice Digital Downlink", "Volume", "VOICEIN"},
-+
-+	{"VOICEOUT", NULL, "Voice Uplink"},
-+	{"VOICEOUT", NULL, "VoiceEnable"},
-+	{"VOICEOUT", NULL, "VoiceCapture"},
-+	{"VOICEOUT", NULL, "Voice NO-tri"},
-+	{"Voice Uplink", "Switch", "TX2 Capture Route"},
-+
- 	/* Stream -> DAC mapping */
- 	{"DAC Right1", NULL, "HiFi Playback"},
- 	{"DAC Left1", NULL, "HiFi Playback"},
+rcustring.h should probably #include any #include dependencies
+it has.  types.h, printk.h, etc...
 
 
