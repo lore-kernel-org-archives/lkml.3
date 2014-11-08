@@ -1,182 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaKHUpk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 15:45:40 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:47866 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaKHUpQ (ORCPT
+	id S1753182AbaKHUth (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 15:49:37 -0500
+Received: from smtprelay0196.hostedemail.com ([216.40.44.196]:36269 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751231AbaKHUtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 15:45:16 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v2 3/3] trace: Replace single-character seq_puts with seq_putc
-Date: Sat,  8 Nov 2014 21:42:12 +0100
-Message-Id: <1415479332-25944-4-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1415479332-25944-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1410513954-28909-5-git-send-email-linux@rasmusvillemoes.dk>
- <1415479332-25944-1-git-send-email-linux@rasmusvillemoes.dk>
+	Sat, 8 Nov 2014 15:49:36 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:979:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3770:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4362:4383:4388:4395:5007:6261:6742:7514:7809:7875:9025:9388:10004:10400:10848:11232:11658:11914:12043:12294:12296:12517:12519:12555:12663:12679:12740:13018:13019:13069:13161:13229:13311:13357:14096:14097:14106:21080:21094,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: coat60_7058221e0362c
+X-Filterd-Recvd-Size: 2827
+Message-ID: <1415479769.23530.31.camel@perches.com>
+Subject: Re: [PATCH v5 06/24] Update MAINTAINERS and CREDITS files with
+ amdkfd info
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Oded Gabbay <oded.gabbay@amd.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        David Rientjes <rientjes@google.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Antti Palosaari <crope@iki.fi>
+Date: Sat, 08 Nov 2014 12:49:29 -0800
+In-Reply-To: <20141108190125.GA2131@thin>
+References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
+	 <1415471865-1893-7-git-send-email-oded.gabbay@amd.com>
+	 <20141108190125.GA2131@thin>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Printing a single character to a seqfile might as well be done with
-seq_putc instead of seq_puts; this avoids a strlen() call and a memory
-access. It also shaves another few bytes off the generated code.
+On Sat, 2014-11-08 at 11:01 -0800, Josh Triplett wrote:
+> On Sat, Nov 08, 2014 at 08:37:27PM +0200, Oded Gabbay wrote:
+> >  CREDITS     |  7 +++++++
+> >  MAINTAINERS | 10 ++++++++++
+> >  2 files changed, 17 insertions(+)
+> 
+> Given the wide variety of folks who patch CREDITS and MAINTAINERS, might
+> I suggest adding CREDITS and MAINTAINERS themselves to the MAINTAINERS
+> file (perhaps in the same entry as get_maintainer.pl), so that
+> get_maintainer.pl does not fall back to git history for them?
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Thanks but:
+
+There is no MAINTAINERS/CREDITS maintainer.
+
+I'm not volunteering.  Maybe you?
+
+But maybe something like this would help:
+
+It has to have both an M: and an S: entry
+with maintained or supported to stop get_maintainers
+from doing a git history lookup.
+
 ---
- kernel/trace/ftrace.c                |  2 +-
- kernel/trace/trace_events_trigger.c  |  4 ++--
- kernel/trace/trace_functions_graph.c |  4 ++--
- kernel/trace/trace_kprobe.c          | 10 +++++-----
- kernel/trace/trace_printk.c          |  2 +-
- kernel/trace/trace_uprobe.c          |  4 ++--
- 6 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 7890718..9ffd006 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2969,7 +2969,7 @@ static int t_show(struct seq_file *m, void *v)
- 		}
- 	}	
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0662378..584fd69 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5881,6 +5881,12 @@ F:	drivers/mailbox/
+ F:	include/linux/mailbox_client.h
+ F:	include/linux/mailbox_controller.h
  
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	return 0;
- }
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 3d89ffc..8712df9 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -383,7 +383,7 @@ event_trigger_print(const char *name, struct seq_file *m,
- 	if (filter_str)
- 		seq_printf(m, " if %s\n", filter_str);
- 	else
--		seq_puts(m, "\n");
-+		seq_putc(m, '\n');
- 
- 	return 0;
- }
-@@ -1105,7 +1105,7 @@ event_enable_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
- 	if (data->filter_str)
- 		seq_printf(m, " if %s\n", data->filter_str);
- 	else
--		seq_puts(m, "\n");
-+		seq_putc(m, '\n');
- 
- 	return 0;
- }
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 29ba611..a82d1d3 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -1407,7 +1407,7 @@ static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
- 		print_lat_header(s, flags);
- 
- 	/* 1st line */
--	seq_puts(s, "#");
-+	seq_putc(s, '#');
- 	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
- 		seq_puts(s, "     TIME       ");
- 	if (flags & TRACE_GRAPH_PRINT_CPU)
-@@ -1421,7 +1421,7 @@ static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
- 	seq_puts(s, "               FUNCTION CALLS\n");
- 
- 	/* 2nd line */
--	seq_puts(s, "#");
-+	seq_putc(s, '#');
- 	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
- 		seq_puts(s, "      |         ");
- 	if (flags & TRACE_GRAPH_PRINT_CPU)
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index ce2ea71..ef7e7f1 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -840,7 +840,7 @@ static int probes_seq_show(struct seq_file *m, void *v)
- 
- 	for (i = 0; i < tk->tp.nr_args; i++)
- 		seq_printf(m, " %s=%s", tk->tp.args[i].name, tk->tp.args[i].comm);
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	return 0;
- }
-@@ -1030,7 +1030,7 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
- 	if (!seq_print_ip_sym(s, field->ip, flags | TRACE_ITER_SYM_OFFSET))
- 		goto partial;
- 
--	if (!trace_seq_puts(s, ")"))
-+	if (!trace_seq_putc(s, ')'))
- 		goto partial;
- 
- 	data = (u8 *)&field[1];
-@@ -1039,7 +1039,7 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
- 					     data + tp->args[i].offset, field))
- 			goto partial;
- 
--	if (!trace_seq_puts(s, "\n"))
-+	if (!trace_seq_putc(s, '\n'))
- 		goto partial;
- 
- 	return TRACE_TYPE_HANDLED;
-@@ -1072,7 +1072,7 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
- 	if (!seq_print_ip_sym(s, field->func, flags & ~TRACE_ITER_SYM_OFFSET))
- 		goto partial;
- 
--	if (!trace_seq_puts(s, ")"))
-+	if (!trace_seq_putc(s, ')'))
- 		goto partial;
- 
- 	data = (u8 *)&field[1];
-@@ -1081,7 +1081,7 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
- 					     data + tp->args[i].offset, field))
- 			goto partial;
- 
--	if (!trace_seq_puts(s, "\n"))
-+	if (!trace_seq_putc(s, '\n'))
- 		goto partial;
- 
- 	return TRACE_TYPE_HANDLED;
-diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-index 2900817..c4e70b6 100644
---- a/kernel/trace/trace_printk.c
-+++ b/kernel/trace/trace_printk.c
-@@ -305,7 +305,7 @@ static int t_show(struct seq_file *m, void *v)
- 			seq_puts(m, "\\t");
- 			break;
- 		case '\\':
--			seq_puts(m, "\\");
-+			seq_putc(m, '\\');
- 			break;
- 		case '"':
- 			seq_puts(m, "\\\"");
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 184aec1..e35327c 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -606,7 +606,7 @@ static int probes_seq_show(struct seq_file *m, void *v)
- 	for (i = 0; i < tu->tp.nr_args; i++)
- 		seq_printf(m, " %s=%s", tu->tp.args[i].name, tu->tp.args[i].comm);
- 
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 	return 0;
- }
- 
-@@ -872,7 +872,7 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
- 			goto partial;
- 	}
- 
--	if (trace_seq_puts(s, "\n"))
-+	if (trace_seq_putc(s, '\n'))
- 		return TRACE_TYPE_HANDLED;
- 
- partial:
--- 
-2.0.4
++MAINTAINERS/CREDITS
++M:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	MAINTAINERS
++F:	CREDITS
++
+ MAN-PAGES: MANUAL PAGES FOR LINUX -- Sections 2, 3, 4, 5, and 7
+ M:	Michael Kerrisk <mtk.manpages@gmail.com>
+ W:	http://www.kernel.org/doc/man-pages
+
+
+
 
