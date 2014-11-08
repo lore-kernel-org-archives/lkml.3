@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaKHVuq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 16:50:46 -0500
-Received: from sauhun.de ([89.238.76.85]:38497 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407AbaKHVup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 16:50:45 -0500
-Date: Sat, 8 Nov 2014 22:51:55 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: linux-i2c@vger.kernel.org, davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-davinci: Handle signals gracefully
-Message-ID: <20141108215155.GA1266@katana>
-References: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl>
- <1394779348-4084-1-git-send-email-mike.looijmans@topic.nl>
- <20140324161432.GA7524@katana>
- <20140521081727.GE2708@katana>
- <53808851.7060308@topic.nl>
- <20140601201134.GA3853@katana>
+	id S1753230AbaKHV6G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 16:58:06 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52839 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752465AbaKHV6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 16:58:03 -0500
+X-Sasl-enc: 2fBgP8ApORvXdiodoGpmTh9yK9ghlajEzSpxvBBiS1BO 1415483881
+Date: Sat, 8 Nov 2014 19:57:49 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: guard against misaligned
+ microcode data
+Message-ID: <20141108215749.GC32023@khazad-dum.debian.net>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-8-git-send-email-hmh@hmh.eng.br>
+ <20141107195905.GE5180@pd.tnic>
+ <20141107225425.GC18128@khazad-dum.debian.net>
+ <20141107234806.GG5180@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140601201134.GA3853@katana>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141107234806.GG5180@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 08 Nov 2014, Borislav Petkov wrote:
+> On Fri, Nov 07, 2014 at 08:54:25PM -0200, Henrique de Moraes Holschuh wrote:
+> > Well, it might well be lost in the noise given how slow a microcode update
+> > is.
+> > 
+> > What I mean is that the early microcode driver "won't waste cpu time moving
+> > data that is already aligned".
+> 
+> Yes, don't say "faster" but explain that we can save us the shuffling
+> of microcode data back and forth in the early loader if the microcode
+> update is 16-byte aligned in the initrd.
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Will change.
 
-On Sun, Jun 01, 2014 at 10:11:34PM +0200, Wolfram Sang wrote:
->=20
-> > Feel free to adap my patch or comments and commit. Or wait a few weeks =
-for
-> > when I have a sponsor to split and update the patch.
->=20
-> OK, I'll hope you can make it for 3.17. Thanks!
+> > That WARN_ONCE() should only trigger if a bug shows its ugly face.  If it is
+> > triggering in any other case, this patch is broken.
+> > 
+> > mc_intel->bits in the late driver really shouldn't depend at all on any
+> > alignment from initramfs or whatever: that path is supposed to run on
+> > microcode that came from the firmware loader, or the deprecated microcode
+> 
+> Right, the early path is apply_microcode_early() - I misread that part,
+> sorry.
+> 
+> > device, or which was memcpy'd from the initramfs to a kmalloc()'d area by
+> > save_microcode() in the early driver.  All of these will always be 16-byte
+> > aligned AFAIK.
+> 
+> Why will it always be 16-byte aligned? And if it is going to be always
+> 16-byte aligned, why do we need the WARN_ONCE() at all?
 
-I now picked the part removing the interruptible-call. The part with
-the new exit-path would need to be resend and retested in case anyone
-is still caring.
+...
 
+> > So, the early driver gets alignment code as it will usually have to deal
+> > with unaligned microcode data, and the late driver (which should never see
+> > unaligned microcode data) gets a WARN_ONCE to alert us if something broke in
+> > the kernel code.
+> > 
+> > Should I change the WARN_ONCE message to:
+> > 
+> > WARN_ONCE(... "kernel bug: microcode data incorrectly aligned") ?
+> 
+> No, you should either give a possible scenario where an unaligned
+> pointer can really happen or, alternatively, if you can prove that the
+> condition will never happen, drop the WARN_ONCE completely.
 
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If I know of a non-kernel-bug scenario where it could happen, I'd have added
+code that fixes the alignment like I did in the early driver...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+AFAIK, that WARN_ON is only going to trigger if kmalloc changes and starts
+returning less strictly aligned data, or if something is corrupting memory.
 
-iQIcBAEBAgAGBQJUXpB7AAoJEBQN5MwUoCm2IQsP+wbjQdDLfWo7LpnbYIeHOb8r
-gTZk9oL4WMvXBV2ETyioDm7bbL9dQhh997SL+VOiUrGwnkNFLsvlZsAXj3puvvrM
-zasyq3fJl0XJ7P9FMoxJoqK3Q+IF/L2NoKev6O+C9E8OaUzp0rDB1Gq38zTvo9IU
-jZTSuXhnn9W5bDIezxpVS1W/Qpg5tNqGMTMzMqKHzD4e8myFlqbKW2V5ajlxvjFa
-CNc/dzzlG7sNydWUfO4y7BUxDhpz38Gb3vTyn8cTcohzj+wy/xZ/29so8sMQxMBt
-P8ROTKdLhYTrA6Uf51JUrvzQKzQKC+tUvLBGXf3qdst75oeoUZr8HIFWYbZtkotV
-9QFDZAQn1zNo/bfwEIkCSuhUtoeiFnsunegWAlfu6HKxZlCziQ6ime3cL0VAeKRd
-0EVtAv4qiIc8uWvJspdbi0t0n2y8hplhNYWdzI4kMxkWGGzv8qxqbMK8asZb5GiD
-5pgwGrLVfyMFekuJy+R68InH3ypsyAvXpo7mBQdUQDXTHxBHdNxFDd2EibII2xrR
-Pdoha5JgBB20sA469lH/rcOhEY/2D19ItzziyV8T3YuUuiVXb5qn5dHuoPPIf+Yg
-bhBEnpcsqYtC1YsSY1lKG4pJ5nQ0REqV+jS0481a/M1y6xGFFx/hZfEayqO2eDfH
-ecQa27uCIBHvKl56CB2p
-=j0QT
------END PGP SIGNATURE-----
+I will remove the WARN_ONCE, and place a comment in its place:
 
---zhXaljGHf11kAtnf--
+/*
+ * the memory area holding the microcode update data must be 16-byte
+ * aligned.  This is supposed to be guaranteed by kmalloc().
+ */
+
+> Oh, and even if the WARN_ONCE triggers, what can we do about it? If we
+> can't do anything about it, then we have a problem. If we can, then we
+> better do it and change the WARN_ONCE to an if-check which, if positive,
+> executes code that fixes the situation.
+
+All we could do is abort the update.  The real reason behind the
+misalignment would have to be tracked in order to know what should be done
+about it.
+
+> IOW, what I'm trying to say is, can we make the kmalloc'ed memory
+> 16-byte aligned and if so, then copy the microcode data there and be
+> happy. And I think we can... :-)
+
+Sure, we can.  But AFAIK kmalloc() is supposed to already give us a 16-byte
+aligned data area.
+
+> > Neither do I.  But this has zero footprint on the resulting kernel, and
+> > might save someone 10 years from now from trying to debug initramfs data
+> > corruption.
+> 
+> ... and someone might waste a lot of time 10 years from now trying
+> to fathom why the hell that thing was added, only to realize that
+> someone was being unreasonably overzealous. No, we don't add code for
+> hypothetical cases which are absolutely improbable.
+
+I will drop it.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
