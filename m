@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaKHSqu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:46:50 -0500
-Received: from smtprelay0033.hostedemail.com ([216.40.44.33]:58523 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752395AbaKHSqt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:46:49 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:857:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3351:3622:3870:3876:4321:4385:4388:4395:5007:6119:6261:6742:10004:10400:10848:11232:11657:11658:11914:12043:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fly84_3af62a5988605
-X-Filterd-Recvd-Size: 2391
-Message-ID: <1415472403.23530.28.camel@perches.com>
-Subject: Re: [PATCH v5 06/24] Update MAINTAINERS and CREDITS files with
- amdkfd info
-From: Joe Perches <joe@perches.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, John Bridgman <John.Bridgman@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>, Jingoo Han <jg1.han@samsung.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        David Rientjes <rientjes@google.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Antti Palosaari <crope@iki.fi>
-Date: Sat, 08 Nov 2014 10:46:43 -0800
-In-Reply-To: <1415471865-1893-7-git-send-email-oded.gabbay@amd.com>
+	id S1753980AbaKHSuk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:50:40 -0500
+Received: from mail-bn1bn0102.outbound.protection.outlook.com ([157.56.110.102]:4873
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752591AbaKHSuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:50:39 -0500
+X-WSS-ID: 0NEQHOA-07-RIP-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        "John Bridgman" <John.Bridgman@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        Oded Gabbay <oded.gabbay@amd.com>, Ben Goz <ben.goz@amd.com>,
+        Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
+        Alexey Skidanov <Alexey.Skidanov@amd.com>
+Subject: [PATCH v5 21/24] amdkfd: Implement the Set Memory Policy IOCTL
+Date: Sat, 8 Nov 2014 20:50:04 +0200
+Message-ID: <1415472608-3537-1-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
 References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-	 <1415471865-1893-7-git-send-email-oded.gabbay@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(36756003)(104166001)(92726001)(48376002)(97736003)(50466002)(101416001)(92566001)(21056001)(44976005)(19580405001)(19580395003)(68736004)(102836001)(99396003)(76176999)(120916001)(50986999)(46102003)(31966008)(84676001)(89996001)(88136002)(64706001)(87936001)(87286001)(33646002)(77156002)(62966003)(77096003)(105586002)(229853001)(95666004)(106466001)(107046002)(20776003)(47776003)(4396001)(50226001)(93916002)(53416004)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
+X-Forefront-PRVS: 0389EDA07F
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-11-08 at 20:37 +0200, Oded Gabbay wrote:
-[]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -610,6 +610,16 @@ F:	drivers/crypto/geode*
->  F:	drivers/video/fbdev/geode/
->  F:	arch/x86/include/asm/geode.h
->  
-> +AMD KFD (radeon extension)
-> +M:	Oded Gabbay <oded.gabbay@amd.com>
-> +L:	dri-devel@lists.freedesktop.org
-> +T:	git git://people.freedesktop.org/~gabbayo/linux.git
-> +S:	Supported
-> +F:	drivers/gpu/drm/radeon/amdkfd/*
-> +F:	drivers/gpu/drm/radeon/radeon_kfd.c
-> +F:	drivers/gpu/drm/radeon/radeon_kfd.h
-> +F:	include/linux/uapi/linux/kfd_ioctl.h
+From: Andrew Lewycky <Andrew.Lewycky@amd.com>
 
-include/uapi/linux/kfd_ioctl.h
+Signed-off-by: Andrew Lewycky <Andrew.Lewycky@amd.com>
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/gpu/drm/amd/amdkfd/kfd_chardev.c | 52 +++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
-> +
->  AMD IOMMU (AMD-VI)
->  M:	Joerg Roedel <joro@8bytes.org>
->  L:	iommu@lists.linux-foundation.org
-
-Please keep MAINTAINERS in alphabetical order too.
-Move this new AMD KFD section after AMD IOMMU.
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c b/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
+index d342035..1020faf 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
+@@ -35,6 +35,7 @@
+ #include <uapi/asm-generic/mman-common.h>
+ #include <asm/processor.h>
+ #include "kfd_priv.h"
++#include "kfd_device_queue_manager.h"
+ 
+ static long kfd_ioctl(struct file *, unsigned int, unsigned long);
+ static int kfd_open(struct inode *, struct file *);
+@@ -345,7 +346,56 @@ static int kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p,
+ static long kfd_ioctl_set_memory_policy(struct file *filep,
+ 				struct kfd_process *p, void __user *arg)
+ {
+-	return -ENODEV;
++	struct kfd_ioctl_set_memory_policy_args args;
++	struct kfd_dev *dev;
++	int err = 0;
++	struct kfd_process_device *pdd;
++	enum cache_policy default_policy, alternate_policy;
++
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
++
++	if (args.default_policy != KFD_IOC_CACHE_POLICY_COHERENT
++	    && args.default_policy != KFD_IOC_CACHE_POLICY_NONCOHERENT) {
++		return -EINVAL;
++	}
++
++	if (args.alternate_policy != KFD_IOC_CACHE_POLICY_COHERENT
++	    && args.alternate_policy != KFD_IOC_CACHE_POLICY_NONCOHERENT) {
++		return -EINVAL;
++	}
++
++	dev = kfd_device_by_id(args.gpu_id);
++	if (dev == NULL)
++		return -EINVAL;
++
++	mutex_lock(&p->mutex);
++
++	pdd = kfd_bind_process_to_device(dev, p);
++	if (IS_ERR(pdd) < 0) {
++		err = PTR_ERR(pdd);
++		goto out;
++	}
++
++	default_policy = (args.default_policy == KFD_IOC_CACHE_POLICY_COHERENT)
++			 ? cache_policy_coherent : cache_policy_noncoherent;
++
++	alternate_policy =
++		(args.alternate_policy == KFD_IOC_CACHE_POLICY_COHERENT)
++		   ? cache_policy_coherent : cache_policy_noncoherent;
++
++	if (!dev->dqm->set_cache_memory_policy(dev->dqm,
++				&pdd->qpd,
++				default_policy,
++				alternate_policy,
++				(void __user *)args.alternate_aperture_base,
++				args.alternate_aperture_size))
++		err = -EINVAL;
++
++out:
++	mutex_unlock(&p->mutex);
++
++	return err;
+ }
+ 
+ static long kfd_ioctl_get_clock_counters(struct file *filep,
+-- 
+2.1.0
 
