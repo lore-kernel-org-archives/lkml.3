@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaKHAch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:32:37 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54293 "EHLO mail.eperm.de"
+	id S1753353AbaKHAio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:38:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60111 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682AbaKHAcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:32:36 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: crypto: algif_skcipher: check for IV size superfluous?
-Date: Sat, 08 Nov 2014 01:32:30 +0100
-Message-ID: <8150359.mtACJVFlUb@tachyon.chronox.de>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
+	id S1752442AbaKHAim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 19:38:42 -0500
+From: NeilBrown <neilb@suse.de>
+To: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie@kernel.org>
+Date: Sat, 08 Nov 2014 11:38:03 +1100
+Subject: [PATCH 0/3] ASoC: twl4030: support routine to external VOICE source.
+Cc: GTA04 owners <gta04-owner@goldelico.com>, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20141108002637.6561.19002.stgit@notabene.brown>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
+The 'voice' port of the twl4030 on my board is connected to
+a GSM modem, not to the CPU.  As such it is not visible to ASLA
+and normal approaches to configuring the interface (as one end of a
+DAI) don't apply.
 
-I am in the process to extend algif_skcipher to support AEAD ciphers as well. 
-The code already works but I want to run final tests before releasing it.
+I need a way to tell the twl4030 that the connected device will
+be master of 'clk' and 'FRM', and whether they are inverted.
+Using device tree seems the correct approach - I am describing the
+properties of the hardware attached the 'voice' port.
 
-In the course of the development I stumbled over the following code:
+Using magic numbers from include/sound/soc-dai.h almost certainly
+is not the right way to represent this information, but it isn't clear
+to me what a good way would be.
 
-static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
-			    struct msghdr *msg, size_t size)
-{
-...
-		if (con.iv && con.iv->ivlen != ivsize)
-			return -EINVAL;
+So the current patch uses magic numbers as a proof of concept, and I'm
+asking if there is any establish precedent, or any suggestions on
+how to record in device tree the 'master' and 'polarity' of CLK and
+FRM signals for an external device.
+[I currently use (SND_SOC_DAIFMT_IB_NF | SND_SOC_DAIFMT_CBS_CFS)]
 
-This code effectively requires that any user space code trying to use a cipher 
-must provide an IV that is equal to the blocksize of the cipher.
+This is in the second patch.  The first silences a pointless warning
+(when it is pointless) and the last allowed the voice linked to be
+turned on or off via ALSA controls.
 
-I am wondering why this check is there or whether we can remove that.
+If the first and last can be applied without finalizing the
+device-tree part yet, that would be great.
 
-When using the kernel crypto API inside the kernel, there is no such 
-enforcement. One can take shorter IVs which are implicitly padded with 
-trailing zeros.
+Thanks,
+NeilBrown
 
-I would like to allow such non-aligned IVs from user space as well. As the 
-user space interface invokes the kernel crypto API functions that allow the 
-non-aligned use inside the kernel, I would not anticipate a problem.
+---
 
-However, if we conclude that the check should remain, then I am wondering 
-whether we have to move it to the various _setiv functions of the kernel 
-crypto API instead of leaving it in the skcipher interface. 
-
-During my testing, I removed the check and provided different sized IVs just 
-as I would in kernel space. The kernel crypto API processed them normally and 
-the resulting ciphertext / plaintext is as expected.
-
-An example that I used are the following parameters for a decryption operation 
-successfully taken from the FIPS 140-2 CAVS tool with an IV shorter than the 
-blocksize:
-
-AEAD_name_1="gcm(aes)"
-AEAD_msg_1="d127b39d365d16246d2866b2ebabd201"	# Ciphertext
-AEAD_key_1="38bd9eb2cb29cc42ac38d6cdbe116760"	# key
-AEAD_iv_1="aac774c39e399e7d6371ec1d"		# IV
-AEAD_tag_1="34a21cc3562f0ba141d73242e5a3b666"	# Authentication Tag
-AEAD_taglen_1="16"
-AEAD_assoc_1="5dbb2884f3fe93664613e863c3bd2572855cf808765880ef1fa5787ceef8c793"
-						# Associated data
-AEAD_exp_1="8f9ec088580c23fc6f5fc011d52f061b"	# Expected plaintext
+NeilBrown (3):
+      ASoC: twl4030: don't report EBUSY if no change requested.
+      ASoC: twl4030: allow voice port to be connected externally.
+      ASoC: twl4030: enable routing audio to 'voice' interface.
 
 
-Thank you
--- 
-Ciao
-Stephan
+ .../devicetree/bindings/mfd/twl4030-audio.txt      |    7 ++
+ include/linux/i2c/twl.h                            |    3 +
+ sound/soc/codecs/twl4030.c                         |   78 ++++++++++++++++++--
+ 3 files changed, 82 insertions(+), 6 deletions(-)
+
+--
+Signature
+
