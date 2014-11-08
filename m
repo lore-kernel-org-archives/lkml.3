@@ -1,126 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbaKHS67 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:58:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51296 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbaKHS65 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:58:57 -0500
-Date: Sat, 8 Nov 2014 10:57:42 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PULL] USB driver fixes for 3.18-rc4
-Message-ID: <20141108185742.GA2138@kroah.com>
+	id S1754097AbaKHS7U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:59:20 -0500
+Received: from mail-bn1bon0142.outbound.protection.outlook.com ([157.56.111.142]:11625
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754049AbaKHS7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:59:18 -0500
+X-WSS-ID: 0NEQI2K-08-GKG-02
+X-M-MSG: 
+Message-ID: <545E67F4.4000706@amd.com>
+Date: Sat, 8 Nov 2014 20:59:00 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Joe Perches <joe@perches.com>
+CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <khali@linux-fr.org>, Jingoo Han <jg1.han@samsung.com>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        David Rientjes <rientjes@google.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Antti Palosaari <crope@iki.fi>
+Subject: Re: [PATCH v5 06/24] Update MAINTAINERS and CREDITS files with amdkfd
+ info
+References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
+	 <1415471865-1893-7-git-send-email-oded.gabbay@amd.com>
+ <1415472403.23530.28.camel@perches.com>
+In-Reply-To: <1415472403.23530.28.camel@perches.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(479174003)(189002)(377454003)(377424004)(199003)(62966003)(99396003)(46102003)(65806001)(65956001)(77156002)(106466001)(31966008)(105586002)(21056001)(87936001)(20776003)(47776003)(120916001)(110136001)(107046002)(97736003)(87266999)(50986999)(54356999)(65816999)(102836001)(76176999)(33656002)(101416001)(44976005)(19580395003)(19580405001)(80316001)(59896002)(68736004)(84676001)(83506001)(23676002)(64126003)(92726001)(64706001)(95666004)(4396001)(50466002)(86362001)(36756003)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB202;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-Forefront-PRVS: 0389EDA07F
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
-are available in the git repository at:
+On 11/08/2014 08:46 PM, Joe Perches wrote:
+> On Sat, 2014-11-08 at 20:37 +0200, Oded Gabbay wrote:
+> []
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+>> @@ -610,6 +610,16 @@ F:	drivers/crypto/geode*
+>>  F:	drivers/video/fbdev/geode/
+>>  F:	arch/x86/include/asm/geode.h
+>>  
+>> +AMD KFD (radeon extension)
+>> +M:	Oded Gabbay <oded.gabbay@amd.com>
+>> +L:	dri-devel@lists.freedesktop.org
+>> +T:	git git://people.freedesktop.org/~gabbayo/linux.git
+>> +S:	Supported
+>> +F:	drivers/gpu/drm/radeon/amdkfd/*
+>> +F:	drivers/gpu/drm/radeon/radeon_kfd.c
+>> +F:	drivers/gpu/drm/radeon/radeon_kfd.h
+>> +F:	include/linux/uapi/linux/kfd_ioctl.h
+> 
+> include/uapi/linux/kfd_ioctl.h
+> 
+>> +
+>>  AMD IOMMU (AMD-VI)
+>>  M:	Joerg Roedel <joro@8bytes.org>
+>>  L:	iommu@lists.linux-foundation.org
+> 
+> Please keep MAINTAINERS in alphabetical order too.
+> Move this new AMD KFD section after AMD IOMMU.
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.18-rc4
+Thanks for the comments. Will be fixed in next version.
+I also noticed I forgot to modify drivers/gpu/drm/radeon/amdkfd/* to
+drivers/gpu/drm/amd/amdkfd/*
 
-for you to fetch changes up to 1910195423e7bea4c01c42bfe3f81792a6e969bb:
-
-  USB: Update default usb-storage delay_use value in kernel-parameters.txt (2014-11-07 08:54:53 -0800)
-
-----------------------------------------------------------------
-USB fixes for 3.18-rc4
-
-Here are some USB fixes for 3.18-rc4.
-
-Just a bunch of little fixes resolving reported issues and new device ids for
-existing drivers.  Full details are in the shortlog.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Adel Gadllah (2):
-      USB: quirks: enable device-qualifier quirk for another Elan touchscreen
-      USB: quirks: enable device-qualifier quirk for yet another Elan touchscreen
-
-Alan Stern (1):
-      usb-storage: handle a skipped data phase
-
-Dan Carpenter (1):
-      USB: HWA: fix a warning message
-
-Greg Kroah-Hartman (3):
-      Revert "storage: Replace magic number with define in usb_stor_euscsi_init()"
-      Merge tag 'usb-serial-3.18-rc4' of git://git.kernel.org/.../johan/usb-serial into usb-linus
-      Merge tag 'fixes-for-v3.18-rc4' of git://git.kernel.org/.../balbi/usb into usb-linus
-
-Hans de Goede (5):
-      usb: Do not allow usb_alloc_streams on unconfigured devices
-      uas: Add US_FL_NO_ATA_1X quirk for 1 more Seagate model
-      xhci: Disable streams on Asmedia 1042 xhci controllers
-      uas: Add NO_ATA_1X for VIA VL711 devices
-      uas: Add US_FL_NO_ATA_1X quirk for 2 more Seagate models
-
-Jim Paris (1):
-      cdc-acm: ensure that termios get set when the port is activated
-
-Johan Hovold (5):
-      USB: kobil_sct: fix non-atomic allocation in write path
-      USB: opticon: fix non-atomic allocation in write path
-      USB: cdc-acm: add device id for GW Instek AFG-2225
-      USB: cdc-acm: only raise DTR on transitions from B0
-      USB: cdc-acm: add quirk for control-line state requests
-
-Luis Henriques (1):
-      usb: storage: fix build warnings !CONFIG_PM
-
-Marek Szyprowski (1):
-      usb: dwc2: gadget: fix enumeration issues
-
-Mark Einon (1):
-      MAINTAINERS: Remove duplicate entry for usbip driver
-
-Mark Knibbs (2):
-      USB: storage: Fix timeout in usb_stor_euscsi_init() and usb_stor_huawei_e220_init()
-      USB: Update default usb-storage delay_use value in kernel-parameters.txt
-
-Oliver Neukum (1):
-      xhci: no switching back on non-ULT Haswell
-
-Oussama Ghorbel (1):
-      phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
-
-Peter Chen (1):
-      usb: core: notify disconnection when core detects disconnect
-
-Sylwester Nawrocki (1):
-      usb: Remove references to non-existent PLAT_S5P symbol
-
-Tony Zheng (1):
-      usb: core: need to call usb_phy_notify_connect after device setup
-
- Documentation/kernel-parameters.txt |  2 +-
- MAINTAINERS                         |  5 -----
- drivers/phy/phy-omap-usb2.c         |  6 ++++--
- drivers/usb/class/cdc-acm.c         | 25 +++++++++++++++++++++----
- drivers/usb/class/cdc-acm.h         |  2 ++
- drivers/usb/core/hcd.c              |  2 ++
- drivers/usb/core/hub.c              | 10 +++++-----
- drivers/usb/core/quirks.c           |  6 ++++++
- drivers/usb/dwc2/gadget.c           |  2 +-
- drivers/usb/host/Kconfig            |  4 ++--
- drivers/usb/host/hwa-hc.c           |  2 +-
- drivers/usb/host/xhci-pci.c         | 18 ++++--------------
- drivers/usb/serial/kobil_sct.c      |  5 +++--
- drivers/usb/serial/opticon.c        |  2 +-
- drivers/usb/storage/initializers.c  |  4 ++--
- drivers/usb/storage/realtek_cr.c    |  2 ++
- drivers/usb/storage/transport.c     | 26 ++++++++++++++++++++++++++
- drivers/usb/storage/unusual_uas.h   | 28 ++++++++++++++++++++++++++++
- 18 files changed, 111 insertions(+), 40 deletions(-)
+	Oded
