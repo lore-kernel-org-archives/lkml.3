@@ -1,207 +1,671 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbaKHM3y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 07:29:54 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37471 "EHLO
+	id S1753811AbaKHMhn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 07:37:43 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37523 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695AbaKHM3w (ORCPT
+	with ESMTP id S1753652AbaKHMhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 07:29:52 -0500
-Message-ID: <545E0CB8.7090906@kernel.org>
-Date: Sat, 08 Nov 2014 12:29:44 +0000
+	Sat, 8 Nov 2014 07:37:41 -0500
+Message-ID: <545E0E92.4080503@kernel.org>
+Date: Sat, 08 Nov 2014 12:37:38 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Vignesh R <vigneshr@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Hartmut Knaack <knaack.h@gmx.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Brad Griffis <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/5] input: touchscreen: ti_am335x_tsc Interchange touchscreen
- and ADC steps
-References: <1415339350-17679-1-git-send-email-vigneshr@ti.com> <1415339350-17679-2-git-send-email-vigneshr@ti.com>
-In-Reply-To: <1415339350-17679-2-git-send-email-vigneshr@ti.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Daniel Baluta <daniel.baluta@intel.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH] iio: imu: Add support for Kionix KMX61 sensor
+References: <1415276952-19712-1-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1415276952-19712-1-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/14 05:49, Vignesh R wrote:
-> From: Brad Griffis <bgriffis@ti.com>
+On 06/11/14 12:29, Daniel Baluta wrote:
+> Minimal implementation for KMX61 6-axis accelerometer/magnetometer. It exports
+> raw accel/magn readings together with scale and sampling frequency.
 > 
-> This patch makes the initial changes required to workaround TSC-false
-> pen-up interrupts. It is required to implement these changes in order to
-> remove udelay in the TSC interrupt handler and false pen-up events.
-> The charge step is to be executed immediately after sampling X+. Hence
-> TSC is made to use higher numbered steps (steps 5 to 16 for 5 co-ordinate
-> readouts, 4 wire TSC configuration) and ADC to use lower ones. Further
-> X co-ordinate readouts must be the last to be sampled, thus co-ordinates
-> are sampled in the order Y-Z-X.
+> Datasheet will be available at:
+> http://www.kionix.com/6-axis-accelerometer-magnetometer/kmx61
 > 
-> Signed-off-by: Brad Griffis <bgriffis@ti.com>
-> [vigneshr@ti.com: Ported the patch from v3.12 to v3.18rc2]
-> 
-> Signed-off-by: Vignesh R <vigneshr@ti.com>
-For the tiny bit in IIO
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+Very nice.  Only one comment inline.
 
-All yours Lee/Dmitry.
+There are some possible race conditions (I think) based on functions
+doing read, modify, write.  Ideally they may want protecting with
+a mutex.
 
 Jonathan
 > ---
->  drivers/iio/adc/ti_am335x_adc.c           |  5 ++--
->  drivers/input/touchscreen/ti_am335x_tsc.c | 42 ++++++++++++++++++-------------
->  2 files changed, 26 insertions(+), 21 deletions(-)
+> Accelerometer is somehow similar with KXCJK-1013 but the registers
+> are different. Some code and ideas are borrowed from KXCJK-1013 driver.
 > 
-> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> index b730864731e8..adba23246474 100644
-> --- a/drivers/iio/adc/ti_am335x_adc.c
-> +++ b/drivers/iio/adc/ti_am335x_adc.c
-> @@ -86,19 +86,18 @@ static void tiadc_step_config(struct iio_dev *indio_dev)
->  {
->  	struct tiadc_device *adc_dev = iio_priv(indio_dev);
->  	unsigned int stepconfig;
-> -	int i, steps;
-> +	int i, steps = 0;
+> Trying to implement KMX61 on top of kxcjk-1013.c would make code
+> harder to read.
+> 
+>  drivers/iio/imu/Kconfig  |   9 +
+>  drivers/iio/imu/Makefile |   2 +
+>  drivers/iio/imu/kmx61.c  | 575 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 586 insertions(+)
+>  create mode 100644 drivers/iio/imu/kmx61.c
+> 
+> diff --git a/drivers/iio/imu/Kconfig b/drivers/iio/imu/Kconfig
+> index 2b0e451..d675f43 100644
+> --- a/drivers/iio/imu/Kconfig
+> +++ b/drivers/iio/imu/Kconfig
+> @@ -25,6 +25,15 @@ config ADIS16480
+>  	  Say yes here to build support for Analog Devices ADIS16375, ADIS16480,
+>  	  ADIS16485, ADIS16488 inertial sensors.
 >  
->  	/*
->  	 * There are 16 configurable steps and 8 analog input
->  	 * lines available which are shared between Touchscreen and ADC.
->  	 *
-> -	 * Steps backwards i.e. from 16 towards 0 are used by ADC
-> +	 * Steps forwards i.e. from 0 towards 16 are used by ADC
->  	 * depending on number of input lines needed.
->  	 * Channel would represent which analog input
->  	 * needs to be given to ADC to digitalize data.
->  	 */
->  
-> -	steps = TOTAL_STEPS - adc_dev->channels;
->  	if (iio_buffer_enabled(indio_dev))
->  		stepconfig = STEPCONFIG_AVG_16 | STEPCONFIG_FIFO1
->  					| STEPCONFIG_MODE_SWCNT;
-> diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-> index 2ce649520fe0..1aeac9675fe7 100644
-> --- a/drivers/input/touchscreen/ti_am335x_tsc.c
-> +++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-> @@ -121,7 +121,7 @@ static void titsc_step_config(struct titsc *ts_dev)
->  {
->  	unsigned int	config;
->  	int i;
-> -	int end_step;
-> +	int end_step, first_step, tsc_steps;
->  	u32 stepenable;
->  
->  	config = STEPCONFIG_MODE_HWSYNC |
-> @@ -140,9 +140,11 @@ static void titsc_step_config(struct titsc *ts_dev)
->  		break;
->  	}
->  
-> -	/* 1 … coordinate_readouts is for X */
-> -	end_step = ts_dev->coordinate_readouts;
-> -	for (i = 0; i < end_step; i++) {
-> +	tsc_steps = ts_dev->coordinate_readouts * 2 + 2;
-> +	first_step = TOTAL_STEPS - tsc_steps;
-> +	/* Steps 16 to 16-coordinate_readouts is for X */
-> +	end_step = first_step + tsc_steps;
-> +	for (i = end_step - ts_dev->coordinate_readouts; i < end_step; i++) {
->  		titsc_writel(ts_dev, REG_STEPCONFIG(i), config);
->  		titsc_writel(ts_dev, REG_STEPDELAY(i), STEPCONFIG_OPENDLY);
->  	}
-> @@ -164,9 +166,9 @@ static void titsc_step_config(struct titsc *ts_dev)
->  		break;
->  	}
->  
-> -	/* coordinate_readouts … coordinate_readouts * 2 is for Y */
-> -	end_step = ts_dev->coordinate_readouts * 2;
-> -	for (i = ts_dev->coordinate_readouts; i < end_step; i++) {
-> +	/* 1 ... coordinate_readouts is for Y */
-> +	end_step = first_step + ts_dev->coordinate_readouts;
-> +	for (i = first_step; i < end_step; i++) {
->  		titsc_writel(ts_dev, REG_STEPCONFIG(i), config);
->  		titsc_writel(ts_dev, REG_STEPDELAY(i), STEPCONFIG_OPENDLY);
->  	}
-> @@ -179,7 +181,7 @@ static void titsc_step_config(struct titsc *ts_dev)
->  	titsc_writel(ts_dev, REG_CHARGECONFIG, config);
->  	titsc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
->  
-> -	/* coordinate_readouts * 2 … coordinate_readouts * 2 + 2 is for Z */
-> +	/* coordinate_readouts + 1 ... coordinate_readouts + 2 is for Z */
->  	config = STEPCONFIG_MODE_HWSYNC |
->  			STEPCONFIG_AVG_16 | ts_dev->bit_yp |
->  			ts_dev->bit_xn | STEPCONFIG_INM_ADCREFM |
-> @@ -194,8 +196,11 @@ static void titsc_step_config(struct titsc *ts_dev)
->  	titsc_writel(ts_dev, REG_STEPDELAY(end_step),
->  			STEPCONFIG_OPENDLY);
->  
-> -	/* The steps1 … end and bit 0 for TS_Charge */
-> -	stepenable = (1 << (end_step + 2)) - 1;
-> +	/* The steps end ... end - readouts * 2 + 2 and bit 0 for TS_Charge */
-> +	stepenable = 1;
-> +	for (i = 0; i < tsc_steps; i++)
-> +		stepenable |= 1 << (first_step + i + 1);
+> +config KMX61
+> +	tristate "Kionix KMX61 6-axis accelerometer and magnetometer"
+> +	depends on I2C
+> +	help
+> +	  Say Y here if you want to build a driver for Kionix KMX61 6-axis accelerometer
+> +	  and magnetometer.
+> +	  To compile this driver as module, choose M here: the module will be called
+> +	  kmx61.
 > +
->  	ts_dev->step_mask = stepenable;
->  	am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
->  }
-> @@ -209,6 +214,7 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
->  	unsigned int read, diff;
->  	unsigned int i, channel;
->  	unsigned int creads = ts_dev->coordinate_readouts;
-> +	unsigned int first_step = TOTAL_STEPS - (creads * 2 + 2);
+>  source "drivers/iio/imu/inv_mpu6050/Kconfig"
 >  
->  	*z1 = *z2 = 0;
->  	if (fifocount % (creads * 2 + 2))
-> @@ -226,7 +232,7 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
+>  endmenu
+> diff --git a/drivers/iio/imu/Makefile b/drivers/iio/imu/Makefile
+> index 114d2c1..e1e6e3d 100644
+> --- a/drivers/iio/imu/Makefile
+> +++ b/drivers/iio/imu/Makefile
+> @@ -14,3 +14,5 @@ adis_lib-$(CONFIG_IIO_ADIS_LIB_BUFFER) += adis_buffer.o
+>  obj-$(CONFIG_IIO_ADIS_LIB) += adis_lib.o
 >  
->  		channel = (read & 0xf0000) >> 16;
->  		read &= 0xfff;
-> -		if (channel < creads) {
-> +		if (channel > first_step + creads + 2) {
->  			diff = abs(read - prev_val_x);
->  			if (diff < prev_diff_x) {
->  				prev_diff_x = diff;
-> @@ -234,19 +240,19 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
->  			}
->  			prev_val_x = read;
->  
-> -		} else if (channel < creads * 2) {
-> +		} else if (channel == first_step + creads + 1) {
-> +			*z1 = read;
+>  obj-y += inv_mpu6050/
 > +
-> +		} else if (channel == first_step + creads + 2) {
-> +			*z2 = read;
+> +obj-$(CONFIG_KMX61) += kmx61.o
+> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+> new file mode 100644
+> index 0000000..124d75d
+> --- /dev/null
+> +++ b/drivers/iio/imu/kmx61.c
+> @@ -0,0 +1,575 @@
+> +/*
+> + * KMX61 - Kionix 6-axis Accelerometer/Magnetometer
+> + *
+> + * Copyright (c) 2014, Intel Corporation.
+> + *
+> + * This file is subject to the terms and conditions of version 2 of
+> + * the GNU General Public License.  See the file COPYING in the main
+> + * directory of this archive for more details.
+> + *
+> + * IIO driver for KMX61 (7-bit I2C slave address 0x0E or 0x0F).
+> + *
+> + * TODO: buffer, interrupt, thresholds, acpi, temperature sensor
+> + *
+> + */
 > +
-> +		} else if (channel > first_step) {
->  			diff = abs(read - prev_val_y);
->  			if (diff < prev_diff_y) {
->  				prev_diff_y = diff;
->  				*y = read;
->  			}
->  			prev_val_y = read;
-> -
-> -		} else if (channel < creads * 2 + 1) {
-> -			*z1 = read;
-> -
-> -		} else if (channel < creads * 2 + 2) {
-> -			*z2 = read;
->  		}
->  	}
->  }
+> +#include <linux/module.h>
+> +#include <linux/i2c.h>
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/sysfs.h>
+> +
+> +#define KMX61_DRV_NAME "kmx61"
+> +
+> +#define KMX61_REG_WHO_AM_I		0x00
+> +
+> +#define KMX61_ACC_XOUT_L		0x0A
+> +
+> +#define KMX61_ACC_XOUT_H		0x0B
+> +#define KMX61_ACC_YOUT_L		0x0C
+> +#define KMX61_ACC_YOUT_H		0x0D
+> +#define KMX61_ACC_ZOUT_L		0x0E
+> +#define KMX61_ACC_ZOUT_H		0x0F
+> +
+> +#define KMX61_MAG_XOUT_L		0x12
+> +
+> +#define KMX61_MAG_XOUT_H		0x13
+> +#define KMX61_MAG_YOUT_L		0x14
+> +#define KMX61_MAG_YOUT_H		0x15
+> +#define KMX61_MAG_ZOUT_L		0x16
+> +#define KMX61_MAG_ZOUT_H		0x17
+> +
+> +#define KMX61_REG_ODCNTL		0x2C
+> +
+> +#define KMX61_REG_STBY			0x29
+> +#define KMX61_REG_CTRL1			0x2A
+> +
+> +#define KMX61_REG_COTR			0x3C
+> +
+> +#define KMX61_ACC_STBY_BIT	BIT(0)
+> +#define KMX61_MAG_STBY_BIT	BIT(1)
+> +#define KMX61_ACT_STBY_BIT	BIT(7)
+> +
+> +#define KMX61_ALL_STBY		(KMX61_ACC_STBY_BIT | KMX61_MAG_STBY_BIT)
+> +
+> +#define KMX61_REG_CTRL1_GSEL0_SHIFT	0
+> +#define KMX61_REG_CTRL1_GSEL1_SHIFT	1
+> +#define KMX61_REG_CTRL1_GSEL0_MASK	0x01
+> +#define KMX61_REG_CTRL1_GSEL1_MASK	0x02
+> +
+> +#define KMX61_REG_CTRL1_BIT_RES		BIT(4)
+> +
+> +#define KMX61_ACC_ODR_SHIFT	0
+> +#define KMX61_MAG_ODR_SHIFT	4
+> +#define KMX61_ACC_ODR_MASK	0x0F
+> +#define KMX61_MAG_ODR_MASK	0xF0
+> +
+> +#define KMX61_CHIP_ID		0x12
+> +
+> +struct kmx61_data {
+> +	struct i2c_client *client;
+> +	u8 range;
+> +	u8 odr_bits;
+> +};
+> +
+> +enum kmx61_range {
+> +	KMX61_RANGE_2G,
+> +	KMX61_RANGE_4G,
+> +	KMX61_RANGE_8G,
+> +};
+> +
+> +enum kmx61_scan {
+> +	KMX61_SCAN_ACC_X,
+> +	KMX61_SCAN_ACC_Y,
+> +	KMX61_SCAN_ACC_Z,
+> +	KMX61_SCAN_TEMP,
+> +	KMX61_SCAN_MAG_X,
+> +	KMX61_SCAN_MAG_Y,
+> +	KMX61_SCAN_MAG_Z,
+> +};
+> +
+> +static const struct {
+> +	u16 scale;
+> +	u8 gsel0;
+> +	u8 gsel1;
+> +} kmx61_scale_table[] = {
+> +	{9582, 0, 0},
+> +	{19163, 1, 0},
+> +	{38326, 0, 1},
+> +};
+> +
+> +/* KMX61 devices */
+> +#define KMX61_ACC	0x01
+> +#define KMX61_MAG	0x02
+> +
+> +static const struct {
+> +	int val;
+> +	int val2;
+> +	int odr_bits;
+> +} samp_freq_table[] = { {12, 500000, 0x00},
+> +			{25, 0, 0x01},
+> +			{50, 0, 0x02},
+> +			{100, 0, 0x03},
+> +			{200, 0, 0x04},
+> +			{400, 0, 0x05},
+> +			{800, 0, 0x06},
+> +			{1600, 0, 0x07},
+> +			{0, 781000, 0x08},
+> +			{1, 563000, 0x09},
+> +			{3, 125000, 0x0A},
+> +			{6, 250000, 0x0B} };
+> +
+> +static IIO_CONST_ATTR(accel_scale_available, "0.009582 0.019163 0.038326");
+> +static IIO_CONST_ATTR(magn_scale_available, "0.001465");
+> +static IIO_CONST_ATTR_SAMP_FREQ_AVAIL(
+> +	"0.781000 1.563000 3.125000 6.250000 12.500000 25 50 100 200 400 800");
+> +
+> +static struct attribute *kmx61_attributes[] = {
+> +	&iio_const_attr_accel_scale_available.dev_attr.attr,
+> +	&iio_const_attr_magn_scale_available.dev_attr.attr,
+> +	&iio_const_attr_sampling_frequency_available.dev_attr.attr,
+> +	NULL,
+> +};
+> +
+> +static const struct attribute_group kmx61_attribute_group = {
+> +	.attrs = kmx61_attributes,
+> +};
+> +
+> +#define KMX61_ACC_CHAN(_axis, _index) { \
+> +	.type = IIO_ACCEL, \
+> +	.modified = 1, \
+> +	.channel2 = IIO_MOD_ ## _axis, \
+> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
+> +	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) | \
+> +				BIT(IIO_CHAN_INFO_SAMP_FREQ), \
+> +	.scan_index = _index, \
+> +	.scan_type = { \
+> +		.sign = 's', \
+> +		.realbits = 12, \
+> +		.storagebits = 16, \
+> +		.shift = 4, \
+> +		.endianness = IIO_BE, \
+> +	}, \
+> +}
+> +
+> +#define KMX61_MAG_CHAN(_axis, _index) { \
+> +	.type = IIO_MAGN, \
+> +	.modified = 1, \
+> +	.channel2 = IIO_MOD_ ## _axis, \
+> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
+> +	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) | \
+> +				BIT(IIO_CHAN_INFO_SAMP_FREQ), \
+> +	.scan_index = _index, \
+> +	.scan_type = { \
+> +		.sign = 's', \
+> +		.realbits = 14, \
+> +		.storagebits = 16, \
+> +		.shift = 2, \
+> +		.endianness = IIO_BE, \
+> +	}, \
+> +}
+> +
+> +static const struct iio_chan_spec kmx61_channels[] = {
+> +	KMX61_ACC_CHAN(X, KMX61_SCAN_ACC_X),
+> +	KMX61_ACC_CHAN(Y, KMX61_SCAN_ACC_Y),
+> +	KMX61_ACC_CHAN(Z, KMX61_SCAN_ACC_Z),
+> +	KMX61_MAG_CHAN(X, KMX61_SCAN_MAG_X),
+> +	KMX61_MAG_CHAN(Y, KMX61_SCAN_MAG_Y),
+> +	KMX61_MAG_CHAN(Z, KMX61_SCAN_MAG_Z),
+> +};
+> +
+> +static int kmx61_convert_freq_to_bit(int val, int val2)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(samp_freq_table); i++)
+> +		if (val == samp_freq_table[i].val &&
+> +		    val2 == samp_freq_table[i].val2)
+> +			return samp_freq_table[i].odr_bits;
+> +	return -EINVAL;
+> +}
+> +
+> +static int kmx61_set_mode(struct kmx61_data *data, u8 mode, u8 device)
+> +{
+> +	int ret;
+> +
+Looks like a possible race in here given the read / write pair.
+Perhaps a mutex to prevent it?
+
+Obviously this applies in a few other places!
+> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_STBY);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "Error reading reg_stby\n");
+> +		return ret;
+> +	}
+> +	if (device & KMX61_ACC) {
+> +		if (mode & KMX61_ACC_STBY_BIT)
+> +			ret |= KMX61_ACC_STBY_BIT;
+> +		else
+> +			ret &= ~KMX61_ACC_STBY_BIT;
+> +	}
+> +
+> +	if (device & KMX61_MAG) {
+> +		if (mode & KMX61_MAG_STBY_BIT)
+> +			ret |= KMX61_MAG_STBY_BIT;
+> +		else
+> +			ret &= ~KMX61_MAG_STBY_BIT;
+> +	}
+> +
+> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_STBY, ret);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "Error writing reg_stby\n");
+> +		return ret;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int kmx61_get_mode(struct kmx61_data *data, u8 *mode, u8 device)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_STBY);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "Error reading reg_stby\n");
+> +		return ret;
+> +	}
+> +	*mode = 0;
+> +
+> +	if (device & KMX61_ACC) {
+> +		if (ret & KMX61_ACC_STBY_BIT)
+> +			*mode |= KMX61_ACC_STBY_BIT;
+> +		else
+> +			*mode &= ~KMX61_ACC_STBY_BIT;
+> +	}
+> +
+> +	if (device & KMX61_MAG) {
+> +		if (ret & KMX61_MAG_STBY_BIT)
+> +			*mode |= KMX61_MAG_STBY_BIT;
+> +		else
+> +			*mode &= ~KMX61_MAG_STBY_BIT;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
+> +{
+> +	int ret;
+> +	u8 mode;
+> +	int lodr_bits, odr_bits;
+> +
+> +	ret = kmx61_get_mode(data, &mode, KMX61_ACC | KMX61_MAG);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	lodr_bits = kmx61_convert_freq_to_bit(val, val2);
+> +	if (lodr_bits < 0)
+> +		return lodr_bits;
+> +
+> +	/* To change ODR, accel and magn must be in STDBY */
+> +	ret = kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	odr_bits = 0;
+> +	if (device & KMX61_ACC)
+> +		odr_bits |= lodr_bits;
+> +	if (device & KMX61_MAG)
+> +		odr_bits |= (lodr_bits << KMX61_MAG_ODR_SHIFT);
+> +
+> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_ODCNTL,
+> +					odr_bits);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	data->odr_bits = lodr_bits;
+> +
+> +	return 0;
+> +}
+> +
+> +static
+> +int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2, u8 device)
+> +{	int i;
+> +	u8 lodr_bits;
+> +
+> +	if (device & KMX61_ACC)
+> +		lodr_bits = (data->odr_bits >> KMX61_ACC_ODR_SHIFT) &
+> +			     KMX61_ACC_ODR_MASK;
+> +	else if (device & KMX61_MAG)
+> +		lodr_bits = (data->odr_bits >> KMX61_MAG_ODR_SHIFT) &
+> +			     KMX61_MAG_ODR_MASK;
+> +	else
+> +		return -EINVAL;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(samp_freq_table); i++)
+> +		if (lodr_bits == samp_freq_table[i].odr_bits) {
+> +			*val = samp_freq_table[i].val;
+> +			*val2 = samp_freq_table[i].val2;
+> +			return 0;
+> +		}
+> +	return -EINVAL;
+> +}
+> +
+> +static int kmx61_set_range(struct kmx61_data *data, int range)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
+> +		return ret;
+> +	}
+> +
+> +	ret &= ~(KMX61_REG_CTRL1_GSEL0_MASK | KMX61_REG_CTRL1_GSEL1_MASK);
+> +	ret |= kmx61_scale_table[range].gsel0 << KMX61_REG_CTRL1_GSEL0_SHIFT;
+> +	ret |= kmx61_scale_table[range].gsel1 << KMX61_REG_CTRL1_GSEL1_SHIFT;
+> +
+> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "Error writing reg_ctrl1\n");
+> +		return ret;
+> +	}
+> +
+> +	data->range = range;
+> +
+> +	return 0;
+> +}
+> +
+> +static int kmx61_set_scale(struct kmx61_data *data, int val)
+> +{
+> +	int ret, i;
+> +	u8  mode;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(kmx61_scale_table); i++) {
+> +		if (kmx61_scale_table[i].scale == val) {
+> +			ret = kmx61_get_mode(data, &mode,
+> +					     KMX61_ACC | KMX61_MAG);
+> +			if (ret < 0)
+> +				return ret;
+> +
+> +			ret = kmx61_set_mode(data, KMX61_ALL_STBY,
+> +					     KMX61_ACC | KMX61_MAG);
+> +			if (ret < 0)
+> +				return ret;
+> +
+> +			ret = kmx61_set_range(data, i);
+> +			if (ret < 0)
+> +				return ret;
+> +
+> +			ret = kmx61_set_mode(data, mode,
+> +					     KMX61_ACC | KMX61_MAG);
+> +			if (ret < 0)
+> +				return ret;
+> +
+> +			return 0;
+> +		}
+> +	}
+> +	return -EINVAL;
+> +}
+> +
+> +static int kmx61_chip_init(struct kmx61_data *data)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_WHO_AM_I);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "Error reading who_am_i\n");
+> +		return ret;
+> +	}
+> +
+> +	if (ret != KMX61_CHIP_ID) {
+> +		dev_err(&data->client->dev,
+> +			"Wrong chip id, got %x expected %x\n",
+> +			 ret, KMX61_CHIP_ID);
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* set accel 12bit, 4g range */
+> +	ret = kmx61_set_range(data, KMX61_RANGE_4G);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/* put accel and magnetometer in operating mode */
+> +	ret = kmx61_set_mode(data, 0, KMX61_ACC | KMX61_MAG);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static int kmx61_read_measurement(struct kmx61_data *data, int base, int offset)
+> +{
+> +	int ret;
+> +	u8 reg = base + offset * 2;
+> +
+> +	ret = i2c_smbus_read_word_data(data->client, reg);
+> +	if (ret < 0) {
+> +		dev_err(&data->client->dev, "failed to read reg at %x\n", reg);
+> +		return ret;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int kmx61_read_raw(struct iio_dev *indio_dev,
+> +			      struct iio_chan_spec const *chan, int *val,
+> +			      int *val2, long mask)
+> +{
+> +	struct kmx61_data *data = iio_priv(indio_dev);
+> +	int ret;
+> +	u8 base_reg;
+> +	u8 device;
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		switch (chan->type) {
+> +		case IIO_ACCEL: case IIO_MAGN:
+> +			base_reg = KMX61_ACC_XOUT_L;
+> +			break;
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +		ret = kmx61_read_measurement(data, base_reg, chan->scan_index);
+> +		if (ret < 0)
+> +			return ret;
+> +		*val = sign_extend32(ret >> chan->scan_type.shift,
+> +				     chan->scan_type.realbits - 1);
+> +		return IIO_VAL_INT;
+> +	case IIO_CHAN_INFO_SCALE:
+> +		switch (chan->type) {
+> +		case IIO_ACCEL:
+> +			*val = 0;
+> +			*val2 = kmx61_scale_table[data->range].scale;
+> +			return IIO_VAL_INT_PLUS_MICRO;
+> +		case IIO_MAGN:
+> +			/* 14 bits res, 1465 microGauss per magn count */
+> +			*val = 0;
+> +			*val2 = 1465;
+> +			return IIO_VAL_INT_PLUS_MICRO;
+> +		default:
+> +			break;
+> +		}
+> +	case IIO_CHAN_INFO_SAMP_FREQ:
+> +		switch (chan->type) {
+> +		case IIO_ACCEL:
+> +			device = KMX61_ACC;
+> +			break;
+> +		case IIO_MAGN:
+> +			device = KMX61_MAG;
+> +			break;
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +
+> +		ret = kmx61_get_odr(data, val, val2, device);
+> +		if (ret)
+> +			return -EINVAL;
+> +		return IIO_VAL_INT_PLUS_MICRO;
+> +	}
+> +	return -EINVAL;
+> +}
+> +
+> +static int kmx61_write_raw(struct iio_dev *indio_dev,
+> +			       struct iio_chan_spec const *chan, int val,
+> +			       int val2, long mask)
+> +{
+> +	struct kmx61_data *data = iio_priv(indio_dev);
+> +	int ret;
+> +	u8 device;
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_SAMP_FREQ:
+> +		switch (chan->type) {
+> +		case IIO_ACCEL:
+> +			device = KMX61_ACC;
+> +			break;
+> +		case IIO_MAGN:
+> +			device = KMX61_MAG;
+> +			break;
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +		ret = kmx61_set_odr(data, val, val2, device);
+> +		break;
+> +	case IIO_CHAN_INFO_SCALE:
+> +		switch (chan->type) {
+> +		case IIO_ACCEL:
+> +			ret = kmx61_set_scale(data, val2);
+> +			break;
+> +		default:
+> +			ret  = -EINVAL;
+> +		}
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static const struct iio_info kmx61_info = {
+> +	.driver_module		= THIS_MODULE,
+> +	.read_raw		= kmx61_read_raw,
+> +	.write_raw		= kmx61_write_raw,
+> +	.attrs			= &kmx61_attribute_group,
+> +};
+> +
+> +static int kmx61_probe(struct i2c_client *client,
+> +		       const struct i2c_device_id *id)
+> +{
+> +	struct kmx61_data *data;
+> +	struct iio_dev *indio_dev;
+> +	int ret;
+> +
+> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+> +	if (!indio_dev)
+> +		return -ENOMEM;
+> +
+> +	data = iio_priv(indio_dev);
+> +	i2c_set_clientdata(client, indio_dev);
+> +	data->client = client;
+> +
+> +	indio_dev->dev.parent = &client->dev;
+> +	indio_dev->info = &kmx61_info;
+> +	indio_dev->channels = kmx61_channels;
+> +	indio_dev->num_channels = ARRAY_SIZE(kmx61_channels);
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +
+> +	ret = kmx61_chip_init(data);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return iio_device_register(indio_dev);
+> +}
+> +
+> +static int kmx61_remove(struct i2c_client *client)
+> +{
+> +	struct iio_dev *indio_dev = i2c_get_clientdata(client);
+> +	struct kmx61_data *data = iio_priv(indio_dev);
+> +
+> +	iio_device_unregister(indio_dev);
+> +
+> +	return kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG);
+> +}
+> +
+> +static const struct i2c_device_id kmx61_id[] = {
+> +	{"kmx61", 0},
+> +	{}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, kmx61_id);
+> +
+> +static struct i2c_driver kmx61_driver = {
+> +	.driver = {
+> +		.name = "kmx61",
+> +	},
+> +	.probe		= kmx61_probe,
+> +	.remove		= kmx61_remove,
+> +	.id_table	= kmx61_id,
+> +};
+> +
+> +module_i2c_driver(kmx61_driver);
+> +
+> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
+> +MODULE_DESCRIPTION("KMX61 accelerometer/magnetometer driver");
+> +MODULE_LICENSE("GPL v2");
 > 
 
