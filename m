@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaKHSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:02:09 -0500
-Received: from sauhun.de ([89.238.76.85]:36973 "EHLO pokefinder.org"
+	id S1753961AbaKHSCS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:02:18 -0500
+Received: from sauhun.de ([89.238.76.85]:36978 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861AbaKHSCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:02:07 -0500
-Date: Sat, 8 Nov 2014 19:03:14 +0100
+	id S1753861AbaKHSCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:02:14 -0500
+Date: Sat, 8 Nov 2014 19:03:25 +0100
 From: Wolfram Sang <wsa@the-dreams.de>
 To: Wenyou Yang <wenyou.yang@atmel.com>
 Cc: ludovic.desroches@atmel.com, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org, nicolas.ferre@atmel.com,
         khilman@kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/3] i2c/at91: adopt pinctrl support
-Message-ID: <20141108180314.GD4900@katana>
+Subject: Re: [PATCH v3 1/3] i2c/at91: add support for runtime PM
+Message-ID: <20141108180325.GE4900@katana>
 References: <1414133417-11530-1-git-send-email-wenyou.yang@atmel.com>
- <1414133417-11530-4-git-send-email-wenyou.yang@atmel.com>
+ <1414133417-11530-2-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hoZxPH4CaxYzWscb"
+	protocol="application/pgp-signature"; boundary="wTWi5aaYRw9ix9vO"
 Content-Disposition: inline
-In-Reply-To: <1414133417-11530-4-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1414133417-11530-2-git-send-email-wenyou.yang@atmel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---hoZxPH4CaxYzWscb
+--wTWi5aaYRw9ix9vO
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Oct 24, 2014 at 02:50:17PM +0800, Wenyou Yang wrote:
-> Amend the i2c at91 pin controller to optionally take a pin control
-> handle and set the state of the pins to:
->=20
-> - "default" on boot, resume and before performing an transfer
-> - "sleep" on suspend()
->=20
-> This should make it possible to optimize energy usage for the pins
-> both for the suspend/resume cycle
+On Fri, Oct 24, 2014 at 02:50:15PM +0800, Wenyou Yang wrote:
+> Drivers should put the device into low power states proactively whenever =
+the
+> device is not in use. Thus implement support for runtime PM and use the
+> autosuspend feature to make sure that we can still perform well in case w=
+e see
+> lots of i2c traffic within short period of time.
 >=20
 > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> ---
->  drivers/i2c/busses/i2c-at91.c |    7 +++++++
->  1 file changed, 7 insertions(+)
->=20
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 6a84a2a..290caf1 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -32,6 +32,7 @@
->  #include <linux/slab.h>
->  #include <linux/platform_data/dma-atmel.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/pinctrl/consumer.h>
-> =20
->  #define DEFAULT_TWI_CLK_HZ		100000		/* max 400 Kbits/s */
->  #define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
-> @@ -747,6 +748,8 @@ static int at91_twi_probe(struct platform_device *pde=
-v)
->  	u32 phy_addr;
->  	u32 bus_clk_rate;
-> =20
-> +	pinctrl_pm_select_default_state(&pdev->dev);
-> +
 
-Do we really need this in probe? Isn't that default? I'm not sure,
-though...
+Applied to for-next, thanks!
 
->  	dev =3D devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
->  	if (!dev)
->  		return -ENOMEM;
-> @@ -851,6 +854,8 @@ static int at91_twi_runtime_suspend(struct device *de=
-v)
-> =20
->  	clk_disable_unprepare(twi_dev->clk);
-> =20
-> +	pinctrl_pm_select_sleep_state(dev);
-> +
->  	return 0;
->  }
-> =20
-> @@ -858,6 +863,8 @@ static int at91_twi_runtime_resume(struct device *dev)
->  {
->  	struct at91_twi_dev *twi_dev =3D dev_get_drvdata(dev);
-> =20
-> +	pinctrl_pm_select_default_state(dev);
-> +
->  	return clk_prepare_enable(twi_dev->clk);
->  }
-> =20
-> --=20
-> 1.7.9.5
->=20
 
---hoZxPH4CaxYzWscb
+--wTWi5aaYRw9ix9vO
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUXlriAAoJEBQN5MwUoCm22ScP/3TRXAjMaeWrJrjzJElUvBVd
-Gzlqe0zD1CAS4Bz0w56Q/mGs0XfoW7n/J1GI2gHBB2kvVtdJJJPIM40y8IO5qAU2
-2+o55WvdeE+eYjqrlEHDXbm01qnueRhJlf5da1twAvQXTHox1hYIFugeJN45jjVD
-q5yIKj4EHn0nEd638XrLKNZdmF1XhMDabjM81QINFbmncU7FVTAoh2kwhQMREE1s
-n3Id83oIP+iaff9wu4Aun+trSk44GkKxOBQuLZYi7Q6xauhFoB3xQAUF1mDFIfsG
-7zbSn9P/bj4XxZ6bJ39DQ8wgoqeWRoxFJn9Duhx74lPvIMRwg/Z93COVuFrNVI50
-2dWzbScGbvJSwtUyUcv+mSpFopdur/OhNVHSU9l8NBRHPU8gXnDkoMVO7gYJ3o34
-RSR/PdBZHP/F5f9rUzoYB00MPMwUdai8u9hjrvaVUXwOZNUsTQYzLd5Rn4IFqxUI
-v1+7FNc4Zt3EbWekqJyr55jrG3zjcZ1KzIRhJnQRx6GS9BfAbVxE8V6TvqlPDHyU
-UevXM7isI6B/MVm6WqhEYklychb8yBDhsgZQ8KUsS0tlNKfzXkM8dL2JGQ0M1MTa
-eUe2ohHyk1evtwv7gQSm4zsCsq7cqXYPIwF9XGe9daJ25Sl3ZQ+t7jWCRFT1qmgW
-adtXm+ZFTMqvsPU3aR3/
-=3XVP
+iQIcBAEBAgAGBQJUXlrtAAoJEBQN5MwUoCm2dEgP/3CgAlRC/tVd2P9gDo9fxdH/
+k8CpDbAD6f3RXH5etWInKCeVmeqO/w0PMUxE+dIfDFYJbDFU8JAeh/rUf7OVjOqJ
+to1VfZ5GvMHpLMvy6GbiDfFjZZ8uMV4/ZuGFo1DKmznJZXe08+1TQyecU0l4ZYxr
+fWeFfvEYM06mvcSG6TsMXlZIuMEcI8sAC7DEqCj9y4EK23S3pZX8/J2LW6LS3Kmw
+ciGdEjFFVhaUQFJxwMUKveGqWs4r6GFgKetjlVTW/7jy5XdYt/QKWMGa7guythm2
+I3Qh4ZY/dgh4LulH9NRt58HuIQZg5aYHXmGRX68IKr8xODNheyIu9K6dD1kHv5hx
+YKg7xEM3MKAkJYszBwG99xw7XRuiUPMA/jv79tuq6hdmGAPkGPqHHS3aNndHAbvz
+Wzi7ZGKeyb6C82dItrYzWTaRrY1iqWxxY5sjztCXUYpmcnYzokCl7qC7gqm3a8Mi
+UuGJZpZePwtLORubhfv6pRer/Skv2eLeWyEziuHgbZgRE9PW9WmGMIiSUWqOPCEu
+0FPI+uJu+Et95sDJucTSMkvHfVHTrRQBFNDc9AaIOlsnBmlUWJnhtjhVDAQ49STp
+UO/o1soXSySlequzClTY9uRrvS2U2MmlF6kmXZYhAYJrjWrvTlSVWc2uz5rGcD0z
+DnMn59OPSdfXf7SVnHTN
+=/8Kn
 -----END PGP SIGNATURE-----
 
---hoZxPH4CaxYzWscb--
+--wTWi5aaYRw9ix9vO--
