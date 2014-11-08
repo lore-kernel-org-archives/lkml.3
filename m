@@ -1,300 +1,613 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaKHIIA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 03:08:00 -0500
-Received: from jablonecka.jablonka.cz ([91.219.244.36]:60034 "EHLO
-	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbaKHIH6 (ORCPT
+	id S1753509AbaKHIqs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 03:46:48 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:51045 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389AbaKHIqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 03:07:58 -0500
-Date: Sat, 8 Nov 2014 09:07:54 +0100
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Kernel Live Patching
-Message-ID: <20141108080754.GA28969@suse.cz>
-References: <20141106184446.GA12779@infradead.org>
- <20141106185157.GB29272@suse.cz>
- <20141106185857.GA7106@infradead.org>
- <20141106202423.GB2266@suse.cz>
- <20141107074745.GC22703@infradead.org>
- <20141107131153.GD4071@treble.redhat.com>
- <20141107140458.GA21774@suse.cz>
- <20141107154500.GF4071@treble.redhat.com>
- <20141107212735.GA21409@suse.cz>
- <20141108034553.GA11663@treble.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141108034553.GA11663@treble.redhat.com>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 8 Nov 2014 03:46:46 -0500
+From: Omar Sandoval <osandov@osandov.com>
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Cc: Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH v6] Move BTRFS RCU string to common library
+Date: Sat,  8 Nov 2014 00:46:24 -0800
+Message-Id: <1415436384-13691-1-git-send-email-osandov@osandov.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415407155.23530.24.camel@perches.com>
+References: <1415407155.23530.24.camel@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 09:45:53PM -0600, Josh Poimboeuf wrote:
+The RCU-friendly string API used internally by BTRFS is generic enough for
+common use. This doesn't add any new functionality, but instead just moves the
+code and documents the existing API.
 
-> On Fri, Nov 07, 2014 at 10:27:35PM +0100, Vojtech Pavlik wrote:
-> > On Fri, Nov 07, 2014 at 09:45:00AM -0600, Josh Poimboeuf wrote:
-> > 
-> > > > 	LEAVE_FUNCTION
-> > > > 	LEAVE_PATCHED_SET
-> > > > 	LEAVE_KERNEL
-> > > > 
-> > > > 	SWITCH_FUNCTION
-> > > > 	SWITCH_THREAD
-> > > > 	SWITCH_KERNEL
-> > > > 
-> > 
-> > There would be the refcounting engine, counting entries/exits of the
-> > area of interest (nothing for LEAVE_FUNCTION, patched functions for
-> > LEAVE_PATCHED_SET - same as Masami's work now, or syscall entry/exit
-> > for LEAVE_KERNEL), and it'd do the counting either per thread,
-> > flagging a thread as 'new universe' when the count goes to zero, or
-> > flipping a 'new universe' switch for the whole kernel when the count
-> > goes down to zero.
-> > 
-> > A patch would have flags which specify a combination of the above
-> > properties that are needed for successful patching of that specific
-> > patch.
-> 
-> Would it really be necessary to support all possible permutations?  I
-> think that would add a lot of complexity to the code.  Especially if we
-> have to support LEAVE_KERNEL, which adds a lot of interdependencies with
-> the rest of the kernel (kthreads, syscall, irq, etc).
-> 
-> It seems to me that the two most interesting options are:
-> - LEAVE_PATCHED_SET + SWITCH_THREAD (Masami-kGraft)
-> - LEAVE_PATCHED_SET + SWITCH_KERNEL (kpatch and/or Masami-kpatch)
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+Chris, if you haven't pulled this in yet, Joe Perches pointed out that
+rcustring.h should include any headers it depends on. The following headers
+take care of it:
 
-I agree here.
+#include <linux/types.h>
+#include <linux/compiler.h>
+#include <linux/printk.h>
+#include <linux/rcupdate.h>
+#include <linux/slab.h>
 
-In fact LEAVE_KERNEL can be approximated by extending the patched
-set as required to include functions which are not changed per se, but
-are "contaminated" by propagation of semantic changes in the calling
-convention, and/or data format.
+v6: Add header dependencies to rcustring.h
+v5: Rebase against v3.18-rc3
+v4: Don't return anything from the printk wrappers on the assumption that
+printk will return void someday
+v3: Add __rcu annotation to relevant functions, add Paul's ack and Josh's
+review
 
-This applies to cases like this (needs LEAVE_KERNEL or extending patched
-set beyond changed functions):
+ fs/btrfs/check-integrity.c |  6 +--
+ fs/btrfs/dev-replace.c     | 19 +++++-----
+ fs/btrfs/disk-io.c         |  6 +--
+ fs/btrfs/extent_io.c       |  4 +-
+ fs/btrfs/ioctl.c           |  4 +-
+ fs/btrfs/raid56.c          |  2 +-
+ fs/btrfs/rcu-string.h      | 56 ---------------------------
+ fs/btrfs/scrub.c           | 15 ++++----
+ fs/btrfs/super.c           |  2 +-
+ fs/btrfs/volumes.c         | 14 +++----
+ include/linux/rcustring.h  | 95 ++++++++++++++++++++++++++++++++++++++++++++++
+ 11 files changed, 132 insertions(+), 91 deletions(-)
+ delete mode 100644 fs/btrfs/rcu-string.h
+ create mode 100644 include/linux/rcustring.h
 
------------------------------------------------------------
-
-	int bar() {
-		[...]
--		return x;
-+		return x + 1;
-	}
-
-	foo() {
-		int ret = bar();
-		do {
-			wait_interruptible();
-		} while (ret == bar());
-	}
-
------------------------------------------------------------
-
-Or like this (needs SWITCH_KERNEL so won't work with kGraft, but also
-extending patched set, will not work with kpatch as it stands today):
-
------------------------------------------------------------
-
-	void lock_a()
-	{
--		spin_lock(&x);
-+		spin_lock(&y);
-	}
-	void lock_b()
-	{
--		spin_lock(&y);
-+		spin_lock(&x);
-	}
-	void unlock_a()
-	}
--		spin_unlock(&x);
-+		spin_unlock(&y);
-	}
-	void unlock_b()
-	{
--		spin_unlock(&y);
-+		spin_unlock(&x);
-	}
-
-	void foo()
-	{
-		lock_a();
-		lock_b();
-		[...]
-		unlock_b();
-		unlock_a();
-	}
------------------------------------------------------------
-	
-
-So once we can extend the patched set as needed (manually, after
-review), we can handle all the cases that LEAVE_KERNEL offers, making
-LEAVE_KERNEL unnecessary.
-
-It'd be nice if we wouldn't require actually patching those functions,
-only include them in the set we have to leave to proceed.
-
-The remaining question is the performance impact of using a large set
-with refcounting. LEAVE_KERNEL's impact as implemented in kGraft is
-beyond being measurable, it's about 16 added instructions for each
-thread that get executed.
-
-> I do see some appeal for the choose-your-own-consistency-model idea.
-> But it wouldn't be practical for cumulative patch upgrades, which I
-> think we both agreed at LPC seems to be safer than incremental
-> patching.  If you only ever have one patch module loaded at any given
-> time, you only get one consistency model anyway.
-
-> In order for multiple consistency models to be practical, I think we'd
-> need to figure out how to make incremental patching safe.
-
-I believe we have to get incremental patching working anyway as it is a
-valid usecase for many users, just not for major distributions.
-
-And we may want to take a look at how to mark parts of a cumulative
-patch with different consistency models, when we combine eg. the recent
-futex CVE patch (not working with SWITCH_KERNEL) and anything requiring
-SWITCH kernel.
-
-> > For data layout an semantic changes, there are two approaches:
-> > 
-> > 	1) TRANSFORM_WORLD
+diff --git a/fs/btrfs/check-integrity.c b/fs/btrfs/check-integrity.c
+index cb7f3fe..a894c94 100644
+--- a/fs/btrfs/check-integrity.c
++++ b/fs/btrfs/check-integrity.c
+@@ -94,6 +94,7 @@
+ #include <linux/mutex.h>
+ #include <linux/genhd.h>
+ #include <linux/blkdev.h>
++#include <linux/rcustring.h>
+ #include "ctree.h"
+ #include "disk-io.h"
+ #include "hash.h"
+@@ -103,7 +104,6 @@
+ #include "print-tree.h"
+ #include "locking.h"
+ #include "check-integrity.h"
+-#include "rcu-string.h"
  
-> I'm kind of surprised to hear that Ksplice does this.  I had
-> considered this approach, but it sounds really tricky, if not
-> impossible in many cases.
-
-By the way, the ability to do this is basically the only advantage of
-actually stopping the kernel.
+ #define BTRFSIC_BLOCK_HASHTABLE_SIZE 0x10000
+ #define BTRFSIC_BLOCK_LINK_HASHTABLE_SIZE 0x10000
+@@ -850,8 +850,8 @@ static int btrfsic_process_superblock_dev_mirror(
+ 			printk_in_rcu(KERN_INFO "New initial S-block (bdev %p, %s)"
+ 				     " @%llu (%s/%llu/%d)\n",
+ 				     superblock_bdev,
+-				     rcu_str_deref(device->name), dev_bytenr,
+-				     dev_state->name, dev_bytenr,
++				     rcu_string_dereference(device->name),
++				     dev_bytenr, dev_state->name, dev_bytenr,
+ 				     superblock_mirror_num);
+ 		list_add(&superblock_tmp->all_blocks_node,
+ 			 &state->all_blocks_list);
+diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+index 6f662b3..f697899 100644
+--- a/fs/btrfs/dev-replace.c
++++ b/fs/btrfs/dev-replace.c
+@@ -25,6 +25,7 @@
+ #include <linux/capability.h>
+ #include <linux/kthread.h>
+ #include <linux/math64.h>
++#include <linux/rcustring.h>
+ #include <asm/div64.h>
+ #include "ctree.h"
+ #include "extent_map.h"
+@@ -34,7 +35,6 @@
+ #include "volumes.h"
+ #include "async-thread.h"
+ #include "check-integrity.h"
+-#include "rcu-string.h"
+ #include "dev-replace.h"
+ #include "sysfs.h"
  
-> Ahem, this would be an opportune time for a Ksplice person to chime in
-> with their experiences...
-
-Indeed. :)
-
-> > 	2) TRANSFORM_ON_ACCESS
+@@ -384,9 +384,9 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
+ 	printk_in_rcu(KERN_INFO
+ 		      "BTRFS: dev_replace from %s (devid %llu) to %s started\n",
+ 		      src_device->missing ? "<missing disk>" :
+-		        rcu_str_deref(src_device->name),
++		      rcu_string_dereference(src_device->name),
+ 		      src_device->devid,
+-		      rcu_str_deref(tgt_device->name));
++		      rcu_string_dereference(tgt_device->name));
  
-> This is a variation on what we've been doing with kpatch, using shadow
-> data fields to add data and/or version metadata to structures, with a
-> few differences:
-> 
-> First, we haven't been transforming existing data.  All existing data
-> structures stay at v1.  Only new data structures are created as v2.  I
-> suppose it depends on the nature of the patch as to whether it's safe
-> to convert existing data.
-
-Also it depends on whether existing data do contain enough information
-to actually avoid the security issue the patch is fixing. You may want
-to transform the data structures as soon as possible.
-
-> Second, we don't need to flip a flag, because with SWITCH_KERNEL the
-> system universe transition happens instantly.
-
-Indeed. I wanted to point out that it works even with the SWITCH_THREAD
-and using the patching_complete flag that already is used in kGraft for
-other purposes.
-
-> > 	The advantage is to not have to look up every single instance of
-> > 	the structure and not having to make sure you found them all.
-> >
-> > 	The disadvantages are that the patch now looks very different to
-> > 	what goes into the kernel sources,
+ 	/*
+ 	 * from now on, the writes to the srcdev are all duplicated to
+@@ -531,9 +531,10 @@ static int btrfs_dev_replace_finishing(struct btrfs_fs_info *fs_info,
+ 		printk_in_rcu(KERN_ERR
+ 			      "BTRFS: btrfs_scrub_dev(%s, %llu, %s) failed %d\n",
+ 			      src_device->missing ? "<missing disk>" :
+-			        rcu_str_deref(src_device->name),
++			      rcu_string_dereference(src_device->name),
+ 			      src_device->devid,
+-			      rcu_str_deref(tgt_device->name), scrub_ret);
++			      rcu_string_dereference(tgt_device->name),
++			      scrub_ret);
+ 		btrfs_dev_replace_unlock(dev_replace);
+ 		mutex_unlock(&root->fs_info->chunk_mutex);
+ 		mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
+@@ -548,9 +549,9 @@ static int btrfs_dev_replace_finishing(struct btrfs_fs_info *fs_info,
+ 	printk_in_rcu(KERN_INFO
+ 		      "BTRFS: dev_replace from %s (devid %llu) to %s finished\n",
+ 		      src_device->missing ? "<missing disk>" :
+-		        rcu_str_deref(src_device->name),
++		      rcu_string_dereference(src_device->name),
+ 		      src_device->devid,
+-		      rcu_str_deref(tgt_device->name));
++		      rcu_string_dereference(tgt_device->name));
+ 	tgt_device->is_tgtdev_for_dev_replace = 0;
+ 	tgt_device->devid = src_device->devid;
+ 	src_device->devid = BTRFS_DEV_REPLACE_DEVID;
+@@ -817,10 +818,10 @@ static int btrfs_dev_replace_kthread(void *data)
+ 		printk_in_rcu(KERN_INFO
+ 			"BTRFS: continuing dev_replace from %s (devid %llu) to %s @%u%%\n",
+ 			dev_replace->srcdev->missing ? "<missing disk>" :
+-			rcu_str_deref(dev_replace->srcdev->name),
++			rcu_string_dereference(dev_replace->srcdev->name),
+ 			dev_replace->srcdev->devid,
+ 			dev_replace->tgtdev ?
+-			rcu_str_deref(dev_replace->tgtdev->name) :
++			rcu_string_dereference(dev_replace->tgtdev->name) :
+ 			"<missing target disk>",
+ 			(unsigned int)progress);
+ 	}
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 1bf9f89..6e9d0e8 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -31,6 +31,7 @@
+ #include <linux/ratelimit.h>
+ #include <linux/uuid.h>
+ #include <linux/semaphore.h>
++#include <linux/rcustring.h>
+ #include <asm/unaligned.h>
+ #include "ctree.h"
+ #include "disk-io.h"
+@@ -44,7 +45,6 @@
+ #include "free-space-cache.h"
+ #include "inode-map.h"
+ #include "check-integrity.h"
+-#include "rcu-string.h"
+ #include "dev-replace.h"
+ #include "raid56.h"
+ #include "sysfs.h"
+@@ -3058,7 +3058,7 @@ static void btrfs_end_buffer_write_sync(struct buffer_head *bh, int uptodate)
  
-> In my experience, s/very different/slightly different/.
-
-Not the same, anyway. :)
-
-> >	that you never know whether the conversion is complete and
-> >	reverting the patch is tough, although can be helped by keeping
-> >	track of transformed functions at a cost of maintaining another
-> >	data structure for that.
-> 
-> True, and we might even want to prevent or discourage such patches
-> from being disabled somehow.
-
-Yes.
-
-> > An interesting bit is that when you skip the backtrace check you're
-> > actually reverting to LEAVE_FUNCION SWITCH_FUNCTION, forfeiting all
-> > consistency and not LEAVE_FUNCTION SWITCH_KERNEL as one would expect.
-> 
-> Hm, if we used stop machine (or ref counting), but without the backtrace
-> check, wouldn't it be LEAVE_FUNCTION SWITCH_KERNEL?
-
-No; if you don't check the backtrace, any of the patched functions can
-be on the stack and old code can still be executed after you resume the
-kernel again. Look at this:
-
---------------------------------------------------------------
-
-	baz() {
-	}
-	bar() {
--		[...]
-+		[...]
-		baz();
--		[...]
-+		[...]
-	}
-	foo() {
-		bar();
-	}
-
---------------------------------------------------------------
-
-Now we stop_kernel on baz(). We don't check the stack. We patch bar().
-We resume, and baz() happily returns into bar(), executing old code.
-At the same time, another CPU can call bar(), getting new code.
-
-Stack checking at stop_kernel() time is required to keep the
-SWITCH_KERNEL part of the model.
-
-> > > So my perspective is that SWITCH_THREAD causes big headaches 10%
-> > > of the time, whereas SWITCH_KERNEL causes small headaches 1.8% of
-> > > the time, and big headaches 0.2% of the time :-)
-> > 
-> > My preferred way would be to go with SWITCH_THREAD for the simpler
-> > stuff and do a SWITCH_KERNEL for the 10% of complex patches.
-> 
-> You said above that neither SWITCH_KERNEL nor SWITCH_THREAD is much
-> simpler than the other for the 10% case.  So why would you use
-> SWITCH_KERNEL here?
-
-I think I was referring to the two data transformation methods and one
-not being simpler than the other.
-
-And since we're both looking at the TRANSFORM_ON_ACCESS model, there
-isn't much of a difference using SWITCH_THREAD or SWITCH_KERNEL for the
-data format modification cases indeed. It works the same.
-
-But there are a few (probably much less than 10%) cases like the locking
-one I used above, where SWITCH_THREAD just isn't going to cut it and for
-those I would need SWITCH_KERNEL or get very creative with refactoring
-the patch to do things differently.
-
-> > This because (LEAVE_PATCHED_SET) SWITCH_THREAD finishes much quicker.
-> > But I'm biased there. ;)
-> 
-> Why would LEAVE_PATCHED_SET SWITCH_THREAD finish much quicker than
-> LEAVE_PATCHED_SET SWITCH_KERNEL?  Wouldn't they be about the same?
-
-Because with LEAVE_PATCHED_SET SWITCH_THREAD you're waiting for each
-thread to leave the patched set and when they each have done that at
-least once, you're done. Even if some are already back within the set.
-
-With LEAVE_PATCHED_SET SWITCH_KERNEL, you have to find the perfect
-moment when all of the threads are outside of the patched set at the
-same time. Depending on how often the functions are used and how large
-the set is, reaching that moment will get harder.
-
+ 		printk_ratelimited_in_rcu(KERN_WARNING "BTRFS: lost page write due to "
+ 					  "I/O error on %s\n",
+-					  rcu_str_deref(device->name));
++					  rcu_string_dereference(device->name));
+ 		/* note, we dont' set_buffer_write_io_error because we have
+ 		 * our own ways of dealing with the IO errors
+ 		 */
+@@ -3247,7 +3247,7 @@ static int write_dev_flush(struct btrfs_device *device, int wait)
+ 
+ 		if (bio_flagged(bio, BIO_EOPNOTSUPP)) {
+ 			printk_in_rcu("BTRFS: disabling barriers on dev %s\n",
+-				      rcu_str_deref(device->name));
++				      rcu_string_dereference(device->name));
+ 			device->nobarriers = 1;
+ 		} else if (!bio_flagged(bio, BIO_UPTODATE)) {
+ 			ret = -EIO;
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index bf3f424..7435c64 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -11,6 +11,7 @@
+ #include <linux/pagevec.h>
+ #include <linux/prefetch.h>
+ #include <linux/cleancache.h>
++#include <linux/rcustring.h>
+ #include "extent_io.h"
+ #include "extent_map.h"
+ #include "ctree.h"
+@@ -18,7 +19,6 @@
+ #include "volumes.h"
+ #include "check-integrity.h"
+ #include "locking.h"
+-#include "rcu-string.h"
+ #include "backref.h"
+ 
+ static struct kmem_cache *extent_state_cache;
+@@ -2048,7 +2048,7 @@ int repair_io_failure(struct inode *inode, u64 start, u64 length, u64 logical,
+ 	printk_ratelimited_in_rcu(KERN_INFO
+ 				  "BTRFS: read error corrected: ino %llu off %llu (dev %s sector %llu)\n",
+ 				  btrfs_ino(inode), start,
+-				  rcu_str_deref(dev->name), sector);
++				  rcu_string_dereference(dev->name), sector);
+ 	bio_put(bio);
+ 	return 0;
+ }
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 4399f0c..9ebc3cc 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -44,6 +44,7 @@
+ #include <linux/uuid.h>
+ #include <linux/btrfs.h>
+ #include <linux/uaccess.h>
++#include <linux/rcustring.h>
+ #include "ctree.h"
+ #include "disk-io.h"
+ #include "transaction.h"
+@@ -53,7 +54,6 @@
+ #include "locking.h"
+ #include "inode-map.h"
+ #include "backref.h"
+-#include "rcu-string.h"
+ #include "send.h"
+ #include "dev-replace.h"
+ #include "props.h"
+@@ -1596,7 +1596,7 @@ static noinline int btrfs_ioctl_resize(struct file *file,
+ 	new_size *= root->sectorsize;
+ 
+ 	printk_in_rcu(KERN_INFO "BTRFS: new size for %s is %llu\n",
+-		      rcu_str_deref(device->name), new_size);
++		      rcu_string_dereference(device->name), new_size);
+ 
+ 	if (new_size > old_size) {
+ 		trans = btrfs_start_transaction(root, 0);
+diff --git a/fs/btrfs/raid56.c b/fs/btrfs/raid56.c
+index 6a41631..66944b9 100644
+--- a/fs/btrfs/raid56.c
++++ b/fs/btrfs/raid56.c
+@@ -32,6 +32,7 @@
+ #include <linux/list_sort.h>
+ #include <linux/raid/xor.h>
+ #include <linux/vmalloc.h>
++#include <linux/rcustring.h>
+ #include <asm/div64.h>
+ #include "ctree.h"
+ #include "extent_map.h"
+@@ -42,7 +43,6 @@
+ #include "raid56.h"
+ #include "async-thread.h"
+ #include "check-integrity.h"
+-#include "rcu-string.h"
+ 
+ /* set when additional merges to this rbio are not allowed */
+ #define RBIO_RMW_LOCKED_BIT	1
+diff --git a/fs/btrfs/rcu-string.h b/fs/btrfs/rcu-string.h
+deleted file mode 100644
+index 9e111e4..0000000
+--- a/fs/btrfs/rcu-string.h
++++ /dev/null
+@@ -1,56 +0,0 @@
+-/*
+- * Copyright (C) 2012 Red Hat.  All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public
+- * License v2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public
+- * License along with this program; if not, write to the
+- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+- * Boston, MA 021110-1307, USA.
+- */
+-
+-struct rcu_string {
+-	struct rcu_head rcu;
+-	char str[0];
+-};
+-
+-static inline struct rcu_string *rcu_string_strdup(const char *src, gfp_t mask)
+-{
+-	size_t len = strlen(src) + 1;
+-	struct rcu_string *ret = kzalloc(sizeof(struct rcu_string) +
+-					 (len * sizeof(char)), mask);
+-	if (!ret)
+-		return ret;
+-	strncpy(ret->str, src, len);
+-	return ret;
+-}
+-
+-static inline void rcu_string_free(struct rcu_string *str)
+-{
+-	if (str)
+-		kfree_rcu(str, rcu);
+-}
+-
+-#define printk_in_rcu(fmt, ...) do {	\
+-	rcu_read_lock();		\
+-	printk(fmt, __VA_ARGS__);	\
+-	rcu_read_unlock();		\
+-} while (0)
+-
+-#define printk_ratelimited_in_rcu(fmt, ...) do {	\
+-	rcu_read_lock();				\
+-	printk_ratelimited(fmt, __VA_ARGS__);		\
+-	rcu_read_unlock();				\
+-} while (0)
+-
+-#define rcu_str_deref(rcu_str) ({				\
+-	struct rcu_string *__str = rcu_dereference(rcu_str);	\
+-	__str->str;						\
+-})
+diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
+index efa0831..0a89364 100644
+--- a/fs/btrfs/scrub.c
++++ b/fs/btrfs/scrub.c
+@@ -18,6 +18,7 @@
+ 
+ #include <linux/blkdev.h>
+ #include <linux/ratelimit.h>
++#include <linux/rcustring.h>
+ #include "ctree.h"
+ #include "volumes.h"
+ #include "disk-io.h"
+@@ -27,7 +28,6 @@
+ #include "extent_io.h"
+ #include "dev-replace.h"
+ #include "check-integrity.h"
+-#include "rcu-string.h"
+ #include "raid56.h"
+ 
+ /*
+@@ -512,7 +512,8 @@ static int scrub_print_warning_inode(u64 inum, u64 offset, u64 root,
+ 		printk_in_rcu(KERN_WARNING "BTRFS: %s at logical %llu on dev "
+ 			"%s, sector %llu, root %llu, inode %llu, offset %llu, "
+ 			"length %llu, links %u (path: %s)\n", swarn->errstr,
+-			swarn->logical, rcu_str_deref(swarn->dev->name),
++			swarn->logical,
++			rcu_string_dereference(swarn->dev->name),
+ 			(unsigned long long)swarn->sector, root, inum, offset,
+ 			min(isize - offset, (u64)PAGE_SIZE), nlink,
+ 			(char *)(unsigned long)ipath->fspath->val[i]);
+@@ -524,7 +525,7 @@ err:
+ 	printk_in_rcu(KERN_WARNING "BTRFS: %s at logical %llu on dev "
+ 		"%s, sector %llu, root %llu, inode %llu, offset %llu: path "
+ 		"resolving failed with ret=%d\n", swarn->errstr,
+-		swarn->logical, rcu_str_deref(swarn->dev->name),
++		swarn->logical, rcu_string_dereference(swarn->dev->name),
+ 		(unsigned long long)swarn->sector, root, inum, offset, ret);
+ 
+ 	free_ipath(ipath);
+@@ -582,7 +583,7 @@ static void scrub_print_warning(const char *errstr, struct scrub_block *sblock)
+ 				"BTRFS: %s at logical %llu on dev %s, "
+ 				"sector %llu: metadata %s (level %d) in tree "
+ 				"%llu\n", errstr, swarn.logical,
+-				rcu_str_deref(dev->name),
++				rcu_string_dereference(dev->name),
+ 				(unsigned long long)swarn.sector,
+ 				ref_level ? "node" : "leaf",
+ 				ret < 0 ? -1 : ref_level,
+@@ -781,7 +782,7 @@ out:
+ 			num_uncorrectable_read_errors);
+ 		printk_ratelimited_in_rcu(KERN_ERR "BTRFS: "
+ 		    "unable to fixup (nodatasum) error at logical %llu on dev %s\n",
+-			fixup->logical, rcu_str_deref(fixup->dev->name));
++		    fixup->logical, rcu_string_dereference(fixup->dev->name));
+ 	}
+ 
+ 	btrfs_free_path(path);
+@@ -1183,7 +1184,7 @@ corrected_error:
+ 			spin_unlock(&sctx->stat_lock);
+ 			printk_ratelimited_in_rcu(KERN_ERR
+ 				"BTRFS: fixed up error at logical %llu on dev %s\n",
+-				logical, rcu_str_deref(dev->name));
++				logical, rcu_string_dereference(dev->name));
+ 		}
+ 	} else {
+ did_not_correct_error:
+@@ -1192,7 +1193,7 @@ did_not_correct_error:
+ 		spin_unlock(&sctx->stat_lock);
+ 		printk_ratelimited_in_rcu(KERN_ERR
+ 			"BTRFS: unable to fixup (regular) error at logical %llu on dev %s\n",
+-			logical, rcu_str_deref(dev->name));
++			logical, rcu_string_dereference(dev->name));
+ 	}
+ 
+ out:
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 54bd91e..4df6a26 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -42,6 +42,7 @@
+ #include <linux/cleancache.h>
+ #include <linux/ratelimit.h>
+ #include <linux/btrfs.h>
++#include <linux/rcustring.h>
+ #include "delayed-inode.h"
+ #include "ctree.h"
+ #include "disk-io.h"
+@@ -54,7 +55,6 @@
+ #include "volumes.h"
+ #include "export.h"
+ #include "compression.h"
+-#include "rcu-string.h"
+ #include "dev-replace.h"
+ #include "free-space-cache.h"
+ #include "backref.h"
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index d47289c..2ad043d 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -27,6 +27,7 @@
+ #include <linux/kthread.h>
+ #include <linux/raid/pq.h>
+ #include <linux/semaphore.h>
++#include <linux/rcustring.h>
+ #include <asm/div64.h>
+ #include "ctree.h"
+ #include "extent_map.h"
+@@ -37,7 +38,6 @@
+ #include "raid56.h"
+ #include "async-thread.h"
+ #include "check-integrity.h"
+-#include "rcu-string.h"
+ #include "math.h"
+ #include "dev-replace.h"
+ #include "sysfs.h"
+@@ -6448,7 +6448,7 @@ static int update_dev_stat_item(struct btrfs_trans_handle *trans,
+ 	if (ret < 0) {
+ 		printk_in_rcu(KERN_WARNING "BTRFS: "
+ 			"error %d while searching for dev_stats item for device %s!\n",
+-			      ret, rcu_str_deref(device->name));
++			      ret, rcu_string_dereference(device->name));
+ 		goto out;
+ 	}
+ 
+@@ -6459,7 +6459,7 @@ static int update_dev_stat_item(struct btrfs_trans_handle *trans,
+ 		if (ret != 0) {
+ 			printk_in_rcu(KERN_WARNING "BTRFS: "
+ 				"delete too small dev_stats item for device %s failed %d!\n",
+-				      rcu_str_deref(device->name), ret);
++				rcu_string_dereference(device->name), ret);
+ 			goto out;
+ 		}
+ 		ret = 1;
+@@ -6472,8 +6472,8 @@ static int update_dev_stat_item(struct btrfs_trans_handle *trans,
+ 					      &key, sizeof(*ptr));
+ 		if (ret < 0) {
+ 			printk_in_rcu(KERN_WARNING "BTRFS: "
+-					  "insert dev_stats item for device %s failed %d!\n",
+-				      rcu_str_deref(device->name), ret);
++				      "insert dev_stats item for device %s failed %d!\n",
++				      rcu_string_dereference(device->name), ret);
+ 			goto out;
+ 		}
+ 	}
+@@ -6529,7 +6529,7 @@ static void btrfs_dev_stat_print_on_error(struct btrfs_device *dev)
+ 		return;
+ 	printk_ratelimited_in_rcu(KERN_ERR "BTRFS: "
+ 			   "bdev %s errs: wr %u, rd %u, flush %u, corrupt %u, gen %u\n",
+-			   rcu_str_deref(dev->name),
++			   rcu_string_dereference(dev->name),
+ 			   btrfs_dev_stat_read(dev, BTRFS_DEV_STAT_WRITE_ERRS),
+ 			   btrfs_dev_stat_read(dev, BTRFS_DEV_STAT_READ_ERRS),
+ 			   btrfs_dev_stat_read(dev, BTRFS_DEV_STAT_FLUSH_ERRS),
+@@ -6549,7 +6549,7 @@ static void btrfs_dev_stat_print_on_load(struct btrfs_device *dev)
+ 
+ 	printk_in_rcu(KERN_INFO "BTRFS: "
+ 		   "bdev %s errs: wr %u, rd %u, flush %u, corrupt %u, gen %u\n",
+-	       rcu_str_deref(dev->name),
++	       rcu_string_dereference(dev->name),
+ 	       btrfs_dev_stat_read(dev, BTRFS_DEV_STAT_WRITE_ERRS),
+ 	       btrfs_dev_stat_read(dev, BTRFS_DEV_STAT_READ_ERRS),
+ 	       btrfs_dev_stat_read(dev, BTRFS_DEV_STAT_FLUSH_ERRS),
+diff --git a/include/linux/rcustring.h b/include/linux/rcustring.h
+new file mode 100644
+index 0000000..33f146a
+--- /dev/null
++++ b/include/linux/rcustring.h
+@@ -0,0 +1,95 @@
++/*
++ * RCU-friendly strings
++ *
++ * Copyright (C) 2012 Red Hat.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, you can access it online at
++ * http://www.gnu.org/licenses/gpl-2.0.html.
++ */
++
++#ifndef _LINUX_RCUSTRING_H
++#define _LINUX_RCUSTRING_H
++
++#include <linux/types.h>
++#include <linux/compiler.h>
++#include <linux/printk.h>
++#include <linux/rcupdate.h>
++#include <linux/slab.h>
++
++struct rcu_string {
++	struct rcu_head rcu;
++	char str[0];
++};
++
++/**
++ * rcu_string_strdup() - create an RCU string from a string
++ * @src: The string to copy
++ * @flags: Flags for kmalloc
++ */
++static inline struct rcu_string __rcu *rcu_string_strdup(const char *src,
++							 gfp_t flags)
++{
++	struct rcu_string *ret;
++	size_t len = strlen(src) + 1;
++
++	ret = kmalloc(sizeof(*ret) + (len * sizeof(char)), flags);
++	if (!ret)
++		return ret;
++	memcpy(ret->str, src, len);
++	return ret;
++}
++
++/**
++ * rcu_string_free() - free an RCU string
++ * @str: The string
++ */
++static inline void rcu_string_free(struct rcu_string __rcu *str)
++{
++	if (str)
++		kfree_rcu(str, rcu);
++}
++
++/*
++ * rcu_string_dereference() - dereference an RCU string
++ * @str: The string
++ *
++ * Like rcu_dereference, this must be done in an RCU critical section.
++ */
++static inline char *rcu_string_dereference(struct rcu_string __rcu *rcu_str)
++{
++	return rcu_dereference(rcu_str)->str;
++}
++
++/**
++ * printk_in_rcu() - printk in an RCU read-side critical section
++ */
++#define printk_in_rcu(fmt, ...)			\
++	do {					\
++		rcu_read_lock();		\
++		printk(fmt, __VA_ARGS__);	\
++		rcu_read_unlock();		\
++	} while (0)
++
++/**
++ * printk_ratelimited_in_rcu() - printk_ratelimited in an RCU read-side critical
++ * section
++ */
++#define printk_ratelimited_in_rcu(fmt, ...)		\
++	do {						\
++		rcu_read_lock();			\
++		printk_ratelimited(fmt, __VA_ARGS__);	\
++		rcu_read_unlock();			\
++	} while (0)
++
++#endif
 -- 
-Vojtech Pavlik
-Director SUSE Labs
+2.1.3
+
