@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120AbaKHS7b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:59:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51298 "EHLO
+	id S1754139AbaKHS7q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:59:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989AbaKHS72 (ORCPT
+	with ESMTP id S1753892AbaKHS7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:59:28 -0500
-Date: Sat, 8 Nov 2014 10:58:12 -0800
+	Sat, 8 Nov 2014 13:59:45 -0500
+Date: Sat, 8 Nov 2014 10:58:29 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PULL] TTY/Serial fixes for 3.18-rc3
-Message-ID: <20141108185812.GA2200@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PULL] Staging driver fixes for 3.18-rc4
+Message-ID: <20141108185829.GA2246@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,42 +28,51 @@ The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.18-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.18-rc4
 
-for you to fetch changes up to c4dc304677e8d566572c4738d95c48be150c6606:
+for you to fetch changes up to bce20b2396626301c65e08306364bce9a7505ae5:
 
-  tty: Fix pty master poll() after slave closes v2 (2014-11-06 12:23:36 -0800)
+  Merge tag 'iio-fixes-for-3.18b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-11-05 11:30:45 -0800)
 
 ----------------------------------------------------------------
-TTY/Serial fixes for 3.18-rc4
+Staging driver fixes for 3.18-rc4
 
-Here are some tiny serial/tty fixes for 3.18-rc4 that resolve some
-reported issues.
+Here are some staging/iio fixes for 3.18-rc4.
+
+Nothing major, just a few bugfixes of things that have been reported.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Francesco Ruggeri (1):
-      tty: Fix pty master poll() after slave closes v2
+Dan Murphy (1):
+      iio: tsl4531: Fix compiler error when CONFIG_PM_OPS is not defined
 
-Imre Deak (1):
-      tty/vt: don't set font mappings on vc not supporting this
+Daniel Baluta (1):
+      io: accel: kxcjk-1013: Fix iio_event_spec direction
 
-Jingchang Lu (1):
-      serial: of-serial: fix uninitialized kmalloc variable
+Fabio Estevam (1):
+      iio: adc: mxs-lradc: Disable the clock on probe failure
 
-Matthias Brugger (1):
-      tty: serial: 8250_mtk: Fix quot calculation
+George McCollister (1):
+      iio: as3935: allocate correct iio_device size
 
-Peter Hurley (3):
-      serial: Fix divide-by-zero fault in uart_get_divisor()
-      tty: Fix high cpu load if tty is unreleaseable
-      tty: Prevent "read/write wait queue active!" log flooding
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.18b' of git://git.kernel.org/.../jic23/iio into staging-linus
 
- drivers/tty/n_tty.c                |  9 +++++++--
- drivers/tty/serial/8250/8250_mtk.c |  2 +-
- drivers/tty/serial/of_serial.c     |  2 +-
- drivers/tty/serial/serial_core.c   |  2 +-
- drivers/tty/tty_io.c               | 15 ++++++++++++---
- drivers/tty/vt/consolemap.c        |  7 +++++++
- 6 files changed, 29 insertions(+), 8 deletions(-)
+Lars-Peter Clausen (5):
+      staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
+      staging:iio:ad5933: Drop "raw" from channel names
+      staging:iio:ade7758: Fix NULL pointer deref when enabling buffer
+      staging:iio:ade7758: Fix check if channels are enabled in prenable
+      staging:iio:ade7758: Remove "raw" from channel name
+
+Robin van der Gracht (1):
+      iio: st_sensors: Fix buffer copy
+
+ drivers/iio/accel/kxcjk-1013.c           |  2 +-
+ drivers/iio/light/tsl4531.c              |  7 ++--
+ drivers/iio/proximity/as3935.c           |  2 +-
+ drivers/staging/iio/meter/ade7758.h      |  1 -
+ drivers/staging/iio/meter/ade7758_core.c | 57 ++++++--------------------------
+ drivers/staging/iio/meter/ade7758_ring.c |  5 ++-
+ 6 files changed, 20 insertions(+), 54 deletions(-)
