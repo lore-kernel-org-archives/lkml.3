@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaKHOCx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 09:02:53 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52017 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744AbaKHOCv (ORCPT
+	id S1753829AbaKHON5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 09:13:57 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:40131 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaKHONy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 09:02:51 -0500
-Date: Sat, 8 Nov 2014 15:02:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] irq updates for 3.18
-Message-ID: <alpine.DEB.2.11.1411081458410.10721@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 8 Nov 2014 09:13:54 -0500
+X-AuditID: cbfec7f5-b7f956d000005ed7-cc-545e251fff58
+From: Karol Wrona <k.wrona@samsung.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <k.wrona@samsung.com>
+Subject: [PATCH 0/5] iio: Add sensorhub driver
+Date: Sat, 08 Nov 2014 15:13:11 +0100
+Message-id: <1415455996-20871-1-git-send-email-k.wrona@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOJMWRmVeSWpSXmKPExsVy+t/xK7ryqnEhBi0fhSz+TjrGbrFxxnpW
+	iwdNq5gsTi3bz2RxtukNu8W8I+9YLC7vmsPmwO7x+9ckRo9NqzrZPPq2rGL0+LxJLoAlissm
+	JTUnsyy1SN8ugStjwew+5oLXYhVTLh5lbWD8INDFyMkhIWAiMbdvMiOELSZx4d56ti5GLg4h
+	gaWMEofutEI5fUwSm2ZMZwWpYhNQl2jesZgZJCEi0MgocXNxPxtIglmgg1FiUTtXFyMHh7CA
+	nsTzRimQMIuAqsTJhdvZQMK8As4SU/+VgpgSAgoScybZTGDkXsDIsIpRNLU0uaA4KT3XSK84
+	Mbe4NC9dLzk/dxMjJDC+7mBceszqEKMAB6MSD++LSbEhQqyJZcWVuYcYJTiYlUR4e88DhXhT
+	EiurUovy44tKc1KLDzEycXBKNTCeibpR4GC8g+fCiZWvFtewBG5wvDR/XzWzZEpG0oHQyGkn
+	FvsGd846uOdRUaTbaoXtSk2xYrN9ddTs92+9/OvXnZlBoWm8TA/iu2IDrB+XfjM69Xvu9byW
+	foVJDSseFoU3uh9edDg0x9q/NNR381fdl0fedSevjtiwJPJrzT/PFR+3bZv1n+eVEktxRqKh
+	FnNRcSIAszTCl+oBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This patchset adds support for sensorhub. It is an external mcu which
+manages and collects data from several sensors i.e. on Galaxy Gear 2 watch.
 
-please pull the latest irq-urgent-for-linus git tree from:
+It contains:
+- spi driver for sensorhub device
+- DT binding for the device
+- IIO common utils for ssp sensors (iio kfifo setup helpers, pre/post callbacks)
+- IIO accelerometer driver
+- IIO gyroscope driver
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+For now the driver supports "traditional" sensors but new ones types are
+intended to be used.
 
-Two fixlets for the armada SoC interrupt controller.
+It depends on:
+[PATCH v4 1/1] misc: st32fwu: Add stm32 upgrade protocol handling
+which is used to firmware upgrade.
 
-Thanks,
+>From RFC:
+  Fixes after Jonathan rewiev
 
-	tglx
+Karol Wrona (5):
+  misc: sensorhub: Add sensorhub driver
+  sensorhub: Add sensorhub bindings
+  iio: sensorhub: Add sensorhub iio commons
+  iio: sensorhub: Add sensorhub accelerometer sensor
+  iio: sensorhub: Add sensorhub gyroscope sensor
 
------------------->
-Grzegorz Jaszczyk (2):
-      irqchip: armada-370-xp: Fix MSI interrupt handling
-      irqchip: armada-370-xp: Fix MPIC interrupt handling
+ .../devicetree/bindings/misc/sensorhub.txt         |   46 ++
+ drivers/iio/accel/Makefile                         |    2 +
+ drivers/iio/accel/ssp_accel_sensor.c               |  211 +++++
+ drivers/iio/common/Kconfig                         |    1 +
+ drivers/iio/common/Makefile                        |    1 +
+ drivers/iio/common/ssp_sensors/Kconfig             |   13 +
+ drivers/iio/common/ssp_sensors/Makefile            |    5 +
+ drivers/iio/common/ssp_sensors/ssp_iio.c           |   81 ++
+ drivers/iio/common/ssp_sensors/ssp_iio_sensor.h    |   59 ++
+ drivers/iio/gyro/Makefile                          |    2 +
+ drivers/iio/gyro/ssp_gyro_sensor.c                 |  209 +++++
+ drivers/misc/Kconfig                               |    1 +
+ drivers/misc/Makefile                              |    1 +
+ drivers/misc/sensorhub/Kconfig                     |   13 +
+ drivers/misc/sensorhub/Makefile                    |    6 +
+ drivers/misc/sensorhub/ssp.h                       |  279 +++++++
+ drivers/misc/sensorhub/ssp_dev.c                   |  825 ++++++++++++++++++++
+ drivers/misc/sensorhub/ssp_spi.c                   |  639 +++++++++++++++
+ include/linux/iio/common/ssp_sensors.h             |   80 ++
+ 19 files changed, 2474 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/misc/sensorhub.txt
+ create mode 100644 drivers/iio/accel/ssp_accel_sensor.c
+ create mode 100644 drivers/iio/common/ssp_sensors/Kconfig
+ create mode 100644 drivers/iio/common/ssp_sensors/Makefile
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio.c
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
+ create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+ create mode 100644 drivers/misc/sensorhub/Kconfig
+ create mode 100644 drivers/misc/sensorhub/Makefile
+ create mode 100644 drivers/misc/sensorhub/ssp.h
+ create mode 100644 drivers/misc/sensorhub/ssp_dev.c
+ create mode 100644 drivers/misc/sensorhub/ssp_spi.c
+ create mode 100644 include/linux/iio/common/ssp_sensors.h
 
+-- 
+1.7.9.5
 
- drivers/irqchip/irq-armada-370-xp.c | 23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 3e238cd049e6..6a2e168c3ab0 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -43,6 +43,7 @@
- #define ARMADA_370_XP_INT_CLEAR_ENABLE_OFFS	(0x34)
- #define ARMADA_370_XP_INT_SOURCE_CTL(irq)	(0x100 + irq*4)
- #define ARMADA_370_XP_INT_SOURCE_CPU_MASK	0xF
-+#define ARMADA_370_XP_INT_IRQ_FIQ_MASK(cpuid)	((BIT(0) | BIT(8)) << cpuid)
- 
- #define ARMADA_370_XP_CPU_INTACK_OFFS		(0x44)
- #define ARMADA_375_PPI_CAUSE			(0x10)
-@@ -406,19 +407,29 @@ static void armada_370_xp_mpic_handle_cascade_irq(unsigned int irq,
- 						  struct irq_desc *desc)
- {
- 	struct irq_chip *chip = irq_get_chip(irq);
--	unsigned long irqmap, irqn;
-+	unsigned long irqmap, irqn, irqsrc, cpuid;
- 	unsigned int cascade_irq;
- 
- 	chained_irq_enter(chip, desc);
- 
- 	irqmap = readl_relaxed(per_cpu_int_base + ARMADA_375_PPI_CAUSE);
--
--	if (irqmap & BIT(0)) {
--		armada_370_xp_handle_msi_irq(NULL, true);
--		irqmap &= ~BIT(0);
--	}
-+	cpuid = cpu_logical_map(smp_processor_id());
- 
- 	for_each_set_bit(irqn, &irqmap, BITS_PER_LONG) {
-+		irqsrc = readl_relaxed(main_int_base +
-+				       ARMADA_370_XP_INT_SOURCE_CTL(irqn));
-+
-+		/* Check if the interrupt is not masked on current CPU.
-+		 * Test IRQ (0-1) and FIQ (8-9) mask bits.
-+		 */
-+		if (!(irqsrc & ARMADA_370_XP_INT_IRQ_FIQ_MASK(cpuid)))
-+			continue;
-+
-+		if (irqn == 1) {
-+			armada_370_xp_handle_msi_irq(NULL, true);
-+			continue;
-+		}
-+
- 		cascade_irq = irq_find_mapping(armada_370_xp_mpic_domain, irqn);
- 		generic_handle_irq(cascade_irq);
- 	}
