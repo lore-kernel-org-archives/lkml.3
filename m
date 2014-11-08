@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaKHGRU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 01:17:20 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:55937 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750811AbaKHGRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 01:17:19 -0500
-Date: Sat, 8 Nov 2014 08:16:58 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Calvin Owens <calvinowens@fb.com>
-cc: Simon Horman <horms@verge.net.au>, Wensong Zhang <wensong@linux-vs.org>,
-        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, agartrell@fb.com, kernel-team@fb.com
-Subject: Re: [PATCH] ipvs: Keep skb->sk when allocating headroom on tunnel
- xmit
-In-Reply-To: <545D43BD.8030203@fb.com>
-Message-ID: <alpine.LFD.2.11.1411080814300.2081@ja.home.ssi.bg>
-References: <1415147860-11389-1-git-send-email-calvinowens@fb.com> <alpine.LFD.2.11.1411051048540.1631@ja.home.ssi.bg> <545D43BD.8030203@fb.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753475AbaKHGRf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 01:17:35 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47518 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125AbaKHGRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 01:17:33 -0500
+Message-ID: <545DB57B.7040802@wwwdotorg.org>
+Date: Fri, 07 Nov 2014 23:17:31 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Gordon Hollingworth <gordon@holliweb.co.uk>
+CC: Noralf Tronnes <notro@tronnes.org>,
+        Matthias Klein <matthias.klein@linux.com>,
+        "linux-rpi-kernel@lists.infradead.org" 
+	<linux-rpi-kernel@lists.infradead.org>,
+        lee@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: bcm2835: add device tree for Raspberry Pi model
+ B+
+References: <1415231123-920-1-git-send-email-matthias.klein@linux.com>	<545BCDBE.9020200@tronnes.org>	<545C4904.1010402@wwwdotorg.org>	<545CF15A.1050601@tronnes.org>	<CAE8Q9tBDxq9W=Vh0LRCRNR+Dj+5PrWyzK+GBdMDM=1kq84mFTA@mail.gmail.com> <CAE8Q9tC7jowebEF3OgRu+qHemV7v_d3o6ZbCPQMbL8_7LR4Ewg@mail.gmail.com>
+In-Reply-To: <CAE8Q9tC7jowebEF3OgRu+qHemV7v_d3o6ZbCPQMbL8_7LR4Ewg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/07/2014 10:12 AM, Gordon Hollingworth wrote:
+> Resend: HTML less...
+> On 7 November 2014 17:07, Gordon Hollingworth <gordon@holliweb.co.uk> wrote:
+>> On 7 November 2014 16:20, Noralf Tronnes <notro@tronnes.org> wrote:
+...
+>>> From the HAT specification:
+>>> GPIO pins ID_SC and ID_SD (GPIO0 and GPIO1) are reserved for use solely
+>>> for board detection / identification. The only allowed connections to
+>>> the ID_ pins are an ID EEPROM plus 3.9K pull up resistors. Do not connect
+>>> anything else to these pins!
+>>>
+>>> Ref:
+>>> https://github.com/raspberrypi/hats/blob/master/designguide.md#gpio-requirements
+>>>
+>>> I asked in the forum if I could use an app for writing to the eeprom to
+>>> change things like display rotation in the DT fragment, but was told that this
+>>> was a no-no. i2c0 is also used together with the camera port, which is then
+>>> controlled by the firmware.
+>>
+>> The idea with the HAT specification is to provide a mechanism for hardware
+>> developers to add their drivers and configuration in such a way as to avoid
+>> 'special' kernel builds for particular bits of hardware (this was a problem
+>> with a number of DAC add on boards for the Pi)
 
-	Hello,
+Have you considered using the (recently merged upstream) DT overlay
+mechanism instead? In this case, the board EEPROM would simply provide a
+unique ID for the board. Linux would obtain this ID somehow (perhaps
+directly reading the EEPROM on boot, or perhaps having some special DT
+node indicating which device was present if only the VC firmware can
+access the EEPROM). The ID then gets used to look up a DT overlay file
+that the kernel loads and merges into its DT at run-time. The benefit
+here is that the DT overlay is a file in the filesystem, and can be
+easily modified or replaced to fix issues, especially when first
+developing that DT for a new HAT. This is all based on the way the
+BeagleBone Black handles its capes. Having RPi work in a standard way
+that's also used on other boards leverages people's knowledge/experience
+across different HW stacks. Standards are good!
 
-On Fri, 7 Nov 2014, Calvin Owens wrote:
-
-> On 11/05/2014 01:21 AM, Julian Anastasov wrote:
-> >
-> >  Hello,
-> >
-> > On Tue, 4 Nov 2014, Calvin Owens wrote:
-> >
-> > > ip_vs_prepare_tunneled_skb() ignores ->sk when allocating a new
-> > > skb, either unconditionally setting ->sk to NULL or allowing
-> > > the uninitialized ->sk from a newly allocated skb to leak through
-> > > to the caller.
-> > >
-> > > This patch properly copies ->sk and increments its reference count.
-> > >
-> > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> >
-> > 	Good catch. Please, extend your patch to
-> > fix also the second place that has such error,
-> > ip_vs_tunnel_xmit_v6. This call is missing from long time,
-> > it was not needed. But commits that allow skb->sk (local
-> > clients) already need it, eg.
-> 
-> I'm not sure where exactly you mean: ip_vs_tunnel_xmit_v6() calls
-> ip_vs_prepare_tunneled_skb() to do the allocation, so this patch covers that
-> case.
-> 
-> In older versions of the kernel, ip_vs_tunnel_xmit_v6() does it directly,
-> could that be what you're looking at?
-
-	Sorry, it seems I was checking old branch.
-
-	Simon, please apply.
-
-Acked-by: Julian Anastasov <ja@ssi.bg>
-
-> > - f2428ed5e7bc89c7 ("ipvs: load balance ipv6 connections from a local
-> > process"), 2.6.28
-> > - 4856c84c1358b798 ("ipvs: load balance IPv4 connections from a local
-> > process"), 2.6.28
-> >
-> > > ---
-> > >   net/netfilter/ipvs/ip_vs_xmit.c | 2 ++
-> > >   1 file changed, 2 insertions(+)
-> > >
-> > > diff --git a/net/netfilter/ipvs/ip_vs_xmit.c
-> > > b/net/netfilter/ipvs/ip_vs_xmit.c
-> > > index 437a366..bd90bf8 100644
-> > > --- a/net/netfilter/ipvs/ip_vs_xmit.c
-> > > +++ b/net/netfilter/ipvs/ip_vs_xmit.c
-> > > @@ -846,6 +846,8 @@ ip_vs_prepare_tunneled_skb(struct sk_buff *skb, int
-> > > skb_af,
-> > >     new_skb = skb_realloc_headroom(skb, max_headroom);
-> > >     if (!new_skb)
-> > >   			goto error;
-> > > +		if (skb->sk)
-> > > +			skb_set_owner_w(new_skb, skb->sk);
-> > >     consume_skb(skb);
-> > >     skb = new_skb;
-> > >    }
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+If I want to use U-Boot as a bootloader on the Pi, is there a VC
+firmware mailbox message that the firmware can use to read the content
+of the EEPROM (or the VC firmware's cached copy of it?) Or, must U-Boot
+be modified to accept a DT, extract information from it, and then modify
+the DT it subsequently passes to the kernel based on the DT it was passed?
