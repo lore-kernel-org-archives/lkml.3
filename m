@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaKHTIM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 14:08:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51331 "EHLO
+	id S1754085AbaKHTIc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 14:08:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbaKHTIK (ORCPT
+	with ESMTP id S1753993AbaKHTIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 14:08:10 -0500
-Date: Sat, 8 Nov 2014 11:06:55 -0800
+	Sat, 8 Nov 2014 14:08:31 -0500
+Date: Sat, 8 Nov 2014 11:07:16 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Kweh Hock Leong <hock.leong.kweh@intel.com>
 Cc: Matt Fleming <matt.fleming@intel.com>, Ming Lei <ming.lei@canonical.com>,
         Sam Protsenko <semen.protsenko@linaro.org>,
         LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
         Ong Boon Leong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH v2 1/3] firmware loader: Introduce new API -
- request_firmware_abort()
-Message-ID: <20141108190655.GA2638@kroah.com>
+Subject: Re: [PATCH v2 2/3] firmware loader: fix hung task warning dump
+Message-ID: <20141108190716.GB2638@kroah.com>
 References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
- <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-3-git-send-email-hock.leong.kweh@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414984030-13859-2-git-send-email-hock.leong.kweh@intel.com>
+In-Reply-To: <1414984030-13859-3-git-send-email-hock.leong.kweh@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 11:07:08AM +0800, Kweh Hock Leong wrote:
+On Mon, Nov 03, 2014 at 11:07:09AM +0800, Kweh Hock Leong wrote:
 > From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
 > 
-> Besides aborting through user helper interface, a new API
-> request_firmware_abort() allows kernel driver module to abort the
-> request_firmware() / request_firmware_nowait() when they are no
-> longer needed. It is useful for cancelling an outstanding firmware
-> load if initiated from inside a module where that module is in the
-> process of being unloaded, since the unload function may not have
-> a handle to the struct firmware_buf.
+> When using request_firmware_nowait() with FW_ACTION_NOHOTPLUG param to
+> expose user helper interface, if the user do not react immediately, after
+> 120 seconds there will be a hung task warning message dumped as below:
 > 
-> Note for people who use request_firmware_nowait():
-> You are required to do your own synchronization after you call
-> request_firmware_abort() in order to continue unloading the
-> module. The example synchronization code shows below:
+> [ 3000.784235] INFO: task kworker/0:0:8259 blocked for more than 120 seconds.
+> [ 3000.791281]       Tainted: G            E 3.16.0-rc1-yocto-standard #41
+> [ 3000.798082] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 3000.806072] kworker/0:0     D cd0075c8     0  8259      2 0x00000000
+> [ 3000.812765] Workqueue: events request_firmware_work_func
+> [ 3000.818253]  cd375e18 00000046 0000000e cd0075c8 000000f0 cd40ea00 cd375fec 1b883e89
+> [ 3000.826374]  0000026b cd40ea00 80000000 00000001 cd0075c8 00000000 cd375de4 c119917f
+> [ 3000.834492]  cd563360 cd375df4 c119a0ab cd563360 00000000 cd375e24 c119a1d6 00000000
+> [ 3000.842616] Call Trace:
+> [ 3000.845252]  [<c119917f>] ? kernfs_next_descendant_post+0x3f/0x50
+> [ 3000.851543]  [<c119a0ab>] ? kernfs_activate+0x6b/0xc0
+> [ 3000.856790]  [<c119a1d6>] ? kernfs_add_one+0xd6/0x130
+> [ 3000.862047]  [<c15fdb02>] schedule+0x22/0x60
+> [ 3000.866548]  [<c15fd195>] schedule_timeout+0x175/0x1d0
+> [ 3000.871887]  [<c119b391>] ? __kernfs_create_file+0x71/0xa0
+> [ 3000.877574]  [<c119bb9a>] ? sysfs_add_file_mode_ns+0xaa/0x180
+> [ 3000.883533]  [<c15fe84f>] wait_for_completion+0x6f/0xb0
+> [ 3000.888961]  [<c1065200>] ? wake_up_process+0x40/0x40
+> [ 3000.894219]  [<c13cb600>] _request_firmware+0x750/0x9f0
+> [ 3000.899666]  [<c1382a7f>] ? n_tty_receive_buf2+0x1f/0x30
+> [ 3000.905200]  [<c13cba02>] request_firmware_work_func+0x22/0x50
+> [ 3000.911235]  [<c10550d2>] process_one_work+0x122/0x380
+> [ 3000.916571]  [<c1055859>] worker_thread+0xf9/0x470
+> [ 3000.921555]  [<c1055760>] ? create_and_start_worker+0x50/0x50
+> [ 3000.927497]  [<c1055760>] ? create_and_start_worker+0x50/0x50
+> [ 3000.933448]  [<c105a5ff>] kthread+0x9f/0xc0
+> [ 3000.937850]  [<c15ffd40>] ret_from_kernel_thread+0x20/0x30
+> [ 3000.943548]  [<c105a560>] ? kthread_worker_fn+0x100/0x100
 > 
-> while (THIS_MODULE && module_refcount(THIS_MODULE))
-> 	msleep(20);
+> This patch change the wait_for_completion() function call to
+> wait_for_completion_interruptible() function call for solving the issue.
+> 
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-As others have pointed out, this isn't ok, and is totally racy and
-should never end up in a driver.  Never mess with THIS_MODULE from
-within the same module, otherwise it's racy and broken code.
-
-So can you please rework this to not require this?
-
-thanks,
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
