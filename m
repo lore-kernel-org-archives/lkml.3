@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaKHBgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 20:36:54 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62625 "HELO
+	id S1753504AbaKHBiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 20:38:24 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58545 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752442AbaKHBgx (ORCPT
+	with SMTP id S1752822AbaKHBiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 20:36:53 -0500
+	Fri, 7 Nov 2014 20:38:23 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Prarit Bhargava <prarit@redhat.com>
 Cc: linux-kernel@vger.kernel.org, robert.schoene@tu-dresden.de,
         sboyd@codeaurora.org, Viresh Kumar <viresh.kumar@linaro.org>,
         linux-pm@vger.kernel.org
-Subject: Re: [PATCH 3/5] cpufreq, dbs_data->usage count must be atomic
-Date: Sat, 08 Nov 2014 02:57:41 +0100
-Message-ID: <11902650.Ha3YdDNSQe@vostro.rjw.lan>
+Subject: Re: [PATCH 4/5] cpufreq, policy->initialized count must be atomic
+Date: Sat, 08 Nov 2014 02:59:11 +0100
+Message-ID: <1546924.3iEqBWAUvW@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1415199239-19019-4-git-send-email-prarit@redhat.com>
-References: <1415199239-19019-1-git-send-email-prarit@redhat.com> <1415199239-19019-4-git-send-email-prarit@redhat.com>
+In-Reply-To: <1415199239-19019-5-git-send-email-prarit@redhat.com>
+References: <1415199239-19019-1-git-send-email-prarit@redhat.com> <1415199239-19019-5-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,93 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 05, 2014 09:53:57 AM Prarit Bhargava wrote:
-> The usage_count value can be modified from several cpus concurrently if
-> !CPUFREQ_HAVE_GOVERNOR_PER_POLICY.  This leads to a variety of panics in
-> which the usage_count is negative or exceeds the number of cpus in the
-> system.  It must be switched to atomic_t and protected with a mutex to make sure
-> that future read/writes obtain the correct data.
+On Wednesday, November 05, 2014 09:53:58 AM Prarit Bhargava wrote:
+> The policy->initialized value can be modified from several cpus concurrently if
+> !CPUFREQ_HAVE_GOVERNOR_PER_POLICY.  This leads to a situation where a
+> governor maybe switched out even though the governor->initialized is greater
+> than one.  It must be switched to atomic_t and protected with a mutex to
+> make sure that future read/writes obtain the correct data.
 
-Why do you need to use a new mutex and atomic_t at the same time?  Most likely
-one of them is redundant.
+Same comments as for [3/5].  If you add a new mutex, you can avoid using
+atomic_t.
 
 > Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 > Cc: Viresh Kumar <viresh.kumar@linaro.org>
 > Cc: linux-pm@vger.kernel.org
 > Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 > ---
->  drivers/cpufreq/cpufreq_governor.c |   16 ++++++++++++----
->  drivers/cpufreq/cpufreq_governor.h |    3 ++-
->  2 files changed, 14 insertions(+), 5 deletions(-)
+>  drivers/cpufreq/cpufreq.c          |   12 +++++++++---
+>  drivers/cpufreq/cpufreq_governor.c |    4 ++--
+>  include/linux/cpufreq.h            |    3 ++-
+>  3 files changed, 13 insertions(+), 6 deletions(-)
 > 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index e33cb15..cf11de6 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -2059,10 +2059,12 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>  	ret = policy->governor->governor(policy, event);
+>  
+>  	if (!ret) {
+> +		mutex_lock(&policy->governor->initialized_mutex);
+>  		if (event == CPUFREQ_GOV_POLICY_INIT)
+> -			policy->governor->initialized++;
+> +			atomic_inc(&policy->governor->initialized);
+>  		else if (event == CPUFREQ_GOV_POLICY_EXIT)
+> -			policy->governor->initialized--;
+> +			atomic_dec(&policy->governor->initialized);
+> +		mutex_unlock(&policy->governor->initialized_mutex);
+>  	} else {
+>  		/* Restore original values */
+>  		mutex_lock(&cpufreq_governor_lock);
+> @@ -2092,7 +2094,11 @@ int cpufreq_register_governor(struct cpufreq_governor *governor)
+>  
+>  	mutex_lock(&cpufreq_governor_mutex);
+>  
+> -	governor->initialized = 0;
+> +	mutex_init(&governor->initialized_mutex);
+> +	mutex_lock(&governor->initialized_mutex);
+> +	atomic_set(&governor->initialized, 0);
+> +	mutex_unlock(&governor->initialized_mutex);
+> +
+>  	err = -EBUSY;
+>  	if (__find_governor(governor->name) == NULL) {
+>  		err = 0;
 > diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 1b44496..32ad9db 100644
+> index 32ad9db..b1ee597 100644
 > --- a/drivers/cpufreq/cpufreq_governor.c
 > +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -265,7 +265,9 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  		if (have_governor_per_policy()) {
->  			WARN_ON(dbs_data);
->  		} else if (dbs_data) {
-> -			dbs_data->usage_count++;
-> +			mutex_lock(&dbs_data->usage_count_mutex);
-> +			atomic_inc(&dbs_data->usage_count);
-> +			mutex_unlock(&dbs_data->usage_count_mutex);
->  			policy->governor_data = dbs_data;
->  			return 0;
->  		}
-> @@ -277,7 +279,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  		}
+> @@ -315,7 +315,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  					latency * LATENCY_MULTIPLIER));
 >  
->  		dbs_data->cdata = cdata;
-> -		dbs_data->usage_count = 1;
-> +		mutex_init(&dbs_data->usage_count_mutex);
-> +		mutex_lock(&dbs_data->usage_count_mutex);
-> +		atomic_set(&dbs_data->usage_count, 1);
-> +		mutex_unlock(&dbs_data->usage_count_mutex);
-
-The locking here isn't necessary (if it was, someone could be using an
-uninitialized mutex).
-
->  		rc = cdata->init(dbs_data);
->  		if (rc) {
->  			pr_err("%s: POLICY_INIT: init() failed\n", __func__);
-> @@ -322,7 +327,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  		if ((cdata->governor == GOV_CONSERVATIVE) &&
+> -				(!policy->governor->initialized)) {
+> +		    (!atomic_read(&policy->governor->initialized))) {
+>  			struct cs_ops *cs_ops = dbs_data->cdata->gov_ops;
 >  
->  		return 0;
->  	case CPUFREQ_GOV_POLICY_EXIT:
-> -		if (!--dbs_data->usage_count) {
-> +		mutex_lock(&dbs_data->usage_count_mutex);
-> +		if (atomic_dec_and_test(&dbs_data->usage_count)) {
->  			sysfs_remove_group(get_governor_parent_kobj(policy),
->  					get_sysfs_attr(dbs_data));
+>  			cpufreq_register_notifier(cs_ops->notifier_block,
+> @@ -336,7 +336,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  				cpufreq_put_global_kobject();
 >  
-> @@ -338,9 +344,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  			}
+>  			if ((dbs_data->cdata->governor == GOV_CONSERVATIVE) &&
+> -				(policy->governor->initialized == 1)) {
+> +			    atomic_read(&policy->governor->initialized) == 1) {
+>  				struct cs_ops *cs_ops = dbs_data->cdata->gov_ops;
 >  
->  			cdata->exit(dbs_data);
-> +			mutex_unlock(&dbs_data->usage_count_mutex);
->  			kfree(dbs_data);
->  			cdata->gdbs_data = NULL;
-> -		}
-> +		} else
-> +			mutex_unlock(&dbs_data->usage_count_mutex);
+>  				cpufreq_unregister_notifier(cs_ops->notifier_block,
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 43909ad..73cec45 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -431,7 +431,8 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div,
 >  
->  		policy->governor_data = NULL;
->  		return 0;
-> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-> index cc401d1..53ca449 100644
-> --- a/drivers/cpufreq/cpufreq_governor.h
-> +++ b/drivers/cpufreq/cpufreq_governor.h
-> @@ -219,7 +219,8 @@ struct common_dbs_data {
->  struct dbs_data {
->  	struct common_dbs_data *cdata;
->  	unsigned int min_sampling_rate;
-> -	int usage_count;
-> +	struct mutex usage_count_mutex;
-> +	atomic_t usage_count;
->  	void *tuners;
->  
->  	/* dbs_mutex protects dbs_enable in governor start/stop */
+>  struct cpufreq_governor {
+>  	char	name[CPUFREQ_NAME_LEN];
+> -	int	initialized;
+> +	struct mutex initialized_mutex;
+> +	atomic_t initialized;
+>  	int	(*governor)	(struct cpufreq_policy *policy,
+>  				 unsigned int event);
+>  	ssize_t	(*show_setspeed)	(struct cpufreq_policy *policy,
 > 
 
 -- 
