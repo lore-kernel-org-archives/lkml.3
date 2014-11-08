@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaKHAPX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Nov 2014 19:15:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59968 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083AbaKHAPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Nov 2014 19:15:20 -0500
-From: NeilBrown <neilb@suse.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-Date: Sat, 08 Nov 2014 11:14:11 +1100
-Subject: [PATCH 2/2] mmc: core: reset sdio card properly on resume.
-Cc: devicetree@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>
-Message-ID: <20141108001411.5629.55298.stgit@notabene.brown>
-In-Reply-To: <20141108000919.5629.55381.stgit@notabene.brown>
-References: <20141108000919.5629.55381.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753375AbaKHASO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Nov 2014 19:18:14 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62931 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaKHASN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Nov 2014 19:18:13 -0500
+From: Julius Werner <jwerner@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Julius Werner <jwerner@chromium.org>
+Subject: [PATCH] checkpatch: Make SI unit tolerance more lenient with 3-character units
+Date: Fri,  7 Nov 2014 16:18:00 -0800
+Message-Id: <1415405880-8520-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmc_sdio_power_restore calls
-	mmc_send_if_cond(host, host->ocr_avail);
+Checkpatch flags CamelCase identifiers in strict mode, but it has a
+feature to ignore parts with only two characters to allow for SI units
+like mV or uA. Unfortunately, not all SI units fit in two characters,
+and not all are lower case followed by upper case.
 
-	ret = mmc_send_io_op_cond(host, 0, NULL);
+This patch changes the check from [a-z][A-Z] to [a-zA-Z]{1,3} (any
+combination of up to three lower and upper case characters), so that it
+will also allow units like MHz, As or KiB.
 
-between mmc_go_idle() and  mmc_sdio_init_card().
-mmc_sdio_resume needs to as well, else my libertas sdio wifi
-device doesn't resume properly from suspend.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 ---
- drivers/mmc/core/sdio.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index e636d9e99e4a..3f069a6f448f 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -981,8 +981,12 @@ static int mmc_sdio_resume(struct mmc_host *host)
- 	if (mmc_card_is_removable(host) || !mmc_card_keep_power(host)) {
- 		sdio_reset(host);
- 		mmc_go_idle(host);
--		err = mmc_sdio_init_card(host, host->card->ocr, host->card,
--					mmc_card_keep_power(host));
-+		mmc_send_if_cond(host, host->ocr_avail);
-+		err = mmc_send_io_op_cond(host, 0, NULL);
-+		if (!err)
-+			err = mmc_sdio_init_card(host, host->card->ocr,
-+						 host->card,
-+						 mmc_card_keep_power(host));
- 	} else if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
- 		/* We may have switched to 1-bit mode during suspend */
- 		err = sdio_enable_4bit_bus(host->card);
-
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 374abf4..0bbd25a 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4055,8 +4055,8 @@ sub process {
+ 			    $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
+ #Ignore Page<foo> variants
+ 			    $var !~ /^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
+-#Ignore SI style variants like nS, mV and dB (ie: max_uV, regulator_min_uA_show)
+-			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/) {
++#Ignore SI style variants like nS, mV, MHz and dB (ie: max_uV, regulator_min_uA_show)
++			    $var !~ /^(?:[a-z_]*?)_?[a-zA-Z]{1,3}(?:_[a-z_]+)?$/) {
+ 				while ($var =~ m{($Ident)}g) {
+ 					my $word = $1;
+ 					next if ($word !~ /[A-Z][a-z]|[a-z][A-Z]/);
+-- 
+1.8.3.2
 
