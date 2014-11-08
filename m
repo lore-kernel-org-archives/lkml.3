@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaKHT0E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 14:26:04 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:49227 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaKHT0B (ORCPT
+	id S1752365AbaKHTzv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 14:55:51 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:62622 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaKHTzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 14:26:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org, frowand.list@gmail.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-Date: Sat, 08 Nov 2014 20:25:22 +0100
-Message-ID: <1630864.S0zQWJED9T@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <545D3B31.3030309@gmail.com>
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <2747100.M77UGx4AmB@wuerfel> <545D3B31.3030309@gmail.com>
+	Sat, 8 Nov 2014 14:55:50 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:O/tkSCZLzhCntyBdpcACQ1MaYa91/wtAI68TpveOrh3
- PA5cSs7o3DEiCoVoOM3CQtPiweedNqOEbkgb9T2qSVvLHe9sGx
- DlExIWzcBf5a/hZ/ZcJBzX47i2PIAawXQ4gxWesvlq1qJLcok2
- QngnSX2Xtj8e6rri4C2ykPyf7lwRwKd/twKfW0qmF6OFs6xwKV
- SZbFD1Kd41YovuhHX7ssK/35KngVIlwApDNM647xsxoBdd4wvn
- x95jCwp1Anz3OdzX8fWftAtmN7LyY7AUtq/XeZxMCSNtebyZlK
- PzYAXDKDWew5RkLzWmx31WwSI2FS0HmAbF5lnUE+qUvKlZuzZJ
- ZKfjzzhDm9xVdpjOSOX8=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <87lhnlwqm4.fsf@free.fr>
+References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
+	<CALT56yOCBN1NAfNw=vThVZ_o=ONGOTvzKHBH5tCTQShJY0wkrQ@mail.gmail.com>
+	<87lhnlwqm4.fsf@free.fr>
+Date: Sat, 8 Nov 2014 23:55:49 +0400
+Message-ID: <CALT56yNOXq-ssvsjafz=ae+uWv1GyscoQ3RQ_h--i740zm4trA@mail.gmail.com>
+Subject: Re: [PATCH v1 0/3] Transition pxa25x clock to common clocks
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Daniel Mack <zonque@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 November 2014 13:35:45 Frank Rowand wrote:
-> On 11/7/2014 1:47 AM, Arnd Bergmann wrote:
-> > On Thursday 06 November 2014 22:42:47 Frank Rowand wrote:
-> >> This same change is also needed in:
-> >>
-> >>   qcom-ipq8064.dtsi
-> >>   qcom-msm8960.dtsi
-> >>   qcom-apq8084.dtsi
-> >>   qcom-apq8064.dtsi
-> >>   qcom-msm8660.dtsi
-> >>
-> >> but I did not want to just blindly apply those changes without testing.
-> >>
-> > 
-> > Is there only one uart on each of these?
-> > 
-> > If not, it would be better to put the aliases in the board specific file,
-> > pointing to whichever ports are in use, in the order that makes sense
-> > for that board.
-> 
-> Good point, thanks for bringing it up.
-> 
-> Your comment made me verify that the board dts files can override the
-> aliases from the included .dtsi.  So not a problem to have a default
-> set of aliases in the .dtsi files.
+2014-11-08 20:26 GMT+03:00 Robert Jarzmik <robert.jarzmik@free.fr>:
+> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
+>
+>> Hello,
+>> Tested in qemu (pxa25x target).
+>>
+>> 2) sa1100-rtc could not find a clock and thus failed to be probed.
+>> 4) Got an issue with IrDA driver - it gets -ENODEV for UARTCLK clock
+>
+> Hi Dmitry,
+>
+> Would you mind retesting with the patch in [1] applied to see if points 2 and 4
+> are fixed ? Alternatively you can refetch from the github tree, I included that
+> incremental patch there too.
+>
+> If it works correctly for you, could I have your Tested-by ? If not, tell me and
+> I'll try to figure out what's wrong.
 
-I would think it's better to keep them in the per-board file out of
-principle though.
-	
-	Arnd
+Tested in qemu, everything works fine. I will test on the real hardware tomorow.
+
+BTW: It looks like pxa27x also shows the same behaviour wrt. sa1100-rtc and
+pxa2xx-ir (after reverting a revert).
+
+-- 
+With best wishes
+Dmitry
