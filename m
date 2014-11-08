@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaKHSpT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 13:45:19 -0500
-Received: from mail-bn1on0113.outbound.protection.outlook.com ([157.56.110.113]:43072
+	id S932115AbaKHSpa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 13:45:30 -0500
+Received: from mail-bn1bbn0109.outbound.protection.outlook.com ([157.56.111.109]:45024
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753927AbaKHSpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 13:45:16 -0500
-X-WSS-ID: 0NEQHFB-07-RGV-02
+	id S1753872AbaKHSpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 13:45:25 -0500
+X-WSS-ID: 0NEQHFK-07-RGW-02
 X-M-MSG: 
 From: Oded Gabbay <oded.gabbay@amd.com>
 To: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
         Jerome Glisse <j.glisse@gmail.com>
 CC: <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
         "John Bridgman" <John.Bridgman@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
         Oded Gabbay <oded.gabbay@amd.com>, Ben Goz <ben.goz@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
         Evgeny Pinchuk <evgeny.pinchuk@amd.com>,
-        Jay Cornwall <jay.cornwall@amd.com>,
-        "Alexey Skidanov" <Alexey.Skidanov@amd.com>
-Subject: [PATCH v5 19/24] amdkfd: Add interrupt handling module
-Date: Sat, 8 Nov 2014 20:37:40 +0200
-Message-ID: <1415471865-1893-20-git-send-email-oded.gabbay@amd.com>
+        Alexey Skidanov <Alexey.Skidanov@amd.com>
+Subject: [PATCH v5 20/24] amdkfd: Implement the create/destroy/update queue IOCTLs
+Date: Sat, 8 Nov 2014 20:37:41 +0200
+Message-ID: <1415471865-1893-21-git-send-email-oded.gabbay@amd.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
 References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
@@ -29,353 +28,267 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.180.168.240]
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(92566001)(87286001)(46102003)(106466001)(47776003)(89996001)(229853001)(102836001)(104166001)(31966008)(107046002)(88136002)(48376002)(53416004)(87936001)(120916001)(105586002)(99396003)(77156002)(4396001)(95666004)(76176999)(50226001)(101416001)(36756003)(64706001)(19580405001)(93916002)(50466002)(86362001)(68736004)(62966003)(44976005)(50986999)(20776003)(33646002)(19580395003)(77096003)(97736003)(92726001)(84676001)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0201MB1081;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(51234002)(53416004)(19580405001)(19580395003)(44976005)(93916002)(68736004)(50986999)(76176999)(46102003)(50226001)(4396001)(36756003)(95666004)(84676001)(31966008)(92566001)(89996001)(105586002)(99396003)(106466001)(86362001)(88136002)(92726001)(77096003)(107046002)(50466002)(101416001)(102836001)(48376002)(77156002)(47776003)(64706001)(21056001)(20776003)(87936001)(97736003)(87286001)(120916001)(104166001)(229853001)(62966003)(33646002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0201MB1008;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1081;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0201MB1008;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1081;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0201MB1008;
 X-Forefront-PRVS: 0389EDA07F
 Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1081;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0201MB1008;
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Lewycky <Andrew.Lewycky@amd.com>
+v3: Removed the use of internal typedefs, fixed debug prints, added checks
+    for parameters and moved to using doorbell address from user
 
-This patch adds the interrupt handling module, in kfd_interrupt.c, and its
-related members in different data structures to the amdkfd driver.
+v4: Extracted some of the code in the create queue ioctl to a different
+    function that may be also called from other ioctls in the future.
+    Also fixed the check of the ring size argument.
 
-The amdkfd interrupt module maintains an internal interrupt ring per amdkfd
-device. The internal interrupt ring contains interrupts that needs further
-handling. The extra handling is deferred to a later time through a workqueue.
+v5:
 
-There's no acknowledgment for the interrupts we use. The hardware simply queues
-a new interrupt each time without waiting.
+Add support for AQL queues creation to enable working with open-source HSA
+runtime
 
-The fixed-size internal queue means that it's possible for us to lose
-interrupts because we have no back-pressure to the hardware.
-
-v3:
-
-Move amdkfd from drm/radeon/ to drm/amd/
-Change device init
-Made sure spin lock is taken only if init is complete
-Moved bool field to the end of the structure
-
-Signed-off-by: Andrew Lewycky <Andrew.Lewycky@amd.com>
+Signed-off-by: Ben Goz <ben.goz@amd.com>
 Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
 ---
- drivers/gpu/drm/amd/amdkfd/Makefile        |   3 +-
- drivers/gpu/drm/amd/amdkfd/kfd_device.c    |  23 +++-
- drivers/gpu/drm/amd/amdkfd/kfd_interrupt.c | 176 +++++++++++++++++++++++++++++
- drivers/gpu/drm/amd/amdkfd/kfd_priv.h      |  21 +++-
- 4 files changed, 218 insertions(+), 5 deletions(-)
- create mode 100644 drivers/gpu/drm/amd/amdkfd/kfd_interrupt.c
+ drivers/gpu/drm/amd/amdkfd/kfd_chardev.c | 205 ++++++++++++++++++++++++++++++-
+ 1 file changed, 202 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/amd/amdkfd/Makefile b/drivers/gpu/drm/amd/amdkfd/Makefile
-index 307a309..be6246d 100644
---- a/drivers/gpu/drm/amd/amdkfd/Makefile
-+++ b/drivers/gpu/drm/amd/amdkfd/Makefile
-@@ -8,6 +8,7 @@ amdkfd-y	:= kfd_module.o kfd_device.o kfd_chardev.o kfd_topology.o \
- 		kfd_pasid.o kfd_doorbell.o kfd_flat_memory.o \
- 		kfd_process.o kfd_queue.o kfd_mqd_manager.o \
- 		kfd_kernel_queue.o kfd_packet_manager.o \
--		kfd_process_queue_manager.o kfd_device_queue_manager.o
-+		kfd_process_queue_manager.o kfd_device_queue_manager.o \
-+		kfd_interrupt.o
- 
- obj-$(CONFIG_HSA_AMD)	+= amdkfd.o
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_device.c b/drivers/gpu/drm/amd/amdkfd/kfd_device.c
-index bdf3e94..9beb6f7 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_device.c
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_device.c
-@@ -31,6 +31,7 @@
- 
- static const struct kfd_device_info kaveri_device_info = {
- 	.max_pasid_bits = 16,
-+	.ih_ring_entry_size = 4 * sizeof(uint32_t),
- 	.mqd_size_aligned = MQD_SIZE_ALIGNED
- };
- 
-@@ -191,6 +192,13 @@ bool kgd2kfd_device_init(struct kfd_dev *kfd,
- 		goto kfd_topology_add_device_error;
- 	}
- 
-+	if (kfd_interrupt_init(kfd)) {
-+		dev_err(kfd_device,
-+			"Error initializing interrupts for device (%x:%x)\n",
-+			kfd->pdev->vendor, kfd->pdev->device);
-+		goto kfd_interrupt_error;
-+	}
-+
- 	if (!device_iommu_pasid_init(kfd)) {
- 		dev_err(kfd_device,
- 			"Error initializing iommuv2 for device (%x:%x)\n",
-@@ -229,6 +237,8 @@ dqm_start_error:
- device_queue_manager_error:
- 	amd_iommu_free_device(kfd->pdev);
- device_iommu_pasid_error:
-+	kfd_interrupt_exit(kfd);
-+kfd_interrupt_error:
- 	kfd_topology_remove_device(kfd);
- kfd_topology_add_device_error:
- 	kfd2kgd->fini_sa_manager(kfd->kgd);
-@@ -244,6 +254,7 @@ void kgd2kfd_device_exit(struct kfd_dev *kfd)
- 	if (kfd->init_complete) {
- 		device_queue_manager_uninit(kfd->dqm);
- 		amd_iommu_free_device(kfd->pdev);
-+		kfd_interrupt_exit(kfd);
- 		kfd_topology_remove_device(kfd);
- 	}
- 
-@@ -281,6 +292,16 @@ int kgd2kfd_resume(struct kfd_dev *kfd)
- 	return 0;
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c b/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
+index 58441cd..d342035 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_chardev.c
+@@ -125,22 +125,221 @@ static long kfd_ioctl_get_version(struct file *filep, struct kfd_process *p,
+ 	return -ENODEV;
  }
  
--void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry)
-+/* This is called directly from KGD at ISR. */
-+void kgd2kfd_interrupt(struct kfd_dev *kfd, const void *ih_ring_entry)
- {
-+	if (kfd->init_complete) {
-+		spin_lock(&kfd->interrupt_lock);
-+
-+		if (kfd->interrupts_active
-+		    && enqueue_ih_ring_entry(kfd, ih_ring_entry))
-+			schedule_work(&kfd->interrupt_work);
-+
-+		spin_unlock(&kfd->interrupt_lock);
-+	}
- }
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_interrupt.c b/drivers/gpu/drm/amd/amdkfd/kfd_interrupt.c
-new file mode 100644
-index 0000000..5b99909
---- /dev/null
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_interrupt.c
-@@ -0,0 +1,176 @@
-+/*
-+ * Copyright 2014 Advanced Micro Devices, Inc.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
-+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ * OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+/*
-+ * KFD Interrupts.
-+ *
-+ * AMD GPUs deliver interrupts by pushing an interrupt description onto the
-+ * interrupt ring and then sending an interrupt. KGD receives the interrupt
-+ * in ISR and sends us a pointer to each new entry on the interrupt ring.
-+ *
-+ * We generally can't process interrupt-signaled events from ISR, so we call
-+ * out to each interrupt client module (currently only the scheduler) to ask if
-+ * each interrupt is interesting. If they return true, then it requires further
-+ * processing so we copy it to an internal interrupt ring and call each
-+ * interrupt client again from a work-queue.
-+ *
-+ * There's no acknowledgment for the interrupts we use. The hardware simply
-+ * queues a new interrupt each time without waiting.
-+ *
-+ * The fixed-size internal queue means that it's possible for us to lose
-+ * interrupts because we have no back-pressure to the hardware.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include "kfd_priv.h"
-+
-+#define KFD_INTERRUPT_RING_SIZE 256
-+
-+static void interrupt_wq(struct work_struct *);
-+
-+int kfd_interrupt_init(struct kfd_dev *kfd)
++static int set_queue_properties_from_user(struct queue_properties *q_properties,
++				struct kfd_ioctl_create_queue_args *args)
 +{
-+	void *interrupt_ring = kmalloc_array(KFD_INTERRUPT_RING_SIZE,
-+					kfd->device_info->ih_ring_entry_size,
-+					GFP_KERNEL);
-+	if (!interrupt_ring)
-+		return -ENOMEM;
++	if (args->queue_percentage > KFD_MAX_QUEUE_PERCENTAGE) {
++		pr_err("kfd: queue percentage must be between 0 to KFD_MAX_QUEUE_PERCENTAGE\n");
++		return -EINVAL;
++	}
 +
-+	kfd->interrupt_ring = interrupt_ring;
-+	kfd->interrupt_ring_size =
-+		KFD_INTERRUPT_RING_SIZE * kfd->device_info->ih_ring_entry_size;
-+	atomic_set(&kfd->interrupt_ring_wptr, 0);
-+	atomic_set(&kfd->interrupt_ring_rptr, 0);
++	if (args->queue_priority > KFD_MAX_QUEUE_PRIORITY) {
++		pr_err("kfd: queue priority must be between 0 to KFD_MAX_QUEUE_PRIORITY\n");
++		return -EINVAL;
++	}
 +
-+	spin_lock_init(&kfd->interrupt_lock);
++	if ((args->ring_base_address) &&
++		(!access_ok(VERIFY_WRITE, args->ring_base_address, sizeof(uint64_t)))) {
++		pr_err("kfd: can't access ring base address\n");
++		return -EFAULT;
++	}
 +
-+	INIT_WORK(&kfd->interrupt_work, interrupt_wq);
++	if (!is_power_of_2(args->ring_size) && (args->ring_size != 0)) {
++		pr_err("kfd: ring size must be a power of 2 or 0\n");
++		return -EINVAL;
++	}
 +
-+	kfd->interrupts_active = true;
++	if (!access_ok(VERIFY_WRITE, args->read_pointer_address, sizeof(uint32_t))) {
++		pr_err("kfd: can't access read pointer\n");
++		return -EFAULT;
++	}
 +
-+	/*
-+	 * After this function returns, the interrupt will be enabled. This
-+	 * barrier ensures that the interrupt running on a different processor
-+	 * sees all the above writes.
-+	 */
-+	smp_wmb();
++	if (!access_ok(VERIFY_WRITE, args->write_pointer_address, sizeof(uint32_t))) {
++		pr_err("kfd: can't access write pointer\n");
++		return -EFAULT;
++	}
++
++	q_properties->is_interop = false;
++	q_properties->queue_percent = args->queue_percentage;
++	q_properties->priority = args->queue_priority;
++	q_properties->queue_address = args->ring_base_address;
++	q_properties->queue_size = args->ring_size;
++	q_properties->read_ptr = (uint32_t *) args->read_pointer_address;
++	q_properties->write_ptr = (uint32_t *) args->write_pointer_address;
++	if (args->queue_type == KFD_IOC_QUEUE_TYPE_COMPUTE ||
++		args->queue_type == KFD_IOC_QUEUE_TYPE_COMPUTE_AQL)
++		q_properties->type = KFD_QUEUE_TYPE_COMPUTE;
++	else
++		return -ENOTSUPP;
++
++	if (args->queue_type == KFD_IOC_QUEUE_TYPE_COMPUTE_AQL)
++		q_properties->format = KFD_QUEUE_FORMAT_AQL;
++	else
++		q_properties->format = KFD_QUEUE_FORMAT_PM4;
++
++	pr_debug("Queue Percentage (%d, %d)\n",
++			q_properties->queue_percent, args->queue_percentage);
++
++	pr_debug("Queue Priority (%d, %d)\n",
++			q_properties->priority, args->queue_priority);
++
++	pr_debug("Queue Address (0x%llX, 0x%llX)\n",
++			q_properties->queue_address, args->ring_base_address);
++
++	pr_debug("Queue Size (0x%llX, %u)\n",
++			q_properties->queue_size, args->ring_size);
++
++	pr_debug("Queue r/w Pointers (0x%llX, 0x%llX)\n",
++			(uint64_t) q_properties->read_ptr,
++			(uint64_t) q_properties->write_ptr);
++
++	pr_debug("Queue Format (%d)\n", q_properties->format);
 +
 +	return 0;
 +}
 +
-+void kfd_interrupt_exit(struct kfd_dev *kfd)
-+{
-+	/*
-+	 * Stop the interrupt handler from writing to the ring and scheduling
-+	 * workqueue items. The spinlock ensures that any interrupt running
-+	 * after we have unlocked sees interrupts_active = false.
-+	 */
-+	unsigned long flags;
+ static long kfd_ioctl_create_queue(struct file *filep, struct kfd_process *p,
+ 					void __user *arg)
+ {
+-	return -ENODEV;
++	struct kfd_ioctl_create_queue_args args;
++	struct kfd_dev *dev;
++	int err = 0;
++	unsigned int queue_id;
++	struct kfd_process_device *pdd;
++	struct queue_properties q_properties;
 +
-+	spin_lock_irqsave(&kfd->interrupt_lock, flags);
-+	kfd->interrupts_active = false;
-+	spin_unlock_irqrestore(&kfd->interrupt_lock, flags);
++	memset(&q_properties, 0, sizeof(struct queue_properties));
 +
-+	/*
-+	 * Flush_scheduled_work ensures that there are no outstanding
-+	 * work-queue items that will access interrupt_ring. New work items
-+	 * can't be created because we stopped interrupt handling above.
-+	 */
-+	flush_scheduled_work();
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
 +
-+	kfree(kfd->interrupt_ring);
-+}
++	pr_debug("kfd: creating queue ioctl\n");
 +
-+/*
-+ * This assumes that it can't be called concurrently with itself
-+ * but only with dequeue_ih_ring_entry.
-+ */
-+bool enqueue_ih_ring_entry(struct kfd_dev *kfd,	const void *ih_ring_entry)
-+{
-+	unsigned int rptr = atomic_read(&kfd->interrupt_ring_rptr);
-+	unsigned int wptr = atomic_read(&kfd->interrupt_ring_wptr);
++	err = set_queue_properties_from_user(&q_properties, &args);
++	if (err)
++		return err;
 +
-+	if ((rptr - wptr) % kfd->interrupt_ring_size ==
-+					kfd->device_info->ih_ring_entry_size) {
-+		/* This is very bad, the system is likely to hang. */
-+		dev_err_ratelimited(kfd_chardev(),
-+			"Interrupt ring overflow, dropping interrupt.\n");
-+		return false;
++	dev = kfd_device_by_id(args.gpu_id);
++	if (dev == NULL)
++		return -EINVAL;
++
++	mutex_lock(&p->mutex);
++
++	pdd = kfd_bind_process_to_device(dev, p);
++	if (IS_ERR(pdd) < 0) {
++		err = PTR_ERR(pdd);
++		goto err_bind_process;
 +	}
 +
-+	memcpy(kfd->interrupt_ring + wptr, ih_ring_entry,
-+			kfd->device_info->ih_ring_entry_size);
++	pr_debug("kfd: creating queue for PASID %d on GPU 0x%x\n",
++			p->pasid,
++			dev->id);
 +
-+	wptr = (wptr + kfd->device_info->ih_ring_entry_size) %
-+			kfd->interrupt_ring_size;
-+	smp_wmb(); /* Ensure memcpy'd data is visible before wptr update. */
-+	atomic_set(&kfd->interrupt_ring_wptr, wptr);
++	err = pqm_create_queue(&p->pqm, dev, filep, &q_properties, 0,
++				KFD_QUEUE_TYPE_COMPUTE, &queue_id);
++	if (err != 0)
++		goto err_create_queue;
 +
-+	return true;
-+}
++	args.queue_id = queue_id;
 +
-+/*
-+ * This assumes that it can't be called concurrently with itself
-+ * but only with enqueue_ih_ring_entry.
-+ */
-+static bool dequeue_ih_ring_entry(struct kfd_dev *kfd, void *ih_ring_entry)
-+{
-+	/*
-+	 * Assume that wait queues have an implicit barrier, i.e. anything that
-+	 * happened in the ISR before it queued work is visible.
-+	 */
++	/* Return gpu_id as doorbell offset for mmap usage */
++	args.doorbell_offset = args.gpu_id << PAGE_SHIFT;
 +
-+	unsigned int wptr = atomic_read(&kfd->interrupt_ring_wptr);
-+	unsigned int rptr = atomic_read(&kfd->interrupt_ring_rptr);
++	if (copy_to_user(arg, &args, sizeof(args))) {
++		err = -EFAULT;
++		goto err_copy_args_out;
++	}
 +
-+	if (rptr == wptr)
-+		return false;
++	mutex_unlock(&p->mutex);
 +
-+	memcpy(ih_ring_entry, kfd->interrupt_ring + rptr,
-+			kfd->device_info->ih_ring_entry_size);
++	pr_debug("kfd: queue id %d was created successfully\n", args.queue_id);
 +
-+	rptr = (rptr + kfd->device_info->ih_ring_entry_size) %
-+			kfd->interrupt_ring_size;
++	pr_debug("ring buffer address == 0x%016llX\n",
++			args.ring_base_address);
 +
-+	/*
-+	 * Ensure the rptr write update is not visible until
-+	 * memcpy has finished reading.
-+	 */
-+	smp_mb();
-+	atomic_set(&kfd->interrupt_ring_rptr, rptr);
++	pr_debug("read ptr address    == 0x%016llX\n",
++			args.read_pointer_address);
 +
-+	return true;
-+}
++	pr_debug("write ptr address   == 0x%016llX\n",
++			args.write_pointer_address);
 +
-+static void interrupt_wq(struct work_struct *work)
-+{
-+	struct kfd_dev *dev = container_of(work, struct kfd_dev,
-+						interrupt_work);
++	return 0;
 +
-+	uint32_t ih_ring_entry[DIV_ROUND_UP(
-+				dev->device_info->ih_ring_entry_size,
-+				sizeof(uint32_t))];
-+
-+	while (dequeue_ih_ring_entry(dev, ih_ring_entry))
-+		;
-+}
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_priv.h b/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
-index 7f3b4fd..2bc34aa1 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_priv.h
-@@ -135,10 +135,22 @@ struct kfd_dev {
++err_copy_args_out:
++	pqm_destroy_queue(&p->pqm, queue_id);
++err_create_queue:
++err_bind_process:
++	mutex_unlock(&p->mutex);
++	return err;
+ }
  
- 	struct kgd2kfd_shared_resources shared_resources;
- 
-+	void *interrupt_ring;
-+	size_t interrupt_ring_size;
-+	atomic_t interrupt_ring_rptr;
-+	atomic_t interrupt_ring_wptr;
-+	struct work_struct interrupt_work;
-+	spinlock_t interrupt_lock;
+ static int kfd_ioctl_destroy_queue(struct file *filp, struct kfd_process *p,
+ 					void __user *arg)
+ {
+-	return -ENODEV;
++	int retval;
++	struct kfd_ioctl_destroy_queue_args args;
 +
- 	/* QCM Device instance */
- 	struct device_queue_manager *dqm;
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
++
++	pr_debug("kfd: destroying queue id %d for PASID %d\n",
++				args.queue_id,
++				p->pasid);
++
++	mutex_lock(&p->mutex);
++
++	retval = pqm_destroy_queue(&p->pqm, args.queue_id);
++
++	mutex_unlock(&p->mutex);
++	return retval;
+ }
  
- 	bool init_complete;
-+	/*
-+	 * Interrupts of interest to KFD are copied
-+	 * from the HW ring into a SW ring.
-+	 */
-+	bool interrupts_active;
- };
+ static int kfd_ioctl_update_queue(struct file *filp, struct kfd_process *p,
+ 					void __user *arg)
+ {
+-	return -ENODEV;
++	int retval;
++	struct kfd_ioctl_update_queue_args args;
++	struct queue_properties properties;
++
++	if (copy_from_user(&args, arg, sizeof(args)))
++		return -EFAULT;
++
++	if (args.queue_percentage > KFD_MAX_QUEUE_PERCENTAGE) {
++		pr_err("kfd: queue percentage must be between 0 to KFD_MAX_QUEUE_PERCENTAGE\n");
++		return -EINVAL;
++	}
++
++	if (args.queue_priority > KFD_MAX_QUEUE_PRIORITY) {
++		pr_err("kfd: queue priority must be between 0 to KFD_MAX_QUEUE_PRIORITY\n");
++		return -EINVAL;
++	}
++
++	if ((args.ring_base_address) &&
++		(!access_ok(VERIFY_WRITE, args.ring_base_address, sizeof(uint64_t)))) {
++		pr_err("kfd: can't access ring base address\n");
++		return -EFAULT;
++	}
++
++	if (!is_power_of_2(args.ring_size) && (args.ring_size != 0)) {
++		pr_err("kfd: ring size must be a power of 2 or 0\n");
++		return -EINVAL;
++	}
++
++	properties.queue_address = args.ring_base_address;
++	properties.queue_size = args.ring_size;
++	properties.queue_percent = args.queue_percentage;
++	properties.priority = args.queue_priority;
++
++	pr_debug("kfd: updating queue id %d for PASID %d\n",
++			args.queue_id, p->pasid);
++
++	mutex_lock(&p->mutex);
++
++	retval = pqm_update_queue(&p->pqm, args.queue_id, &properties);
++
++	mutex_unlock(&p->mutex);
++
++	return retval;
+ }
  
- /* KGD2KFD callbacks */
-@@ -493,11 +505,14 @@ struct kfd_dev *kfd_device_by_pci_dev(const struct pci_dev *pdev);
- struct kfd_dev *kfd_topology_enum_kfd_devices(uint8_t idx);
- 
- /* Interrupts */
--void kgd2kfd_interrupt(struct kfd_dev *dev, const void *ih_ring_entry);
-+int kfd_interrupt_init(struct kfd_dev *dev);
-+void kfd_interrupt_exit(struct kfd_dev *dev);
-+void kgd2kfd_interrupt(struct kfd_dev *kfd, const void *ih_ring_entry);
-+bool enqueue_ih_ring_entry(struct kfd_dev *kfd,	const void *ih_ring_entry);
- 
- /* Power Management */
--void kgd2kfd_suspend(struct kfd_dev *dev);
--int kgd2kfd_resume(struct kfd_dev *dev);
-+void kgd2kfd_suspend(struct kfd_dev *kfd);
-+int kgd2kfd_resume(struct kfd_dev *kfd);
- 
- /* amdkfd Apertures */
- int kfd_init_apertures(struct kfd_process *process);
+ static long kfd_ioctl_set_memory_policy(struct file *filep,
 -- 
 2.1.0
 
