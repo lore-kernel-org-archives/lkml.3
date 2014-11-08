@@ -1,142 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaKHOeP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 09:34:15 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:37565 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753716AbaKHOeO (ORCPT
+	id S1753890AbaKHOhF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 09:37:05 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:38049 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaKHOhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 09:34:14 -0500
-X-Greylist: delayed 3448 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Nov 2014 09:34:13 EST
-Message-ID: <1415454115.1881.3.camel@palomino.walls.org>
-Subject: Re: [PATCH 05/11] cx25840/cx18: Use standard ordering of mask and
- shift
-From: Andy Walls <awalls@md.metrocast.net>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Date: Sat, 08 Nov 2014 08:41:55 -0500
-In-Reply-To: <0f1e7b544283cd5d8ef1ca6f759af5e208dbc2fd.1414387334.git.joe@perches.com>
-References: <cover.1414387334.git.joe@perches.com>
-	 <0f1e7b544283cd5d8ef1ca6f759af5e208dbc2fd.1414387334.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-08_01:2014-11-07,2014-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1411080124
+	Sat, 8 Nov 2014 09:37:02 -0500
+Date: Sat, 8 Nov 2014 14:36:54 +0000
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Inconsistent lock state with Hyper-V memory balloon?
+Message-ID: <20141108143654.GA7939@sucs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-26 at 22:25 -0700, Joe Perches wrote:
-> Precedence of & and >> is not the same and is not left to right.
-> shift has higher precedence and should be done after the mask.
-> 
-> This use has a mask then shift which is not the normal style.
-> 
-> Move the shift before the mask to match nearly all the other
-> uses in kernel.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+I've been trying to use the Hyper-V balloon driver to allow the host to
+reclaim unused memory but have been hitting issues. With a Hyper-V 2012
+R2 guest with 4GBytes of RAM, dynamic memory on, 1GByte minimum 10GByte
+maximum, 8 vcpus, running a 3.18.0-rc3 kernel with no swap configured
+the following lockdep splat occurred:
 
-The patch is technically correct.
+=================================
+[ INFO: inconsistent lock state ]
+3.18.0-rc3.x86_64 #159 Not tainted
+---------------------------------
+inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+swapper/0/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
+ (bdev_lock){+.?...}, at: [<ffffffff811ff39c>] nr_blockdev_pages+0x1c/0x80
+{SOFTIRQ-ON-W} state was registered at:
+  [<ffffffff810ba03d>] __lock_acquire+0x87d/0x1c60
+  [<ffffffff810bbcdc>] lock_acquire+0xfc/0x150
+  [<ffffffff816e4019>] _raw_spin_lock+0x39/0x50
+  [<ffffffff811ff39c>] nr_blockdev_pages+0x1c/0x80
+  [<ffffffff8115d5f7>] si_meminfo+0x47/0x70
+  [<ffffffff81d6622f>] eventpoll_init+0x11/0x10a
+  [<ffffffff81d3d150>] do_one_initcall+0xf9/0x1a7
+  [<ffffffff81d3d3d2>] kernel_init_freeable+0x1d4/0x268
+  [<ffffffff816ce0ae>] kernel_init+0xe/0x100
+  [<ffffffff816e4dfc>] ret_from_fork+0x7c/0xb0
+irq event stamp: 2660283708
+hardirqs last  enabled at (2660283708): [<ffffffff8115eef5>] free_hot_cold_page+0x175/0x190
+hardirqs last disabled at (2660283707): [<ffffffff8115ee25>] free_hot_cold_page+0xa5/0x190
+softirqs last  enabled at (2660132034): [<ffffffff81071e6a>] _local_bh_enable+0x4a/0x50
+softirqs last disabled at (2660132035): [<ffffffff81072478>] irq_exit+0x58/0xc0
 
-Reviewed-by: Andy Walls <awalls@md.metrocast.net>
+might help us debug this:
+ Possible unsafe locking scenario:
 
-> ---
->  drivers/media/i2c/cx25840/cx25840-core.c | 12 ++++++------
->  drivers/media/pci/cx18/cx18-av-core.c    | 16 ++++++++--------
->  2 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/media/i2c/cx25840/cx25840-core.c b/drivers/media/i2c/cx25840/cx25840-core.c
-> index e453a3f..0327032 100644
-> --- a/drivers/media/i2c/cx25840/cx25840-core.c
-> +++ b/drivers/media/i2c/cx25840/cx25840-core.c
-> @@ -879,7 +879,7 @@ void cx25840_std_setup(struct i2c_client *client)
->  	/* Sets horizontal blanking delay and active lines */
->  	cx25840_write(client, 0x470, hblank);
->  	cx25840_write(client, 0x471,
-> -			0xff & (((hblank >> 8) & 0x3) | (hactive << 4)));
-> +		      (((hblank >> 8) & 0x3) | (hactive << 4)) & 0xff);
->  	cx25840_write(client, 0x472, hactive >> 4);
->  
->  	/* Sets burst gate delay */
-> @@ -888,13 +888,13 @@ void cx25840_std_setup(struct i2c_client *client)
->  	/* Sets vertical blanking delay and active duration */
->  	cx25840_write(client, 0x474, vblank);
->  	cx25840_write(client, 0x475,
-> -			0xff & (((vblank >> 8) & 0x3) | (vactive << 4)));
-> +		      (((vblank >> 8) & 0x3) | (vactive << 4)) & 0xff);
->  	cx25840_write(client, 0x476, vactive >> 4);
->  	cx25840_write(client, 0x477, vblank656);
->  
->  	/* Sets src decimation rate */
-> -	cx25840_write(client, 0x478, 0xff & src_decimation);
-> -	cx25840_write(client, 0x479, 0xff & (src_decimation >> 8));
-> +	cx25840_write(client, 0x478, src_decimation & 0xff);
-> +	cx25840_write(client, 0x479, (src_decimation >> 8) & 0xff);
->  
->  	/* Sets Luma and UV Low pass filters */
->  	cx25840_write(client, 0x47a, luma_lpf << 6 | ((uv_lpf << 4) & 0x30));
-> @@ -904,8 +904,8 @@ void cx25840_std_setup(struct i2c_client *client)
->  
->  	/* Sets SC Step*/
->  	cx25840_write(client, 0x47c, sc);
-> -	cx25840_write(client, 0x47d, 0xff & sc >> 8);
-> -	cx25840_write(client, 0x47e, 0xff & sc >> 16);
-> +	cx25840_write(client, 0x47d, (sc >> 8) & 0xff);
-> +	cx25840_write(client, 0x47e, (sc >> 16) & 0xff);
->  
->  	/* Sets VBI parameters */
->  	if (std & V4L2_STD_625_50) {
-> diff --git a/drivers/media/pci/cx18/cx18-av-core.c b/drivers/media/pci/cx18/cx18-av-core.c
-> index 2d3afe0..45be26c 100644
-> --- a/drivers/media/pci/cx18/cx18-av-core.c
-> +++ b/drivers/media/pci/cx18/cx18-av-core.c
-> @@ -490,8 +490,8 @@ void cx18_av_std_setup(struct cx18 *cx)
->  
->  	/* Sets horizontal blanking delay and active lines */
->  	cx18_av_write(cx, 0x470, hblank);
-> -	cx18_av_write(cx, 0x471, 0xff & (((hblank >> 8) & 0x3) |
-> -						(hactive << 4)));
-> +	cx18_av_write(cx, 0x471,
-> +		      (((hblank >> 8) & 0x3) | (hactive << 4)) & 0xff);
->  	cx18_av_write(cx, 0x472, hactive >> 4);
->  
->  	/* Sets burst gate delay */
-> @@ -499,14 +499,14 @@ void cx18_av_std_setup(struct cx18 *cx)
->  
->  	/* Sets vertical blanking delay and active duration */
->  	cx18_av_write(cx, 0x474, vblank);
-> -	cx18_av_write(cx, 0x475, 0xff & (((vblank >> 8) & 0x3) |
-> -						(vactive << 4)));
-> +	cx18_av_write(cx, 0x475,
-> +		      (((vblank >> 8) & 0x3) | (vactive << 4)) & 0xff);
->  	cx18_av_write(cx, 0x476, vactive >> 4);
->  	cx18_av_write(cx, 0x477, vblank656);
->  
->  	/* Sets src decimation rate */
-> -	cx18_av_write(cx, 0x478, 0xff & src_decimation);
-> -	cx18_av_write(cx, 0x479, 0xff & (src_decimation >> 8));
-> +	cx18_av_write(cx, 0x478, src_decimation & 0xff);
-> +	cx18_av_write(cx, 0x479, (src_decimation >> 8) & 0xff);
->  
->  	/* Sets Luma and UV Low pass filters */
->  	cx18_av_write(cx, 0x47a, luma_lpf << 6 | ((uv_lpf << 4) & 0x30));
-> @@ -516,8 +516,8 @@ void cx18_av_std_setup(struct cx18 *cx)
->  
->  	/* Sets SC Step*/
->  	cx18_av_write(cx, 0x47c, sc);
-> -	cx18_av_write(cx, 0x47d, 0xff & sc >> 8);
-> -	cx18_av_write(cx, 0x47e, 0xff & sc >> 16);
-> +	cx18_av_write(cx, 0x47d, (sc >> 8) & 0xff);
-> +	cx18_av_write(cx, 0x47e, (sc >> 16) & 0xff);
->  
->  	if (std & V4L2_STD_625_50) {
->  		state->slicer_line_delay = 1;
+       CPU0
+       ----
+  lock(bdev_lock);
+  <Interrupt>
+    lock(bdev_lock);
+
+*
+
+no locks held by swapper/0/0.
 
 
+CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc3.x86_64 #159
+Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+ ffffffff8266ac90 ffff880107403af8 ffffffff816db3ef 0000000000000000
+ ffffffff81c134c0 ffff880107403b58 ffffffff816d6fd3 0000000000000001
+ ffffffff00000001 ffff880100000000 ffffffff81010e6f 0000000000000046
+Call Trace:
+ <IRQ>  [<ffffffff816db3ef>] dump_stack+0x4e/0x68
+ [<ffffffff816d6fd3>] print_usage_bug+0x1f3/0x204
+ [<ffffffff81010e6f>] ? save_stack_trace+0x2f/0x50
+ [<ffffffff810b6f40>] ? print_irq_inversion_bug+0x200/0x200
+ [<ffffffff810b78e6>] mark_lock+0x176/0x2e0
+ [<ffffffff810b9f83>] __lock_acquire+0x7c3/0x1c60
+ [<ffffffff8103d548>] ? lookup_address+0x28/0x30
+ [<ffffffff8103d58b>] ? _lookup_address_cpa.isra.3+0x3b/0x40
+ [<ffffffff813c4e89>] ? __debug_check_no_obj_freed+0x89/0x220
+ [<ffffffff810bbcdc>] lock_acquire+0xfc/0x150
+ [<ffffffff811ff39c>] ? nr_blockdev_pages+0x1c/0x80
+ [<ffffffff816e4019>] _raw_spin_lock+0x39/0x50
+ [<ffffffff811ff39c>] ? nr_blockdev_pages+0x1c/0x80
+ [<ffffffff811ff39c>] nr_blockdev_pages+0x1c/0x80
+ [<ffffffff8115d5f7>] si_meminfo+0x47/0x70
+ [<ffffffff815eb14d>] post_status.isra.3+0x6d/0x190
+ [<ffffffff810b7f4d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff8115f00f>] ? __free_pages+0x2f/0x60
+ [<ffffffff815eb34f>] ? free_balloon_pages.isra.5+0x8f/0xb0
+ [<ffffffff815eb972>] balloon_onchannelcallback+0x212/0x380
+ [<ffffffff815e69d3>] vmbus_on_event+0x173/0x1d0
+ [<ffffffff81071b47>] tasklet_action+0x127/0x160
+ [<ffffffff81071ffa>] __do_softirq+0x18a/0x340
+ [<ffffffff81072478>] irq_exit+0x58/0xc0
+ [<ffffffff810290c5>] hyperv_vector_handler+0x45/0x60
+ [<ffffffff816e6b92>] hyperv_callback_vector+0x72/0x80
+ <EOI>  [<ffffffff81037b76>] ? native_safe_halt+0x6/0x10
+ [<ffffffff810b7f4d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff8100c8d1>] default_idle+0x51/0xf0
+ [<ffffffff8100d30f>] arch_cpu_idle+0xf/0x20
+ [<ffffffff810b01e7>] cpu_startup_entry+0x217/0x3f0
+ [<ffffffff816ce099>] rest_init+0xc9/0xd0
+ [<ffffffff816cdfd5>] ? rest_init+0x5/0xd0
+ [<ffffffff81d3d04a>] start_kernel+0x438/0x445
+ [<ffffffff81d3c94a>] ? set_init_arg+0x57/0x57
+ [<ffffffff81d3c120>] ? early_idt_handlers+0x120/0x120
+ [<ffffffff81d3c59f>] x86_64_start_reservations+0x2a/0x2c
+ [<ffffffff81d3c6df>] x86_64_start_kernel+0x13e/0x14d
+
+Any help deciphering the above is greatly appreciated!
+
+-- 
+Sitsofe | http://sucs.org/~sits/
