@@ -1,149 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaKIV5m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 16:57:42 -0500
-Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:65470 "EHLO
-	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751532AbaKIV5k (ORCPT
+	id S1751573AbaKIWES (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 17:04:18 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44466 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaKIWEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 16:57:40 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Nov 2014 16:57:39 EST
-From: Marc Dietrich <Marc.Dietrich@ap.physik.uni-giessen.de>
-To: Guenter Roeck <linux@roeck-us.net>, devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v5 33/48] staging: nvec: Register with kernel power-off handler
-Date: Sun, 09 Nov 2014 22:41:26 +0100
-Message-Id: <5008744.rVN94atT9b@ax5200p>
-User-Agent: KMail/4.13.3 (Linux/3.13.0-39-generic; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1415292213-28652-34-git-send-email-linux@roeck-us.net>
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net> <1415292213-28652-34-git-send-email-linux@roeck-us.net>
+	Sun, 9 Nov 2014 17:04:16 -0500
+Date: Sun, 9 Nov 2014 14:00:38 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Tom Boshoven <tomboshoven@gmail.com>, x86@kernel.org,
+        Josh Triplett <josh@joshtriplett.org>,
+        Alexander Monakov <amonakov@gmail.com>
+Subject: Re: [PATCH v2] ACPI/osl: speedup grace period in acpi_os_map_cleanup
+Message-ID: <20141109220038.GH4901@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141108094717.9388.34638.stgit@zurg>
+ <20141109105337.4952.36899.stgit@zurg>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
-X-HRZ-JLUG-MailScanner: No virus found
-X-Envelope-From: marc.dietrich@ap.physik.uni-giessen.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141109105337.4952.36899.stgit@zurg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14110922-0021-0000-0000-00000603FDDF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 06 November 2014, 08:43:17 schrieb Guenter Roeck:
-> Register with kernel power-off handler instead of setting pm_power_off
-> directly. Register with default priority since we don't know any better.
+On Sun, Nov 09, 2014 at 01:53:37PM +0400, Konstantin Khlebnikov wrote:
+> ACPI maintains cache of ioremap regions to speed up operations and
+> access to them from irq context where ioremap() calls aren't allowed.
+> This code abuses synchronize_rcu() on unmap path for synchronization
+> with fast-path in acpi_os_read/write_memory which uses this cache.
 > 
-> Cc: Julian Andres Klode <jak@jak-linux.org>
-> Cc: Marc Dietrich <marvin24@gmx.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net
+> Since v3.10 CPUs are allowed to enter idle state even if they have RCU
+> callbacks queued, see commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+> ("rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks").
+> That change caused problems with nvidia proprietary driver which calls
+> acpi_os_map/unmap_generic_address several times during initialization.
+> Each unmap calls synchronize_rcu and adds significant delay. Totally
+> initialization is slowed for a couple of seconds and that is enough to
+> trigger timeout in hardware, gpu decides to "fell off the bus". Widely
+> spread workaround is reducing "rcu_idle_gp_delay" from 4 to 1 jiffy.
+> 
+> This patch replaces synchronize_rcu() with synchronize_rcu_expedited()
+> which is much faster.
+> 
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+> Reported-and-tested-by: Alexander Monakov <amonakov@gmail.com>
+> Cc: Tom Boshoven <tomboshoven@gmail.com>
+> Link: https://devtalk.nvidia.com/default/topic/567297/linux/linux-3-10-driver-crash/
 
-ok, this version (V5) actually switches the device off in contrast to the 
-first implementation. Somehow I have to find out why it works at all without 
-irqs.
-
-Acked-by: Marc Dietrich <mavin24@gmx.de>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
 > ---
-> v5:
-> - Rebase to v3.18-rc3
-> v4:
-> - Do not use notifiers but internal functions and data structures to manage
->   the list of power-off handlers. Drop unused parameters from callbacks, and
-> make the power-off function type void
-> v3:
-> - Replace poweroff in all newly introduced variables and in text
->   with power_off or power-off as appropriate
-> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> v2:
-> - Use define to specify poweroff handler priority
-> - Use dev_warn instead of dev_err
+>  drivers/acpi/osl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
->  drivers/staging/nvec/nvec.c | 21 ++++++++++++---------
->  drivers/staging/nvec/nvec.h |  2 ++
->  2 files changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-> index a93208a..acf2ea6 100644
-> --- a/drivers/staging/nvec/nvec.c
-> +++ b/drivers/staging/nvec/nvec.c
-> @@ -33,6 +33,7 @@
->  #include <linux/mfd/core.h>
->  #include <linux/mutex.h>
->  #include <linux/notifier.h>
-> +#include <linux/pm.h>
->  #include <linux/slab.h>
->  #include <linux/spinlock.h>
->  #include <linux/workqueue.h>
-> @@ -80,8 +81,6 @@ enum nvec_sleep_subcmds {
->  #define LID_SWITCH BIT(1)
->  #define PWR_BUTTON BIT(15)
-> 
-> -static struct nvec_chip *nvec_power_handle;
-> -
->  static const struct mfd_cell nvec_devices[] = {
->  	{
->  		.name = "nvec-kbd",
-> @@ -759,12 +758,14 @@ static void nvec_disable_i2c_slave(struct nvec_chip
-> *nvec) }
->  #endif
-> 
-> -static void nvec_power_off(void)
-> +static void nvec_power_off(struct power_off_handler_block *this)
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 9964f70..217713c 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -436,7 +436,7 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
+>  static void acpi_os_map_cleanup(struct acpi_ioremap *map)
 >  {
-> +	struct nvec_chip *nvec = container_of(this, struct nvec_chip,
-> +					      power_off_hb);
->  	char ap_pwr_down[] = { NVEC_SLEEP, AP_PWR_DOWN };
+>  	if (!map->refcount) {
+> -		synchronize_rcu();
+> +		synchronize_rcu_expedited();
+>  		acpi_unmap(map->phys, map->virt);
+>  		kfree(map);
+>  	}
 > 
-> -	nvec_toggle_global_events(nvec_power_handle, false);
-> -	nvec_write_async(nvec_power_handle, ap_pwr_down, 2);
-> +	nvec_toggle_global_events(nvec, false);
-> +	nvec_write_async(nvec, ap_pwr_down, 2);
->  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
->  /*
-> @@ -878,8 +879,11 @@ static int tegra_nvec_probe(struct platform_device
-> *pdev) nvec->nvec_status_notifier.notifier_call = nvec_status_notifier;
-> nvec_register_notifier(nvec, &nvec->nvec_status_notifier, 0);
-> 
-> -	nvec_power_handle = nvec;
-> -	pm_power_off = nvec_power_off;
-> +	nvec->power_off_hb.handler = nvec_power_off;
-> +	nvec->power_off_hb.priority = POWER_OFF_PRIORITY_DEFAULT;
-> +	ret = register_power_off_handler(&nvec->power_off_hb);
-> +	if (ret)
-> +		dev_warn(nvec->dev, "Failed to register power-off handler\n");
-> 
->  	/* Get Firmware Version */
->  	msg = nvec_write_sync(nvec, get_firmware_version, 2);
-> @@ -914,13 +918,12 @@ static int tegra_nvec_remove(struct platform_device
-> *pdev) {
->  	struct nvec_chip *nvec = platform_get_drvdata(pdev);
-> 
-> +	unregister_power_off_handler(&nvec->power_off_hb);
->  	nvec_toggle_global_events(nvec, false);
->  	mfd_remove_devices(nvec->dev);
->  	nvec_unregister_notifier(nvec, &nvec->nvec_status_notifier);
->  	cancel_work_sync(&nvec->rx_work);
->  	cancel_work_sync(&nvec->tx_work);
-> -	/* FIXME: needs check wether nvec is responsible for power off */
-> -	pm_power_off = NULL;
-> 
->  	return 0;
->  }
-> diff --git a/drivers/staging/nvec/nvec.h b/drivers/staging/nvec/nvec.h
-> index e271375..d4145da 100644
-> --- a/drivers/staging/nvec/nvec.h
-> +++ b/drivers/staging/nvec/nvec.h
-> @@ -163,6 +163,8 @@ struct nvec_chip {
->  	struct nvec_msg *last_sync_msg;
-> 
->  	int state;
-> +
-> +	struct power_off_handler_block power_off_hb;
->  };
-> 
->  extern int nvec_write_async(struct nvec_chip *nvec, const unsigned char
-> *data,
 
