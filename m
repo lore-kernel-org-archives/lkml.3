@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaKIJ2x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 04:28:53 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:40723 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaKIJ1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 04:27:48 -0500
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 1/3] spi: meson: Add device tree bindings documentation for SPIFC
-Date: Sun,  9 Nov 2014 10:25:11 +0100
-Message-Id: <1415525113-25598-2-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415525113-25598-1-git-send-email-b.galvani@gmail.com>
-References: <1415525113-25598-1-git-send-email-b.galvani@gmail.com>
+	id S1751538AbaKIJf1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 04:35:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45690 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138AbaKIJfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 04:35:22 -0500
+Message-ID: <545F3556.5000802@suse.cz>
+Date: Sun, 09 Nov 2014 10:35:18 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "P. Christeas" <xrg@linux.gr>, Hillf Danton <hillf.zj@alibaba-inc.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: linux-mm@kvack.org
+Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
+References: <00a801cffbd8$434189b0$c9c49d10$@alibaba-inc.com> <1433036.WjB5pb09Zh@xorhgos3.pefnos>
+In-Reply-To: <1433036.WjB5pb09Zh@xorhgos3.pefnos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds documentation of device tree bindings for the Amlogic Meson
-SPIFC (SPI Flash Controller).
+On 11/09/2014 09:22 AM, P. Christeas wrote:
+> On Sunday 09 November 2014, Hillf Danton wrote:
+>> -		return COMPACT_CONTINUE;
+>> +		return COMPACT_SKIPPED;
+> 
+> I guess this one would mitigate against Vlastmil's migration scanner issue, 
+> wouldn't it?
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- .../devicetree/bindings/spi/spi-meson.txt          | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-meson.txt
+Please no, that's a wrong fix. The purpose of compaction is to make the
+high-order watermark meet, not give up.
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-meson.txt b/Documentation/devicetree/bindings/spi/spi-meson.txt
-new file mode 100644
-index 0000000..bb52a86
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-meson.txt
-@@ -0,0 +1,22 @@
-+Amlogic Meson SPI controllers
-+
-+* SPIFC (SPI Flash Controller)
-+
-+The Meson SPIFC is a controller optimized for communication with SPI
-+NOR memories, without DMA support and a 64-byte unified transmit /
-+receive buffer.
-+
-+Required properties:
-+ - compatible: should be "amlogic,meson6-spifc"
-+ - reg: physical base address and length of the controller registers
-+ - clocks: phandle of the input clock for the baud rate generator
-+ - #address-cells: should be 1
-+ - #size-cells: should be 0
-+
-+	spi@c1108c80 {
-+		compatible = "amlogic,meson6-spifc";
-+		reg = <0xc1108c80 0x80>;
-+		clocks = <&clk81>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
--- 
-1.9.1
+> In that case, I should wait a bit[1] to try the first patch, then revert, try 
+> yours and (hopefully) have some results.
+
+I hope my patch will be enough,
+
+> Then, apply both.
+> 
+> [1] trying to push the vm by loading memory-hungry apps and random load.
+
+Maybe the tools/testing/selftests/vm/transhuge-stress could help
 
