@@ -1,93 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaKISms (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 13:42:48 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:31781 "EHLO smtp4-g21.free.fr"
+	id S1751728AbaKISmy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 13:42:54 -0500
+Received: from mout.gmx.com ([74.208.4.201]:55297 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567AbaKISmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 13:42:46 -0500
-X-Mailbox-Line: From 33e64705e81810201349a09ac22d5e1f66e035e0 Mon Sep 17 00:00:00 2001
-Message-Id: <33e64705e81810201349a09ac22d5e1f66e035e0.1415557680.git.moinejf@free.fr>
-In-Reply-To: <cover.1415557680.git.moinejf@free.fr>
-References: <cover.1415557680.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Sun, 9 Nov 2014 12:38:56 +0100
-Subject: [PATCH 2/2] ASoC: Remove useless casts
-To: Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+	id S1751650AbaKISmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 13:42:52 -0500
+MIME-Version: 1.0
+Message-ID: <trinity-df7c77fa-0ea5-4ed3-9fba-356a697d6d2f-1415558570714@3capp-mailcom-lxa10>
+From: "Brad Townshend" <bradtownshend83a@email.com>
+To: linux-kernel@vger.kernel.org
+Subject: What systemd will lead to: An eventual lament. What it is: a jumble
+ of lines.
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 9 Nov 2014 19:42:51 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:waESu+LBoLn3on2vKh3n+jfyWf3tO4g/XuxRY1UcU+W
+ q6/H16FrFS2vGvYuBJZ/Pa8grbPmYhXUSBr3vNElFgRBDyPyHq
+ ANdPIGmT8ROMEc/VwrVqyesWoLgRCiaLe7cxNiJT3LW7y/h8uZ
+ /lfbR/Y25iTJm5fY7mqfzKJYFN18gcn1JeRTxqFWjzov0Iea+i
+ KmwsQUwjty9sKJLqxWeO9cWYZ9u7I8DBY6nDHTNr8gPyZ/oBbO
+ /G3kTiXBe1AreyWpMnGHQDddMMQQDAOmBtlmDGNlaA2dw/Pwqd
+ ARkTolJHWvmIc6erT1Mpg+H6CuB
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to cast the cpu_of_node or codec_of_node of the
-dai_links when calling of_put_node.
+Systemd forced adoption will lead to an eventual lament.
+(auditorial interpretation here: http://youtu.be/PCJ-CWYoY9s )
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- sound/soc/generic/simple-card.c       | 7 ++-----
- sound/soc/samsung/odroidx2_max98090.c | 4 ++--
- sound/soc/ux500/mop500.c              | 6 ++----
- 3 files changed, 6 insertions(+), 11 deletions(-)
+What systemd is, is a jumble of lines.
+(sonic interpretation: http://youtu.be/ACDi1YOcupk )
 
-diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-index cd49d50..3e3fec4 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -457,16 +457,13 @@ static int asoc_simple_card_unref(struct platform_device *pdev)
- {
- 	struct snd_soc_card *card = platform_get_drvdata(pdev);
- 	struct snd_soc_dai_link *dai_link;
--	struct device_node *np;
- 	int num_links;
- 
- 	for (num_links = 0, dai_link = card->dai_link;
- 	     num_links < card->num_links;
- 	     num_links++, dai_link++) {
--		np = (struct device_node *) dai_link->cpu_of_node;
--		of_node_put(np);
--		np = (struct device_node *) dai_link->codec_of_node;
--		of_node_put(np);
-+		of_node_put(dai_link->cpu_of_node);
-+		of_node_put(dai_link->codec_of_node);
- 	}
- 	return 0;
- }
-diff --git a/sound/soc/samsung/odroidx2_max98090.c b/sound/soc/samsung/odroidx2_max98090.c
-index 3c8f604..d7640e7 100644
---- a/sound/soc/samsung/odroidx2_max98090.c
-+++ b/sound/soc/samsung/odroidx2_max98090.c
-@@ -153,8 +153,8 @@ static int odroidx2_audio_remove(struct platform_device *pdev)
- 
- 	snd_soc_unregister_card(card);
- 
--	of_node_put((struct device_node *)odroidx2_dai[0].cpu_of_node);
--	of_node_put((struct device_node *)odroidx2_dai[0].codec_of_node);
-+	of_node_put(odroidx2_dai[0].cpu_of_node);
-+	of_node_put(odroidx2_dai[0].codec_of_node);
- 
- 	return 0;
- }
-diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
-index b3b66aa..ea9ba284 100644
---- a/sound/soc/ux500/mop500.c
-+++ b/sound/soc/ux500/mop500.c
-@@ -64,11 +64,9 @@ static void mop500_of_node_put(void)
- 
- 	for (i = 0; i < 2; i++) {
- 		if (mop500_dai_links[i].cpu_of_node)
--			of_node_put((struct device_node *)
--				mop500_dai_links[i].cpu_of_node);
-+			of_node_put(mop500_dai_links[i].cpu_of_node);
- 		if (mop500_dai_links[i].codec_of_node)
--			of_node_put((struct device_node *)
--				mop500_dai_links[i].codec_of_node);
-+			of_node_put(mop500_dai_links[i].codec_of_node);
- 	}
- }
- 
--- 
-2.1.3
-
+What systemd and it's anti-choice religious order is:
+An abomination to the spirit of the free software movement.
+(an interpretive abomination to sound to explain this without words is here:
+http://youtu.be/zw8Ta1A3sTQ )
