@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaKIOqj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 09:46:39 -0500
+	id S1752325AbaKIOrB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 09:47:01 -0500
 Received: from mga09.intel.com ([134.134.136.24]:9864 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108AbaKIOo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 09:44:59 -0500
+	id S1751600AbaKIOov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 09:44:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="485940434"
+   d="scan'208";a="485940411"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -20,9 +20,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
         dmaengine@vger.kernel.org
-Subject: [Patch Part3 V7 4/8] iommu/vt-d: Search for ACPI _DSM method for DMAR hotplug
-Date: Sun,  9 Nov 2014 22:47:59 +0800
-Message-Id: <1415544483-27990-5-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part3 V7 2/8] iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
+Date: Sun,  9 Nov 2014 22:47:57 +0800
+Message-Id: <1415544483-27990-3-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
@@ -30,74 +30,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Intel VT-d specification, _DSM method to support DMAR
-hotplug should exist directly under corresponding ACPI object
-representing PCI host bridge. But some BIOSes doesn't conform to
-this, so search for _DSM method in the subtree starting from the
-ACPI object representing the PCI host bridge.
+Introduce functions to support dynamic IOMMU seq_id allocating and
+releasing, which will be used to support DMAR hotplug.
+
+Also rename IOMMU_UNITS_SUPPORTED as DMAR_UNITS_SUPPORTED.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Reviewed-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/iommu/dmar.c |   33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ drivers/iommu/dmar.c        |   40 ++++++++++++++++++++++++++++++++++------
+ drivers/iommu/intel-iommu.c |   13 +++----------
+ include/linux/dmar.h        |    6 ++++++
+ 3 files changed, 43 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 0bd536d769a9..9847613085e1 100644
+index 586dd2aa2ca2..78aa1b2af113 100644
 --- a/drivers/iommu/dmar.c
 +++ b/drivers/iommu/dmar.c
-@@ -1942,21 +1942,48 @@ static int dmar_hotplug_remove(acpi_handle handle)
- 	return ret;
+@@ -70,6 +70,7 @@ LIST_HEAD(dmar_drhd_units);
+ struct acpi_table_header * __initdata dmar_tbl;
+ static acpi_size dmar_tbl_size;
+ static int dmar_dev_scope_status = 1;
++static unsigned long dmar_seq_ids[BITS_TO_LONGS(DMAR_UNITS_SUPPORTED)];
+ 
+ static int alloc_iommu(struct dmar_drhd_unit *drhd);
+ static void free_iommu(struct intel_iommu *iommu);
+@@ -944,11 +945,32 @@ out:
+ 	return err;
  }
  
-+static acpi_status dmar_get_dsm_handle(acpi_handle handle, u32 lvl,
-+				       void *context, void **retval)
++static int dmar_alloc_seq_id(struct intel_iommu *iommu)
 +{
-+	acpi_handle *phdl = retval;
-+
-+	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-+		*phdl = handle;
-+		return AE_CTRL_TERMINATE;
++	iommu->seq_id = find_first_zero_bit(dmar_seq_ids,
++					    DMAR_UNITS_SUPPORTED);
++	if (iommu->seq_id >= DMAR_UNITS_SUPPORTED) {
++		iommu->seq_id = -1;
++	} else {
++		set_bit(iommu->seq_id, dmar_seq_ids);
++		sprintf(iommu->name, "dmar%d", iommu->seq_id);
 +	}
 +
-+	return AE_OK;
++	return iommu->seq_id;
 +}
 +
- static int dmar_device_hotplug(acpi_handle handle, bool insert)
- {
- 	int ret;
-+	acpi_handle tmp = NULL;
-+	acpi_status status;
- 
- 	if (!dmar_in_use())
- 		return 0;
- 
--	if (!dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD))
-+	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-+		tmp = handle;
-+	} else {
-+		status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-+					     ACPI_UINT32_MAX,
-+					     dmar_get_dsm_handle,
-+					     NULL, NULL, &tmp);
-+		if (ACPI_FAILURE(status)) {
-+			pr_warn("Failed to locate _DSM method.\n");
-+			return -ENXIO;
-+		}
++static void dmar_free_seq_id(struct intel_iommu *iommu)
++{
++	if (iommu->seq_id >= 0) {
++		clear_bit(iommu->seq_id, dmar_seq_ids);
++		iommu->seq_id = -1;
 +	}
-+	if (tmp == NULL)
- 		return 0;
++}
++
+ static int alloc_iommu(struct dmar_drhd_unit *drhd)
+ {
+ 	struct intel_iommu *iommu;
+ 	u32 ver, sts;
+-	static int iommu_allocated = 0;
+ 	int agaw = 0;
+ 	int msagaw = 0;
+ 	int err;
+@@ -962,13 +984,16 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 	if (!iommu)
+ 		return -ENOMEM;
  
- 	down_write(&dmar_global_lock);
- 	if (insert)
--		ret = dmar_hotplug_insert(handle);
-+		ret = dmar_hotplug_insert(tmp);
- 	else
--		ret = dmar_hotplug_remove(handle);
-+		ret = dmar_hotplug_remove(tmp);
- 	up_write(&dmar_global_lock);
+-	iommu->seq_id = iommu_allocated++;
+-	sprintf (iommu->name, "dmar%d", iommu->seq_id);
++	if (dmar_alloc_seq_id(iommu) < 0) {
++		pr_err("IOMMU: failed to allocate seq_id\n");
++		err = -ENOSPC;
++		goto error;
++	}
  
- 	return ret;
+ 	err = map_iommu(iommu, drhd->reg_base_addr);
+ 	if (err) {
+ 		pr_err("IOMMU: failed to map %s\n", iommu->name);
+-		goto error;
++		goto error_free_seq_id;
+ 	}
+ 
+ 	err = -EINVAL;
+@@ -1018,9 +1043,11 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 
+ 	return 0;
+ 
+- err_unmap:
++err_unmap:
+ 	unmap_iommu(iommu);
+- error:
++error_free_seq_id:
++	dmar_free_seq_id(iommu);
++error:
+ 	kfree(iommu);
+ 	return err;
+ }
+@@ -1044,6 +1071,7 @@ static void free_iommu(struct intel_iommu *iommu)
+ 	if (iommu->reg)
+ 		unmap_iommu(iommu);
+ 
++	dmar_free_seq_id(iommu);
+ 	kfree(iommu);
+ }
+ 
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 041f6e727337..39870414f657 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -328,17 +328,10 @@ static int hw_pass_through = 1;
+ /* si_domain contains mulitple devices */
+ #define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
+ 
+-/* define the limit of IOMMUs supported in each domain */
+-#ifdef	CONFIG_X86
+-# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
+-#else
+-# define	IOMMU_UNITS_SUPPORTED	64
+-#endif
+-
+ struct dmar_domain {
+ 	int	id;			/* domain id */
+ 	int	nid;			/* node id */
+-	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
++	DECLARE_BITMAP(iommu_bmp, DMAR_UNITS_SUPPORTED);
+ 					/* bitmap of iommus this domain uses*/
+ 
+ 	struct list_head devices; 	/* all devices' list */
+@@ -2728,12 +2721,12 @@ static int __init init_dmars(void)
+ 		 * threaded kernel __init code path all other access are read
+ 		 * only
+ 		 */
+-		if (g_num_of_iommus < IOMMU_UNITS_SUPPORTED) {
++		if (g_num_of_iommus < DMAR_UNITS_SUPPORTED) {
+ 			g_num_of_iommus++;
+ 			continue;
+ 		}
+ 		printk_once(KERN_ERR "intel-iommu: exceeded %d IOMMUs\n",
+-			  IOMMU_UNITS_SUPPORTED);
++			  DMAR_UNITS_SUPPORTED);
+ 	}
+ 
+ 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 495df5e48f80..725204fc433e 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -30,6 +30,12 @@
+ 
+ struct acpi_dmar_header;
+ 
++#ifdef	CONFIG_X86
++# define	DMAR_UNITS_SUPPORTED	MAX_IO_APICS
++#else
++# define	DMAR_UNITS_SUPPORTED	64
++#endif
++
+ /* DMAR Flags */
+ #define DMAR_INTR_REMAP		0x1
+ #define DMAR_X2APIC_OPT_OUT	0x2
 -- 
 1.7.10.4
 
