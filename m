@@ -1,317 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaKIKRX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 05:17:23 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:43392 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588AbaKIKRT (ORCPT
+	id S1751852AbaKIKRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 05:17:54 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53380 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743AbaKIKRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 05:17:19 -0500
-Message-ID: <545F3F2C.7060704@gmail.com>
-Date: Sun, 09 Nov 2014 18:17:16 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 9 Nov 2014 05:17:50 -0500
+Date: Sun, 9 Nov 2014 10:17:29 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Message-ID: <20141109101729.GN2722@sirena.org.uk>
+References: <1415525113-25598-1-git-send-email-b.galvani@gmail.com>
+ <1415525113-25598-4-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
-To: megaraidlinux@lsi.com,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers: scsi: megaraid: Add "megaraid_sas_internal.h" for
- internal shared functions using
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JLiXfqD9/Kt1b+Pq"
+Content-Disposition: inline
+In-Reply-To: <1415525113-25598-4-git-send-email-b.galvani@gmail.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.164.97
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] ARM: dts: meson: add node for SPIFC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For shared inline functions crossed source files, better to let it as
-"static inline" in a header file. For extern functions, better to
-declare them in header file.
 
-For the latest upstream gcc/binutiles (gcc 5 with ld 2.25.51), it will
-cause building break (although it might be the gcc's or ld's issue), the
-related error (with allmodconfig under tile):
+--JLiXfqD9/Kt1b+Pq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    MODPOST 4002 modules
-  ERROR: "megasas_return_cmd" [drivers/scsi/megaraid/megaraid_sas.ko] undefined!
-  ERROR: "megasas_is_ldio" [drivers/scsi/megaraid/megaraid_sas.ko] undefined!
+On Sun, Nov 09, 2014 at 10:25:13AM +0100, Beniamino Galvani wrote:
+> This adds a node for the SPI Flash Controller to the Amlogic Meson
+> DTS.
 
+Acked-by: Mark Brown <broonie@kernel.org>
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/scsi/megaraid/megaraid_sas_base.c     |  65 +----------------
- drivers/scsi/megaraid/megaraid_sas_fusion.c   |  38 +---------
- drivers/scsi/megaraid/megaraid_sas_internal.h | 100 ++++++++++++++++++++++++++
- 3 files changed, 102 insertions(+), 101 deletions(-)
- create mode 100644 drivers/scsi/megaraid/megaraid_sas_internal.h
+--JLiXfqD9/Kt1b+Pq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index f6a69a3..4a71c04 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -57,6 +57,7 @@
- #include <scsi/scsi_tcq.h>
- #include "megaraid_sas_fusion.h"
- #include "megaraid_sas.h"
-+#include "megaraid_sas_internal.h"
- 
- /*
-  * Number of sectors per IO command
-@@ -98,7 +99,6 @@ MODULE_VERSION(MEGASAS_VERSION);
- MODULE_AUTHOR("megaraidlinux@lsi.com");
- MODULE_DESCRIPTION("LSI MegaRAID SAS Driver");
- 
--int megasas_transition_to_ready(struct megasas_instance *instance, int ocr);
- static int megasas_get_pd_list(struct megasas_instance *instance);
- static int megasas_ld_list_query(struct megasas_instance *instance,
- 				 u8 query_type);
-@@ -155,9 +155,6 @@ static u32 support_device_change;
- /* define lock for aen poll */
- spinlock_t poll_aen_lock;
- 
--void
--megasas_complete_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd,
--		     u8 alt_status);
- static u32
- megasas_read_fw_status_reg_gen2(struct megasas_register_set __iomem *regs);
- static int
-@@ -170,26 +167,8 @@ u32
- megasas_build_and_issue_cmd(struct megasas_instance *instance,
- 			    struct scsi_cmnd *scmd);
- static void megasas_complete_cmd_dpc(unsigned long instance_addr);
--void
--megasas_release_fusion(struct megasas_instance *instance);
--int
--megasas_ioc_init_fusion(struct megasas_instance *instance);
--void
--megasas_free_cmds_fusion(struct megasas_instance *instance);
--u8
--megasas_get_map_info(struct megasas_instance *instance);
--int
--megasas_sync_map_info(struct megasas_instance *instance);
--int
--wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd,
--	int seconds);
--void megasas_reset_reply_desc(struct megasas_instance *instance);
--int megasas_reset_fusion(struct Scsi_Host *shost, int iotimeout);
--void megasas_fusion_ocr_wq(struct work_struct *work);
- static int megasas_get_ld_vf_affiliation(struct megasas_instance *instance,
- 					 int initial);
--int megasas_check_mpio_paths(struct megasas_instance *instance,
--			     struct scsi_cmnd *scmd);
- 
- void
- megasas_issue_dcmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
-@@ -258,22 +237,6 @@ __megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
- }
- 
- /**
-- * megasas_return_cmd -	Return a cmd to free command pool
-- * @instance:		Adapter soft state
-- * @cmd:		Command packet to be returned to free command pool
-- */
--inline void
--megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&instance->mfi_pool_lock, flags);
--	__megasas_return_cmd(instance, cmd);
--	spin_unlock_irqrestore(&instance->mfi_pool_lock, flags);
--}
--
--
--/**
- *	The following functions are defined for xscale
- *	(deviceid : 1064R, PERC5) controllers
- */
-@@ -1417,32 +1380,6 @@ megasas_build_ldio(struct megasas_instance *instance, struct scsi_cmnd *scp,
- 	return cmd->frame_count;
- }
- 
--/**
-- * megasas_is_ldio -		Checks if the cmd is for logical drive
-- * @scmd:			SCSI command
-- *
-- * Called by megasas_queue_command to find out if the command to be queued
-- * is a logical drive command
-- */
--inline int megasas_is_ldio(struct scsi_cmnd *cmd)
--{
--	if (!MEGASAS_IS_LOGICAL(cmd))
--		return 0;
--	switch (cmd->cmnd[0]) {
--	case READ_10:
--	case WRITE_10:
--	case READ_12:
--	case WRITE_12:
--	case READ_6:
--	case WRITE_6:
--	case READ_16:
--	case WRITE_16:
--		return 1;
--	default:
--		return 0;
--	}
--}
--
-  /**
-  * megasas_dump_pending_frames -	Dumps the frame address of all pending cmds
-  *                              	in FW
-diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-index f37eed6..c2b8782 100644
---- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-@@ -54,43 +54,7 @@
- 
- #include "megaraid_sas_fusion.h"
- #include "megaraid_sas.h"
--
--extern void megasas_free_cmds(struct megasas_instance *instance);
--extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
--					   *instance);
--extern void
--megasas_complete_cmd(struct megasas_instance *instance,
--		     struct megasas_cmd *cmd, u8 alt_status);
--int megasas_is_ldio(struct scsi_cmnd *cmd);
--int
--wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd,
--	      int seconds);
--
--void
--megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd);
--int megasas_alloc_cmds(struct megasas_instance *instance);
--int
--megasas_clear_intr_fusion(struct megasas_register_set __iomem *regs);
--int
--megasas_issue_polled(struct megasas_instance *instance,
--		     struct megasas_cmd *cmd);
--void
--megasas_check_and_restore_queue_depth(struct megasas_instance *instance);
--
--int megasas_transition_to_ready(struct megasas_instance *instance, int ocr);
--void megaraid_sas_kill_hba(struct megasas_instance *instance);
--
--extern u32 megasas_dbg_lvl;
--void megasas_sriov_heartbeat_handler(unsigned long instance_addr);
--int megasas_sriov_start_heartbeat(struct megasas_instance *instance,
--				  int initial);
--void megasas_start_timer(struct megasas_instance *instance,
--			struct timer_list *timer,
--			 void *fn, unsigned long interval);
--extern struct megasas_mgmt_info megasas_mgmt_info;
--extern int resetwaittime;
--
--
-+#include "megaraid_sas_internal.h"
- 
- /**
-  * megasas_enable_intr_fusion -	Enables interrupts
-diff --git a/drivers/scsi/megaraid/megaraid_sas_internal.h b/drivers/scsi/megaraid/megaraid_sas_internal.h
-new file mode 100644
-index 0000000..b2b0a55
---- /dev/null
-+++ b/drivers/scsi/megaraid/megaraid_sas_internal.h
-@@ -0,0 +1,100 @@
-+#ifndef LSI_MEGARAID_SAS_INTERNAL_H
-+#define LSI_MEGARAID_SAS_INTERNAL_H
-+
-+/*
-+ * From base.
-+ */
-+
-+extern void megasas_free_cmds(struct megasas_instance *instance);
-+extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
-+					   *instance);
-+
-+extern void
-+megasas_complete_cmd(struct megasas_instance *instance,
-+		     struct megasas_cmd *cmd, u8 alt_status);
-+/**
-+ * megasas_is_ldio -		Checks if the cmd is for logical drive
-+ * @scmd:			SCSI command
-+ *
-+ * Called by megasas_queue_command to find out if the command to be queued
-+ * is a logical drive command
-+ */
-+static inline int megasas_is_ldio(struct scsi_cmnd *cmd)
-+{
-+	if (!MEGASAS_IS_LOGICAL(cmd))
-+		return 0;
-+	switch (cmd->cmnd[0]) {
-+	case READ_10:
-+	case WRITE_10:
-+	case READ_12:
-+	case WRITE_12:
-+	case READ_6:
-+	case WRITE_6:
-+	case READ_16:
-+	case WRITE_16:
-+		return 1;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+/**
-+ * megasas_return_cmd -	Return a cmd to free command pool
-+ * @instance:		Adapter soft state
-+ * @cmd:		Command packet to be returned to free command pool
-+ */
-+static inline void
-+megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&instance->mfi_pool_lock, flags);
-+	__megasas_return_cmd(instance, cmd);
-+	spin_unlock_irqrestore(&instance->mfi_pool_lock, flags);
-+}
-+
-+int megasas_alloc_cmds(struct megasas_instance *instance);
-+
-+int
-+megasas_issue_polled(struct megasas_instance *instance,
-+		     struct megasas_cmd *cmd);
-+void
-+megasas_check_and_restore_queue_depth(struct megasas_instance *instance);
-+
-+int megasas_transition_to_ready(struct megasas_instance *instance, int ocr);
-+void megaraid_sas_kill_hba(struct megasas_instance *instance);
-+
-+extern u32 megasas_dbg_lvl;
-+void megasas_sriov_heartbeat_handler(unsigned long instance_addr);
-+int megasas_sriov_start_heartbeat(struct megasas_instance *instance,
-+				  int initial);
-+void megasas_start_timer(struct megasas_instance *instance,
-+			struct timer_list *timer,
-+			 void *fn, unsigned long interval);
-+extern struct megasas_mgmt_info megasas_mgmt_info;
-+extern int resetwaittime;
-+
-+/*
-+ * From fusion.
-+ */
-+
-+int megasas_check_mpio_paths(struct megasas_instance *instance,
-+			     struct scsi_cmnd *scmd);
-+int
-+wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd,
-+	      int seconds);
-+void
-+megasas_release_fusion(struct megasas_instance *instance);
-+int
-+megasas_ioc_init_fusion(struct megasas_instance *instance);
-+void
-+megasas_free_cmds_fusion(struct megasas_instance *instance);
-+u8
-+megasas_get_map_info(struct megasas_instance *instance);
-+int
-+megasas_sync_map_info(struct megasas_instance *instance);
-+void megasas_reset_reply_desc(struct megasas_instance *instance);
-+int megasas_reset_fusion(struct Scsi_Host *shost, int iotimeout);
-+void megasas_fusion_ocr_wq(struct work_struct *work);
-+
-+#endif /* LSI_MEGARAID_SAS_INTERNAL_H */
--- 
-1.9.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUXz85AAoJECTWi3JdVIfQG5cH/3A15dIrwZU8ZtnWmeAznIes
+0YCa6pASIak1j8iCCGLW5qUXchiMB5ag5gWAZRiZAfuW7K0K57IlRrHYQSsk8jOC
+UWK5M0er7jKCTpfgrwfpO1GcOWlNQwo+qCx47M8N2HBK6cSH1AC3WqhzZmyn6anK
+HnV+858F6PoBlRflAhRJNVRyF2MIS9DqSS4hYttsUrWiiHxsz3jmnsgZr4Z6thjR
+VegzJ354je2zaKhEPPBL+s08xwRN/1EzZ67KFCYWLfgMA7uMwRk6F4BuxfHEqOs4
+K0+qlRjZAJJpIiD/3aCF124O9Kfu7Ar+ZTJosEcsZt61UESR4StW7uUOWcqpMzM=
+=sG1B
+-----END PGP SIGNATURE-----
+
+--JLiXfqD9/Kt1b+Pq--
