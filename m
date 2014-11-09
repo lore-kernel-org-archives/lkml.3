@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599AbaKIAz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 19:55:29 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60308 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259AbaKIAz2 (ORCPT
+	id S1753658AbaKIA6H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 19:58:07 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:35344 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814AbaKIA6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 19:55:28 -0500
-Date: Sat, 8 Nov 2014 16:55:26 -0800
+	Sat, 8 Nov 2014 19:58:05 -0500
+Date: Sat, 8 Nov 2014 16:58:02 -0800
 From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: cleanup for 3.19 #1
-Message-ID: <20141109005526.GC13855@quad.lixom.net>
-References: <1415037288-4332-1-git-send-email-nicolas.ferre@atmel.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Andreas Olofsson <andreas@adapteva.com>,
+        Matteo Vit <matteo.vit@starwaredesign.com>,
+        Sean Rickerd <srickerd@suse.com>, stable@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: zynq: Enable PL clocks for Parallella
+Message-ID: <20141109005802.GE13855@quad.lixom.net>
+References: <1415294531-8942-1-git-send-email-afaerber@suse.de>
+ <eca8ae5de8184151b03d3fd8d23c62a7@BY2FFO11FD010.protection.gbl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1415037288-4332-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <eca8ae5de8184151b03d3fd8d23c62a7@BY2FFO11FD010.protection.gbl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 06:54:47PM +0100, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
+On Fri, Nov 07, 2014 at 07:44:16AM +0100, Michal Simek wrote:
+> On 11/06/2014 06:22 PM, Andreas Färber wrote:
+> > The Parallella board comes with a U-Boot bootloader that loads one of
+> > two predefined FPGA bitstreams before booting the kernel. Both define an
+> > AXI interface to the on-board Epiphany processor.
+> > 
+> > Enable clocks FCLK0..FCLK3 for the Programmable Logic by default.
+> > 
+> > Otherwise accessing, e.g., the ESYSRESET register freezes the board,
+> > as seen with the Epiphany SDK tools e-reset and e-hw-rev, using /dev/mem.
+> > 
+> > Cc: <stable@vger.kernel.org> # 3.17.x
+> > Signed-off-by: Andreas Färber <afaerber@suse.de>
+> > ---
+> >  Michal/Olof, please consider this trivial patch as a fix for 3.18.
 > 
-> The pull-request that was sent late for 3.18. It was removing the old
-> !MMU at91x40 and 2 board files plus the whole code in at91sam9g45 & at91sam9rl
-> files for implementing this deprecated method. For these particular ones, the
-> EK were the only one to use this code.
-> We can use these boards with DT right now.
+> Acked-by: Michal Simek <michal.simek@xilinx.com>
 > 
-> More code removal like that is shedulle for 3.19, so this is just a first set.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
-> 
->   Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup
-> 
-> for you to fetch changes up to bcf8c7e7703bb2bbde66bec26a81fed4be9cd1d4:
-> 
->   ARM: at91: remove at91sam9rl legacy board support (2014-11-03 18:48:02 +0100)
-> 
-> ----------------------------------------------------------------
-> First batch of cleanup/SoC for 3.19:
-> - removal of old at91x40 !MMU ARM7TDMI support which was kind of rusty
-> - removal of board-sam9m10g45ek.c and board-sam9rlek.c from mach-at91
->   and the code related to these board C files + defconfigs. Use DT for them
->   now!
+> Olof, Arnd: Can you please pick this directly?
 
-Merged, thanks!
+Done, applied to fixes.
 
 
 -Olof
