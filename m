@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaKIJf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 04:35:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45690 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138AbaKIJfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 04:35:22 -0500
-Message-ID: <545F3556.5000802@suse.cz>
-Date: Sun, 09 Nov 2014 10:35:18 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751590AbaKIJiR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 04:38:17 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:48425 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312AbaKIJiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 04:38:11 -0500
+Message-ID: <545F35FB.20100@konagma.com>
+Date: Sun, 09 Nov 2014 09:38:03 +0000
+From: Krzysztof Konopko <kris@konagma.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: "P. Christeas" <xrg@linux.gr>, Hillf Danton <hillf.zj@alibaba-inc.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: linux-mm@kvack.org
-Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
-References: <00a801cffbd8$434189b0$c9c49d10$@alibaba-inc.com> <1433036.WjB5pb09Zh@xorhgos3.pefnos>
-In-Reply-To: <1433036.WjB5pb09Zh@xorhgos3.pefnos>
+To: Joe Perches <joe@perches.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        navin patidar <navin.patidar@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, trivial@kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtl8188eu: Remove unnecessary braces for simple return
+ in xmit_linux.c
+References: <1415481253-12281-1-git-send-email-kris@konagma.com> <1415481824.23530.35.camel@perches.com>
+In-Reply-To: <1415481824.23530.35.camel@perches.com>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 09:22 AM, P. Christeas wrote:
-> On Sunday 09 November 2014, Hillf Danton wrote:
->> -		return COMPACT_CONTINUE;
->> +		return COMPACT_SKIPPED;
+On 08/11/14 21:23, Joe Perches wrote:
+> On Sat, 2014-11-08 at 22:14 +0100, Krzysztof Konopko wrote:
+>> scripts/checkpatch.pl reports a coding style problem in xmit_linux.c
+> []
+>> diff --git a/drivers/staging/rtl8188eu/os_dep/xmit_linux.c b/drivers/staging/rtl8188eu/os_dep/xmit_linux.c
+> []
+>> @@ -67,9 +67,8 @@ uint _rtw_pktfile_read(struct pkt_file *pfile, u8 *rmem, uint rlen)
+>>  int rtw_endofpktfile(struct pkt_file *pfile)
+>>  {
+>>  
+>> -	if (pfile->pkt_len == 0) {
+>> +	if (pfile->pkt_len == 0)
+>>  		return true;
+>> -	}
+>>  
+>>
+>>  	return false;
 > 
-> I guess this one would mitigate against Vlastmil's migration scanner issue, 
-> wouldn't it?
-
-Please no, that's a wrong fix. The purpose of compaction is to make the
-high-order watermark meet, not give up.
-
-> In that case, I should wait a bit[1] to try the first patch, then revert, try 
-> yours and (hopefully) have some results.
-
-I hope my patch will be enough,
-
-> Then, apply both.
+> This should probably be
 > 
-> [1] trying to push the vm by loading memory-hungry apps and random load.
+> bool rtw_endofpktfile(const struct pkt_file *pfile_
+> {
+> 	return !pfile->pkt_len;
+> }
+>
 
-Maybe the tools/testing/selftests/vm/transhuge-stress could help
+Thanks for looking into it.
 
+I see your point about making it a single return statement.  I tend to
+shorten things as well.  I'd keep it as this:
+
+bool rtw_endofpktfile(const struct pkt_file *pfile_
+{
+ 	return pfile->pkt_len == 0;
+}
+
+Usign `!` operator suggests the variable is boolean although the name
+suggests it isn't.  I'm not so familiar with the linux kernel code base
+yet to justify it myself but I see no harm in making it slightly more
+explicit.
+
+> or just removed altogether and tested directly
+> in the one place it's used.
+> 
+> 
+
+It looks to me that the original intention was to open a possibility to
+define the end of packet file in a OS dependent way so I'd leave it.
+
+Or, if the counter argument is that non-Linux functionality should not
+appear in this driver, the rest of non-Linux code should be removed in
+the first place.  I'm not in position to even have an opinion on this.
+
+The sole point of this patch was to fix a coding style problem but the
+change you suggest seems still relevant.  I'll resend unless you have
+strong objections on using `==` operator explicitly in the return statement.
+
+Cheers,
+Kris
