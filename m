@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaKISWm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 13:22:42 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44665 "EHLO mail.skyhub.de"
+	id S1751736AbaKISY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 13:24:56 -0500
+Received: from mout.gmx.com ([74.208.4.201]:57572 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392AbaKISWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 13:22:40 -0500
-Date: Sun, 9 Nov 2014 19:22:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Mark Salter <msalter@redhat.com>, Matt Fleming <matt@console-pimps.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>, Dave Young <dyoung@redhat.com>
-Subject: Re: [PATCH] rtc: Disable EFI rtc for x86
-Message-ID: <20141109182231.GA29337@pd.tnic>
-References: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
- <1412348517.5410.13.camel@deneb.redhat.com>
- <201411091837.47354@pali>
+	id S1751415AbaKISYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 13:24:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201411091837.47354@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Message-ID: <trinity-097c680e-35f2-425b-a5e3-3ad0d4d3a541-1415557493820@3capp-mailcom-lxa02>
+From: "Brad Townshend" <bradtownshend83a@email.com>
+To: linux-kernel@vger.kernel.org
+Subject: Took Our Thing: systemd Blues
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 9 Nov 2014 19:24:54 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:WQhs5tOxU0k5ThPh/QLbuWMOQ2iya2PTM++V1Wip3rs
+ nq6pZRA/YPNkdVqRRtXBLCo6Uwam9SVbvP0rVdvbY67mhVAj8F
+ ESOzuP9F0UpgArfkuahlqICjIPUKXwZ+vy9VI+gVUZ4g2s7klw
+ cSDMJwlDYbR5qXpu6rWPHKyfFOdBRpi4W0GZQni/WU+3TCYgae
+ 0BKNuSDRDmqROHqkjOg8bVqWeQxYUqrAh0EG19/iwR9wSZ7ZcZ
+ 6i6YmrfZKy18ofvdgzGMZja6bPDOunz4qVmNWVloo/Laj3npWb
+ TBw9KDJpbAw1t5PQRaiY/fdVtIG
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 09, 2014 at 06:37:46PM +0100, Pali Rohár wrote:
-> this patch totally disabled efi rfc driver on x86 machines at 
-> compile time. But on some x86 machines it working without crash 
-> and reading from file /sys/class/rtc/rtc*/since_epoch returns 
-> correct information. So why to disable compiling driver on 
-> machines where driver working?
+A friend of mine and I did an auditorial study of string, drum, and voice
+exploring the systemd debacle as it pertains to the linux(r) operating
+system and community.
 
-Sounds like we need an efi=rtc_enable knob for people who what to use
-it...
+This is what we found:
 
--- 
-Regards/Gruss,
-    Boris.
+http://youtu.be/y0aTqsl-vfU
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thankyou for your time.
