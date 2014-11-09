@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaKIKRH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 05:17:07 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:48778 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaKIKRE (ORCPT
+	id S1751693AbaKIKRX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 05:17:23 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43392 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588AbaKIKRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 05:17:04 -0500
-Message-ID: <545F3F1A.5030902@gmail.com>
-Date: Sun, 09 Nov 2014 18:16:58 +0800
+	Sun, 9 Nov 2014 05:17:19 -0500
+Message-ID: <545F3F2C.7060704@gmail.com>
+Date: Sun, 09 Nov 2014 18:17:16 +0800
 From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For shared inline functions acrossed source files, better to let it as
+For shared inline functions crossed source files, better to let it as
 "static inline" in a header file. For extern functions, better to
 declare them in header file.
 
