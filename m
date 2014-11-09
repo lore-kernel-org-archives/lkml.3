@@ -1,142 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaKIX25 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 18:28:57 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51750 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaKIX24 (ORCPT
+	id S1751484AbaKIXew (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 18:34:52 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:60491 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121AbaKIXev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 18:28:56 -0500
-X-Original-SENDERIP: 10.186.123.76
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <545FF8B5.5000007@lge.com>
-Date: Mon, 10 Nov 2014 08:28:53 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 9 Nov 2014 18:34:51 -0500
+Date: Mon, 10 Nov 2014 00:34:37 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: e100: Laptop battery drain and WoL settings from EEPROM
+Message-ID: <20141109233437.GA5037@electric-eye.fr.zoreil.com>
+References: <201411090015.41446.linux@rainbow-software.org>
+ <201411091918.04036.linux@rainbow-software.org>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm/debug-pagealloc: cleanup page guard code
-References: <1415345746-16666-1-git-send-email-iamjoonsoo.kim@lge.com> <1415345746-16666-2-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1415345746-16666-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201411091918.04036.linux@rainbow-software.org>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ondrej Zary <linux@rainbow-software.org> :
+[...]
+> > Looks like this laptop is probably WoL-capable even on battery.
+> >
+> > Measured the current from AC adapter:
+> > around 20mA with WoL inactive (shut down from Windows or by power button in
+> > GRUB) around 40mA with WoL active (shut down from Linux)
+> >
+> > So to work-around this problem, users must disable WoL manually on each
+> > boot.
 
+Or configure udev so that ethtool disables WoL.
 
-2014-11-07 오후 4:35에 Joonsoo Kim 이(가) 쓴 글:
-> Page guard is used by debug-pagealloc feature. Currently,
-> it is open-coded, but, I think that more abstraction of it makes
-> core page allocator code more readable.
-> 
-> There is no functional difference.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->   mm/page_alloc.c |   38 +++++++++++++++++++-------------------
->   1 file changed, 19 insertions(+), 19 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index d673f64..c0dbede 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -440,18 +440,29 @@ static int __init debug_guardpage_minorder_setup(char *buf)
->   }
->   __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
->   
-> -static inline void set_page_guard_flag(struct page *page)
-> +static inline void set_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype)
->   {
->   	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
-> +	INIT_LIST_HEAD(&page->lru);
-> +	set_page_private(page, order);
-> +	/* Guard pages are not available for any usage */
-> +	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
->   }
->   
-> -static inline void clear_page_guard_flag(struct page *page)
-> +static inline void clear_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype)
->   {
->   	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
-> +	set_page_private(page, 0);
-> +	if (!is_migrate_isolate(migratetype))
-> +		__mod_zone_freepage_state(zone, (1 << order), migratetype);
->   }
->   #else
-> -static inline void set_page_guard_flag(struct page *page) { }
-> -static inline void clear_page_guard_flag(struct page *page) { }
-> +static inline void set_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype) {}
-> +static inline void clear_page_guard(struct zone *zone, struct page *page,
-> +				unsigned int order, int migratetype) {}
->   #endif
->   
->   static inline void set_page_order(struct page *page, unsigned int order)
-> @@ -582,12 +593,7 @@ static inline void __free_one_page(struct page *page,
->   		 * merge with it and move up one order.
->   		 */
->   		if (page_is_guard(buddy)) {
-> -			clear_page_guard_flag(buddy);
-> -			set_page_private(buddy, 0);
-> -			if (!is_migrate_isolate(migratetype)) {
-> -				__mod_zone_freepage_state(zone, 1 << order,
-> -							  migratetype);
-> -			}
-> +			clear_page_guard(zone, buddy, order, migratetype);
->   		} else {
->   			list_del(&buddy->lru);
->   			zone->free_area[order].nr_free--;
-> @@ -862,23 +868,17 @@ static inline void expand(struct zone *zone, struct page *page,
->   		size >>= 1;
->   		VM_BUG_ON_PAGE(bad_range(zone, &page[size]), &page[size]);
->   
-> -#ifdef CONFIG_DEBUG_PAGEALLOC
-> -		if (high < debug_guardpage_minorder()) {
-> +		if (IS_ENABLED(CONFIG_DEBUG_PAGEALLOC) &&
-> +			high < debug_guardpage_minorder()) {
->   			/*
->   			 * Mark as guard pages (or page), that will allow to
->   			 * merge back to allocator when buddy will be freed.
->   			 * Corresponding page table entries will not be touched,
->   			 * pages will stay not present in virtual address space
->   			 */
-> -			INIT_LIST_HEAD(&page[size].lru);
-> -			set_page_guard_flag(&page[size]);
-> -			set_page_private(&page[size], high);
-> -			/* Guard pages are not available for any usage */
-> -			__mod_zone_freepage_state(zone, -(1 << high),
-> -						  migratetype);
-> +			set_page_guard(zone, &page[size], high, migratetype);
->   			continue;
->   		}
-> -#endif
->   		list_add(&page[size].lru, &area->free_list[migratetype]);
->   		area->nr_free++;
->   		set_page_order(&page[size], high);
-> 
+The current policy has been here for ages. Some users may rely on it.
 
-Looks good!
-Thanks for your work.
+There must be some strong rationale for their setup to have to be changed.
+
+-- 
+Ueimor
