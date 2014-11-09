@@ -1,109 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaKINNH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 08:13:07 -0500
-Received: from ozlabs.org ([103.22.144.67]:52848 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456AbaKINNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 08:13:04 -0500
-Date: Mon, 10 Nov 2014 00:12:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Subject: Re: [PATCH v6 00/29] nios2 Linux kernel port
-Message-ID: <20141110001250.7fc64233@canb.auug.org.au>
-In-Reply-To: <CAFiDJ5_opOE5g14y1A7X3mn3H0ZOGV0kLVhEJnSrt3n47Nn2bQ@mail.gmail.com>
-References: <1415011945-3297-1-git-send-email-lftan@altera.com>
-	<CAFiDJ5_6HOPH_g6+Z1GwE87qXaGtnyUZdPvFCbC7E3v0+7o3VA@mail.gmail.com>
-	<CAFiDJ5_opOE5g14y1A7X3mn3H0ZOGV0kLVhEJnSrt3n47Nn2bQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/_.7ulH3/uPwo3YpSpOlPZFv"; protocol="application/pgp-signature"
+	id S1751982AbaKINSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 08:18:55 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:44859 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaKINSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 08:18:53 -0500
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: ashwin.chaugule@linaro.org, linux-kernel@vger.kernel.org
+Cc: broonie@kernel.org, patches@linaro.org, linux-acpi@vger.kernel.org,
+        rjw@rjwysocki.net, arnd@arndb.de, lv.zheng@intel.com,
+        linaro-acpi@lists.linaro.org, Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCH] mailbox: enable non-DT/ACPI clients to use the api
+Date: Sun,  9 Nov 2014 18:48:25 +0530
+Message-Id: <1415539105-4213-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_.7ulH3/uPwo3YpSpOlPZFv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The Mailbox API so far discounted controllers and clients that
+may not have a DT based channel mapping capability, as in ACPI.
 
-Hi,
+Allow such mailbox clients to ask for a mailbox channel by simply
+specifying a token. The token would be globally unique
+among channels provided by such controllers... which shouldn't
+be a problem because practically non-DT means ACPI and ACPI
+specifies just one controller instance called the Platform
+Communications Channel (PCC) that could have max 256 subspaces
+(channels or mailboxes). So this is simply going to be the value
+from 'Signature' field (first 4bytes) of the SharedMemory Region
+corresponding to the subspace/channel the client is interested in.
 
-On Fri, 7 Nov 2014 17:24:43 +0800 Ley Foon Tan <lftan@altera.com> wrote:
->
-> On Fri, Nov 7, 2014 at 3:39 PM, LF.Tan <lftan.linux@gmail.com> wrote:
-> >
-> > Review for Nios2 port is completed and ready for upstream. Can you
-> > please add nios2 patchset to linux-next?
-> >
-> > The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a=
-1da4:
-> >
-> >   Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-> >
-> > are available in the git repository at:
-> >
-> >   http://git.rocketboards.org/linux-socfpga-next.git tags/nios2-for-lin=
-ux-next
-> >
-> > for you to fetch changes up to 1b9e67a57ac633f407de11b36d8f996c368a8c66:
-> >
-> >   nios2: Build infrastructure (2014-11-06 15:23:37 +0800)
->
-> By the way, I also created "nios2-next" branch for you to add to linux-ne=
-xt.
->=20
-> git://git.rocketboards.org/linux-socfpga-next.git nios2-next
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+---
+ drivers/mailbox/mailbox.c          | 50 +++++++++++++++++++++-----------------
+ include/linux/mailbox_controller.h |  7 ++++++
+ 2 files changed, 35 insertions(+), 22 deletions(-)
 
-Added from Monday with just you as the contact.
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index afcb430..8260451 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -296,36 +296,42 @@ struct mbox_chan *mbox_request_channel(struct mbox_client *cl, int index)
+ {
+ 	struct device *dev = cl->dev;
+ 	struct mbox_controller *mbox;
+-	struct of_phandle_args spec;
+-	struct mbox_chan *chan;
++	struct mbox_chan *chan = NULL;
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	if (!dev || !dev->of_node) {
+-		pr_debug("%s: No owner device node\n", __func__);
+-		return ERR_PTR(-ENODEV);
+-	}
+-
+ 	mutex_lock(&con_mutex);
+ 
+-	if (of_parse_phandle_with_args(dev->of_node, "mboxes",
+-				       "#mbox-cells", index, &spec)) {
+-		dev_dbg(dev, "%s: can't parse \"mboxes\" property\n", __func__);
+-		mutex_unlock(&con_mutex);
+-		return ERR_PTR(-ENODEV);
+-	}
+-
+-	chan = NULL;
+-	list_for_each_entry(mbox, &mbox_cons, node)
+-		if (mbox->dev->of_node == spec.np) {
+-			chan = mbox->of_xlate(mbox, &spec);
+-			break;
++	if (!dev || !dev->of_node) { /* If it's an ACPI client */
++		list_for_each_entry(mbox, &mbox_cons, node) {
++			if (!mbox->global_xlate)
++				continue;
++			chan = mbox->global_xlate(mbox, index);
++			if (chan && !chan->cl)
++				break;
++		}
++	} else {
++		struct of_phandle_args spec;
++
++		if (of_parse_phandle_with_args(dev->of_node, "mboxes",
++					       "#mbox-cells", index, &spec)) {
++			dev_dbg(dev, "%s: can't parse \"mboxes\" property\n",
++				__func__);
++			mutex_unlock(&con_mutex);
++			return ERR_PTR(-ENODEV);
+ 		}
+ 
+-	of_node_put(spec.np);
++		list_for_each_entry(mbox, &mbox_cons, node)
++			if (mbox->dev->of_node == spec.np) {
++				chan = mbox->of_xlate(mbox, &spec);
++				break;
++			}
++
++		of_node_put(spec.np);
++	}
+ 
+ 	if (!chan || chan->cl || !try_module_get(mbox->dev->driver->owner)) {
+-		dev_dbg(dev, "%s: mailbox not free\n", __func__);
++		pr_err("%s: mailbox not available\n", __func__);
+ 		mutex_unlock(&con_mutex);
+ 		return ERR_PTR(-EBUSY);
+ 	}
+@@ -344,7 +350,7 @@ struct mbox_chan *mbox_request_channel(struct mbox_client *cl, int index)
+ 
+ 	ret = chan->mbox->ops->startup(chan);
+ 	if (ret) {
+-		dev_err(dev, "Unable to startup the chan (%d)\n", ret);
++		pr_err("Unable to startup the chan (%d)\n", ret);
+ 		mbox_free_channel(chan);
+ 		chan = ERR_PTR(ret);
+ 	}
+diff --git a/include/linux/mailbox_controller.h b/include/linux/mailbox_controller.h
+index d4cf96f..76871b2 100644
+--- a/include/linux/mailbox_controller.h
++++ b/include/linux/mailbox_controller.h
+@@ -67,6 +67,11 @@ struct mbox_chan_ops {
+  * @txpoll_period:	If 'txdone_poll' is in effect, the API polls for
+  *			last TX's status after these many millisecs
+  * @of_xlate:		Controller driver specific mapping of channel via DT
++ * @global_xlate:	Controller driver specific mapping of channel for
++ *			non-DT based clients (like ACPI). The 'global_id'
++ *			argument is a token to uniquely identify the mbox_chan
++ *			fromm those provided by more than one such controllers.
++ *			'of_xlate' takes precedence for DT based clients.
+  * @poll:		API private. Used to poll for TXDONE on all channels.
+  * @node:		API private. To hook into list of controllers.
+  */
+@@ -80,6 +85,8 @@ struct mbox_controller {
+ 	unsigned txpoll_period;
+ 	struct mbox_chan *(*of_xlate)(struct mbox_controller *mbox,
+ 				      const struct of_phandle_args *sp);
++	struct mbox_chan *(*global_xlate)(struct mbox_controller *mbox,
++					  int global_id);
+ 	/* Internal to API */
+ 	struct timer_list poll;
+ 	struct list_head node;
+-- 
+1.8.1.2
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-        Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
---Sig_/_.7ulH3/uPwo3YpSpOlPZFv
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUX2haAAoJEMDTa8Ir7ZwVAdsP/2zth6cacJXydrKwZ9qhsbSi
-uq+Y6aM+ZK/7QqYWK4cKPZZgQeDjfPtAmSngVCHS7yL018u3hPWhbOwWDpeXvgMP
-seWwTW8E6isaN+Z4FgX5dN7PiOsgyXMYVefgyCpn3SmT+dXpbKv6iqw9rZnEXQud
-hmH3zOoJ0LLBAiRhwOZ49YkqyC37euJivG+ex+ubKsynW+8z0UW+bCHYq6Qsl4bR
-Fl9E0WMh50sbRbGF84pRwXDEY5b1JYn0k/6sNM43CndwVS5Ms/pUH9qSPpSu5IWm
-h7L+tnR7bPorXnAN+7FkwuVbtUTJU9quMaW6p9BHo4dJisHApXEeIPMg1VT6K1y5
-tSHRVR9y1jm8nsMEgSuzx8Pxy14ASz15GY1EhLaP9PyfNWdI+iP7y56Sbx0dx3p1
-mo75gYKeKzrIZ24bZ4KjW5vgEnXqGGKt/i3gH5b27LWNbpqGpY++gIhVUcNfppqh
-ta2prAuNOgGybKEJW5YH2YtorS39a/FT/g0DcVQX5Tl89rUelQ9aLOsV1Z7lCjwP
-6r4wOg15L0Kao5ao5SpEbUnLDYO+HrCIjPr49EeTVv9R6K7Qo8d2AKI3AcNx4RNA
-VrZP5+YXjUXKH02EUKJ9odfWtiwCDSERMY26iMWdCqniLsZ+aGK9OAdtST6GwVG2
-xZ8xbeLDxfuTb3WiZ3VX
-=lXGJ
------END PGP SIGNATURE-----
-
---Sig_/_.7ulH3/uPwo3YpSpOlPZFv--
