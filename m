@@ -1,340 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaKIPLH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 10:11:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:62511 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbaKIPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 10:11:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,346,1413270000"; 
-   d="scan'208";a="604933605"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC Part4 v1 17/17] x86, htirq: Use common MSI code to manage Hypertransport interrupts
-Date: Sun,  9 Nov 2014 23:10:39 +0800
-Message-Id: <1415545839-28263-18-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1751981AbaKIPVl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 10:21:41 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:57126 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662AbaKIPVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 10:21:39 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Subject: Re: [PATCH] dell-wmi: Update code for processing WMI events
+Date: Sun, 9 Nov 2014 16:21:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+References: <1413843324-13662-1-git-send-email-pali.rohar@gmail.com> <20141021213212.GE20951@vmdeb7> <201410221251.17977@pali>
+In-Reply-To: <201410221251.17977@pali>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart3798428.UP4Wm9Ke6j";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411091621.35634@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hypertransport interrupt is a type of "Message Signalled Interrupt",
-so use common MSI code to manage it.
+--nextPart3798428.UP4Wm9Ke6j
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/kernel/apic/htirq.c |  134 +++++++++++++++---------------------------
- drivers/pci/Kconfig          |    1 +
- drivers/pci/htirq.c          |   16 ++---
- include/linux/htirq.h        |    5 +-
- 4 files changed, 60 insertions(+), 96 deletions(-)
+On Wednesday 22 October 2014 12:51:17 Pali Roh=C3=A1r wrote:
+> On Tuesday 21 October 2014 23:32:12 Darren Hart wrote:
+> > On Tue, Oct 21, 2014 at 12:15:24AM +0200, Pali Roh=C3=A1r wrote:
+> > > WMI buffer can contains more events. First value in buffer
+> > > is length of event followed by data of specified length.
+> > > After that is next length and next data. When length is
+> > > zero then there is no more events in bufffer.
+> > >=20
+> > > This patch adds support for processing all events in
+> > > buffer (not only first) and parse more event types (not
+> > > only hotkey events). Because of variable length of events
+> > > sometimes BIOS fills more hotkeys (or other values) into
+> > > single WMI event. In this case this patch process also
+> > > these multiple hotkeys (and not only first one).
+> > >=20
+> > > Some event types are just ignored because kernel is not
+> > > interested for them (e.g. NIC Link status, battery unplug,
+> > > ...).
+> > >=20
+> > > This patch is based on DSDT table from Dell Latitude
+> > > E6440. Code should be backward compatible so will process
+> > > other events of old types same as before this patch.
+> > >=20
+> > > This patch also fixes problem when in kernel log are
+> > > written messages about unknown WMI events. Now all know
+> > > events are parsed and those which are not interesting for
+> > > kernel are dropped without unknown message.
+> >=20
+> > This should probably be done in a separate patch.
+>=20
+> It is not possible, because my patch rewrite code for handling
+> events. Kernel does not print "unknown event" messages when it
+> parse WMI event and understand specified part.
+>=20
+> > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> >=20
+> > Well yes, I should hope so ;-)
+> >=20
+> > > ---
+> > >=20
+> > >  drivers/platform/x86/dell-wmi.c |  157
+> > >  +++++++++++++++++++++++++++++++-------- 1 file changed,
+> > >  127 insertions(+), 30 deletions(-)
+> > >=20
+> > > diff --git a/drivers/platform/x86/dell-wmi.c
+> > > b/drivers/platform/x86/dell-wmi.c index 25721bf..3d15949
+> > > 100644
+> > > --- a/drivers/platform/x86/dell-wmi.c
+> > > +++ b/drivers/platform/x86/dell-wmi.c
+> > > @@ -145,11 +145,35 @@ static const u16
+> > > bios_to_linux_keycode[256] __initconst =3D {
+> > >=20
+> > >  static struct input_dev *dell_wmi_input_dev;
+> > >=20
+> > > +static void dell_wmi_process_key(int reported_key)
+> > > +{
+> > > +	const struct key_entry *key;
+> > > +
+> > > +	key =3D
+> > > sparse_keymap_entry_from_scancode(dell_wmi_input_dev,
+> > > +						reported_key);
+> > > +	if (!key) {
+> > > +		pr_info("Unknown key %x pressed\n", reported_key);
+> > > +		return;
+> > > +	}
+> > > +
+> > > +	pr_debug("Key %x pressed\n", reported_key);
+> > > +
+> > > +	/* Don't report brightness notifications that will also
+> > > come via ACPI */ +	if ((key->keycode =3D=3D KEY_BRIGHTNESSUP
+> > > || +	     key->keycode =3D=3D KEY_BRIGHTNESSDOWN) &&
+> > > acpi_video) +		return;
+> > > +
+> > > +	sparse_keymap_report_entry(dell_wmi_input_dev, key, 1,
+> > > true); +}
+> > > +
+> > >=20
+> > >  static void dell_wmi_notify(u32 value, void *context)
+> > >  {
+> > > =20
+> > >  	struct acpi_buffer response =3D { ACPI_ALLOCATE_BUFFER,
+> > >  	NULL }; union acpi_object *obj;
+> > >  	acpi_status status;
+> > >=20
+> > > +	acpi_size buffer_size;
+> > > +	u16 *buffer_entry, *buffer_end;
+> > > +	int len, i;
+> > >=20
+> > >  	status =3D wmi_get_event_data(value, &response);
+> > >  	if (status !=3D AE_OK) {
+> > >=20
+> > > @@ -158,44 +182,117 @@ static void dell_wmi_notify(u32
+> > > value, void *context)
+> > >=20
+> > >  	}
+> > >  =09
+> > >  	obj =3D (union acpi_object *)response.pointer;
+> > >=20
+> > > +	if (!obj) {
+> > > +		pr_info("no response\n");
+> > > +		return;
+> > > +	}
+> >=20
+> > If you intend to print this, it should probably be a bit
+> > more informative. Is "info" the right level here? I would
+> > imagine either WARN if this was a bad thing, or DEBUG if
+> > this is more for debugging the driver.
+>=20
+> So what you (or somebody else) prefer? warn or debug?
+>=20
+> > > -	if (obj && obj->type =3D=3D ACPI_TYPE_BUFFER) {
+> > > -		const struct key_entry *key;
+> > > -		int reported_key;
+> > > -		u16 *buffer_entry =3D (u16 *)obj->buffer.pointer;
+> > > -		int buffer_size =3D obj->buffer.length/2;
+> > > -
+> > > -		if (buffer_size >=3D 2 && dell_new_hk_type &&
+> > > buffer_entry[1] !=3D 0x10) { -			pr_info("Received
+>=20
+> unknown
+>=20
+> > > WMI event (0x%x)\n",
+> > > -				buffer_entry[1]);
+> > > -			kfree(obj);
+> > > -			return;
+> > > -		}
+> > > +	if (obj->type !=3D ACPI_TYPE_BUFFER) {
+> > > +		pr_info("bad response type %x\n", obj->type);
+> > > +		kfree(obj);
+> > > +		return;
+> > > +	}
+> > > +
+> > > +	pr_debug("Received WMI event (%*ph)\n",
+> > > +		obj->buffer.length, obj->buffer.pointer);
+> > >=20
+> > > -		if (buffer_size >=3D 3 && (dell_new_hk_type ||
+> > > buffer_entry[1] =3D=3D 0x0)) -			reported_key =3D
+> > > (int)buffer_entry[2];
+> > > +	buffer_entry =3D (u16 *)obj->buffer.pointer;
+> > > +	buffer_size =3D obj->buffer.length/2;
+> > > +
+> > > +	if (!dell_new_hk_type) {
+> > > +		if (buffer_size >=3D 3 && buffer_entry[1] =3D=3D 0x0)
+> > > +			dell_wmi_process_key(buffer_entry[2]);
+> > >=20
+> > >  		else if (buffer_size >=3D 2)
+> > >=20
+> > > -			reported_key =3D (int)buffer_entry[1] & 0xffff;
+> > > -		else {
+> > > +			dell_wmi_process_key(buffer_entry[1]);
+> >=20
+> > Why can we drop the 0xffff mask now?
+>=20
+> Because it is useless (or correct me if not!). Variable
+> buffer_entry has type u16* so operation "AND 0xFFFF" on 16bit
+> integer do nothing.
+>=20
+> > > +		else
+> > >=20
+> > >  			pr_info("Received unknown WMI event\n");
+> > >=20
+> > > -			kfree(obj);
+> > > -			return;
+> > > +		kfree(obj);
+> > > +		return;
+> > > +	}
+> > > +
+> > > +	buffer_end =3D buffer_entry + buffer_size;
+> > > +
+> > > +	while (buffer_entry < buffer_end) {
+> > > +
+> > > +		len =3D buffer_entry[0];
+> > > +		if (len =3D=3D 0)
+> > > +			break;
+> > > +
+> > > +		len++;
+> > > +
+> >=20
+> > Why increment len here? Are you trying to avoid a "len + 1"
+> > in the comparisons below? If so, is using "len * 2" in the
+> > debug message below correct? Please clarify.
+>=20
+> in buffer_entry[0] (16 bit integer) is stored length of event
+> (in 16bit units) without first (length) value. And "%*ph"
+> takes size in bytes (u8). So length in bytes (u8) units is 2
+> * length in u16 units.
+>=20
+> > > +		if (buffer_entry+len > buffer_end) {
+> >=20
+> > See coding style documentation on operators. Please run
+> > patches through checkpatch.
+>=20
+> checkpatch.pl does not show any problem for these lines.
+>=20
+> > > +			pr_info("Invalid length of WMI event\n");
+> >=20
+> > info doesn't see correct here either.
+>=20
+> debug or warn?
+>=20
+> > > +			break;
+> > >=20
+> > >  		}
+> > >=20
+> > > -		key =3D
+> > > sparse_keymap_entry_from_scancode(dell_wmi_input_dev,
+> > > -							reported_key);
+> > > -		if (!key) {
+> > > -			pr_info("Unknown key %x pressed\n",=20
+reported_key);
+> > > -		} else if ((key->keycode =3D=3D KEY_BRIGHTNESSUP ||
+> > > -			    key->keycode =3D=3D KEY_BRIGHTNESSDOWN) &&
+>=20
+> acpi_video) {
+>=20
+> > > -			/* Don't report brightness notifications that=20
+will
+>=20
+> also
+>=20
+> > > -			 * come via ACPI */
+> > > -			;
+> > > -		} else {
+> > > -			sparse_keymap_report_entry(dell_wmi_input_dev,
+>=20
+> key,
+>=20
+> > > -						   1, true);
+> > > +		pr_debug("Process buffer (%*ph)\n", len*2,
+>=20
+> buffer_entry);
+>=20
+> > > +
+> > > +		switch (buffer_entry[1]) {
+> > > +		case 0x00:
+> > > +			for (i =3D 2; i < len; ++i) {
+> > > +				switch (buffer_entry[i]) {
+> > > +				case 0xe043:
+> > > +					/* NIC Link is Up */
+> > > +					pr_debug("NIC Link is Up\n");
+> > > +					break;
+> > > +				case 0xe044:
+> > > +					/* NIC Link is Down */
+> > > +					pr_debug("NIC Link is Down\n");
+> > > +					break;
+> > > +				case 0xe045:
+> > > +					/* Unknown event but defined in DSDT */
+> > > +				default:
+> > > +					/* Unknown event */
+> > > +					pr_info("Unknown WMI event type 0x00: "
+> > > +						"0x%x\n", (int)buffer_entry[i]);
+> > > +					break;
+> > > +				}
+> > > +			}
+> > > +			break;
+> > > +		case 0x10:
+> > > +			/* Keys pressed */
+> > > +			for (i =3D 2; i < len; ++i)
+> > > +				dell_wmi_process_key(buffer_entry[i]);
+> > > +			break;
+> > > +		case 0x11:
+> > > +			for (i =3D 2; i < len; ++i) {
+> > > +				switch (buffer_entry[i]) {
+> > > +				case 0xfff0:
+> > > +					/* Battery unplugged */
+> > > +					pr_debug("Battery unplugged\n");
+> > > +					break;
+> > > +				case 0xfff1:
+> > > +					/* Battery inserted */
+> > > +					pr_debug("Battery inserted\n");
+> > > +					break;
+> > > +				case 0x01e1:
+> > > +				case 0x02ea:
+> > > +				case 0x02eb:
+> > > +				case 0x02ec:
+> > > +				case 0x02f6:
+> > > +					/* Keyboard backlight level changed */
+> > > +					pr_debug("Keyboard backlight level "
+> > > +						 "changed\n");
+> > > +					break;
+> > > +				default:
+> > > +					/* Unknown event */
+> > > +					pr_info("Unknown WMI event type 0x11: "
+> > > +						"0x%x\n", (int)buffer_entry[i]);
+> > > +					break;
+> > > +				}
+> > > +			}
+> > > +			break;
+> > > +		default:
+> > > +			/* Unknown event */
+> > > +			pr_info("Unknown WMI event type 0x%x\n",
+> > > +				(int)buffer_entry[1]);
+> > > +			break;
+> > >=20
+> > >  		}
+> > >=20
+> > > +
+> > > +		buffer_entry +=3D len;
+> > > +
+> > >=20
+> > >  	}
+> > >=20
+> > > +
+> > >=20
+> > >  	kfree(obj);
+> > > =20
+> > >  }
 
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-index b6503510f1af..230e37ab3948 100644
---- a/arch/x86/kernel/apic/htirq.c
-+++ b/arch/x86/kernel/apic/htirq.c
-@@ -17,37 +17,33 @@
- #include <linux/pci.h>
- #include <linux/htirq.h>
- #include <linux/irqdomain.h>
-+#include <linux/msi.h>
- #include <asm/hw_irq.h>
- #include <asm/apic.h>
- #include <asm/hypertransport.h>
- 
- static struct irq_domain *htirq_domain;
- 
--/*
-- * Hypertransport interrupt support
-- */
--static int
--ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
-+static void ht_irq_compose_msg(struct irq_data *data, struct msi_msg *msg)
- {
--	struct irq_data *parent = data->parent_data;
--	int ret;
--
--	ret = parent->chip->irq_set_affinity(parent, mask, force);
--	if (ret >= 0) {
--		struct msi_msg msg;
--		struct irq_cfg *cfg = irqd_cfg(data);
--
--		fetch_ht_irq_msg(data->irq, &msg);
--		msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK |
--				    HT_IRQ_LOW_DEST_ID_MASK);
--		msg.address_lo |= HT_IRQ_LOW_VECTOR(cfg->vector) |
--				  HT_IRQ_LOW_DEST_ID(cfg->dest_apicid);
--		msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
--		msg.address_hi |= HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
--		write_ht_irq_msg(data->irq, &msg);
--	}
--
--	return ret;
-+	struct irq_cfg *cfg = irqd_cfg(data);
-+	struct ht_irq_cfg *ht_cfg = data->chip_data;
-+
-+	msg->address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
-+	msg->address_lo = HT_IRQ_LOW_BASE |
-+			  HT_IRQ_LOW_DEST_ID(cfg->dest_apicid) |
-+			  HT_IRQ_LOW_VECTOR(cfg->vector) |
-+			  HT_IRQ_LOW_RQEOI_EDGE;
-+	if (ht_cfg->masked)
-+		msg->address_lo |= HT_IRQ_LOW_IRQ_MASKED;
-+	if (apic->irq_dest_mode)
-+		msg->address_lo |= HT_IRQ_LOW_DM_LOGICAL;
-+	else
-+		msg->address_lo |= HT_IRQ_LOW_DM_PHYSICAL;
-+	if (apic->irq_delivery_mode == dest_LowestPrio)
-+		msg->address_lo |= HT_IRQ_LOW_MT_ARBITRATED;
-+	else
-+		msg->address_lo |= HT_IRQ_LOW_MT_FIXED;
- }
- 
- static struct irq_chip ht_irq_chip = {
-@@ -55,40 +51,34 @@ static struct irq_chip ht_irq_chip = {
- 	.irq_mask		= mask_ht_irq,
- 	.irq_unmask		= unmask_ht_irq,
- 	.irq_ack		= irq_chip_ack_parent,
--	.irq_set_affinity	= ht_set_affinity,
-+	.irq_set_affinity	= msi_domain_set_affinity,
- 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-+	.irq_compose_msi_msg	= ht_irq_compose_msg,
-+	.irq_write_msi_msg	= write_ht_irq_msg,
- 	.flags			= IRQCHIP_SKIP_SET_WAKE,
- };
- 
--static int htirq_domain_alloc(struct irq_domain *domain, unsigned int virq,
--			      unsigned int nr_irqs, void *arg)
-+static irq_hw_number_t ht_irq_get_hwirq(struct msi_domain_info *minfo,
-+					void *arg)
- {
--	struct ht_irq_cfg *ht_cfg;
- 	struct irq_alloc_info *info = arg;
--	struct pci_dev *dev;
--	irq_hw_number_t hwirq;
--	int ret;
-+	struct pci_dev *dev = info->ht_dev;
- 
--	if (nr_irqs > 1 || !info)
--		return -EINVAL;
--
--	dev = info->ht_dev;
--	hwirq = (info->ht_idx & 0xFF) |
-+	return (info->ht_idx & 0xFF) |
- 		PCI_DEVID(dev->bus->number, dev->devfn) << 8 |
- 		(pci_domain_nr(dev->bus) & 0xFFFFFFFF) << 24;
--	if (irq_find_mapping(domain, hwirq) > 0)
--		return -EEXIST;
-+}
-+
-+static int ht_irq_init(struct irq_domain *domain, struct msi_domain_info *minfo,
-+		       unsigned int virq, irq_hw_number_t hwirq, void *arg)
-+{
-+	struct ht_irq_cfg *ht_cfg;
-+	struct irq_alloc_info *info = arg;
- 
- 	ht_cfg = kmalloc(sizeof(*ht_cfg), GFP_KERNEL);
- 	if (!ht_cfg)
- 		return -ENOMEM;
- 
--	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, info);
--	if (ret < 0) {
--		kfree(ht_cfg);
--		return ret;
--	}
--
- 	/* Initialize msg to a value that will never match the first write. */
- 	ht_cfg->msg.address_lo = 0xffffffff;
- 	ht_cfg->msg.address_hi = 0xffffffff;
-@@ -96,58 +86,30 @@ static int htirq_domain_alloc(struct irq_domain *domain, unsigned int virq,
- 	ht_cfg->update = info->ht_update;
- 	ht_cfg->pos = info->ht_pos;
- 	ht_cfg->idx = 0x10 + (info->ht_idx * 2);
--	irq_domain_set_info(domain, virq, hwirq, &ht_irq_chip, ht_cfg,
-+	ht_cfg->masked = true;
-+	irq_domain_set_info(domain, virq, hwirq, minfo->chip, ht_cfg,
- 			    handle_edge_irq, NULL, "edge");
- 
- 	return 0;
- }
- 
--static void htirq_domain_free(struct irq_domain *domain, unsigned int virq,
--			      unsigned int nr_irqs)
-+static void ht_irq_free(struct irq_domain *domain, struct msi_domain_info *info,
-+			unsigned int virq)
- {
- 	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
- 
--	BUG_ON(nr_irqs != 1);
- 	kfree(irq_data->chip_data);
--	irq_domain_free_irqs_top(domain, virq, nr_irqs);
--}
--
--static void htirq_domain_activate(struct irq_domain *domain,
--				  struct irq_data *irq_data)
--{
--	struct msi_msg msg;
--	struct irq_cfg *cfg = irqd_cfg(irq_data);
--
--	msg.address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
--	msg.address_lo =
--		HT_IRQ_LOW_BASE |
--		HT_IRQ_LOW_DEST_ID(cfg->dest_apicid) |
--		HT_IRQ_LOW_VECTOR(cfg->vector) |
--		((apic->irq_dest_mode == 0) ?
--			HT_IRQ_LOW_DM_PHYSICAL :
--			HT_IRQ_LOW_DM_LOGICAL) |
--		HT_IRQ_LOW_RQEOI_EDGE |
--		((apic->irq_delivery_mode != dest_LowestPrio) ?
--			HT_IRQ_LOW_MT_FIXED :
--			HT_IRQ_LOW_MT_ARBITRATED) |
--		HT_IRQ_LOW_IRQ_MASKED;
--	write_ht_irq_msg(irq_data->irq, &msg);
- }
- 
--static void htirq_domain_deactivate(struct irq_domain *domain,
--				    struct irq_data *irq_data)
--{
--	struct msi_msg msg;
--
--	memset(&msg, 0, sizeof(msg));
--	write_ht_irq_msg(irq_data->irq, &msg);
--}
-+static struct msi_domain_ops ht_irq_domain_ops = {
-+	.get_hwirq = ht_irq_get_hwirq,
-+	.msi_init = ht_irq_init,
-+	.msi_free = ht_irq_free,
-+};
- 
--static struct irq_domain_ops htirq_domain_ops = {
--	.alloc = htirq_domain_alloc,
--	.free = htirq_domain_free,
--	.activate = htirq_domain_activate,
--	.deactivate = htirq_domain_deactivate,
-+static struct msi_domain_info ht_irq_domain_info = {
-+	.ops = &ht_irq_domain_ops,
-+	.chip = &ht_irq_chip,
- };
- 
- void arch_init_htirq_domain(struct irq_domain *parent)
-@@ -155,11 +117,9 @@ void arch_init_htirq_domain(struct irq_domain *parent)
- 	if (disable_apic)
- 		return;
- 
--	htirq_domain = irq_domain_add_tree(NULL, &htirq_domain_ops, NULL);
-+	htirq_domain = msi_create_irq_domain(NULL, &ht_irq_domain_info, parent);
- 	if (!htirq_domain)
- 		pr_warn("failed to initialize irqdomain for HTIRQ.\n");
--	else
--		htirq_domain->parent = parent;
- }
- 
- int arch_setup_ht_irq(int idx, int pos, struct pci_dev *dev,
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 7a8f1c5e65af..22f948f9738a 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -68,6 +68,7 @@ config HT_IRQ
- 	bool "Interrupts on hypertransport devices"
- 	default y
- 	depends on PCI && X86_LOCAL_APIC
-+	select GENERIC_MSI_IRQ_DOMAIN
- 	help
- 	   This allows native hypertransport devices to use interrupts.
- 
-diff --git a/drivers/pci/htirq.c b/drivers/pci/htirq.c
-index 3bbbc5cdcb9b..27b09b266bb6 100644
---- a/drivers/pci/htirq.c
-+++ b/drivers/pci/htirq.c
-@@ -23,9 +23,9 @@
-  */
- static DEFINE_SPINLOCK(ht_irq_lock);
- 
--void write_ht_irq_msg(unsigned int irq, struct msi_msg *msg)
-+void write_ht_irq_msg(struct irq_data *data, struct msi_msg *msg)
- {
--	struct ht_irq_cfg *cfg = irq_get_handler_data(irq);
-+	struct ht_irq_cfg *cfg = data->chip_data;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&ht_irq_lock, flags);
-@@ -38,14 +38,14 @@ void write_ht_irq_msg(unsigned int irq, struct msi_msg *msg)
- 		pci_write_config_dword(cfg->dev, cfg->pos + 4, msg->address_hi);
- 	}
- 	if (cfg->update)
--		cfg->update(cfg->dev, irq, msg);
-+		cfg->update(cfg->dev, data->irq, msg);
- 	spin_unlock_irqrestore(&ht_irq_lock, flags);
- 	cfg->msg = *msg;
- }
- 
--void fetch_ht_irq_msg(unsigned int irq, struct msi_msg *msg)
-+void fetch_ht_irq_msg(struct irq_data *data, struct msi_msg *msg)
- {
--	struct ht_irq_cfg *cfg = irq_get_handler_data(irq);
-+	struct ht_irq_cfg *cfg = data->chip_data;
- 
- 	*msg = cfg->msg;
- }
-@@ -56,7 +56,8 @@ void mask_ht_irq(struct irq_data *data)
- 	struct msi_msg msg = cfg->msg;
- 
- 	msg.address_lo |= 1;
--	write_ht_irq_msg(data->irq, &msg);
-+	write_ht_irq_msg(data, &msg);
-+	cfg->masked = true;
- }
- 
- void unmask_ht_irq(struct irq_data *data)
-@@ -65,7 +66,8 @@ void unmask_ht_irq(struct irq_data *data)
- 	struct msi_msg msg = cfg->msg;
- 
- 	msg.address_lo &= ~1;
--	write_ht_irq_msg(data->irq, &msg);
-+	write_ht_irq_msg(data, &msg);
-+	cfg->masked = false;
- }
- 
- /**
-diff --git a/include/linux/htirq.h b/include/linux/htirq.h
-index 98e432f7f9b1..c5d03a81809c 100644
---- a/include/linux/htirq.h
-+++ b/include/linux/htirq.h
-@@ -14,12 +14,13 @@ struct ht_irq_cfg {
- 	ht_irq_update_t *update;
- 	unsigned pos;
- 	unsigned idx;
-+	bool masked;
- 	struct msi_msg msg;
- };
- 
- /* Helper functions.. */
--void fetch_ht_irq_msg(unsigned int irq, struct msi_msg *msg);
--void write_ht_irq_msg(unsigned int irq, struct msi_msg *msg);
-+void fetch_ht_irq_msg(struct irq_data *data, struct msi_msg *msg);
-+void write_ht_irq_msg(struct irq_data *data, struct msi_msg *msg);
- void mask_ht_irq(struct irq_data *data);
- void unmask_ht_irq(struct irq_data *data);
- 
--- 
-1.7.10.4
+Darren: PING. See my comments and questions.
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart3798428.UP4Wm9Ke6j
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlRfhn8ACgkQi/DJPQPkQ1Ls2ACfXAG+S4BO5gCNzjOKI6Dyt13F
+QmwAoJfviF+wCU8alQaIK0nFEJt5eP2r
+=E/Pr
+-----END PGP SIGNATURE-----
+
+--nextPart3798428.UP4Wm9Ke6j--
