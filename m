@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaKITj5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 14:39:57 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50256 "EHLO
+	id S1751538AbaKITlz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 14:41:55 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50368 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaKITj4 (ORCPT
+	with ESMTP id S1751244AbaKITlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 14:39:56 -0500
-Date: Sun, 9 Nov 2014 20:39:53 +0100
+	Sun, 9 Nov 2014 14:41:53 -0500
+Date: Sun, 9 Nov 2014 20:41:51 +0100
 From: Pavel Machek <pavel@ucw.cz>
 To: Mark Brown <broonie@debian.org>
 Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
@@ -16,8 +16,8 @@ Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
         linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
         aaro.koskinen@iki.fi, freemangordon@abv.bg, peter.ujfalusi@ti.com,
         perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org
-Subject: Re: sound: enable sound support on n900 on devicetree-based boot
-Message-ID: <20141109193953.GA7852@amd>
+Subject: ASoC: omap: enable sound support on n900 on devicetree-based boot
+Message-ID: <20141109194151.GB7852@amd>
 References: <20141109120222.GA3815@amd>
  <20141109123753.GO2722@sirena.org.uk>
 MIME-Version: 1.0
@@ -29,30 +29,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-11-09 12:37:53, Mark Brown wrote:
-> On Sun, Nov 09, 2014 at 01:02:22PM +0100, Pavel Machek wrote:
-> > 
-> > With device tree, it is possible (and encouraged) to build N900
-> > kernels without CONFIG_MACH_NOKIA_RX51. Update config file to enable
-> > the driver build in this case.
-> 
-> Please do try to use subject lines reflecting the style for the
-> subsystem.
+With device tree, it is possible (and encouraged) to build N900
+kernels without CONFIG_MACH_NOKIA_RX51. Update config file to enable
+the driver build in this case.
 
-Ok.
+This makes sound work on my n900 under 3.18-rc1.
 
-> >  config SND_OMAP_SOC_RX51
-> >  	tristate "SoC Audio support for Nokia RX-51"
-> > -	depends on SND_OMAP_SOC && ARM && (MACH_NOKIA_RX51 || COMPILE_TEST) && I2C
-> > +	depends on SND_OMAP_SOC && ARM && I2C
-> 
-> Please also update the config text so users have a chance to figure out
-> that this driver is the one they need for their system - I guess most
-> people won't know what RX-51 is.
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Actually help text below already explains that. I'll update tristate
-text, too.
-									Pavel
+diff --git a/sound/soc/omap/Kconfig b/sound/soc/omap/Kconfig
+index d44463a..2738b19 100644
+--- a/sound/soc/omap/Kconfig
++++ b/sound/soc/omap/Kconfig
+@@ -25,15 +25,15 @@ config SND_OMAP_SOC_N810
+ 	  Say Y if you want to add support for SoC audio on Nokia N810.
+ 
+ config SND_OMAP_SOC_RX51
+-	tristate "SoC Audio support for Nokia RX-51"
+-	depends on SND_OMAP_SOC && ARM && (MACH_NOKIA_RX51 || COMPILE_TEST) && I2C
++	tristate "SoC Audio support for Nokia N900 (RX-51)"
++	depends on SND_OMAP_SOC && ARM && I2C
+ 	select SND_OMAP_SOC_MCBSP
+ 	select SND_SOC_TLV320AIC3X
+ 	select SND_SOC_TPA6130A2
+ 	depends on GPIOLIB
+ 	help
+-	  Say Y if you want to add support for SoC audio on Nokia RX-51
+-	  hardware. This is also known as Nokia N900 product.
++	  Say Y if you want to add support for SoC audio on Nokia N900
++	  cellphone.
+ 
+ config SND_OMAP_SOC_AMS_DELTA
+ 	tristate "SoC Audio support for Amstrad E3 (Delta) videophone"
+
+
+
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
