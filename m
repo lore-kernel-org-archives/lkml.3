@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaKIRwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 12:52:25 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:49903 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaKIRwX (ORCPT
+	id S1751501AbaKISKU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 13:10:20 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:35208 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040AbaKISKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 12:52:23 -0500
-Message-ID: <545FA9D4.5080908@plexistor.com>
-Date: Sun, 09 Nov 2014 19:52:20 +0200
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 9 Nov 2014 13:10:18 -0500
+Message-ID: <545FAE05.2030701@gmail.com>
+Date: Sun, 09 Nov 2014 13:10:13 -0500
+From: Mathy Vanhoef <vanhoefm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>
-Subject: Re: [PATCH 4/5] brd: Request from fdisk 4k alignment
-References: <545A2D69.8090003@plexistor.com> <545A2F52.3040303@plexistor.com>	<yq1k339enl5.fsf@sermon.lab.mkp.net> <545A379D.30608@plexistor.com> <yq1sihwb5qz.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1sihwb5qz.fsf@sermon.lab.mkp.net>
+To: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
+        meuleman@broadcom.com, linville@tuxdriver.com, pieterpg@broadcom.com,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] brcmfmac: unlink URB when request timed out
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 07:25 PM, Martin K. Petersen wrote:
->>>>>> "Boaz" == Boaz Harrosh <boaz@plexistor.com> writes:
-> 
-> Boaz,
-> 
-> Boaz> Note that blk_queue_physical_block_size() also trashes io_min, but
-> Boaz> we can leave this one to be 512. io_min as opposed to
-> Boaz> physical_block_size will actually change Kernel behavior
-> 
->>> Care to elaborate?
-> 
-> I wanted you to elaborate on how io_min changes kernel behavior.
-> 
+From: Mathy Vanhoef <vanhoefm@gmail.com>
 
-OK You are correct. io_min changes behavior of Kernel in exactly the same
-way as physical_block_size.
+Unlink the submitted URB in brcmf_usb_dl_cmd if the request timed out. This
+assures the URB is never submitted twice, preventing a driver crash.
 
-Through the call to queue_limit_alignment_offset() inside add_partition()
-by setting hd_struct->alignment_offset
+Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
+---
+Currently brcmfmac may crash when a USB device is attached (tested with a LG
+TWFM-B003D). In particular it fails on the second call to brcmf_usb_dl_cmd in
+the while loop of brcmf_usb_resetcfg. The problem is that an URB is being
+submitted twice:
 
-I do not know why I thought that only io_min does that, I can see now that
-both effect the Kernel the same way. Which scares me a bit.
+[  169.861800] brcmfmac: brcmf_usb_dl_writeimage Enter, fw f14db000, len 348160
+[  171.787791] brcmfmac: brcmf_usb_dl_writeimage Exit, err=0
+[  171.787797] brcmfmac: brcmf_usb_dlstart Exit, err=0
+[  171.787799] brcmfmac: brcmf_usb_dlrun Enter
+[  171.791794] brcmfmac: brcmf_usb_resetcfg Enter
+[  173.988072] ------------[ cut here ]------------
+[  173.988083] WARNING: CPU: 0 PID: 369 at drivers/usb/core/urb.c:339 usb_submit_urb+0x4e6/0x500()
+[  173.988085] URB eaf45f00 submitted while active
+[  173.988086] Modules linked in: brcmfmac brcmutil vmw_pvscsi pcnet32 mptspi mptscsih mptbase
+[  173.988100] CPU: 0 PID: 369 Comm: kworker/0:2 Not tainted 3.18.0-rc3-wl #1
+[  173.988102] Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
+[  173.988106] Workqueue: events request_firmware_work_func
+[  173.988108]  00000000 00000000 ee747db8 c1711f4a ee747df8 ee747de8 c103edaf c18d1e10
+[  173.988112]  ee747e14 00000171 c18a8b29 00000153 c1490556 c1490556 eaf45f00 eafdc660
+[  173.988115]  f14b8fa0 ee747e00 c103ee4e 00000009 ee747df8 c18d1e10 ee747e14 ee747e50
+[  173.988119] Call Trace:
+[  173.988129]  [<c1711f4a>] dump_stack+0x41/0x52
+[  173.988136]  [<c103edaf>] warn_slowpath_common+0x7f/0xa0
+[  173.988139]  [<c1490556>] ? usb_submit_urb+0x4e6/0x500
+[  173.988141]  [<c1490556>] ? usb_submit_urb+0x4e6/0x500
+[  173.988147]  [<f14b8fa0>] ? brcmf_usb_ioctl_resp_wake+0x40/0x40 [brcmfmac]
+[  173.988150]  [<c103ee4e>] warn_slowpath_fmt+0x2e/0x30
+[  173.988152]  [<c1490556>] usb_submit_urb+0x4e6/0x500
+[  173.988156]  [<c1123de1>] ? __kmalloc+0x21/0x140
+[  173.988161]  [<f14b91c3>] ? brcmf_usb_dl_cmd+0x33/0x120 [brcmfmac]
+[  173.988166]  [<f14b9243>] brcmf_usb_dl_cmd+0xb3/0x120 [brcmfmac]
+[  173.988170]  [<f14ba6c4>] brcmf_usb_probe_phase2+0x4e4/0x640 [brcmfmac]
+[  173.988176]  [<f14b4900>] brcmf_fw_request_code_done+0xd0/0xf0 [brcmfmac]
+[  173.988178]  [<c1400876>] request_firmware_work_func+0x26/0x50
+[  173.988182]  [<c10513ee>] process_one_work+0x11e/0x360
+[  173.988184]  [<c1051750>] worker_thread+0xf0/0x3c0
+[  173.988205]  [<c106e14a>] ? __wake_up_locked+0x1a/0x20
+[  173.988208]  [<c1051660>] ? process_scheduled_works+0x30/0x30
+[  173.988211]  [<c1055b56>] kthread+0x96/0xb0
+[  173.988214]  [<c1719c81>] ret_from_kernel_thread+0x21/0x30
+[  173.988217]  [<c1055ac0>] ? kthread_worker_fn+0x110/0x110
+[  173.988219] ---[ end trace 0c88bf46801de083 ]---
+[  173.988221] brcmf_usb_dl_cmd: usb_submit_urb failed -16
+[  173.988396] brcmfmac: brcmf_usb_probe_phase2 failed: dev=1-1, err=-19
+[  173.989503] brcmfmac: brcmf_usb_disconnect Enter
 
-Will I have problems?
+This patch fixes the brcmf_usb_dl_cmd function to prevent an URB from being
+submitted twice. Tested using a LG TWFM-B003D, which now works properly.
 
-<>
-> 
-> It really sounds like either your fdisk is way too old or you are
-> running it in DOS compat mode.
-> 
-> I don't have a fundamental issue reporting pbs of 4K. But if you are
-> only doing it to force a certain partition alignment then it sounds like
-> a kernel fix for a userland problem.
-> 
-> I've CC:ed Karel who can comment on fdisk partition alignment issues.
-> 
 
-Thanks Martin. I agree, we should not fix user-mode problems. Please see
-the other email with the exact numbers I get from fdisk. It looks like
-when everything is 512 like default it would not align my partitions, but
-with the 4k-phisical thing it would. What is the expected behavior we want?
+ drivers/net/wireless/brcm80211/brcmfmac/usb.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Thanks
-Boaz
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/usb.c b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
+index 5265aa7..1bc7858 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/usb.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
+@@ -738,10 +738,12 @@ static int brcmf_usb_dl_cmd(struct brcmf_usbdev_info *devinfo, u8 cmd,
+ 		goto finalize;
+ 	}
+ 
+-	if (!brcmf_usb_ioctl_resp_wait(devinfo))
++	if (!brcmf_usb_ioctl_resp_wait(devinfo)) {
++		usb_unlink_urb(devinfo->ctl_urb);
+ 		ret = -ETIMEDOUT;
+-	else
++	} else {
+ 		memcpy(buffer, tmpbuf, buflen);
++	}
+ 
+ finalize:
+ 	kfree(tmpbuf);
+-- 
+1.7.10.4
 
