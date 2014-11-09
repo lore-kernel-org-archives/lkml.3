@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaKIPJm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 10:09:42 -0500
-Received: from mga03.intel.com ([134.134.136.65]:25345 "EHLO mga03.intel.com"
+	id S1752541AbaKIPJv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 10:09:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50190 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432AbaKIPJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 10:09:38 -0500
+	id S1752432AbaKIPJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 10:09:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,346,1413270000"; 
-   d="scan'208";a="604933271"
+   d="scan'208";a="604933294"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -19,23 +19,20 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
         Matthias Brugger <matthias.bgg@gmail.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
         Jiang Liu <jiang.liu@linux.intel.com>,
-        Yijing Wang <wangyijing@huawei.com>
+        Yijing Wang <wangyijing@huawei.com>,
+        Alexander Gordeev <agordeev@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
         Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, xen-devel@lists.xenproject.org
-Subject: [RFC Part4 v1 11/17] PCI, MSI: Rename __read_msi_msg() as __pci_read_msi_msg()
-Date: Sun,  9 Nov 2014 23:10:33 +0800
-Message-Id: <1415545839-28263-12-git-send-email-jiang.liu@linux.intel.com>
+        xen-devel@lists.xenproject.org
+Subject: [RFC Part4 v1 12/17] PCI, MSI: Rename __write_msi_msg() as __pci_write_msi_msg()
+Date: Sun,  9 Nov 2014 23:10:34 +0800
+Message-Id: <1415545839-28263-13-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
@@ -43,86 +40,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename __read_msi_msg() as __pci_read_msi_msg() and kill unused
-read_msi_msg(). It's a preparation to separate generic MSI code
-from PCI core.
+Rename __write_msi_msg() as __pci_write_msi_msg() to mark it as PCI
+specific. Also define pci_write_msi_msg() as write_msi_msg() for easy
+transition.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/powerpc/platforms/pseries/msi.c |    2 +-
- arch/x86/pci/xen.c                   |    2 +-
- drivers/pci/msi.c                    |    9 +--------
- include/linux/msi.h                  |    3 +--
- 4 files changed, 4 insertions(+), 12 deletions(-)
+ arch/x86/pci/xen.c  |    2 +-
+ drivers/pci/msi.c   |    9 ++++-----
+ include/linux/msi.h |    3 ++-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
-index 8ab5add4ac82..90f756d0f58f 100644
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -476,7 +476,7 @@ again:
- 		irq_set_msi_desc(virq, entry);
- 
- 		/* Read config space back so we can restore after reset */
--		__read_msi_msg(entry, &msg);
-+		__pci_read_msi_msg(entry, &msg);
- 		entry->msg = msg;
- 	}
- 
 diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 093f5f4272d3..a48ca2f8b93e 100644
+index a48ca2f8b93e..1cfbe32c4b1c 100644
 --- a/arch/x86/pci/xen.c
 +++ b/arch/x86/pci/xen.c
-@@ -229,7 +229,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 		return 1;
- 
- 	list_for_each_entry(msidesc, &dev->msi_list, list) {
--		__read_msi_msg(msidesc, &msg);
-+		__pci_read_msi_msg(msidesc, &msg);
- 		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
- 			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
- 		if (msg.data != XEN_PIRQ_MSI_DATA ||
+@@ -240,7 +240,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 				goto error;
+ 			}
+ 			xen_msi_compose_msg(dev, pirq, &msg);
+-			__write_msi_msg(msidesc, &msg);
++			__pci_write_msi_msg(msidesc, &msg);
+ 			dev_dbg(&dev->dev, "xen: msi bound to pirq=%d\n", pirq);
+ 		} else {
+ 			dev_dbg(&dev->dev,
 diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index e1814f4be4b9..6011dfb475a1 100644
+index 6011dfb475a1..80be534df522 100644
 --- a/drivers/pci/msi.c
 +++ b/drivers/pci/msi.c
-@@ -243,7 +243,7 @@ void default_restore_msi_irqs(struct pci_dev *dev)
- 		default_restore_msi_irq(dev, entry->irq);
+@@ -27,7 +27,6 @@ static int pci_msi_enable = 1;
+ 
+ #define msix_table_size(flags)	((flags & PCI_MSIX_FLAGS_QSIZE) + 1)
+ 
+-
+ /* Arch hooks */
+ 
+ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+@@ -115,7 +114,7 @@ static void default_restore_msi_irq(struct pci_dev *dev, int irq)
+ 	}
+ 
+ 	if (entry)
+-		__write_msi_msg(entry, &entry->msg);
++		__pci_write_msi_msg(entry, &entry->msg);
  }
  
--void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
-+void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
- {
- 	BUG_ON(entry->dev->current_state != PCI_D0);
- 
-@@ -273,13 +273,6 @@ void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
+ void __weak arch_restore_msi_irqs(struct pci_dev *dev)
+@@ -273,7 +272,7 @@ void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
  	}
  }
  
--void read_msi_msg(unsigned int irq, struct msi_msg *msg)
--{
--	struct msi_desc *entry = irq_get_msi_desc(irq);
--
--	__read_msi_msg(entry, msg);
--}
--
- void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
+-void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
++void __pci_write_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
  {
  	if (entry->dev->current_state != PCI_D0) {
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 19502186a64d..4b0d070ff481 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -61,9 +61,8 @@ void msi_domain_deactivate(struct irq_domain *domain,
+ 		/* Don't touch the hardware now */
+@@ -314,7 +313,7 @@ void write_msi_msg(unsigned int irq, struct msi_msg *msg)
+ {
+ 	struct msi_desc *entry = irq_get_msi_desc(irq);
  
- #ifdef CONFIG_PCI_MSI
- /* Helper functions */
--void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-+void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
--void read_msi_msg(unsigned int irq, struct msi_msg *msg);
- void write_msi_msg(unsigned int irq, struct msi_msg *msg);
+-	__write_msi_msg(entry, msg);
++	__pci_write_msi_msg(entry, msg);
+ }
+ EXPORT_SYMBOL_GPL(write_msi_msg);
+ 
+@@ -1085,7 +1084,7 @@ void pci_msi_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
+ 	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
+ 	 */
+ 	if (desc->irq == irq_data->irq)
+-		__write_msi_msg(desc, msg);
++		__pci_write_msi_msg(desc, msg);
+ }
  
  /*
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 4b0d070ff481..5639970db71d 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -62,8 +62,9 @@ void msi_domain_deactivate(struct irq_domain *domain,
+ #ifdef CONFIG_PCI_MSI
+ /* Helper functions */
+ void __pci_read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+-void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
++void __pci_write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+ void write_msi_msg(unsigned int irq, struct msi_msg *msg);
++#define pci_write_msi_msg	write_msi_msg
+ 
+ /*
+  * The arch hooks to setup up msi irqs. Those functions are
 -- 
 1.7.10.4
 
