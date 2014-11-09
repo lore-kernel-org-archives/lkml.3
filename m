@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaKIE4I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 23:56:08 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63070 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaKIE4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 23:56:06 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18VM1ohISmQxuGl6dlOcZW7JR5CMXBqRB8=
-X-DKIM: OpenDKIM Filter v2.0.1 titan BF712615671
-Date: Sat, 8 Nov 2014 23:55:50 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] irqchip: atmel-aic: add RTT irq fixup
-Message-ID: <20141109045550.GS3698@titan.lakedaemon.net>
-References: <1415003464-29239-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1751040AbaKIFA4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 00:00:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:61962 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714AbaKIFAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 00:00:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="485830973"
+Message-ID: <545EF505.7040101@linux.intel.com>
+Date: Sat, 08 Nov 2014 21:00:53 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415003464-29239-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scripts/ksize: Add kernel build size report
+References: <eda7fd84192e80829af62db0a6debe6f1987f98b.1415488698.git.dvhart@linux.intel.com> <20141109032630.GB1026@thin>
+In-Reply-To: <20141109032630.GB1026@thin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 03, 2014 at 09:30:59AM +0100, Boris Brezillon wrote:
-> Hello,
-> 
-> This patch series add a new fixup function for the RTT (Real Time Timer)
-> block and make use of it on SoCs integrating at least one RTT to prevent
-> spurious interrupts on the first interrupt line.
-> 
-> This fixup function was previously implemented in
-> arch/arm/mach-at91/sysirq_mask.c, but is now moved to the AIC driver so
-> that we can remove SoC specific hooks in arch/arm/mach-at91/ when booting
-> a DT kernel.
-> 
-> This series also reworks the naming convention of the SoC specific fixup
-> functions and add an entry for the at91rm9200.
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> Changes since v1:
-> - rebased on linux-3.18-rc2
-> 
-> Boris BREZILLON (5):
->   irqchip: atmel-aic: add irq fixup for RTT block
->   irqchip: atmel-aic: add irq fixups for at91sam926x SoCs
->   irqchip: atmel-aic: add specific irq fixup function for sam9g45 and
->     sam9rl
->   irqchip: atmel-aic: rename at91sam9_aic_irq_fixup for naming
->     consistency
->   irqchip: atmel-aic: add missing entry for rm9200 irq fixups
-> 
->  drivers/irqchip/irq-atmel-aic-common.c | 26 ++++++++++++++++++++++++++
->  drivers/irqchip/irq-atmel-aic-common.h |  2 ++
->  drivers/irqchip/irq-atmel-aic.c        | 26 +++++++++++++++++++++-----
->  3 files changed, 49 insertions(+), 5 deletions(-)
 
-Whole series applied to irqchip/atmel
 
-thx,
+On 11/8/14 19:26, Josh Triplett wrote:
+> On Sat, Nov 08, 2014 at 03:18:18PM -0800, Darren Hart wrote:
+>> ksize generates hierarchical build size reports from vmlinux, *.o, and
+>> built-in.o files.
+>>
+>> ksize is useful in preparing minimal configurations and comparing
+>> similar configurations across kernel versions.
+>>
+>> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+>> Cc: Josh Triplett <josh@joshtriplett.org>
+> 
+> One comment below; with that addressed:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+>> +def main(argv):
+>> +    try:
+>> +        opts, args = getopt.getopt(argv[1:], "dh", ["help"])
+>> +    except getopt.GetoptError, err:
+>> +        print '%s' % str(err)
+>> +        usage()
+>> +        return 2
+>> +
+>> +    driver_detail = False
+>> +    for o, a in opts:
+>> +        if o == '-d':
+>> +            driver_detail = True
+>> +        elif o in ('-h', '--help'):
+>> +            usage()
+>> +            return 0
+>> +        else:
+>> +            assert False, "unhandled option"
+>> +
+>> +    cols = term_width()
+>> +
+>> +    # Determine kernel version
+>> +    p = Popen("strings vmlinux | grep 'Linux version' | cut -d ' ' -f 3",
+>> +              shell=True, stdout=PIPE, stderr=PIPE)
+>> +    version = p.communicate()[0].strip()
+> 
+> This seems like a very fragile, Perl-y way to obtain the kernel version.
+> 
+> I'd suggest either not including the version (just as bloat-o-meter
+> doesn't), or parsing it out using objdump -h -t and file offsetting
+> (looking for the offset and size of linux_banner).  Personally I'd go
+> with the former.
 
-Jason.
+I agree it's a hack, but it isn't a performance sensitive area and I
+couldn't see spending the time to calculate offsets and such to save a
+couple seconds for something like this. There are more advanced
+approaches to extracting bits of information from vmlinux, such as
+scripts/extract-ikconfig. I suppose something along those lines could be
+created.
+
+As to fragile, I have not tested every version, but this technique has
+been used at least as far back as 2.6.24 [1], which seem fairly stable
+to me.
+
+Personally, I think it's nice to have. But, if nobody chimes in asking
+to keep it, or with a better way to retrieve it, I can resend with it
+removed.
+
+Thanks Josh :-)
+
+1.
+http://plastilinux.blogspot.com/2009/11/how-to-know-version-of-kernel-without.html
+(A slightly faster hack)
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
