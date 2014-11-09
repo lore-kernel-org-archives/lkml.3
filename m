@@ -1,124 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaKISSj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 13:18:39 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:58075 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaKISSh (ORCPT
+	id S1751579AbaKISTk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 13:19:40 -0500
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:50702 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaKISTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 13:18:37 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: e1000-devel@lists.sourceforge.net
-Subject: Re: e100: Laptop battery drain and WoL settings from EEPROM
-Date: Sun, 9 Nov 2014 19:18:03 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201411090015.41446.linux@rainbow-software.org>
-In-Reply-To: <201411090015.41446.linux@rainbow-software.org>
-X-KMail-QuotePrefix: > 
+	Sun, 9 Nov 2014 13:19:38 -0500
+X-ME-Helo: beldin
+X-ME-Date: Sun, 09 Nov 2014 19:19:35 +0100
+X-ME-IP: 109.222.82.103
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Daniel Mack <zonque@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 0/3] Transition pxa25x clock to common clocks
+References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
+	<CALT56yOCBN1NAfNw=vThVZ_o=ONGOTvzKHBH5tCTQShJY0wkrQ@mail.gmail.com>
+	<87lhnlwqm4.fsf@free.fr>
+	<CALT56yNOXq-ssvsjafz=ae+uWv1GyscoQ3RQ_h--i740zm4trA@mail.gmail.com>
+	<8761epwgni.fsf@free.fr>
+	<CALT56yOU=cqczdEs=FOgoWUHev1A0gihEpV-XsD5_g_ECz6+Qg@mail.gmail.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Sun, 09 Nov 2014 19:19:33 +0100
+In-Reply-To: <CALT56yOU=cqczdEs=FOgoWUHev1A0gihEpV-XsD5_g_ECz6+Qg@mail.gmail.com>
+	(Dmitry Eremin-Solenikov's message of "Sun, 9 Nov 2014 20:11:27
+	+0400")
+Message-ID: <87fvdsuthm.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201411091918.04036.linux@rainbow-software.org>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 09 November 2014 00:15:41 Ondrej Zary wrote:
-> Hello,
-> there is long-standing problem with battery drain after turning off at
-> least some Toshiba laptops, see
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
->
-> I have the same problem with Toshiba Portege R100. When I shut it down in
-> Linux, the battery is drained to zero in a couple of days. I noticed that
-> the LAN port is still active, even when AC disconnected.
->
-> The WoL is enabled by default by e100 driver:
->
-> # ethtool eth0
-> Settings for eth0:
->         Supported ports: [ TP MII ]
->         Supported link modes:   10baseT/Half 10baseT/Full
->                                 100baseT/Half 100baseT/Full
->         Supported pause frame use: No
->         Supports auto-negotiation: Yes
->         Advertised link modes:  10baseT/Half 10baseT/Full
->                                 100baseT/Half 100baseT/Full
->         Advertised pause frame use: Symmetric
->         Advertised auto-negotiation: Yes
->         Link partner advertised link modes:  10baseT/Half
->         Link partner advertised pause frame use: No
->         Link partner advertised auto-negotiation: No
->         Speed: 10Mb/s
->         Duplex: Half
->         Port: MII
->         PHYAD: 1
->         Transceiver: internal
->         Auto-negotiation: on
->         Supports Wake-on: g
->         Wake-on: g
->         Current message level: 0x00000007 (7)
->                                drv probe link
->         Link detected: yes
->
-> By this code:
->         /* Wol magic packet can be enabled from eeprom */
->         if ((nic->mac >= mac_82558_D101_A4) &&
->            (nic->eeprom[eeprom_id] & eeprom_id_wol)) {
->                 nic->flags |= wol_magic;
->                 device_set_wakeup_enable(&pdev->dev, true);
->         }
->
-> because the WoL bit is set in EEPROM ID word:
->
-> # ethtool -e eth0
-> Offset          Values
-> ------          ------
-> 0x0000:         xx xx xx xx xx xx 03 1b 00 00 01 02 01 47 00 00
-> 0x0010:         00 00 00 00 a2 49 01 00 79 11 7f 00 00 00 00 00
->                             ^^ bit 5 here
-> 0x0020:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 0x0030:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 0x0040:         00 00 00 00 00 00 3d 10 00 00 00 00 00 00 00 00
-> 0x0050:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 0x0060:         e4 00 3f 40 09 41 00 00 00 00 00 00 00 00 00 00
-> 0x0070:         00 00 00 00 00 00 00 00 00 00 00 00 00 00 f7 fe
->
-> Looks like this laptop is probably WoL-capable even on battery.
->
-> Measured the current from AC adapter:
-> around 20mA with WoL inactive (shut down from Windows or by power button in
-> GRUB) around 40mA with WoL active (shut down from Linux)
->
-> So to work-around this problem, users must disable WoL manually on each
-> boot.
->
-> Maybe the driver should ignore the EEPROM WoL bit on Toshiba susbsystem
-> IDs? Or completely, like Windows driver does?
+Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
 
-Suggested patch:
+> 2014-11-09 0:01 GMT+03:00 Robert Jarzmik <robert.jarzmik@free.fr>:
+> Tested-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+OK, that's really great, thanks for your testing effort.
+I'll digest the clk_summary output next week to cross-check everything is in
+order.
 
-diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
-index 781065e..bd4fe64 100644
---- a/drivers/net/ethernet/intel/e100.c
-+++ b/drivers/net/ethernet/intel/e100.c
-@@ -2949,13 +2949,6 @@ static int e100_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		}
- 	}
- 
--	/* Wol magic packet can be enabled from eeprom */
--	if ((nic->mac >= mac_82558_D101_A4) &&
--	   (nic->eeprom[eeprom_id] & eeprom_id_wol)) {
--		nic->flags |= wol_magic;
--		device_set_wakeup_enable(&pdev->dev, true);
--	}
--
- 	/* ack any pending wake events, disable PME */
- 	pci_pme_active(pdev, false);
- 
+> Could you please also include a revert of
+> 23c4a3a5212701ad34bd30591fa33d7bacef9c5f
+> into your branch? Otherwise pxa27x is broken in your tree.
+Done.
+
+I will release v2 of this serie very soon now as the fixes for at least 2
+pxa25x platforms are identified and done.
+
+Cheers.
+
 -- 
-Ondrej Zary
+Robert
