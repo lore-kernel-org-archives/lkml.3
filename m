@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaKIA6H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 19:58:07 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:35344 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814AbaKIA6F (ORCPT
+	id S1751410AbaKIBRS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 20:17:18 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:25319 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750962AbaKIBRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 19:58:05 -0500
-Date: Sat, 8 Nov 2014 16:58:02 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Andreas Olofsson <andreas@adapteva.com>,
-        Matteo Vit <matteo.vit@starwaredesign.com>,
-        Sean Rickerd <srickerd@suse.com>, stable@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: zynq: Enable PL clocks for Parallella
-Message-ID: <20141109005802.GE13855@quad.lixom.net>
-References: <1415294531-8942-1-git-send-email-afaerber@suse.de>
- <eca8ae5de8184151b03d3fd8d23c62a7@BY2FFO11FD010.protection.gbl>
+	Sat, 8 Nov 2014 20:17:17 -0500
+Message-ID: <545EC097.2010005@fb.com>
+Date: Sat, 8 Nov 2014 20:17:11 -0500
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <eca8ae5de8184151b03d3fd8d23c62a7@BY2FFO11FD010.protection.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-08_03:2014-11-07,2014-11-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.88182802673964e-14 kscore.compositescore=0
+ circleOfTrustscore=29.4129509548051 compositescore=0.939076664828693
+ urlsuspect_oldscore=0.939076664828693 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.939076664828693 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1411090010
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 07:44:16AM +0100, Michal Simek wrote:
-> On 11/06/2014 06:22 PM, Andreas Färber wrote:
-> > The Parallella board comes with a U-Boot bootloader that loads one of
-> > two predefined FPGA bitstreams before booting the kernel. Both define an
-> > AXI interface to the on-board Epiphany processor.
-> > 
-> > Enable clocks FCLK0..FCLK3 for the Programmable Logic by default.
-> > 
-> > Otherwise accessing, e.g., the ESYSRESET register freezes the board,
-> > as seen with the Epiphany SDK tools e-reset and e-hw-rev, using /dev/mem.
-> > 
-> > Cc: <stable@vger.kernel.org> # 3.17.x
-> > Signed-off-by: Andreas Färber <afaerber@suse.de>
-> > ---
-> >  Michal/Olof, please consider this trivial patch as a fix for 3.18.
-> 
-> Acked-by: Michal Simek <michal.simek@xilinx.com>
-> 
-> Olof, Arnd: Can you please pick this directly?
+Hi Linus,
 
-Done, applied to fixes.
+Please pull my for-linus branch:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
--Olof
+It's a one liner for an error cleanup path that leads to crashes.
+
+Chris Mason (1) commits (+1/-1):
+    Btrfs: fix kfree on list_head in btrfs_lookup_csums_range error cleanup
+
+Total: (1) commits (+1/-1)
+
+ fs/btrfs/file-item.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
