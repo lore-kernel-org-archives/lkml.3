@@ -1,453 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaKIP55 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 10:57:57 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45009 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaKIP5z (ORCPT
+	id S1751942AbaKIQLa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 11:11:30 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:62962 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaKIQL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 10:57:55 -0500
-Message-ID: <545F8EFF.7030704@linaro.org>
-Date: Sun, 09 Nov 2014 16:57:51 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 9 Nov 2014 11:11:28 -0500
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Tomasz Figa <tomasz.figa@gmail.com>, Colin Cross <ccross@google.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/2] cpuidle: exynos: add coupled cpuidle support for
- Exynos4210
-References: <1415383252-20118-1-git-send-email-b.zolnierkie@samsung.com> <1415383252-20118-3-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1415383252-20118-3-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <8761epwgni.fsf@free.fr>
+References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
+	<CALT56yOCBN1NAfNw=vThVZ_o=ONGOTvzKHBH5tCTQShJY0wkrQ@mail.gmail.com>
+	<87lhnlwqm4.fsf@free.fr>
+	<CALT56yNOXq-ssvsjafz=ae+uWv1GyscoQ3RQ_h--i740zm4trA@mail.gmail.com>
+	<8761epwgni.fsf@free.fr>
+Date: Sun, 9 Nov 2014 20:11:27 +0400
+Message-ID: <CALT56yOU=cqczdEs=FOgoWUHev1A0gihEpV-XsD5_g_ECz6+Qg@mail.gmail.com>
+Subject: Re: [PATCH v1 0/3] Transition pxa25x clock to common clocks
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Daniel Mack <zonque@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 07:00 PM, Bartlomiej Zolnierkiewicz wrote:
-> The following patch adds coupled cpuidle support for Exynos4210 to
-> an existing cpuidle-exynos driver.  As a result it enables AFTR mode
-> to be used by default on Exynos4210 without the need to hot unplug
-> CPU1 first.
+2014-11-09 0:01 GMT+03:00 Robert Jarzmik <robert.jarzmik@free.fr>:
+> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
 >
-> The patch is heavily based on earlier cpuidle-exynos4210 driver from
-> Daniel Lezcano:
->
-> http://www.spinics.net/lists/linux-samsung-soc/msg28134.html
->
-> Changes from Daniel's code include:
-> - porting code to current kernels
-> - fixing it to work on my setup (by using S5P_INFORM register
->    instead of S5P_VA_SYSRAM one on Revison 1.1 and retrying poking
->    CPU1 out of the BOOT ROM if necessary)
-> - fixing rare lockup caused by waiting for CPU1 to get stuck in
->    the BOOT ROM (CPU hotplug code in arch/arm/mach-exynos/platsmp.c
->    doesn't require this and works fine)
-> - moving Exynos specific code to arch/arm/mach-exynos/pm.c
-> - using cpu_boot_reg_base() helper instead of BOOT_VECTOR macro
-> - using exynos_cpu_*() helpers instead of accessing registers
->    directly
-> - using arch_send_wakeup_ipi_mask() instead of dsb_sev()
->    (this matches CPU hotplug code in arch/arm/mach-exynos/platsmp.c)
+>> 2014-11-08 20:26 GMT+03:00 Robert Jarzmik <robert.jarzmik@free.fr>:
+>>> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
+>>>
+>>>> Hello,
+>>>> Tested in qemu (pxa25x target).
+>>>>
+>>>> 2) sa1100-rtc could not find a clock and thus failed to be probed.
+>>>> 4) Got an issue with IrDA driver - it gets -ENODEV for UARTCLK clock
+>>>
+>>> Hi Dmitry,
+>>>
+>>> Would you mind retesting with the patch in [1] applied to see if points 2 and 4
+>>> are fixed ? Alternatively you can refetch from the github tree, I included that
+>>> incremental patch there too.
+>>>
+>>> If it works correctly for you, could I have your Tested-by ? If not, tell me and
+>>> I'll try to figure out what's wrong.
+>>
+>> Tested in qemu, everything works fine. I will test on the real hardware
+>> tomorow.
+> Aha, the test.
+> Would you at that time do a "cat /sys/kernel/debug/clk/clk_summary" and send it
+> to me please ?
 
-I am curious. You experienced very rare hangs after running the tests a 
-few hours, right ? Is the SEV replaced by the IPI solving the issue ? If 
-yes, how did you catch it ?
+Tested-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
->- integrating separate exynos4210-cpuidle driver into existing
->    exynos-cpuidle one
->
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Colin Cross <ccross@google.com>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Tomasz Figa <tomasz.figa@gmail.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Captured on tosa (pxa255):
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
-A few comments below:
-
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->   arch/arm/mach-exynos/common.h                |   4 +
->   arch/arm/mach-exynos/exynos.c                |   4 +
->   arch/arm/mach-exynos/platsmp.c               |   2 +-
->   arch/arm/mach-exynos/pm.c                    | 122 +++++++++++++++++++++++++++
->   drivers/cpuidle/Kconfig.arm                  |   1 +
->   drivers/cpuidle/cpuidle-exynos.c             |  62 ++++++++++++--
->   include/linux/platform_data/cpuidle-exynos.h |  20 +++++
->   7 files changed, 209 insertions(+), 6 deletions(-)
->   create mode 100644 include/linux/platform_data/cpuidle-exynos.h
->
-> diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-> index d4d09bc..f208a60 100644
-> --- a/arch/arm/mach-exynos/common.h
-> +++ b/arch/arm/mach-exynos/common.h
-> @@ -14,6 +14,7 @@
->
->   #include <linux/reboot.h>
->   #include <linux/of.h>
-> +#include <linux/platform_data/cpuidle-exynos.h>
->
->   #define EXYNOS3250_SOC_ID	0xE3472000
->   #define EXYNOS3_SOC_MASK	0xFFFFF000
-> @@ -168,8 +169,11 @@ extern void exynos_pm_central_suspend(void);
->   extern int exynos_pm_central_resume(void);
->   extern void exynos_enter_aftr(void);
->
-> +extern struct cpuidle_exynos_data cpuidle_coupled_exynos_data;
-> +
->   extern void s5p_init_cpu(void __iomem *cpuid_addr);
->   extern unsigned int samsung_rev(void);
-> +extern void __iomem *cpu_boot_reg_base(void);
->
->   static inline void pmu_raw_writel(u32 val, u32 offset)
->   {
-> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-> index a487e59..4f4eb9e 100644
-> --- a/arch/arm/mach-exynos/exynos.c
-> +++ b/arch/arm/mach-exynos/exynos.c
-> @@ -317,6 +317,10 @@ static void __init exynos_dt_machine_init(void)
->   	if (!IS_ENABLED(CONFIG_SMP))
->   		exynos_sysram_init();
->
-> +#ifdef CONFIG_ARM_EXYNOS_CPUIDLE
-> +	if (of_machine_is_compatible("samsung,exynos4210"))
-> +		exynos_cpuidle.dev.platform_data = &cpuidle_coupled_exynos_data;
-> +#endif
-
-You should not add those #ifdef.
-
->   	if (of_machine_is_compatible("samsung,exynos4210") ||
->   	    of_machine_is_compatible("samsung,exynos4212") ||
->   	    (of_machine_is_compatible("samsung,exynos4412") &&
-> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-> index adb36a8..0e3ffc9 100644
-> --- a/arch/arm/mach-exynos/platsmp.c
-> +++ b/arch/arm/mach-exynos/platsmp.c
-> @@ -182,7 +182,7 @@ int exynos_cluster_power_state(int cluster)
->   		S5P_CORE_LOCAL_PWR_EN);
->   }
->
-> -static inline void __iomem *cpu_boot_reg_base(void)
-> +void __iomem *cpu_boot_reg_base(void)
->   {
->   	if (soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_1_1)
->   		return pmu_base_addr + S5P_INFORM5;
-> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-> index 4b36ab5..44cc08a 100644
-> --- a/arch/arm/mach-exynos/pm.c
-> +++ b/arch/arm/mach-exynos/pm.c
-> @@ -178,3 +178,125 @@ void exynos_enter_aftr(void)
->
->   	cpu_pm_exit();
->   }
-> +
-> +static atomic_t cpu1_wakeup = ATOMIC_INIT(0);
-> +
-> +static int exynos_cpu0_enter_aftr(void)
-> +{
-> +	int ret = -1;
-> +
-> +	/*
-> +	 * If the other cpu is powered on, we have to power it off, because
-> +	 * the AFTR state won't work otherwise
-> +	 */
-> +	if (cpu_online(1)) {
-> +		/*
-> +		 * We reach a sync point with the coupled idle state, we know
-> +		 * the other cpu will power down itself or will abort the
-> +		 * sequence, let's wait for one of these to happen
-> +		 */
-> +		while (exynos_cpu_power_state(1)) {
-> +			/*
-> +			 * The other cpu may skip idle and boot back
-> +			 * up again
-> +			 */
-> +			if (atomic_read(&cpu1_wakeup))
-> +				goto abort;
-> +
-> +			/*
-> +			 * The other cpu may bounce through idle and
-> +			 * boot back up again, getting stuck in the
-> +			 * boot rom code
-> +			 */
-> +			if (__raw_readl(cpu_boot_reg_base()) == 0)
-> +				goto abort;
-> +
-> +			cpu_relax();
-> +		}
-> +	}
-> +
-> +	exynos_enter_aftr();
-> +	ret = 0;
-> +
-> +abort:
-> +	if (cpu_online(1)) {
-> +		/*
-> +		 * Set the boot vector to something non-zero
-> +		 */
-> +		__raw_writel(virt_to_phys(exynos_cpu_resume),
-> +			     cpu_boot_reg_base());
-> +		dsb();
-> +
-> +		/*
-> +		 * Turn on cpu1 and wait for it to be on
-> +		 */
-> +		exynos_cpu_power_up(1);
-> +		while (exynos_cpu_power_state(1) != S5P_CORE_LOCAL_PWR_EN)
-> +			cpu_relax();
-> +
-> +		while (!atomic_read(&cpu1_wakeup)) {
-> +			/*
-> +			 * Poke cpu1 out of the boot rom
-> +			 */
-> +			__raw_writel(virt_to_phys(exynos_cpu_resume),
-> +				     cpu_boot_reg_base());
-> +
-> +			arch_send_wakeup_ipi_mask(cpumask_of(1));
-> +		}
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int exynos_wfi_finisher(unsigned long flags)
-> +{
-> +	cpu_do_idle();
-> +
-> +	return -1;
-> +}
-> +
-> +static int exynos_cpu1_powerdown(void)
-> +{
-> +	int ret = -1;
-> +
-> +	/*
-> +	 * Idle sequence for cpu1
-> +	 */
-> +	if (cpu_pm_enter())
-> +		goto cpu1_aborted;
-> +
-> +	/*
-> +	 * Turn off cpu 1
-> +	 */
-> +	exynos_cpu_power_down(1);
-> +
-> +	ret = cpu_suspend(0, exynos_wfi_finisher);
-> +
-> +	cpu_pm_exit();
-> +
-> +cpu1_aborted:
-> +	dsb();
-> +	/*
-> +	 * Notify cpu 0 that cpu 1 is awake
-> +	 */
-> +	atomic_set(&cpu1_wakeup, 1);
-> +
-> +	return ret;
-> +}
-> +
-> +static void exynos_pre_enter_aftr(void)
-> +{
-> +	__raw_writel(virt_to_phys(exynos_cpu_resume), cpu_boot_reg_base());
-> +}
-> +
-> +static void exynos_post_enter_aftr(void)
-> +{
-> +	atomic_set(&cpu1_wakeup, 0);
-> +}
-> +
-> +struct cpuidle_exynos_data cpuidle_coupled_exynos_data = {
-> +	.cpu0_enter_aftr		= exynos_cpu0_enter_aftr,
-> +	.cpu1_powerdown		= exynos_cpu1_powerdown,
-> +	.pre_enter_aftr		= exynos_pre_enter_aftr,
-> +	.post_enter_aftr		= exynos_post_enter_aftr,
-> +};
-> diff --git a/drivers/cpuidle/Kconfig.arm b/drivers/cpuidle/Kconfig.arm
-> index 8c16ab2..8e07c94 100644
-> --- a/drivers/cpuidle/Kconfig.arm
-> +++ b/drivers/cpuidle/Kconfig.arm
-> @@ -55,6 +55,7 @@ config ARM_AT91_CPUIDLE
->   config ARM_EXYNOS_CPUIDLE
->   	bool "Cpu Idle Driver for the Exynos processors"
->   	depends on ARCH_EXYNOS
-> +	select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
->   	help
->   	  Select this to enable cpuidle for Exynos processors
->
-> diff --git a/drivers/cpuidle/cpuidle-exynos.c b/drivers/cpuidle/cpuidle-exynos.c
-> index ba9b34b..4700d5d 100644
-> --- a/drivers/cpuidle/cpuidle-exynos.c
-> +++ b/drivers/cpuidle/cpuidle-exynos.c
-> @@ -1,8 +1,11 @@
-> -/* linux/arch/arm/mach-exynos/cpuidle.c
-> - *
-> - * Copyright (c) 2011 Samsung Electronics Co., Ltd.
-> +/*
-> + * Copyright (c) 2011-2014 Samsung Electronics Co., Ltd.
->    *		http://www.samsung.com
->    *
-> + * Coupled cpuidle support based on the work of:
-> + *	Colin Cross <ccross@android.com>
-> + *	Daniel Lezcano <daniel.lezcano@linaro.org>
-> + *
->    * This program is free software; you can redistribute it and/or modify
->    * it under the terms of the GNU General Public License version 2 as
->    * published by the Free Software Foundation.
-> @@ -13,13 +16,49 @@
->   #include <linux/export.h>
->   #include <linux/module.h>
->   #include <linux/platform_device.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_data/cpuidle-exynos.h>
->
->   #include <asm/proc-fns.h>
->   #include <asm/suspend.h>
->   #include <asm/cpuidle.h>
->
-> +static atomic_t exynos_idle_barrier;
-> +
-> +static struct cpuidle_exynos_data *exynos_cpuidle_pdata;
->   static void (*exynos_enter_aftr)(void);
->
-> +static int exynos_enter_coupled_lowpower(struct cpuidle_device *dev,
-> +					 struct cpuidle_driver *drv,
-> +					 int index)
-> +{
-> +	int ret;
-> +
-> +	exynos_cpuidle_pdata->pre_enter_aftr();
-> +
-> +	/*
-> +	 * Waiting all cpus to reach this point at the same moment
-> +	 */
-> +	cpuidle_coupled_parallel_barrier(dev, &exynos_idle_barrier);
-> +
-> +	/*
-> +	 * Both cpus will reach this point at the same time
-> +	 */
-> +	ret = dev->cpu ? exynos_cpuidle_pdata->cpu1_powerdown()
-> +		       : exynos_cpuidle_pdata->cpu0_enter_aftr();
-> +	if (ret)
-> +		index = ret;
-> +
-> +	/*
-> +	 * Waiting all cpus to finish the power sequence before going further
-> +	 */
-> +	cpuidle_coupled_parallel_barrier(dev, &exynos_idle_barrier);
-> +
-> +	exynos_cpuidle_pdata->post_enter_aftr();
-> +
-> +	return index;
-> +}
-> +
->   static int exynos_enter_lowpower(struct cpuidle_device *dev,
->   				struct cpuidle_driver *drv,
->   				int index)
-> @@ -58,11 +97,24 @@ static struct cpuidle_driver exynos_idle_driver = {
->
->   static int exynos_cpuidle_probe(struct platform_device *pdev)
->   {
-> +	const struct cpumask *coupled_cpus = NULL;
->   	int ret;
->
-> -	exynos_enter_aftr = (void *)(pdev->dev.platform_data);
-> +	if (of_machine_is_compatible("samsung,exynos4210")) {
-> +		exynos_cpuidle_pdata = pdev->dev.platform_data;
-> +
-> +		exynos_idle_driver.states[1].enter =
-> +						exynos_enter_coupled_lowpower;
-> +		exynos_idle_driver.states[1].exit_latency = 5000;
-> +		exynos_idle_driver.states[1].target_residency = 10000;
-> +		exynos_idle_driver.states[1].flags |= CPUIDLE_FLAG_COUPLED |
-> +						      CPUIDLE_FLAG_TIMER_STOP;
-
-I tried to remove those dynamic state allocation everywhere in the 
-different drivers. I would prefer to have another cpuidle_driver to be 
-registered with its states instead of overwriting the existing idle state.
-
-struct cpuidle_driver exynos4210_idle_driver = {
-	.name = "exynos4210_idle",
-	.owner = THIS_MODULE,
-	.states = {
-		[0] = ARM_CPUIDLE_WFI_STATE,
-                 [1] = {
-                         .enter = exynos_enter_coupled_lowpower,
-                         .exit_latency = 5000,
-                         .target_residency = 10000,
-			.flags = CPUIDLE_FLAG_TIME_VALID |
-				CPUIDLE_FLAG_COUPLED |
-				CPUIDLE_FLAG_TIMER_STOP,
-                         .name = "C1",
-                         .desc = "ARM power down",
-                 },
-	}
-};
+   clock                         enable_cnt  prepare_cnt        rate
+accuracy   phase
+----------------------------------------------------------------------------------------
+ clk_dummy                                0            0           0
+       0 0
+ osc_32_768khz                            3            3    32768000
+       0 0
+    OSTIMER0                              1            1    32768000
+       0 0
+    sa1100-rtc                            1            1    32768000
+       0 0
+    GPIO12_CLK                            0            0    32768000
+       0 0
+    pxa26x-gpio                           0            0    32768000
+       0 0
+    pxa25x-gpio                           1            1    32768000
+       0 0
+ osc_3_6864mhz                            3            3     3686400
+       0 0
+    PWM1                                  0            0     3686400
+       0 0
+    PWM0                                  0            0     3686400
+       0 0
+    ASSP                                  0            0     3686400
+       0 0
+    NSSP                                  0            0     3686400
+       0 0
+    SSP                                   0            0     3686400
+       0 0
+    GPIO11_CLK                            1            1     3686400
+       0 0
+    cpll                                  0            0   398131200
+       0 0
+       core                               0            0   398131200
+       0 0
+       run                                0            0   199065600
+       0 0
+          MEMC                            0            0   199065600
+       0 0
+          LCD                             0            0   199065600
+       0 0
+          memory                          0            0    99532800
+       0 0
+    ppll_147_46mhz                        2            4   147456000
+       0 0
+       AC97                               1            1    12288000
+       0 0
+       I2S                                0            0   147456000
+       0 0
+       HWUART                             0            0    14745600
+       0 0
+       STUART                             0            1    14745600
+       0 0
+          pxa2xx-ir                       0            0    14745600
+       0 0
+       BTUART                             0            1    14745600
+       0 0
+       FFUART                             1            2    14745600
+       0 0
+    ppll_95_85mhz                         1            1    95846400
+       0 0
+       USB                                0            0    47923200
+       0 0
+       FICP                               0            0    47923200
+       0 0
+       I2C                                1            1    31948800
+       0 0
+       MMC                                0            0    19169280
+       0 0
 
 
-and then:
-
-if (of_machine_is_compatible("samsung,exynos4210")) {
-	...
-	ret = cpuidle_register(&exynos4210_idle_driver,
-				cpu_online_mask);
-	...
-}
-...
-
-If we can reuse this mechanism, which I believe it is possible to, for 
-4420 and 5250. Then we will be able to refactor this out again.
-
-> +
-> +		coupled_cpus = cpu_possible_mask;
-> +	} else
-> +		exynos_enter_aftr = (void *)(pdev->dev.platform_data);
+>> BTW: It looks like pxa27x also shows the same behaviour wrt. sa1100-rtc and
+>> pxa2xx-ir (after reverting a revert).
+> Ah yes, you're very right about that.
 >
-> -	ret = cpuidle_register(&exynos_idle_driver, NULL);
-> +	ret = cpuidle_register(&exynos_idle_driver, coupled_cpus);
->   	if (ret) {
->   		dev_err(&pdev->dev, "failed to register cpuidle driver\n");
->   		return ret;
-> diff --git a/include/linux/platform_data/cpuidle-exynos.h b/include/linux/platform_data/cpuidle-exynos.h
-> new file mode 100644
-> index 0000000..bfa40e4
-> --- /dev/null
-> +++ b/include/linux/platform_data/cpuidle-exynos.h
-> @@ -0,0 +1,20 @@
-> +/*
-> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> + *              http://www.samsung.com
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> +*/
-> +
-> +#ifndef __CPUIDLE_EXYNOS_H
-> +#define __CPUIDLE_EXYNOS_H
-> +
-> +struct cpuidle_exynos_data {
-> +	int (*cpu0_enter_aftr)(void);
-> +	int (*cpu1_powerdown)(void);
-> +	void (*pre_enter_aftr)(void);
-> +	void (*post_enter_aftr)(void);
-> +};
-> +
-> +#endif
+> Same as before, github updated and patch included in this mail.
+
+Could you please also include a revert of
+23c4a3a5212701ad34bd30591fa33d7bacef9c5f
+into your branch? Otherwise pxa27x is broken in your tree.
+
 >
+> Cheers.
+>
+> --
+> Robert
+>
+
 
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+With best wishes
+Dmitry
