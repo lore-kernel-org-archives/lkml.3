@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaKIJZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 04:25:43 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46825 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaKIJZl (ORCPT
+	id S1751676AbaKIJ1t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 04:27:49 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:58730 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaKIJ1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 04:25:41 -0500
-Message-ID: <545F3307.4000305@gmail.com>
-Date: Sun, 09 Nov 2014 17:25:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: dmitry.kasatkin@intel.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lib: mpi: Use "static inline" instead of "extern inline"
- in header file for __GNUC__
-References: <545F2C99.4080607@gmail.com> <1415524261.23530.37.camel@perches.com>
-In-Reply-To: <1415524261.23530.37.camel@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 9 Nov 2014 04:27:44 -0500
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH 0/3] spi: Add support for Amlogic Meson SPIFC
+Date: Sun,  9 Nov 2014 10:25:10 +0100
+Message-Id: <1415525113-25598-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 05:11 PM, Joe Perches wrote:
-> On Sun, 2014-11-09 at 16:58 +0800, Chen Gang wrote:
->> In header file, "extern inline" may cause multiple definition, so need
->> change it to "static inline". And also need be quoted  by __GNUC__ for
->> they are as inline functions only for __GNUC__.
-> []
->> diff --git a/lib/mpi/mpi-inline.h b/lib/mpi/mpi-inline.h
-> []
->> @@ -30,7 +30,7 @@
->>  #define G10_MPI_INLINE_H
->>  
->>  #ifndef G10_MPI_INLINE_DECL
->> -#define G10_MPI_INLINE_DECL  extern inline
->> +#define G10_MPI_INLINE_DECL  static inline
-> 
-> Why not remove the #define and use static inline
-> in the 4 places the #define is currently used?
-> 
+Hi,
 
-I just follow the original author's ways, the original author may think
-it is useful.
+this patchset adds a driver for the SPIFC (SPI flash controller)
+available in Amlogic Meson6 and Meson8 SoCs. It doesn't support DMA
+and has a 64-byte unified transmit/receive buffer.
 
-I guess, it may be used by other systems (neither Linux kernel nor gcc).
-For another compiler, it may need another syntax for it (although I am
-not quite sure about it).
+The driver has been tested on a Meson8 based device to communicate
+with a Macronix mx25l1606e serial flash.
 
-So for safety reason, still keep it no touch, at present.
+Beniamino Galvani (3):
+  spi: meson: Add device tree bindings documentation for SPIFC
+  spi: meson: Add support for Amlogic Meson SPIFC
+  ARM: dts: meson: add node for SPIFC
 
-Thanks.
+ .../devicetree/bindings/spi/spi-meson.txt          |  22 ++
+ arch/arm/boot/dts/meson.dtsi                       |   9 +
+ drivers/spi/Kconfig                                |   7 +
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-meson-spifc.c                      | 411 +++++++++++++++++++++
+ 5 files changed, 450 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-meson.txt
+ create mode 100644 drivers/spi/spi-meson-spifc.c
+
 -- 
-Chen Gang
+1.9.1
 
-Open share and attitude like air water and life which God blessed
