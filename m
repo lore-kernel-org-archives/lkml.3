@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaKISul (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 13:50:41 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60689 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751365AbaKISuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 13:50:39 -0500
-Date: Sun, 9 Nov 2014 18:50:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] of: Make const the device node pointers in
- of_clk_get and of_node_put
-Message-ID: <20141109185019.GU4042@n2100.arm.linux.org.uk>
-References: <cover.1415557680.git.moinejf@free.fr>
- <375a82230accf26dfbbb74e6f928243ea8e38b50.1415557680.git.moinejf@free.fr>
+	id S1751720AbaKISvy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 13:51:54 -0500
+Received: from mxf1.bahnhof.se ([213.80.101.25]:61047 "EHLO mxf1.bahnhof.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059AbaKISvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 13:51:53 -0500
+X-Spam-Score: 0
+Message-ID: <545FB7B8.5080506@flawful.org>
+Date: Sun, 09 Nov 2014 19:51:36 +0100
+From: Niklas Svensson <nks@flawful.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <375a82230accf26dfbbb74e6f928243ea8e38b50.1415557680.git.moinejf@free.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jason Cooper <jason@lakedaemon.net>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        eric.rost@mybabylon.net, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] staging: skein: fixed sparse warnings related to static
+ declarations
+References: <1415461758-9587-1-git-send-email-nks@flawful.org> <20141108195633.GM3698@titan.lakedaemon.net>
+In-Reply-To: <20141108195633.GM3698@titan.lakedaemon.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 08, 2014 at 07:33:22PM +0100, Jean-Francois Moine wrote:
-> Some device nodes are sometimes referenced by const pointers.
-> 
-> This patch avoids to cast these pointers when calling the functions
-> of_clk_get() and of_node_put().
 
-NAK.  Firstly, of_node_put contains a kref, which is /definitely/ not
-a const item when kobject_put() is called on it.  Inside the kobject
-is a kref, which kobject_put() will call kref_put() on.  kref_put()
-in turn will internally call atomic_sub_and_test() on a value embedded
-within the kref struct.
+On 11/08/2014 08:56 PM, Jason Cooper wrote:
+> On Sat, Nov 08, 2014 at 04:49:18PM +0100, Niklas Svensson wrote:
+>> drivers/staging/skein/skein_generic.c:30:5: warning: symbol 'skein256_update' was not declared. Should it be static?
+>> drivers/staging/skein/skein_generic.c:65:5: warning: symbol 'skein512_update' was not declared. Should it be static?
+>> drivers/staging/skein/skein_generic.c:100:5: warning: symbol 'skein1024_update' was not declared. Should it be static?
+>>
+>> Signed-off-by: Niklas Svensson <nks@flawful.org>
+>> ---
+>>  drivers/staging/skein/skein_generic.c | 6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+> What tree/tag is this patch against?  There've been quite a few changes
+> to the api this time around.
+linux-next,
+tag: next-20141106
 
-Ergo, of_node_put() modifies the struct device_node contents.  Therefore,
-of_node_put() definitely not treating the data pointed to as read-only,
-and therefore it is completely inappropriate for it to be marked "const".
-
-What this then means is that it fundamentally undermines the idea of
-storing the pointer to a device_node as a const pointer, as the device
-node must always be modified when you're done with it (because it's a
-ref-counted structure.)  So, having it const in your code is a bug.
-
-What this also means is that every other place that you've added const
-below is also very dubious.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+also applicable for gregkg's staging-next tree
