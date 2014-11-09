@@ -1,157 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaKIQLa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 11:11:30 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:62962 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaKIQL2 (ORCPT
+	id S1752016AbaKIQYv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 11:24:51 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:45434 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712AbaKIQYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 11:11:28 -0500
+	Sun, 9 Nov 2014 11:24:49 -0500
+From: Rob Ward <robert.ward114@googlemail.com>
+X-Google-Original-From: Rob Ward <rob@rob-thinkpad>
+Date: Sun, 9 Nov 2014 16:24:44 +0000 (GMT)
+To: joern@lazybastard.org, dwmw2@infradead.org, computersforpeace@gmail.com
+cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
+Subject: [PATCH] mtd: phram: Allow multiple phram devices on cmd line
+In-Reply-To: <alpine.DEB.2.10.1410211859030.7838@rob-thinkpad>
+Message-ID: <alpine.DEB.2.10.1411091618160.7838@rob-thinkpad>
+References: <alpine.DEB.2.10.1410211859030.7838@rob-thinkpad>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <8761epwgni.fsf@free.fr>
-References: <1414941415-13146-1-git-send-email-robert.jarzmik@free.fr>
-	<CALT56yOCBN1NAfNw=vThVZ_o=ONGOTvzKHBH5tCTQShJY0wkrQ@mail.gmail.com>
-	<87lhnlwqm4.fsf@free.fr>
-	<CALT56yNOXq-ssvsjafz=ae+uWv1GyscoQ3RQ_h--i740zm4trA@mail.gmail.com>
-	<8761epwgni.fsf@free.fr>
-Date: Sun, 9 Nov 2014 20:11:27 +0400
-Message-ID: <CALT56yOU=cqczdEs=FOgoWUHev1A0gihEpV-XsD5_g_ECz6+Qg@mail.gmail.com>
-Subject: Re: [PATCH v1 0/3] Transition pxa25x clock to common clocks
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Daniel Mack <zonque@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-09 0:01 GMT+03:00 Robert Jarzmik <robert.jarzmik@free.fr>:
-> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
->
->> 2014-11-08 20:26 GMT+03:00 Robert Jarzmik <robert.jarzmik@free.fr>:
->>> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> writes:
->>>
->>>> Hello,
->>>> Tested in qemu (pxa25x target).
->>>>
->>>> 2) sa1100-rtc could not find a clock and thus failed to be probed.
->>>> 4) Got an issue with IrDA driver - it gets -ENODEV for UARTCLK clock
->>>
->>> Hi Dmitry,
->>>
->>> Would you mind retesting with the patch in [1] applied to see if points 2 and 4
->>> are fixed ? Alternatively you can refetch from the github tree, I included that
->>> incremental patch there too.
->>>
->>> If it works correctly for you, could I have your Tested-by ? If not, tell me and
->>> I'll try to figure out what's wrong.
->>
->> Tested in qemu, everything works fine. I will test on the real hardware
->> tomorow.
-> Aha, the test.
-> Would you at that time do a "cat /sys/kernel/debug/clk/clk_summary" and send it
-> to me please ?
+>From 4e9b8ff3a6731a0ac43eac2e8bdf47101ff20ede Mon Sep 17 00:00:00 2001
+From: Rob Ward <robert.ward114@googlemail.com>
+Date: Tue, 21 Oct 2014 17:46:53 +0100
+Subject: [PATCH] mtd: phram: Allow multiple phram devices on cmd line
 
-Tested-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Allow the phram module the ability to create multiple phram mtd
+devices via the kernel command line.
 
-Captured on tosa (pxa255):
+Currently the phram module only allows a single mtd device to be
+created via the kernel command line. This is due to the phram
+module having to store the values until it is initialised
+later. This storage is done using a single char[] meaning when
+the module_param_call is made the previous value is overidden.
 
-   clock                         enable_cnt  prepare_cnt        rate
-accuracy   phase
-----------------------------------------------------------------------------------------
- clk_dummy                                0            0           0
-       0 0
- osc_32_768khz                            3            3    32768000
-       0 0
-    OSTIMER0                              1            1    32768000
-       0 0
-    sa1100-rtc                            1            1    32768000
-       0 0
-    GPIO12_CLK                            0            0    32768000
-       0 0
-    pxa26x-gpio                           0            0    32768000
-       0 0
-    pxa25x-gpio                           1            1    32768000
-       0 0
- osc_3_6864mhz                            3            3     3686400
-       0 0
-    PWM1                                  0            0     3686400
-       0 0
-    PWM0                                  0            0     3686400
-       0 0
-    ASSP                                  0            0     3686400
-       0 0
-    NSSP                                  0            0     3686400
-       0 0
-    SSP                                   0            0     3686400
-       0 0
-    GPIO11_CLK                            1            1     3686400
-       0 0
-    cpll                                  0            0   398131200
-       0 0
-       core                               0            0   398131200
-       0 0
-       run                                0            0   199065600
-       0 0
-          MEMC                            0            0   199065600
-       0 0
-          LCD                             0            0   199065600
-       0 0
-          memory                          0            0    99532800
-       0 0
-    ppll_147_46mhz                        2            4   147456000
-       0 0
-       AC97                               1            1    12288000
-       0 0
-       I2S                                0            0   147456000
-       0 0
-       HWUART                             0            0    14745600
-       0 0
-       STUART                             0            1    14745600
-       0 0
-          pxa2xx-ir                       0            0    14745600
-       0 0
-       BTUART                             0            1    14745600
-       0 0
-       FFUART                             1            2    14745600
-       0 0
-    ppll_95_85mhz                         1            1    95846400
-       0 0
-       USB                                0            0    47923200
-       0 0
-       FICP                               0            0    47923200
-       0 0
-       I2C                                1            1    31948800
-       0 0
-       MMC                                0            0    19169280
-       0 0
+This change modifies the phram system to use a char[][] allowing
+multiple devices to be created.
 
+The array size if controlled using the new config option
+CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS that allows the maximum
+number of devices to be specified. Currently this option
+defaults to a value of 1 leaving the behaviour unchanged.
 
->> BTW: It looks like pxa27x also shows the same behaviour wrt. sa1100-rtc and
->> pxa2xx-ir (after reverting a revert).
-> Ah yes, you're very right about that.
->
-> Same as before, github updated and patch included in this mail.
+If the array is full a message is printed to the console and the
+module_param_call returns.
 
-Could you please also include a revert of
-23c4a3a5212701ad34bd30591fa33d7bacef9c5f
-into your branch? Otherwise pxa27x is broken in your tree.
+To test, in all cases an area of memory needs to be reserved via
+the command line e.g. memmap=10M$114M
 
->
-> Cheers.
->
-> --
-> Robert
->
+To test with phram build into the kernel on the command line add
+the following:
 
+phram.phram=alpha,114Mi,1Mi phram.phram=beta,115Mi,1Mi
 
+If CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS is left as default i.e. 1
+then the first device, alpha will be created only. If the value of
+CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS is increased to 2 or more then
+both alpha and beta will be created.
 
+To test phram built as a module insmod with the following arguments:
+
+phram=gamma,114Mi,1Mi phram=delta,115Mi,1Mi
+
+In this case two devices should be created.
+
+Signed-off-by: Rob Ward <robert.ward114@googlemail.com>
+---
+ drivers/mtd/devices/Kconfig | 12 ++++++++++++
+ drivers/mtd/devices/phram.c | 45 ++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 52 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+index c49d0b1..5fdc80b 100644
+--- a/drivers/mtd/devices/Kconfig
++++ b/drivers/mtd/devices/Kconfig
+@@ -136,6 +136,18 @@ config MTD_PHRAM
+ 	  doesn't have access to, memory beyond the mem=xxx limit, nvram,
+ 	  memory on the video card, etc...
+ 
++config MTD_PHRAM_MAX_CMDLINE_ARGS
++	int "Max number of devices via Kernel command line"
++	depends on MTD_PHRAM=y
++	default 1
++	help
++	  Specify the number of phram devices that can be initialised
++	  using the Kernel command line.
++
++	  This option is only applicable when phram is built into the
++	  Kernel. When built as a module many devices can be specified
++	  at module insmod.
++
+ config MTD_LART
+ 	tristate "28F160xx flash driver for LART"
+ 	depends on SA1100_LART
+diff --git a/drivers/mtd/devices/phram.c b/drivers/mtd/devices/phram.c
+index effd9a4..223f221 100644
+--- a/drivers/mtd/devices/phram.c
++++ b/drivers/mtd/devices/phram.c
+@@ -212,9 +212,13 @@ static int phram_init_called;
+  * - phram.phram=<device>,<address>,<size> for built-in case
+  * We leave 64 bytes for the device name, 20 for the address and 20 for the
+  * size.
++ *
++ * The maximum number of devices supported is controlled by the
++ * MTD_PHRAM_MAX_CMDLINE_ARGS config option
++ *
+  * Example: phram.phram=rootfs,0xa0000000,512Mi
+  */
+-static char phram_paramline[64 + 20 + 20];
++static char phram_paramline[CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS][64 + 20 + 20];
+ #endif
+ 
+ static int phram_setup(const char *val)
+@@ -271,6 +275,9 @@ static int phram_param_call(const char *val, struct kernel_param *kp)
+ #ifdef MODULE
+ 	return phram_setup(val);
+ #else
++	int paramline_it = 0;
++	int arraysize = 0;
++
+ 	/*
+ 	 * If more parameters are later passed in via
+ 	 * /sys/module/phram/parameters/phram
+@@ -290,9 +297,27 @@ static int phram_param_call(const char *val, struct kernel_param *kp)
+ 	 * phram_setup().
+ 	 */
+ 
+-	if (strlen(val) >= sizeof(phram_paramline))
++	if (strlen(val) >= sizeof(phram_paramline[0]))
+ 		return -ENOSPC;
+-	strcpy(phram_paramline, val);
++
++	arraysize = sizeof(phram_paramline)/sizeof(phram_paramline[0]);
++
++	/*
++	 * Check if any space is left in the array. If no space
++	 * is left then print warning and return 0
++	 */
++
++	if (phram_paramline[arraysize - 1][0]) {
++		pr_warn("exceeded limit via cmd_line - %s ignored", val);
++		return 0;
++	}
++
++	for (paramline_it = 0; paramline_it <= arraysize; paramline_it++) {
++		if (!phram_paramline[paramline_it][0]) {
++			strcpy(phram_paramline[paramline_it], val);
++			break;
++		}
++	}
+ 
+ 	return 0;
+ #endif
+@@ -307,8 +332,18 @@ static int __init init_phram(void)
+ 	int ret = 0;
+ 
+ #ifndef MODULE
+-	if (phram_paramline[0])
+-		ret = phram_setup(phram_paramline);
++	int arraysize = 0;
++	int paramline_it = 0;
++
++	arraysize = sizeof(phram_paramline)/sizeof(phram_paramline[0]);
++
++	for (paramline_it = 0; paramline_it <= arraysize; paramline_it++) {
++		if (phram_paramline[paramline_it][0]) {
++			ret = phram_setup(phram_paramline[paramline_it]);
++			if (ret)
++				break;
++		}
++	}
+ 	phram_init_called = 1;
+ #endif
+ 
 -- 
-With best wishes
-Dmitry
+2.0.2
+
