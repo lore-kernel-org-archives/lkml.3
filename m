@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaKIWES (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 17:04:18 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:44466 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaKIWEQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 17:04:16 -0500
-Date: Sun, 9 Nov 2014 14:00:38 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Tom Boshoven <tomboshoven@gmail.com>, x86@kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Alexander Monakov <amonakov@gmail.com>
-Subject: Re: [PATCH v2] ACPI/osl: speedup grace period in acpi_os_map_cleanup
-Message-ID: <20141109220038.GH4901@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141108094717.9388.34638.stgit@zurg>
- <20141109105337.4952.36899.stgit@zurg>
+	id S1751673AbaKIWH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 17:07:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54100 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751474AbaKIWHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 17:07:25 -0500
+Message-ID: <545FE59B.3020702@suse.cz>
+Date: Sun, 09 Nov 2014 23:07:23 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141109105337.4952.36899.stgit@zurg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14110922-0021-0000-0000-00000603FDDF
+To: AL13N <alien@rmail.be>, linux-kernel@vger.kernel.org
+Subject: Re: Memory leaks on atom-based boards?
+References: <8bdeb6866adef7f2d34a693040c33f12.squirrel@mail.rmail.be>    <545F566F.7010102@suse.cz> <27d4dc6a448169861446f8c1b3c3cadd.squirrel@mail.rmail.be>
+In-Reply-To: <27d4dc6a448169861446f8c1b3c3cadd.squirrel@mail.rmail.be>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 09, 2014 at 01:53:37PM +0400, Konstantin Khlebnikov wrote:
-> ACPI maintains cache of ioremap regions to speed up operations and
-> access to them from irq context where ioremap() calls aren't allowed.
-> This code abuses synchronize_rcu() on unmap path for synchronization
-> with fast-path in acpi_os_read/write_memory which uses this cache.
+On 11/09/2014 05:38 PM, AL13N wrote:
+>> On 10/27/2014 07:44 PM, AL13N wrote:
+>>
+>> Hi, this does look like a kernel memory leak. There was recently a known
+>> one fixed by patch from https://lkml.org/lkml/2014/10/15/447 which made
+>> it to 3.18-rc3 and should be backported to stable kernels 3.8+ soon.
+>> You would recognize if this is the fix for you by checking the
+>> thp_zero_page_alloc value in /proc/vmstat. Value X > 1 basically means
+>> that X*2 MB memory is leaked.
+>> You say in the serverfault post that 3.17.2 helped, but the fix is not
+>> in 3.17.2... but it could be just that the circumstances changed and THP
+>> zero pages are no longer freed and realocated.
+>> So if you want to be sure, I would suggest trying again a version where
+>> the problem appeared on your system, and checking the
+>> thp_zero_page_alloc. Perhaps you'll see a >1 value even on 3.17.2, which
+>> means some leak did occur there as well, but maybe not so severe.
 > 
-> Since v3.10 CPUs are allowed to enter idle state even if they have RCU
-> callbacks queued, see commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
-> ("rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks").
-> That change caused problems with nvidia proprietary driver which calls
-> acpi_os_map/unmap_generic_address several times during initialization.
-> Each unmap calls synchronize_rcu and adds significant delay. Totally
-> initialization is slowed for a couple of seconds and that is enough to
-> trigger timeout in hardware, gpu decides to "fell off the bus". Widely
-> spread workaround is reducing "rcu_idle_gp_delay" from 4 to 1 jiffy.
 > 
-> This patch replaces synchronize_rcu() with synchronize_rcu_expedited()
-> which is much faster.
+> i was gonna tell you guys, but i was waiting until i was sure, but indeed
+> 3.17.2 fixed, it, where i had OOM after 3, maybe 4 days (for at least 2
+> months), now i'm up more than 4 days and the MemAvailable is still high
+> enough... at about 3.5GB whereas otherwise it would dwindle until 0. (at
+> about 1GB/day)
 > 
-> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-> Reported-and-tested-by: Alexander Monakov <amonakov@gmail.com>
-> Cc: Tom Boshoven <tomboshoven@gmail.com>
-> Link: https://devtalk.nvidia.com/default/topic/567297/linux/linux-3-10-driver-crash/
+> Well, it results to 0 on 3.17.2 ... so... i guess not? i'll keep this
+> value under observation...
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Hm, 0 sounds like nobody was allocating transparent huge pages at all. What
+about the other thp_* stats?
 
-> ---
->  drivers/acpi/osl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>  - How can i find out what is allocating all this memory?
+>>
+>> There's no simple way, unfortunately. Checking the kpageflags /proc file
+>> might help. IIRC there used to be a patch in -mm tree to store who
+>> allocated what page, but it might be bitrotten.
 > 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 9964f70..217713c 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -436,7 +436,7 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
->  static void acpi_os_map_cleanup(struct acpi_ioremap *map)
->  {
->  	if (!map->refcount) {
-> -		synchronize_rcu();
-> +		synchronize_rcu_expedited();
->  		acpi_unmap(map->phys, map->virt);
->  		kfree(map);
->  	}
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> i checked what was in kpageflags (or kpagecount) but it's all some kind of
+> binary stuff...
 > 
+> do i need some tool to interprete these values?
 
+There's tools/vm/page-types.c in kernel sources which can read kpageflags, but
+not the kpagecount...
+
+Vlastimil
