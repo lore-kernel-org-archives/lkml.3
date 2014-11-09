@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaKIIem (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 03:34:42 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:39121 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaKIIek (ORCPT
+	id S1751567AbaKIIer (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 03:34:47 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:45133 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513AbaKIIen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 03:34:40 -0500
+	Sun, 9 Nov 2014 03:34:43 -0500
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Cc: linux-media@vger.kernel.org, Carlo Caione <carlo@caione.org>,
@@ -17,47 +17,45 @@ Cc: linux-media@vger.kernel.org, Carlo Caione <carlo@caione.org>,
         Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
         Victor Wan <victor.wan@amlogic.com>,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v2 0/3] media: rc: add support for Amlogic Meson IR receiver
-Date: Sun,  9 Nov 2014 09:32:05 +0100
-Message-Id: <1415521928-25251-1-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH v2 1/3] media: rc: meson: document device tree bindings
+Date: Sun,  9 Nov 2014 09:32:06 +0100
+Message-Id: <1415521928-25251-2-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415521928-25251-1-git-send-email-b.galvani@gmail.com>
+References: <1415521928-25251-1-git-send-email-b.galvani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This adds binding documentation for the infrared remote control
+receiver available in Amlogic Meson SoCs.
 
-this is a driver for the infrared receiver available in Amlogic Meson6
-and Meson8 SoCs. The device can operate in two modes: "NEC" mode in
-which the hardware decodes frames using the NEC IR protocol, and
-"general" mode in which the receiver simply reports the duration of
-pulses and spaces for software decoding.
-
-In order to have the maximum compatibility with different protocols
-the driver implements software decoding.
-
-Changes since v1:
- - added COMPILE_TEST to allow compilation for other architectures
- - added missing header files
- - removed bogus vendor, product and version assignments
- - added file path to Meson entry in MAINTAINERS
- - reordered patches
-
-Beniamino Galvani (3):
-  media: rc: meson: document device tree bindings
-  media: rc: add driver for Amlogic Meson IR remote receiver
-  ARM: dts: meson: add IR receiver node
-
- .../devicetree/bindings/media/meson-ir.txt         |  14 ++
- MAINTAINERS                                        |   1 +
- arch/arm/boot/dts/meson.dtsi                       |   7 +
- drivers/media/rc/Kconfig                           |  11 ++
- drivers/media/rc/Makefile                          |   1 +
- drivers/media/rc/meson-ir.c                        | 215 +++++++++++++++++++++
- 6 files changed, 249 insertions(+)
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+---
+ Documentation/devicetree/bindings/media/meson-ir.txt | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/media/meson-ir.txt
- create mode 100644 drivers/media/rc/meson-ir.c
 
+diff --git a/Documentation/devicetree/bindings/media/meson-ir.txt b/Documentation/devicetree/bindings/media/meson-ir.txt
+new file mode 100644
+index 0000000..407848e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/meson-ir.txt
+@@ -0,0 +1,14 @@
++* Amlogic Meson IR remote control receiver
++
++Required properties:
++ - compatible	: should be "amlogic,meson6-ir"
++ - reg		: physical base address and length of the device registers
++ - interrupts	: a single specifier for the interrupt from the device
++
++Example:
++
++	ir-receiver@c8100480 {
++		compatible= "amlogic,meson6-ir";
++		reg = <0xc8100480 0x20>;
++		interrupts = <0 15 1>;
++	};
 -- 
 1.9.1
 
