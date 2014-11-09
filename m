@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaKIKtu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 05:49:50 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:53475 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaKIKts (ORCPT
+	id S1751933AbaKIKxq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 05:53:46 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:47602 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaKIKxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 05:49:48 -0500
-Message-ID: <545F46C8.2090502@gmail.com>
-Date: Sun, 09 Nov 2014 18:49:44 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 9 Nov 2014 05:53:42 -0500
+Subject: [PATCH v2] ACPI/osl: speedup grace period in acpi_os_map_cleanup
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Cc: Tom Boshoven <tomboshoven@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, x86@kernel.org,
+        Josh Triplett <josh@joshtriplett.org>,
+        Alexander Monakov <amonakov@gmail.com>
+Date: Sun, 09 Nov 2014 13:53:37 +0400
+Message-ID: <20141109105337.4952.36899.stgit@zurg>
+In-Reply-To: <20141108094717.9388.34638.stgit@zurg>
+References: <20141108094717.9388.34638.stgit@zurg>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>
-Subject: Re: [PATCH] drivers: input: mouse: Use "static inline" instead of
- "inline" in "lifebook.h"
-References: <545F4602.10101@gmail.com>
-In-Reply-To: <545F4602.10101@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ACPI maintains cache of ioremap regions to speed up operations and
+access to them from irq context where ioremap() calls aren't allowed.
+This code abuses synchronize_rcu() on unmap path for synchronization
+with fast-path in acpi_os_read/write_memory which uses this cache.
 
-After this patch, our tile can pass allmodconfig building. :-)
+Since v3.10 CPUs are allowed to enter idle state even if they have RCU
+callbacks queued, see commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+("rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks").
+That change caused problems with nvidia proprietary driver which calls
+acpi_os_map/unmap_generic_address several times during initialization.
+Each unmap calls synchronize_rcu and adds significant delay. Totally
+initialization is slowed for a couple of seconds and that is enough to
+trigger timeout in hardware, gpu decides to "fell off the bus". Widely
+spread workaround is reducing "rcu_idle_gp_delay" from 4 to 1 jiffy.
 
-Thanks.
+This patch replaces synchronize_rcu() with synchronize_rcu_expedited()
+which is much faster.
 
-On 11/09/2014 06:46 PM, Chen Gang wrote:
-> For inline function in header file, better to be "static inline", or may
-> cause building break under the latest upstream gcc (although, probably,
-> it should be the gcc's issue).
-> 
-> The related error (with allmodconfig under tile):
-> 
->     MODPOST 4002 modules
->   ERROR: "lifebook_detect" [drivers/input/mouse/psmouse.ko] undefined!
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/input/mouse/lifebook.h | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/lifebook.h b/drivers/input/mouse/lifebook.h
-> index 4c4326c..0baf02a 100644
-> --- a/drivers/input/mouse/lifebook.h
-> +++ b/drivers/input/mouse/lifebook.h
-> @@ -16,14 +16,14 @@ void lifebook_module_init(void);
->  int lifebook_detect(struct psmouse *psmouse, bool set_properties);
->  int lifebook_init(struct psmouse *psmouse);
->  #else
-> -inline void lifebook_module_init(void)
-> +static inline void lifebook_module_init(void)
->  {
->  }
-> -inline int lifebook_detect(struct psmouse *psmouse, bool set_properties)
-> +static inline int lifebook_detect(struct psmouse *psmouse, bool set_properties)
->  {
->  	return -ENOSYS;
->  }
-> -inline int lifebook_init(struct psmouse *psmouse)
-> +static inline int lifebook_init(struct psmouse *psmouse)
->  {
->  	return -ENOSYS;
->  }
-> 
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reported-and-tested-by: Alexander Monakov <amonakov@gmail.com>
+Cc: Tom Boshoven <tomboshoven@gmail.com>
+Link: https://devtalk.nvidia.com/default/topic/567297/linux/linux-3-10-driver-crash/
+---
+ drivers/acpi/osl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 9964f70..217713c 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -436,7 +436,7 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
+ static void acpi_os_map_cleanup(struct acpi_ioremap *map)
+ {
+ 	if (!map->refcount) {
+-		synchronize_rcu();
++		synchronize_rcu_expedited();
+ 		acpi_unmap(map->phys, map->virt);
+ 		kfree(map);
+ 	}
 
--- 
-Chen Gang
-
-Open share and attitude like air water and life which God blessed
