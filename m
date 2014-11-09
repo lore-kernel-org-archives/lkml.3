@@ -1,119 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaKILaL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 06:30:11 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:47069 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaKILaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 06:30:09 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v3 4/4] input: alps: Fix trackstick detection
-Date: Sun, 9 Nov 2014 12:30:03 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <1414884310-19842-5-git-send-email-pali.rohar@gmail.com> <20141109080504.GB34700@dtor-ws>
-In-Reply-To: <20141109080504.GB34700@dtor-ws>
+	id S1751905AbaKILwd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 06:52:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789AbaKILwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 06:52:31 -0500
+Date: Sun, 9 Nov 2014 13:52:22 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Fam Zheng <famz@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Ulrich Obergfell <uobergfe@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] virtio-pci: Reset device on shutdown
+Message-ID: <20141109115222.GA6831@redhat.com>
+References: <1415525945-7324-1-git-send-email-famz@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3778126.RZHr1kPRq9";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411091230.05337@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415525945-7324-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3778126.RZHr1kPRq9
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Nov 09, 2014 at 05:39:05PM +0800, Fam Zheng wrote:
+> This fixes a hanging issue during guest shutdown.
+> 
+> The device is left enabled even though we removed it and disabled msix
+> during shutdown. If the virtio device happens to get a new event right
+> at this point, seeing msix is disabled, it may try to notify us with an
+> IRQ, which is totally unexpected thus will not be handled. In this
+> case the guest hangs.
+> 
+> Let's reset the device so that it will not generate any interrupts.
+> 
+> Link: https://bugzilla.redhat.com/show_bug.cgi?id=1128424
+> Cc: Ulrich Obergfell <uobergfe@redhat.com>
+> Signed-off-by: Fam Zheng <famz@redhat.com>
 
-On Sunday 09 November 2014 09:05:04 Dmitry Torokhov wrote:
-> Hi Pali,
->=20
-> On Sun, Nov 02, 2014 at 12:25:10AM +0100, Pali Roh=C3=A1r wrote:
-> >  int alps_detect(struct psmouse *psmouse, bool
-> >  set_properties) {
-> >=20
-> > -	struct alps_data dummy;
-> > +	unsigned char e6[4];
-> >=20
-> > -	if (alps_identify(psmouse, &dummy) < 0)
-> > -		return -1;
-> > +	/*
-> > +	 * Try "E6 report".
-> > +	 * ALPS should return 0,0,10 or 0,0,100 if no buttons are
-> > pressed. +	 * The bits 0-2 of the first byte will be 1s if
-> > some buttons are +	 * pressed.
-> > +	 */
-> > +	if (alps_rpt_cmd(psmouse, PSMOUSE_CMD_SETRES,
-> > +			 PSMOUSE_CMD_SETSCALE11, e6))
-> > +		return -EIO;
-> > +
-> > +	if ((e6[0] & 0xf8) !=3D 0 || e6[1] !=3D 0 || (e6[2] !=3D 10 &&
-> > e6[2] !=3D 100)) +		return -EINVAL;
-> >=20
-> >  	if (set_properties) {
-> >=20
-> > +		/*
-> > +		 * NOTE: To detect model and trackstick presence we=20
-need
-> > to do +		 *       full device reset. To speed up=20
-detection
-> > and prevent +		 *       calling duplicate initialization
-> > sequence (both in +		 *       alps_detect() and
-> > alps_init()) we set model/protocol +		 *       version and
-> > correct name in alps_init() (which will +		 *       do=20
-full
-> > device reset). For now set name to DualPoint. +		 */
-> >=20
-> >  		psmouse->vendor =3D "ALPS";
-> >=20
-> > -		psmouse->name =3D dummy.flags & ALPS_DUALPOINT ?
-> > -				"DualPoint TouchPad" : "GlidePoint";
-> > -		psmouse->model =3D dummy.proto_version << 8;
-> > +		psmouse->name =3D "DualPoint TouchPad";
-> >=20
-> >  	}
-> >=20
-> > +
-> >=20
-> >  	return 0;
->=20
-> We can't do this; going by e6 only will give us false
-> positives and alps_detect is supposed to be authoritative.
->=20
-> Thanks.
+This needs some careful thought.
 
-psmouse-base.c is calling alps_detect() and alps_init()=20
-consecutively so it does not matter if code is in _detect or=20
-_init function. Just need to make sure that correct order will be=20
-used. So this patch could not bring any problems.
+vp_reset isn't safe unless there's a guarantee that
+nothing is accessing the device at the same time,
+which normally needs coordination with the function-specific
+driver.
 
-If psmouse-base.c detect device false-positive as ALPS (with=20
-alps_detect()) then it immediately calls alps_init() which fails=20
-and psmouse-base.c will try to use another protocol.
+For example, for virtio net, you will notice that on remove path we
+do unregister_netdev before reset for this reason.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+What guarantees it in this case?
 
---nextPart3778126.RZHr1kPRq9
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRfUD0ACgkQi/DJPQPkQ1JRsQCcDLZLSjfwk0I/NyUmFIUnU3az
-5gsAn3M15js4KkJewDDe5v0zxAmbVkWV
-=SF4u
------END PGP SIGNATURE-----
-
---nextPart3778126.RZHr1kPRq9--
+> ---
+>  drivers/virtio/virtio_pci.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index d34ebfa..cd7be6f 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -743,6 +743,14 @@ out:
+>  	return err;
+>  }
+>  
+> +static void virtio_pci_shutdown(struct pci_dev *pci_dev)
+> +{
+> +	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+> +
+> +	vp_reset(&vp_dev->vdev);
+> +}
+> +
+> +
+>  static void virtio_pci_remove(struct pci_dev *pci_dev)
+>  {
+>  	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+> @@ -794,6 +802,7 @@ static struct pci_driver virtio_pci_driver = {
+>  	.id_table	= virtio_pci_id_table,
+>  	.probe		= virtio_pci_probe,
+>  	.remove		= virtio_pci_remove,
+> +	.shutdown	= virtio_pci_shutdown,
+>  #ifdef CONFIG_PM_SLEEP
+>  	.driver.pm	= &virtio_pci_pm_ops,
+>  #endif
+> -- 
+> 1.9.3
