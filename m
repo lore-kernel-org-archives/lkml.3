@@ -1,77 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaKIL4h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 06:56:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46746 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640AbaKIL4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 06:56:35 -0500
-Message-ID: <545F566F.7010102@suse.cz>
-Date: Sun, 09 Nov 2014 12:56:31 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751973AbaKIL4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 06:56:43 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59356 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaKIL4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 06:56:39 -0500
+Date: Sun, 9 Nov 2014 12:56:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg, B38611@freescale.com,
+        jg1.han@samsung.com, linux-input@vger.kernel.org
+Subject: tsc2005 touchscreen: implement disable attribute
+Message-ID: <20141109115636.GA3106@amd>
 MIME-Version: 1.0
-To: AL13N <alien@rmail.be>, linux-kernel@vger.kernel.org
-Subject: Re: Memory leaks on atom-based boards?
-References: <8bdeb6866adef7f2d34a693040c33f12.squirrel@mail.rmail.be>
-In-Reply-To: <8bdeb6866adef7f2d34a693040c33f12.squirrel@mail.rmail.be>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 07:44 PM, AL13N wrote:
-> I have several machines with the same OS and kernel (3.14.22).
-> 
-> 2 of those machines are both atom-based boards and they get OOM, without
-> swap being used (MemAvail crawls down towards 0, even though not more
-> memory is used on processes).
-> 
-> Specifically, this one machine, i need to reboot every 3 à 5 days.
-> 
-> It has 4GB RAM and 4GB swap(SSD), but:
->  - sum of all vmRSS < 500MB
->  - sum of all tmpfs < 100MB
->  - Slab is around 16MB
->  - Cache will usually crawl down towards 0 (just like MemAvail)
->  - I couldn't find another explanation for the loss of Memory
->  - I also asked
-> http://serverfault.com/questions/616856/where-did-my-memory-go-on-linux-no-cache-slab-shm-ipcs
-> (the other machine)
->  - This problem existed on this hardware at least from 3.12.* upwards.
-> 
-> I've recompiled kernel to include kmemleak (i figured it'd be some module
-> that i've only got with this board), but it didn't point to anything (i
-> tested also with the test module, to see if it was working).
-> 
-> My questions are:
->  - Is this a kernel memory leak somewhere?
 
-Hi, this does look like a kernel memory leak. There was recently a known
-one fixed by patch from https://lkml.org/lkml/2014/10/15/447 which made
-it to 3.18-rc3 and should be backported to stable kernels 3.8+ soon.
-You would recognize if this is the fix for you by checking the
-thp_zero_page_alloc value in /proc/vmstat. Value X > 1 basically means
-that X*2 MB memory is leaked.
-You say in the serverfault post that 3.17.2 helped, but the fix is not
-in 3.17.2... but it could be just that the circumstances changed and THP
-zero pages are no longer freed and realocated.
-So if you want to be sure, I would suggest trying again a version where
-the problem appeared on your system, and checking the
-thp_zero_page_alloc. Perhaps you'll see a >1 value even on 3.17.2, which
-means some leak did occur there as well, but maybe not so severe.
+Implement disable attribute for tsc2005 touchscreen. It is useful to
+avoid wakeups when phone is in the pocket.
 
->  - How can i find out what is allocating all this memory?
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-There's no simple way, unfortunately. Checking the kpageflags /proc file
-might help. IIRC there used to be a patch in -mm tree to store who
-allocated what page, but it might be bitrotten.
+---
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+[This is from Pali's n900 tree that is GPL, so that is okay, but maybe
+I should get his sign-off here?]
 
+diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
+index 52380b6..ec1c276 100644
+--- a/drivers/input/touchscreen/tsc2005.c
++++ b/drivers/input/touchscreen/tsc2005.c
+@@ -147,6 +147,7 @@ struct tsc2005 {
+ 
+ 	unsigned int		x_plate_ohm;
+ 
++	bool			disabled;
+ 	bool			opened;
+ 	bool			suspended;
+ 
+@@ -384,6 +385,48 @@ static void __tsc2005_enable(struct tsc2005 *ts)
+ 
+ }
+ 
++static ssize_t tsc2005_disable_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	struct tsc2005 *ts = spi_get_drvdata(spi);
++
++	return sprintf(buf, "%u\n", ts->disabled);
++}
++
++static ssize_t tsc2005_disable_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	struct tsc2005 *ts = spi_get_drvdata(spi);
++	unsigned long val;
++	int error;
++
++	error = kstrtoul(buf, 10, &val);
++	if (error)
++		return error;
++
++	mutex_lock(&ts->mutex);
++
++	if (!ts->suspended && ts->opened) {
++		if (val) {
++			if (!ts->disabled)
++				__tsc2005_disable(ts);
++		} else {
++			if (ts->disabled)
++				__tsc2005_enable(ts);
++		}
++	}
++
++	ts->disabled = !!val;
++
++	mutex_unlock(&ts->mutex);
++
++	return count;
++}
++static DEVICE_ATTR(disable, 0664, tsc2005_disable_show, tsc2005_disable_store);
++
+ static ssize_t tsc2005_selftest_show(struct device *dev,
+ 				     struct device_attribute *attr,
+ 				     char *buf)
+@@ -466,6 +509,7 @@ out:
+ static DEVICE_ATTR(selftest, S_IRUGO, tsc2005_selftest_show, NULL);
+ 
+ static struct attribute *tsc2005_attrs[] = {
++	&dev_attr_disable.attr,
+ 	&dev_attr_selftest.attr,
+ 	NULL
+ };
+@@ -551,7 +595,7 @@ static int tsc2005_open(struct input_dev *input)
+ 
+ 	mutex_lock(&ts->mutex);
+ 
+-	if (!ts->suspended)
++	if (!ts->suspended && !ts->disabled)
+ 		__tsc2005_enable(ts);
+ 
+ 	ts->opened = true;
+@@ -567,7 +611,7 @@ static void tsc2005_close(struct input_dev *input)
+ 
+ 	mutex_lock(&ts->mutex);
+ 
+-	if (!ts->suspended)
++	if (!ts->suspended && !ts->disabled)
+ 		__tsc2005_disable(ts);
+ 
+ 	ts->opened = false;
+@@ -781,7 +825,7 @@ static int tsc2005_suspend(struct device *dev)
+ 
+ 	mutex_lock(&ts->mutex);
+ 
+-	if (!ts->suspended && ts->opened)
++	if (!ts->suspended && !ts->disabled && ts->opened)
+ 		__tsc2005_disable(ts);
+ 
+ 	ts->suspended = true;
+@@ -798,7 +842,7 @@ static int tsc2005_resume(struct device *dev)
+ 
+ 	mutex_lock(&ts->mutex);
+ 
+-	if (ts->suspended && ts->opened)
++	if (ts->suspended && !ts->disabled && ts->opened)
+ 		__tsc2005_enable(ts);
+ 
+ 	ts->suspended = false;
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
