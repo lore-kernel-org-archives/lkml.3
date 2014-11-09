@@ -1,130 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaKIV4P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 16:56:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaKIV4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 16:56:13 -0500
-Date: Sat, 8 Nov 2014 16:17:08 +1100
-From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>
-Subject: Re: [PATCH] Input: gpio_keys: Make sure wake-up buttons work.
-Message-ID: <20141108161708.0ee85c67@notabene.brown>
-In-Reply-To: <23209922.Rp3elUvURv@vostro.rjw.lan>
-References: <20141108103707.45bcc7e3@notabene.brown>
-	<20141107234507.GB4439@dtor-ws>
-	<20141108110058.6c5217e3@notabene.brown>
-	<23209922.Rp3elUvURv@vostro.rjw.lan>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+	id S1751771AbaKIV5m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 16:57:42 -0500
+Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:65470 "EHLO
+	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751532AbaKIV5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 16:57:40 -0500
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Nov 2014 16:57:39 EST
+From: Marc Dietrich <Marc.Dietrich@ap.physik.uni-giessen.de>
+To: Guenter Roeck <linux@roeck-us.net>, devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v5 33/48] staging: nvec: Register with kernel power-off handler
+Date: Sun, 09 Nov 2014 22:41:26 +0100
+Message-Id: <5008744.rVN94atT9b@ax5200p>
+User-Agent: KMail/4.13.3 (Linux/3.13.0-39-generic; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1415292213-28652-34-git-send-email-linux@roeck-us.net>
+References: <1415292213-28652-1-git-send-email-linux@roeck-us.net> <1415292213-28652-34-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/+2OfsJ3QLSZRD6P2r04/WWv"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
+X-HRZ-JLUG-MailScanner: No virus found
+X-Envelope-From: marc.dietrich@ap.physik.uni-giessen.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+2OfsJ3QLSZRD6P2r04/WWv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Am Donnerstag 06 November 2014, 08:43:17 schrieb Guenter Roeck:
+> Register with kernel power-off handler instead of setting pm_power_off
+> directly. Register with default priority since we don't know any better.
+> 
+> Cc: Julian Andres Klode <jak@jak-linux.org>
+> Cc: Marc Dietrich <marvin24@gmx.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net
 
-On Sat, 08 Nov 2014 01:49:06 +0100 "Rafael J. Wysocki" <rjw@rjwysocki.net>
-wrote:
+ok, this version (V5) actually switches the device off in contrast to the 
+first implementation. Somehow I have to find out why it works at all without 
+irqs.
 
-> On Saturday, November 08, 2014 11:00:58 AM NeilBrown wrote:
-> > On Fri, 7 Nov 2014 15:45:07 -0800 Dmitry Torokhov <dmitry.torokhov@gmai=
-l.com>
-> > wrote:
-> >=20
-> > > Hi Neil,
-> > >=20
-> > > On Sat, Nov 08, 2014 at 10:37:07AM +1100, NeilBrown wrote:
-> > > >=20
-> > > >=20
-> > > > If a key is to be used for wake-up, we must not disable
-> > > > the interrupt during suspend.
-> > > >=20
-> > > > Signed-off-by: NeilBrown <neilb@suse.de>
-> > > >=20
-> > > > diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/key=
-board/gpio_keys.c
-> > > > index 8c98e97f8e41..0b5e54ae343e 100644
-> > > > --- a/drivers/input/keyboard/gpio_keys.c
-> > > > +++ b/drivers/input/keyboard/gpio_keys.c
-> > > > @@ -526,6 +526,8 @@ static int gpio_keys_setup_key(struct platform_=
-device *pdev,
-> > > >  	 */
-> > > >  	if (!button->can_disable)
-> > > >  		irqflags |=3D IRQF_SHARED;
-> > > > +	if (button->wakeup)
-> > > > +		irqflags |=3D IRQF_NO_SUSPEND;
-> > >=20
-> > > No, enable_irq_wake() should be enough. I believe Rafael has fixed th=
-at
-> > > in the core, right?
-> > >=20
-> >=20
-> > Interesting...  you seem to be right, but I was having wakeup problems =
-until
-> > I added that patch.
->=20
-> This was a fairly recent change made in 3.18-rc1.
->=20
-> > I didn't test exhaustively, but the first time my device entered suspen=
-d, the
-> > gpio-key didn't wake it up.  Subsequent suspends did...
-> >=20
-> > After I applied this patch, it would reliably wake up even on the first
-> > suspend.
-> >=20
-> > So there seems to be something wrong, but maybe it is more subtle.
-> >=20
-> > Is there a good reason why enable_irq_wake() is only called just as the
-> > device is being suspended, and why disable_irq_wake() is called on resu=
-me?
-> > To me it would make more sense to just enable it once (if required) and=
- leave
-> > it enabled....
->=20
-> On some platforms it actually changes the configuration of interrupt
-> controllers in to a "suspend mode" which is not appropriate for run time
-> AFAICS.
->=20
-> > I'll see what I can find.
->=20
-> Yes, please.
+Acked-by: Marc Dietrich <mavin24@gmx.de>
 
-Hmmm.. that's frustrating.  I cannot reproduce the problem at all now.  I
-wonder what changed..
-And I see there are lots of changes in 3.18.
+> ---
+> v5:
+> - Rebase to v3.18-rc3
+> v4:
+> - Do not use notifiers but internal functions and data structures to manage
+>   the list of power-off handlers. Drop unused parameters from callbacks, and
+> make the power-off function type void
+> v3:
+> - Replace poweroff in all newly introduced variables and in text
+>   with power_off or power-off as appropriate
+> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+> v2:
+> - Use define to specify poweroff handler priority
+> - Use dev_warn instead of dev_err
+> 
+>  drivers/staging/nvec/nvec.c | 21 ++++++++++++---------
+>  drivers/staging/nvec/nvec.h |  2 ++
+>  2 files changed, 14 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+> index a93208a..acf2ea6 100644
+> --- a/drivers/staging/nvec/nvec.c
+> +++ b/drivers/staging/nvec/nvec.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/mfd/core.h>
+>  #include <linux/mutex.h>
+>  #include <linux/notifier.h>
+> +#include <linux/pm.h>
+>  #include <linux/slab.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/workqueue.h>
+> @@ -80,8 +81,6 @@ enum nvec_sleep_subcmds {
+>  #define LID_SWITCH BIT(1)
+>  #define PWR_BUTTON BIT(15)
+> 
+> -static struct nvec_chip *nvec_power_handle;
+> -
+>  static const struct mfd_cell nvec_devices[] = {
+>  	{
+>  		.name = "nvec-kbd",
+> @@ -759,12 +758,14 @@ static void nvec_disable_i2c_slave(struct nvec_chip
+> *nvec) }
+>  #endif
+> 
+> -static void nvec_power_off(void)
+> +static void nvec_power_off(struct power_off_handler_block *this)
+>  {
+> +	struct nvec_chip *nvec = container_of(this, struct nvec_chip,
+> +					      power_off_hb);
+>  	char ap_pwr_down[] = { NVEC_SLEEP, AP_PWR_DOWN };
+> 
+> -	nvec_toggle_global_events(nvec_power_handle, false);
+> -	nvec_write_async(nvec_power_handle, ap_pwr_down, 2);
+> +	nvec_toggle_global_events(nvec, false);
+> +	nvec_write_async(nvec, ap_pwr_down, 2);
+>  }
+> 
+>  /*
+> @@ -878,8 +879,11 @@ static int tegra_nvec_probe(struct platform_device
+> *pdev) nvec->nvec_status_notifier.notifier_call = nvec_status_notifier;
+> nvec_register_notifier(nvec, &nvec->nvec_status_notifier, 0);
+> 
+> -	nvec_power_handle = nvec;
+> -	pm_power_off = nvec_power_off;
+> +	nvec->power_off_hb.handler = nvec_power_off;
+> +	nvec->power_off_hb.priority = POWER_OFF_PRIORITY_DEFAULT;
+> +	ret = register_power_off_handler(&nvec->power_off_hb);
+> +	if (ret)
+> +		dev_warn(nvec->dev, "Failed to register power-off handler\n");
+> 
+>  	/* Get Firmware Version */
+>  	msg = nvec_write_sync(nvec, get_firmware_version, 2);
+> @@ -914,13 +918,12 @@ static int tegra_nvec_remove(struct platform_device
+> *pdev) {
+>  	struct nvec_chip *nvec = platform_get_drvdata(pdev);
+> 
+> +	unregister_power_off_handler(&nvec->power_off_hb);
+>  	nvec_toggle_global_events(nvec, false);
+>  	mfd_remove_devices(nvec->dev);
+>  	nvec_unregister_notifier(nvec, &nvec->nvec_status_notifier);
+>  	cancel_work_sync(&nvec->rx_work);
+>  	cancel_work_sync(&nvec->tx_work);
+> -	/* FIXME: needs check wether nvec is responsible for power off */
+> -	pm_power_off = NULL;
+> 
+>  	return 0;
+>  }
+> diff --git a/drivers/staging/nvec/nvec.h b/drivers/staging/nvec/nvec.h
+> index e271375..d4145da 100644
+> --- a/drivers/staging/nvec/nvec.h
+> +++ b/drivers/staging/nvec/nvec.h
+> @@ -163,6 +163,8 @@ struct nvec_chip {
+>  	struct nvec_msg *last_sync_msg;
+> 
+>  	int state;
+> +
+> +	struct power_off_handler_block power_off_hb;
+>  };
+> 
+>  extern int nvec_write_async(struct nvec_chip *nvec, const unsigned char
+> *data,
 
-I'll discard my patch and wait to see if the problem recurs.
-
-Thanks for your time,
-NeilBrown
-
---Sig_/+2OfsJ3QLSZRD6P2r04/WWv
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVF2nVDnsnt1WYoG5AQKVQg//SAo/vc2mS7aTnhoq4ZOHk5UHxPM7vOyi
-CukiTdrUUyRTztCOyFppUbqsqCQPvDzb/VUCv/0sm1onvkz25AJw3t0KHY8YqZmn
-SZslVQcBLlJLI4cJiuf6m08VZOYkFD61tQ1FD4JgbJmMEqkjdB6mTUKDXS51i5kw
-+uBzjD7KWvjr/hJS5ZV/3hU9xray+ldU/dCyyUf+PhDt7Zg4AGqUB58TwYth8SZ1
-tN8pOUCgT9/08u+ArJBKv3ZkTj1/lxHYi5G8llK4eI9M95wUPNNY4GiGmP1pRl6z
-/+ZKD7MR2YH1WBylvFec60x/GbAlnIyYt71LyDMI4S1JxG7VkauzPvP/lC0cfWQd
-SO1ok9SZNPAE78xEMA/7/avsq5Wfn1qqtdKcN1j4OMyPhvK1MiWM3IuEyh8IHdOM
-gkZFAprNzFL1Dor5OhnQaCXiQTJaqvxMpXo91OwJSpjaARSGSnVevc8vhchNLkx1
-ABtsn6cghwRlgzzpYpHUEG86FH/vRaiUGrvY8UXjJkeVzqWxAU5PhuKgbACM5BUF
-V6V7owNqtX02u4WQ9/9fZB3Ert2IBVQPeWl6qDp9sWlnjACXydTi+FfJi6R2PEwR
-Di+wNlysFW1TuGarb/1d8TIOIlwvGWpnS4PopTvivYDokX9Oo9VY+dLUCYwh0+5L
-HrFfwZMm8ew=
-=OuhB
------END PGP SIGNATURE-----
-
---Sig_/+2OfsJ3QLSZRD6P2r04/WWv--
