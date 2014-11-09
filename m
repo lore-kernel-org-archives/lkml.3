@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaKIJok (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 04:44:40 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55096 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaKIJoi (ORCPT
+	id S1751604AbaKIJrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 04:47:23 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53199 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaKIJrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 04:44:38 -0500
-Date: Sun, 9 Nov 2014 09:44:30 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] arm64 fixes for 3.18
-Message-ID: <20141109094422.GA14540@e104818-lin.cambridge.arm.com>
+	Sun, 9 Nov 2014 04:47:21 -0500
+Date: Sun, 9 Nov 2014 09:46:54 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Peter Rosin <peda@lysator.liu.se>
+Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, Peter Rosin <peda@axentia.se>
+Message-ID: <20141109094654.GL2722@sirena.org.uk>
+References: <20141107111737.GJ8509@sirena.org.uk>
+ <1415454017-4146-1-git-send-email-peda@lysator.liu.se>
+ <1415454017-4146-2-git-send-email-peda@lysator.liu.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iAzLNm1y1mIRgolD"
 Content-Disposition: inline
+In-Reply-To: <1415454017-4146-2-git-send-email-peda@lysator.liu.se>
+X-Cookie: Today is what happened to yesterday.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 188.29.164.159
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] ASoC: tfa9879: New driver for NXP Semiconductors
+ TFA9879 amplifier.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull the arm64 fixes below. Thanks.
+--iAzLNm1y1mIRgolD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit 3dec0fe48a8936528aae2fc3f904c2c9a34ba368:
+On Sat, Nov 08, 2014 at 02:40:17PM +0100, Peter Rosin wrote:
+> From: Peter Rosin <peda@axentia.se>
+>=20
+> Signed-off-by: Peter Rosin <peda@axentia.se>
 
-  arm64: Fix memblock current_limit with 64K pages and 48-bit VA (2014-10-24 18:16:47 +0100)
+Applied, thanks.
 
-are available in the git repository at:
+--iAzLNm1y1mIRgolD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-for you to fetch changes up to 2d39ad649eca1e8a993f4fda244fe17ecea7a38d:
+iQEcBAEBAgAGBQJUXzgNAAoJECTWi3JdVIfQZkMH/AzYGTR/xGvTt+1OZiPpVJHT
+wuUvWJdVhEGdKMXnLVIPBB7ZFr+q11OLh6kYACOLap4OPZFPCRw0o/w+g6CyzTWy
+SttFYPQpCqJcEhmT+BwBrJ5HPvyrEZSxKlAqxoE+xSQ7flLItGaCsXl9VQA6kZdD
+/vzUph9lRUYzp4pIV1hmPGn5dtQ7Y5C28VwDmYNSI8UG6rb1UC1DkQjHK8wWZC9h
+0ry/Y7OInQpctge8UX5s6BcVuv4KUi2dcgSGQDWfwC/0UQtV+9/9mqgta721VHu/
+UiGwh9Ak1Z3q7JyEoN/WLv+P9Nx0kPspLJQAcsfGuQhM1j/BCU5bOBXEs0Q7foM=
+=iayA
+-----END PGP SIGNATURE-----
 
-  arm64: defconfig: update defconfig for 3.18 (2014-11-05 17:07:58 +0000)
-
-----------------------------------------------------------------
-arm64 fixes:
-
-- enable bpf syscall for compat
-- cpu_suspend fix when checking the idle state type
-- defconfig update
-
-----------------------------------------------------------------
-Amit Daniel Kachhap (1):
-      arm64: psci: fix cpu_suspend to check idle state type for index
-
-Catalin Marinas (1):
-      arm64: compat: Enable bpf syscall
-
-Will Deacon (1):
-      arm64: defconfig: update defconfig for 3.18
-
- arch/arm64/configs/defconfig      | 26 ++++++++++++++++++++++++--
- arch/arm64/include/asm/unistd32.h |  2 ++
- arch/arm64/kernel/psci.c          |  2 +-
- 3 files changed, 27 insertions(+), 3 deletions(-)
-
--- 
-Catalin
+--iAzLNm1y1mIRgolD--
