@@ -1,181 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaKIQYv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 11:24:51 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:45434 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaKIQYt (ORCPT
+	id S1752086AbaKIQ0N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 11:26:13 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:57432 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbaKIQ0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 11:24:49 -0500
-From: Rob Ward <robert.ward114@googlemail.com>
-X-Google-Original-From: Rob Ward <rob@rob-thinkpad>
-Date: Sun, 9 Nov 2014 16:24:44 +0000 (GMT)
-To: joern@lazybastard.org, dwmw2@infradead.org, computersforpeace@gmail.com
-cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
-Subject: [PATCH] mtd: phram: Allow multiple phram devices on cmd line
-In-Reply-To: <alpine.DEB.2.10.1410211859030.7838@rob-thinkpad>
-Message-ID: <alpine.DEB.2.10.1411091618160.7838@rob-thinkpad>
-References: <alpine.DEB.2.10.1410211859030.7838@rob-thinkpad>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 9 Nov 2014 11:26:11 -0500
+From: Faisal Abbas <90.abbasfaisal@gmail.com>
+To: dhowells@redhat.com, fabf@skynet.be
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] FRV: Wire up new syscalls
+Date: Sun,  9 Nov 2014 21:26:03 +0500
+Message-Id: <1415550363-6172-1-git-send-email-90.abbasfaisal@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4e9b8ff3a6731a0ac43eac2e8bdf47101ff20ede Mon Sep 17 00:00:00 2001
-From: Rob Ward <robert.ward114@googlemail.com>
-Date: Tue, 21 Oct 2014 17:46:53 +0100
-Subject: [PATCH] mtd: phram: Allow multiple phram devices on cmd line
+Compiling source tree for FRV generates following warnings so wire these syscalls up.
 
-Allow the phram module the ability to create multiple phram mtd
-devices via the kernel command line.
+<stdin>:1187:2: warning: #warning syscall recvmmsg not implemented [-Wcpp]
+<stdin>:1190:2: warning: #warning syscall fanotify_init not implemented [-Wcpp]
+<stdin>:1193:2: warning: #warning syscall fanotify_mark not implemented [-Wcpp]
+<stdin>:1196:2: warning: #warning syscall prlimit64 not implemented [-Wcpp]
+<stdin>:1199:2: warning: #warning syscall name_to_handle_at not implemented [-Wcpp]
+<stdin>:1202:2: warning: #warning syscall open_by_handle_at not implemented [-Wcpp]
+<stdin>:1205:2: warning: #warning syscall clock_adjtime not implemented [-Wcpp]
+<stdin>:1208:2: warning: #warning syscall syncfs not implemented [-Wcpp]
+<stdin>:1211:2: warning: #warning syscall sendmmsg not implemented [-Wcpp]
+<stdin>:1217:2: warning: #warning syscall process_vm_readv not implemented [-Wcpp]
+<stdin>:1220:2: warning: #warning syscall process_vm_writev not implemented [-Wcpp]
+<stdin>:1223:2: warning: #warning syscall kcmp not implemented [-Wcpp]
+<stdin>:1226:2: warning: #warning syscall finit_module not implemented [-Wcpp]
+<stdin>:1229:2: warning: #warning syscall sched_setattr not implemented [-Wcpp]
+<stdin>:1232:2: warning: #warning syscall sched_getattr not implemented [-Wcpp]
+<stdin>:1235:2: warning: #warning syscall renameat2 not implemented [-Wcpp]
+<stdin>:1238:2: warning: #warning syscall seccomp not implemented [-Wcpp]
+<stdin>:1241:2: warning: #warning syscall getrandom not implemented [-Wcpp]
+<stdin>:1244:2: warning: #warning syscall memfd_create not implemented [-Wcpp]
+<stdin>:1247:2: warning: #warning syscall bpf not implemented [-Wcpp]
 
-Currently the phram module only allows a single mtd device to be
-created via the kernel command line. This is due to the phram
-module having to store the values until it is initialised
-later. This storage is done using a single char[] meaning when
-the module_param_call is made the previous value is overidden.
-
-This change modifies the phram system to use a char[][] allowing
-multiple devices to be created.
-
-The array size if controlled using the new config option
-CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS that allows the maximum
-number of devices to be specified. Currently this option
-defaults to a value of 1 leaving the behaviour unchanged.
-
-If the array is full a message is printed to the console and the
-module_param_call returns.
-
-To test, in all cases an area of memory needs to be reserved via
-the command line e.g. memmap=10M$114M
-
-To test with phram build into the kernel on the command line add
-the following:
-
-phram.phram=alpha,114Mi,1Mi phram.phram=beta,115Mi,1Mi
-
-If CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS is left as default i.e. 1
-then the first device, alpha will be created only. If the value of
-CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS is increased to 2 or more then
-both alpha and beta will be created.
-
-To test phram built as a module insmod with the following arguments:
-
-phram=gamma,114Mi,1Mi phram=delta,115Mi,1Mi
-
-In this case two devices should be created.
-
-Signed-off-by: Rob Ward <robert.ward114@googlemail.com>
+Signed-off-by: Faisal Abbas <90.abbasfaisal@gmail.com>
 ---
- drivers/mtd/devices/Kconfig | 12 ++++++++++++
- drivers/mtd/devices/phram.c | 45 ++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 52 insertions(+), 5 deletions(-)
+ arch/frv/include/asm/unistd.h      |    2 +-
+ arch/frv/include/uapi/asm/unistd.h |   20 ++++++++++++++++++++
+ arch/frv/kernel/entry.S            |   22 +++++++++++++++++++++-
+ 3 files changed, 42 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index c49d0b1..5fdc80b 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -136,6 +136,18 @@ config MTD_PHRAM
- 	  doesn't have access to, memory beyond the mem=xxx limit, nvram,
- 	  memory on the video card, etc...
+diff --git a/arch/frv/include/asm/unistd.h b/arch/frv/include/asm/unistd.h
+index 17b5df8..a7f3488 100644
+--- a/arch/frv/include/asm/unistd.h
++++ b/arch/frv/include/asm/unistd.h
+@@ -4,7 +4,7 @@
+ #include <uapi/asm/unistd.h>
  
-+config MTD_PHRAM_MAX_CMDLINE_ARGS
-+	int "Max number of devices via Kernel command line"
-+	depends on MTD_PHRAM=y
-+	default 1
-+	help
-+	  Specify the number of phram devices that can be initialised
-+	  using the Kernel command line.
-+
-+	  This option is only applicable when phram is built into the
-+	  Kernel. When built as a module many devices can be specified
-+	  at module insmod.
-+
- config MTD_LART
- 	tristate "28F160xx flash driver for LART"
- 	depends on SA1100_LART
-diff --git a/drivers/mtd/devices/phram.c b/drivers/mtd/devices/phram.c
-index effd9a4..223f221 100644
---- a/drivers/mtd/devices/phram.c
-+++ b/drivers/mtd/devices/phram.c
-@@ -212,9 +212,13 @@ static int phram_init_called;
-  * - phram.phram=<device>,<address>,<size> for built-in case
-  * We leave 64 bytes for the device name, 20 for the address and 20 for the
-  * size.
-+ *
-+ * The maximum number of devices supported is controlled by the
-+ * MTD_PHRAM_MAX_CMDLINE_ARGS config option
-+ *
-  * Example: phram.phram=rootfs,0xa0000000,512Mi
-  */
--static char phram_paramline[64 + 20 + 20];
-+static char phram_paramline[CONFIG_MTD_PHRAM_MAX_CMDLINE_ARGS][64 + 20 + 20];
- #endif
  
- static int phram_setup(const char *val)
-@@ -271,6 +275,9 @@ static int phram_param_call(const char *val, struct kernel_param *kp)
- #ifdef MODULE
- 	return phram_setup(val);
- #else
-+	int paramline_it = 0;
-+	int arraysize = 0;
-+
- 	/*
- 	 * If more parameters are later passed in via
- 	 * /sys/module/phram/parameters/phram
-@@ -290,9 +297,27 @@ static int phram_param_call(const char *val, struct kernel_param *kp)
- 	 * phram_setup().
- 	 */
+-#define NR_syscalls 338
++#define NR_syscalls 358
  
--	if (strlen(val) >= sizeof(phram_paramline))
-+	if (strlen(val) >= sizeof(phram_paramline[0]))
- 		return -ENOSPC;
--	strcpy(phram_paramline, val);
-+
-+	arraysize = sizeof(phram_paramline)/sizeof(phram_paramline[0]);
-+
-+	/*
-+	 * Check if any space is left in the array. If no space
-+	 * is left then print warning and return 0
-+	 */
-+
-+	if (phram_paramline[arraysize - 1][0]) {
-+		pr_warn("exceeded limit via cmd_line - %s ignored", val);
-+		return 0;
-+	}
-+
-+	for (paramline_it = 0; paramline_it <= arraysize; paramline_it++) {
-+		if (!phram_paramline[paramline_it][0]) {
-+			strcpy(phram_paramline[paramline_it], val);
-+			break;
-+		}
-+	}
+ /* #define __ARCH_WANT_OLD_READDIR */
+ #define __ARCH_WANT_OLD_STAT
+diff --git a/arch/frv/include/uapi/asm/unistd.h b/arch/frv/include/uapi/asm/unistd.h
+index 9e2612f..0549798 100644
+--- a/arch/frv/include/uapi/asm/unistd.h
++++ b/arch/frv/include/uapi/asm/unistd.h
+@@ -344,5 +344,25 @@
+ #define __NR_rt_tgsigqueueinfo	335
+ #define __NR_perf_event_open	336
+ #define __NR_setns		337
++#define __NR_recvmmsg		338
++#define __NR_fanotify_init	339
++#define __NR_fanotify_mark	340
++#define __NR_prlimit64		341
++#define __NR_name_to_handle_at	342
++#define __NR_open_by_handle_at	343
++#define __NR_clock_adjtime	344
++#define __NR_syncfs		345
++#define __NR_sendmmsg		346
++#define __NR_process_vm_readv	347
++#define __NR_process_vm_writev	348
++#define __NR_kcmp		349
++#define __NR_finit_module	350
++#define __NR_sched_setattr	351
++#define __NR_sched_getattr	352
++#define __NR_renameat2		353
++#define __NR_seccomp		354
++#define __NR_getrandom		355
++#define __NR_memfd_create	356
++#define __NR_bpf		357
  
- 	return 0;
- #endif
-@@ -307,8 +332,18 @@ static int __init init_phram(void)
- 	int ret = 0;
- 
- #ifndef MODULE
--	if (phram_paramline[0])
--		ret = phram_setup(phram_paramline);
-+	int arraysize = 0;
-+	int paramline_it = 0;
+ #endif /* _UAPI_ASM_UNISTD_H_ */
+diff --git a/arch/frv/kernel/entry.S b/arch/frv/kernel/entry.S
+index dfcd263..66debb5 100644
+--- a/arch/frv/kernel/entry.S
++++ b/arch/frv/kernel/entry.S
+@@ -1515,5 +1515,25 @@ sys_call_table:
+ 	.long sys_rt_tgsigqueueinfo	/* 335 */
+ 	.long sys_perf_event_open
+ 	.long sys_setns
+-
++	.long sys_recvmmsg
++	.long sys_fanotify_init
++	.long sys_fanotify_mark
++	.long sys_prlimit64
++	.long sys_name_to_handle_at
++	.long sys_open_by_handle_at
++	.long sys_clock_adjtime
++	.long sys_syncfs
++	.long sys_sendmmsg
++	.long sys_process_vm_readv
++	.long sys_process_vm_writev
++	.long sys_kcmp
++	.long sys_finit_module
++	.long sys_sched_setattr
++	.long sys_sched_getattr
++	.long sys_renameat2
++	.long sys_seccomp
++	.long sys_getrandom
++	.long sys_memfd_create
++	.long sys_bpf
 +
-+	arraysize = sizeof(phram_paramline)/sizeof(phram_paramline[0]);
-+
-+	for (paramline_it = 0; paramline_it <= arraysize; paramline_it++) {
-+		if (phram_paramline[paramline_it][0]) {
-+			ret = phram_setup(phram_paramline[paramline_it]);
-+			if (ret)
-+				break;
-+		}
-+	}
- 	phram_init_called = 1;
- #endif
- 
+ syscall_table_size = (. - sys_call_table)
 -- 
-2.0.2
+1.7.9.5
 
