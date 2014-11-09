@@ -1,191 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaKIOrB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 09:47:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9864 "EHLO mga09.intel.com"
+	id S1751936AbaKIPHY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 10:07:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21860 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751600AbaKIOov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 09:44:51 -0500
+	id S1751600AbaKIPHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 10:07:22 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="485940411"
+X-IronPort-AV: E=Sophos;i="5.07,346,1413270000"; 
+   d="scan'208";a="604932673"
 From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [Patch Part3 V7 2/8] iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
-Date: Sun,  9 Nov 2014 22:47:57 +0800
-Message-Id: <1415544483-27990-3-git-send-email-jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [RFC Part4 v1 00/17] Refine support of non-PCI-compliant Message
+Date: Sun,  9 Nov 2014 23:10:22 +0800
+Message-Id: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce functions to support dynamic IOMMU seq_id allocating and
-releasing, which will be used to support DMAR hotplug.
+Some interrupt controllers, such as DMAR/HPET/HT_IRQ, work almost in
+the same as PCI MSI interrupt controller. And there some devices make
+use of PCI MSI mechanism for non-PCI devices on ARm/ARM64 platforms.
 
-Also rename IOMMU_UNITS_SUPPORTED as DMAR_UNITS_SUPPORTED.
+So this patches tries to split PCI MSI code into PCI dependent part
+and PCI independent part. The PCI independent part will be used to
+support other PCI MSI like interrupt controllers.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/iommu/dmar.c        |   40 ++++++++++++++++++++++++++++++++++------
- drivers/iommu/intel-iommu.c |   13 +++----------
- include/linux/dmar.h        |    6 ++++++
- 3 files changed, 43 insertions(+), 16 deletions(-)
+Patch 1-9 are clean ups for previous hierarchy irqdomain patchset
+and preparation for coming PCI MSI code reorganization.
+Patch 10-15 split PCI MSI code and implement common mechanism to support
+other MSI alike interrupt contollers.
+Patch 16-17 converts HT_IRQ to use the common MSI support mechanism.
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 586dd2aa2ca2..78aa1b2af113 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -70,6 +70,7 @@ LIST_HEAD(dmar_drhd_units);
- struct acpi_table_header * __initdata dmar_tbl;
- static acpi_size dmar_tbl_size;
- static int dmar_dev_scope_status = 1;
-+static unsigned long dmar_seq_ids[BITS_TO_LONGS(DMAR_UNITS_SUPPORTED)];
- 
- static int alloc_iommu(struct dmar_drhd_unit *drhd);
- static void free_iommu(struct intel_iommu *iommu);
-@@ -944,11 +945,32 @@ out:
- 	return err;
- }
- 
-+static int dmar_alloc_seq_id(struct intel_iommu *iommu)
-+{
-+	iommu->seq_id = find_first_zero_bit(dmar_seq_ids,
-+					    DMAR_UNITS_SUPPORTED);
-+	if (iommu->seq_id >= DMAR_UNITS_SUPPORTED) {
-+		iommu->seq_id = -1;
-+	} else {
-+		set_bit(iommu->seq_id, dmar_seq_ids);
-+		sprintf(iommu->name, "dmar%d", iommu->seq_id);
-+	}
-+
-+	return iommu->seq_id;
-+}
-+
-+static void dmar_free_seq_id(struct intel_iommu *iommu)
-+{
-+	if (iommu->seq_id >= 0) {
-+		clear_bit(iommu->seq_id, dmar_seq_ids);
-+		iommu->seq_id = -1;
-+	}
-+}
-+
- static int alloc_iommu(struct dmar_drhd_unit *drhd)
- {
- 	struct intel_iommu *iommu;
- 	u32 ver, sts;
--	static int iommu_allocated = 0;
- 	int agaw = 0;
- 	int msagaw = 0;
- 	int err;
-@@ -962,13 +984,16 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 	if (!iommu)
- 		return -ENOMEM;
- 
--	iommu->seq_id = iommu_allocated++;
--	sprintf (iommu->name, "dmar%d", iommu->seq_id);
-+	if (dmar_alloc_seq_id(iommu) < 0) {
-+		pr_err("IOMMU: failed to allocate seq_id\n");
-+		err = -ENOSPC;
-+		goto error;
-+	}
- 
- 	err = map_iommu(iommu, drhd->reg_base_addr);
- 	if (err) {
- 		pr_err("IOMMU: failed to map %s\n", iommu->name);
--		goto error;
-+		goto error_free_seq_id;
- 	}
- 
- 	err = -EINVAL;
-@@ -1018,9 +1043,11 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 
- 	return 0;
- 
-- err_unmap:
-+err_unmap:
- 	unmap_iommu(iommu);
-- error:
-+error_free_seq_id:
-+	dmar_free_seq_id(iommu);
-+error:
- 	kfree(iommu);
- 	return err;
- }
-@@ -1044,6 +1071,7 @@ static void free_iommu(struct intel_iommu *iommu)
- 	if (iommu->reg)
- 		unmap_iommu(iommu);
- 
-+	dmar_free_seq_id(iommu);
- 	kfree(iommu);
- }
- 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 041f6e727337..39870414f657 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -328,17 +328,10 @@ static int hw_pass_through = 1;
- /* si_domain contains mulitple devices */
- #define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
- 
--/* define the limit of IOMMUs supported in each domain */
--#ifdef	CONFIG_X86
--# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
--#else
--# define	IOMMU_UNITS_SUPPORTED	64
--#endif
--
- struct dmar_domain {
- 	int	id;			/* domain id */
- 	int	nid;			/* node id */
--	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
-+	DECLARE_BITMAP(iommu_bmp, DMAR_UNITS_SUPPORTED);
- 					/* bitmap of iommus this domain uses*/
- 
- 	struct list_head devices; 	/* all devices' list */
-@@ -2728,12 +2721,12 @@ static int __init init_dmars(void)
- 		 * threaded kernel __init code path all other access are read
- 		 * only
- 		 */
--		if (g_num_of_iommus < IOMMU_UNITS_SUPPORTED) {
-+		if (g_num_of_iommus < DMAR_UNITS_SUPPORTED) {
- 			g_num_of_iommus++;
- 			continue;
- 		}
- 		printk_once(KERN_ERR "intel-iommu: exceeded %d IOMMUs\n",
--			  IOMMU_UNITS_SUPPORTED);
-+			  DMAR_UNITS_SUPPORTED);
- 	}
- 
- 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 495df5e48f80..725204fc433e 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -30,6 +30,12 @@
- 
- struct acpi_dmar_header;
- 
-+#ifdef	CONFIG_X86
-+# define	DMAR_UNITS_SUPPORTED	MAX_IO_APICS
-+#else
-+# define	DMAR_UNITS_SUPPORTED	64
-+#endif
-+
- /* DMAR Flags */
- #define DMAR_INTR_REMAP		0x1
- #define DMAR_X2APIC_OPT_OUT	0x2
+This patch set only solves the issue to manage interrupt controller,
+but we still need another patch set to provide pci_enable_msix_range()
+alike interfaces to support non-PCI devices. To achieve that, we will:
+1) Move msi_list from struct pci_dev into struct device
+2) Abstract common code from drivers/pci/msi.c into kernel/irq/msi.c
+3) Implement msi_enable_range()/msi_disable() alike interfaces.
+
+Apparently, we need much more time to discuss the proposal for next
+patch set.
+
+Hi Thomas and Bjorn,
+	Could you please to review patch 10,13 and give your thoughts?
+Those are the main changes. This patch set only passes compilation and
+boot tests.
+
+Regards!
+Gerry
+
+Jiang Liu (17):
+  x86, irq: Normalize x86 irq_chip name
+  genirq: Introduce helper irq_domain_set_info() to reduce duplicated
+    code
+  x86, PCI/MSI: Simplify the way to deal with remapped MSI interrupts
+  PCI/MSI: Replace msi_update_msg() with irq_chip_compose_msi_msg()
+  PCI/MSI: Move msi_set_affinity() to PCI core
+  genirq: Introduce callback irq_chip.irq_write_msi_msg
+  x86, irq: Implement irq_chip.irq_write_msi_msg for MSI/DMAR/HPET
+    irq_chips
+  PCI/MSI: Use irq_chip.irq_write_msi_msg() to share common code
+  x86, irq: Simplify MSI/DMAR/HPET implementation by using common code
+  PCI, MSI: Split MSI code into PCI dependent and PCI independent parts
+  PCI, MSI: Rename __read_msi_msg() as __pci_read_msi_msg()
+  PCI, MSI: Rename __write_msi_msg() as __pci_write_msi_msg()
+  MSI: Provide irqdomain support for generic MSI
+  x86, PCI, MSI: Use common code to manage MSI interrupts
+  PCI, MSI: Clean up unused irqdomain related code
+  x86, htirq: Kill struct ht_irq_msg by reusing struct msi_msg
+  x86, htirq: Use common MSI code to manage Hypertransport interrupts
+
+ arch/powerpc/platforms/pseries/msi.c        |    2 +-
+ arch/x86/kernel/apic/htirq.c                |  137 +++++-------
+ arch/x86/kernel/apic/msi.c                  |  309 ++++++++++++---------------
+ arch/x86/pci/xen.c                          |    4 +-
+ arch/x86/platform/uv/uv_irq.c               |    5 +-
+ drivers/infiniband/hw/ipath/ipath_iba6110.c |    2 +-
+ drivers/pci/Kconfig                         |    5 +-
+ drivers/pci/htirq.c                         |   20 +-
+ drivers/pci/msi.c                           |  144 ++-----------
+ include/linux/htirq.h                       |   15 +-
+ include/linux/irq.h                         |    8 +
+ include/linux/irqdomain.h                   |    4 +
+ include/linux/msi.h                         |   89 +++++---
+ kernel/irq/Kconfig                          |   10 +-
+ kernel/irq/Makefile                         |    1 +
+ kernel/irq/irqdomain.c                      |   10 +
+ kernel/irq/msi.c                            |  133 ++++++++++++
+ 17 files changed, 454 insertions(+), 444 deletions(-)
+ create mode 100644 kernel/irq/msi.c
+
 -- 
 1.7.10.4
 
