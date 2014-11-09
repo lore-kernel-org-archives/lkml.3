@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbaKIPHt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 10:07:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:37821 "EHLO mga02.intel.com"
+	id S1752143AbaKIPIB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 10:08:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12114 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751948AbaKIPHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 10:07:46 -0500
+	id S1751948AbaKIPH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 10:07:58 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,346,1413270000"; 
-   d="scan'208";a="604932784"
+   d="scan'208";a="604932858"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -27,9 +27,9 @@ Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC Part4 v1 02/17] genirq: Introduce helper irq_domain_set_info() to reduce duplicated code
-Date: Sun,  9 Nov 2014 23:10:24 +0800
-Message-Id: <1415545839-28263-3-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFC Part4 v1 03/17] x86, PCI/MSI: Simplify the way to deal with remapped MSI interrupts
+Date: Sun,  9 Nov 2014 23:10:25 +0800
+Message-Id: <1415545839-28263-4-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,86 +37,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper irq_domain_set_info() to reduce duplicated code.
-We use "void *handler" instead of "irq_flow_handler_t handler" to solve
-a recursive header file inclusion issue.
+Simplify the way to deal with remapped MSI interrupts, so we could
+kill irq_chip.irq_print_chip later.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/htirq.c  |    5 ++---
- arch/x86/platform/uv/uv_irq.c |    5 ++---
- include/linux/irqdomain.h     |    4 ++++
- kernel/irq/irqdomain.c        |   10 ++++++++++
- 4 files changed, 18 insertions(+), 6 deletions(-)
+ arch/x86/kernel/apic/msi.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-index 900f1401a452..1448df3f9e9f 100644
---- a/arch/x86/kernel/apic/htirq.c
-+++ b/arch/x86/kernel/apic/htirq.c
-@@ -96,9 +96,8 @@ static int htirq_domain_alloc(struct irq_domain *domain, unsigned int virq,
- 	ht_cfg->update = info->ht_update;
- 	ht_cfg->pos = info->ht_pos;
- 	ht_cfg->idx = 0x10 + (info->ht_idx * 2);
--	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, &ht_irq_chip,
--				      ht_cfg);
--	__irq_set_handler(virq, handle_edge_irq, 0, "edge");
-+	irq_domain_set_info(domain, virq, hwirq, &ht_irq_chip, ht_cfg,
-+			    handle_edge_irq, NULL, "edge");
- 
- 	return 0;
- }
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 66d531e71c9a..b242e0aada19 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -102,9 +102,8 @@ static int uv_domain_alloc(struct irq_domain *domain, unsigned int virq,
- 
- 		chip_data->pnode = uv_blade_to_pnode(info->uv_blade);
- 		chip_data->offset = info->uv_offset;
--		irq_domain_set_hwirq_and_chip(domain, virq, virq,
--					      &uv_irq_chip, chip_data);
--		__irq_set_handler(virq, handle_percpu_irq, 0, info->uv_name);
-+		irq_domain_set_info(domain, virq, virq, &uv_irq_chip, chip_data,
-+				    handle_percpu_irq, NULL, info->uv_name);
- 	} else {
- 		kfree(chip_data);
- 	}
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 50931e936149..fb7af45f9425 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -263,6 +263,10 @@ extern int irq_domain_set_hwirq_and_chip(struct irq_domain *domain,
- 					 irq_hw_number_t hwirq,
- 					 struct irq_chip *chip,
- 					 void *chip_data);
-+extern void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
-+				irq_hw_number_t hwirq, struct irq_chip *chip,
-+				void *chip_data, void *handler,
-+				void *handler_data, const char *handler_name);
- extern void irq_domain_reset_irq_data(struct irq_data *irq_data);
- extern void irq_domain_free_irqs_common(struct irq_domain *domain,
- 					int virq, int nr_irqs);
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 4811bee1b8a7..1da30ae88665 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -882,6 +882,16 @@ int irq_domain_set_hwirq_and_chip(struct irq_domain *domain, unsigned int virq,
- 	return 0;
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index adc76eba59bd..12919b3c6cf4 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -95,7 +95,6 @@ static struct irq_chip msi_chip = {
+ 	.irq_ack		= irq_chip_ack_parent,
+ 	.irq_set_affinity	= msi_set_affinity,
+ 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
+-	.irq_print_chip		= irq_remapping_print_chip,
+ 	.irq_compose_msi_msg	= msi_compose_msg,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+@@ -153,9 +152,19 @@ void arch_init_msi_domain(struct irq_domain *parent)
  }
  
-+void irq_domain_set_info(struct irq_domain *domain, unsigned int virq,
-+			 irq_hw_number_t hwirq, struct irq_chip *chip,
-+			 void *chip_data, void *handler, void *handler_data,
-+			 const char *handler_name)
-+{
-+	irq_domain_set_hwirq_and_chip(domain, virq, hwirq, chip, chip_data);
-+	__irq_set_handler(virq, handler, 0, handler_name);
-+	irq_set_handler_data(virq, handler_data);
-+}
+ #ifdef CONFIG_IRQ_REMAP
++static struct irq_chip msi_ir_chip = {
++	.name			= "IR-PCI-MSI",
++	.irq_unmask		= unmask_msi_irq,
++	.irq_mask		= mask_msi_irq,
++	.irq_ack		= irq_chip_ack_parent,
++	.irq_set_affinity	= msi_set_affinity,
++	.irq_retrigger		= irq_chip_retrigger_hierarchy,
++	.flags			= IRQCHIP_SKIP_SET_WAKE,
++};
 +
- void irq_domain_reset_irq_data(struct irq_data *irq_data)
+ struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent)
  {
- 	irq_data->hwirq = 0;
+-	return msi_create_irq_domain(NULL, &msi_chip, parent);
++	return msi_create_irq_domain(NULL, &msi_ir_chip, parent);
+ }
+ #endif
+ 
+@@ -316,7 +325,6 @@ static struct irq_chip hpet_msi_type = {
+ 	.irq_ack = irq_chip_ack_parent,
+ 	.irq_set_affinity = hpet_msi_set_affinity,
+ 	.irq_retrigger = irq_chip_retrigger_hierarchy,
+-	.irq_print_chip = irq_remapping_print_chip,
+ 	.irq_compose_msi_msg = msi_compose_msg,
+ 	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };
+@@ -397,6 +405,8 @@ struct irq_domain *hpet_create_irq_domain(int hpet_id)
+ 		domain->parent = irq_remapping_get_ir_irq_domain(&info);
+ 		if (!domain->parent)
+ 			domain->parent = x86_vector_domain;
++		else
++			hpet_msi_type.name = "IR-HPET-MSI";
+ 	}
+ 
+ 	return domain;
 -- 
 1.7.10.4
 
