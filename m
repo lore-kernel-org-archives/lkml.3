@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaKIOpm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 09:45:42 -0500
-Received: from mga09.intel.com ([134.134.136.24]:65257 "EHLO mga09.intel.com"
+	id S1752198AbaKIOpK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 09:45:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:9864 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281AbaKIOpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 09:45:39 -0500
+	id S1752052AbaKIOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 09:45:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="485940510"
+   d="scan'208";a="485940477"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
         Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Dan Williams <dan.j.williams@intel.com>,
         Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
         Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [Patch Part3 V7 8/8] pci, ACPI, iommu: Enhance pci_root to support DMAR device hotplug
-Date: Sun,  9 Nov 2014 22:48:03 +0800
-Message-Id: <1415544483-27990-9-git-send-email-jiang.liu@linux.intel.com>
+        dmaengine@vger.kernel.org
+Subject: [Patch Part3 V7 6/8] iommu/vt-d: Enhance error recovery in function intel_enable_irq_remapping()
+Date: Sun,  9 Nov 2014 22:48:01 +0800
+Message-Id: <1415544483-27990-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415544483-27990-1-git-send-email-jiang.liu@linux.intel.com>
@@ -31,84 +30,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally enhance pci_root driver to support DMAR device hotplug when
-hot-plugging PCI host bridges.
+Enhance error recovery in function intel_enable_irq_remapping()
+by tearing down all created data structures.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Reviewed-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/acpi/pci_root.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/iommu/intel_irq_remapping.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index cd4de7e038ea..c6bcb8c719d8 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -33,6 +33,7 @@
- #include <linux/pci.h>
- #include <linux/pci-acpi.h>
- #include <linux/pci-aspm.h>
-+#include <linux/dmar.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
- #include <linux/dmi.h>
-@@ -525,6 +526,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	struct acpi_pci_root *root;
- 	acpi_handle handle = device->handle;
- 	int no_aspm = 0, clear_aspm = 0;
-+	bool hotadd = system_state != SYSTEM_BOOTING;
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 7af0b56dc2d1..27541d440849 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -702,9 +702,11 @@ static int __init intel_enable_irq_remapping(void)
+ 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
  
- 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
- 	if (!root)
-@@ -571,6 +573,11 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
- 	device->driver_data = root;
+ error:
+-	/*
+-	 * handle error condition gracefully here!
+-	 */
++	for_each_iommu(iommu, drhd)
++		if (ecap_ir_support(iommu->ecap)) {
++			iommu_disable_irq_remapping(iommu);
++			intel_teardown_irq_remapping(iommu);
++		}
  
-+	if (hotadd && dmar_device_add(handle)) {
-+		result = -ENXIO;
-+		goto end;
-+	}
-+
- 	pr_info(PREFIX "%s [%s] (domain %04x %pR)\n",
- 	       acpi_device_name(device), acpi_device_bid(device),
- 	       root->segment, &root->secondary);
-@@ -597,7 +604,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 			root->segment, (unsigned int)root->secondary.start);
- 		device->driver_data = NULL;
- 		result = -ENODEV;
--		goto end;
-+		goto remove_dmar;
- 	}
- 
- 	if (clear_aspm) {
-@@ -611,7 +618,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	if (device->wakeup.flags.run_wake)
- 		device_set_run_wake(root->bus->bridge, true);
- 
--	if (system_state != SYSTEM_BOOTING) {
-+	if (hotadd) {
- 		pcibios_resource_survey_bus(root->bus);
- 		pci_assign_unassigned_root_bus_resources(root->bus);
- 	}
-@@ -621,6 +628,9 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	pci_unlock_rescan_remove();
- 	return 1;
- 
-+remove_dmar:
-+	if (hotadd)
-+		dmar_device_remove(handle);
- end:
- 	kfree(root);
- 	return result;
-@@ -639,6 +649,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
- 
- 	pci_remove_root_bus(root->bus);
- 
-+	dmar_device_remove(device->handle);
-+
- 	pci_unlock_rescan_remove();
- 
- 	kfree(root);
+ 	if (x2apic_present)
+ 		pr_warn("Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
 -- 
 1.7.10.4
 
