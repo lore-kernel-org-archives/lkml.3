@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaKIXzF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 18:55:05 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58236 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaKIXzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 18:55:01 -0500
-Message-ID: <545FFECD.9050600@roeck-us.net>
-Date: Sun, 09 Nov 2014 15:54:53 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751744AbaKIXza (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 18:55:30 -0500
+Received: from ozlabs.org ([103.22.144.67]:42015 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751689AbaKIXz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 18:55:28 -0500
+Date: Mon, 10 Nov 2014 10:55:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-ID: <20141110105520.79a01c90@canb.auug.org.au>
+In-Reply-To: <20141106112359.GJ26297@ulmo>
+References: <20141106193618.461c3ae7@canb.auug.org.au>
+	<20141106112359.GJ26297@ulmo>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Marc Dietrich <Marc.Dietrich@ap.physik.uni-giessen.de>,
-        devel@driverdev.osuosl.org
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v5 33/48] staging: nvec: Register with kernel power-off
- handler
-References: <1415292213-28652-1-git-send-email-linux@roeck-us.net> <1415292213-28652-34-git-send-email-linux@roeck-us.net> <5008744.rVN94atT9b@ax5200p>
-In-Reply-To: <5008744.rVN94atT9b@ax5200p>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.545FFED4.01A3,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/votWREneJCcvUWwtDkQ_MHZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 01:41 PM, Marc Dietrich wrote:
-> Am Donnerstag 06 November 2014, 08:43:17 schrieb Guenter Roeck:
->> Register with kernel power-off handler instead of setting pm_power_off
->> directly. Register with default priority since we don't know any better.
->>
->> Cc: Julian Andres Klode <jak@jak-linux.org>
->> Cc: Marc Dietrich <marvin24@gmx.de>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net
+--Sig_/votWREneJCcvUWwtDkQ_MHZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi Thierry,
+
+On Thu, 6 Nov 2014 12:24:00 +0100 Thierry Reding <thierry.reding@gmail.com>=
+ wrote:
 >
-> ok, this version (V5) actually switches the device off in contrast to the
-> first implementation. Somehow I have to find out why it works at all without
-> irqs.
->
-> Acked-by: Marc Dietrich <mavin24@gmx.de>
->
+> I fixed this using the attached patch.
 
-Hi Marc,
+I will apply this to linux-next today (unless Andrew beats me to it).
 
-The most recent version does not turn off interrupts as long as the
-infrastructure (architecture code, ie machine_power_off) doesn't
-turn it off.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks a lot for (re-)testing.
+--Sig_/votWREneJCcvUWwtDkQ_MHZ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-Guenter
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUX/7tAAoJEMDTa8Ir7ZwVRYYQAJItnr9qaCAmwIFCYOdH6nZo
+xiwMknY8f8pEXRkLYRdtRzpqq2o8fHpJ69mlfE6DGqHv6tBYMQKud/96UIc5SGgD
+GYZRZSX54EumwfPr+DbY7MHwlr0skJNiDrVULBfWYkGir+sQP8kq3jMuptuZPXjO
+nJFkHTiqhwPhzZkoBcNqHuXmstztQHWZ8pIM0bPVPXxW62o+Dn7POXAMG6TuFmXD
+gGlox4QT55R9GKwnKK93CKpIbiksCzMiptyI970E3v8nBfcgLQAp+4Fp+UpT0x8H
+mcaQoTBFFguzX72euwxou4A+YCE1pPS5Utw8gAl63pwLt9yv4TgMXKfcwXMBe5Vs
+SS5isAit/bMxeJtNdBr0qfXm7Wp3A8eXFvhH9mWakvOB7a6KMXfA/M1h/oK7mYpH
+P1pZqlns/adCg1UVBauWeNVDwJg0gpzBdP3FerYLPTjOmYE2NfnEmtdddUhI0EOb
+GuLvMslTEuk+w3NOj+mLiK19ZbLey5Xx/muTYgo1BNMHMIY46fGhRMeiBwnUvVzG
+3zGzjXpnaUhFmY+z1WQmSRKijlkjLa5b36iXWRudmV/hVcw3zz3mdQv8t6SZ2Eku
+m4DzKi1lc4Ey4gJydawFUFWht7DpuAp9rlMICHG9Ei4zItA6sfCSM5WZZXw1M35y
+e38V8Sq+vu1WzH1rLuRa
+=V+hn
+-----END PGP SIGNATURE-----
+
+--Sig_/votWREneJCcvUWwtDkQ_MHZ--
