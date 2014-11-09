@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaKIPKh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 10:10:37 -0500
-Received: from mga03.intel.com ([134.134.136.65]:48707 "EHLO mga03.intel.com"
+	id S1752627AbaKIPKx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 10:10:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:62496 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854AbaKIPKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 10:10:34 -0500
+	id S1752595AbaKIPKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 10:10:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,346,1413270000"; 
-   d="scan'208";a="604933467"
+   d="scan'208";a="604933522"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -19,19 +19,21 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Mike Marciniszyn <infinipath@intel.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
         Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Alexander Gordeev <agordeev@redhat.com>
+        Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC Part4 v1 15/17] PCI, MSI: Clean up unused irqdomain related code
-Date: Sun,  9 Nov 2014 23:10:37 +0800
-Message-Id: <1415545839-28263-16-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rdma@vger.kernel.org
+Subject: [RFC Part4 v1 16/17] x86, htirq: Kill struct ht_irq_msg by reusing struct msi_msg
+Date: Sun,  9 Nov 2014 23:10:38 +0800
+Message-Id: <1415545839-28263-17-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com>
@@ -39,172 +41,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI MSI has been converted to use common MSI code, so kill unsued code.
+Reuse struct msi_msg for HT interrupts, so we could use common MSI code
+to manage HT interrupts later.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/msi.c |    9 +------
- drivers/pci/msi.c          |   62 ++------------------------------------------
- include/linux/msi.h        |   13 ++--------
- kernel/irq/msi.c           |    6 +++--
- 4 files changed, 9 insertions(+), 81 deletions(-)
+ arch/x86/kernel/apic/htirq.c                |    6 +++---
+ drivers/infiniband/hw/ipath/ipath_iba6110.c |    2 +-
+ drivers/pci/htirq.c                         |    8 ++++----
+ include/linux/htirq.h                       |   14 +++++---------
+ 4 files changed, 13 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index 6bd339ed59f5..15168893fcc3 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -89,7 +89,7 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	if (domain == NULL)
- 		return -ENOSYS;
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+index 1448df3f9e9f..b6503510f1af 100644
+--- a/arch/x86/kernel/apic/htirq.c
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -34,7 +34,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
  
--	return msi_irq_domain_alloc_irqs(domain, type, dev, &info);
-+	return pci_msi_irq_domain_alloc_irqs(domain, type, dev, &info);
- }
+ 	ret = parent->chip->irq_set_affinity(parent, mask, force);
+ 	if (ret >= 0) {
+-		struct ht_irq_msg msg;
++		struct msi_msg msg;
+ 		struct irq_cfg *cfg = irqd_cfg(data);
  
- void native_teardown_msi_irq(unsigned int irq)
-@@ -97,13 +97,6 @@ void native_teardown_msi_irq(unsigned int irq)
- 	irq_domain_free_irqs(irq, 1);
- }
- 
--irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg)
--{
--	struct irq_alloc_info *info = arg;
--
--	return info->msi_hwirq;
--}
--
- static void pci_msi_generate_hwirq(struct msi_domain_info *minfo, void *arg,
- 				   struct msi_desc *desc)
+ 		fetch_ht_irq_msg(data->irq, &msg);
+@@ -115,7 +115,7 @@ static void htirq_domain_free(struct irq_domain *domain, unsigned int virq,
+ static void htirq_domain_activate(struct irq_domain *domain,
+ 				  struct irq_data *irq_data)
  {
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index adfabc9add24..1c5c7720b74c 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -1098,66 +1098,8 @@ irq_hw_number_t pci_msi_calc_hwirq(struct pci_dev *dev, struct msi_desc *desc)
- 		(pci_domain_nr(dev->bus) & 0xFFFFFFFF) << 27;
+-	struct ht_irq_msg msg;
++	struct msi_msg msg;
+ 	struct irq_cfg *cfg = irqd_cfg(irq_data);
+ 
+ 	msg.address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
+@@ -137,7 +137,7 @@ static void htirq_domain_activate(struct irq_domain *domain,
+ static void htirq_domain_deactivate(struct irq_domain *domain,
+ 				    struct irq_data *irq_data)
+ {
+-	struct ht_irq_msg msg;
++	struct msi_msg msg;
+ 
+ 	memset(&msg, 0, sizeof(msg));
+ 	write_ht_irq_msg(irq_data->irq, &msg);
+diff --git a/drivers/infiniband/hw/ipath/ipath_iba6110.c b/drivers/infiniband/hw/ipath/ipath_iba6110.c
+index 7cc305488a3d..b49ce8942b57 100644
+--- a/drivers/infiniband/hw/ipath/ipath_iba6110.c
++++ b/drivers/infiniband/hw/ipath/ipath_iba6110.c
+@@ -986,7 +986,7 @@ static int ipath_ht_intconfig(struct ipath_devdata *dd)
  }
  
--static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
--			    unsigned int nr_irqs, void *arg)
--{
--	int i, ret;
--	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
--
--	if (irq_find_mapping(domain, hwirq) > 0)
--		return -EEXIST;
--
--	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
--	if (ret < 0)
--		return ret;
--
--	for (i = 0; i < nr_irqs; i++) {
--		irq_domain_set_hwirq_and_chip(domain, virq + i, hwirq + i,
--					      domain->host_data, NULL);
--		__irq_set_handler(virq + i, handle_edge_irq, 0, "edge");
--	}
--
--	return ret;
--}
--
--static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
--			    unsigned int nr_irqs)
--{
--	int i;
--
--	for (i = 0; i < nr_irqs; i++) {
--		struct msi_desc *desc = irq_get_msi_desc(virq);
--
--		if (desc)
--			desc->irq = 0;
--	}
--	irq_domain_free_irqs_top(domain, virq, nr_irqs);
--}
--
--static struct irq_domain_ops msi_domain_ops = {
--	.alloc = msi_domain_alloc,
--	.free = msi_domain_free,
--	.activate = msi_domain_activate,
--	.deactivate = msi_domain_deactivate,
+ static void ipath_ht_irq_update(struct pci_dev *dev, int irq,
+-				struct ht_irq_msg *msg)
++				struct msi_msg *msg)
+ {
+ 	struct ipath_devdata *dd = pci_get_drvdata(dev);
+ 	u64 prev_intconfig = dd->ipath_intconfig;
+diff --git a/drivers/pci/htirq.c b/drivers/pci/htirq.c
+index 7eb4109a3df4..3bbbc5cdcb9b 100644
+--- a/drivers/pci/htirq.c
++++ b/drivers/pci/htirq.c
+@@ -23,7 +23,7 @@
+  */
+ static DEFINE_SPINLOCK(ht_irq_lock);
+ 
+-void write_ht_irq_msg(unsigned int irq, struct ht_irq_msg *msg)
++void write_ht_irq_msg(unsigned int irq, struct msi_msg *msg)
+ {
+ 	struct ht_irq_cfg *cfg = irq_get_handler_data(irq);
+ 	unsigned long flags;
+@@ -43,7 +43,7 @@ void write_ht_irq_msg(unsigned int irq, struct ht_irq_msg *msg)
+ 	cfg->msg = *msg;
+ }
+ 
+-void fetch_ht_irq_msg(unsigned int irq, struct ht_irq_msg *msg)
++void fetch_ht_irq_msg(unsigned int irq, struct msi_msg *msg)
+ {
+ 	struct ht_irq_cfg *cfg = irq_get_handler_data(irq);
+ 
+@@ -53,7 +53,7 @@ void fetch_ht_irq_msg(unsigned int irq, struct ht_irq_msg *msg)
+ void mask_ht_irq(struct irq_data *data)
+ {
+ 	struct ht_irq_cfg *cfg = irq_data_get_irq_handler_data(data);
+-	struct ht_irq_msg msg = cfg->msg;
++	struct msi_msg msg = cfg->msg;
+ 
+ 	msg.address_lo |= 1;
+ 	write_ht_irq_msg(data->irq, &msg);
+@@ -62,7 +62,7 @@ void mask_ht_irq(struct irq_data *data)
+ void unmask_ht_irq(struct irq_data *data)
+ {
+ 	struct ht_irq_cfg *cfg = irq_data_get_irq_handler_data(data);
+-	struct ht_irq_msg msg = cfg->msg;
++	struct msi_msg msg = cfg->msg;
+ 
+ 	msg.address_lo &= ~1;
+ 	write_ht_irq_msg(data->irq, &msg);
+diff --git a/include/linux/htirq.h b/include/linux/htirq.h
+index d4a527e58434..98e432f7f9b1 100644
+--- a/include/linux/htirq.h
++++ b/include/linux/htirq.h
+@@ -1,16 +1,12 @@
+ #ifndef LINUX_HTIRQ_H
+ #define LINUX_HTIRQ_H
++#include <linux/msi.h>
+ 
+ struct pci_dev;
+ struct irq_data;
+ 
+-struct ht_irq_msg {
+-	u32	address_lo;	/* low 32 bits of the ht irq message */
+-	u32	address_hi;	/* high 32 bits of the it irq message */
 -};
 -
--struct irq_domain *pci_msi_create_irq_domain(struct device_node *of_node,
--					     struct irq_chip *chip,
--					     struct irq_domain *parent)
--{
--	struct irq_domain *domain;
--
--	domain = irq_domain_add_tree(of_node, &msi_domain_ops, chip);
--	if (!domain)
--		return NULL;
--
--	domain->parent = parent;
--
--	return domain;
--}
--
--int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
--			      struct pci_dev *dev, void *arg)
-+int pci_msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
-+				  struct pci_dev *dev, void *arg)
- {
- 	int i, virq;
- 	struct msi_desc *desc;
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 7b102148c4c6..0c1446e48572 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -73,9 +73,6 @@ struct msi_domain_info {
+ typedef void (ht_irq_update_t)(struct pci_dev *dev, int irq,
+-			       struct ht_irq_msg *msg);
++			       struct msi_msg *msg);
  
- int msi_domain_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			    bool force);
--void msi_domain_activate(struct irq_domain *domain, struct irq_data *irq_data);
--void msi_domain_deactivate(struct irq_domain *domain,
--			   struct irq_data *irq_data);
- struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
- 					 struct msi_domain_info *info,
- 					 struct irq_domain *parent);
-@@ -117,16 +114,10 @@ struct msi_chip {
+ struct ht_irq_cfg {
+ 	struct pci_dev *dev;
+@@ -18,12 +14,12 @@ struct ht_irq_cfg {
+ 	ht_irq_update_t *update;
+ 	unsigned pos;
+ 	unsigned idx;
+-	struct ht_irq_msg msg;
++	struct msi_msg msg;
  };
  
- #ifdef CONFIG_PCI_MSI_IRQ_DOMAIN
--struct irq_domain *pci_msi_create_irq_domain(struct device_node *of_node,
--					     struct irq_chip *chip,
--					     struct irq_domain *parent);
- void pci_msi_write_msg(struct irq_data *irq_data, struct msi_msg *msg);
--int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
--			      struct pci_dev *dev, void *arg);
-+int pci_msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
-+				  struct pci_dev *dev, void *arg);
- irq_hw_number_t pci_msi_calc_hwirq(struct pci_dev *dev, struct msi_desc *desc);
--
--irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg);
--void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq);
- #endif /* CONFIG_PCI_MSI_IRQ_DOMAIN */
- 
- #endif /* CONFIG_PCI_MSI */
-diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
-index 85a50254d815..4f9f56e75804 100644
---- a/kernel/irq/msi.c
-+++ b/kernel/irq/msi.c
-@@ -43,7 +43,8 @@ int msi_domain_set_affinity(struct irq_data *irq_data,
- 	return ret;
- }
- 
--void msi_domain_activate(struct irq_domain *domain, struct irq_data *irq_data)
-+static void msi_domain_activate(struct irq_domain *domain,
-+				struct irq_data *irq_data)
- {
- 	struct msi_msg msg;
- 
-@@ -51,7 +52,8 @@ void msi_domain_activate(struct irq_domain *domain, struct irq_data *irq_data)
- 	irq_chip_write_msi_msg(irq_data, &msg);
- }
- 
--void msi_domain_deactivate(struct irq_domain *domain, struct irq_data *irq_data)
-+static void msi_domain_deactivate(struct irq_domain *domain,
-+				  struct irq_data *irq_data)
- {
- 	struct msi_msg msg;
+ /* Helper functions.. */
+-void fetch_ht_irq_msg(unsigned int irq, struct ht_irq_msg *msg);
+-void write_ht_irq_msg(unsigned int irq, struct ht_irq_msg *msg);
++void fetch_ht_irq_msg(unsigned int irq, struct msi_msg *msg);
++void write_ht_irq_msg(unsigned int irq, struct msi_msg *msg);
+ void mask_ht_irq(struct irq_data *data);
+ void unmask_ht_irq(struct irq_data *data);
  
 -- 
 1.7.10.4
