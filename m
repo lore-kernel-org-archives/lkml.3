@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaKIJTv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 04:19:51 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53162 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaKIJTs (ORCPT
+	id S1751522AbaKIJZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 04:25:43 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46825 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaKIJZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 04:19:48 -0500
-Date: Sun, 9 Nov 2014 09:19:32 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20141109091932.GJ2722@sirena.org.uk>
-References: <1415448772-3895-1-git-send-email-badarkhe.manish@gmail.com>
+	Sun, 9 Nov 2014 04:25:41 -0500
+Message-ID: <545F3307.4000305@gmail.com>
+Date: Sun, 09 Nov 2014 17:25:27 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mFHiwr52TKrxpkjc"
-Content-Disposition: inline
-In-Reply-To: <1415448772-3895-1-git-send-email-badarkhe.manish@gmail.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 188.29.164.253
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: tps65218: Remove '.owner' field
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Joe Perches <joe@perches.com>
+CC: dmitry.kasatkin@intel.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib: mpi: Use "static inline" instead of "extern inline"
+ in header file for __GNUC__
+References: <545F2C99.4080607@gmail.com> <1415524261.23530.37.camel@perches.com>
+In-Reply-To: <1415524261.23530.37.camel@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/09/2014 05:11 PM, Joe Perches wrote:
+> On Sun, 2014-11-09 at 16:58 +0800, Chen Gang wrote:
+>> In header file, "extern inline" may cause multiple definition, so need
+>> change it to "static inline". And also need be quoted  by __GNUC__ for
+>> they are as inline functions only for __GNUC__.
+> []
+>> diff --git a/lib/mpi/mpi-inline.h b/lib/mpi/mpi-inline.h
+> []
+>> @@ -30,7 +30,7 @@
+>>  #define G10_MPI_INLINE_H
+>>  
+>>  #ifndef G10_MPI_INLINE_DECL
+>> -#define G10_MPI_INLINE_DECL  extern inline
+>> +#define G10_MPI_INLINE_DECL  static inline
+> 
+> Why not remove the #define and use static inline
+> in the 4 places the #define is currently used?
+> 
 
---mFHiwr52TKrxpkjc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I just follow the original author's ways, the original author may think
+it is useful.
 
-On Sat, Nov 08, 2014 at 05:42:52PM +0530, Manish Badarkhe wrote:
-> Remove '.owner' field of driver structure as it is
-> going to be filled via "module_platform_driver" call.
+I guess, it may be used by other systems (neither Linux kernel nor gcc).
+For another compiler, it may need another syntax for it (although I am
+not quite sure about it).
 
-Same question as ever with this stuff: if we've decided to do this why
-are we doing it for a single driver and not as a genric cleanup?
+So for safety reason, still keep it no touch, at present.
 
---mFHiwr52TKrxpkjc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks.
+-- 
+Chen Gang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUXzGfAAoJECTWi3JdVIfQzkcH/0i1D3QyNT9kflBRYJYOwMzY
-ObYepZd+TQHG4meY7Kcl3yTa4airYuf1EeKceY0HkiwsMxgaPvccDExYAKrmbgM+
-eC211nsf4aTkYjv/PelweSqnTZ30OO3nPJ1h3QaHxU6VCjlEpqvO9J5B2FNuVb9x
-18B65Ln65wrrCkljy5EfsCs8CHUmoqB2NdioiIhihKI1KY4fyE+xEXz0D9DRO0ea
-Qo4FZillUkZ2SboGHpKUF5gxiJR2zP06miSfWSmPcWLF1Nncamdzuwr7EiJgSo5s
-PNMWN6iXcPb9fppZRsDjPioUiIrXLLpFJFNfZhRxljpKT9lK3kC9MUKMvsKdIjs=
-=Yo0N
------END PGP SIGNATURE-----
-
---mFHiwr52TKrxpkjc--
+Open share and attitude like air water and life which God blessed
