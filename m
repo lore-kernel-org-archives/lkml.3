@@ -1,131 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaKIVOw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 16:14:52 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:64532 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaKIVOv (ORCPT
+	id S1751547AbaKIVTQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 16:19:16 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55262 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaKIVTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 16:14:51 -0500
-From: Alexey Charkov <alchark@gmail.com>
-To: Tony Prisk <linux@prisktech.co.nz>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Helmut Stengele <lautriv@coldplug.net>, Alexey Charkov <alchark@gmail.com>
-Subject: [PATCH] mmc: wmt-sdmmc: fix unmatched release_mem_region
-Date: Mon, 10 Nov 2014 00:12:51 +0300
-Message-Id: <1415567571-6144-1-git-send-email-alchark@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Sun, 9 Nov 2014 16:19:14 -0500
+Date: Sun, 9 Nov 2014 21:19:08 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@redhat.com>
+Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141109211908.GF7996@ZenIV.linux.org.uk>
+References: <20141105210745.GT7996@ZenIV.linux.org.uk>
+ <20141105.165719.835728206041332333.davem@davemloft.net>
+ <20141106032533.GU7996@ZenIV.linux.org.uk>
+ <20141107.164859.951682597018909290.davem@redhat.com>
+ <20141107221114.GB7996@ZenIV.linux.org.uk>
+ <20141107234253.GE7996@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107234253.GE7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Helmut Stengele <lautriv@coldplug.net>
+[Michael Cc'd]
 
-Current code calls release_mem_region upon module unload
-without requesting the region first. This patch fixes it
-by moving to a devres-based ioremap implementation, which
-handles requesting and releasing memory region internally.
+On Fri, Nov 07, 2014 at 11:42:53PM +0000, Al Viro wrote:
 
-This also makes the error/unload paths a bit simpler.
+> I'll finish RTFS drivers/vhost and if it turns out to be OK I'll post the
+> series moving those checks to the moment of copying iovec from userland,
+> so that kernel-side we could always rely on ->msg_iov elements having been
+> verified.
 
-Signed-off-by: Helmut Stengele <lautriv@coldplug.net>
-(edited commit message)
-Signed-off-by: Alexey Charkov <alchark@gmail.com>
----
-Dear Chris, Ulf,
+Two questions:
+1) does sparc64 access_ok() need to differ for 32bit and 64bit tasks?
+AFAICS, x86 and ppc just check that address is OK for 64bit process -
+if a 32bit process passes the kernel an address that would be valid
+for 64bit process, but not for 32bit one, we just get a pagefault in
+__copy_from_user() and friends.  No kernel objects are going to have
+a virtual address in that range, so access_ok() doesn't bother preventing
+such access attempts there...
 
-This is a pretty trivial fix to a bug in wmt-sdmmc.c that is only
-visible upon module unload. Is there any chance to get it merged to
-the current fixes tree?
-
-I think I'd also like to convert other resource requests here to devres,
-but that would probably be a separate patch to go into -next. That's why
-we didn't rename the failX: labels, for example (as most of them could be
-dropped altogether if the respective requesting functions are converted to
-devres infrastructure).
-
-Thanks a lot,
-Alexey
-
- drivers/mmc/host/wmt-sdmmc.c | 18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
-index 54181b4..02b5e6b 100644
---- a/drivers/mmc/host/wmt-sdmmc.c
-+++ b/drivers/mmc/host/wmt-sdmmc.c
-@@ -759,6 +759,7 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 	const struct wmt_mci_caps *wmt_caps;
- 	int ret;
- 	int regular_irq, dma_irq;
-+	struct resource *res;
- 
- 	if (!of_id || !of_id->data) {
- 		dev_err(&pdev->dev, "Controller capabilities data missing\n");
-@@ -781,6 +782,11 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 		goto fail1;
- 	}
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		ret = -ENODEV;
-+		goto fail1;
-+	}
- 	mmc = mmc_alloc_host(sizeof(struct wmt_mci_priv), &pdev->dev);
- 	if (!mmc) {
- 		dev_err(&pdev->dev, "Failed to allocate mmc_host\n");
-@@ -813,7 +819,7 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 	if (of_get_property(np, "cd-inverted", NULL))
- 		priv->cd_inverted = 1;
- 
--	priv->sdmmc_base = of_iomap(np, 0);
-+	priv->sdmmc_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (!priv->sdmmc_base) {
- 		dev_err(&pdev->dev, "Failed to map IO space\n");
- 		ret = -ENOMEM;
-@@ -826,7 +832,7 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 	ret = request_irq(regular_irq, wmt_mci_regular_isr, 0, "sdmmc", priv);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Register regular IRQ fail\n");
--		goto fail3;
-+		goto fail2;
- 	}
- 
- 	ret = request_irq(dma_irq, wmt_mci_dma_isr, 0, "sdmmc", priv);
-@@ -869,8 +875,6 @@ fail5:
- 	free_irq(dma_irq, priv);
- fail4:
- 	free_irq(regular_irq, priv);
--fail3:
--	iounmap(priv->sdmmc_base);
- fail2:
- 	mmc_free_host(mmc);
- fail1:
-@@ -881,7 +885,6 @@ static int wmt_mci_remove(struct platform_device *pdev)
- {
- 	struct mmc_host *mmc;
- 	struct wmt_mci_priv *priv;
--	struct resource *res;
- 	u32 reg_tmp;
- 
- 	mmc = platform_get_drvdata(pdev);
-@@ -904,14 +907,9 @@ static int wmt_mci_remove(struct platform_device *pdev)
- 	free_irq(priv->irq_regular, priv);
- 	free_irq(priv->irq_dma, priv);
- 
--	iounmap(priv->sdmmc_base);
--
- 	clk_disable_unprepare(priv->clk_sdmmc);
- 	clk_put(priv->clk_sdmmc);
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(res->start, resource_size(res));
--
- 	mmc_free_host(mmc);
- 
- 	dev_info(&pdev->dev, "WMT MCI device removed\n");
--- 
-2.1.0
-
+2) shouldn't vhost_dev_cleanup() stop the worker thread before doing anything
+else?  AFAICS, we do parts of vhost_dev teardown while the thread is
+still running; granted, we keep dev->mm pinned down until after it stops
+(or we would be _really_ screwed), but is it safe to do all those fput()s, etc.
+while it's still running?  Michael?
