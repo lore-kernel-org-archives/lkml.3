@@ -1,339 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581AbaKIV0X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 16:26:23 -0500
-Received: from smtp07.smtpout.orange.fr ([80.12.242.129]:32204 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaKIV0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 16:26:22 -0500
-X-ME-Helo: localhost.localdomain
-X-ME-Date: Sun, 09 Nov 2014 22:26:20 +0100
-X-ME-IP: 90.16.212.42
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v2] clk: add pxa25x clock drivers
-Date: Sun,  9 Nov 2014 22:26:09 +0100
-Message-Id: <1415568369-9243-1-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 2.1.0
+	id S1751494AbaKIVe4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 16:34:56 -0500
+Received: from mail-bl2on0089.outbound.protection.outlook.com ([65.55.169.89]:59810
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751350AbaKIVez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 16:34:55 -0500
+Date: Sun, 9 Nov 2014 13:34:48 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Peter Crosthwaite <crosthwaitepeter@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <michals@xilinx.com>, <sorenb@xilinx.com>,
+        <steven.wang@digilentinc.com>
+Subject: Re: [PATCH 1/2] arm: dts: zynq: Move crystal freq. to board level
+References: <1415504283-31321-1-git-send-email-crosthwaite.peter@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1415504283-31321-1-git-send-email-crosthwaite.peter@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21088.002
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <38537ddd8ce845cd9929db4ffcb33031@BN1AFFO11FD006.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(24454002)(189002)(377424004)(51704005)(1411001)(31966008)(85182001)(106466001)(104016003)(50986999)(33646002)(107046002)(110136001)(23676002)(108616004)(62966003)(74316001)(77156002)(77096003)(4396001)(20776003)(92566001)(53416004)(47776003)(44976005)(95666004)(6806004)(46102003)(86362001)(50466002)(87936001)(21056001)(120916001)(99396003)(83506001)(64706001)(19580405001)(54356999)(19580395003)(102836001)(76176999)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB065;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB065;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB065;
+X-Forefront-PRVS: 0390DB4BDA
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB065;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move pxa25x clock drivers from arch/arm/mach-pxa to driver/clk.
-In the move :
- - convert to new clock framework legacy clocks
- - provide clocks as before for platform data based boards
- - provide clocks through devicetree with clk-pxa-dt
+On Sun, 2014-11-09 at 01:38PM +1000, Peter Crosthwaite wrote:
+> The fact that all supported boards use the same 33MHz crystal is a
+> co-incidence. The Zynq PS support a range of crystal freqs so the
+> hardcoded setting should be removed from the dtsi. Re-implement it
+> on the board level.
+> 
+> This prepares support for Zynq boards with different crystal
+> frequencies (e.g. the Digilent ZYBO).
 
-This is the preliminary step in the conversion. The remaining steps are
-:
- - pxa3xx
- - once PXA is fully converted to device tree, if that happens,
-   clk-pxa2* and clk-pxa3* should only hold the core clocks which cannot
-   be described in devicetree.
+Even with the 33MHz in the dtsi you can override it on the board-level.
+Just like the 'status' property is overriden in board dts files.
 
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
-Tested-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
----
-Since v1: fix clocks after Dmitry tests.
----
- drivers/clk/pxa/Makefile     |   1 +
- drivers/clk/pxa/clk-pxa25x.c | 273 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 274 insertions(+)
- create mode 100644 drivers/clk/pxa/clk-pxa25x.c
+> 
+> Signed-off-by: Peter Crosthwaite <crosthwaite.peter@gmail.com>
+> 
+> ---
+> Im guessing long term this should be converted to a fixed clock. But
+> I think this at least steps in that direction.
 
-diff --git a/drivers/clk/pxa/Makefile b/drivers/clk/pxa/Makefile
-index 4ff2abc..38e9153 100644
---- a/drivers/clk/pxa/Makefile
-+++ b/drivers/clk/pxa/Makefile
-@@ -1,2 +1,3 @@
- obj-y				+= clk-pxa.o
-+obj-$(CONFIG_PXA25x)		+= clk-pxa25x.o
- obj-$(CONFIG_PXA27x)		+= clk-pxa27x.o
-diff --git a/drivers/clk/pxa/clk-pxa25x.c b/drivers/clk/pxa/clk-pxa25x.c
-new file mode 100644
-index 0000000..0611a6b
---- /dev/null
-+++ b/drivers/clk/pxa/clk-pxa25x.c
-@@ -0,0 +1,273 @@
-+/*
-+ * Marvell PXA25x family clocks
-+ *
-+ * Copyright (C) 2014 Robert Jarzmik
-+ *
-+ * Heavily inspired from former arch/arm/mach-pxa/pxa25x.c.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * For non-devicetree platforms. Once pxa is fully converted to devicetree, this
-+ * should go away.
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <mach/pxa25x.h>
-+#include <mach/pxa2xx-regs.h>
-+
-+#include <dt-bindings/clock/pxa-clock.h>
-+#include "clk-pxa.h"
-+
-+#define KHz 1000
-+#define MHz (1000 * 1000)
-+
-+enum {
-+	PXA_CORE_RUN = 0,
-+	PXA_CORE_TURBO,
-+};
-+
-+/*
-+ * Various clock factors driven by the CCCR register.
-+ */
-+
-+/* Crystal Frequency to Memory Frequency Multiplier (L) */
-+static unsigned char L_clk_mult[32] = { 0, 27, 32, 36, 40, 45, 0, };
-+
-+/* Memory Frequency to Run Mode Frequency Multiplier (M) */
-+static unsigned char M_clk_mult[4] = { 0, 1, 2, 4 };
-+
-+/* Run Mode Frequency to Turbo Mode Frequency Multiplier (N) */
-+/* Note: we store the value N * 2 here. */
-+static unsigned char N2_clk_mult[8] = { 0, 0, 2, 3, 4, 0, 6, 0 };
-+
-+static const char * const get_freq_khz[] = {
-+	"core", "run", "cpll", "memory"
-+};
-+
-+/*
-+ * Get the clock frequency as reflected by CCCR and the turbo flag.
-+ * We assume these values have been applied via a fcs.
-+ * If info is not 0 we also display the current settings.
-+ */
-+unsigned int pxa25x_get_clk_frequency_khz(int info)
-+{
-+	struct clk *clk;
-+	unsigned long clks[5];
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(get_freq_khz); i++) {
-+		clk = clk_get(NULL, get_freq_khz[i]);
-+		if (IS_ERR(clk)) {
-+			clks[i] = 0;
-+		} else {
-+			clks[i] = clk_get_rate(clk);
-+			clk_put(clk);
-+		}
-+	}
-+
-+	if (info) {
-+		pr_info("Run Mode clock: %ld.%02ldMHz\n",
-+			clks[1] / 1000000, (clks[1] % 1000000) / 10000);
-+		pr_info("Turbo Mode clock: %ld.%02ldMHz\n",
-+			clks[2] / 1000000, (clks[2] % 1000000) / 10000);
-+		pr_info("Memory clock: %ld.%02ldMHz\n",
-+			clks[3] / 1000000, (clks[3] % 1000000) / 10000);
-+	}
-+
-+	return (unsigned int)clks[0];
-+}
-+
-+static unsigned long clk_pxa25x_memory_get_rate(struct clk_hw *hw,
-+						unsigned long parent_rate)
-+{
-+	unsigned long cccr = CCCR;
-+	unsigned int m = M_clk_mult[(cccr >> 5) & 0x03];
-+
-+	return parent_rate / m;
-+}
-+PARENTS(clk_pxa25x_memory) = { "run" };
-+RATE_RO_OPS(clk_pxa25x_memory, "memory");
-+
-+PARENTS(pxa25x_pbus95) = { "ppll_95_85mhz", "ppll_95_85mhz" };
-+PARENTS(pxa25x_pbus147) = { "ppll_147_46mhz", "ppll_147_46mhz" };
-+PARENTS(pxa25x_osc3) = { "osc_3_6864mhz", "osc_3_6864mhz" };
-+
-+#define PXA25X_CKEN(dev_id, con_id, parents, mult, div,			\
-+		    bit, is_lp, flags)					\
-+	PXA_CKEN(dev_id, con_id, bit, parents, mult, div, mult, div,	\
-+		 is_lp,  &CKEN, CKEN_ ## bit, flags)
-+#define PXA25X_PBUS95_CKEN(dev_id, con_id, bit, mult_hp, div_hp, delay)	\
-+	PXA25X_CKEN(dev_id, con_id, pxa25x_pbus95_parents, mult_hp,	\
-+		    div_hp, bit, NULL, 0)
-+#define PXA25X_PBUS147_CKEN(dev_id, con_id, bit, mult_hp, div_hp, delay)\
-+	PXA25X_CKEN(dev_id, con_id, pxa25x_pbus147_parents, mult_hp,	\
-+		    div_hp, bit, NULL, 0)
-+#define PXA25X_OSC3_CKEN(dev_id, con_id, bit, mult_hp, div_hp, delay)	\
-+	PXA25X_CKEN(dev_id, con_id, pxa25x_osc3_parents, mult_hp,	\
-+		    div_hp, bit, NULL, 0)
-+
-+#define PXA25X_CKEN_1RATE(dev_id, con_id, bit, parents, delay)		\
-+	PXA_CKEN_1RATE(dev_id, con_id, bit, parents,			\
-+		       &CKEN, CKEN_ ## bit, 0)
-+#define PXA25X_CKEN_1RATE_AO(dev_id, con_id, bit, parents, delay)	\
-+	PXA_CKEN_1RATE(dev_id, con_id, bit, parents,			\
-+		       &CKEN, CKEN_ ## bit, CLK_IGNORE_UNUSED)
-+
-+static struct desc_clk_cken pxa25x_clocks[] __initdata = {
-+	PXA25X_PBUS95_CKEN("pxa2xx-mci.0", NULL, MMC, 1, 5, 0),
-+	PXA25X_PBUS95_CKEN("pxa2xx-i2c.0", NULL, I2C, 1, 3, 0),
-+	PXA25X_PBUS95_CKEN("pxa2xx-ir", "FICPCLK", FICP, 1, 2, 0),
-+	PXA25X_PBUS95_CKEN("pxa25x-udc", NULL, USB, 1, 2, 5),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.0", NULL, FFUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.1", NULL, BTUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.2", NULL, STUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-uart.3", NULL, HWUART, 1, 10, 1),
-+	PXA25X_PBUS147_CKEN("pxa2xx-i2s", NULL, I2S, 1, 1, 0),
-+	PXA25X_PBUS147_CKEN(NULL, "AC97CLK", AC97, 1, 12, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-ssp.0", NULL, SSP, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-nssp.1", NULL, NSSP, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-nssp.2", NULL, ASSP, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-pwm.0", NULL, PWM0, 1, 1, 0),
-+	PXA25X_OSC3_CKEN("pxa25x-pwm.1", NULL, PWM1, 1, 1, 0),
-+
-+	PXA25X_CKEN_1RATE("pxa2xx-fb", NULL, LCD, clk_pxa25x_memory_parents, 0),
-+	PXA25X_CKEN_1RATE_AO("pxa2xx-pcmcia", NULL, MEMC,
-+			     clk_pxa25x_memory_parents, 0),
-+};
-+
-+static u8 clk_pxa25x_core_get_parent(struct clk_hw *hw)
-+{
-+	unsigned long clkcfg;
-+	unsigned int t;
-+
-+	asm("mrc\tp14, 0, %0, c6, c0, 0" : "=r" (clkcfg));
-+	t  = clkcfg & (1 << 0);
-+	if (t)
-+		return PXA_CORE_TURBO;
-+	return PXA_CORE_RUN;
-+}
-+
-+static unsigned long clk_pxa25x_core_get_rate(struct clk_hw *hw,
-+					      unsigned long parent_rate)
-+{
-+	return parent_rate;
-+}
-+PARENTS(clk_pxa25x_core) = { "run", "cpll" };
-+MUX_RO_RATE_RO_OPS(clk_pxa25x_core, "core");
-+
-+static unsigned long clk_pxa25x_run_get_rate(struct clk_hw *hw,
-+					     unsigned long parent_rate)
-+{
-+	unsigned long cccr = CCCR;
-+	unsigned int n2 = N2_clk_mult[(cccr >> 7) & 0x07];
-+
-+	return (parent_rate / n2) * 2;
-+}
-+PARENTS(clk_pxa25x_run) = { "cpll" };
-+RATE_RO_OPS(clk_pxa25x_run, "run");
-+
-+static unsigned long clk_pxa25x_cpll_get_rate(struct clk_hw *hw,
-+	unsigned long parent_rate)
-+{
-+	unsigned long clkcfg, cccr = CCCR;
-+	unsigned int l, m, n2, t;
-+
-+	asm("mrc\tp14, 0, %0, c6, c0, 0" : "=r" (clkcfg));
-+	t = clkcfg & (1 << 0);
-+	l  =  L_clk_mult[(cccr >> 0) & 0x1f];
-+	m = M_clk_mult[(cccr >> 5) & 0x03];
-+	n2 = N2_clk_mult[(cccr >> 7) & 0x07];
-+
-+	if (t)
-+		return m * l * n2 * parent_rate / 2;
-+	return m * l * parent_rate;
-+}
-+PARENTS(clk_pxa25x_cpll) = { "osc_3_6864mhz" };
-+RATE_RO_OPS(clk_pxa25x_cpll, "cpll");
-+
-+static void __init pxa25x_register_core(void)
-+{
-+	clk_register_clk_pxa25x_cpll();
-+	clk_register_clk_pxa25x_run();
-+	clkdev_pxa_register(CLK_CORE, "core", NULL,
-+			    clk_register_clk_pxa25x_core());
-+}
-+
-+static void __init pxa25x_register_plls(void)
-+{
-+	clk_register_fixed_rate(NULL, "osc_3_6864mhz", NULL,
-+				CLK_GET_RATE_NOCACHE | CLK_IS_ROOT,
-+				3686400);
-+	clk_register_fixed_rate(NULL, "osc_32_768khz", NULL,
-+				CLK_GET_RATE_NOCACHE | CLK_IS_ROOT,
-+				32768 * KHz);
-+	clk_register_fixed_rate(NULL, "clk_dummy", NULL, CLK_IS_ROOT, 0);
-+	clk_register_fixed_factor(NULL, "ppll_95_85mhz", "osc_3_6864mhz",
-+				  0, 26, 1);
-+	clk_register_fixed_factor(NULL, "ppll_147_46mhz", "osc_3_6864mhz",
-+				  0, 40, 1);
-+}
-+
-+static void __init pxa25x_base_clocks_init(void)
-+{
-+	pxa25x_register_plls();
-+	pxa25x_register_core();
-+	clk_register_clk_pxa25x_memory();
-+}
-+
-+#define DUMMY_CLK(_con_id, _dev_id, _parent) \
-+	{ .con_id = _con_id, .dev_id = _dev_id, .parent = _parent }
-+struct dummy_clk {
-+	const char *con_id;
-+	const char *dev_id;
-+	const char *parent;
-+};
-+static struct dummy_clk dummy_clks[] __initdata = {
-+	DUMMY_CLK(NULL, "pxa25x-gpio", "osc_32_768khz"),
-+	DUMMY_CLK(NULL, "pxa26x-gpio", "osc_32_768khz"),
-+	DUMMY_CLK("GPIO11_CLK", NULL, "osc_3_6864mhz"),
-+	DUMMY_CLK("GPIO12_CLK", NULL, "osc_32_768khz"),
-+	DUMMY_CLK(NULL, "sa1100-rtc", "osc_32_768khz"),
-+	DUMMY_CLK("OSTIMER0", NULL, "osc_32_768khz"),
-+	DUMMY_CLK("UARTCLK", "pxa2xx-ir", "STUART"),
-+};
-+
-+static void __init pxa25x_dummy_clocks_init(void)
-+{
-+	struct clk *clk;
-+	struct dummy_clk *d;
-+	const char *name;
-+	int i;
-+
-+	/*
-+	 * All pinctrl logic has been wiped out of the clock driver, especially
-+	 * for gpio11 and gpio12 outputs. Machine code should ensure proper pin
-+	 * control (ie. pxa2xx_mfp_config() invocation).
-+	 */
-+	for (i = 0; i < ARRAY_SIZE(dummy_clks); i++) {
-+		d = &dummy_clks[i];
-+		name = d->dev_id ? d->dev_id : d->con_id;
-+		clk = clk_register_fixed_factor(NULL, name, d->parent, 0, 1, 1);
-+		clk_register_clkdev(clk, d->con_id, d->dev_id);
-+	}
-+}
-+
-+int __init pxa25x_clocks_init(void)
-+{
-+	pxa25x_base_clocks_init();
-+	pxa25x_dummy_clocks_init();
-+	return clk_pxa_cken_init(pxa25x_clocks, ARRAY_SIZE(pxa25x_clocks));
-+}
-+
-+static void __init pxa25x_dt_clocks_init(struct device_node *np)
-+{
-+	pxa25x_clocks_init();
-+	clk_pxa_dt_common_init(np);
-+}
-+CLK_OF_DECLARE(pxa25x_clks, "marvell,pxa250-core-clocks",
-+	       pxa25x_dt_clocks_init);
--- 
-2.1.0
+I was against that since it makes juggling with clock names more
+difficult. The problem is that the CCF uses a global name space of clock
+names. Not having the oscillator as fixed-clock in DT removed that
+additional complexity. But it would be possible, I guess.
 
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi      | 1 -
+>  arch/arm/boot/dts/zynq-parallella.dts | 4 ++++
+>  arch/arm/boot/dts/zynq-zc702.dts      | 4 ++++
+>  arch/arm/boot/dts/zynq-zc706.dts      | 4 ++++
+>  arch/arm/boot/dts/zynq-zed.dts        | 4 ++++
+>  5 files changed, 16 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> index ce2ef5b..ee3e5d6 100644
+> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> @@ -243,7 +243,6 @@
+>  			clkc: clkc@100 {
+>  				#clock-cells = <1>;
+>  				compatible = "xlnx,ps7-clkc";
+> -				ps-clk-frequency = <33333333>;
+>  				fclk-enable = <0>;
+>  				clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x",
+>  						"cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x",
+> diff --git a/arch/arm/boot/dts/zynq-parallella.dts b/arch/arm/boot/dts/zynq-parallella.dts
+> index e1f51ca..cd84d45 100644
+> --- a/arch/arm/boot/dts/zynq-parallella.dts
+> +++ b/arch/arm/boot/dts/zynq-parallella.dts
+> @@ -83,3 +83,7 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&clkc {
+> +	ps-clk-frequency = <33333333>;
+> +};
+> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+> index 94e2cda..24dcece 100644
+> --- a/arch/arm/boot/dts/zynq-zc702.dts
+> +++ b/arch/arm/boot/dts/zynq-zc702.dts
+> @@ -135,3 +135,7 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&clkc {
+> +	ps-clk-frequency = <33333333>;
+> +};
+> diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
+> index a8bbdfb..7b88399 100644
+> --- a/arch/arm/boot/dts/zynq-zc706.dts
+> +++ b/arch/arm/boot/dts/zynq-zc706.dts
+> @@ -114,3 +114,7 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&clkc {
+> +	ps-clk-frequency = <33333333>;
+> +};
+> diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
+> index 697779a..4662da2 100644
+> --- a/arch/arm/boot/dts/zynq-zed.dts
+> +++ b/arch/arm/boot/dts/zynq-zed.dts
+> @@ -46,3 +46,7 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&clkc {
+> +	ps-clk-frequency = <33333333>;
+> +};
+
+I think we currently have the nodes more or less in alphabetical order.
+I'd prefer if we maintained that.
+
+Other than that:
+Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+
+	Soren
