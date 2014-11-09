@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaKIEa0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 23:30:26 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56217 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751263AbaKIEaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 23:30:24 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19/BuFEd1mK8bYlEiMADFzkURv07a2ayA4=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 426836155F7
-Date: Sat, 8 Nov 2014 23:30:10 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: tglx@linutronix.de, linux-sh@vger.kernel.org, arnd@arndb.de,
-        f.fainelli@gmail.com, ralf@linux-mips.org,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH V4 00/14] genirq endian fixes; bcm7120/brcmstb IRQ
- updates
-Message-ID: <20141109043010.GR3698@titan.lakedaemon.net>
-References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
- <20141107122745.GJ3698@titan.lakedaemon.net>
+	id S1751422AbaKIEg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 23:36:27 -0500
+Received: from mout.gmx.com ([74.208.4.200]:49486 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263AbaKIEg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Nov 2014 23:36:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141107122745.GJ3698@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <trinity-9f4725fb-c5e5-4afa-ac02-5400c3ce2005-1415507784018@3capp-mailcom-lxa04>
+From: "Brad Townshend" <bradtownshend83a@email.com>
+To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org,
+        debian-vote@lists.debian.org, ubuntu-devel-discuss@lists.ubuntu.com,
+        ubuntu-users@lists.ubuntu.com
+Subject: Systemd Blues. A lyrical song that says Fuck SystemD, no harm Ment
+ Mr. Poettering
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 9 Nov 2014 05:36:24 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:+nknbRldpTL+MRHpeWxCVCRhwtkx1kRAj2ZKIvhW8yy
+ VFTfrNbLU+ofFDYuYLXh8C7gYcjo7OHYIlqLUSSuBLcNPQCZ7e
+ NQWDSwVG/Ul6kSiV3Zh85cDuvrQxfRZSgswk95NDaGPNouUwCq
+ 4yzzFBb5sWpDzweQI+SUZSmfpLR1LHZ8qCSJNBhZe0WGjlbu2l
+ 72pvhUueCXDzzI0puCzqR9HZjuY8Z0TZqH6kTSbRJSs02UwZRR
+ A527XIzD3XfCwb/7axUlEW3AghfrD45RMrlBweiIHIxsfoOGb1
+ IE7e15qHnZY6txYQ/DAo2dYk9NA
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 07:27:45AM -0500, Jason Cooper wrote:
-> Thomas,
-> 
-> On Thu, Nov 06, 2014 at 10:44:15PM -0800, Kevin Cernekee wrote:
-> > V3->V4:
-> > 
-> >  - Fix buildbot bisectability warning on patch 02/14 (missing include)
-> 
-> Dammit.  :(  Even if I had created a topic branch for this series, I
-> still would have put the genirq changes in /core, then based a brcm
-> branch off of that.
-> 
-> I'm inclined to think I should just drop v3 and apply v4, as a revert
-> commit wouldn't solve the bisectability issue.
+Systemd Blues. A lyrical song accompanied by some drum and a heavy thick bass line
+that's been laid down like tar during a southern snow storm,
+that says Fuck SystemD, no harm Ment Mr. Poettering (who is an important man)
 
-Ok, no complaints, so it's done.
+http://youtu.be/y0aTqsl-vfU
 
-thx,
+Please discuss.
+Best Regards.
 
-Jason.
+Fuck Systemd.
