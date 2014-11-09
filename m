@@ -1,280 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474AbaKITSD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 14:18:03 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:38916 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaKITR7 (ORCPT
+	id S1751494AbaKITZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 14:25:40 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:17314 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751095AbaKITZi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 14:17:59 -0500
-Message-ID: <545FBDDD.9060801@gmail.com>
-Date: Sun, 09 Nov 2014 20:17:49 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 9 Nov 2014 14:25:38 -0500
+Date: Sun, 9 Nov 2014 20:28:20 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] of: Make const the device node pointers in
+ of_clk_get and of_node_put
+Message-ID: <20141109202820.026252bf@armhf>
+In-Reply-To: <20141109185019.GU4042@n2100.arm.linux.org.uk>
+References: <cover.1415557680.git.moinejf@free.fr>
+	<375a82230accf26dfbbb74e6f928243ea8e38b50.1415557680.git.moinejf@free.fr>
+	<20141109185019.GU4042@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        kexec@lists.infradead.org, Andy Lutomirski <luto@amacapital.net>,
-        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Edited kexec_load(2) [kexec_file_load()] man page for review
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek (and all),
+On Sun, 9 Nov 2014 18:50:19 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Thanks for the kexec_file_load() patch [for the kexec_load(2) man page]
-that you quite some time ago sent. I have merged it and done some
-substantial editing as well. Could you please take a look at the 
-draft below, and check that the kexec_file_load() material is okay.
-Please could you especially pay attention to the pieces marked
-"FIXME(kexec_file_load)", since those are pieces about which i
-had questions or doubts.
+> What this then means is that it fundamentally undermines the idea of
+> storing the pointer to a device_node as a const pointer, as the device
+> node must always be modified when you're done with it (because it's a
+> ref-counted structure.)  So, having it const in your code is a bug.
+> 
+> What this also means is that every other place that you've added const
+> below is also very dubious.
 
-Thanks,
+Thanks for the explanation.
 
-Michael
-
-.\" Copyright (C) 2010 Intel Corporation, Author: Andi Kleen
-.\" and Copyright 2014, Vivek Goyal <vgoyal@redhat.com>
-.\"
-.\" %%%LICENSE_START(VERBATIM)
-.\" Permission is granted to make and distribute verbatim copies of this
-.\" manual provided the copyright notice and this permission notice are
-.\" preserved on all copies.
-.\"
-.\" Permission is granted to copy and distribute modified versions of this
-.\" manual under the conditions for verbatim copying, provided that the
-.\" entire resulting derived work is distributed under the terms of a
-.\" permission notice identical to this one.
-.\"
-.\" Since the Linux kernel and libraries are constantly changing, this
-.\" manual page may be incorrect or out-of-date.  The author(s) assume no
-.\" responsibility for errors or omissions, or for damages resulting from
-.\" the use of the information contained herein.  The author(s) may not
-.\" have taken the same level of care in the production of this manual,
-.\" which is licensed free of charge, as they might when working
-.\" professionally.
-.\"
-.\" Formatted or processed versions of this manual, if unaccompanied by
-.\" the source, must acknowledge the copyright and authors of this work.
-.\" %%%LICENSE_END
-.\"
-.TH KEXEC_LOAD 2 2014-08-19 "Linux" "Linux Programmer's Manual"
-.SH NAME
-kexec_load, kexec_file_load \- load a new kernel for later execution
-.SH SYNOPSIS
-.nf
-.B #include <linux/kexec.h>
-
-.BI "long kexec_load(unsigned long " entry ", unsigned long " nr_segments ","
-.BI "                struct kexec_segment *" segments \
-", unsigned long " flags ");"
-
-.\" FIXME(kexec_file_load):
-.\"     Why are the return types of kexec_load() and kexec_file_load()
-.\"     different?
-.BI "int kexec_file_load(int " kernel_fd ", int " initrd_fd ","
-.br
-.BI "                    unsigned long " cmdline_len  \
-", const char *" cmdline ","
-.BI "                    unsigned long " flags ");"
-
-.fi
-.IR Note :
-There are no glibc wrappers for these system calls; see NOTES.
-.SH DESCRIPTION
-The
-.BR kexec_load ()
-system call loads a new kernel that can be executed later by
-.BR reboot (2).
-.PP
-The
-.I flags
-argument is a bit mask that controls the operation of the call.
-The following values can be specified in
-.IR flags :
-.TP
-.BR KEXEC_ON_CRASH " (since Linux 2.6.13)"
-Execute the new kernel automatically on a system crash.
-.\" FIXME Explain in more detail how KEXEC_ON_CRASH is actually used
-.TP
-.BR KEXEC_PRESERVE_CONTEXT " (since Linux 2.6.27)"
-Preserve the system hardware and
-software states before executing the new kernel.
-This could be used for system suspend.
-This flag is available only if the kernel was configured with
-.BR CONFIG_KEXEC_JUMP ,
-and is effective only if
-.I nr_segments
-is greater than 0.
-.PP
-The high-order bits (corresponding to the mask 0xffff0000) of
-.I flags
-contain the architecture of the to-be-executed kernel.
-Specify (OR) the constant
-.B KEXEC_ARCH_DEFAULT
-to use the current architecture,
-or one of the following architecture constants
-.BR KEXEC_ARCH_386 ,
-.BR KEXEC_ARCH_68K ,
-.BR KEXEC_ARCH_X86_64 ,
-.BR KEXEC_ARCH_PPC ,
-.BR KEXEC_ARCH_PPC64 ,
-.BR KEXEC_ARCH_IA_64 ,
-.BR KEXEC_ARCH_ARM ,
-.BR KEXEC_ARCH_S390 ,
-.BR KEXEC_ARCH_SH ,
-.BR KEXEC_ARCH_MIPS ,
-and
-.BR KEXEC_ARCH_MIPS_LE .
-The architecture must be executable on the CPU of the system.
-
-The
-.I entry
-argument is the physical entry address in the kernel image.
-The
-.I nr_segments
-argument is the number of segments pointed to by the
-.I segments
-pointer;
-the kernel imposes an (arbitrary) limit of 16 on the number of segments.
-The
-.I segments
-argument is an array of
-.I kexec_segment
-structures which define the kernel layout:
-.in +4n
-.nf
-
-struct kexec_segment {
-    void   *buf;        /* Buffer in user space */
-    size_t  bufsz;      /* Buffer length in user space */
-    void   *mem;        /* Physical address of kernel */
-    size_t  memsz;      /* Physical address length */
-};
-.fi
-.in
-.PP
-.\" FIXME Explain the details of how the kernel image defined by segments
-.\" is copied from the calling process into previously reserved memory.
-The kernel image defined by
-.I segments
-is copied from the calling process into previously reserved memory.
-.SS kexec_file_load()
-The
-.BR kexec_file_load ()
-system call is similar to
-.BR kexec_load (),
-but it takes a different set of arguments.
-It reads the kernel to be loaded from the file referred to by the descriptor
-.IR kernel_fd ,
-and the initrd (initial RAM disk)
-to be loaded from file referred to by the descriptor
-.IR initrd_fd .
-The
-.IR cmdline
-argument is a pointer to a string containing the command line
-for the new kernel; the
-.IR cmdline_len
-argument specifies the length of the string in
-.IR cmdline .
-
-The
-.IR flags
-argument is a bit mask which modifies the behavior of the call.
-The following values can be specified in
-.IR flags :
-.TP
-.BR KEXEC_FILE_UNLOAD
-Unload the currently loaded kernel.
-.TP
-.BR KEXEC_FILE_ON_CRASH
-Load the new kernel in the memory region reserved for the crash kernel.
-This kernel is booted if the currently running kernel crashes.
-.TP
-.BR KEXEC_FILE_NO_INITRAMFS
-Loading initrd/initramfs is optional.
-Specify this flag if no initramfs is being loaded.
-If this flag is set, the value passed in
-.IR initrd_fd
-is ignored.
-.SH RETURN VALUE
-On success, these system calls returns 0.
-On error, \-1 is returned and
-.I errno
-is set to indicate the error.
-.SH ERRORS
-.TP
-.B EBUSY
-Another crash kernel is already being loaded
-or a crash kernel is already in use.
-.TP
-.B EINVAL
-.I flags
-is invalid; or
-.IR nr_segments
-is too large
-.\" KEXEC_SEGMENT_MAX == 16
-.TP
-.B ENOEXEC
-.I kernel_fd
-does not refer to an open file, or the kernel can't load this file.
-.TP
-.B EPERM
-The caller does not have the
-.BR CAP_SYS_BOOT
-capability.
-.SH VERSIONS
-The
-.BR kexec_load ()
-system call first appeared in Linux 2.6.13.
-The
-.BR kexec_file_load ()
-system call first appeared in Linux 3.17.
-.SH CONFORMING TO
-These system calls are Linux-specific.
-.SH NOTES
-Currently, there is no glibc support for these system calls.
-Call them using
-.BR syscall (2).
-.PP
-The required constants are in the Linux kernel source file
-.IR linux/kexec.h ,
-which is not currently exported to glibc.
-Therefore, these constants must be defined manually.
-
-.\" FIXME(kexec_file_load):
-.\" Is the following rationale accurate? Does it need expanding?
-The
-.BR kexec_file_load ()
-.\" See also http://lwn.net/Articles/603116/
-system call was added to provide support for systems
-where "kexec" loading should be restricted to
-only kernels that are signed.
-
-The
-.BR kexec_load ()
-system call is available only if the kernel was configured with
-.BR CONFIG_KEXEC .
-The
-.BR kexec_file_load ()
-system call is available only if the kernel was configured with
-.BR CONFIG_KEXEC_FILE .
-.\" FIXME(kexec_file_load):
-.\"     Does kexec_file_load() need any other CONFIG_* options to be defined?
-.SH SEE ALSO
-.BR reboot (2),
-.BR syscall (2),
-.BR kexec (8)
-
+The correct patch will be simpler: in the ASoC structures, I found only
+three places where the device_node pointer is const.
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
