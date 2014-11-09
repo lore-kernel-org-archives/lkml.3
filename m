@@ -1,91 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaKIBXk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Nov 2014 20:23:40 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:57032 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaKIBW2 (ORCPT
+	id S1751325AbaKIBas (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Nov 2014 20:30:48 -0500
+Received: from smtp107.biz.mail.bf1.yahoo.com ([98.139.244.55]:29200 "EHLO
+	smtp107.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751054AbaKIBaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Nov 2014 20:22:28 -0500
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: cascardo@linux.vnet.ibm.com
-Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Zapalowicz <bergo.torino@gmail.com>
-Subject: [PATCH 1/5] serial: jsm: Remove unnecessary parameter from clear_break()
-Date: Sun,  9 Nov 2014 02:22:16 +0100
-Message-Id: <1415496140-14997-2-git-send-email-bergo.torino@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415496140-14997-1-git-send-email-bergo.torino@gmail.com>
-References: <1415496140-14997-1-git-send-email-bergo.torino@gmail.com>
+	Sat, 8 Nov 2014 20:30:46 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: r8rzdpEVM1kFw3fOAqf6qZ6glIDofX3yEWoUXhS5qoi5sjh
+ gtY3kuCBcDRag2XiW38R1fFlHVO1ywlNi2nO26dZe3tsjdJGCK_maBAxIJB3
+ eFYEeKEsUvVqSFU6zQ3EveTq7SFvkHZpjHgM1FoS9cj.MVrnWMdTbI6n0k9L
+ SY3Tx8rGNJrhJtBh7G6RwdroIGB1Nq_oJXOgAO4sWtW20B029vYZKcii8a5S
+ TNF0Ne6Jlf6B2VxV10RkK0_bUR75ALWHNGS6qjwuoehn9nDxNb64kNiuqlrH
+ 0XnZm_JsHTqFXACayXabX3LDe.YC6vyX2KzwvMPwGtJsYeXVXxH4z5SwRhKt
+ sjI3gHIMhGutvBJNJzbLdcKiN1HcgxfSf28Ba4bzU_kPYxH8Ij1DrTKw_jyR
+ ke.WCa0WPZj_9ljDnaSITwqdJzxls5f0F88.V7Vojs3BqY0ASpxAVIEbANVp
+ QyXFr6m1D97RCbzBnzJJ2G_nge9wrkpjlIB9KbMC8VgiIHcpeHDv9Rk8BHnG
+ vmWNZY.Jk1Pa9yC5_Yv1cPznHI_ol6g--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <545EC3E7.4040002@schaufler-ca.com>
+Date: Sat, 08 Nov 2014 17:31:19 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Daniel J Walsh <dwalsh@redhat.com>, David Howells <dhowells@redhat.com>
+CC: linux-unionfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-fsdevel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 0/7] Security: Provide unioned file support
+References: <545BC088.6080306@schaufler-ca.com> <545BB147.4000100@schaufler-ca.com> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <6108.1415296719@warthog.procyon.org.uk> <29936.1415373684@warthog.procyon.org.uk> <545D1575.2010708@redhat.com>
+In-Reply-To: <545D1575.2010708@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'force' parameter to the {cls,neo}_send_break() function has been
-removed because it has not been used. The client to this API (the tty
-code) always called this function with only one value.
+On 11/7/2014 10:54 AM, Daniel J Walsh wrote:
+> On 11/07/2014 10:21 AM, David Howells wrote:
+>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>
+>>>>> What does this mean?
+>>>> It has been decided that for the purposes of docker, all files within the
+>>>> docker root fs will have the same label.  We'd have to provide policy
+>>>> namespacing otherwise (I think).
+>>> That's just insane. "It has been decided" by who? Obviously not people
+>>> who care about security policies. Maybe it's good enough for your
+>>> particular use case, but labeling of files has to be up to the security
+>>> module. That's what the modules are for.
+>> It has been decided by the docker people that I've dealt with.  I was
+>> expecting there to be different labels throughout a docker image, but
+>> apparently not...
+> We want the equivalent of the mount option
+> context="system_u:object_r:svirt_sandbox_file_t:s0:c1,c2"
 
-Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
----
- drivers/tty/serial/jsm/jsm.h     | 2 +-
- drivers/tty/serial/jsm/jsm_cls.c | 2 +-
- drivers/tty/serial/jsm/jsm_neo.c | 2 +-
- drivers/tty/serial/jsm/jsm_tty.c | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+Which just means that the policy used in the container is going
+to have to grant access to everything running in that container
+to that context. That's fine if you want to emasculate your module
+within the container. But it requires that you do so, and that is
+wrong.
 
-diff --git a/drivers/tty/serial/jsm/jsm.h b/drivers/tty/serial/jsm/jsm.h
-index 72ed5c1..39b325b 100644
---- a/drivers/tty/serial/jsm/jsm.h
-+++ b/drivers/tty/serial/jsm/jsm.h
-@@ -120,7 +120,7 @@ struct board_ops {
- 	void (*disable_receiver) (struct jsm_channel *ch);
- 	void (*enable_receiver) (struct jsm_channel *ch);
- 	void (*send_break) (struct jsm_channel *ch);
--	void (*clear_break) (struct jsm_channel *ch, int);
-+	void (*clear_break) (struct jsm_channel *ch);
- 	void (*send_start_character) (struct jsm_channel *ch);
- 	void (*send_stop_character) (struct jsm_channel *ch);
- 	void (*copy_data_from_queue_to_uart) (struct jsm_channel *ch);
-diff --git a/drivers/tty/serial/jsm/jsm_cls.c b/drivers/tty/serial/jsm/jsm_cls.c
-index 4cb9275..3df9112 100644
---- a/drivers/tty/serial/jsm/jsm_cls.c
-+++ b/drivers/tty/serial/jsm/jsm_cls.c
-@@ -311,7 +311,7 @@ static void cls_set_no_input_flow_control(struct jsm_channel *ch)
-  * No locks are assumed to be held when calling this function.
-  * channel lock is held and released in this function.
-  */
--static void cls_clear_break(struct jsm_channel *ch, int force)
-+static void cls_clear_break(struct jsm_channel *ch)
- {
- 	unsigned long lock_flags;
- 
-diff --git a/drivers/tty/serial/jsm/jsm_neo.c b/drivers/tty/serial/jsm/jsm_neo.c
-index dc2cd90..b9faee7 100644
---- a/drivers/tty/serial/jsm/jsm_neo.c
-+++ b/drivers/tty/serial/jsm/jsm_neo.c
-@@ -689,7 +689,7 @@ static void neo_flush_uart_read(struct jsm_channel *ch)
- /*
-  * No locks are assumed to be held when calling this function.
-  */
--static void neo_clear_break(struct jsm_channel *ch, int force)
-+static void neo_clear_break(struct jsm_channel *ch)
- {
- 	unsigned long lock_flags;
- 
-diff --git a/drivers/tty/serial/jsm/jsm_tty.c b/drivers/tty/serial/jsm/jsm_tty.c
-index c60e454..524e86a 100644
---- a/drivers/tty/serial/jsm/jsm_tty.c
-+++ b/drivers/tty/serial/jsm/jsm_tty.c
-@@ -188,7 +188,7 @@ static void jsm_tty_break(struct uart_port *port, int break_state)
- 	if (break_state == -1)
- 		channel->ch_bd->bd_ops->send_break(channel);
- 	else
--		channel->ch_bd->bd_ops->clear_break(channel, 0);
-+		channel->ch_bd->bd_ops->clear_break(channel);
- 
- 	spin_unlock_irqrestore(&port->lock, lock_flags);
- }
--- 
-1.9.1
+> Which would label all of the content in the OVERLAYFS with this label. 
+> If we have to have a readonly label for the lower
+> level and a RW Label for the context mount then that is fine with us. 
+> The lower level can actually just reveal the label of the INODE.
+> We can take care of labeling it with a single label.
+>
+> If the context="LABEL" (Or its equivalent is not passed), it should get
+> some kind of label based on the parent directory I would guess
+> or transition rules. 
+>
+> With docker we want to treat all contents of a container with a single
+> label and then separate containers based on MCS(Svirt) separation.
+
+That seems like a limited and rather pointless use case to me.
+
+>>>>> What about LSMs that have multiple labels on a file?
+>>>> Setting policy is something I'll have to leave to the docker people and the
+>>>> administrators of systems that use docker.
+>>> What does that mean? If the underlying mechanism can't do the job,
+>>> how the dickens is the administrator supposed to make it happen?
+>> I'm trying to make the kernel able to support a policy on this at all - not
+>> actually write the policy itself.  The policy may well vary depending on the
+>> installation anyway.
+>>
+>>>> But all I'm proposing is a way to give the LSM access to both the file in
+>>>> the overlay and the file in the lower fs that is leeching through into the
+>>>> overlay.
+>>> But your mechanisms are simultaneously incomplete and over specified.
+>> Well then, specify better ones!  I'm fairly certain it is incomplete and I'm
+>> *trying* to get input on how it may be improved.  I should've marked the
+>> patches [RFC] but it didn't occur to me until just after I'd sent them (of
+>> course).
+
+I'd love to do so, but I'm frying too many kittens right now
+to put the effort required into making this right. I do have
+faith that this can be worked out. Sorry that I missed the implicit
+[RFC]. It helps to know that feedback is still open.
+
+>>
+>> Anyway, there are a number of things one has to take account of:
+>>
+>>  (1) There may be multiple 'views' or instances of a file in a union - and
+>>      each may be labelled differently.
+>>
+>>  (2) The lower file may have xattrs attached to it that represent the security
+>>      policy.
+>>
+>>  (3) The union file may have xattrs attached to it that represent the security
+>>      policy.
+>>
+>>  (4) When copying the lower file up, the xattrs representing the security
+>>      attributes of the lower file must not be written as they may incorrectly
+>>      overwrite the security attributes of the union file.
+>>
+>>  (5) There needs to be a way to set the security attributes on the union file.
+>>
+>>  (6) When setting the attributes on the union file, the LSM might need to take
+>>      account of the attributes of the lower file in their derivation.
+>>
+>>  (7) There may be no inode in the union layer on which to hang the attributes
+>>      for the upper file.
+>>
+>>  (8) struct file::f_security should be used to contain the union layer
+>>      labellage on open files that point to a lower layer.
+>>
+>>  (9) Ideally, file->f_path would point to the union layer and file->f_inode to
+>>      the lower layer when there is no upper file.  However, this is not the
+>>      case at the moment.  The file struct *only* points to the lower file or
+>>      the upper file and never both.
+>>
+>> (10) Overlayfs has an extra complication in that there are potentially three
+>>      files involved in any union.  The lower file that is the source, the
+>>      upper file that where the copy-up goes and the virtual union file in the
+>>      overlay fs that redirects to one or the other.
+>>
+>>      I've taken the approach that we assume that the upper file (if it exists)
+>>      has the same labellage as the union file.
+>>
+>>> Your proposal is a cop out. It may work in a limited set of cases.
+>>> It is not a general solution.
+>> Actually, I think the actual code interface I've proposed is pretty close to
+>> being a general solution.  I've given the LSM the information I have, it can
+>> implement a fabulous maze of specially crafted labels if it wants to - and
+>> even have multiple labels per inode or per file.  The VFS does not care.
+>>
+>> David
+>>
+>> _______________________________________________
+>> Selinux mailing list
+>> Selinux@tycho.nsa.gov
+>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>
 
