@@ -1,150 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaKIW5U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 17:57:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54664 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651AbaKIW5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 17:57:18 -0500
-Date: Mon, 10 Nov 2014 09:57:07 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        GTA04 owners <gta04-owner@goldelico.com>,
-        "chr >> Doug Anderson" <dianders@chromium.org>,
-        Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        "christian.strobel@iis.fraunhofer.de >> Christian Strobel" 
-	<christian.strobel@iis.fraunhofer.de>
-Subject: Re: [PATCH] iio: gyro: itg3200: add suspend/resume support.
-Message-ID: <20141110095707.62e718c4@notabene.brown>
-In-Reply-To: <545E0401.2000505@kernel.org>
-References: <20141108111833.3829480c@notabene.brown>
-	<545E0401.2000505@kernel.org>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+	id S1751850AbaKIW7G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 17:59:06 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56015 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaKIW7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 17:59:03 -0500
+Date: Sun, 9 Nov 2014 23:56:50 +0100
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH 2/3] spi: meson: Add support for Amlogic Meson SPIFC
+Message-ID: <20141109225650.GA27950@gmail.com>
+References: <1415525113-25598-1-git-send-email-b.galvani@gmail.com>
+ <1415525113-25598-3-git-send-email-b.galvani@gmail.com>
+ <20141109101712.GM2722@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/Yngu3fWEmsqBCFlhU//5xnQ"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141109101712.GM2722@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Yngu3fWEmsqBCFlhU//5xnQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Sat, 08 Nov 2014 11:52:33 +0000 Jonathan Cameron <jic23@kernel.org> wrot=
-e:
-
-> On 08/11/14 00:18, NeilBrown wrote:
-> >=20
-> >=20
-> > Unless we put the device to sleep when not it use, it wastes
-> > 6mA.
-> >=20
-> > If the device is asleep on probe, the 'id' register
-> > sometimes mis-reads - so reset first.  If the device responds
-> > at all a command sent to the address, it is almost certainly
-> > the correct device already.
-> >=20
-> > Signed-off-by: NeilBrown <neil@brown.name>
-> Hi Neil,
->=20
-> Looks fine to me - but you should have cc'd a few people from
-> the listed driver authors.  Will give them a few days to respond...
-
-Over-dependence on get_maintainers.pl I guess. :-(
-
-Thanks,
-NeilBrown
-
-
->=20
-> Jonathan
-> >=20
-> > diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200=
-_core.c
-> > index 6a8020d48140..394667fb23f9 100644
-> > --- a/drivers/iio/gyro/itg3200_core.c
-> > +++ b/drivers/iio/gyro/itg3200_core.c
-> > @@ -223,6 +223,7 @@ static int itg3200_initial_setup(struct iio_dev *in=
-dio_dev)
-> >  	int ret;
-> >  	u8 val;
-> > =20
-> > +	ret =3D itg3200_reset(indio_dev);
-> >  	ret =3D itg3200_read_reg_8(indio_dev, ITG3200_REG_ADDRESS, &val);
-> >  	if (ret)
-> >  		goto err_ret;
-> > @@ -351,6 +352,35 @@ static int itg3200_remove(struct i2c_client *clien=
-t)
-> >  	return 0;
-> >  }
-> > =20
-> > +#ifdef CONFIG_PM_SLEEP
-> > +static int itg3200_suspend(struct device *dev)
+On Sun, Nov 09, 2014 at 10:17:12AM +0000, Mark Brown wrote:
+> On Sun, Nov 09, 2014 at 10:25:12AM +0100, Beniamino Galvani wrote:
+> 
+> > +static int meson_spifc_wait_ready(struct meson_spifc *spifc)
 > > +{
-> > +	struct iio_dev *indio_dev =3D dev_get_drvdata(dev);
-> > +	struct itg3200 *st =3D iio_priv(indio_dev);
-> > +	int ret;
+> > +	unsigned long deadline = jiffies + msecs_to_jiffies(1000);
+> > +	u32 data;
 > > +
-> > +	dev_dbg(&st->i2c->dev, "suspend device");
-> > +
-> > +	ret =3D itg3200_write_reg_8(indio_dev,
-> > +			ITG3200_REG_POWER_MANAGEMENT,
-> > +			ITG3200_SLEEP);
-> > +	return ret;
-> > +}
-> > +
-> > +static int itg3200_resume(struct device *dev)
-> > +{
-> > +	struct iio_dev *indio_dev =3D dev_get_drvdata(dev);
-> > +
-> > +	itg3200_reset(indio_dev);
-> > +	return 0;
-> > +}
-> > +
-> > +static SIMPLE_DEV_PM_OPS(itg3200_pm_ops, itg3200_suspend, itg3200_resu=
-me);
-> > +#define ITG3200_PM_OPS (&itg3200_pm_ops)
-> > +#else
-> > +#define ITG3200_PM_OPS NULL
-> > +#endif
-> > +
-> >  static const struct i2c_device_id itg3200_id[] =3D {
-> >  	{ "itg3200", 0 },
-> >  	{ }
-> > @@ -361,6 +391,7 @@ static struct i2c_driver itg3200_driver =3D {
-> >  	.driver =3D {
-> >  		.owner  =3D THIS_MODULE,
-> >  		.name	=3D "itg3200",
-> > +		.pm	=3D ITG3200_PM_OPS,
-> >  	},
-> >  	.id_table	=3D itg3200_id,
-> >  	.probe		=3D itg3200_probe,
-> >=20
+> > +	do {
+> > +		regmap_read(spifc->regmap, REG_SLAVE, &data);
+> > +		if (data & SLAVE_TRST_DONE)
+> > +			return 0;
+> > +		cond_resched();
+> > +	} while (time_before(jiffies, deadline));
+> 
+> This will busy wait for up to a second, that seems like a long time to
+> busy wait.  We also appear to be using this for the entire duration of
+> the transfer which could be a fairly long time even during normal
+> operation if doing a large transfer such as a firmware download, or if
+> the bus speed is low.
 
+Yes, probably the timeout value is too long since the maximum length
+of a basic transfer is 64 bytes. Can you suggest a reasonable value?
 
---Sig_/Yngu3fWEmsqBCFlhU//5xnQ
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+> 
+> > +	meson_spifc_setup_speed(spifc, xfer->speed_hz ? xfer->speed_hz :
+> > +				spi->max_speed_hz);
+> > +
+> 
+> Please avoid the ternery operator, it does nothing for legibility and in
+> this case it's not needed as the core will always ensure that there is a
+> per-transfer speed set.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Ok.
 
-iQIVAwUBVF/xQznsnt1WYoG5AQIrow/8DkGRFTCYZysIwzWIxg4Kh6TPDFen/zrJ
-n102xtxOQw1lWHwksHJiPVDC4bxt9apL37mDx2vaNOCBFt1hhaM9k8E43x2Sp7LQ
-c1drXKcOmRl5fWnKkjrhAYyBlaNTpMWSHKrBnTvfVrNfbf4JySOhBh5ypE8e0MAA
-2uFYJeeS1eWR2P+px6S7LGVe0c0JbBOHSnf4NN+IR0Tgay1T2bREt/oUNsxsVLUC
-hDkLAbRI+L2EXwSOojVpsOTVd4Yecjjs4OswjSjpu84gmAG05sil70jwtOBuhZvP
-A2l0Z2JC9GspLn3ICLNc8VjXi1eLY8ovsqElbHtxbYkqpIhaNX6hw2VRo/HGRmCu
-Pb/MmQudnRXdEKQTllxikVJwRlULVQYbdFLNLy5IBKzNNM3mU9ClXKeaiL7VykZR
-1eydvBFwJN9XG6c6+V953VAY9Bepcl9NE4fcgfU0UbArnsBmmgzayQQUp57/LPyz
-f/YJF9jO7kKHiOI1QQckKmAqd/vqGNd04vVIb8wWh/bJAFcu7f1bwQAH1/4ZrQ9M
-JWBsMQrHXJhpcF8ZGF+yYqIQeRuu+3HrkWkXu6ZS9NXH2khxLYNXjPPAmWm3Rybk
-z+hspPIOFcRVNOf8V+K6dZwH4k9XsKVmaCOMC9p9zPnYiKwCA+EX6cFfB+Tcq2Pe
-F86JX3/RyUs=
-=VM7y
------END PGP SIGNATURE-----
+> > +	while (done < xfer->len && !ret) {
+> > +		len = min_t(int, xfer->len - done, SPIFC_BUFFER_SIZE);
+> > +		ret = meson_spifc_txrx(spifc, xfer, done, len,
+> > +				       last_xfer, done + len >= xfer->len);
+> > +		done += len;
+> > +	}
+> 
+> I noticed that the handling of /CS was done in the spifc_txrx() function
+> - will this do the right thing if the transfer needs to be split for the
+> buffer size?
 
---Sig_/Yngu3fWEmsqBCFlhU//5xnQ--
+It should. When the transfer gets split, CS is kept active for all the
+chunks and the value of CS after that depends on the value of
+cs_change.
+
+> 
+> > +	if (!ret && xfer->delay_usecs)
+> > +		udelay(xfer->delay_usecs);
+> 
+> The core will do this for you if you implement this as transfer_one().
+
+Please correct me if I'm wrong, but I think that transfer_one() can't
+be used in this case. The hardware doesn't support direct manipulation
+of CS and allows only to specify if CS must be kept active after the
+current transfer. So I need to know for each transfer if it's the last
+and this can be achieved only implementing transfer_one_message().
+
+> 
+> > +static int meson_spifc_transfer_one_message(struct spi_master *master,
+> > +					    struct spi_message *msg)
+> 
+> This appears to do nothing that the core won't do - just implement
+> transfer_one() and remove this.
+> 
+> > +	spifc = spi_master_get_devdata(master);
+> > +	memset(spifc, 0, sizeof(struct meson_spifc));
+> 
+> There should be no need for this memset.
+> 
+> > +	spifc_regmap_config.max_register = resource_size(res) - 4;
+> > +	spifc_regmap_config.name = "amlogic,meson-spifc";
+> 
+> If you're dynamically initializing the structure you need to work with a
+> copy of it rather than directly since there may be multiple instances.
+> I'm not seeing a reason to override the regmap name here, this is only
+> really intended for devices with multiple register maps.
+> 
+> > +	ret = clk_prepare_enable(spifc->clk);
+> > +	if (ret) {
+> > +		dev_err(spifc->dev, "can't prepare clock\n");
+> > +		goto out_err;
+> > +	}
+> 
+> You should really implement runtime PM operations to disable this when
+> not in use and use auto_runtime_pm to make sure this happens.
+> 
+> > +	master->bus_num = pdev->id;
+> 
+> Leave this blank for DT only devices (and for non-DT devices this won't
+> work if you get two different buses).
+
+Ok, will do. Thanks for the review.
+
+Beniamino
+
