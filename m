@@ -1,127 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaKIQ0N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 11:26:13 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57432 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaKIQ0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 11:26:11 -0500
-From: Faisal Abbas <90.abbasfaisal@gmail.com>
-To: dhowells@redhat.com, fabf@skynet.be
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] FRV: Wire up new syscalls
-Date: Sun,  9 Nov 2014 21:26:03 +0500
-Message-Id: <1415550363-6172-1-git-send-email-90.abbasfaisal@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752022AbaKIQii (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 11:38:38 -0500
+Received: from mail.rmail.be ([85.234.218.189]:45990 "EHLO mail.rmail.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751854AbaKIQih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 11:38:37 -0500
+Message-ID: <27d4dc6a448169861446f8c1b3c3cadd.squirrel@mail.rmail.be>
+In-Reply-To: <545F566F.7010102@suse.cz>
+References: <8bdeb6866adef7f2d34a693040c33f12.squirrel@mail.rmail.be>
+    <545F566F.7010102@suse.cz>
+Date: Sun, 9 Nov 2014 16:38:34 -0000
+Subject: Re: Memory leaks on atom-based boards?
+From: "AL13N" <alien@rmail.be>
+To: linux-kernel@vger.kernel.org
+Cc: "Vlastimil Babka" <vbabka@suse.cz>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling source tree for FRV generates following warnings so wire these syscalls up.
+> On 10/27/2014 07:44 PM, AL13N wrote:
+>> I have several machines with the same OS and kernel (3.14.22).
+>>
+>> 2 of those machines are both atom-based boards and they get OOM, without
+>> swap being used (MemAvail crawls down towards 0, even though not more
+>> memory is used on processes).
+>>
+>> Specifically, this one machine, i need to reboot every 3 à 5 days.
+>>
+>> It has 4GB RAM and 4GB swap(SSD), but:
+>>  - sum of all vmRSS < 500MB
+>>  - sum of all tmpfs < 100MB
+>>  - Slab is around 16MB
+>>  - Cache will usually crawl down towards 0 (just like MemAvail)
+>>  - I couldn't find another explanation for the loss of Memory
+>>  - I also asked
+>> http://serverfault.com/questions/616856/where-did-my-memory-go-on-linux-no-cache-slab-shm-ipcs
+>> (the other machine)
+>>  - This problem existed on this hardware at least from 3.12.* upwards.
+>>
+>> I've recompiled kernel to include kmemleak (i figured it'd be some
+>> module
+>> that i've only got with this board), but it didn't point to anything (i
+>> tested also with the test module, to see if it was working).
+>>
+>> My questions are:
+>>  - Is this a kernel memory leak somewhere?
+>
+> Hi, this does look like a kernel memory leak. There was recently a known
+> one fixed by patch from https://lkml.org/lkml/2014/10/15/447 which made
+> it to 3.18-rc3 and should be backported to stable kernels 3.8+ soon.
+> You would recognize if this is the fix for you by checking the
+> thp_zero_page_alloc value in /proc/vmstat. Value X > 1 basically means
+> that X*2 MB memory is leaked.
+> You say in the serverfault post that 3.17.2 helped, but the fix is not
+> in 3.17.2... but it could be just that the circumstances changed and THP
+> zero pages are no longer freed and realocated.
+> So if you want to be sure, I would suggest trying again a version where
+> the problem appeared on your system, and checking the
+> thp_zero_page_alloc. Perhaps you'll see a >1 value even on 3.17.2, which
+> means some leak did occur there as well, but maybe not so severe.
 
-<stdin>:1187:2: warning: #warning syscall recvmmsg not implemented [-Wcpp]
-<stdin>:1190:2: warning: #warning syscall fanotify_init not implemented [-Wcpp]
-<stdin>:1193:2: warning: #warning syscall fanotify_mark not implemented [-Wcpp]
-<stdin>:1196:2: warning: #warning syscall prlimit64 not implemented [-Wcpp]
-<stdin>:1199:2: warning: #warning syscall name_to_handle_at not implemented [-Wcpp]
-<stdin>:1202:2: warning: #warning syscall open_by_handle_at not implemented [-Wcpp]
-<stdin>:1205:2: warning: #warning syscall clock_adjtime not implemented [-Wcpp]
-<stdin>:1208:2: warning: #warning syscall syncfs not implemented [-Wcpp]
-<stdin>:1211:2: warning: #warning syscall sendmmsg not implemented [-Wcpp]
-<stdin>:1217:2: warning: #warning syscall process_vm_readv not implemented [-Wcpp]
-<stdin>:1220:2: warning: #warning syscall process_vm_writev not implemented [-Wcpp]
-<stdin>:1223:2: warning: #warning syscall kcmp not implemented [-Wcpp]
-<stdin>:1226:2: warning: #warning syscall finit_module not implemented [-Wcpp]
-<stdin>:1229:2: warning: #warning syscall sched_setattr not implemented [-Wcpp]
-<stdin>:1232:2: warning: #warning syscall sched_getattr not implemented [-Wcpp]
-<stdin>:1235:2: warning: #warning syscall renameat2 not implemented [-Wcpp]
-<stdin>:1238:2: warning: #warning syscall seccomp not implemented [-Wcpp]
-<stdin>:1241:2: warning: #warning syscall getrandom not implemented [-Wcpp]
-<stdin>:1244:2: warning: #warning syscall memfd_create not implemented [-Wcpp]
-<stdin>:1247:2: warning: #warning syscall bpf not implemented [-Wcpp]
 
-Signed-off-by: Faisal Abbas <90.abbasfaisal@gmail.com>
----
- arch/frv/include/asm/unistd.h      |    2 +-
- arch/frv/include/uapi/asm/unistd.h |   20 ++++++++++++++++++++
- arch/frv/kernel/entry.S            |   22 +++++++++++++++++++++-
- 3 files changed, 42 insertions(+), 2 deletions(-)
+i was gonna tell you guys, but i was waiting until i was sure, but indeed
+3.17.2 fixed, it, where i had OOM after 3, maybe 4 days (for at least 2
+months), now i'm up more than 4 days and the MemAvailable is still high
+enough... at about 3.5GB whereas otherwise it would dwindle until 0. (at
+about 1GB/day)
 
-diff --git a/arch/frv/include/asm/unistd.h b/arch/frv/include/asm/unistd.h
-index 17b5df8..a7f3488 100644
---- a/arch/frv/include/asm/unistd.h
-+++ b/arch/frv/include/asm/unistd.h
-@@ -4,7 +4,7 @@
- #include <uapi/asm/unistd.h>
- 
- 
--#define NR_syscalls 338
-+#define NR_syscalls 358
- 
- /* #define __ARCH_WANT_OLD_READDIR */
- #define __ARCH_WANT_OLD_STAT
-diff --git a/arch/frv/include/uapi/asm/unistd.h b/arch/frv/include/uapi/asm/unistd.h
-index 9e2612f..0549798 100644
---- a/arch/frv/include/uapi/asm/unistd.h
-+++ b/arch/frv/include/uapi/asm/unistd.h
-@@ -344,5 +344,25 @@
- #define __NR_rt_tgsigqueueinfo	335
- #define __NR_perf_event_open	336
- #define __NR_setns		337
-+#define __NR_recvmmsg		338
-+#define __NR_fanotify_init	339
-+#define __NR_fanotify_mark	340
-+#define __NR_prlimit64		341
-+#define __NR_name_to_handle_at	342
-+#define __NR_open_by_handle_at	343
-+#define __NR_clock_adjtime	344
-+#define __NR_syncfs		345
-+#define __NR_sendmmsg		346
-+#define __NR_process_vm_readv	347
-+#define __NR_process_vm_writev	348
-+#define __NR_kcmp		349
-+#define __NR_finit_module	350
-+#define __NR_sched_setattr	351
-+#define __NR_sched_getattr	352
-+#define __NR_renameat2		353
-+#define __NR_seccomp		354
-+#define __NR_getrandom		355
-+#define __NR_memfd_create	356
-+#define __NR_bpf		357
- 
- #endif /* _UAPI_ASM_UNISTD_H_ */
-diff --git a/arch/frv/kernel/entry.S b/arch/frv/kernel/entry.S
-index dfcd263..66debb5 100644
---- a/arch/frv/kernel/entry.S
-+++ b/arch/frv/kernel/entry.S
-@@ -1515,5 +1515,25 @@ sys_call_table:
- 	.long sys_rt_tgsigqueueinfo	/* 335 */
- 	.long sys_perf_event_open
- 	.long sys_setns
--
-+	.long sys_recvmmsg
-+	.long sys_fanotify_init
-+	.long sys_fanotify_mark
-+	.long sys_prlimit64
-+	.long sys_name_to_handle_at
-+	.long sys_open_by_handle_at
-+	.long sys_clock_adjtime
-+	.long sys_syncfs
-+	.long sys_sendmmsg
-+	.long sys_process_vm_readv
-+	.long sys_process_vm_writev
-+	.long sys_kcmp
-+	.long sys_finit_module
-+	.long sys_sched_setattr
-+	.long sys_sched_getattr
-+	.long sys_renameat2
-+	.long sys_seccomp
-+	.long sys_getrandom
-+	.long sys_memfd_create
-+	.long sys_bpf
-+
- syscall_table_size = (. - sys_call_table)
--- 
-1.7.9.5
+Well, it results to 0 on 3.17.2 ... so... i guess not? i'll keep this
+value under observation...
+
+
+>>  - How can i find out what is allocating all this memory?
+>
+> There's no simple way, unfortunately. Checking the kpageflags /proc file
+> might help. IIRC there used to be a patch in -mm tree to store who
+> allocated what page, but it might be bitrotten.
+
+
+i checked what was in kpageflags (or kpagecount) but it's all some kind of
+binary stuff...
+
+do i need some tool to interprete these values?
 
