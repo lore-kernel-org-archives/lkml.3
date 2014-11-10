@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaKJB4f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:56:35 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:38868 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaKJBn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:43:27 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v6 05/48] mfd: as3722: Drop reference to pm_power_off from devicetree bindings
-Date: Sun,  9 Nov 2014 17:42:22 -0800
-Message-Id: <1415583785-6980-6-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
-References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.5460183E.0157,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 19
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752697AbaKJB4p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:56:45 -0500
+Received: from ozlabs.org ([103.22.144.67]:36738 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532AbaKJB4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 20:56:43 -0500
+Date: Mon, 10 Nov 2014 12:56:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: linux-next: manual merge of the mmc-uh tree with the arm-soc tree
+Message-ID: <20141110125637.30fe73b9@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/7nhfZn=bRNFbDHLgI3wKewf"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devicetree bindings are supposed to be operating system independent
-and should thus not describe how a specific functionality is implemented
-in Linux.
+--Sig_/7nhfZn=bRNFbDHLgI3wKewf
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v6:
-- No change.
-v5:
-- Rebase to v3.18-rc3
-v4:
-- No change
-v3:
-- No change
-v2:
-- No change
+Hi Ulf,
 
- Documentation/devicetree/bindings/mfd/as3722.txt | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Today's linux-next merge of the mmc-uh tree got a conflict in
+arch/arm/mach-at91/at91sam9g45_devices.c between commit 4bf7753b8ab7
+("ARM: at91: remove at91sam9g45/9m10 legacy board support") from the
+arm-soc tree and commit 4049854c41e0 ("ARM: at91: remove
+mach/atmel-mci.h") from the mmc-uh tree.
 
-diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
-index 4f64b2a..0b2a609 100644
---- a/Documentation/devicetree/bindings/mfd/as3722.txt
-+++ b/Documentation/devicetree/bindings/mfd/as3722.txt
-@@ -122,8 +122,7 @@ Following are properties of regulator subnode.
- 
- Power-off:
- =========
--AS3722 supports the system power off by turning off all its rail. This
--is provided through pm_power_off.
-+AS3722 supports the system power off by turning off all its rails.
- The device node should have the following properties to enable this
- functionality
- ams,system-power-controller: Boolean, to enable the power off functionality
--- 
-1.9.1
+I fixed it up (I just removed the file) and can carry the fix as
+necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/7nhfZn=bRNFbDHLgI3wKewf
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUYBtZAAoJEMDTa8Ir7ZwVbUsP/AmmnztFTOUZb1MXSZOImfnc
+j2L+k94rpmWkacN3KG2flcr4hYO6g4nlzF7ykhpTwk/Po5cWdYw7o1MI6SAiKz0Y
+WiduTK9Fm4AixY1Yku25ZthWSAHrl91yGgxg5ZO0Z1wuV6SXH/GQejIvwcM5k/9y
+sfnWoXQprX/NWxEDkfJKam5ofw53PtXTahZoLc+2Kx2dj11P62Oj7VSqBCWzLPGo
+bTZ31xxp1sek9elHNVQBHDq4mmiNZu78s39Wt0LDD2eFw+z7ncthYJyYE2/UQzpk
+xy2DWGNFkD2oiCMzxyx7OjJjz6I/cClEFYkKkBctf0gs0TDEfDWP9j3iA2pGknzZ
+vthTP7ZU9j8Y8Ms7SKHIiR9XO7uiGPoRpls1ww7w3NEOzl0RHHPsGnxe1rX69CvZ
+ADycKB3Ci38lBWAAu+letPhIryb/2Ym5i0MwkXQx2x+nazkxX9HcRQXxXzVjcNcR
+/2SR3zbExrBP79VtAVGTHHL3QEXry8TtJe+4LYn07Qp52FRJ7fAMHLRQ159Jmh9h
+DPcif0ANBx2XQYpVTCOEIE2VYHtEsrCF2XtJO02RQHbyoBTAIYvO3Ap1oWh1M6Vh
+Bgoy4NTcndXTyPY7cDBEJ3s1b30Wm+XqTHNrhdJTG6ZOU9fMx+cVSuozkoyvYUqn
+BbRLyIK9kJusr3mn2qE+
+=ozUW
+-----END PGP SIGNATURE-----
+
+--Sig_/7nhfZn=bRNFbDHLgI3wKewf--
