@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaKJUuh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:50:37 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:49060 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaKJUug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:50:36 -0500
-Date: Mon, 10 Nov 2014 20:50:31 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 10/11] perf/x86/intel: Perform rotation on Intel CQM
- RMIDs
-Message-ID: <20141110205031.GE1292@console-pimps.org>
-References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
- <1415276602-10337-11-git-send-email-matt@console-pimps.org>
- <20141107121803.GC3337@twins.programming.kicks-ass.net>
+	id S1752333AbaKJUwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:52:34 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39611 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264AbaKJUwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 15:52:32 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [GIT PULL] USB fixes for v3.18-rc5
+Date: Mon, 10 Nov 2014 14:52:59 -0600
+Message-ID: <1415652779-31904-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.1.0.GIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141107121803.GC3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov, at 01:18:03PM, Peter Zijlstra wrote:
-> On Thu, Nov 06, 2014 at 12:23:21PM +0000, Matt Fleming wrote:
-> > +	/*
-> > +	 * Test whether an RMID is free for each package.
-> > +	 */
-> > +	preempt_disable();
-> > +	smp_call_function_many(&cqm_cpumask, intel_cqm_stable, NULL, true);
-> > +	preempt_enable();
-> 
-> Same problem again, the current cpu is not included.
-> 
-> Ah, just found we have on_each_cpu_mask(), which is what you want.
+Hi Greg,
 
-Aha, yes, that looks useful. Thanks!
+Here's another minor for v3.18-rc5. Please consider
+merging to your usb-linus branch.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Tested with AM437x SK and testusb.
+
+cheers
+
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
+
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.18-rc5
+
+for you to fetch changes up to 520fe7633692181bb6d1560d655fbdfbb7c05aaa:
+
+  usb: dwc3: ep0: fix for dead code (2014-11-10 14:39:44 -0600)
+
+----------------------------------------------------------------
+usb: fixes for v3.18-rc5
+
+Just one fix here on dwc3 which fixes a minor
+bug caused by a fix that went in this v3.18-rc
+cycle.
+
+The corner case is minimal as it can only be
+reproduced with back-to-back Setup transfers
+(without starting data or status phase) by
+means of a LeCroy USB Trainer, where we can
+generate USB packets any way we like.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+
+----------------------------------------------------------------
+Felipe Balbi (1):
+      usb: dwc3: ep0: fix for dead code
+
+ drivers/usb/dwc3/ep0.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
