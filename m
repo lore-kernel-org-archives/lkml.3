@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaKJJJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:09:12 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:59241 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaKJJJK (ORCPT
+	id S1752457AbaKJJKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:10:01 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57456 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaKJJJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:09:10 -0500
-Date: Mon, 10 Nov 2014 09:09:04 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: NeilBrown <neilb@suse.de>
-Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        List for communicating with real GTA04 owners 
-	<gta04-owner@goldelico.com>
-Subject: Re: [Gta04-owner] [PATCH] mfd: twl4030-power: Support compatible =
- "ti, twl4030-power" again.
-Message-ID: <20141110090904.GB21424@x1>
-References: <20141108112227.256f93ce@notabene.brown>
- <ABCF9D6C-DD71-4DE3-BF1E-3C41DC8086FF@goldelico.com>
- <20141110122722.34b27c4c@notabene.brown>
+	Mon, 10 Nov 2014 04:09:59 -0500
+Date: Mon, 10 Nov 2014 09:09:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org, mst@redhat.com
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141110090955.GH7996@ZenIV.linux.org.uk>
+References: <20141109211908.GF7996@ZenIV.linux.org.uk>
+ <20141110.002020.1062493586889118565.davem@davemloft.net>
+ <20141110065817.GG7996@ZenIV.linux.org.uk>
+ <20141110.023000.1275181784917275552.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141110122722.34b27c4c@notabene.brown>
+In-Reply-To: <20141110.023000.1275181784917275552.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014, NeilBrown wrote:
-
-> On Sat, 8 Nov 2014 08:24:28 +0100 "Dr. H. Nikolaus Schaller"
-> <hns@goldelico.com> wrote:
+On Mon, Nov 10, 2014 at 02:30:00AM -0500, David Miller wrote:
+> From: Al Viro <viro@ZenIV.linux.org.uk>
+> Date: Mon, 10 Nov 2014 06:58:17 +0000
 > 
+> > On Mon, Nov 10, 2014 at 12:20:20AM -0500, David Miller wrote:
+> >> From: Al Viro <viro@ZenIV.linux.org.uk>
+> >> Date: Sun, 9 Nov 2014 21:19:08 +0000
+> >> 
+> >> > 1) does sparc64 access_ok() need to differ for 32bit and 64bit tasks?
+> >> 
+> >> sparc64 will just fault no matter what kind of task it is.
+> >> 
+> >> It is impossible for a user task to generate a reference to
+> >> a kernel virtual address, as kernel and user accesses each
+> >> go via a separate address space identifier.
 > > 
-> > Am 08.11.2014 um 01:22 schrieb NeilBrown <neilb@suse.de>:
-> > 
-> > > 
-> > > commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
-> > >    mfd: twl4030-power: Add generic reset configuration
-> > > 
-> > > claims:
-> > >    Let's add device tree support and configure things for warm reset
-> > >    as the default when compatible = "ti,twl4030-power".
-> > > and
-> > >    Documentation/devicetree/bindings/mfd/twl4030-power.txt
-> > > claims that "ti,twl4030-power" is still a valid "compatible" setting.
-> > > 
-> > > However the current driver fails to probe with that 'compatible'
-> > > setting.
-> > > Restore the old default.
-> > 
-> > I think this is a duplicate to 
-> > 
-> > 599a1ca80d1d8269d54fdc4abdec8e65141381fe
-> > 
-> > (in linux-next)
+> > Sure, but why do we have access_ok() there at all?  I.e. why not just have
+> > it constant 1?
 > 
-> 
-> Ahh, so it is.  Thanks.
+> Since access_ok() is in fact constant 1 on sparc64, where we use it,
+> does it really matter?
 
-Just read this.
+*blink*
 
-Previous reply withdrawn.
+My apologies - I've got confused by the maze of twisty includes, all alike.
+Right you are; in biarch case it *doesn't* depend on 32bit vs. 64bit.
+STACK_TOP-using one is sparc32 variant where we obviously don't have
+biarch at all.
 
-> > > Signed-off-by: NeilBrown <neilb@suse.de>
-> > > 
-> > > diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-> > > index 4d3ff3771491..1a7794f6be15 100644
-> > > --- a/drivers/mfd/twl4030-power.c
-> > > +++ b/drivers/mfd/twl4030-power.c
-> > > @@ -776,6 +776,10 @@ static struct twl4030_power_data osc_off_idle = {
-> > > 
-> > > static struct of_device_id twl4030_power_of_match[] = {
-> > > 	{
-> > > +		.compatible = "ti,twl4030-power",
-> > > +		.data = NULL,
-> > > +	},
-> > > +	{
-> > > 		.compatible = "ti,twl4030-power-reset",
-> > > 		.data = &omap3_reset,
-> > > 	},
-> > > _______________________________________________
-> > > Gta04-owner mailing list
-> > > Gta04-owner@goldelico.com
-> > > http://lists.goldelico.com/mailman/listinfo.cgi/gta04-owner
-> 
+Anyway, the series switching to {compat_,}rw_copy_check_uvector() and
+getting rid of duplicate checks is in vfs.git#iov_iter-net.  Warning:
+it's almost completely untested.  It survives boot, ssh into it and
+runltp -f syscalls (no regressions), but that's about it.  BTW, what's
+the usual regression suite used for net/* stuff?
 
-
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+3 commits in there, on top of net-next#master; head should be at 555126.
+There's a bunch of fairly obvious followups becoming possible after that,
+but let's keep those separate...
