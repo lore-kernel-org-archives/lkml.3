@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaKJQSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:18:06 -0500
-Received: from mail-bl2on0126.outbound.protection.outlook.com ([65.55.169.126]:12896
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751420AbaKJQSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:18:03 -0500
-X-WSS-ID: 0NETZXS-08-KLT-02
-X-M-MSG: 
-Message-ID: <5460E532.9020604@amd.com>
-Date: Mon, 10 Nov 2014 10:17:54 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753589AbaKJQSN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:18:13 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:10305 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753562AbaKJQSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 11:18:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,353,1413244800"; 
+   d="scan'208";a="189800779"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 13/13] swiotlb-xen: remove BUG_ON in xen_bus_to_phys
+Date: Mon, 10 Nov 2014 16:14:05 +0000
+Message-ID: <1415636045-24669-13-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
-        <acme@kernel.org>, <tglx@linutronix.de>, <hpa@zytor.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "Jan Kiszka" <jan.kiszka@siemens.com>, Len Brown <len.brown@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf, amd, ibs: Update IBS MSRs and feature definitions
-References: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20141106163430.GB4737@pd.tnic> <545BA884.5040406@amd.com>
- <20141108090355.GB14837@pd.tnic> <5460E13B.4090302@amd.com>
- <20141110160345.GB9565@pd.tnic>
-In-Reply-To: <20141110160345.GB9565@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(377454003)(479174003)(189002)(199003)(24454002)(164054003)(65806001)(92726001)(92566001)(23676002)(120886001)(120916001)(36756003)(97736003)(64706001)(20776003)(21056001)(47776003)(77156002)(62966003)(95666004)(50466002)(76176999)(54356999)(101416001)(105586002)(50986999)(87266999)(106466001)(65816999)(4396001)(99396003)(84676001)(46102003)(59896002)(68736004)(107046002)(31966008)(33656002)(102836001)(44976005)(80316001)(110136001)(86362001)(83506001)(93886004)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Forefront-PRVS: 039178EF4A
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 10:03 AM, Borislav Petkov wrote:
-> On Mon, Nov 10, 2014 at 10:00:59AM -0600, Aravind Gopalakrishnan wrote:
->> No, There aren't any bits in MSR_AMD64_IBS_FETCH_EXTD_CTL that we need to
->> configure right now.
->> So, have included it here mainly to keep the MSR listing consistent with the
->> manual.
-> Please remove it then. We put MSRs in msr-index.h which are in use only.
->
->
+On x86 truncation cannot occur because config XEN depends on X86_64 ||
+(X86_32 && X86_PAE).
 
-Ok, Will do.
+On ARM truncation can occur without CONFIG_ARM_LPAE, when the dma
+operation involves foreign grants. However in that case the physical
+address returned by xen_bus_to_phys is actually invalid (there is no mfn
+to pfn tracking for foreign grants on ARM) and it is not used.
 
-Thanks,
--Aravind.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ drivers/xen/swiotlb-xen.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 498b654..153cf14 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -96,8 +96,6 @@ static inline phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+ 	dma_addr_t dma = (dma_addr_t)pfn << PAGE_SHIFT;
+ 	phys_addr_t paddr = dma;
+ 
+-	BUG_ON(paddr != dma); /* truncation has occurred, should never happen */
+-
+ 	paddr |= baddr & ~PAGE_MASK;
+ 
+ 	return paddr;
+-- 
+1.7.10.4
+
