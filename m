@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaKJKRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:17:04 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55366 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaKJKRB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:17:01 -0500
-Date: Mon, 10 Nov 2014 10:16:46 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/8] arm64: introduce is_device_dma_coherent
-Message-ID: <20141110101645.GA21366@e104818-lin.cambridge.arm.com>
-References: <alpine.DEB.2.02.1411051757140.22875@kaball.uk.xensource.com>
- <20141106103337.GA19702@e104818-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1411061155200.22875@kaball.uk.xensource.com>
- <20141107110524.GA21875@localhost>
- <alpine.DEB.2.02.1411071212250.22875@kaball.uk.xensource.com>
- <20141107160006.GE29148@e104818-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1411071646170.22875@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1411071732550.22875@kaball.uk.xensource.com>
- <20141107181430.GH29148@e104818-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1411071834540.22875@kaball.uk.xensource.com>
+	id S1752303AbaKJKVy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:21:54 -0500
+Received: from mail-bn1bn0107.outbound.protection.outlook.com ([157.56.110.107]:54912
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751590AbaKJKVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 05:21:52 -0500
+X-WSS-ID: 0NETJGC-07-W4H-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        "Oded Gabbay" <oded.gabbay@amd.com>
+Subject: [PATCH] iommu/amd: fix accounting of device_state
+Date: Mon, 10 Nov 2014 12:21:39 +0200
+Message-ID: <1415614899-12602-1-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1411071834540.22875@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(104166001)(97736003)(50986999)(46102003)(33646002)(93916002)(102836001)(87286001)(84676001)(89996001)(86362001)(88136002)(92566001)(120916001)(92726001)(87936001)(44976005)(19580395003)(31966008)(19580405001)(68736004)(21056001)(101416001)(99396003)(109900001)(229853001)(106466001)(99900001)(89900001)(48376002)(107046002)(47776003)(20776003)(110136001)(77096003)(77156002)(50466002)(95666004)(64706001)(36756003)(4396001)(50226001)(62966003)(105586002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-Forefront-PRVS: 039178EF4A
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 06:45:22PM +0000, Stefano Stabellini wrote:
-> On Fri, 7 Nov 2014, Catalin Marinas wrote:
-> > On Fri, Nov 07, 2014 at 05:35:41PM +0000, Stefano Stabellini wrote:
-> > > On Fri, 7 Nov 2014, Stefano Stabellini wrote:
-> > > > On Fri, 7 Nov 2014, Catalin Marinas wrote:
-> > > > > What I would like to see is xen_dma_map_page() also using hyp calls for
-> > > > > cache maintenance when !pfn_valid(), for symmetry with unmap. You would
-> > > > > need another argument to xen_dma_map_page() though to pass the real
-> > > > > device address or mfn (and on the map side you could simply check for
-> > > > > page_to_pfn(page) != mfn). For such cases, Xen swiotlb already handles
-> > > > > bouncing so you don't need dom0 swiotlb involved as well.
-> > > > 
-> > > > I can see that it would be nice to have map_page and unmap_page be
-> > > > symmetrical. However actually doing the map_page flush with an hypercall
-> > > > would slow things down. Hypercalls are slower than function calls. It is
-> > > > faster to do the cache flushing in dom0 if possible. In the map_page
-> > > > case we have the struct page so we can easily do it by calling the
-> > > > native dma_ops function.
-> > > > 
-> > > > Maybe I could just add a comment to explain the reason for the asymmetry?
-> > > 
-> > > Ah, but the problem is that map_page could allocate a swiotlb buffer
-> > > (actually it does on arm64) that without a corresponding unmap_page
-> > > call, would end up being leaked, right?
-> > 
-> > Yes. You could hack dma_capable() to always return true for dom0
-> > (because the pfn/dma address here doesn't have anything to do with the
-> > real mfn) but that's more of a hack assuming a lot about the swiotlb
-> > implementation.
-> 
-> Another idea would be to avoid calling the native map_page for foreign
-> pages, but in the xen specific implementation instead of making the
-> hypercall, we could call __dma_map_area on arm64 and map_page on arm.
+This patch fixes a bug in the accounting of the device_state.
+In the current code, the device_state was put (decremented) too many times,
+which sometimes lead to the driver getting stuck permanently in
+put_device_state_wait(). That happen because the device_state->count would go
+below zero, which is never supposed to happen.
 
-The problem here is that you assume that for an SoC that is not fully
-coherent all it needs is __dma_map_area. If you look at mach-mvebu, the
-DMA is nearly cache coherent but it needs some specific synchronisation
-barrier at the interconnect level. If we get something like this on a
-platform with virtualisation, it would be implemented at the dom0 level
-by SoC-specific DMA ops. Xen hypervisor I assume has its own BSP, hence
-it could implement SoC specific cache flushing there. But with the mix
-of cache flushing in dom0 on map and hypervisor on unmap such thing is
-no longer be possible in a nice way.
+The root cause is that the device_state was decremented in put_pasid_state()
+and put_pasid_state_wait() but also in all the functions that call those
+functions. Therefore, the device_state was decremented twice in each of these
+code paths.
 
-> In arch/arm/include/asm/xen/page-coherent.h:
-> 
-> static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
-> 	     dma_addr_t dev_addr, unsigned long offset, size_t size,
-> 	     enum dma_data_direction dir, struct dma_attrs *attrs)
-> {
-> 	if (pfn_valid(PFN_DOWN(dev_addr))) {
+The fix is to decouple the device_state accounting from the pasid_state
+accounting - remove the call to put_device_state() from the
+put_pasid_state() and the put_pasid_state_wait())
 
-BTW, pfn_valid() is more expensive than simply comparing the mfn with
-pfn for dom0. The calling code knows this already and it may be quicker
-to simply pass a "bool foreign" argument.
+Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+---
+ drivers/iommu/amd_iommu_v2.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-> It wouldn't be as nice as using the hypercall but it would be faster and
-> wouldn't depend on the inner workings of the arm64 implementation of
-> map_page, except for __dma_map_area.
-
-This "except" is big as we may at some point get some SoC like mvebu (I
-would say less likely for arm64 than arm32).
-
-BTW, does the Xen hypervisor already have a mapping of the mfn? If not
-and it has to create one temporarily for the flush, you may not lose
-much by using the dom0 ops for unmap with a hyper call for temporarily
-mapping the foreign page in dom0's IPA space (you could do the unmapping
-lazily).
-
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 0d387db..7e0614b 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -272,10 +272,8 @@ static void free_pasid_state(struct pasid_state *pasid_state)
+ 
+ static void put_pasid_state(struct pasid_state *pasid_state)
+ {
+-	if (atomic_dec_and_test(&pasid_state->count)) {
+-		put_device_state(pasid_state->device_state);
++	if (atomic_dec_and_test(&pasid_state->count))
+ 		wake_up(&pasid_state->wq);
+-	}
+ }
+ 
+ static void put_pasid_state_wait(struct pasid_state *pasid_state)
+@@ -284,9 +282,7 @@ static void put_pasid_state_wait(struct pasid_state *pasid_state)
+ 
+ 	prepare_to_wait(&pasid_state->wq, &wait, TASK_UNINTERRUPTIBLE);
+ 
+-	if (atomic_dec_and_test(&pasid_state->count))
+-		put_device_state(pasid_state->device_state);
+-	else
++	if (!atomic_dec_and_test(&pasid_state->count))
+ 		schedule();
+ 
+ 	finish_wait(&pasid_state->wq, &wait);
 -- 
-Catalin
+1.9.1
+
