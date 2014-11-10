@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaKJU3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:29:04 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:34579 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaKJU3B (ORCPT
+	id S1752572AbaKJU33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:29:29 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:17644 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408AbaKJU32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:29:01 -0500
+	Mon, 10 Nov 2014 15:29:28 -0500
+X-IronPort-AV: E=Sophos;i="5.07,354,1413270000"; 
+   d="scan'208";a="50317340"
+Message-ID: <54611FF5.40405@broadcom.com>
+Date: Mon, 10 Nov 2014 21:28:37 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141110.142439.2292080248990157625.davem@davemloft.net>
-References: <20141110205945.51af32a6@canb.auug.org.au>
-	<546100AF.40201@infradead.org>
-	<20141110.142439.2292080248990157625.davem@davemloft.net>
-Date: Mon, 10 Nov 2014 12:29:00 -0800
-Message-ID: <CA+mtBx-DdWvafMVjKzBW7rX=gFgKjPejyiALmBGLZwODTWQzpA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Nov 10 (net/ipv4/ip_tunnel.c)
-From: Tom Herbert <therbert@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: rdunlap@infradead.org, sfr@canb.auug.org.au,
-        Linux-Next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Netdev List <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jes Sorensen <Jes.Sorensen@redhat.com>, Chris Ruffin <cmruffin@gmail.com>
+CC: <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>, Larry Finger <Larry.Finger@lwfinger.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: rtl8723au: change typecast to match type returned
+ by htons()
+References: <1415650025-16403-1-git-send-email-cmruffin@gmail.com> <wrfjlhnivmb9.fsf@redhat.com>
+In-Reply-To: <wrfjlhnivmb9.fsf@redhat.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am looking at it.
+On 10-11-14 21:21, Jes Sorensen wrote:
+> Chris Ruffin <cmruffin@gmail.com> writes:
+>> Using a u16 pointer typecast for a result from htons() results in the following warning from sparse:
+>>
+>> drivers/staging/rtl8723au/core/rtw_xmit.c:1279:36: warning: incorrect type in assignment (different base types)
+>> drivers/staging/rtl8723au/core/rtw_xmit.c:1279:36:    expected unsigned short [unsigned] [short] [usertype] <noident>
+>> drivers/staging/rtl8723au/core/rtw_xmit.c:1279:36:    got restricted __be16 [usertype] <noident>
+>>
+>> This patch fixes the issue by using an endian-specific typecast
+>> that will always match the type returned by htons().
+>>
+>> Signed-off-by: Chris Ruffin <cmruffin@gmail.com>
+>> ---
+>>  drivers/staging/rtl8723au/core/rtw_xmit.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Looks fine to me
+> 
+> Signed-off-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+> 
+>>
+>> diff --git a/drivers/staging/rtl8723au/core/rtw_xmit.c b/drivers/staging/rtl8723au/core/rtw_xmit.c
+>> index a0f7e27..44ef55c 100644
+>> --- a/drivers/staging/rtl8723au/core/rtw_xmit.c
+>> +++ b/drivers/staging/rtl8723au/core/rtw_xmit.c
+>> @@ -1276,7 +1276,7 @@ s32 rtw_put_snap23a(u8 *data, u16 h_proto)
+>>  	snap->oui[0] = oui[0];
+>>  	snap->oui[1] = oui[1];
+>>  	snap->oui[2] = oui[2];
+>> -	*(u16 *)(data + SNAP_SIZE) = htons(h_proto);
+>> +	*(__be16 *)(data + SNAP_SIZE) = htons(h_proto);
 
-On Mon, Nov 10, 2014 at 11:24 AM, David Miller <davem@davemloft.net> wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> Date: Mon, 10 Nov 2014 10:15:11 -0800
->
->> On 11/10/14 01:59, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20141106:
->>>
->>
->> on x86_64:
->> when CONFIG_NET_IP_TUNNEL=y and CONFIG_NET_FOU=m:
->>
->> net/built-in.o: In function `ip_tunnel_encap':
->> (.text+0xb04d8): undefined reference to `gue_build_header'
->> net/built-in.o: In function `ip_tunnel_encap':
->> (.text+0xb04ea): undefined reference to `fou_build_header'
->
-> Tom, this has now been reported twice, please fix this.
->
-> Thanks.
+Could (data + SNAP_SIZE) be on a unaligned address?
+
+Regards,
+Arend
+
+>>  	return SNAP_SIZE + sizeof(u16);
+>>  }
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
