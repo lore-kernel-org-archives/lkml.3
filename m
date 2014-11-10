@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaKJRjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:39:00 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43727 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292AbaKJRi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:38:57 -0500
-Message-ID: <5460F806.3040305@ti.com>
-Date: Mon, 10 Nov 2014 19:38:14 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754081AbaKJRjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:39:16 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:47086 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753629AbaKJRi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 12:38:59 -0500
+Date: Mon, 10 Nov 2014 12:38:57 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 04/12 v3] tracing: Convert seq_buf_path() to be
+ like seq_path()
+Message-ID: <20141110123857.733b6d7f@gandalf.local.home>
+In-Reply-To: <20141110140324.GD2160@pathway.suse.cz>
+References: <20141104155237.228431433@goodmis.org>
+	<20141104160222.048795666@goodmis.org>
+	<20141106150143.GF2001@dhcp128.suse.cz>
+	<20141107133413.6e37755e@gandalf.local.home>
+	<20141110140324.GD2160@pathway.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <khilman@linaro.org>, <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <1415631557-22897-2-git-send-email-grygorii.strashko@ti.com> <5331397.OQCQmJO78C@wuerfel>
-In-Reply-To: <5331397.OQCQmJO78C@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, 10 Nov 2014 15:03:25 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-On 11/10/2014 05:06 PM, Arnd Bergmann wrote:
-> On Monday 10 November 2014 16:59:16 Grygorii Strashko wrote:
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
->> @@ -0,0 +1,31 @@
->> +* TI Keystone 2 Generic PM Controller
->> +
->> +The TI Keystone 2 Generic PM Controller is responsible for Clock gating
->> +for each controlled IP module.
->> +
->> +Required properties:
->> +- compatible: Should be "ti,keystone-powerdomain"
->> +- #power-domain-cells: Should be 0, see below:
->> +
->> +The PM Controller node is a PM domain as documented in
->> +Documentation/devicetree/bindings/power/power_domain.txt.
->> +
->> +Example:
->> +
->> +       pm_controller: pm-controller {
->> +               compatible = "ti,keystone-powerdomain";
->> +               #power-domain-cells = <0>;
->> +       };
->> +
->> +       netcp: netcp@2090000 {
->> +               reg = <0x2620110 0x8>;
->> +               reg-names = "efuse";
->> +               ...
->> +               #address-cells = <1>;
->> +               #size-cells = <1>;
->> +               ranges;
->> +               power-domains = <&pm_controller>;
->> +
->> +               clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
->> +               dma-coherent;
->> +       }
+> On Fri 2014-11-07 13:34:13, Steven Rostedt wrote:
+> > 
+> > I made a few touch ups on this patch.
+> > 
+> > -- Steve
+> > 
+> > From 309e8ce4cc1605d3038b16b8e43219a2867f47b1 Mon Sep 17 00:00:00 2001
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > Date: Wed, 29 Oct 2014 13:48:37 -0400
+> > Subject: [PATCH] tracing: Convert seq_buf_path() to be like seq_path()
+> > 
+> > Rewrite seq_buf_path() like it is done in seq_path() and allow
+> > it to accept any escape character instead of just "\n".
+> > 
+> > Making seq_buf_path() like seq_path() will help prevent problems
+> > when converting seq_file to use the seq_buf logic.
+> > 
+> > Link: http://lkml.kernel.org/r/20141104160222.048795666@goodmis.org
+> > 
+> > Tested-by: Jiri Kosina <jkosina@suse.cz>
+> > Acked-by: Jiri Kosina <jkosina@suse.cz>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  include/linux/seq_buf.h  |  2 +-
+> >  kernel/trace/seq_buf.c   | 26 +++++++++++++++-----------
+> >  kernel/trace/trace_seq.c |  4 ++--
+> >  3 files changed, 18 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
+> > index 64bf5a43411e..aec09b126082 100644
+> > --- a/include/linux/seq_buf.h
+> > +++ b/include/linux/seq_buf.h
+> > @@ -70,7 +70,7 @@ extern int seq_buf_putc(struct seq_buf *s, unsigned char c);
+> >  extern int seq_buf_putmem(struct seq_buf *s, const void *mem, unsigned int len);
+> >  extern int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+> >  			      unsigned int len);
+> > -extern int seq_buf_path(struct seq_buf *s, const struct path *path);
+> > +extern int seq_buf_path(struct seq_buf *s, const struct path *path, const char *esc);
+> >  
+> >  extern int seq_buf_bitmask(struct seq_buf *s, const unsigned long *maskp,
+> >  			   int nmaskbits);
+> > diff --git a/kernel/trace/seq_buf.c b/kernel/trace/seq_buf.c
+> > index 88738b200bf3..ac6eb864c946 100644
+> > --- a/kernel/trace/seq_buf.c
+> > +++ b/kernel/trace/seq_buf.c
+> > @@ -272,28 +272,32 @@ int seq_buf_putmem_hex(struct seq_buf *s, const void *mem,
+> >   * seq_buf_path - copy a path into the sequence buffer
+> >   * @s: seq_buf descriptor
+> >   * @path: path to write into the sequence buffer.
+> > + * @esc: set of characters to escape in the output
+> >   *
+> >   * Write a path name into the sequence buffer.
+> >   *
+> >   * Returns zero on success, -1 on overflow
 > 
-> I don't get it. What keystone specific about a "ti,keystone-powerdomain"
-> device? It seems that the device has no registers whatsoever and the
-> driver doesn't really do anything that relates to the platform.
+> This should be
+> 
+>    * Returns the number of written bytes on success, -1 on overflow
 
-That's true. but it was the only one acceptable way  to enable
-Generic clock manipulation PM callbacks for the DT-boot case.
-After several unsuccessful attempts the idea to use GPD
-was introduced by Kevin there:
-  https://lkml.org/lkml/2014/9/8/643
+Yep.
 
-So, The Keystone 2 Generic PM Controller is just a proxy PM layer here between
-device and Generic clock manipulation PM callbacks.
-It fills per-device clock list when device is attached to GPD and
-ensures that all clocks from that list enabled/disabled when device is
-started/stopped.
+> 
+> 
+> This is just a minor issue. I believe the you would fix it. Feel free to add:
+> 
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
 
-Regards,
--grygorii
+Thanks,
+
+-- Steve
+
