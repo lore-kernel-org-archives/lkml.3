@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaKJLKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:10:48 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:35850 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751725AbaKJLKr (ORCPT
+	id S1752569AbaKJLNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:13:31 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:33226 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaKJLN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:10:47 -0500
-Message-ID: <54609D0C.3040806@st.com>
-Date: Mon, 10 Nov 2014 12:10:04 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 06:13:29 -0500
+Message-ID: <54609DD8.8030903@cogentembedded.com>
+Date: Mon, 10 Nov 2014 14:13:28 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: ARM: sti: SOC_STIH407 and STIH407_RESET?
-References: <1415614934.4862.22.camel@x220> <54609304.4080209@st.com> <1415616570.4862.37.camel@x220>
-In-Reply-To: <1415616570.4862.37.camel@x220>
-Content-Type: text/plain; charset="utf-8"; format=flowed
+To: Wenyou Yang <wenyou.yang@atmel.com>, wsa@the-dreams.de,
+        ludovic.desroches@atmel.com
+CC: khilman@kernel.org, nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] i2c/at91: adopt pinctrl support
+References: <1415584552-11390-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1415584552-11390-1-git-send-email-wenyou.yang@atmel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.251.16.238]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-10_01:2014-11-07,2014-11-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-On 11/10/2014 11:49 AM, Paul Bolle wrote:
-> Hi Maxime,
->
-> On Mon, 2014-11-10 at 11:27 +0100, Maxime Coquelin wrote:
->> The STiH407 reset has been merged in Philipp Zabel Reset tree for v3.19:
->> http://git.pengutronix.de/?p=pza/linux.git;a=shortlog;h=refs/heads/reset/for_v3.19
-> That tree isn't part of linux-next, is it? Is it included in a tree that
-> itself is included in linux-next, so that it will end up in linux-next
-> one of these days?
-I don't know if reset tree is regularly merged into linux-next.
-I let Philipp, its maintainer, answer.
+On 11/10/2014 4:55 AM, Wenyou Yang wrote:
 
-Kind regards,
-Maxime
+> Amend the at91 i2c pin controller
 
+    You're amending the hardware itself, really? :-)
+
+> to optionally take a pin controlhandle
+
+    I don't see the code that does this.
+
+> and set the state of the pins to:
+> - "default" on boot and resume.
+
+    I don't see where you are changing anything for the probe() method. 
+Perhaps you meant the driver core code which selects the dafault profile 
+automatically?
+
+> - "sleep" on suspend().
+
+> This should make it possible to optimize energy usage for the pins
+> both for the suspend/resume cycle
+
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> ---
+> Hi Wolfram,
 >
-> Paul Bolle
+> Thanks a lot.
 >
+> The change of this version is to remove
+> 	pinctrl_pm_select_default_state(&pdev->dev) from the _probe function.
+
+    Aha, you've specifically removed this...
+
+WBR, Sergei
 
