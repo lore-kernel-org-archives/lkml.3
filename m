@@ -1,96 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaKJQjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:39:42 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47953 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272AbaKJQjl (ORCPT
+	id S1753669AbaKJQkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:40:43 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:37717 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860AbaKJQkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:39:41 -0500
-Message-ID: <5460EA45.2080202@linaro.org>
-Date: Mon, 10 Nov 2014 16:39:33 +0000
-From: Zoltan Kiss <zoltan.kiss@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Jay Vosburgh <jay.vosburgh@canonical.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] BUG in xennet_make_frags with paged skb data
-References: <20141106214940.GD44162@ubuntu-hedt> <545CA27F.4070400@citrix.com>	<20141110143517.GA74005@ubuntu-hedt> <5460CEA5.3070201@citrix.com>
-In-Reply-To: <5460CEA5.3070201@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Nov 2014 11:40:37 -0500
+From: Milosz Tanski <milosz@adfin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: [PATCH v6 1/7] vfs: Prepare for adding a new preadv/pwritev with user flags.
+Date: Mon, 10 Nov 2014 11:40:24 -0500
+Message-Id: <e9ce907fbe6ef2d4c6bd48a8fbf5b1c73280bd5b.1415636409.git.milosz@adfin.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1415636409.git.milosz@adfin.com>
+References: <cover.1415636409.git.milosz@adfin.com>
+In-Reply-To: <cover.1415636409.git.milosz@adfin.com>
+References: <cover.1415636409.git.milosz@adfin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Plumbing the flags argument through the vfs code so they can be passed down to
+__generic_file_(read/write)_iter function that do the acctual work.
 
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+---
+ drivers/target/target_core_file.c |  6 +++---
+ fs/nfsd/vfs.c                     |  4 ++--
+ fs/read_write.c                   | 27 +++++++++++++++------------
+ fs/splice.c                       |  2 +-
+ include/linux/aio.h               |  2 ++
+ include/linux/fs.h                |  4 ++--
+ 6 files changed, 25 insertions(+), 20 deletions(-)
 
-On 10/11/14 14:41, David Vrabel wrote:
-> On 10/11/14 14:35, Seth Forshee wrote:
->> On Fri, Nov 07, 2014 at 10:44:15AM +0000, David Vrabel wrote:
->>> On 06/11/14 21:49, Seth Forshee wrote:
->>>> We've had several reports of hitting the following BUG_ON in
->>>> xennet_make_frags with 3.2 and 3.13 kernels (I'm currently awaiting
->>>> results of testing with 3.17):
->>>>
->>>>          /* Grant backend access to each skb fragment page. */
->>>>          for (i = 0; i < frags; i++) {
->>>>                  skb_frag_t *frag = skb_shinfo(skb)->frags + i;
->>>>                  struct page *page = skb_frag_page(frag);
->>>>
->>>>                  len = skb_frag_size(frag);
->>>>                  offset = frag->page_offset;
->>>>
->>>>                  /* Data must not cross a page boundary. */
->>>>                  BUG_ON(len + offset > PAGE_SIZE<<compound_order(page));
->>>>
->>>> When this happens the page in question is a "middle" page in a compound
->>>> page (i.e. it's a tail page but not the last tail page), and the data is
->>>> fully contained within the compound page. The data does however cross
->>>> the hardware page boundary, and since compound_order evaluates to 0 for
->>>> tail pages the check fails.
->>>>
->>>> In going over this I've been unable to determine whether the BUG_ON in
->>>> xennet_make_frags is incorrect or the paged skb data is wrong. I can't
->>>> find that it's documented anywhere, and the networking code itself is a
->>>> bit ambiguous when it comes to compound pages. On the one hand
->>>> __skb_fill_page_desc specifically handles adding tail pages as paged
->>>> data, but on the other hand skb_copy_bits kmaps frag->page.p which could
->>>> fail with data that extends into another page.
->>>
->>> netfront will safely handle this case so you can remove this BUG_ON()
->>> (and the one later on).  But it would be better to find out were these
->>> funny-looking skbs are coming from and (if necessary) fixing the bug there.
->>
->> There still seems to be disagreement about whether the "funny" skb is
->> valid though - you imply it isn't, but Eric says it is. I've been trying
->> to track down where these skbs originate, and so far I've determined
->> that they come from a socket spliced to a pipe spliced to a socket. It
->> looks like the particular page/offset/len tuple originates at least as
->> far back as the first socket, as the tuple is simply copied from an skb
->> into the pipe and from the pipe into the final skb.
->
-> Apologies for the lack of clarity.  I meant either: a) fix the producer
-> if these skbs are invalid; or b) remove the BUG_ON()s.  Since Eric says
-> these are actually valid skbs, please do option (b).
->
-> i.e., remove both BUG_ON()s.
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index 7d6cdda..58d9a6d 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -350,9 +350,9 @@ static int fd_do_rw(struct se_cmd *cmd, struct scatterlist *sgl,
+ 	set_fs(get_ds());
+ 
+ 	if (is_write)
+-		ret = vfs_writev(fd, &iov[0], sgl_nents, &pos);
++		ret = vfs_writev(fd, &iov[0], sgl_nents, &pos, 0);
+ 	else
+-		ret = vfs_readv(fd, &iov[0], sgl_nents, &pos);
++		ret = vfs_readv(fd, &iov[0], sgl_nents, &pos, 0);
+ 
+ 	set_fs(old_fs);
+ 
+@@ -528,7 +528,7 @@ fd_execute_write_same(struct se_cmd *cmd)
+ 
+ 	old_fs = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_writev(f, &iov[0], iov_num, &pos);
++	rc = vfs_writev(f, &iov[0], iov_num, &pos, 0);
+ 	set_fs(old_fs);
+ 
+ 	vfree(iov);
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 989129e..ef01c78 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -872,7 +872,7 @@ __be32 nfsd_readv(struct file *file, loff_t offset, struct kvec *vec, int vlen,
+ 
+ 	oldfs = get_fs();
+ 	set_fs(KERNEL_DS);
+-	host_err = vfs_readv(file, (struct iovec __user *)vec, vlen, &offset);
++	host_err = vfs_readv(file, (struct iovec __user *)vec, vlen, &offset, 0);
+ 	set_fs(oldfs);
+ 	return nfsd_finish_read(file, count, host_err);
+ }
+@@ -960,7 +960,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+ 
+ 	/* Write the data. */
+ 	oldfs = get_fs(); set_fs(KERNEL_DS);
+-	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &pos);
++	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &pos, 0);
+ 	set_fs(oldfs);
+ 	if (host_err < 0)
+ 		goto out_nfserr;
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 7d9318c..94b2d34 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -653,7 +653,8 @@ unsigned long iov_shorten(struct iovec *iov, unsigned long nr_segs, size_t to)
+ EXPORT_SYMBOL(iov_shorten);
+ 
+ static ssize_t do_iter_readv_writev(struct file *filp, int rw, const struct iovec *iov,
+-		unsigned long nr_segs, size_t len, loff_t *ppos, iter_fn_t fn)
++		unsigned long nr_segs, size_t len, loff_t *ppos, iter_fn_t fn,
++		int flags)
+ {
+ 	struct kiocb kiocb;
+ 	struct iov_iter iter;
+@@ -662,6 +663,7 @@ static ssize_t do_iter_readv_writev(struct file *filp, int rw, const struct iove
+ 	init_sync_kiocb(&kiocb, filp);
+ 	kiocb.ki_pos = *ppos;
+ 	kiocb.ki_nbytes = len;
++	kiocb.ki_rwflags = flags;
+ 
+ 	iov_iter_init(&iter, rw, iov, nr_segs, len);
+ 	ret = fn(&kiocb, &iter);
+@@ -800,7 +802,8 @@ out:
+ 
+ static ssize_t do_readv_writev(int type, struct file *file,
+ 			       const struct iovec __user * uvector,
+-			       unsigned long nr_segs, loff_t *pos)
++			       unsigned long nr_segs, loff_t *pos,
++			       int flags)
+ {
+ 	size_t tot_len;
+ 	struct iovec iovstack[UIO_FASTIOV];
+@@ -834,7 +837,7 @@ static ssize_t do_readv_writev(int type, struct file *file,
+ 
+ 	if (iter_fn)
+ 		ret = do_iter_readv_writev(file, type, iov, nr_segs, tot_len,
+-						pos, iter_fn);
++						pos, iter_fn, flags);
+ 	else if (fnv)
+ 		ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
+ 						pos, fnv);
+@@ -857,27 +860,27 @@ out:
+ }
+ 
+ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+-		  unsigned long vlen, loff_t *pos)
++		  unsigned long vlen, loff_t *pos, int flags)
+ {
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_READ))
+ 		return -EINVAL;
+ 
+-	return do_readv_writev(READ, file, vec, vlen, pos);
++	return do_readv_writev(READ, file, vec, vlen, pos, flags);
+ }
+ 
+ EXPORT_SYMBOL(vfs_readv);
+ 
+ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
+-		   unsigned long vlen, loff_t *pos)
++		   unsigned long vlen, loff_t *pos, int flags)
+ {
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_WRITE))
+ 		return -EINVAL;
+ 
+-	return do_readv_writev(WRITE, file, vec, vlen, pos);
++	return do_readv_writev(WRITE, file, vec, vlen, pos, flags);
+ }
+ 
+ EXPORT_SYMBOL(vfs_writev);
+@@ -890,7 +893,7 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
+ 
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+-		ret = vfs_readv(f.file, vec, vlen, &pos);
++		ret = vfs_readv(f.file, vec, vlen, &pos, 0);
+ 		if (ret >= 0)
+ 			file_pos_write(f.file, pos);
+ 		fdput_pos(f);
+@@ -910,7 +913,7 @@ SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
+ 
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+-		ret = vfs_writev(f.file, vec, vlen, &pos);
++		ret = vfs_writev(f.file, vec, vlen, &pos, 0);
+ 		if (ret >= 0)
+ 			file_pos_write(f.file, pos);
+ 		fdput_pos(f);
+@@ -942,7 +945,7 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
+ 	if (f.file) {
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PREAD)
+-			ret = vfs_readv(f.file, vec, vlen, &pos);
++			ret = vfs_readv(f.file, vec, vlen, &pos, 0);
+ 		fdput(f);
+ 	}
+ 
+@@ -966,7 +969,7 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
+ 	if (f.file) {
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PWRITE)
+-			ret = vfs_writev(f.file, vec, vlen, &pos);
++			ret = vfs_writev(f.file, vec, vlen, &pos, 0);
+ 		fdput(f);
+ 	}
+ 
+@@ -1014,7 +1017,7 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
+ 
+ 	if (iter_fn)
+ 		ret = do_iter_readv_writev(file, type, iov, nr_segs, tot_len,
+-						pos, iter_fn);
++						pos, iter_fn, 0);
+ 	else if (fnv)
+ 		ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
+ 						pos, fnv);
+diff --git a/fs/splice.c b/fs/splice.c
+index f5cb9ba..9591b9f 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -576,7 +576,7 @@ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
+ 	old_fs = get_fs();
+ 	set_fs(get_ds());
+ 	/* The cast to a user pointer is valid due to the set_fs() */
+-	res = vfs_readv(file, (const struct iovec __user *)vec, vlen, &pos);
++	res = vfs_readv(file, (const struct iovec __user *)vec, vlen, &pos, 0);
+ 	set_fs(old_fs);
+ 
+ 	return res;
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index d9c92da..9c1d499 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -52,6 +52,8 @@ struct kiocb {
+ 	 * this is the underlying eventfd context to deliver events to.
+ 	 */
+ 	struct eventfd_ctx	*ki_eventfd;
++
++	int			ki_rwflags;
+ };
+ 
+ static inline bool is_sync_kiocb(struct kiocb *kiocb)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index a957d43..9ed5711 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1538,9 +1538,9 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
+ extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
+ extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
+-		unsigned long, loff_t *);
++		unsigned long, loff_t *, int);
+ extern ssize_t vfs_writev(struct file *, const struct iovec __user *,
+-		unsigned long, loff_t *);
++		unsigned long, loff_t *, int);
+ 
+ struct super_operations {
+    	struct inode *(*alloc_inode)(struct super_block *sb);
+-- 
+1.9.1
 
-The BUG_ON suggested by Stefan would be still reasonable:
-
-BUG_ON(((page-compound_head(page))*PAGE_SIZE)+offset+len >
-PAGE_SIZE<<compound_order(compound_head(page)));
->
-> David
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
->
