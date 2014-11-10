@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078AbaKJHxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:53:21 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54309 "EHLO mail.eperm.de"
+	id S1752115AbaKJHxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 02:53:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60044 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbaKJHxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 02:53:14 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: crypto: zeroization of sensitive data in af_alg
-Date: Sun, 09 Nov 2014 23:33:52 +0100
-Message-ID: <1979092.odOtqL46qU@tachyon.chronox.de>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
+	id S1751850AbaKJHxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 02:53:43 -0500
+Message-ID: <54606F02.5070808@suse.cz>
+Date: Mon, 10 Nov 2014 08:53:38 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: "P. Christeas" <xrg@linux.gr>, linux-mm@kvack.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Norbert Preining <preining@logic.at>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
+References: <12996532.NCRhVKzS9J@xorhgos3.pefnos> <3583067.00bS4AInhm@xorhgos3.pefnos> <545BEA3B.40005@suse.cz> <3443150.6EQzxj6Rt9@xorhgos3.pefnos> <545E96BD.5040103@suse.cz> <20141110060726.GA4900@js1304-P5Q-DELUXE>
+In-Reply-To: <20141110060726.GA4900@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
+On 11/10/2014 07:07 AM, Joonsoo Kim wrote:
+> On Sat, Nov 08, 2014 at 11:18:37PM +0100, Vlastimil Babka wrote:
+>> On 11/08/2014 02:11 PM, P. Christeas wrote:
+>>
+>> Hi,
+>>
+>> I think I finally found the cause by staring into the code... CCing
+>> people from all 4 separate threads I know about this issue.
+>> The problem with finding the cause was that the first report I got from
+>> Markus was about isolate_freepages_block() overhead, and later Norbert
+>> reported that reverting a patch for isolate_freepages* helped. But the
+>> problem seems to be that although the loop in isolate_migratepages exits
+>> because the scanners almost meet (they are within same pageblock), they
+>> don't truly meet, therefore compact_finished() decides to continue, but
+>> isolate_migratepages() exits immediately... boom! But indeed e14c720efdd7
+>> made this situation possible, as free scaner pfn can now point to a
+>> middle of pageblock.
+>
+> Indeed.
+>
+>>
+>> So I hope the attached patch will fix the soft-lockup issues in
+>> compact_zone. Please apply on 3.18-rc3 or later without any other reverts,
+>> and test. It probably won't help Markus and his isolate_freepages_block()
+>> overhead though...
+>
+> Yes, I found this bug too, but, it can't explain
+> isolate_freepages_block() overhead. Anyway, I can't find another bug
+> related to isolate_freepages_block(). :/
 
-while working on the AF_ALG interface, I saw no active zeroizations of memory 
-that may hold sensitive data that is maintained outside the kernel crypto API 
-cipher handles. I think the following memory segments fall under that 
-category:
+Thanks for checking.
 
-	* message digest
+>> Thanks,
+>> Vlastimil
+>>
+>> ------8<------
+>> >From fbf8eb0bcd2897090312e23da6a31bad9cc6b337 Mon Sep 17 00:00:00 2001
+>> From: Vlastimil Babka <vbabka@suse.cz>
+>> Date: Sat, 8 Nov 2014 22:20:43 +0100
+>> Subject: [PATCH] mm, compaction: prevent endless loop in migrate scanner
+>>
+>> ---
+>>   mm/compaction.c | 8 ++++++--
+>>   1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index ec74cf0..1b7a1be 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -1029,8 +1029,12 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>>   	}
+>>
+>>   	acct_isolated(zone, cc);
+>> -	/* Record where migration scanner will be restarted */
+>> -	cc->migrate_pfn = low_pfn;
+>> +	/*
+>> +	 * Record where migration scanner will be restarted. If we end up in
+>> +	 * the same pageblock as the free scanner, make the scanners fully
+>> +	 * meet so that compact_finished() terminates compaction.
+>> +	 */
+>> +	cc->migrate_pfn = (end_pfn <= cc->free_pfn) ? low_pfn : cc->free_pfn;
+>>
+>>   	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+>>   }
+>
+> IMHO, proper fix is not to change this logic, but, to change decision
+> logic in compact_finished() and in compact_zone(). Maybe helper
+> function would be good for readability.
 
-	* IV
+OK but I would think that to fix 3.18 ASAP and not introduce more 
+regressions, go with the patch above first, as it is the minimal fix and 
+people already test it. Then we can implement your suggestion later as a 
+cleanup for 3.19?
 
-	* plaintext / ciphertext handed in by consumer
+Vlastimil
 
-	* ciphertext / plaintext that is send back to the consumer
+> Thanks.
+>
 
-May I ask whether such zeroizations are present? At least I did not find it. 
-If we conclude that there is a need for adding such zeroizations, I checked 
-the code for the appropriate locations:
-
-I think I found the location for the first one: hash_sock_destruct that should 
-be enhanced with a memset(0) of ctx->result. I have a patch ready which is 
-tested and works.
-
-For the IV, I think I found the spot as well: skcipher_sock_destruct. This 
-function should be enhanced with a memset(0) of ctx->iv. Again, I have a patch 
-ready which is tested and works.
-
-However, I am failing to find the right spot to add a zeroization for the 
-latter one, i.e. the code that handles the pages send in by the user or the 
-pages that are returned by the crypto API. Initially I thought 
-skcipher_pull_sgl is a good spot for the symmetric ciphers as it evicts the 
-used pages out of the scope of the kernel crypto API. I added a 
-clear_page(sg_page(sg+1)) as well as memset(sg_page(sg+1), 0, plen) right 
-before the put_page call. All that I got in return was a BUG() from the memory 
-management layer.
-
-Then I tried the same in af_alg_free_sg() as this function is used by 
-algif_hash.c -- with the same result.
-
-That makes me wonder: where should such a zeroization call be added?
-
-Thanks
-
--- 
-Ciao
-Stephan
