@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaKJU7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:59:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33878 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaKJU7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:59:19 -0500
-Message-ID: <546126FF.3070600@zytor.com>
-Date: Mon, 10 Nov 2014 12:58:39 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-CC: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Mark Salter <msalter@redhat.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Young <dyoung@redhat.com>
-Subject: Re: [PATCH] rtc: Disable EFI rtc for x86
-References: <1412339576-17972-1-git-send-email-matt@console-pimps.org> <20141109182231.GA29337@pd.tnic> <1415618533.14686.239.camel@mfleming-mobl1.ger.corp.intel.com> <201411101723.49197@pali> <5460EB92.1090501@gmail.com> <20141110170417.GA17286@srcf.ucam.org> <5461220E.20605@gmail.com>
-In-Reply-To: <5461220E.20605@gmail.com>
-Content-Type: text/plain; charset=windows-1252
+	id S1752456AbaKJVFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:05:43 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64953 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751649AbaKJVFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 16:05:41 -0500
+Message-ID: <1415653538.21229.37.camel@x220>
+Subject: Re: [GIT PULL for v3.18-rc1] media updates
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Nov 2014 22:05:38 +0100
+In-Reply-To: <20141110185433.3c53e438@recife.lan>
+References: <20141009141849.137e738d@recife.lan>
+	 <1413793905.16435.6.camel@x220> <1415652356.21229.31.camel@x220>
+	 <20141110185433.3c53e438@recife.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Nov 2014 21:05:39.0176 (UTC) FILETIME=[14852E80:01CFFD2A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 12:37 PM, Austin S Hemmelgarn wrote:
-> On 2014-11-10 12:04, Matthew Garrett wrote:
->> On Mon, Nov 10, 2014 at 11:45:06AM -0500, Austin S Hemmelgarn wrote:
->>
->>> I agree, without it you need PC CMOS RTC support to access the RTC
->>> on most systems, which in turn means that you have to enable the CSM
->>> in the EFI firmware, which is annoying cause you can't easily dual
->>> boot windows with secure boot when the CSM is enabled.
->>
->> CMOS RTC support doesn't depend on the CSM.
->>
-> That's really interesting, because with it compiled in, I can't boot on
-> my EFI based thinkpad laptop without telling EFI to launch the CSM, and
-> with it compiled out, I can boot fine without the CSM.  I'll have to
-> look further into the options I have set in my kernel build, I may have
-> changed something else without remembering between booting with and
-> without the CSM enabled.
+On Mon, 2014-11-10 at 18:54 -0200, Mauro Carvalho Chehab wrote:
+> Em Mon, 10 Nov 2014 21:45:56 +0100
+> Paul Bolle <pebolle@tiscali.nl> escreveu: 
+> > This typo is still present in both next-20141110 and v3.18-rc4. And I've
+> > first reported it nearly two months ago. I see two fixes:
+> >     1) s/HAS_MMU/MMU/
+> >     2) s/ || (COMPILE_TEST && HAS_MMU)//
+> > 
+> > Which would you prefer?
 > 
+> Hmm... Probably patchwork didn't get your patch.
 
-It could also be that the non-CSM BIOS somehow remaps the CMOS registers.
+There's no patch, not yet. I try to report stuff like this before
+sending patches. The idea here being that the people familiar with the
+code tend to fix things better and quicker.
 
-	-hpa
+> IMHO, the best would be:
+> 
+> 	depends on HAS_MMU
+
+You really like the HAS_MMU symbol, don't you?
+
+> 	depends on ARCH_OMAP2 || ARCH_OMAP3 || COMPILE_TEST
+
+But I understand what you're suggesting here. Should I draft a, probably
+untested, patch?
+
+
+Paul Bolle
 
