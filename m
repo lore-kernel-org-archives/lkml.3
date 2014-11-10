@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaKJOTS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:19:18 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:36811 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711AbaKJOTR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:19:17 -0500
+	id S1753055AbaKJOT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:19:26 -0500
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:58026 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752942AbaKJOTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 09:19:23 -0500
+Date: Mon, 10 Nov 2014 16:19:17 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Christoph Hellwig <hch@infradead.org>
+cc: Chad Dupuis <chad.dupuis@qlogic.com>,
+        Joe Carnuccio <joe.carnuccio@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>, qla2xxx-upstream@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bisected regression: qla2xxx endianness on sparc64
+In-Reply-To: <20141110141555.GB12347@infradead.org>
+Message-ID: <alpine.LRH.2.11.1411101617030.31442@siim2.ut.ee>
+References: <alpine.DEB.2.03.1411022004230.3979@cyber.ee> <alpine.OSX.2.00.1411031508560.1960@administrators-macbook-pro.local> <alpine.LRH.2.11.1411032330370.19361@siim2.ut.ee> <20141110141555.GB12347@infradead.org>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20141109091932.GJ2722@sirena.org.uk>
-References: <1415448772-3895-1-git-send-email-badarkhe.manish@gmail.com>
-	<20141109091932.GJ2722@sirena.org.uk>
-Date: Mon, 10 Nov 2014 19:49:16 +0530
-Message-ID: <CAKDJKT5yKp-JyGEsOjcQ=bxd6OddQqZgx0E8s2k=i-jHj9nRHA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: tps65218: Remove '.owner' field
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+> On Mon, Nov 03, 2014 at 11:32:14PM +0200, Meelis Roos wrote:
+> > Yes. I took the same 3.18.0-rc1-00422-g2cc9188-dirty kernel that had 
+> > just this patch reverted, it started the controller fine, detected disk, 
+> > mounted root, started multiple tasks and then some time after startin 
+> > exim it just hangs. This is consisten with what I saw during bisection.
+> 
+> Can you try to bisect this one as well?
 
-On Sun, Nov 9, 2014 at 2:49 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Sat, Nov 08, 2014 at 05:42:52PM +0530, Manish Badarkhe wrote:
->> Remove '.owner' field of driver structure as it is
->> going to be filled via "module_platform_driver" call.
->
-> Same question as ever with this stuff: if we've decided to do this why
-> are we doing it for a single driver and not as a genric cleanup?
+I have tried for many evenings but it is not so easy. With current 
+bisecting, I have lost good base version, even going back to 3.17 and 
+3.16 breaks for now. I will try more after some days when I have an idea 
+what did I change to break it (some conf option perhaps).
 
-There are many drivers needs to be changed with such fix.
-Can we fix drivers with this fix module by module or all at once?
-Please let me know your opinion.
-
-Thanks
-Manish Badarkhe
+-- 
+Meelis Roos (mroos@linux.ee)
