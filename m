@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaKJJI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:08:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33246 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827AbaKJJIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:08:25 -0500
-Message-ID: <1415610506.16488.20.camel@linux-0dmf.site>
-Subject: Re: [PATCH] brcmfmac: unlink URB when request timed out
-From: Oliver Neukum <oneukum@suse.de>
-To: Mathy Vanhoef <vanhoefm@gmail.com>
-Cc: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
-        meuleman@broadcom.com, linville@tuxdriver.com, pieterpg@broadcom.com,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 10:08:26 +0100
-In-Reply-To: <545FAE05.2030701@gmail.com>
-References: <545FAE05.2030701@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752384AbaKJJJM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:09:12 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:59241 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaKJJJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 04:09:10 -0500
+Date: Mon, 10 Nov 2014 09:09:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        List for communicating with real GTA04 owners 
+	<gta04-owner@goldelico.com>
+Subject: Re: [Gta04-owner] [PATCH] mfd: twl4030-power: Support compatible =
+ "ti, twl4030-power" again.
+Message-ID: <20141110090904.GB21424@x1>
+References: <20141108112227.256f93ce@notabene.brown>
+ <ABCF9D6C-DD71-4DE3-BF1E-3C41DC8086FF@goldelico.com>
+ <20141110122722.34b27c4c@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141110122722.34b27c4c@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-09 at 13:10 -0500, Mathy Vanhoef wrote:
-> From: Mathy Vanhoef <vanhoefm@gmail.com>
+On Mon, 10 Nov 2014, NeilBrown wrote:
+
+> On Sat, 8 Nov 2014 08:24:28 +0100 "Dr. H. Nikolaus Schaller"
+> <hns@goldelico.com> wrote:
 > 
-> Unlink the submitted URB in brcmf_usb_dl_cmd if the request timed out. This
-> assures the URB is never submitted twice, preventing a driver crash.
+> > 
+> > Am 08.11.2014 um 01:22 schrieb NeilBrown <neilb@suse.de>:
+> > 
+> > > 
+> > > commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
+> > >    mfd: twl4030-power: Add generic reset configuration
+> > > 
+> > > claims:
+> > >    Let's add device tree support and configure things for warm reset
+> > >    as the default when compatible = "ti,twl4030-power".
+> > > and
+> > >    Documentation/devicetree/bindings/mfd/twl4030-power.txt
+> > > claims that "ti,twl4030-power" is still a valid "compatible" setting.
+> > > 
+> > > However the current driver fails to probe with that 'compatible'
+> > > setting.
+> > > Restore the old default.
+> > 
+> > I think this is a duplicate to 
+> > 
+> > 599a1ca80d1d8269d54fdc4abdec8e65141381fe
+> > 
+> > (in linux-next)
+> 
+> 
+> Ahh, so it is.  Thanks.
 
-Hi,
+Just read this.
 
-I am afrad this patch is no good. The diagnosis is good,
-but the fix introduces serious problems.
+Previous reply withdrawn.
 
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/usb.c b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
-> index 5265aa7..1bc7858 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/usb.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/usb.c
-> @@ -738,10 +738,12 @@ static int brcmf_usb_dl_cmd(struct brcmf_usbdev_info *devinfo, u8 cmd,
->  		goto finalize;
->  	}
->  
-> -	if (!brcmf_usb_ioctl_resp_wait(devinfo))
-> +	if (!brcmf_usb_ioctl_resp_wait(devinfo)) {
-> +		usb_unlink_urb(devinfo->ctl_urb);
+> > > Signed-off-by: NeilBrown <neilb@suse.de>
+> > > 
+> > > diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+> > > index 4d3ff3771491..1a7794f6be15 100644
+> > > --- a/drivers/mfd/twl4030-power.c
+> > > +++ b/drivers/mfd/twl4030-power.c
+> > > @@ -776,6 +776,10 @@ static struct twl4030_power_data osc_off_idle = {
+> > > 
+> > > static struct of_device_id twl4030_power_of_match[] = {
+> > > 	{
+> > > +		.compatible = "ti,twl4030-power",
+> > > +		.data = NULL,
+> > > +	},
+> > > +	{
+> > > 		.compatible = "ti,twl4030-power-reset",
+> > > 		.data = &omap3_reset,
+> > > 	},
+> > > _______________________________________________
+> > > Gta04-owner mailing list
+> > > Gta04-owner@goldelico.com
+> > > http://lists.goldelico.com/mailman/listinfo.cgi/gta04-owner
+> 
 
-This is the asynchronous unlink. You have no guarantee it is finished
-after this point.
 
->  		ret = -ETIMEDOUT;
-> -	else
-> +	} else {
->  		memcpy(buffer, tmpbuf, buflen);
-> +	}
->  
->  finalize:
->  	kfree(tmpbuf);
-
-Which means that you are freeing memory that may still be used by DMA
-at this time.
-In addition you have no guarantee that the unlink is indeed finished
-by the time the URB is reused.
-If you wish to take this approach you better forget about this URB
-and allocate a new one and free the buffer from the callback.
-
-	Regards
-		Oliver
 
 -- 
-Oliver Neukum <oneukum@suse.de>
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
