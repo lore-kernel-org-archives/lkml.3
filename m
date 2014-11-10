@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaKJUpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:45:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751373AbaKJUpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:45:33 -0500
-Message-ID: <1415652328.16601.277.camel@ul30vt.home>
-Subject: Re: [PATCH] PCI: pciehp: Flush slot control prior to reset
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org
-Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org, rajatxjain@gmail.com,
-        yinghai@kernel.org
-Date: Mon, 10 Nov 2014 13:45:28 -0700
-In-Reply-To: <20141107225359.1937.61243.stgit@gimli.home>
-References: <20141107225359.1937.61243.stgit@gimli.home>
+	id S1752559AbaKJUqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:46:01 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:60040 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752294AbaKJUqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 15:46:00 -0500
+Message-ID: <1415652356.21229.31.camel@x220>
+Subject: Re: [GIT PULL for v3.18-rc1] media updates
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Nov 2014 21:45:56 +0100
+In-Reply-To: <1413793905.16435.6.camel@x220>
+References: <20141009141849.137e738d@recife.lan>
+	 <1413793905.16435.6.camel@x220>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Nov 2014 20:45:57.0223 (UTC) FILETIME=[54057770:01CFFD27]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-07 at 15:54 -0700, Alex Williamson wrote:
-> Since 3461a068661c we don't automatically do a pcie_wait_cmd() for
-> as part of pcie_write_cmd(), it needs to be called explicitly or
-> triggered by the next pcie_write_cmd().  However, when we do a
-> secondary bus reset and we're using pcie_write_cmd() to make sure
-> that we don't see that bus reset as a hotplug event, we really want
-> to make sure the update is complete.  Testing on an old Lenovo S20
-> system, which sets surprise hotplug for some slots, this failure to
-> flush results in a link down event seen by the hotplug controller
-> when we issue the bus reset and returns us to the undesireable
-> behavior of removing and re-adding the device.  Force a flush by
-> adding an explicit call to pcie_wait_cmd().
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: stable@vger.kernel.org [3.17]
-> ---
-> 
->  drivers/pci/hotplug/pciehp_hpc.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-> index 0ebf754..e540966 100644
-> --- a/drivers/pci/hotplug/pciehp_hpc.c
-> +++ b/drivers/pci/hotplug/pciehp_hpc.c
-> @@ -660,6 +660,7 @@ int pciehp_reset_slot(struct slot *slot, int probe)
->  		 pci_pcie_cap(ctrl->pcie->port) + PCI_EXP_SLTCTL, 0);
->  	if (pciehp_poll_mode)
->  		del_timer_sync(&ctrl->poll_timer);
-> +	pcie_wait_cmd(ctrl);
->  
->  	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
->  
-> 
+Hi Mauro,
 
-I think we might need a similar change on the other side of the reset,
-calling pcie_wait_cmd() explicitly before we re-enable polling.  The
-patch above passed about 7000 VM startup/shutdown cycles (up from zero
-w/o the patch), but it did eventually get a spurious hotplug.  With the
-additional pcie_wait_cmd() I'm thinking about, I've passed 8000 cycles.
-TL;DR, I'm probably sending a v2 of this patch.  Thanks,
+On Mon, 2014-10-20 at 10:31 +0200, Paul Bolle wrote:
+> This became commit 38a073116525 ("[media] omap: be sure that MMU is
+> there for COMPILE_TEST").
+> 
+> As I reported in
+> http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/82299
+> it adds an (optional) test for a Kconfig symbol HAS_MMU. There's no
+> such symbol. So that test will always fail. Did you perhaps mean
+> simply "MMU"?
 
-Alex
+This typo is still present in both next-20141110 and v3.18-rc4. And I've
+first reported it nearly two months ago. I see two fixes:
+    1) s/HAS_MMU/MMU/
+    2) s/ || (COMPILE_TEST && HAS_MMU)//
+
+Which would you prefer?
+
+
+Paul Bolle
 
