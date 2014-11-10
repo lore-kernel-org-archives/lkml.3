@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaKJVTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:19:08 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:55348 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaKJVTH (ORCPT
+	id S1753115AbaKJVUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:20:41 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:38467 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaKJVUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:19:07 -0500
+	Mon, 10 Nov 2014 16:20:35 -0500
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <CA+i8gKK0sj55s-Gk8Y36KM4yBFLvLotffbSodjH5Gsd_yxd5Sg@mail.gmail.com>
-References: <CA+i8gKK0sj55s-Gk8Y36KM4yBFLvLotffbSodjH5Gsd_yxd5Sg@mail.gmail.com>
-Date: Mon, 10 Nov 2014 22:19:05 +0100
-Message-ID: <CAKMK7uGa_dHnie8EACcX0mQvc-uGpsgQHjWGN_obxPa3O6SJbw@mail.gmail.com>
-Subject: Re: [Regression] 83f45fc turns machine's screen off
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
+In-Reply-To: <CAPM=9tyTcgiFqg+DyjzLX82_TV5Pa7wbN0Z_40rfLL5cWT_XKA@mail.gmail.com>
+References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
+	<CAPM=9tyej9J13U0c+-DH-EYw_4JJQbiQM98QREZQLz4PPj+FmQ@mail.gmail.com>
+	<54606AF7.8070506@amd.com>
+	<CAPM=9tyTcgiFqg+DyjzLX82_TV5Pa7wbN0Z_40rfLL5cWT_XKA@mail.gmail.com>
+Date: Mon, 10 Nov 2014 16:20:34 -0500
+Message-ID: <CADnq5_PaRuoN586pcWhcL1c9q8TSSkAdUYtn2jFNf=AcS5chPQ@mail.gmail.com>
+Subject: Re: [PATCH v5 00/24] AMDKFD Kernel Driver
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Oded Gabbay <oded.gabbay@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding relevant mailing lists.
-
-
-On Sat, Nov 8, 2014 at 7:34 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
-> Hi,
+On Mon, Nov 10, 2014 at 4:16 PM, Dave Airlie <airlied@gmail.com> wrote:
+>>> How does amdkfd interfact with runtime pm on the radeon driver? I'd expect
+>>> some calls to the runtime get/put functions in some places.
+>>>
+>>> Dave.
+>>>
+>> Hi Dave,
+>> Per Jerome's request from the first time he saw the driver, we removed all
+>> the "register bashing" code from amdkfd and moved them to the interface file
+>> between amdkfd and radeon, which is part of the radeon driver.
+>> See "[PATCH v5 05/24] drm/radeon: Add radeon <--> amdkfd interface" for the
+>> implementation of that interface file.
 >
-> The following commit permanently turns my screen off when x server is
-> started (i3 330M Ironlake):
+> So in GPU offload mode, how does amdkfd wake the GPU up to execute
+> stuff?
 >
->     [83f45fc360c8e16a330474860ebda872d1384c8c] drm: Don't grab an fb
-> reference for the idr
+> GPU offload is where the radeon GPU is a secondary GPU and we power it
+> down automatically.
 >
-> Reverting this commit fixed the issue.
+> Granted I think our powerdown should probably check if the GPU is executing
+> anything a bit more, but I don't think amdkfd can even wake it up to submit
+> work at the moment.
 
-This is definitely unexpected. I think we need a bit more data to
-figure out what's going on here:
-- Please boot with drm.debug=0xe added to your kernel cmdline and grab
-the dmesg right after boot-up for both a working or broken kernel.
-- Are you using any special i915 cmdline options?
+Currently we never power down APUs (only dGPUs) and kfd only supports
+APUs so they should always be available.  It will definitely need to
+be handled properly if we eventually support dGPUs with the kfd.
 
-Everything else should be in the debug logs I hope.
-
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Alex
