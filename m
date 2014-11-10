@@ -1,116 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaKJGhJ (ORCPT <rfc822;w@1wt.eu>);
+	id S1752112AbaKJGhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 01:37:12 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13024 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752066AbaKJGhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Nov 2014 01:37:09 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48891 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaKJGhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 01:37:04 -0500
-Message-ID: <54605D08.1030008@linaro.org>
-Date: Mon, 10 Nov 2014 15:36:56 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "roland@hack.frob.com" <roland@hack.frob.com>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>
-Subject: Re: [RFC] ptrace: add generic SET_SYSCALL request
-References: <1415346443-28915-1-git-send-email-takahiro.akashi@linaro.org> <1977974.l97vvy7Y8b@wuerfel> <20141107115551.GC18916@arm.com> <1678531.AUssrM9PAs@wuerfel> <20141107122734.GE18916@arm.com>
-In-Reply-To: <20141107122734.GE18916@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,351,1413270000"; 
+   d="scan'208";a="629364140"
+From: Feng Wu <feng.wu@intel.com>
+To: gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org, joro@8bytes.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Feng Wu <feng.wu@intel.com>
+Subject: [PATCH 08/13] KVM: Update Posted-Interrupts descriptor during VCPU scheduling
+Date: Mon, 10 Nov 2014 14:26:47 +0800
+Message-Id: <1415600812-27773-9-git-send-email-feng.wu@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1415600812-27773-1-git-send-email-feng.wu@intel.com>
+References: <1415600812-27773-1-git-send-email-feng.wu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2014 09:27 PM, Will Deacon wrote:
-> On Fri, Nov 07, 2014 at 12:03:00PM +0000, Arnd Bergmann wrote:
->> On Friday 07 November 2014 11:55:51 Will Deacon wrote:
->>> On Fri, Nov 07, 2014 at 09:30:53AM +0000, Arnd Bergmann wrote:
->>>> On Friday 07 November 2014 16:47:23 AKASHI Takahiro wrote:
->>>>> This patch adds a new generic ptrace request, PTRACE_SET_SYSCALL.
->>>>> It can be used to change a system call number as follows:
->>>>>      ret = ptrace(pid, PTRACE_SET_SYSCALL, null, new_syscall_no);
->>>>> 'new_syscall_no' can be -1 to skip this system call, you need to modify
->>>>> a register's value, in arch-specific way, as return value though.
->>>>>
->>>>> Please note that we can't define PTRACE_SET_SYSCALL macro in
->>>>> uapi/linux/ptrace.h partly because its value on arm, 23, is used as another
->>>>> request on sparc.
->>>>>
->>>>> This patch also contains an example of change on arch side, arm.
->>>>> Only syscall_set_nr() is required to be defined in asm/syscall.h.
->>>>>
->>>>> Currently only arm has this request, while arm64 would also have it
->>>>> once my patch series of seccomp for arm64 is merged. It will also be
->>>>> usable for most of other arches.
->>>>> See the discussions in lak-ml:
->>>>> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/300167.html
->>>>>
->>>>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->>>>>
->>>>
->>>> Can you describe why you are moving the implementation? Is this a feature
->>>> that we want to have on all architectures in the future? As you say,
->>>> only arm32 implements is at the moment.
->>>
->>> We need this for arm64 and, since all architectures seem to have a mechanism
->>> for setting a system call via ptrace, moving it to generic code should make
->>> sense for new architectures too, no?
->>
->> It makes a little more sense now, but I still don't understand why you
->> need to set the system call number via ptrace. What is this used for,
->> and why doesn't any other architecture have this?
->
-> I went through the same thought process back in August, and Akashi
-> eventually convinced me that this was the best thing to do:
->
->    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-August/278692.html
->
-> It comes down to a debugger (which could be GDB, seccomp, tracer ...)
-> wanting to change the system call number. This is also used as a mechanism
-> to skip a system call by setting it to '-1' (yeah, it's gross, and the
-> interaction between all of these syscall hooks is horrible too).
->
-> If we update w8 directly instead, we run into a couple of issues:
->
->    - Needing to restore the original w8 if the value is set to '-1' for
->      skip, but continuing to return -ENOSYS for syscall(-1) when not on a
->      tracer path
+Update Posted-Interrupts descriptor according to the
+following rules:
+- Before VCPU block, set 'NV' to POSTED_INTR_WAKEUP_VECTOR
+- After VCPU block, set 'NV' back to POSTED_INTR_VECTOR
 
-Yeah, this restriction still exists on my recent patch, v7.
-(this is because arm64 uses the same register, x0, as the first argument
-and a return value.)
+Signed-off-by: Feng Wu <feng.wu@intel.com>
+---
+ arch/x86/include/asm/kvm_host.h |    5 ++
+ arch/x86/kvm/vmx.c              |   83 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/kvm/x86.c              |   16 +++++++
+ virt/kvm/kvm_main.c             |   11 +++++
+ 4 files changed, 115 insertions(+), 0 deletions(-)
 
->    - seccomp assumes that syscall_get_nr will return the version set by
->      the most recent tracer, so then we need hacks in ptrace to route
->      register writes to w8 to syscallno in pt_regs, but again, only in the
->      case that we're tracing.
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 0630161..71cfe3e 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -773,6 +773,8 @@ struct kvm_x86_ops {
+ 
+ 	void (*sched_in)(struct kvm_vcpu *kvm, int cpu);
+ 	u64 (*get_pi_desc_addr)(struct kvm_vcpu *vcpu);
++	int (*vcpu_pre_block)(struct kvm_vcpu *vcpu);
++	void (*vcpu_post_block)(struct kvm_vcpu *vcpu);
+ };
+ 
+ struct kvm_arch_async_pf {
+@@ -1095,4 +1097,7 @@ int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
+ void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
+ void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
+ 
++int kvm_arch_vcpu_pre_block(struct kvm_vcpu *vcpu);
++void kvm_arch_vcpu_post_block(struct kvm_vcpu *vcpu);
++
+ #endif /* _ASM_X86_KVM_HOST_H */
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index f41111f..4c1a966 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -9153,6 +9153,86 @@ static void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
+ 		shrink_ple_window(vcpu);
+ }
+ 
++static int vmx_vcpu_pre_block(struct kvm_vcpu *vcpu)
++{
++	struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
++	struct pi_desc old;
++	struct pi_desc new;
++
++	if (!irq_post_enabled)
++		return 0;
++
++	memset(&old, 0, sizeof(old));
++	memset(&new, 0, sizeof(new));
++
++	do {
++		old.control = new.control = pi_desc->control;
++
++		/*
++		 * A posted-interrupt happened in the one of the
++		 * following two cases:
++		 * 1. After the latest pir-to-virr sync operation
++		 * in kvm_arch_vcpu_runnable() function
++		 * 2. In this do-while() loop, a posted-interrupt
++		 * occurs.
++		 *
++		 * For either of above cases, we should not block
++		 * the VCPU.
++		 */
++		if (pi_test_on(pi_desc) == 1) {
++			/*
++			 * Need to set this flag, then the inject will
++			 * be synced from PIR to vIRR before VM-ENTRY.
++			 * In fact, for guest IPI case, in function
++			 * vmx_deliver_posted_interrupt(), this flags
++			 * has already been set, but if the interrupt
++			 * is injected by VT-d PI hardware, we need
++			 * to set this.
++			 */
++			kvm_make_request(KVM_REQ_EVENT, vcpu);
++			return 1;
++		}
++
++		pi_clear_sn(&new);
++
++		/* set 'NV' to 'wakeup vector' */
++		new.nv = POSTED_INTR_WAKEUP_VECTOR;
++	} while (cmpxchg(&pi_desc->control, old.control, new.control)
++			!= old.control);
++
++	return 0;
++}
++
++static void vmx_vcpu_post_block(struct kvm_vcpu *vcpu)
++{
++	struct pi_desc *pi_desc = vcpu_to_pi_desc(vcpu);
++	struct pi_desc old;
++	struct pi_desc new;
++	unsigned int dest = 0;
++
++	if (!irq_post_enabled)
++		return;
++
++	pi_set_sn(pi_desc);
++
++	do {
++		old.control = new.control = pi_desc->control;
++
++		dest = cpu_physical_id(vcpu->cpu);
++
++		if (x2apic_mode)
++			new.ndst = dest;
++		else
++			new.ndst = (dest << 8) & 0xFF00;
++
++		/* set 'NV' to 'notification vector' */
++		new.nv = POSTED_INTR_VECTOR;
++	} while (cmpxchg(&pi_desc->control, old.control, new.control)
++			!= old.control);
++
++	pi_clear_sn(pi_desc);
++}
++
+ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.cpu_has_kvm_support = cpu_has_kvm_support,
+ 	.disabled_by_bios = vmx_disabled_by_bios,
+@@ -9262,6 +9342,9 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.sched_in = vmx_sched_in,
+ 
+ 	.get_pi_desc_addr = vmx_get_pi_desc_addr,
++
++	.vcpu_pre_block = vmx_vcpu_pre_block,
++	.vcpu_post_block = vmx_vcpu_post_block,
+ };
+ 
+ static int __init vmx_init(void)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 0c19d15..d0c8bb2 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7746,6 +7746,22 @@ int kvm_update_pi_irte_common(struct kvm *kvm, struct kvm_vcpu *vcpu,
+ 	return 0;
+ }
+ 
++int kvm_arch_vcpu_pre_block(struct kvm_vcpu *vcpu)
++{
++	if (kvm_x86_ops->vcpu_pre_block)
++		return kvm_x86_ops->vcpu_pre_block(vcpu);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_arch_vcpu_pre_block);
++
++void kvm_arch_vcpu_post_block(struct kvm_vcpu *vcpu)
++{
++	if (kvm_x86_ops->vcpu_post_block)
++		kvm_x86_ops->vcpu_post_block(vcpu);
++}
++EXPORT_SYMBOL_GPL(kvm_arch_vcpu_post_block);
++
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 25ffac9..1be1a45 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1754,7 +1754,18 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+ 		if (signal_pending(current))
+ 			break;
+ 
++#ifdef CONFIG_X86
++		if (kvm_arch_vcpu_pre_block(vcpu) == 1) {
++			kvm_make_request(KVM_REQ_UNHALT, vcpu);
++			break;
++		}
++#endif
++
+ 		schedule();
++
++#ifdef CONFIG_X86
++		kvm_arch_vcpu_post_block(vcpu);
++#endif
+ 	}
+ 
+ 	finish_wait(&vcpu->wq, &wait);
+-- 
+1.7.1
 
-The problem here is that, if we had a hack of replacinging syscallno with w8
-in ptrace (ptrace_syscall_enter()), secure_computing() (actually, seccomp_phase2()
-on v3.18-rc) would have no chance of seeing a modified syscall number because
-the hack would be executed after secure_computing().
-(Please note that a tracer simply modifies w8, not syscallno directly).
-
-This eventually results in missing a special case of -1 (skipping this system call).
-     http://lists.infradead.org/pipermail/linux-arm-kernel/2014-August/280846.html
-
-That is why we needed to have a dedicated new interface.
-
--Takahiro AKASHI
-
-> Akashi might be able to elaborate on other problems, since this was a
-> couple of months ago and I take every opportunity I can to avoid looking
-> at this part of the kernel.
->
-> Will
->
