@@ -1,230 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaKJTiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:38:21 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:59830 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaKJTiU (ORCPT
+	id S1752245AbaKJTie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:38:34 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57815 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaKJTic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:38:20 -0500
+	Mon, 10 Nov 2014 14:38:32 -0500
+Date: Mon, 10 Nov 2014 19:37:04 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141110193704.GL3815@sirena.org.uk>
+References: <cover.1415562021.git.moinejf@free.fr>
+ <d5d74f6993e9f2392008a27a2938c58d47dc8062.1415562021.git.moinejf@free.fr>
 MIME-Version: 1.0
-In-Reply-To: <545E0B06.6030706@gmail.com>
-References: <545E0B06.6030706@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Nov 2014 11:37:53 -0800
-Message-ID: <CALCETrWSz5hZJb5vavKX_kbfjm42w-e4aQjdRNsvS4m5uw4Q2w@mail.gmail.com>
-Subject: Re: Edited seccomp.2 man page for review
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l/31HQTn6peyh0iH"
+Content-Disposition: inline
+In-Reply-To: <d5d74f6993e9f2392008a27a2938c58d47dc8062.1415562021.git.moinejf@free.fr>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/2] ASoC: Remove 'const' from the device_node pointers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 8, 2014 at 4:22 AM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hi Kees, (and all),
->
-> Thanks for the seccomp.2 draft man page that you provided a few
-> weeks ago (https://lkml.org/lkml/2014/9/25/685), and my apologies
-> for the slow follow-up.
->
 
-Answers to some of your questions below.
+--l/31HQTn6peyh0iH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> .BR execve (2)
-> is allowed by the filter,
-> the filters and constraints on permitted system calls are preserved across an
-> .BR execve (2).
->
-> .\" FIXME I (mtk) reworded the following paragraph substantially.
-> .\" Please check it.
-> In order to use the
-> .BR SECCOMP_SET_MODE_FILTER
-> operation, either the caller must have the
-> .BR CAP_SYS_ADMIN
-> capability or the call must be preceded by the call:
->
->     prctl(PR_SET_NO_NEW_PRIVS, 1);
->
-> Otherwise, the
-> .BR SECCOMP_SET_MODE_FILTER
-> operation will fail and return
-> .BR EACCES
-> in
-> .IR errno .
-> This requirement ensures that filter programs cannot be applied to child
-> .\" FIXME What does "installed" in the following line mean?
-> processes with greater privileges than the process that installed them.
->
+On Sun, Nov 09, 2014 at 08:33:45PM +0100, Jean-Francois Moine wrote:
 
-This requirement ensures that an unprivileged process cannot apply a
-malicious filter and then invoke a setuid or other privileged program
-using execve, thus potentially compromising that program.
+> index 7ba7130..405f967 100644
+> --- a/include/sound/soc.h
+> +++ b/include/sound/soc.h
+> @@ -886,7 +886,7 @@ struct snd_soc_platform_driver {
+> =20
+>  struct snd_soc_dai_link_component {
+>  	const char *name;
+> -	const struct device_node *of_node;
+> +	struct device_node *of_node;
+>  	const char *dai_name;
+>  };
+> =20
 
-> If
-> .BR prctl (2)
-> or
-> .BR seccomp (2)
-> is allowed by the attached filter, further filters may be added.
-> This will increase evaluation time, but allows for further reduction of
-> the attack surface during execution of a process.
->
-> The
-> .BR SECCOMP_SET_MODE_FILTER
-> operation is available only if the kernel is configured with
-> .BR CONFIG_SECCOMP_FILTER
-> enabled.
->
-> When
-> .IR flags
-> is 0, this operation is functionally identical to the call:
->
->     prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, args);
->
-> The recognized
-> .IR flags
-> are:
-> .RS
-> .TP
-> .BR SECCOMP_FILTER_FLAG_TSYNC
-> When adding a new filter, synchronize all other threads of the calling
-> process to the same seccomp filter tree.
-> .\" FIXME Nowhere in this page is the term "filter tree" defined.
-> .\" There should be a definition somewhere.
-> .\" Is it: "the set of filters attached to a thread"?
+The changelog talked about of_node_put() but I'm not seeing anything in
+the code which calls that except snd_soc_of_get_dai_name()?  Everything
+else just does comparisons of the pointer AFIACT from a quick scan
+through.
 
-It's the ordered list of filters attached to a thread, where attaching
-identical filters in separate syscalls results in different filters
-from this perspective.
+--l/31HQTn6peyh0iH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> If any thread cannot do this,
-> the call will not attach the new seccomp filter,
-> and will fail, returning the first thread ID found that cannot synchronize.
-> Synchronization will fail if another thread is in
-> .BR SECCOMP_MODE_STRICT
-> or if it has attached new seccomp filters to itself,
-> diverging from the calling thread's filter tree.
-> .RE
-> .SH FILTERS
-> When adding filters via
-> .BR SECCOMP_SET_MODE_FILTER ,
-> .IR args
-> points to a filter program:
->
-> .in +4n
-> .nf
-> struct sock_fprog {
->     unsigned short      len;    /* Number of BPF instructions */
->     struct sock_filter *filter;
-> };
-> .fi
-> .in
->
-> Each program must contain one or more BPF instructions:
->
-> .in +4n
-> .nf
-> struct sock_filter {    /* Filter block */
->     __u16   code;       /* Actual filter code */
->     __u8    jt;         /* Jump true */
->     __u8    jf;         /* Jump false */
->     __u32   k;          /* Generic multiuse field */
-> };
-> .fi
-> .in
->
-> When executing the instructions, the BPF program executes over the
-> system call information made available via:
->
-> .in +4n
-> .nf
-> struct seccomp_data {
->     int nr;                     /* system call number */
->     __u32 arch;                 /* AUDIT_ARCH_* value */
->     __u64 instruction_pointer;  /* CPU instruction pointer */
->     __u64 args[6];              /* up to 6 system call arguments */
-> };
-> .fi
-> .in
->
-> .\" FIXME I find the next piece a little hard to understand, so,
-> .\"       some questions:
-> .\"       * If there are multiple filters, in what order are they executed?
-> .\"         (The man page should probably detail the answer to this question.)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-All of them are executed.  The precedence rules determine what happens
-if the filters return different values.
+iQEcBAEBAgAGBQJUYRPfAAoJECTWi3JdVIfQCLoH+wVGAQLCw+nWR1YK8qNAE9OX
+eRWX8IViBBMfor6/9dm/Tx6vLwlrVy4nyhfabIg50xcvaFcgY4Mx1mGaL1U+UjnR
+PSzhD1lXpkdLru6wzVvS1o81RW1Sg8MMCw7brP5GdN/y3q8eULIW3b+iuQvPo+RP
+O4eEXxxYpP6zVUlzYMtZjHQXY2natUR4an+LafrfopGvFNsHyPgUfZ6iUJy57Oxi
+mp8TX9etJbezm7wGWifCPmwkjiGA4+CnELnNBYqAOjgdJ2nV/Y9+Yz8621FdQKgP
+QjK3G3RKJyjxWhxdPiiTTYssUEH7li1VVaqX1VJy6AsMnEEHTPEH8gPC2PxxXlw=
+=z5Kq
+-----END PGP SIGNATURE-----
 
-> .\"       * If there are multiple filters, are they all always executed?
-> .\"         I assume not, but the notion that
-> .\"             "the return value for the evaluation of a given system call
-> .\"              will always use the value with the highest precedence"
-> .\"         implies that even that if one filter generates (say)
-> .\"         SECCOMP_RET_ERRNO, then further filters may still be executed,
-> .\"         including one that generates (say) the "higher priority"
-> .\"         SECCOMP_RET_KILL condition.
-> .\"       Can you clarify the above?
-> A seccomp filter returns one of the values listed below.
-> If multiple filters exist,
-> the return value for the evaluation of a given system call
-> will always use the value with the highest precedence.
-> (For example,
-> .BR SECCOMP_RET_KILL
-> will always take precedence.)
->
-> In decreasing order order of precedence,
-> the values that may be returned by a seccomp filter are:
-> .TP
-> .BR SECCOMP_RET_KILL
-> Results in the task exiting immediately without executing the system call.
-> The task terminates as though killed by a
-> .B SIGSYS
-> signal
-> .RI ( not
-> .BR SIGKILL ).
-> .TP
-> .BR SECCOMP_RET_TRAP
-> Results in the kernel sending a
-> .BR SIGSYS
-> signal to the triggering task without executing the system call.
-> .IR siginfo\->si_call_addr
-> will show the address of the system call instruction, and
-> .IR siginfo\->si_syscall
-> and
-> .IR siginfo\->si_arch
-> will indicate which system call was attempted.
-> The program counter will be as though the system call happened
-> (i.e., it will not point to the system call instruction).
-> The return value register will contain an architecture\-dependent value;
-> if resuming execution, set it to something sensible.
-> (The architecture dependency is because replacing it with
-> .BR ENOSYS
-> could overwrite some useful information.)
->
-> .\" FIXME The following sentence is the first time that SECCOMP_RET_DATA
-> .\"       is mentioned. SECCOMP_RET_DATA needs to be described in this
-> .\"       man page.
-> The
-> .BR SECCOMP_RET_DATA
-> portion of the return value will be passed as
-> .IR si_errno .
->
-> .BR SIGSYS
-> triggered by seccomp will have the value
-> .BR SYS_SECCOMP
-> in the
-> .IR si_code
-> field.
-> .TP
-> .BR SECCOMP_RET_ERRNO
-> .\" FIXME What does "the return value" refer to in the next sentence?
-> .\"       It is not obvious to me.
-
-The return value is the value returned by the BPF program.
-
---Andy
+--l/31HQTn6peyh0iH--
