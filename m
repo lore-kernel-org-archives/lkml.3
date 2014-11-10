@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaKJNoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:44:25 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:48093 "EHLO
+	id S1752996AbaKJNpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:45:36 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:48068 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882AbaKJNoU (ORCPT
+	with ESMTP id S1752629AbaKJNoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 08:44:20 -0500
+	Mon, 10 Nov 2014 08:44:08 -0500
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Mark Brown <broonie@kernel.org>
 Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
@@ -16,9 +16,9 @@ Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v6 5/5] regulator: of: Add support for parsing initial and suspend modes
-Date: Mon, 10 Nov 2014 14:43:55 +0100
-Message-Id: <1415627035-3088-6-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 1/5] regulator: Document binding for initial and suspend modes
+Date: Mon, 10 Nov 2014 14:43:51 +0100
+Message-Id: <1415627035-3088-2-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415627035-3088-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1415627035-3088-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -26,109 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some regulators support their operating mode to be changed on startup
-or by consumers when the system is running while others only support
-their operating mode to be changed while the system has entered in a
-suspend state.
+Some regulators can run on different operating modes (opmodes). This
+allows systems to choose the most efficient opmode for each regulator.
 
-The regulator Device Tree binding documents a set of properties to
-configure the regulators operating modes from a FDT. This patch builds
-on (40e20d6 regulator: of: Add support for parsing regulator_state for
-suspend state) and adds support to parse those properties and fill the
-regulator constraints so the regulator core can call the right suspend
-handlers when the system enters into sleep.
+This patch builds on top of (291d761 regulator: Document binding for
+regulator suspend state for PM state) adding a regulator-initial-mode
+DT property to configure at startup the operating mode for regulators
+that support changing its mode during normal operation and a property
+regulator-mode to be used in the regulator-state-[mem/disk] nodes for
+regulators that supports changing its operating mode when the system
+enters in a suspend state.
 
-The modes are defined in the Device Tree using the hardware specific
-modes supported by the regulators. Regulator drivers have to define a
-translation function that is used to map the hardware specific modes
-to the standard ones.
+The set of possible modes that a regulator can operate depends on the
+hardware capabilities so a list of generic operating modes can't be
+provided. Instead, each hardware binding should define the list of
+valid operating modes for the regulators found on that device.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
 Changes in v6:
- - Don't ignore the value of .of_map_mode(). Suggested by Mark Brown.
- - Improve the warning message to better explain what the real issue is.
+ - Remove assumptions about implementation details and don't overspecify.
    Suggested by Mark Brown.
 
 Changes in v5: None
 
-Changes in v4:
- - Parse the properties in the core and map using driver provided functions.
-   Suggested by Mark Brown
+Changes in v4: None
 
 Changes in v3:
- - Use the standard suspend states binding instead of custom properties.
-   Suggested by Mark Brown
+ - Rebased on top of regulator suspend voltage series
 
- drivers/regulator/of_regulator.c | 33 +++++++++++++++++++++++++++++++--
- 1 file changed, 31 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/regulator/regulator.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index cbc1d71..91eaaf0 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -25,7 +25,8 @@ static const char *const regulator_states[PM_SUSPEND_MAX + 1] = {
- };
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index 4e7ed76..abb26b5 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -30,6 +30,13 @@ Optional properties:
+ 	- regulator-off-in-suspend: regulator should be off in suspend state.
+ 	- regulator-suspend-microvolt: regulator should be set to this voltage
+ 	  in suspend.
++	- regulator-mode: operating mode in the given suspend state.
++	  The set of possible operating modes depends on the capabilities of
++	  every hardware so the valid modes are documented on each regulator
++	  device tree binding document.
++- regulator-initial-mode: initial operating mode. The set of possible operating
++  modes depends on the capabilities of every hardware so each device binding
++  documentation explains which values the regulator supports.
  
- static void of_get_regulation_constraints(struct device_node *np,
--					struct regulator_init_data **init_data)
-+					struct regulator_init_data **init_data,
-+					const struct regulator_desc *desc)
- {
- 	const __be32 *min_uV, *max_uV;
- 	struct regulation_constraints *constraints = &(*init_data)->constraints;
-@@ -81,6 +82,19 @@ static void of_get_regulation_constraints(struct device_node *np,
- 	if (!ret)
- 		constraints->enable_time = pval;
- 
-+	if (!of_property_read_u32(np, "regulator-initial-mode", &pval)) {
-+		if (desc && desc->of_map_mode) {
-+			ret = desc->of_map_mode(pval);
-+			if (ret == -EINVAL)
-+				pr_err("%s: invalid mode %u\n", np->name, pval);
-+			else
-+				constraints->initial_mode = ret;
-+		} else {
-+			pr_warn("%s: mapping for mode %d not defined\n",
-+				np->name, pval);
-+		}
-+	}
-+
- 	for (i = 0; i < ARRAY_SIZE(regulator_states); i++) {
- 		switch (i) {
- 		case PM_SUSPEND_MEM:
-@@ -100,6 +114,21 @@ static void of_get_regulation_constraints(struct device_node *np,
- 		if (!suspend_np || !suspend_state)
- 			continue;
- 
-+		if (!of_property_read_u32(suspend_np, "regulator-mode",
-+					  &pval)) {
-+			if (desc && desc->of_map_mode) {
-+				ret = desc->of_map_mode(pval);
-+				if (ret == -EINVAL)
-+					pr_err("%s: invalid mode %u\n",
-+					       np->name, pval);
-+				else
-+					suspend_state->mode = ret;
-+			} else {
-+				pr_warn("%s: mapping for mode %d not defined\n",
-+					np->name, pval);
-+			}
-+		}
-+
- 		if (of_property_read_bool(suspend_np,
- 					"regulator-on-in-suspend"))
- 			suspend_state->enabled = true;
-@@ -140,7 +169,7 @@ struct regulator_init_data *of_get_regulator_init_data(struct device *dev,
- 	if (!init_data)
- 		return NULL; /* Out of memory? */
- 
--	of_get_regulation_constraints(node, &init_data);
-+	of_get_regulation_constraints(node, &init_data, desc);
- 	return init_data;
- }
- EXPORT_SYMBOL_GPL(of_get_regulator_init_data);
+ Deprecated properties:
+ - regulator-compatible: If a regulator chip contains multiple
 -- 
 2.1.0
 
