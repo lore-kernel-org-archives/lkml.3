@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaKJV6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:58:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993AbaKJV6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:58:17 -0500
-Message-ID: <1415656669.16601.293.camel@ul30vt.home>
-Subject: Re: [PATCH 13/13] iommu/vt-d: Add a command line parameter for VT-d
- posted-interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Feng Wu <feng.wu@intel.com>
-Cc: gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org, joro@8bytes.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 14:57:49 -0700
-In-Reply-To: <1415600812-27773-14-git-send-email-feng.wu@intel.com>
-References: <1415600812-27773-1-git-send-email-feng.wu@intel.com>
-	 <1415600812-27773-14-git-send-email-feng.wu@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751984AbaKJWAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:00:09 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:49000 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaKJWAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 17:00:06 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: tglx@linutronix.de, jason@lakedaemon.net, linux-sh@vger.kernel.org,
+        arnd@arndb.de, f.fainelli@gmail.com, ralf@linux-mips.org,
+        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
+        linux-mips@linux-mips.org, nicolas.ferre@atmel.com,
+        alexandre.belloni@free-electrons.com, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH V4 04/14] genirq: Generic chip: Add big endian I/O accessors
+References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
+	<1415342669-30640-5-git-send-email-cernekee@gmail.com>
+Date: Mon, 10 Nov 2014 14:00:02 -0800
+In-Reply-To: <1415342669-30640-5-git-send-email-cernekee@gmail.com> (Kevin
+	Cernekee's message of "Thu, 6 Nov 2014 22:44:19 -0800")
+Message-ID: <7hy4riogwt.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 14:26 +0800, Feng Wu wrote:
-> Enable VT-d Posted-Interrtups and add a command line
-> parameter for it.
-> 
-> Signed-off-by: Feng Wu <feng.wu@intel.com>
-> ---
->  drivers/iommu/irq_remapping.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-> index 0e36860..3cb9429 100644
-> --- a/drivers/iommu/irq_remapping.c
-> +++ b/drivers/iommu/irq_remapping.c
-> @@ -23,7 +23,7 @@ int irq_remap_broken;
->  int disable_sourceid_checking;
->  int no_x2apic_optout;
->  
-> -int disable_irq_post = 1;
-> +int disable_irq_post = 0;
->  int irq_post_enabled = 0;
->  EXPORT_SYMBOL_GPL(irq_post_enabled);
->  
-> @@ -206,6 +206,13 @@ static __init int setup_irqremap(char *str)
->  }
->  early_param("intremap", setup_irqremap);
->  
-> +static __init int setup_nointpost(char *str)
-> +{
-> +	disable_irq_post = 1;
-> +	return 0;
-> +}
-> +early_param("nointpost", setup_nointpost);
-> +
+Kevin Cernekee <cernekee@gmail.com> writes:
 
-Documentation/kernel-parameters.txt?  Thanks,
+> Use io{read,write}32be if the caller specified IRQ_GC_BE_IO when creating
+> the irqchip.
+>
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 
-Alex
+I bisected a couple ARM boot failures in next-20141110 on atmel sama5 platforms down to
+this patch, though I'm not quite yet sure how it's causing the failure.
+I'm not getting any console output, so haven't been able to dig deeper
+yet.  Maybe the atmel maintainers (Cc'd) can help dig.
 
->  void __init setup_irq_remapping_ops(void)
->  {
->  	remap_ops = &intel_irq_remap_ops;
+I've confirmed that reverting $SUBJECT patch (commit
+b79055952badbd73710685643bab44104f2509ea2) on top of next-20141110 gets
+things booting again.
 
+Also, it only happens with sama5_defconfig, not with multi_v7_defconfig.
 
+Kevin
 
