@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949AbaKJNyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:54:16 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:34372 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaKJNyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 08:54:13 -0500
-Date: Mon, 10 Nov 2014 13:54:04 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: devzero@web.de
-Cc: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
-Subject: Re: dmesg spam: "PnPBIOS: pnp_dock_thread: unexpected status 0x5
- flooding"
-Message-ID: <20141110135404.2de623a5@alan.etchedpixels.co.uk>
-In-Reply-To: <trinity-0270e0ae-a135-4789-9ed2-f8fd1f7cff71-1415318071046@3capp-webde-bs13>
-References: <trinity-0270e0ae-a135-4789-9ed2-f8fd1f7cff71-1415318071046@3capp-webde-bs13>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752991AbaKJNy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:54:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:53779 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917AbaKJNyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 08:54:15 -0500
+Date: Mon, 10 Nov 2014 10:54:09 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] perf syscall error handling
+Message-ID: <20141110135409.GR18464@kernel.org>
+References: <20141031092713.GA23124@gmail.com>
+ <20141031122824.GZ12020@console-pimps.org>
+ <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
+ <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
+ <20141103162548.GB18464@kernel.org>
+ <20141103165019.GY10501@worktop.programming.kicks-ass.net>
+ <20141103170059.GC18464@kernel.org>
+ <20141110102725.GA19309@gmail.com>
+ <20141110121527.GQ18464@kernel.org>
+ <20141110122446.GA21503@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110122446.GA21503@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Nov 2014 00:54:31 +0100
-devzero@web.de wrote:
+Em Mon, Nov 10, 2014 at 01:24:47PM +0100, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > Em Mon, Nov 10, 2014 at 11:27:25AM +0100, Ingo Molnar escreveu:
+> > > * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > > > Em Mon, Nov 03, 2014 at 05:50:19PM +0100, Peter Zijlstra escreveu:
+> > > > > OK, so how about we do both, the offset+mask for the tools 
+> > > > > and the string for the humans?
 
-> Hi, 
-> 
-> on an ancient GX1 Geode embedded board (Evo T20/Wyse wt3235le Thin Client, which are cheap (<$10) and low power x86 embeded platform) , dmesg is getting constantly spammed with "PnPBIOS: pnp_dock_thread: unexpected status 0x5" during and after boot. 
-> 
-> Any ideas what this means and how to stop that?
-> 
-> It seems it comes from drivers/pnp/pnpbios/bioscalls.c -> pnpbios_print_status()  
-> 
-> Tried adding pnpbios=off, but with that the system does not boot anymore.
-> 
-> Being curious, why a non-existing docking-station is being "polled at regular intervals" (i.e. every 2 seconds - see drivers/pnp/pnpbios/core.c )
+It looks like machines don't have problems with strings 8-)
 
-We poll for a dock, and if the BIOS reports that the function is not
-supported we then exit the thread.
+> > > > Yeah, tooling tries to provide the best it can with the 
+> > > > offset+mask, and if doesn't manage to do anything smart with 
+> > > > it, just show the string and hope that helps the user to figure 
+> > > > out what is happening.
 
-> 
-> >From http://books.google.de/books?id=ibLa4I5EnC4C&pg=PA231&lpg=PA231&dq=pnp+docking+bios&source=bl&ots=ekCFm34U_B&sig=9Z9L55IAL7_3NtuM10jT3serncM&hl=de&sa=X&ei=mAZcVILnJsviO-r5gNgI&ved=0CCsQ6AEwAQ#v=onepage&q=pnp%20docking%20bios&f=false   i read:  "Function 05h - Get Docking Status Information at page 251" 
+> > > Almost: tooling should generally always consider the string as 
+> > > well, for the (not so uncommon) case where there can be multiple 
+> > > problems with the same field.
 
-The spec is available at:
+> > > Really, I think the string will give the most bang for the buck, 
+> > > because it's really simple and straightforward on the kernel side 
+> > > (so that we have a good chance of achieving full coverage 
+> > > relatively quickly), and later on we could still complicate it 
+> > > all with offset+mask if there's really a need.
 
-http://download.intel.com/support/motherboards/desktop/sb/pnpbiosspecificationv10a.pdf
+> > > So lets start with an error string...
+
+> > I don't have a problem with the order of introduction of new 
+> > error reporting mechanisms, or at least I can't think of one 
+> > right now.
+
+> > So if we introduce strings now then tools/perf/ will trow them 
+> > to the user when it still don't have fallbacks or any other UI 
+> > indication of such an error.
+
+> > I wonder tho if we have any previous experience on some other 
+> > project (or even in the kernel?) and how userspace ended up 
+> > using it, if just presenting those strings to the user or if 
+> > trying to parse it, etc, anybody?
+
+> I'm not aware of any such efforts in the Linux space - subsystems 
+> with administrative interfaces generally just tend to printk() a 
+> reason - that's obviously suboptimal in several ways.
  
-> it  seems this is being the result of a "docking event" ? Does this mean, my system is erroneusly generating such docking events, even if there is no docking station at all?
+> Programmatic use in user-spaec is very simple - go with my 
+> initial example, tooling can either just display the error string 
+> and bail out, or do:
+ 
+>   if (unlikely(error)) {
+> 	if (!strcmp(attr->error_str, "x86/bts: BTS not supported by this CPU architecture")) {
+> 		fprintf(stderr, "x86/BTS: No hardware support falling back to branch sampling\n");
+> 		activate_x86_bts_fallback_code();
+> 		goto out;
+> 	}
+> 	if (!strcmp(attr->error_str, "x86/lbr: LBR not supported by this CPU architecture"))
+> 		goto out_err;
+>   }
+ 
+> or it may do any number of other things, such as convert it to 
+> its internal error code. Note that the error messages should have 
+> some minimal structure (the 'x86/bts:' and 'x86/lbr' prefixes) to 
+> organize things nicely and to make string clashes less likely.
 
-Your BIOS appears to be making strange replies. Any error ought to have
-the top bit set, so its reporting a nonsense value for some reason.
+Right, focus on the string format: Can we just have this two level
+thing, first part separated by a slash, followed by colon, to identify
+the origin of the message, and then a message, that can have further,
+unspecified at this time, parser tokens as the need arises?
+ 
+> as this is a slowpath the performance of strcmp() doesn't matter, 
+> and in any case it's hardware accelerated or optimized well on 
+> most platforms.
 
-I've not seen other reports of pnp_dock_thread errors with a real dock.
-The only reports at all are a couple of old ones in google that seem to
-be similar and a Debian bug (294652) which appears to be your bug so I'd
-suggest testing the following
-
-
-Change the default to
-
-              default:
-                  pnpbios_print_status("pnp_dock..... etc)
-	          printk(KERN_ERR "PnPBIOS: Disabling dock monitoring\n");
-	          complete_and_exit(&unload_sem, 0);
-
-that should produce you one error message, a warning that dock monitoring
-is being disabled and then it should stfu.
-
-If you can let us know if that does the trick then I can push it upstream.
-
-Alan
+- Arnaldo
