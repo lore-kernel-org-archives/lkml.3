@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaKJBoz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:44:55 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39194 "EHLO
+	id S1752662AbaKJBpA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:45:00 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39207 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595AbaKJBov (ORCPT
+	with ESMTP id S1752625AbaKJBo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:44:51 -0500
+	Sun, 9 Nov 2014 20:44:56 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH v6 37/48] avr32: atngw100: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:42:54 -0800
-Message-Id: <1415583785-6980-38-git-send-email-linux@roeck-us.net>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Joshua Thompson <funaho@jurai.org>, linux-m68k@vger.kernel.org
+Subject: [PATCH v6 39/48] m68k: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:42:56 -0800
+Message-Id: <1415583785-6980-40-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54601893.009F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A02020A.54601897.016B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 219
+X-CTCH-SenderID-TotalMessages: 228
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -53,9 +53,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Register with kernel power-off handler instead of setting pm_power_off
 directly.
 
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joshua Thompson <funaho@jurai.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v6:
@@ -70,25 +70,38 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
+- Use defines to specify poweroff handler priorities
 
- arch/avr32/boards/atngw100/mrmt.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/m68k/emu/natfeat.c | 3 ++-
+ arch/m68k/mac/config.c  | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/avr32/boards/atngw100/mrmt.c b/arch/avr32/boards/atngw100/mrmt.c
-index 91146b4..166c2e1 100644
---- a/arch/avr32/boards/atngw100/mrmt.c
-+++ b/arch/avr32/boards/atngw100/mrmt.c
-@@ -274,7 +274,8 @@ static int __init mrmt1_init(void)
- {
- 	gpio_set_value( PIN_PWR_ON, 1 );	/* Ensure PWR_ON is enabled */
+diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+index 91e2ae7..38fec50 100644
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -91,5 +91,6 @@ void __init nf_init(void)
+ 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
+ 		version & 0xffff);
  
--	pm_power_off = mrmt_power_off;
-+	register_power_off_handler_simple(mrmt_power_off,
+-	pm_power_off = nf_poweroff;
++	register_power_off_handler_simple(nf_poweroff,
 +					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	/* Setup USARTS (other than console) */
- 	at32_map_usart(2, 1, 0);	/* USART 2: /dev/ttyS1, RMT1:DB9M */
+ }
+diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
+index 677913ff..14fd981 100644
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -160,7 +160,8 @@ void __init config_mac(void)
+ 	mach_set_clock_mmss = mac_set_clock_mmss;
+ 	mach_reset = mac_reset;
+ 	mach_halt = mac_poweroff;
+-	pm_power_off = mac_poweroff;
++	register_power_off_handler_simple(mac_poweroff,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 	mach_max_dma_address = 0xffffffff;
+ #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
+ 	mach_beep = mac_mksound;
 -- 
 1.9.1
 
