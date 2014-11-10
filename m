@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaKJPP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:15:58 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:50656 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaKJPP4 (ORCPT
+	id S1753272AbaKJPRL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:17:11 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56647 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaKJPRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:15:56 -0500
-Message-ID: <5460D6A6.9070501@linaro.org>
-Date: Mon, 10 Nov 2014 16:15:50 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 10:17:10 -0500
+Date: Mon, 10 Nov 2014 15:15:54 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20141110151554.GC3815@sirena.org.uk>
+References: <1415448772-3895-1-git-send-email-badarkhe.manish@gmail.com>
+ <20141109091932.GJ2722@sirena.org.uk>
+ <CAKDJKT5yKp-JyGEsOjcQ=bxd6OddQqZgx0E8s2k=i-jHj9nRHA@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 3/6] sched: idle: Get the next timer event and pass
- it the cpuidle framework
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org> <1415370687-18688-4-git-send-email-daniel.lezcano@linaro.org> <20141110124353.GO3337@twins.programming.kicks-ass.net>
-In-Reply-To: <20141110124353.GO3337@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7iqzzmjEMnnYslDD"
+Content-Disposition: inline
+In-Reply-To: <CAKDJKT5yKp-JyGEsOjcQ=bxd6OddQqZgx0E8s2k=i-jHj9nRHA@mail.gmail.com>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: tps65218: Remove '.owner' field
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 01:43 PM, Peter Zijlstra wrote:
-> On Fri, Nov 07, 2014 at 03:31:24PM +0100, Daniel Lezcano wrote:
->>   static void cpu_idle_loop(void)
->>   {
->> -	unsigned int latency_req;
->> +	unsigned int latency_req, next_timer_event;
->>
->>   	while (1) {
->>   		/*
->> @@ -221,6 +222,9 @@ static void cpu_idle_loop(void)
->>
->>   			latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
->>
->> +			next_timer_event =
->> +				ktime_to_us(tick_nohz_get_sleep_length());
->> +
->>   			/*
->>   			 * In poll mode we reenable interrupts and spin.
->>   			 *
->> @@ -238,7 +242,8 @@ static void cpu_idle_loop(void)
->>   			    tick_check_broadcast_expired())
->>   				cpu_idle_poll();
->>   			else
->> -				cpuidle_idle_call(latency_req);
->> +				cpuidle_idle_call(latency_req,
->> +						  next_timer_event);
->>
->>   			arch_cpu_idle_exit();
->>   		}
->
-> Why do we want to query the next timer in the poll case? Afaict the
-> other patches don't make use of this either.
 
-Well, the direction I am taking when writing those cleanups is to have 
-something like:
+--7iqzzmjEMnnYslDD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-"I will sleep X usec, I have Y usec latency constraints". Grouping the 
-latency req and the next timer allows to stick to the next changes.
+On Mon, Nov 10, 2014 at 07:49:16PM +0530, Manish Badarkhe wrote:
+> On Sun, Nov 9, 2014 at 2:49 PM, Mark Brown <broonie@kernel.org> wrote:
 
+> > Same question as ever with this stuff: if we've decided to do this why
+> > are we doing it for a single driver and not as a genric cleanup?
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> There are many drivers needs to be changed with such fix.
+> Can we fix drivers with this fix module by module or all at once?
+> Please let me know your opinion.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+All at once, though I think Greg just did that in -next anyway.
 
+--7iqzzmjEMnnYslDD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUYNapAAoJECTWi3JdVIfQ5SMH/0Dl1q7kd8S3T8CfXXGEcDpu
+OfJdUcl/mKzAgM2XNvWYcVUBotptTQ+FZVzFHmFpcXxeN054nsbPk++VUlx4tEm8
+tq+cSeiEMzQ3v/C8b5iS0RAIKwISZBnGlIOtJfqL3RiMKPVC7apBsBcHh+k6Tc63
+MBIgxNbZ2fkiNHnK8cPzH9HOH80dnNzMRfjlQf/TS8+Z3wt8IDZy0Ciw6rW5k8H6
+p3erB5JxZa2jvFOULopQ5jaYZX7Ju2i8ps/PZl6VvZ9Qu7gYbo8xUBnHsPJnOxLn
+A9AbR+d1UhpXWcHOyalZmXjzRqnWan+OA/GhOOXsrdl5Mduy+PCfp5xRFhbhIqw=
+=Rwu+
+-----END PGP SIGNATURE-----
+
+--7iqzzmjEMnnYslDD--
