@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbaKJWAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 17:00:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52361 "EHLO mx1.redhat.com"
+	id S1752776AbaKJWAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:00:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48763 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392AbaKJWAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 17:00:49 -0500
-Date: Mon, 10 Nov 2014 23:00:38 +0100
+	id S1752413AbaKJWAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 17:00:45 -0500
+Date: Mon, 10 Nov 2014 23:00:32 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Aaron Tomlin <atomlin@redhat.com>,
@@ -14,9 +14,8 @@ Cc: Aaron Tomlin <atomlin@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Roland McGrath <roland@hack.frob.com>,
         Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] exit: ptrace: shift "reap dead" code from
-	exit_ptrace() to forget_original_parent()
-Message-ID: <20141110220038.GA31247@redhat.com>
+Subject: [PATCH 3/5] exit: reparent: cleanup the changing of ->parent
+Message-ID: <20141110220032.GA31235@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,100 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that forget_original_parent() uses ->ptrace_entry for EXIT_DEAD
-tasks, we can simply pass "dead_children" list to exit_ptrace() and
-remove another release_task() loop. Plus this way we do not need to
-drop and reacquire tasklist_lock.
+1. Cosmetic, but "if (t->parent == father)" looks a bit confusing.
+   We need to change t->parent if and only if t is not traced.
 
-Also shift the list_empty(ptraced) check, if we want this optimization
-it makes sense to eliminate the function call altogether.
+2. If we actually want this BUG_ON() to ensure that parent/ptrace
+   match each other, then we should also take ptrace_reparented()
+   case into account too.
+
+3. Change this code to use for_each_thread() instead of deprecated
+   while_each_thread().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/ptrace.h |    2 +-
- kernel/exit.c          |   10 ++++------
- kernel/ptrace.c        |   23 +++--------------------
- 3 files changed, 8 insertions(+), 27 deletions(-)
+ kernel/exit.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index cc79eff..987a73a 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -52,7 +52,7 @@ extern void ptrace_notify(int exit_code);
- extern void __ptrace_link(struct task_struct *child,
- 			  struct task_struct *new_parent);
- extern void __ptrace_unlink(struct task_struct *child);
--extern void exit_ptrace(struct task_struct *tracer);
-+extern void exit_ptrace(struct task_struct *tracer, struct list_head *dead);
- #define PTRACE_MODE_READ	0x01
- #define PTRACE_MODE_ATTACH	0x02
- #define PTRACE_MODE_NOAUDIT	0x04
 diff --git a/kernel/exit.c b/kernel/exit.c
-index e3e7379..ee5399b 100644
+index 4a9b4c0..939e9fc 100644
 --- a/kernel/exit.c
 +++ b/kernel/exit.c
-@@ -553,13 +553,11 @@ static void forget_original_parent(struct task_struct *father)
+@@ -557,7 +557,7 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
+ 
+ static void forget_original_parent(struct task_struct *father)
+ {
+-	struct task_struct *p, *n, *reaper;
++	struct task_struct *p, *t, *n, *reaper;
  	LIST_HEAD(dead_children);
  
  	write_lock_irq(&tasklist_lock);
--	/*
--	 * Note that exit_ptrace() and find_new_reaper() might
--	 * drop tasklist_lock and reacquire it.
--	 */
--	exit_ptrace(father);
--	reaper = find_new_reaper(father);
-+	if (unlikely(!list_empty(&father->ptraced)))
-+		exit_ptrace(father, &dead_children);
+@@ -569,18 +569,15 @@ static void forget_original_parent(struct task_struct *father)
+ 	reaper = find_new_reaper(father);
  
-+	/* Can drop and reacquire tasklist_lock */
-+	reaper = find_new_reaper(father);
- 	list_for_each_entry(p, &father->children, sibling) {
- 		for_each_thread(p, t) {
+ 	list_for_each_entry_safe(p, n, &father->children, sibling) {
+-		struct task_struct *t = p;
+-
+-		do {
++		for_each_thread(p, t) {
  			t->real_parent = reaper;
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 54e7522..1eb9d90 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -485,36 +485,19 @@ static int ptrace_detach(struct task_struct *child, unsigned int data)
- 
- /*
-  * Detach all tasks we were using ptrace on. Called with tasklist held
-- * for writing, and returns with it held too. But note it can release
-- * and reacquire the lock.
-+ * for writing.
-  */
--void exit_ptrace(struct task_struct *tracer)
--	__releases(&tasklist_lock)
--	__acquires(&tasklist_lock)
-+void exit_ptrace(struct task_struct *tracer, struct list_head *dead)
- {
- 	struct task_struct *p, *n;
--	LIST_HEAD(ptrace_dead);
--
--	if (likely(list_empty(&tracer->ptraced)))
--		return;
- 
- 	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
- 		if (unlikely(p->ptrace & PT_EXITKILL))
- 			send_sig_info(SIGKILL, SEND_SIG_FORCED, p);
- 
- 		if (__ptrace_detach(tracer, p))
--			list_add(&p->ptrace_entry, &ptrace_dead);
--	}
--
--	write_unlock_irq(&tasklist_lock);
--	BUG_ON(!list_empty(&tracer->ptraced));
--
--	list_for_each_entry_safe(p, n, &ptrace_dead, ptrace_entry) {
--		list_del_init(&p->ptrace_entry);
--		release_task(p);
-+			list_add(&p->ptrace_entry, dead);
+-			if (t->parent == father) {
+-				BUG_ON(t->ptrace);
++			BUG_ON(!t->ptrace != (t->parent == father));
++			if (likely(!t->ptrace))
+ 				t->parent = t->real_parent;
+-			}
+ 			if (t->pdeath_signal)
+ 				group_send_sig_info(t->pdeath_signal,
+ 						    SEND_SIG_NOINFO, t);
+-		} while_each_thread(p, t);
++		}
+ 		reparent_leader(father, p, &dead_children);
  	}
--
--	write_lock_irq(&tasklist_lock);
- }
- 
- int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len)
+ 	write_unlock_irq(&tasklist_lock);
 -- 
 1.5.5.1
 
