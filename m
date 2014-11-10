@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaKJN0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:26:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53676 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814AbaKJN0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 08:26:49 -0500
-Date: Mon, 10 Nov 2014 14:26:39 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@fb.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] brd: Add getgeo to block ops for fdisk
-Message-ID: <20141110132639.GN6880@x2.net.home>
-References: <545A2D69.8090003@plexistor.com>
- <545A2FEA.3050101@plexistor.com>
- <20141107092313.GH6880@x2.net.home>
- <545F9CF7.6090306@plexistor.com>
- <20141110095403.GL6880@x2.net.home>
- <54609E56.3050403@plexistor.com>
+	id S1752666AbaKJN3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:29:21 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:54731 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaKJN3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 08:29:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54609E56.3050403@plexistor.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+In-Reply-To: <20141108001411.5629.55298.stgit@notabene.brown>
+References: <20141108000919.5629.55381.stgit@notabene.brown>
+	<20141108001411.5629.55298.stgit@notabene.brown>
+Date: Mon, 10 Nov 2014 14:29:19 +0100
+Message-ID: <CAPDyKFrrOozTO5xR8RO=4L8xZ9hLGizH=2mxZE=5zvwMhhgD+w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mmc: core: reset sdio card properly on resume.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Chris Ball <chris@printf.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        GTA04 owners <gta04-owner@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 01:15:34PM +0200, Boaz Harrosh wrote:
-> >> Command (m for help): n
-> >> First sector (34-8158, default 40): 
-> >> Last sector, +sectors or +size{K,M,G,T,P} (40-8158, default 8158): 1717
-> >> Command (m for help): n
-> >> First sector (34-8158, default 1720): 
-> >> # NOTE 34-8158 again, only with gpt
-> > 
-> >  It seems like a fdisk bug, the gap between 34-40 is smaller than phy sector
-> >  size.. I'll fix it, thanks!
-> > 
-> 
-> Please note that the final output needs to be 1718-8158 not
-> 40-8158. I was not sure if you noticed from your explanation above.
+On 8 November 2014 01:14, NeilBrown <neilb@suse.de> wrote:
+> mmc_sdio_power_restore calls
+>         mmc_send_if_cond(host, host->ocr_avail);
+>
+>         ret = mmc_send_io_op_cond(host, 0, NULL);
+>
+> between mmc_go_idle() and  mmc_sdio_init_card().
+> mmc_sdio_resume needs to as well, else my libertas sdio wifi
+> device doesn't resume properly from suspend.
+>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  drivers/mmc/core/sdio.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> index e636d9e99e4a..3f069a6f448f 100644
+> --- a/drivers/mmc/core/sdio.c
+> +++ b/drivers/mmc/core/sdio.c
+> @@ -981,8 +981,12 @@ static int mmc_sdio_resume(struct mmc_host *host)
+>         if (mmc_card_is_removable(host) || !mmc_card_keep_power(host)) {
+>                 sdio_reset(host);
+>                 mmc_go_idle(host);
+> -               err = mmc_sdio_init_card(host, host->card->ocr, host->card,
+> -                                       mmc_card_keep_power(host));
+> +               mmc_send_if_cond(host, host->ocr_avail);
 
- Yes, I understand, fixed in util-linux master branch. 
- 
- https://github.com/karelzak/util-linux/commit/4a4616b22e21f3c05030dc05d98016fcb15a2ee9
+/s /host->ocr_avail /host->card->ocr
 
-    Karel
+I would expect that to work. I do realize that "host->ocr_avail" is
+being used in the ->power_restore() callback, but I think that's wrong
+as well. Could you maybe verify that changing to host->card->ocr works
+in this path as well? That's would of course be a separate patch.
 
+> +               err = mmc_send_io_op_cond(host, 0, NULL);
+> +               if (!err)
+> +                       err = mmc_sdio_init_card(host, host->card->ocr,
+> +                                                host->card,
+> +                                                mmc_card_keep_power(host));
+>         } else if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
+>                 /* We may have switched to 1-bit mode during suspend */
+>                 err = sdio_enable_4bit_bus(host->card);
+>
+>
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Kind regards
+Uffe
