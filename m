@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaKJQPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:15:11 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:36052 "EHLO SMTP.CITRIX.COM"
+	id S1753469AbaKJQPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:15:22 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:48719 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594AbaKJQPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:15:08 -0500
+	id S1753333AbaKJQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 11:15:11 -0500
 X-IronPort-AV: E=Sophos;i="5.07,353,1413244800"; 
-   d="scan'208";a="189798975"
+   d="scan'208";a="189798983"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
         <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
         <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux@arm.linux.org.uk>, <will.deacon@arm.com>
-Subject: [PATCH v8 05/13] arm: introduce is_device_dma_coherent
-Date: Mon, 10 Nov 2014 16:13:57 +0000
-Message-ID: <1415636045-24669-5-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 10/13] xen/arm/arm64: introduce xen_arch_need_swiotlb
+Date: Mon, 10 Nov 2014 16:14:02 +0000
+Message-ID: <1415636045-24669-10-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
@@ -29,52 +28,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a boolean flag and an accessor function to check whether a
-device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
+Introduce an arch specific function to find out whether a particular dma
+mapping operation needs to bounce on the swiotlb buffer.
+
+On ARM and ARM64, if the page involved is a foreign page and the device
+is not coherent, we need to bounce because at unmap time we cannot
+execute any required cache maintenance operations (we don't know how to
+find the pfn from the mfn).
+
+No change of behaviour for x86.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux@arm.linux.org.uk
-CC: will.deacon@arm.com
----
- arch/arm/include/asm/device.h      |    1 +
- arch/arm/include/asm/dma-mapping.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
-index dc662fc..4111592 100644
---- a/arch/arm/include/asm/device.h
-+++ b/arch/arm/include/asm/device.h
-@@ -17,6 +17,7 @@ struct dev_archdata {
- #ifdef CONFIG_ARM_DMA_USE_IOMMU
- 	struct dma_iommu_mapping	*mapping;
- #endif
-+	bool dma_coherent;
- };
+---
+
+Changes in v6:
+- fix ts.
+
+Changes in v5:
+- fix indentation.
+---
+ arch/arm/include/asm/xen/page.h |    4 ++++
+ arch/arm/xen/mm.c               |    7 +++++++
+ arch/x86/include/asm/xen/page.h |    7 +++++++
+ drivers/xen/swiotlb-xen.c       |    5 ++++-
+ 4 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+index 135c24a..68c739b 100644
+--- a/arch/arm/include/asm/xen/page.h
++++ b/arch/arm/include/asm/xen/page.h
+@@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
+ #define xen_unmap(cookie) iounmap((cookie))
  
- struct omap_device;
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 85738b2..8c3b616 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -123,11 +123,17 @@ static inline unsigned long dma_max_pfn(struct device *dev)
- 
- static inline int set_arch_dma_coherent_ops(struct device *dev)
- {
-+	dev->archdata.dma_coherent = true;
- 	set_dma_ops(dev, &arm_coherent_dma_ops);
- 	return 0;
++bool xen_arch_need_swiotlb(struct device *dev,
++			   unsigned long pfn,
++			   unsigned long mfn);
++
+ #endif /* _ASM_ARM_XEN_PAGE_H */
+diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+index 0e96023..1b087cd 100644
+--- a/arch/arm/xen/mm.c
++++ b/arch/arm/xen/mm.c
+@@ -102,6 +102,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
+ 	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
  }
- #define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
  
-+static inline bool is_device_dma_coherent(struct device *dev)
++bool xen_arch_need_swiotlb(struct device *dev,
++			   unsigned long pfn,
++			   unsigned long mfn)
 +{
-+	return dev->archdata.dma_coherent;
++	return ((pfn != mfn) && !is_device_dma_coherent(dev));
 +}
 +
- static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
- {
- 	unsigned int offset = paddr & ~PAGE_MASK;
+ int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
+ 				 unsigned int address_bits,
+ 				 dma_addr_t *dma_handle)
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index c949923..f58ef6c 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
+ #define xen_remap(cookie, size) ioremap((cookie), (size));
+ #define xen_unmap(cookie) iounmap((cookie))
+ 
++static inline bool xen_arch_need_swiotlb(struct device *dev,
++					 unsigned long pfn,
++					 unsigned long mfn)
++{
++	return false;
++}
++
+ #endif /* _ASM_X86_XEN_PAGE_H */
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index ad2c5eb..3725ee4 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 * buffering it.
+ 	 */
+ 	if (dma_capable(dev, dev_addr, size) &&
+-	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
++	    !range_straddles_page_boundary(phys, size) &&
++		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
++		!swiotlb_force) {
+ 		/* we are not interested in the dma_addr returned by
+ 		 * xen_dma_map_page, only in the potential cache flushes executed
+ 		 * by the function. */
+@@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
+ 
+ 		if (swiotlb_force ||
++		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
+ 		    !dma_capable(hwdev, dev_addr, sg->length) ||
+ 		    range_straddles_page_boundary(paddr, sg->length)) {
+ 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
 -- 
 1.7.10.4
 
