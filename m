@@ -1,227 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaKJN4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:56:25 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55521 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaKJN4Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 08:56:24 -0500
-Date: Mon, 10 Nov 2014 13:56:17 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-Message-ID: <20141110135617.GC23942@arm.com>
-References: <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
- <CA+55aFwpOCeXdThX3zB64AU4hFwufD6UdJDi2tkD8Q7yEV2pOA@mail.gmail.com>
- <20141029194738.GA29911@arm.com>
- <20141104142955.GA24816@e104818-lin.cambridge.arm.com>
- <CA+55aFzBggoXtNXQeng5d_mRoDnaMBE5Y+URs+PHR67nUpMtaw@mail.gmail.com>
- <20141106135740.GC19702@e104818-lin.cambridge.arm.com>
- <CA+55aFzQM-yvvXYENiviLBm0=jiZoO7xPmz5mLowuTb-Pb8e6Q@mail.gmail.com>
- <20141106183808.GH19702@e104818-lin.cambridge.arm.com>
- <CA+55aFwE847pZgOpcLuZah6qhMDPV1v8oUpTV1_ROQNTtWhZKQ@mail.gmail.com>
- <20141107165003.GG29148@e104818-lin.cambridge.arm.com>
+	id S1752788AbaKJN77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:59:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815AbaKJN75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 08:59:57 -0500
+Message-ID: <5460C4D6.8010905@redhat.com>
+Date: Mon, 10 Nov 2014 08:59:50 -0500
+From: Daniel J Walsh <dwalsh@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141107165003.GG29148@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Casey Schaufler <casey@schaufler-ca.com>,
+        David Howells <dhowells@redhat.com>
+CC: linux-unionfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/7] Security: Provide unioned file support
+References: <545BC088.6080306@schaufler-ca.com> <545BB147.4000100@schaufler-ca.com> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <6108.1415296719@warthog.procyon.org.uk> <29936.1415373684@warthog.procyon.org.uk> <545D1575.2010708@redhat.com> <545EC3E7.4040002@schaufler-ca.com>
+In-Reply-To: <545EC3E7.4040002@schaufler-ca.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 04:50:04PM +0000, Catalin Marinas wrote:
-> On Thu, Nov 06, 2014 at 09:29:54PM +0000, Linus Torvalds wrote:
-> > That's fine. That makes sense. In fact, how about adding "granularity"
-> > to the mmu_gather structure, and then doing:\
-> > 
-> >  - in __tlb_reset_range(), setting it to ~0ul
-> > 
-> >  - add "granularity" to __tlb_adjust_range(), and make it do something like
-> > 
-> >        if (!tlb->fullmm) {
-> >                tlb->granularity = min(tlb->granularity, granularity);
-> >                tlb->start = min(tlb->start, address);
-> >                tlb->end = max(tlb->end, address+1);
-> >        }
-> > 
-> > and then the TLB flush logic would basically do
-> > 
-> >    address = tlb->start;
-> >    do {
-> >         flush(address);
-> >         if (address + tlb->granularity < address)
-> >                 break;
-> >         address = address + tlb->granularity;
-> >    } while (address < tlb->end);
-> > 
-> > or something like that.
-> 
-> Indeed. We'll come up with a patch after Will's clean-up.
 
-My clean-up is the patch I sent previously, plus the removal of need_flush.
+On 11/08/2014 08:31 PM, Casey Schaufler wrote:
+> On 11/7/2014 10:54 AM, Daniel J Walsh wrote:
+>> On 11/07/2014 10:21 AM, David Howells wrote:
+>>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>
+>>>>>> What does this mean?
+>>>>> It has been decided that for the purposes of docker, all files within the
+>>>>> docker root fs will have the same label.  We'd have to provide policy
+>>>>> namespacing otherwise (I think).
+>>>> That's just insane. "It has been decided" by who? Obviously not people
+>>>> who care about security policies. Maybe it's good enough for your
+>>>> particular use case, but labeling of files has to be up to the security
+>>>> module. That's what the modules are for.
+>>> It has been decided by the docker people that I've dealt with.  I was
+>>> expecting there to be different labels throughout a docker image, but
+>>> apparently not...
+>> We want the equivalent of the mount option
+>> context="system_u:object_r:svirt_sandbox_file_t:s0:c1,c2"
+> Which just means that the policy used in the container is going
+> to have to grant access to everything running in that container
+> to that context. That's fine if you want to emasculate your module
+> within the container. But it requires that you do so, and that is
+> wrong.
+Huh?  I am asking for this to be supported not enforced.  If you don't
+do the command context="" or its equivalent, then you can run with ever
+labels you want and see the underlying XATTRS on inodes.  I just need a way
+to support sVirt controls as defined for docker containers, matching
+what we
+are able to do with Device Mapper back end.
+>> Which would label all of the content in the OVERLAYFS with this label. 
+>> If we have to have a readonly label for the lower
+>> level and a RW Label for the context mount then that is fine with us. 
+>> The lower level can actually just reveal the label of the INODE.
+>> We can take care of labeling it with a single label.
+>>
+>> If the context="LABEL" (Or its equivalent is not passed), it should get
+>> some kind of label based on the parent directory I would guess
+>> or transition rules. 
+>>
+>> With docker we want to treat all contents of a container with a single
+>> label and then separate containers based on MCS(Svirt) separation.
+> That seems like a limited and rather pointless use case to me.
+>>>>>> What about LSMs that have multiple labels on a file?
+>>>>> Setting policy is something I'll have to leave to the docker people and the
+>>>>> administrators of systems that use docker.
+>>>> What does that mean? If the underlying mechanism can't do the job,
+>>>> how the dickens is the administrator supposed to make it happen?
+>>> I'm trying to make the kernel able to support a policy on this at all - not
+>>> actually write the policy itself.  The policy may well vary depending on the
+>>> installation anyway.
+>>>
+>>>>> But all I'm proposing is a way to give the LSM access to both the file in
+>>>>> the overlay and the file in the lower fs that is leeching through into the
+>>>>> overlay.
+>>>> But your mechanisms are simultaneously incomplete and over specified.
+>>> Well then, specify better ones!  I'm fairly certain it is incomplete and I'm
+>>> *trying* to get input on how it may be improved.  I should've marked the
+>>> patches [RFC] but it didn't occur to me until just after I'd sent them (of
+>>> course).
+> I'd love to do so, but I'm frying too many kittens right now
+> to put the effort required into making this right. I do have
+> faith that this can be worked out. Sorry that I missed the implicit
+> [RFC]. It helps to know that feedback is still open.
+>
+>>> Anyway, there are a number of things one has to take account of:
+>>>
+>>>  (1) There may be multiple 'views' or instances of a file in a union - and
+>>>      each may be labelled differently.
+>>>
+>>>  (2) The lower file may have xattrs attached to it that represent the security
+>>>      policy.
+>>>
+>>>  (3) The union file may have xattrs attached to it that represent the security
+>>>      policy.
+>>>
+>>>  (4) When copying the lower file up, the xattrs representing the security
+>>>      attributes of the lower file must not be written as they may incorrectly
+>>>      overwrite the security attributes of the union file.
+>>>
+>>>  (5) There needs to be a way to set the security attributes on the union file.
+>>>
+>>>  (6) When setting the attributes on the union file, the LSM might need to take
+>>>      account of the attributes of the lower file in their derivation.
+>>>
+>>>  (7) There may be no inode in the union layer on which to hang the attributes
+>>>      for the upper file.
+>>>
+>>>  (8) struct file::f_security should be used to contain the union layer
+>>>      labellage on open files that point to a lower layer.
+>>>
+>>>  (9) Ideally, file->f_path would point to the union layer and file->f_inode to
+>>>      the lower layer when there is no upper file.  However, this is not the
+>>>      case at the moment.  The file struct *only* points to the lower file or
+>>>      the upper file and never both.
+>>>
+>>> (10) Overlayfs has an extra complication in that there are potentially three
+>>>      files involved in any union.  The lower file that is the source, the
+>>>      upper file that where the copy-up goes and the virtual union file in the
+>>>      overlay fs that redirects to one or the other.
+>>>
+>>>      I've taken the approach that we assume that the upper file (if it exists)
+>>>      has the same labellage as the union file.
+>>>
+>>>> Your proposal is a cop out. It may work in a limited set of cases.
+>>>> It is not a general solution.
+>>> Actually, I think the actual code interface I've proposed is pretty close to
+>>> being a general solution.  I've given the LSM the information I have, it can
+>>> implement a fabulous maze of specially crafted labels if it wants to - and
+>>> even have multiple labels per inode or per file.  The VFS does not care.
+>>>
+>>> David
+>>>
+>>> _______________________________________________
+>>> Selinux mailing list
+>>> Selinux@tycho.nsa.gov
+>>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+>>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+> _______________________________________________
+> Selinux mailing list
+> Selinux@tycho.nsa.gov
+> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>
+>
 
-Incremental diff for the latter part below. We drop a set of need_flush
-from tlb_remove_table, but I can't figure out why it was there in the
-first place (need_flush was already set by pXd_free_tlb).
-
-Will
-
---->8
-
-diff --git a/arch/arm64/include/asm/tlb.h b/arch/arm64/include/asm/tlb.h
-index a9c9df0f60ff..c028fe37456f 100644
---- a/arch/arm64/include/asm/tlb.h
-+++ b/arch/arm64/include/asm/tlb.h
-@@ -39,7 +39,7 @@ static inline void tlb_flush(struct mmu_gather *tlb)
- {
- 	if (tlb->fullmm) {
- 		flush_tlb_mm(tlb->mm);
--	} else if (tlb->end > 0) {
-+	} else {
- 		struct vm_area_struct vma = { .vm_mm = tlb->mm, };
- 		flush_tlb_range(&vma, tlb->start, tlb->end);
- 	}
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index 340bc5c5ca2d..08848050922e 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -96,10 +96,9 @@ struct mmu_gather {
- #endif
- 	unsigned long		start;
- 	unsigned long		end;
--	unsigned int		need_flush : 1,	/* Did free PTEs */
- 	/* we are in the middle of an operation to clear
- 	 * a full mm and can make some optimizations */
--				fullmm : 1,
-+	unsigned int		fullmm : 1,
- 	/* we have performed an operation which
- 	 * requires a complete flush of the tlb */
- 				need_flush_all : 1;
-@@ -131,10 +130,8 @@ static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
- static inline void __tlb_adjust_range(struct mmu_gather *tlb,
- 				      unsigned long address)
- {
--	if (!tlb->fullmm) {
--		tlb->start = min(tlb->start, address);
--		tlb->end = max(tlb->end, address + PAGE_SIZE);
--	}
-+	tlb->start = min(tlb->start, address);
-+	tlb->end = max(tlb->end, address + PAGE_SIZE);
- }
- 
- static inline void __tlb_reset_range(struct mmu_gather *tlb)
-@@ -154,7 +151,7 @@ static inline void __tlb_reset_range(struct mmu_gather *tlb)
- 
- #define __tlb_end_vma(tlb, vma)					\
- 	do {							\
--		if (!tlb->fullmm) {				\
-+		if (!tlb->fullmm && tlb->end) {			\
- 			tlb_flush(tlb);				\
- 			__tlb_reset_range(tlb);			\
- 		}						\
-@@ -171,13 +168,12 @@ static inline void __tlb_reset_range(struct mmu_gather *tlb)
- /**
-  * tlb_remove_tlb_entry - remember a pte unmapping for later tlb invalidation.
-  *
-- * Record the fact that pte's were really umapped in ->need_flush, so we can
-- * later optimise away the tlb invalidate.   This helps when userspace is
-- * unmapping already-unmapped pages, which happens quite a lot.
-+ * Record the fact that pte's were really unmapped by updating the range,
-+ * so we can later optimise away the tlb invalidate.   This helps when
-+ * userspace is unmapping already-unmapped pages, which happens quite a lot.
-  */
- #define tlb_remove_tlb_entry(tlb, ptep, address)		\
- 	do {							\
--		tlb->need_flush = 1;				\
- 		__tlb_adjust_range(tlb, address);		\
- 		__tlb_remove_tlb_entry(tlb, ptep, address);	\
- 	} while (0)
-@@ -192,14 +188,12 @@ static inline void __tlb_reset_range(struct mmu_gather *tlb)
- 
- #define tlb_remove_pmd_tlb_entry(tlb, pmdp, address)		\
- 	do {							\
--		tlb->need_flush = 1;				\
- 		__tlb_adjust_range(tlb, address);		\
- 		__tlb_remove_pmd_tlb_entry(tlb, pmdp, address);	\
- 	} while (0)
- 
- #define pte_free_tlb(tlb, ptep, address)			\
- 	do {							\
--		tlb->need_flush = 1;				\
- 		__tlb_adjust_range(tlb, address);		\
- 		__pte_free_tlb(tlb, ptep, address);		\
- 	} while (0)
-@@ -207,7 +201,6 @@ static inline void __tlb_reset_range(struct mmu_gather *tlb)
- #ifndef __ARCH_HAS_4LEVEL_HACK
- #define pud_free_tlb(tlb, pudp, address)			\
- 	do {							\
--		tlb->need_flush = 1;				\
- 		__tlb_adjust_range(tlb, address);		\
- 		__pud_free_tlb(tlb, pudp, address);		\
- 	} while (0)
-@@ -215,7 +208,6 @@ static inline void __tlb_reset_range(struct mmu_gather *tlb)
- 
- #define pmd_free_tlb(tlb, pmdp, address)			\
- 	do {							\
--		tlb->need_flush = 1;				\
- 		__tlb_adjust_range(tlb, address);		\
- 		__pmd_free_tlb(tlb, pmdp, address);		\
- 	} while (0)
-diff --git a/mm/memory.c b/mm/memory.c
-index 0bc940e41ec9..8b1c1d2e7c67 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -220,7 +220,6 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long
- 	/* Is it from 0 to ~0? */
- 	tlb->fullmm     = !(start | (end+1));
- 	tlb->need_flush_all = 0;
--	tlb->need_flush = 0;
- 	tlb->local.next = NULL;
- 	tlb->local.nr   = 0;
- 	tlb->local.max  = ARRAY_SIZE(tlb->__pages);
-@@ -236,7 +235,9 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long
- 
- static void tlb_flush_mmu_tlbonly(struct mmu_gather *tlb)
- {
--	tlb->need_flush = 0;
-+	if (!tlb->end)
-+		return;
-+
- 	tlb_flush(tlb);
- #ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	tlb_table_flush(tlb);
-@@ -257,8 +258,6 @@ static void tlb_flush_mmu_free(struct mmu_gather *tlb)
- 
- void tlb_flush_mmu(struct mmu_gather *tlb)
- {
--	if (!tlb->need_flush)
--		return;
- 	tlb_flush_mmu_tlbonly(tlb);
- 	tlb_flush_mmu_free(tlb);
- }
-@@ -293,7 +292,7 @@ int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
- {
- 	struct mmu_gather_batch *batch;
- 
--	VM_BUG_ON(!tlb->need_flush);
-+	VM_BUG_ON(!tlb->end);
- 
- 	batch = tlb->active;
- 	batch->pages[batch->nr++] = page;
-@@ -360,8 +359,6 @@ void tlb_remove_table(struct mmu_gather *tlb, void *table)
- {
- 	struct mmu_table_batch **batch = &tlb->batch;
- 
--	tlb->need_flush = 1;
--
- 	/*
- 	 * When there's less then two users of this mm there cannot be a
- 	 * concurrent page-table walk.
