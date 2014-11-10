@@ -1,535 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaKJUTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:19:30 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:40306 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaKJUT2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:19:28 -0500
-Date: Mon, 10 Nov 2014 20:19:24 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        device tree <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 2/2] arm64: Add Juno SoC device tree.
-Message-ID: <20141110201924.GB10247@e106497-lin.cambridge.arm.com>
-References: <1415618875-8469-1-git-send-email-Liviu.Dudau@arm.com>
- <1415618875-8469-3-git-send-email-Liviu.Dudau@arm.com>
- <CAOesGMhNcT4xoKaMgvihk3Lc6XWWiaKeRNt_C04dV4ZSAwjZQQ@mail.gmail.com>
+	id S1752078AbaKJUVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:21:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47326 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087AbaKJUVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 15:21:39 -0500
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Chris Ruffin <cmruffin@gmail.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: rtl8723au: change typecast to match type returned by htons()
+References: <1415650025-16403-1-git-send-email-cmruffin@gmail.com>
+Date: Mon, 10 Nov 2014 15:21:30 -0500
+In-Reply-To: <1415650025-16403-1-git-send-email-cmruffin@gmail.com> (Chris
+	Ruffin's message of "Mon, 10 Nov 2014 15:07:05 -0500")
+Message-ID: <wrfjlhnivmb9.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMhNcT4xoKaMgvihk3Lc6XWWiaKeRNt_C04dV4ZSAwjZQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 10 Nov 2014 20:19:25.0727 (UTC) FILETIME=[9F6A72F0:01CFFD23]
-X-MC-Unique: 114111020192501401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 05:42:59PM +0000, Olof Johansson wrote:
-> Hi,
-> 
-> Nice to see this posted! Thanks for doing so.
-> 
-> On Mon, Nov 10, 2014 at 3:27 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> 
-> Care to give a brief patch description?
+Chris Ruffin <cmruffin@gmail.com> writes:
+> Using a u16 pointer typecast for a result from htons() results in the following warning from sparse:
+>
+> drivers/staging/rtl8723au/core/rtw_xmit.c:1279:36: warning: incorrect type in assignment (different base types)
+> drivers/staging/rtl8723au/core/rtw_xmit.c:1279:36:    expected unsigned short [unsigned] [short] [usertype] <noident>
+> drivers/staging/rtl8723au/core/rtw_xmit.c:1279:36:    got restricted __be16 [usertype] <noident>
+>
+> This patch fixes the issue by using an endian-specific typecast
+> that will always match the type returned by htons().
+>
+> Signed-off-by: Chris Ruffin <cmruffin@gmail.com>
+> ---
+>  drivers/staging/rtl8723au/core/rtw_xmit.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Bah, I've managed to screw this! I will add a description, of course.
+Looks fine to me
 
-> 
-> > ---
-> >  arch/arm64/boot/dts/Makefile |   2 +-
-> >  arch/arm64/boot/dts/juno.dts | 374 +++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 375 insertions(+), 1 deletion(-)
-> >  create mode 100644 arch/arm64/boot/dts/juno.dts
-> >
-> > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> > index f8001a6..0100eca 100644
-> > --- a/arch/arm64/boot/dts/Makefile
-> > +++ b/arch/arm64/boot/dts/Makefile
-> > @@ -1,5 +1,5 @@
-> >  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
-> > -dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
-> > +dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb juno.dtb
-> 
-> We've applied the series that creates subdirectories per vendor, so
-> this won't apply. Care to respin on top of our next/cleanup branch?
+Signed-off-by: Jes Sorensen <Jes.Sorensen@redhat.com>
 
-Sure, will do.
-
-> 
-> >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
-> >
-> >  targets += dtbs
-> > diff --git a/arch/arm64/boot/dts/juno.dts b/arch/arm64/boot/dts/juno.dts
-> > new file mode 100644
-> > index 0000000..7f998de
-> > --- /dev/null
-> > +++ b/arch/arm64/boot/dts/juno.dts
-> > @@ -0,0 +1,374 @@
-> > +/*
-> > + * ARM Ltd. Juno Plaform
-> > + *
-> > + */
-> > +
-> > +/dts-v1/;
-> > +
-> > +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> > +
-> > +/ {
-> > +       model = "Juno";
-> 
-> This could probably be a bit more descriptive.
-
-I will add something to the tune: "ARM Juno development board (r0)" ? Not sure
-that the format usually is.
-
-> 
-> > +       compatible = "arm,juno", "arm,vexpress";
-> > +       interrupt-parent = <&gic>;
-> > +       #address-cells = <2>;
-> > +       #size-cells = <2>;
-> > +
-> > +       aliases {
-> > +               serial0 = &soc_uart0;
-> > +       };
-> > +
-> > +       cpus {
-> > +               #address-cells = <2>;
-> > +               #size-cells = <0>;
-> > +
-> > +               A53_0:cpu@100 {
-> > +                       compatible = "arm,cortex-a53","arm,armv8";
-> > +                       reg = <0x0 0x100>;
-> > +                       device_type = "cpu";
-> > +                       enable-method = "psci";
-> > +               };
-> > +
-> > +               A53_1:cpu@101 {
-> > +                       compatible = "arm,cortex-a53","arm,armv8";
-> > +                       reg = <0x0 0x101>;
-> > +                       device_type = "cpu";
-> > +                       enable-method = "psci";
-> > +               };
-> > +
-> > +               A53_2:cpu@102 {
-> > +                       compatible = "arm,cortex-a53","arm,armv8";
-> > +                       reg = <0x0 0x102>;
-> > +                       device_type = "cpu";
-> > +                       enable-method = "psci";
-> > +               };
-> > +
-> > +               A53_3:cpu@103 {
-> > +                       compatible = "arm,cortex-a53","arm,armv8";
-> > +                       reg = <0x0 0x103>;
-> > +                       device_type = "cpu";
-> > +                       enable-method = "psci";
-> > +               };
-> > +
-> > +               A57_0:cpu@0 {
-> > +                       compatible = "arm,cortex-a57","arm,armv8";
-> > +                       reg = <0x0 0x0>;
-> > +                       device_type = "cpu";
-> > +                       enable-method = "psci";
-> > +               };
-> > +
-> > +               A57_1:cpu@1 {
-> > +                       compatible = "arm,cortex-a57","arm,armv8";
-> > +                       reg = <0x0 0x1>;
-> > +                       device_type = "cpu";
-> > +                       enable-method = "psci";
-> > +               };
-> 
-> These cpus are not ordered by reg, they probably should be (i.e. 57s
-> before 53s).
-
-That's because the A53s are the boot cluster. And yes, HW guys though it
-was fun to confuse people by making the little cluster second in line.
-
-Is that a hard requirement to order by reg or can I keep the current
-order? AFAIK (but I need to check tomorrow with the board) the boot
-code gets confused if the first node is not the boot node.
-
-
-> 
-> > +       };
-> > +
-> > +       memory@80000000 {
-> > +               device_type = "memory";
-> > +               /* last 16MB of the first memory area is reserved for secure world use by firmware */
-> > +               reg = <0x00000000 0x80000000 0x0 0x7f000000>,
-> > +                     <0x00000008 0x80000000 0x1 0x80000000>;
-> > +       };
-> > +
-> > +       gic: interrupt-controller@2c001000 {
-> > +               compatible = "arm,gic-400", "arm,cortex-a15-gic";
-> > +               reg = <0x0 0x2c010000 0 0x1000>,
-> > +                     <0x0 0x2c02f000 0 0x2000>,
-> > +                     <0x0 0x2c04f000 0 0x2000>,
-> > +                     <0x0 0x2c06f000 0 0x2000>;
-> > +               #address-cells = <0>;
-> > +               #interrupt-cells = <3>;
-> > +               interrupt-controller;
-> > +               interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>;
-> > +       };
-> > +
-> > +       timer {
-> > +               compatible = "arm,armv8-timer";
-> > +               interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> > +                            <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> > +                            <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> > +                            <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
-> > +       };
-> > +
-> > +       pmu {
-> > +               compatible = "arm,armv8-pmuv3";
-> > +               interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 02 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 06 IRQ_TYPE_LEVEL_HIGH>;
-> > +       };
-> > +
-> > +       psci {
-> > +               compatible = "arm,psci-0.2";
-> > +               method = "smc";
-> > +       };
-> 
-> This dt is just a pile of nodes in a flat directory today. You're not
-> the first to add psci at toplevel, but it'd be nice to do some sort of
-> structure for this at some point.
-
-I agree and apologise for the linear dump. I know that there are other
-platform coming but I don't have enough details on what parts are going
-to end up being common and what not.
-
-As for psci, should I create a small include file that contains just the
-psci node and include that? 
-
-> 
-> Same for the timer and pmu nodes, they should probably go somewhere
-> else than the top.
-
-OK, I will try to break this DT in pieces.
-
-> 
-> > +
-> > +       /* SoC fixed clocks */
-> > +       soc_uartclk: refclk72738khz {
-> > +               compatible = "fixed-clock";
-> > +               #clock-cells = <0>;
-> > +               clock-frequency = <7273800>;
-> > +               clock-output-names = "juno:uartclk";
-> > +       };
-> > +
-> > +       soc_usb48mhz: clk48mhz {
-> > +               compatible = "fixed-clock";
-> > +               #clock-cells = <0>;
-> > +               clock-frequency = <48000000>;
-> > +               clock-output-names = "clk48mhz";
-> > +       };
-> > +
-> > +       soc_smc50mhz: clk50mhz {
-> > +               compatible = "fixed-clock";
-> > +               #clock-cells = <0>;
-> > +               clock-frequency = <50000000>;
-> > +               clock-output-names = "smc_clk";
-> > +       };
-> > +
-> > +       soc_refclk100mhz: refclk100mhz {
-> > +               compatible = "fixed-clock";
-> > +               #clock-cells = <0>;
-> > +               clock-frequency = <100000000>;
-> > +               clock-output-names = "apb_pclk";
-> > +       };
-> > +
-> > +       soc_faxiclk: refclk533mhz {
-> > +               compatible = "fixed-clock";
-> > +               #clock-cells = <0>;
-> > +               clock-frequency = <533000000>;
-> > +               clock-output-names = "faxi_clk";
-> > +       };
-> > +
-> > +       mb_eth25mhz: clk25mhz {
-> > +               compatible = "fixed-clock";
-> > +               #clock-cells = <0>;
-> > +               clock-frequency = <25000000>;
-> > +               clock-output-names = "ethclk25mhz";
-> > +       };
-> > +
-> > +       memory-controller@7ffd0000 {
-> > +               compatible = "arm,pl354", "arm,primecell";
-> > +               reg = <0 0x7ffd0000 0 0x1000>;
-> > +               interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
-> > +               clocks = <&soc_smc50mhz>;
-> > +               clock-names = "apb_pclk";
-> > +       };
-> > +
-> > +       dma0: dma@7ff00000 {
-> 
-> We're trying to encourate DT contents to be sorted per unit address /
-> reg, to cause fewer conflicts when new stuff is added. Care to reorder
-> the devices based on that?
-
-Absolutely, sorry for the mistake.
-
-> 
-> 
-> > +               compatible = "arm,pl330", "arm,primecell";
-> > +               reg = <0x0 0x7ff00000 0 0x1000>;
-> > +               #dma-cells = <1>;
-> > +               #dma-channels = <8>;
-> > +               #dma-requests = <32>;
-> > +               interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>,
-> > +                            <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
-> > +               clocks = <&soc_faxiclk>;
-> > +               clock-names = "apb_pclk";
-> > +       };
-> > +
-> > +       soc_uart0: uart@7ff80000 {
-> > +               compatible = "arm,pl011", "arm,primecell";
-> > +               reg = <0x0 0x7ff80000 0x0 0x1000>;
-> > +               interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
-> > +               clocks = <&soc_uartclk>, <&soc_refclk100mhz>;
-> > +               clock-names = "uartclk", "apb_pclk";
-> > +       };
-> > +
-> > +       ulpi_phy: phy@0 {
-> > +               compatible = "phy-ulpi-generic";
-> > +               reg = <0x0 0x94 0x0 0x4>;
-> > +               phy-id = <0>;
-> > +       };
-> 
-> phy@0? Hmm. Doesn't seem to belong in the same address space as
-> everything else here.
-
-And the bindings are not defined either. I wonder if I need to define
-this at all after my patch to add the SMSC USB334x PHY ID. Will check
-tomorrow when I have access to the board.
-
-Thanks for reviewing this!
-
-Best regards,
-Liviu
-
-
-> 
-> 
-> > +
-> > +       ehci@7ffc0000 {
-> > +               compatible = "generic-ehci";
-> > +               reg = <0x0 0x7ffc0000 0x0 0x10000>;
-> > +               interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
-> > +               clocks = <&soc_usb48mhz>;
-> > +               phys = <&ulpi_phy>;
-> > +               phy-names = "usb_ulpi";
-> > +       };
-> > +
-> > +       ohci@7ffb0000 {
-> > +               compatible = "generic-ohci";
-> > +               reg = <0x0 0x7ffb0000 0x0 0x10000>;
-> > +               interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
-> > +               clocks = <&soc_usb48mhz>;
-> > +               phys = <&ulpi_phy>;
-> > +               phy-names = "usb_ulpi";
-> > +       };
-> > +
-> > +       i2c@7ffa0000 {
-> > +               compatible = "snps,designware-i2c";
-> > +               reg = <0x0 0x7ffa0000 0x0 0x1000>;
-> > +               #address-cells = <1>;
-> > +               #size-cells = <0>;
-> > +               interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>;
-> > +               clock-frequency = <400000>;
-> > +               i2c-sda-hold-time-ns = <500>;
-> > +               clocks = <&soc_smc50mhz>;
-> > +
-> > +               dvi0: dvi-transmitter@70 {
-> > +                       compatible = "nxp,tda998x";
-> > +                       reg = <0x70>;
-> > +               };
-> > +
-> > +               dvi1: dvi-transmitter@71 {
-> > +                       compatible = "nxp,tda998x";
-> > +                       reg = <0x71>;
-> > +               };
-> > +       };
-> > +
-> > +       smb {
-> > +               compatible = "simple-bus";
-> > +               #address-cells = <2>;
-> > +               #size-cells = <1>;
-> > +               ranges = <0 0 0 0x08000000 0x04000000>,
-> > +                        <1 0 0 0x14000000 0x04000000>,
-> > +                        <2 0 0 0x18000000 0x04000000>,
-> > +                        <3 0 0 0x1c000000 0x04000000>,
-> > +                        <4 0 0 0x0c000000 0x04000000>,
-> > +                        <5 0 0 0x10000000 0x04000000>;
-> > +
-> > +               #interrupt-cells = <1>;
-> > +               interrupt-map-mask = <0 0 15>;
-> > +               interrupt-map = <0 0  0 &gic 0  68 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  1 &gic 0  69 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  2 &gic 0  70 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  3 &gic 0 160 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  4 &gic 0 161 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  5 &gic 0 162 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  6 &gic 0 163 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  7 &gic 0 164 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  8 &gic 0 165 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0  9 &gic 0 166 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0 10 &gic 0 167 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0 11 &gic 0 168 IRQ_TYPE_LEVEL_HIGH>,
-> > +                               <0 0 12 &gic 0 169 IRQ_TYPE_LEVEL_HIGH>;
-> > +
-> > +               mb_clk24mhz: clk24mhz {
-> > +                       compatible = "fixed-clock";
-> > +                       #clock-cells = <0>;
-> > +                       clock-frequency = <24000000>;
-> > +                       clock-output-names = "juno_mb:clk24mhz";
-> > +               };
-> > +
-> > +               motherboard {
-> > +                       compatible = "arm,vexpress,v2p-p1", "simple-bus";
-> > +                       #address-cells = <2>;  /* SMB chipselect number and offset */
-> > +                       #size-cells = <1>;
-> > +                       #interrupt-cells = <1>;
-> > +                       ranges;
-> > +                       model = "V2M-Juno";
-> > +                       arm,hbi = <0x252>;
-> > +                       arm,vexpress,site = <0>;
-> > +                       arm,v2m-memory-map = "rs1";
-> > +
-> > +                       mb_fixed_3v3: fixedregulator@0 {
-> > +                               compatible = "regulator-fixed";
-> > +                               regulator-name = "MCC_SB_3V3";
-> > +                               regulator-min-microvolt = <3300000>;
-> > +                               regulator-max-microvolt = <3300000>;
-> > +                               regulator-always-on;
-> > +                       };
-> > +
-> > +                       ethernet@2,00000000 {
-> > +                               compatible = "smsc,lan9118", "smsc,lan9115";
-> > +                               reg = <2 0x00000000 0x10000>;
-> > +                               interrupts = <3>;
-> > +                               phy-mode = "mii";
-> > +                               reg-io-width = <4>;
-> > +                               smsc,irq-active-high;
-> > +                               smsc,irq-push-pull;
-> > +                               clocks = <&mb_eth25mhz>;
-> > +                               vdd33a-supply = <&mb_fixed_3v3>;
-> > +                               vddvario-supply = <&mb_fixed_3v3>;
-> > +                       };
-> > +
-> > +                       usb@5,00000000 {
-> > +                               compatible = "nxp,usb-isp1763";
-> > +                               reg = <5 0x00000000 0x20000>;
-> > +                               bus-width = <16>;
-> > +                               interrupts = <4>;
-> > +                       };
-> > +
-> > +                       iofpga@3,00000000 {
-> > +                               compatible = "arm,amba-bus", "simple-bus";
-> > +                               #address-cells = <1>;
-> > +                               #size-cells = <1>;
-> > +                               ranges = <0 3 0 0x200000>;
-> > +
-> > +                               mmci@050000 {
-> > +                                       compatible = "arm,pl180", "arm,primecell";
-> > +                                       reg = <0x050000 0x1000>;
-> > +                                       interrupts = <5>;
-> > +                                       /* cd-gpios = <&v2m_mmc_gpios 0 0>;
-> > +                                       wp-gpios = <&v2m_mmc_gpios 1 0>; */
-> > +                                       max-frequency = <12000000>;
-> > +                                       vmmc-supply = <&mb_fixed_3v3>;
-> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
-> > +                                       clock-names = "mclk", "apb_pclk";
-> > +                               };
-> > +
-> > +                               kmi@060000 {
-> > +                                       compatible = "arm,pl050", "arm,primecell";
-> > +                                       reg = <0x060000 0x1000>;
-> > +                                       interrupts = <8>;
-> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
-> > +                                       clock-names = "KMIREFCLK", "apb_pclk";
-> > +                               };
-> > +
-> > +                               kmi@070000 {
-> > +                                       compatible = "arm,pl050", "arm,primecell";
-> > +                                       reg = <0x070000 0x1000>;
-> > +                                       interrupts = <8>;
-> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
-> > +                                       clock-names = "KMIREFCLK", "apb_pclk";
-> > +                               };
-> > +
-> > +                               wdt@0f0000 {
-> > +                                       compatible = "arm,sp805", "arm,primecell";
-> > +                                       reg = <0x0f0000 0x10000>;
-> > +                                       interrupts = <7>;
-> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
-> > +                                       clock-names = "wdogclk", "apb_pclk";
-> > +                               };
-> > +
-> > +                               v2m_timer01: timer@110000 {
-> > +                                       compatible = "arm,sp804", "arm,primecell";
-> > +                                       reg = <0x110000 0x10000>;
-> > +                                       interrupts = <9>;
-> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
-> > +                                       clock-names = "timclken1", "apb_pclk";
-> > +                               };
-> > +
-> > +                               v2m_timer23: timer@120000 {
-> > +                                       compatible = "arm,sp804", "arm,primecell";
-> > +                                       reg = <0x120000 0x10000>;
-> > +                                       interrupts = <9>;
-> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
-> > +                                       clock-names = "timclken1", "apb_pclk";
-> > +                               };
-> > +
-> > +                               rtc@170000 {
-> > +                                       compatible = "arm,pl031", "arm,primecell";
-> > +                                       reg = <0x170000 0x10000>;
-> > +                                       interrupts = <0>;
-> > +                                       clocks = <&soc_smc50mhz>;
-> > +                                       clock-names = "apb_pclk";
-> > +                               };
-> > +                       };
-> > +               };
-> > +       };
-> > +};
-> > --
-> > 2.1.3
-> >
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+>
+> diff --git a/drivers/staging/rtl8723au/core/rtw_xmit.c b/drivers/staging/rtl8723au/core/rtw_xmit.c
+> index a0f7e27..44ef55c 100644
+> --- a/drivers/staging/rtl8723au/core/rtw_xmit.c
+> +++ b/drivers/staging/rtl8723au/core/rtw_xmit.c
+> @@ -1276,7 +1276,7 @@ s32 rtw_put_snap23a(u8 *data, u16 h_proto)
+>  	snap->oui[0] = oui[0];
+>  	snap->oui[1] = oui[1];
+>  	snap->oui[2] = oui[2];
+> -	*(u16 *)(data + SNAP_SIZE) = htons(h_proto);
+> +	*(__be16 *)(data + SNAP_SIZE) = htons(h_proto);
+>  	return SNAP_SIZE + sizeof(u16);
+>  }
