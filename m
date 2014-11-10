@@ -1,110 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaKJJgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:36:45 -0500
-Received: from mout.web.de ([212.227.15.3]:60179 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423AbaKJJgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:36:44 -0500
-Message-ID: <5460870C.9010109@web.de>
-Date: Mon, 10 Nov 2014 10:36:12 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752258AbaKJJhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:37:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55642 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaKJJhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 04:37:00 -0500
+Date: Mon, 10 Nov 2014 01:36:35 -0800
+From: tip-bot for Andrey Ryabinin <tipbot@zytor.com>
+Message-ID: <tip-c123588b3b193d06588dfb51f475407f835ebfb2@git.kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, a.ryabinin@samsung.com,
+        riel@redhat.com, mingo@kernel.org, tglx@linutronix.de
+Reply-To: hpa@zytor.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        a.ryabinin@samsung.com, riel@redhat.com, tglx@linutronix.de
+In-Reply-To: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
+References: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/numa:
+  Fix out of bounds read in sched_init_numa()
+Git-Commit-ID: c123588b3b193d06588dfb51f475407f835ebfb2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: AMR: sun7i: CPU hotplug support?
-References: <545FC215.7010802@web.de> <20141109231744.GC2989@lukather> <5460554A.1060701@web.de> <5460766B.8070000@web.de> <546082A8.60401@arm.com>
-In-Reply-To: <546082A8.60401@arm.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="7iFXEwL2CGUWMbS4UcVh9JmihJNKHqOVq"
-X-Provags-ID: V03:K0:qHIblZ2DNXt2vbnE+JXTrrjJ9n8VYS9xZdYgjFAu0hHpK7u2tkZ
- e7/yTuPzOR9sJ5ZdOOKhoPRrHDlV286IFVF6hcJGCJvDshI8q5z3iuezCcKJl3n6cMloTro
- 2UCAXZTMJDKVJDQbArxpoKDlGazof4okut3lLXy9xUB13tvZdfHW98RhLusuAvVMqYj8nSm
- koRS0B8mXifum2vY83QVQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---7iFXEwL2CGUWMbS4UcVh9JmihJNKHqOVq
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  c123588b3b193d06588dfb51f475407f835ebfb2
+Gitweb:     http://git.kernel.org/tip/c123588b3b193d06588dfb51f475407f835ebfb2
+Author:     Andrey Ryabinin <a.ryabinin@samsung.com>
+AuthorDate: Fri, 7 Nov 2014 17:53:40 +0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 10 Nov 2014 10:33:22 +0100
 
-On 2014-11-10 10:17, Marc Zyngier wrote:
-> On 10/11/14 08:25, Jan Kiszka wrote:
->> On 2014-11-10 07:03, Jan Kiszka wrote:
->>> On 2014-11-10 00:17, Maxime Ripard wrote:
->>>> Hi Jan,
->>>>
->>>> On Sun, Nov 09, 2014 at 08:35:49PM +0100, Jan Kiszka wrote:
->>>>> did anyone already happen to look into enabling CPU hotplug
->>>>> for the Allwinner A20 in upstream? I'm currently running the
->>>>> sunxi-next branch on Banana Pi, and echo 0 > .../cpu1/online
->>>>> just hangs the system. The old 3.4 LeMaker kernel works fine
->>>>> in this regard. I can try to look into details and port
->>>>> things over, just want to avoid duplicate efforts.
->>>>
->>>> Having hotplug support would indeed be very welcome.
->>>>
->>>> However, it should be done in u-boot, through PSCI, and not in
->>>> the kernel itself.
->>>>
->>>> As far as I'm aware, no one worked actively on it, beside some
->>>> WIP commit from Marc a while ago:=20
->>>> https://git.kernel.org/cgit/linux/kernel/git/maz/u-boot.git/commit/?=
-h=3Dwip/psci&id=3D45379c0f9cf812f0f62722f4015ec907fa5dc144
->>>
->>>
->>>>
-> OK - I guess I will need a little guidance in then: Is there a good
->>> reference board to study and to derive from? And maybe also: What
->>> is missing or not working in that u-boot branch? If I get this
->>> interface right, I just takes some device tree bits to enable
->>> this for the kernel afterward, correct?
->>
->> Started to play with that patch in naive ways: CPU0 locks up when=20
->> offlining CPU1 - unless I disable the FIQ signal from CPU1. Then
->> it "works", both offlining and onlining again. However, I suspect
->> that this only parks CPU1 in wfi and does not do anything
->> interesting to it.
->=20
-> Here's how this is supposed to work:
-> - CPU1 sends a FIQ to CPU0, bringing it into secure mode.
-> - CPU0 then kills CPU1 by doing the magic incantations on the power
-> controller
->=20
-> What is missing here is all the cache cleaning before signalling CPU0.
-> If you add that, things should look a lot better (patches welcome).
+sched/numa: Fix out of bounds read in sched_init_numa()
 
-Unsure about this, or maybe this was too simplistic: I added calls to
-u-boot's flush_dcache_all and invalidate_icache_all (right after
-disabling the cache, just like the vendor kernel does), but CPU0 still
-locks up. I suspect there is still a bug in the FIQ handling. There is
-also a suspicious single "@" printed on the console. I'll play with the
-FIQ handler a bit.
+On latest mm + KASan patchset I've got this:
 
-Jan
+    ==================================================================
+    BUG: AddressSanitizer: out of bounds access in sched_init_smp+0x3ba/0x62c at addr ffff88006d4bee6c
+    =============================================================================
+    BUG kmalloc-8 (Not tainted): kasan error
+    -----------------------------------------------------------------------------
 
+    Disabling lock debugging due to kernel taint
+    INFO: Allocated in alloc_vfsmnt+0xb0/0x2c0 age=75 cpu=0 pid=0
+     __slab_alloc+0x4b4/0x4f0
+     __kmalloc_track_caller+0x15f/0x1e0
+     kstrdup+0x44/0x90
+     alloc_vfsmnt+0xb0/0x2c0
+     vfs_kern_mount+0x35/0x190
+     kern_mount_data+0x25/0x50
+     pid_ns_prepare_proc+0x19/0x50
+     alloc_pid+0x5e2/0x630
+     copy_process.part.41+0xdf5/0x2aa0
+     do_fork+0xf5/0x460
+     kernel_thread+0x21/0x30
+     rest_init+0x1e/0x90
+     start_kernel+0x522/0x531
+     x86_64_start_reservations+0x2a/0x2c
+     x86_64_start_kernel+0x15b/0x16a
+    INFO: Slab 0xffffea0001b52f80 objects=24 used=22 fp=0xffff88006d4befc0 flags=0x100000000004080
+    INFO: Object 0xffff88006d4bed20 @offset=3360 fp=0xffff88006d4bee70
 
+    Bytes b4 ffff88006d4bed10: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+    Object ffff88006d4bed20: 70 72 6f 63 00 6b 6b a5                          proc.kk.
+    Redzone ffff88006d4bed28: cc cc cc cc cc cc cc cc                          ........
+    Padding ffff88006d4bee68: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+    CPU: 0 PID: 1 Comm: swapper/0 Tainted: G    B          3.18.0-rc3-mm1+ #108
+    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+     ffff88006d4be000 0000000000000000 ffff88006d4bed20 ffff88006c86fd18
+     ffffffff81cd0a59 0000000000000058 ffff88006d404240 ffff88006c86fd48
+     ffffffff811fa3a8 ffff88006d404240 ffffea0001b52f80 ffff88006d4bed20
+    Call Trace:
+    dump_stack (lib/dump_stack.c:52)
+    print_trailer (mm/slub.c:645)
+    object_err (mm/slub.c:652)
+    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
+    kasan_report_error (mm/kasan/report.c:102 mm/kasan/report.c:178)
+    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
+    ? kasan_unpoison_shadow (mm/kasan/kasan.c:54)
+    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
+    ? kasan_kmalloc (mm/kasan/kasan.c:311)
+    __asan_load4 (mm/kasan/kasan.c:371)
+    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
+    sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
+    kernel_init_freeable (init/main.c:869 init/main.c:997)
+    ? finish_task_switch (kernel/sched/sched.h:1036 kernel/sched/core.c:2248)
+    ? rest_init (init/main.c:924)
+    kernel_init (init/main.c:929)
+    ? rest_init (init/main.c:924)
+    ret_from_fork (arch/x86/kernel/entry_64.S:348)
+    ? rest_init (init/main.c:924)
+    Read of size 4 by task swapper/0:
+    Memory state around the buggy address:
+     ffff88006d4beb80: fc fc fc fc fc fc fc fc fc fc 00 fc fc fc fc fc
+     ffff88006d4bec00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bec80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bed00: fc fc fc fc 00 fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bed80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+    >ffff88006d4bee00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc 04 fc
+                                                              ^
+     ffff88006d4bee80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bef00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+     ffff88006d4bef80: fc fc fc fc fc fc fc fc fb fb fb fb fb fb fb fb
+     ffff88006d4bf000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+     ffff88006d4bf080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+    ==================================================================
 
---7iFXEwL2CGUWMbS4UcVh9JmihJNKHqOVq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Zero 'level' (e.g. on non-NUMA system) causing out of bounds
+access in this line:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+     sched_max_numa_distance = sched_domains_numa_distance[level - 1];
 
-iEYEARECAAYFAlRghw0ACgkQitSsb3rl5xSXHwCeNscZ5LsgcfKmZO7cNtNXDjUW
-AncAnif0LKcQ+2ChXFcqgS3YswZwkn63
-=p8rb
------END PGP SIGNATURE-----
+Fix this by exiting from sched_init_numa() earlier.
 
---7iFXEwL2CGUWMbS4UcVh9JmihJNKHqOVq--
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Fixes: 9942f79ba ("sched/numa: Export info needed for NUMA balancing on complex topologies")
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1415372020-1871-1-git-send-email-a.ryabinin@samsung.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 6841fb4..5f12ca6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6368,6 +6368,10 @@ static void sched_init_numa(void)
+ 		if (!sched_debug())
+ 			break;
+ 	}
++
++	if (!level)
++		return;
++
+ 	/*
+ 	 * 'level' contains the number of unique distances, excluding the
+ 	 * identity distance node_distance(i,i).
