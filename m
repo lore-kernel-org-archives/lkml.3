@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaKJRpW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:45:22 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:54960 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257AbaKJRpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:45:20 -0500
-Date: Mon, 10 Nov 2014 10:45:11 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v6 04/10] tpm: rename chip->dev to chip->pdev
-Message-ID: <20141110174511.GA5296@obsidianresearch.com>
-References: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1415623794-6090-5-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1753988AbaKJRqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:46:31 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36338 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785AbaKJRqa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 12:46:30 -0500
+Message-ID: <5460F9EF.5010605@gmail.com>
+Date: Mon, 10 Nov 2014 09:46:23 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415623794-6090-5-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+To: Radek Dostal <radek.dostal@streamunlimited.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: Re: [PATCH] ARM: dts: bcm63138: change "interupts" to "interrupts"
+References: <1415637358-24378-1-git-send-email-radek.dostal@streamunlimited.com>
+In-Reply-To: <1415637358-24378-1-git-send-email-radek.dostal@streamunlimited.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 02:49:48PM +0200, Jarkko Sakkinen wrote:
-> Rename chip->dev to chip->pdev to make it explicit that this not the
-> character device but actually represents the platform device.
+On 11/10/2014 08:35 AM, Radek Dostal wrote:
+> all other nodes in bcm63138.dtsi use "interrupts", this had to be just a typo
+> which never got noticed, even it may have quite some consequences.
+> 
+> Signed-off-by: Radek Dostal <radek.dostal@streamunlimited.com>
 
-I don't really have time to take a detailed look at this for a few
-weeks, but I like this entire patch set.
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
- 
-> -		if (try_module_get(pos->dev->driver->owner)) {
-> +		if (try_module_get(pos->pdev->driver->owner)) {
->  			chip = pos;
->  			break;
+> ---
+>  Hi all,
+> 
+>  when running git grep with typo, I spotted this typo inDT binding, which 
+>  looks obviously wrong to me. Sorry I do not have the board to test it, but 
+>  I am pretty sure the patch is correct.
+> 
+>  I hope I included, right people get_maintainer.pl showed bit too many.
+> 
+>  Thanks,
+>  Radek
+> 
+>  arch/arm/boot/dts/bcm63138.dtsi |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/bcm63138.dtsi b/arch/arm/boot/dts/bcm63138.dtsi
+> index f3bb2dd..d2d8e94 100644
+> --- a/arch/arm/boot/dts/bcm63138.dtsi
+> +++ b/arch/arm/boot/dts/bcm63138.dtsi
+> @@ -102,7 +102,7 @@
+>  		twd_watchdog: watchdog@1e620 {
+>  			compatible = "arm,cortex-a9-twd-wdt";
+>  			reg = <0x1e620 0x20>;
+> -			interupts = <GIC_PPI 14 IRQ_TYPE_LEVEL_HIGH>;
+> +			interrupts = <GIC_PPI 14 IRQ_TYPE_LEVEL_HIGH>;
+>  		};
+>  	};
+>  
+> 
 
-Yes, this needs to be pdev
-
->  	if (test_and_set_bit(0, &chip->is_open)) {
-> -		dev_dbg(chip->dev, "Another process owns this TPM\n");
-> +		dev_dbg(chip->pdev, "Another process owns this TPM\n");
->  		return -EBUSY;
-
-This should be moved to the class dev, ie it should ultimately say dev_dbg(&chip->dev,..
-
-Similar comments all over the place.
-
-Jason
