@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaKJGFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 01:05:24 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51800 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaKJGFX (ORCPT
+	id S1751644AbaKJGIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 01:08:13 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:42109 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751184AbaKJGIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 01:05:23 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 10 Nov 2014 15:07:27 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: "P. Christeas" <xrg@linux.gr>, linux-mm@kvack.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Norbert Preining <preining@logic.at>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Pavel Machek <pavel@ucw.cz>
-Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
-Message-ID: <20141110060726.GA4900@js1304-P5Q-DELUXE>
-References: <12996532.NCRhVKzS9J@xorhgos3.pefnos>
- <3583067.00bS4AInhm@xorhgos3.pefnos>
- <545BEA3B.40005@suse.cz>
- <3443150.6EQzxj6Rt9@xorhgos3.pefnos>
- <545E96BD.5040103@suse.cz>
+	Mon, 10 Nov 2014 01:08:11 -0500
+X-Sasl-enc: 8AnugmPAMVqsuf0C2zPdUE0VAGfaj1QggEM34C/NMPwl 1415599688
+Date: Mon, 10 Nov 2014 14:58:05 +0900
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pratik Patel <pratikp@codeaurora.org>
+Subject: Re: linux-next: manual merge of the char-misc tree with the staging
+ tree
+Message-ID: <20141110055805.GA28761@kroah.com>
+References: <20141110165316.5c122b47@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <545E96BD.5040103@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141110165316.5c122b47@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 08, 2014 at 11:18:37PM +0100, Vlastimil Babka wrote:
-> On 11/08/2014 02:11 PM, P. Christeas wrote:
-> > On Thursday 06 November 2014, Vlastimil Babka wrote:
-> >>> On Wednesday 05 November 2014, Vlastimil Babka wrote:
-> >>>> Can you please try the following patch?
-> >>>> -			compaction_defer_reset(zone, order, false);
-> >> Oh and did I ask in this thread for /proc/zoneinfo yet? :)
-> > 
-> > Using that same kernel[1], got again into a race, gathered a few more data.
-> > 
-> > This time, I had 1x "urpmq" process [2] hung at 100% CPU , when "kwin" got 
-> > apparently blocked (100% CPU, too) trying to resize a GUI window. I suppose 
-> > the resizing operation would mean heavy memory alloc/free.
-> > 
-> > The rest of the system was responsive, I could easily get a console, login, 
-> > gather the files.. Then, I have *killed* -9 the "urpmq" process, which solved 
-> > the race and my system is still alive! "kwin" is still running, returned to 
-> > regular CPU load.
-> > 
-> > Attached is traces from SysRq+l (pressed a few times, wanted to "snapshot" the 
-> > stack) and /proc/zoneinfo + /proc/vmstat
-> > 
-> > Bisection is not yet meaningful, IMHO, because I cannot be sure that "good" 
-> > points are really free from this issue. I'd estimate that each test would take 
-> > +3days, unless I really find a deterministic way to reproduce the issue .
+On Mon, Nov 10, 2014 at 04:53:16PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Hi,
+> Today's linux-next merge of the char-misc tree got a conflict in
+> drivers/Makefile between commit 777783e0abae ("staging: android:
+> binder: move to the "real" part of the kernel") from the staging tree and
+> commit a06ae8609b3d ("coresight: add CoreSight core layer framework")
+> from the char-misc tree.
 > 
-> I think I finally found the cause by staring into the code... CCing
-> people from all 4 separate threads I know about this issue.
-> The problem with finding the cause was that the first report I got from
-> Markus was about isolate_freepages_block() overhead, and later Norbert
-> reported that reverting a patch for isolate_freepages* helped. But the
-> problem seems to be that although the loop in isolate_migratepages exits
-> because the scanners almost meet (they are within same pageblock), they
-> don't truly meet, therefore compact_finished() decides to continue, but
-> isolate_migratepages() exits immediately... boom! But indeed e14c720efdd7
-> made this situation possible, as free scaner pfn can now point to a
-> middle of pageblock.
-
-Indeed.
-
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 > 
-> So I hope the attached patch will fix the soft-lockup issues in
-> compact_zone. Please apply on 3.18-rc3 or later without any other reverts,
-> and test. It probably won't help Markus and his isolate_freepages_block()
-> overhead though...
-
-Yes, I found this bug too, but, it can't explain
-isolate_freepages_block() overhead. Anyway, I can't find another bug
-related to isolate_freepages_block(). :/
-
-> Thanks,
-> Vlastimil
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> ------8<------
-> >From fbf8eb0bcd2897090312e23da6a31bad9cc6b337 Mon Sep 17 00:00:00 2001
-> From: Vlastimil Babka <vbabka@suse.cz>
-> Date: Sat, 8 Nov 2014 22:20:43 +0100
-> Subject: [PATCH] mm, compaction: prevent endless loop in migrate scanner
-> 
-> ---
->  mm/compaction.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index ec74cf0..1b7a1be 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -1029,8 +1029,12 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	}
->  
->  	acct_isolated(zone, cc);
-> -	/* Record where migration scanner will be restarted */
-> -	cc->migrate_pfn = low_pfn;
-> +	/* 
-> +	 * Record where migration scanner will be restarted. If we end up in
-> +	 * the same pageblock as the free scanner, make the scanners fully
-> +	 * meet so that compact_finished() terminates compaction.
-> +	 */
-> +	cc->migrate_pfn = (end_pfn <= cc->free_pfn) ? low_pfn : cc->free_pfn;
->  
->  	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
->  }
+> diff --cc drivers/Makefile
+> index 60d19820a4d4,628b512b625b..000000000000
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@@ -161,4 -161,4 +161,5 @@@ obj-$(CONFIG_POWERCAP)		+= powercap
+>   obj-$(CONFIG_MCB)		+= mcb/
+>   obj-$(CONFIG_RAS)		+= ras/
+>   obj-$(CONFIG_THUNDERBOLT)	+= thunderbolt/
+>  +obj-$(CONFIG_ANDROID)		+= android/
+> + obj-$(CONFIG_CORESIGHT)		+= coresight/
 
-IMHO, proper fix is not to change this logic, but, to change decision
-logic in compact_finished() and in compact_zone(). Maybe helper
-function would be good for readability.
 
-Thanks.
+Looks good, thanks.
+
+greg k-h
