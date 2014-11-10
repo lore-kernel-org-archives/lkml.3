@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaKJKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:41:25 -0500
-Received: from mail-yk0-f194.google.com ([209.85.160.194]:65482 "EHLO
-	mail-yk0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaKJKlX (ORCPT
+	id S1752672AbaKJKli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:41:38 -0500
+Received: from mail-yh0-f68.google.com ([209.85.213.68]:53306 "EHLO
+	mail-yh0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaKJKlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:41:23 -0500
+	Mon, 10 Nov 2014 05:41:37 -0500
 From: Andy Yan <andy.yan@rock-chips.com>
 To: airlied@linux.ie, Zubair.Kakakhel@imgtec.com, rmk+kernel@arm.linux.org.uk,
         fabio.estevam@freescale.com, heiko@sntech.de
-Cc: Andy Yan <andy.yan@rock-chips.com>, Arnd Bergmann <arnd@arndb.de>,
-        Yakir Yang <ykk@rock-chips.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>, dri-devel@lists.freedesktop.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Inki Dae <inki.dae@samsung.com>, Lucas Stach <l.stach@pengutronix.de>,
-        Pawel Moll <pawel.moll@arm.com>,
+Cc: Andy Yan <andy.yan@rock-chips.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Airlie <airlied@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
-        Mark Rutland <mark.rutland@arm.com>, Sean Paul <seanpaul@chromium.org>
-Subject: [PATCH v6 0/7] dw-hdmi: convert imx hdmi to bridge/dw-hdmi
-Date: Mon, 10 Nov 2014 18:40:55 +0800
-Message-Id: <1415616062-30583-1-git-send-email-andy.yan@rock-chips.com>
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 2/7] staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
+Date: Mon, 10 Nov 2014 18:40:57 +0800
+Message-Id: <1415616062-30583-3-git-send-email-andy.yan@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415616062-30583-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415616062-30583-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+drm driver may probe before the i2c bus, so the driver should
+defer probing until it is available
 
-We found freescale imx6 and rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
-use the interface compatible Designware HDMI IP, but they also have some
-lightly difference, such as phy pll configuration, register width(imx hdmi
-register is one byte, but rk3288 is 4 bytes width and can only access by word),
-4K support(imx6 doesn't support 4k, but rk3288 does).
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-To reuse the imx-hdmi driver, we do this patch set:
-(1): fix some codingstyle warning to make checkpatch happy
-(2): split out imx-soc code from imx-hdmi to dw_hdmi-imx.c
-(3): move imx-hdmi to bridge/dw-hdmi, and convert it to a drm_bridge driver
-And we will add rockchip platform specific code dw_hdmi-rockchip.c later,
-this is depend on drm-rockchip.
+---
 
-Changes in v6:
-- rearrange the patch order
-- move some modification from patch#5 to  patch#6
-- refactor register access without reg_shift
-
-Changes in v5:
-- refactor reg-io-width
-
+Changes in v6: None
+Changes in v5: None
 Changes in v4:
-- fix checkpatch CHECK
 - defer probe ddc i2c adapter
 
-Changes in v3:
-- split multi register access to one indepent patch
+Changes in v3: None
+Changes in v2: None
 
-Changes in v2:
-- use git format -M to generate these patch
+ drivers/staging/imx-drm/imx-hdmi.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Andy Yan (6):
-  staging: imx-drm: imx-hdmi: make checkpatch happy
-  staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
-  staging: imx-drm: imx-hdmi: split imx soc specific code from imx-hdmi
-  staging: imx-drm: imx-hdmi: move imx-hdmi to bridge/dw-hdmi
-  drm: bridge/dw-hdmi: add support for multi byte register width access
-  dt-bindings: add document for dw-hdmi
-
-Yakir Yang (1):
-  drm: bridge/dw-hdmi: convert dw-hdmi to drm_bridge mode
-
- .../devicetree/bindings/drm/bridge/dw-hdmi.txt     |  38 ++
- drivers/gpu/drm/bridge/Kconfig                     |   5 +
- drivers/gpu/drm/bridge/Makefile                    |   1 +
- .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 725 +++++++++------------
- .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   5 +-
- drivers/staging/imx-drm/Kconfig                    |   1 +
- drivers/staging/imx-drm/Makefile                   |   2 +-
- drivers/staging/imx-drm/dw_hdmi-imx.c              | 263 ++++++++
- include/drm/bridge/dw_hdmi.h                       |  52 ++
- 9 files changed, 668 insertions(+), 424 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
- rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (71%)
- rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
- create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
- create mode 100644 include/drm/bridge/dw_hdmi.h
-
+diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
+index 79daec4..c2b035a 100644
+--- a/drivers/staging/imx-drm/imx-hdmi.c
++++ b/drivers/staging/imx-drm/imx-hdmi.c
+@@ -1611,8 +1611,11 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
+ 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
+ 	if (ddc_node) {
+ 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
+-		if (!hdmi->ddc)
++		if (!hdmi->ddc) {
+ 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
++			of_node_put(ddc_node);
++			return -EPROBE_DEFER;
++		}
+ 
+ 		of_node_put(ddc_node);
+ 	} else {
 -- 
 1.9.1
 
