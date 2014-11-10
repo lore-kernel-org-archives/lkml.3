@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaKJMaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:30:04 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57963 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaKJMaC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:30:02 -0500
-Date: Mon, 10 Nov 2014 13:29:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 1/6] sched: idle: Add a weak arch_cpu_idle_poll
- function
-Message-ID: <20141110122954.GM3337@twins.programming.kicks-ass.net>
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
- <1415370687-18688-2-git-send-email-daniel.lezcano@linaro.org>
+	id S1752784AbaKJMbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:31:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606AbaKJMbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:31:04 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>, Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Tools: hv: vssdaemon: freeze/thaw logic improvement for the failure case
+References: <1415380170-641-1-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C6105A0E13@HKNPRD3002MB017.064d.mgd.msft.net>
+Date: Mon, 10 Nov 2014 13:30:54 +0100
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C6105A0E13@HKNPRD3002MB017.064d.mgd.msft.net>
+	(Dexuan Cui's message of "Sat, 8 Nov 2014 01:07:47 +0000")
+Message-ID: <87vbmnw83l.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415370687-18688-2-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 03:31:22PM +0100, Daniel Lezcano wrote:
-> The poll function is called when a timer expired or if we force to poll when
-> the cpu_idle_force_poll option is set.
-> 
-> The poll function does:
-> 
->        local_irq_enable();
->        while (!tif_need_resched())
->                cpu_relax();
-> 
-> This default poll function suits for the x86 arch because its rep; nop;
-> hardware power optimization. But on other archs, this optimization does not
-> exists and we are not saving power. The arch specific bits may want to
-> optimize this loop by adding their own optimization.
+Dexuan Cui <decui@microsoft.com> writes:
 
-This doesn't make sense to me; should an arch not either implement an
-actual idle driver or implement cpu_relax() properly, why allow for a
-third weird option?
+>> -----Original Message-----
+>> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>> Sent: Saturday, November 8, 2014 1:09 AM
+>> To: KY Srinivasan; Haiyang Zhang; Greg Kroah-Hartman
+>> Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org; Dexuan Cui
+>> Subject: [PATCH 0/3] Tools: hv: vssdaemon: freeze/thaw logic improvement
+>> for the failure case
+>> 
+>> This patch series addresses the following issues:
+>> - Wrong error reporting for multiple filesystems case.
+>> - Skip all readonly-mounted filesystems instead of skipping iso9660.
+>> - Thaw all filesystems after an unsuccessful freeze attempt.
+>> 
+>> Vitaly Kuznetsov (3):
+>>   Tools: hv: vssdaemon: consult with errno in case of failure only
+>>   Tools: hv: vssdaemon: skip all filesystems mounted readonly
+>>   Tools: hv: vssdaemon: thaw everything in case of freeze failure
+>> 
+>>  tools/hv/hv_vss_daemon.c | 14 ++++++++++++--
+>>  1 file changed, 12 insertions(+), 2 deletions(-)
+>
+> Hi Vitaly,
+> Thanks for your patchset!
+>
+> FYI: Greg checked in a patch of mine several hours ago -- my patch
+> implemented "thaw all filesytems on a failure of freeze" too. :-)
+
+Ah, sorry for stepping on your toes :-)
+
+>
+> Please see my patch in Greg's char-misc-next tree:
+> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/commit/?h=char-misc-next&id=4f689190bb55d171d2f6614f8a6cbd4b868e48bd
+>
+> Can you please rebase  your patch(es) on Greg's tree?
+
+Sure, I'll throw away my patch#3, rebase, and repost.
+
+>
+> Thanks,
+> -- Dexuan
+
+-- 
+  Vitaly
