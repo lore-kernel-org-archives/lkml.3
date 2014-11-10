@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaKJNPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:15:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:17440 "EHLO mga11.intel.com"
+	id S1752325AbaKJN0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:26:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53676 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992AbaKJNPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 08:15:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,352,1413270000"; 
-   d="scan'208";a="629515940"
-Message-ID: <1415625297.22887.108.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: Extend UBI layer debug/messaging capabilities -
- cosmetics
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: hujianyang@huawei.com, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Nov 2014 15:14:57 +0200
-In-Reply-To: <5460B553.5060401@codeaurora.org>
-References: <1415531185-2343-1-git-send-email-tlinder@codeaurora.org>
-	 <1415621918.22887.80.camel@sauron.fi.intel.com>
-	 <5460B553.5060401@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750814AbaKJN0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 08:26:49 -0500
+Date: Mon, 10 Nov 2014 14:26:39 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Boaz Harrosh <boaz@plexistor.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@fb.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] brd: Add getgeo to block ops for fdisk
+Message-ID: <20141110132639.GN6880@x2.net.home>
+References: <545A2D69.8090003@plexistor.com>
+ <545A2FEA.3050101@plexistor.com>
+ <20141107092313.GH6880@x2.net.home>
+ <545F9CF7.6090306@plexistor.com>
+ <20141110095403.GL6880@x2.net.home>
+ <54609E56.3050403@plexistor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54609E56.3050403@plexistor.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 14:53 +0200, Tanya Brokhman wrote:
-> On 11/10/2014 2:18 PM, Artem Bityutskiy wrote:
-> > On Sun, 2014-11-09 at 13:06 +0200, Tanya Brokhman wrote:
-> >>
-> >>   /* Normal UBI messages */
-> >>   #define ubi_msg(ubi, fmt, ...) pr_notice("UBI-%d: %s:" fmt "\n", \
-> >> -                                        ubi->ubi_num, __func__, ##__VA_ARGS__)
-> >> +                               (ubi ? ubi->ubi_num : UBI_MAX_DEVICES), \
-> >> +                               __func__, ##__VA_ARGS__)
-> >>   /* UBI warning messages */
-> >>   #define ubi_warn(ubi, fmt, ...) pr_warn("UBI-%d warning: %s: " fmt "\n", \
-> >> -                                       ubi->ubi_num, __func__, ##__VA_ARGS__)
-> >> +                               (ubi ? ubi->ubi_num : UBI_MAX_DEVICES), \
-> >> +                               __func__, ##__VA_ARGS__)
-> >>   /* UBI error messages */
-> >>   #define ubi_err(ubi, fmt, ...) pr_err("UBI-%d error: %s: " fmt "\n", \
-> >> -                                     ubi->ubi_num, __func__, ##__VA_ARGS__)
-> >> +                               (ubi ? ubi->ubi_num : UBI_MAX_DEVICES), \
-> >> +                               __func__, ##__VA_ARGS__)
-> >
-> > Why did you make these changes? It is preferable to not add another 'if'
-> > statement to this macro to handle one or 2 cases - much bloat, little
-> > gain.
-> >
-> > Could we please avoid this?
+On Mon, Nov 10, 2014 at 01:15:34PM +0200, Boaz Harrosh wrote:
+> >> Command (m for help): n
+> >> First sector (34-8158, default 40): 
+> >> Last sector, +sectors or +size{K,M,G,T,P} (40-8158, default 8158): 1717
+> >> Command (m for help): n
+> >> First sector (34-8158, default 1720): 
+> >> # NOTE 34-8158 again, only with gpt
+> > 
+> >  It seems like a fdisk bug, the gap between 34-40 is smaller than phy sector
+> >  size.. I'll fix it, thanks!
+> > 
 > 
-> I just wanted to be on the safe side and prevent this macro being called 
-> with ubi=NULL that may crash the system. If you still prefer the "if" 
-> removed will do.
+> Please note that the final output needs to be 1718-8158 not
+> 40-8158. I was not sure if you noticed from your explanation above.
 
-On the other hand, these are macros, and this if gets duplicated in many
-places and translate into few additional assembly instructions per
-message.
+ Yes, I understand, fixed in util-linux master branch. 
+ 
+ https://github.com/karelzak/util-linux/commit/4a4616b22e21f3c05030dc05d98016fcb15a2ee9
 
-> > The warning looks pretty poor, so I do not mind to remove it, but I
-> > thought your patch is about adding a parameter, but you mix different
-> > kinds of things there. Please, be stricter to the similar UBIFS patch
-> > which you was going to send.
-> 
-> Now I'm confused. I added this msg as part of the patch you already 
-> pushed to your branch but later you requested NOT to add additional msgs 
-> and if required add it in a different patch. So this was added by me and 
-> now removed by me - as per your request.
+    Karel
 
-This comment of mine just repeats that request. It talks about being
-stricter in the future patches and not add/remove messages. It does not
-request to modify this patch. IOW, this change is OK, but please, let's
-make sure we do not have them in the UBIFS patch.
 
-> > How about just turning this into a debug message, not removing?
-> 
-> Same here. Removing this because *you* requested it.
-> Quoting you from V5:
-> "Yes, please, remove these messages or turn them into debugging messages.
-> And yes, these should have been added in a separate patch."
-
-OK, just asking.
-
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
