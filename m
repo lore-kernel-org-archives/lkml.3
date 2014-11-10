@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaKJKtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:49:36 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:53409 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751928AbaKJKte (ORCPT
+	id S1752695AbaKJKty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:49:54 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:63898 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaKJKtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:49:34 -0500
-Message-ID: <1415616570.4862.37.camel@x220>
-Subject: Re: ARM: sti: SOC_STIH407 and STIH407_RESET?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Peter Griffin <peter.griffin@linaro.org>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 11:49:30 +0100
-In-Reply-To: <54609304.4080209@st.com>
-References: <1415614934.4862.22.camel@x220> <54609304.4080209@st.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Nov 2014 10:49:31.0194 (UTC) FILETIME=[01E2C9A0:01CFFCD4]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Nov 2014 05:49:53 -0500
+Date: Mon, 10 Nov 2014 10:49:47 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH 02/13] ARM: STi: DT: STiH416: Add DT node for the
+ stih415/6 usb2 phy
+Message-ID: <20141110104947.GT21424@x1>
+References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
+ <1415361475-6218-3-git-send-email-peter.griffin@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415361475-6218-3-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+On Fri, 07 Nov 2014, Peter Griffin wrote:
 
-On Mon, 2014-11-10 at 11:27 +0100, Maxime Coquelin wrote:
-> The STiH407 reset has been merged in Philipp Zabel Reset tree for v3.19:
-> http://git.pengutronix.de/?p=pza/linux.git;a=shortlog;h=refs/heads/reset/for_v3.19
+> This usb picophy is found on stih415/6 SoC.
 
-That tree isn't part of linux-next, is it? Is it included in a tree that
-itself is included in linux-next, so that it will end up in linux-next
-one of these days?
+Then shouldn't it live in stih41x.dtsi?
 
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  arch/arm/boot/dts/stih416.dtsi | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+> index 1137bdf..0f3019a 100644
+> --- a/arch/arm/boot/dts/stih416.dtsi
+> +++ b/arch/arm/boot/dts/stih416.dtsi
+> @@ -316,5 +316,14 @@
+>  
+>  			status	        = "disabled";
+>  		};
+> +
+> +		usb2_phy: usb2phy@0 {
+> +			compatible = "st,stih416-usb-phy";
+> +			#phy-cells = <0>;
+> +			st,syscfg = <&syscfg_rear>;
+> +			clocks = <&clk_sysin>;
+> +			clock-names = "osc_phy";
+> +
 
-Paul Bolle
+Remove this '\n'.
 
+> +		};
+>  	};
+>  };
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
