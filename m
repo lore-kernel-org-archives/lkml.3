@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaKJD26 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 22:28:58 -0500
-Received: from out4133-130.mail.aliyun.com ([42.120.133.130]:53169 "EHLO
-	out4133-130.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751184AbaKJD25 (ORCPT
+	id S1751948AbaKJD3h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 22:29:37 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:52547 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaKJD3f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 22:28:57 -0500
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Nov 2014 22:28:57 EST
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R141e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r46d02004;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=4;RT=4;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Vlastimil Babka'" <vbabka@suse.cz>, "'P. Christeas'" <xrg@linux.gr>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Cc: <linux-mm@kvack.org>
-References: <00a801cffbd8$434189b0$c9c49d10$@alibaba-inc.com> <1433036.WjB5pb09Zh@xorhgos3.pefnos> <545F3556.5000802@suse.cz>
-In-Reply-To: <545F3556.5000802@suse.cz>
-Subject: Re: Early test: hangs in mm/compact.c w. Linus's 12d7aacab56e9ef185c
-Date: Mon, 10 Nov 2014 11:23:15 +0800
-Message-ID: <00f301cffc95$ab4adad0$01e09070$@alibaba-inc.com>
+	Sun, 9 Nov 2014 22:29:35 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAA3TQH3032195, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Topic: [PATCH net-next 2/2] r8152: adjust rtl_start_rx
+Thread-Index: AQHP+nD06ZRj/kse50uRMFsgi72OwJxU1qgAgARRxyA=
+Date: Mon, 10 Nov 2014 03:29:27 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2ECE0A3@RTITMBSV03.realtek.com.tw>
+References: <1394712342-15778-88-Taiwan-albertk@realtek.com>
+	<1394712342-15778-90-Taiwan-albertk@realtek.com>
+ <20141107.113522.837502028522211960.davem@davemloft.net>
+In-Reply-To: <20141107.113522.837502028522211960.davem@davemloft.net>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQLNGskR6DANUF8ZyPx3jvFQMc78ygEv7npMAmXqJP2aQkTUUA==
-Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > I guess this one would mitigate against Vlastmil's migration scanner issue,
-> > wouldn't it?
+ David Miller [mailto:davem@davemloft.net] 
+> Sent: Saturday, November 08, 2014 12:35 AM
+[...]
+> Does this even work?
 > 
-Nope, I wanted to see  if free pages are low enough.
+> If you leave a hole in the ring, the device is going to stop there
+> anyways.
 
-> Please no, that's a wrong fix. The purpose of compaction is to make the
-> high-order watermark meet, not give up.
-> 
-Yupe, have to spin.
+Excuse me. I don't sure I understand your meaning clearly.
 
---- a/mm/compaction.c	Sun Nov  9 12:02:59 2014
-+++ b/mm/compaction.c	Mon Nov 10 11:12:07 2014
-@@ -1074,6 +1074,8 @@ static int compact_finished(struct zone 
- 	watermark = low_wmark_pages(zone);
- 	watermark += (1 << cc->order);
+The behavior is different for PCI(e) and USB ethernet device.
+The PCI nic could know the ring buffer by certain way, so
+the device could fill the data into the buffer one by one
+automatically. However, for usb nic, the driver has to
+indicate (i.e. submit) each buffer for each data. The device
+doesn't know what is the next buffer by itself. That is,
+the driver determines the order by which the data would be
+filled.
+
+Therefore, when I try to submit 10 rx buffers and some of
+them fail, I could get the data depending on the order of
+the successful ones. Besides, the driver has to submit the
+buffer for next data continually, so the previous unsuccessful
+ones could be tried again for the same time.
  
-+	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
-+		return COMPACT_SKIPPED;
- 	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
- 		return COMPACT_CONTINUE;
- 
---
-
-
+Best Regards,
+Hayes
