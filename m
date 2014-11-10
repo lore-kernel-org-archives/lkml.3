@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaKJLR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:17:27 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41729 "EHLO mga01.intel.com"
+	id S1752485AbaKJLWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:22:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45531 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977AbaKJLRZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:17:25 -0500
+	id S1750933AbaKJLWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 06:22:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,352,1413270000"; 
-   d="scan'208";a="629472752"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "anton@enomsg.org" <anton@enomsg.org>, "pavel@ucw.cz" <pavel@ucw.cz>
-Subject: RE: [PATCH 2/3] power: core: Add variables related temperature to
- power_supply_info.
-Thread-Topic: [PATCH 2/3] power: core: Add variables related temperature to
- power_supply_info.
-Thread-Index: AQHP4h28WS6Qmn8eW0+W+Bid+M8/ppxZ6CGA
-Date: Mon, 10 Nov 2014 11:16:32 +0000
-Message-ID: <20ADAB092842284E95860F279283C5642ED9EDE3@BGSMSX104.gar.corp.intel.com>
-References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
- <1412679518-21499-3-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1412679518-21499-3-git-send-email-jonghwa3.lee@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="629474462"
+Message-ID: <1415618533.14686.239.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] rtc: Disable EFI rtc for x86
+From: Matt Fleming <matt.fleming@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Mark Salter <msalter@redhat.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Date: Mon, 10 Nov 2014 11:22:13 +0000
+In-Reply-To: <20141109182231.GA29337@pd.tnic>
+References: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
+	 <1412348517.5410.13.camel@deneb.redhat.com> <201411091837.47354@pali>
+	 <20141109182231.GA29337@pd.tnic>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [163.33.239.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -241,6 +241,8 @@ struct power_supply_info {
->  	int charge_empty_design;
->  	int energy_full_design;
->  	int energy_empty_design;
-> +	int temperature_max;
-> +	int temperature_min;
->  	int use_for_apm;
->  };
+On Sun, 2014-11-09 at 19:22 +0100, Borislav Petkov wrote:
+> On Sun, Nov 09, 2014 at 06:37:46PM +0100, Pali Rohár wrote:
+> > this patch totally disabled efi rfc driver on x86 machines at 
+> > compile time. But on some x86 machines it working without crash 
+> > and reading from file /sys/class/rtc/rtc*/since_epoch returns 
+> > correct information. So why to disable compiling driver on 
+> > machines where driver working?
+> 
+> Sounds like we need an efi=rtc_enable knob for people who what to use
+> it...
 
+I'm not so sure. By and large, the EFI runtime Time services just don't
+work very well on x86. Just because they work sometimes, doesn't
+actually mean it's a good idea to use them.
 
-The CC,CV and restart threshold would vary based on the battery temperature
-So I would suggest to have temperature zone table as part  of battery info
-along with other attributes.
-
-int iterm; //charge termination current (used to stop charging)
-int temp_zone_count; // number of temperature zone tables present
-struct batt_temp_mon_table temp_mon_tbl[MAX_TEMP_MON_TABLE]; //temperature zone table array
-
-struct  batt_temp_mon_table {
-	 short int temp_max;
-	 short int cc;
-	 short int cv;
-	 short int vbat_vchk_drop_uv;
-	 short int temp_min;
-};
-
--Jenny
+The one scenario where the time services are useful is early on during
+boot when we want to get the timezone information. I have vague
+recollections of someone working on that.
 
