@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaKJLAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:00:30 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:43772 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaKJLA3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:00:29 -0500
-Date: Mon, 10 Nov 2014 11:00:22 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH v2 0/3] regulator: max77686/802: Cleanup
-Message-ID: <20141110110022.GX21424@x1>
-References: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+	id S1752573AbaKJLEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:04:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35781 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752142AbaKJLEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 06:04:06 -0500
+Date: Mon, 10 Nov 2014 11:03:57 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Alex Thorlton <athorlton@sgi.com>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
+Message-ID: <20141110110357.GY21422@suse.de>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+ <87lho0pf4l.fsf@tassilo.jf.intel.com>
+ <544F9302.4010001@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415180871-25293-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <544F9302.4010001@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Nov 2014, Krzysztof Kozlowski wrote:
+On Tue, Oct 28, 2014 at 08:58:42AM -0400, Rik van Riel wrote:
+> On 10/28/2014 08:12 AM, Andi Kleen wrote:
+> > Alex Thorlton <athorlton@sgi.com> writes:
+> > 
+> >> Last week, while discussing possible fixes for some unexpected/unwanted behavior
+> >> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
+> >> mentioned possibly changing changing khugepaged to work as a task_work function
+> >> instead of a kernel thread.  This will give us finer grained control over the
+> >> page collapse scans, eliminate some unnecessary scans since tasks that are
+> >> relatively inactive will not be scanned often, and eliminate the unwanted
+> >> behavior described in the email thread I mentioned.
+> > 
+> > With your change, what would happen in a single threaded case?
+> > 
+> > Previously one core would scan and another would run the workload.
+> > With your change both scanning and running would be on the same
+> > core.
+> > 
+> > Would seem like a step backwards to me.
+> 
 
-> Hi,
-> 
-> 
-> Changes since v1
-> ================
-> 1. Rebase on next-20141105, now it should apply cleanly to regulator
->    tree.
-> 2. Remove first 3 patches, applied by Mark.
-> 
-> 
-> Description
-> ===========
-> Previously this patchset was part of adding GPIO to max77686
-> regulator driver [1]. I split it but the goal is the same:
-> cleanup and simplify the regulator drivers by removing obsolete
-> board file support so adding new features would be easier.
-> 
-> The patchset removes board file support from regulator drivers
-> incrementally and in a bisect-friendly way. Thus MFD driver is
-> updated at the end.
-> 
-> Everything should be pulled at once (preferrably regulator tree).
-> Rebased on next-20141105.
+Only in the single-threaded, one process for the whole system case.
+khugepaged can only scan one address space at a time and if processes
+fail to allocate a huge page on fault then they must wait until
+khugepaged gets to scan them. The wait time is not unbounded, but it
+could be considerable.
 
-I'm happy for that to happen, so long as Mark sends me a tagged commit
-to pull from.
+As pointed out elsewhere, scanning from task-work context allows the
+scan rate to adapt due to different inputs -- runtime on CPU probably
+being the most relevant. Another scan factor could be NUMA sharing within
+THP-boundaries in which case we don't want to either collapse or continue
+scanning at the same rate.
 
-> The changes on max77802 were not tested.
-> I am kindly asking for testing it because I don't have the board
-> with Maxim 77802.
+> It's not just scanning, either.
 > 
+> Memory compaction can spend a lot of time waiting on
+> locks. Not consuming CPU or anything, but just waiting.
 > 
-> [1] [PATCH v3 00/14] regulator: max77686: Add GPIO control
->     https://lkml.org/lkml/2014/10/30/270
+
+I did not pick apart the implementation closely as it's still RFC but
+there is no requirement for the reclaim/compaction to take place from
+task work context. That would likely cause user-visible stalls in any
+number of situations can trigger bug reports.
+
+One possibility would be to try allocate a THP GFP_ATOMIC from task_work
+context and only start the scan if that allocation succeeds. Scan the
+address space for a THP to collapse. If a collapse target it found and
+the allocated THP is on the correct node then great -- use it. If not,
+the first page should be freed and a second GFP_ATOMIC allocation
+attempt made. 
+
+If a THP allocation fails then wake we need something to try allocate the
+page on the processes behalf. khugepaged could be repurposed to do the
+reclaim/compaction step or kswapd could be woken up. Either option may
+be tricky to get right as currently waking kswapd is avoided to prevent
+excessive reclaim. khugepaged could do the work but would need similar
+back-off logic in the event of failures. Workqueues could also be used
+but I'd worry about controlling the number of active workqueue requests
+and accounting for the reclaim/compaction work is tricker if workqueues
+were used. 
+
+> I am not convinced that moving all that waiting to task
+> context is a good idea.
 > 
-> 
-> Best regards,
-> Krzysztof Kozlowski
-> 
-> 
-> Krzysztof Kozlowski (3):
->   regulator: max77802: Remove support for board files
->   regulator: max77686: Remove support for board files
->   mfd: max77686/802: Remove support for board files
-> 
->  drivers/mfd/Kconfig                  |  1 +
->  drivers/mfd/max77686.c               | 23 ---------
->  drivers/regulator/max77686.c         | 91 ++++++++---------------------------
->  drivers/regulator/max77802.c         | 92 ++++++++----------------------------
->  include/linux/mfd/max77686-private.h |  1 -
->  include/linux/mfd/max77686.h         | 28 -----------
->  6 files changed, 39 insertions(+), 197 deletions(-)
-> 
+
+It allows the scanning of page tables to be parallelised, moves the
+work into the task context where it can be accounted for and the scan
+rate can be adapted to prevent useless work. I think those are desirable
+characteristics although there is no data on the expected gains of doing
+something like this. It's the proper deferral of THP allocations that is
+likely to cause the most headaches.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mel Gorman
+SUSE Labs
