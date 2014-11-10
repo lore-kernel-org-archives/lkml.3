@@ -1,152 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaKJAcw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 19:32:52 -0500
-Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:34311 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751268AbaKJAcu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 19:32:50 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:966:968:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1544:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:4250:4321:4385:4605:5007:6119:6261:10004:10394:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12679:13972:14093:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: salt62_52c471f67be5b
-X-Filterd-Recvd-Size: 4833
-Message-ID: <1415579566.23530.47.camel@perches.com>
-Subject: [PATCH net-next] dsa: Use netdev_<level> instead of printk
-From: Joe Perches <joe@perches.com>
-To: netdev <netdev@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Date: Sun, 09 Nov 2014 16:32:46 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751626AbaKJApe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 19:45:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55661 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320AbaKJApc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 19:45:32 -0500
+Date: Mon, 10 Nov 2014 11:45:18 +1100
+From: NeilBrown <neilb@suse.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        GTA04 owners <gta04-owner@goldelico.com>, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ASoC: twl4030: don't report EBUSY if no change
+ requested.
+Message-ID: <20141110114518.715dcd4e@notabene.brown>
+In-Reply-To: <20141108092242.GB2722@sirena.org.uk>
+References: <20141108002637.6561.19002.stgit@notabene.brown>
+	<20141108003803.6561.42934.stgit@notabene.brown>
+	<20141108092242.GB2722@sirena.org.uk>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/Ry163USoKLJGigS4hoDEhBo"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neaten and standardize the logging output.
+--Sig_/Ry163USoKLJGigS4hoDEhBo
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Other miscellanea:
+On Sat, 8 Nov 2014 09:22:42 +0000 Mark Brown <broonie@kernel.org> wrote:
 
-o Use pr_notice_once instead of a guard flag.
-o Convert existing pr_<level> uses too.
+> On Sat, Nov 08, 2014 at 11:38:03AM +1100, NeilBrown wrote:
+>=20
+> > +	int val =3D ucontrol->value.integer.value[0];
+> > +
+> > +	if (!!(twl4030_read(codec, TWL4030_REG_CODEC_MODE)
+> > +	       & TWL4030_OPTION_1) =3D=3D !!val)
+> > +		/* No change */
+> > +		return 0;
+>=20
+> We shouldn't be accepting attempts to set out of range values so there
+> should be no need for the !! on val (which confused me when I was
+> reading this).
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/dsa/dsa.c   | 28 ++++++++++++----------------
- net/dsa/slave.c | 10 +++++-----
- 2 files changed, 17 insertions(+), 21 deletions(-)
+True, the '!!' on val isn't necessary.
 
-diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-index dd646a8..4648f12 100644
---- a/net/dsa/dsa.c
-+++ b/net/dsa/dsa.c
-@@ -192,12 +192,12 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
- 	 */
- 	drv = dsa_switch_probe(host_dev, pd->sw_addr, &name);
- 	if (drv == NULL) {
--		printk(KERN_ERR "%s[%d]: could not detect attached switch\n",
--		       dst->master_netdev->name, index);
-+		netdev_err(dst->master_netdev, "[%d]: could not detect attached switch\n",
-+			   index);
- 		return ERR_PTR(-EINVAL);
- 	}
--	printk(KERN_INFO "%s[%d]: detected a %s switch\n",
--		dst->master_netdev->name, index, name);
-+	netdev_info(dst->master_netdev, "[%d]: detected a %s switch\n",
-+		    index, name);
- 
- 
- 	/*
-@@ -225,7 +225,8 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
- 
- 		if (!strcmp(name, "cpu")) {
- 			if (dst->cpu_switch != -1) {
--				printk(KERN_ERR "multiple cpu ports?!\n");
-+				netdev_err(dst->master_netdev,
-+					   "multiple cpu ports?!\n");
- 				ret = -EINVAL;
- 				goto out;
- 			}
-@@ -320,10 +321,8 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
- 
- 		slave_dev = dsa_slave_create(ds, parent, i, pd->port_names[i]);
- 		if (slave_dev == NULL) {
--			printk(KERN_ERR "%s[%d]: can't create dsa "
--			       "slave device for port %d(%s)\n",
--			       dst->master_netdev->name,
--			       index, i, pd->port_names[i]);
-+			netdev_err(dst->master_netdev, "[%d]: can't create dsa slave device for port %d(%s)\n",
-+				   index, i, pd->port_names[i]);
- 			continue;
- 		}
- 
-@@ -701,15 +700,13 @@ static inline void dsa_of_remove(struct platform_device *pdev)
- 
- static int dsa_probe(struct platform_device *pdev)
+I took the opportunity to look around a bit more and discovered there was a
+snd_soc_get_enum_double, which I really should use in preference to
+twl4030_read.
+
+So here is the new version.  Can it be taken out of the email, or should I
+resend stand-alone?
+
+Thanks,
+NeilBrown
+
+
+From: NeilBrown <neilb@suse.de>
+Date: Wed, 2 Oct 2013 14:45:52 +1000
+Subject: [PATCH] ASoC: twl4030: don't report EBUSY if no change requested.
+
+"mode" must not be changed when active.
+However if a request is received to set the mode to what it currently
+is, that is also rejected when active, which causes confusing
+error messages.
+
+So check first and if no change is actually requested, don't report
+an error.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index b6b0cb399599..613b61cee081 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -957,6 +957,16 @@ static int snd_soc_put_twl4030_opmode_enum_double(stru=
+ct snd_kcontrol *kcontrol,
  {
--	static int dsa_version_printed;
- 	struct dsa_platform_data *pd = pdev->dev.platform_data;
- 	struct net_device *dev;
- 	struct dsa_switch_tree *dst;
- 	int i, ret;
- 
--	if (!dsa_version_printed++)
--		printk(KERN_NOTICE "Distributed Switch Architecture "
--			"driver version %s\n", dsa_driver_version);
-+	pr_notice_once("Distributed Switch Architecture driver version %s\n",
-+		       dsa_driver_version);
- 
- 	if (pdev->dev.of_node) {
- 		ret = dsa_of_probe(pdev);
-@@ -753,9 +750,8 @@ static int dsa_probe(struct platform_device *pdev)
- 
- 		ds = dsa_switch_setup(dst, i, &pdev->dev, pd->chip[i].host_dev);
- 		if (IS_ERR(ds)) {
--			printk(KERN_ERR "%s[%d]: couldn't create dsa switch "
--				"instance (error %ld)\n", dev->name, i,
--				PTR_ERR(ds));
-+			netdev_err(dev, "[%d]: couldn't create dsa switch instance (error %ld)\n",
-+				   i, PTR_ERR(ds));
- 			continue;
- 		}
- 
-diff --git a/net/dsa/slave.c b/net/dsa/slave.c
-index 0ea466d..528380a 100644
---- a/net/dsa/slave.c
-+++ b/net/dsa/slave.c
-@@ -532,7 +532,7 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
- 		 */
- 		ret = of_phy_register_fixed_link(port_dn);
- 		if (ret) {
--			pr_err("failed to register fixed PHY\n");
-+			netdev_err(slave_dev, "failed to register fixed PHY\n");
- 			return;
- 		}
- 		phy_is_fixed = true;
-@@ -558,8 +558,8 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
- 		phy_connect_direct(slave_dev, p->phy, dsa_slave_adjust_link,
- 				   p->phy_interface);
- 	} else {
--		pr_info("attached PHY at address %d [%s]\n",
--			p->phy->addr, p->phy->drv->name);
-+		netdev_info(slave_dev, "attached PHY at address %d [%s]\n",
-+			    p->phy->addr, p->phy->drv->name);
- 	}
- }
- 
-@@ -657,8 +657,8 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
- 
- 	ret = register_netdev(slave_dev);
- 	if (ret) {
--		printk(KERN_ERR "%s: error %d registering interface %s\n",
--				master->name, ret, slave_dev->name);
-+		netdev_err(master, "error %d registering interface %s\n",
-+			   ret, slave_dev->name);
- 		free_netdev(slave_dev);
- 		return NULL;
- 	}
+ 	struct snd_soc_codec *codec =3D snd_soc_kcontrol_codec(kcontrol);
+ 	struct twl4030_priv *twl4030 =3D snd_soc_codec_get_drvdata(codec);
++	struct snd_ctl_elem_value currentval;
++	int ret;
++
++	ret =3D snd_soc_get_enum_double(kcontrol, &currentval);
++	if (ret)
++		return ret;
++	if (ucontrol->value.enumerated.item[0] =3D=3D
++	    currentval.value.enumerated.item[0])
++		/* No change */
++		return 0;
+=20
+ 	if (twl4030->configured) {
+ 		dev_err(codec->dev,
 
+--Sig_/Ry163USoKLJGigS4hoDEhBo
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVGAKnjnsnt1WYoG5AQINZQ//VDIecdqCM5IduFfNuGehnhN0g6yQQpYD
+/OVxUHOlUjbqCMkW+ny+aK+X4qlDkGXruWe3v27fC0o7TCw4t8T3iNwmEAHrM1Fy
+BLigMrwTI0+MotekbSfLa/3VkGOYN41Crcu7Z5ghtGKQJS9u/VnbE4YsSh1ZWLyQ
+e5rs/1GO6ea18aIYIyYw3wvZp4JYYaMSHB4AZXoLjc205fLJs9lo5KROAk4gMApn
+XT/P+0L+ne2yqV++OEQGY1TVayZftFCEDPJq0uiVM0lNrT2SX/LydRMXDo5Venze
+eYg6XCXfono7521fLi2w61ACy/bm8hkrTDUG544o/hDR8tD0hs0JkO+6Zgx5kNYD
+qq8b//9tEHxc5V+/cAsVjltUlxp8pMn1LBitqcgP7rSzSDLeFIhy56d4M2rY1nuh
+d3xtpjATJXbiuUv02CF90ZwckntpROA8yseK/wr46LLgsCW8sePgSoMYYZ5NVBli
+rns7DKwo8TitdzyHVFjg6e0OZBpp6x0hyzlbpHElTG1501hKzCvCkr0xlaC/TCwx
+POW41A9tc9Jx5qMDn8ZwOhdrewTA6cJ+ikuoUMalBwDpHteE1CRUqdmpgNm5d5/1
+cgqqJ01yQNLvk30pKLjmKr+mo0VimjpO2Qh6pZMKVJnRW1QB9nH86xyGiYDjO7H6
+zqcImho01ik=
+=0Zzo
+-----END PGP SIGNATURE-----
+
+--Sig_/Ry163USoKLJGigS4hoDEhBo--
