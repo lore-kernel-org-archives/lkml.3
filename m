@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaKJDl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 22:41:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60476 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbaKJDl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 22:41:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,350,1413270000"; 
-   d="scan'208";a="619756839"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "anton@enomsg.org" <anton@enomsg.org>, "pavel@ucw.cz" <pavel@ucw.cz>
-Subject: RE: [PATCH 1/3] power: core: Add generic interface to get battery
- specification.
-Thread-Topic: [PATCH 1/3] power: core: Add generic interface to get battery
- specification.
-Thread-Index: AQHP4h263BcJpDIneE+5kaYQB24XuZxWs9dQgAIyEwCAAIUrQA==
-Date: Mon, 10 Nov 2014 03:41:04 +0000
-Message-ID: <20ADAB092842284E95860F279283C5642ED9B294@BGSMSX104.gar.corp.intel.com>
-References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
- <1412679518-21499-2-git-send-email-jonghwa3.lee@samsung.com>
- <20ADAB092842284E95860F279283C5642ED8AE04@BGSMSX104.gar.corp.intel.com>
- <5460109E.9060603@samsung.com>
-In-Reply-To: <5460109E.9060603@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1751987AbaKJDtI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 22:49:08 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:33728 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751789AbaKJDtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 22:49:05 -0500
+X-Sasl-enc: 9tbGJZxAhZ6GggHXbo7MWhQmQxDWWfyK3IV32yC/kMc9 1415591343
+Date: Mon, 10 Nov 2014 11:56:36 +0900
+From: Greg KH <greg@kroah.com>
+To: Peter Weber <peter.weber@ttyhoney.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [drm/i915: Do not store the error pointer for a failed userptr
+ registration] Candidate for stable tree?
+Message-ID: <20141110025636.GA29809@kroah.com>
+References: <574931b8edea4d60014d5e9b31daa4a1@ttyhoney.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <574931b8edea4d60014d5e9b31daa4a1@ttyhoney.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAA3g4Ls025188
 
+On Fri, Oct 31, 2014 at 04:41:02PM +0100, Peter Weber wrote:
+> Hello!
 > 
-> >> +ATOMIC_NOTIFIER_HEAD(psy_battery_info_notifier);
-> >
-> >  Isn't it good to reuse the existing power_supply_notifier for this?
-> >
-> >> +enum battery_info_notifier_events {
-> >> +	PSY_BATT_INFO_REGISTERED,
-> >> +	PSY_BATT_INFO_UNREGISTERED,
-> >> +};
-> >
-> > If we use the power_supply_notifier, then this can be moved to
-> > enum power_supply_notifier_events
-> >
+> Is the patch[0] mentioned in the subject a possible candidate for the next
+> release of the stable kernel, at time of writing "3.17.3"? It looks like,
+> this is
+> causing serious problems and we are currently discussing this on the
+> bugtracker of
+> Archlinux[1].
 > 
+> I'm not sure if I'm personally affected. I suffered unexpected freezes
+> since 3.17-rc4 on my machine, at least STDIO and STDOUT are frozen. Maybe
+> the
+> reaction differs based on the kernel options (see changed behaviour
+> through
+> CONFIG_PREEMPT_VOLUNTARY=y). In my case, I don't see a null pointer in my
+> log
+> files.
 > 
-> It doesn't use power_supply_notifier, rather than it uses newly introduced
-> notifier for battery information. Intention of making of new notifier block here
-> is to extinguish event from power_supply_changed which might be noisy for
-> battery information consumer. However, If it looks wasteful code, it's not a big
-> deal to use existed power_supply_notifier.
+> I hope this doesn't offend against the stable kernel rules.
+> 
+> [0]
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e9681366ea9e76ab8f75e84351f2f3ca63ee542c
+> # commit id is: e9681366ea9e76ab8f75e84351f2f3ca63ee542c
+> # already send to stable@vger.kernel.org, but not included in current
+> stable "3.17.2"
+> [1] https://bugs.archlinux.org/task/42353
 
-Using the power_supply_notifier helps to get all power supply notifications
-(power_supply_chnaged, battery info register/unregister, ..) using a single notifier. The
-consumers can ignore the unwanted events.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It's now queued up, sorry, the backlog is really long right now :(
