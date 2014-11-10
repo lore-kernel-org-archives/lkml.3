@@ -1,110 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaKJFRq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 00:17:46 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:49832 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaKJFRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 00:17:43 -0500
-X-IronPort-AV: E=Sophos;i="5.07,350,1413270000"; 
-   d="scan'208";a="50475935"
-Message-ID: <54604A71.1010000@broadcom.com>
-Date: Sun, 9 Nov 2014 21:17:37 -0800
-From: Scott Branden <sbranden@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751507AbaKJFUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 00:20:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56940 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750730AbaKJFUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 00:20:12 -0500
+Date: Sun, 9 Nov 2014 21:20:09 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Changman Lee <cm224.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH 3/5] f2fs: control the memory footprint used
+ by ino entries
+Message-ID: <20141110052009.GB21743@jaegeuk-mac02.mot-mobility.com>
+References: <1415518569-20626-1-git-send-email-jaegeuk@kernel.org>
+ <1415518569-20626-3-git-send-email-jaegeuk@kernel.org>
+ <20141110032834.GA14659@lcm>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Olof Johansson <olof@lixom.net>, Christian Daudt <bcm@fixthebug.org>,
-        Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        "Mike Turquette" <mturquette@linaro.org>,
-        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ray Jui <rjui@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        JD Zheng <jdzheng@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 4/8] ARM: dts: Enable Broadcom Cygnus SoC
-References: <sbranden@broadcom.com> <CAOesGMhd37UM+7+6eR9iLY22Fb9cG1dr8dD4DAzLJNRmtysnkg@mail.gmail.com> <20141109172311.GB738@kroah.com> <5982323.RDuqIHPULA@wuerfel>
-In-Reply-To: <5982323.RDuqIHPULA@wuerfel>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110032834.GA14659@lcm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-11-09 12:38 PM, Arnd Bergmann wrote:
-> On Sunday 09 November 2014 09:23:11 Greg Kroah-Hartman wrote:
->> On Sat, Nov 08, 2014 at 10:49:09PM -0800, Olof Johansson wrote:
->>>>>> +/*
->>>>>> + * Copyright 2014 Broadcom Corporation.  All rights reserved.
->>>>>> + *
->>>>>> + * Unless you and Broadcom execute a separate written software license
->>>>>> + * agreement governing use of this software, this software is licensed
->>>>>> to you
->>>>>> + * under the terms of the GNU General Public License as
->>>>>> + * published by the Free Software Foundation version 2.
->>>>>> + *
->>>>>> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->>>>>> + * kind, whether express or implied; without even the implied warranty
->>>>>> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>>>>> + * GNU General Public License for more details.
->>>>>
->>>>>
->>>>> We ask for new DT contents to be added with dual BSD/GPL license, to
->>>>> allow for reuse of the DT data structures in other projects as well.
->>>>> There's currently a lot of activity going on relicensing the current
->>>>> files so I recommend sorting it out before they are added if you can.
->>>>
->>>>
->>>> This may take more time than you think.  I am going to have to go through
->>>> legal to get such a license created. Also, why would you need dual license?
->>>> If it is BSD that should serve both purposes?
->>>
->>> I haven't followed the discussion close enough to know if there's been
->>> discussion about single-license BSD vs dual BSD/GPL.
->
-> I think for all practical purposes, BSD and dual BSD/GPL is the same and
-> listing it as dual was meant as a clarification to make it easier to see
-> that all files in the kernel are GPLv2 compatible.
-A dual BSD/GPL may involve having me get a lawyer to create such a 
-header.  I would prefer to leave it as GPL for now until some concrete 
-decision has finally been made on this by the rest of the community? 
-Or, I can put it as BSD right now if that helps?
->
->>> At the very least, please start the process of getting it changed.
->>>
->>> Also, I see now that this isn't even a clean GPL v2, given "Unless you
->>> and Broadcom..." language. I see the bnx2x driver had that in the
->>> past, but none of the Kona contributions did. I strongly suggest
->>> sticking to the normal copyrights here and not making things more
->>> complicated than they have to.
->>
->> I'm thinking that the "unless you and Broadcom..." language really
->> doesn't mean much other than what all other files in the kernel mean
->> from what I can tell.  This should just default to GPLv2 and everyone
->> should be ok.
->
-> I would hope so at least. It's certainly not obvious whether that means
-> Broadcom can give additional rights to someone over what someone else
-> contributed upstream, or worse if this becomes GPL-incompatible and
-> makes the kernel undistributable for anybody who has an additional
-> license agreement that doesn't give them all the rights that they already
-> had under the GPL.
-I'll change the header on these files so there are no disagreements.
->
-> 	Arnd
->
+On Mon, Nov 10, 2014 at 12:28:34PM +0900, Changman Lee wrote:
+> On Sat, Nov 08, 2014 at 11:36:07PM -0800, Jaegeuk Kim wrote:
+> > This patch adds to control the memory footprint used by ino entries.
+> > This will conduct best effort, not strictly.
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  fs/f2fs/node.c    | 28 ++++++++++++++++++++++------
+> >  fs/f2fs/node.h    |  3 ++-
+> >  fs/f2fs/segment.c |  3 ++-
+> >  3 files changed, 26 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > index 44b8afe..4ea2c47 100644
+> > --- a/fs/f2fs/node.c
+> > +++ b/fs/f2fs/node.c
+> > @@ -31,22 +31,38 @@ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
+> >  {
+> >  	struct f2fs_nm_info *nm_i = NM_I(sbi);
+> >  	struct sysinfo val;
+> > +	unsigned long avail_ram;
+> >  	unsigned long mem_size = 0;
+> >  	bool res = false;
+> >  
+> >  	si_meminfo(&val);
+> > -	/* give 25%, 25%, 50% memory for each components respectively */
+> > +
+> > +	/* only uses low memory */
+> > +	avail_ram = val.totalram - val.totalhigh;
+> > +
+> > +	/* give 25%, 25%, 50%, 50% memory for each components respectively */
+> 
+> Hi Jaegeuk,
+> 
+> The memory usage of nm_i should be 100% but it's 125%.
+> Mistake or intended?
 
+I contemplated whether this 100% was an exact number that we expected.
+The answer was NO, since this number was just an estimated one.
+There were no strict constrains to limit memory footprints even the previous
+codes were used whatever 25%, 25%, and 50%.
+
+So, here, I'd like to add additional threshold for INO_ENTRIES on a basis
+of the given threshold.
+In addition, I don't want to add any complex equations to satisfy 100% at all.
+It's meaningless.
+
+Thanks,
+
+> 
+> >  	if (type == FREE_NIDS) {
+> > -		mem_size = (nm_i->fcnt * sizeof(struct free_nid)) >> 12;
+> > -		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
+> > +		mem_size = (nm_i->fcnt * sizeof(struct free_nid)) >>
+> > +							PAGE_CACHE_SHIFT;
+> > +		res = mem_size < ((avail_ram * nm_i->ram_thresh / 100) >> 2);
+> >  	} else if (type == NAT_ENTRIES) {
+> > -		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
+> > -		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
+> > +		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >>
+> > +							PAGE_CACHE_SHIFT;
+> > +		res = mem_size < ((avail_ram * nm_i->ram_thresh / 100) >> 2);
+> >  	} else if (type == DIRTY_DENTS) {
+> >  		if (sbi->sb->s_bdi->dirty_exceeded)
+> >  			return false;
+> >  		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
+> > -		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
+> > +		res = mem_size < ((avail_ram * nm_i->ram_thresh / 100) >> 1);
+> > +	} else if (type == INO_ENTRIES) {
+> > +		int i;
+> > +
+> > +		if (sbi->sb->s_bdi->dirty_exceeded)
+> > +			return false;
+> > +		for (i = 0; i <= UPDATE_INO; i++)
+> > +			mem_size += (sbi->ino_num[i] * sizeof(struct ino_entry))
+> > +							>> PAGE_CACHE_SHIFT;
+> > +		res = mem_size < ((avail_ram * nm_i->ram_thresh / 100) >> 1);
+> >  	}
+> >  	return res;
+> >  }
+> > diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+> > index acb71e5..d10b644 100644
+> > --- a/fs/f2fs/node.h
+> > +++ b/fs/f2fs/node.h
+> > @@ -106,7 +106,8 @@ static inline void raw_nat_from_node_info(struct f2fs_nat_entry *raw_ne,
+> >  enum mem_type {
+> >  	FREE_NIDS,	/* indicates the free nid list */
+> >  	NAT_ENTRIES,	/* indicates the cached nat entry */
+> > -	DIRTY_DENTS	/* indicates dirty dentry pages */
+> > +	DIRTY_DENTS,	/* indicates dirty dentry pages */
+> > +	INO_ENTRIES,	/* indicates inode entries */
+> >  };
+> >  
+> >  struct nat_entry_set {
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index 16721b5d..e094675 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -276,7 +276,8 @@ void f2fs_balance_fs_bg(struct f2fs_sb_info *sbi)
+> >  {
+> >  	/* check the # of cached NAT entries and prefree segments */
+> >  	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK) ||
+> > -				excess_prefree_segs(sbi))
+> > +			excess_prefree_segs(sbi) ||
+> > +			available_free_memory(sbi, INO_ENTRIES))
+> >  		f2fs_sync_fs(sbi->sb, true);
+> >  }
+> >  
+> > -- 
+> > 2.1.1
+> > 
+> > 
+> > ------------------------------------------------------------------------------
+> > _______________________________________________
+> > Linux-f2fs-devel mailing list
+> > Linux-f2fs-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
