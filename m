@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaKJOtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:49:21 -0500
-Received: from smtp103.mer-nm.internl.net ([217.149.192.139]:44365 "EHLO
-	smtp103.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752862AbaKJOtU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:49:20 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.9
-X-Spam-Languages: en
-Message-ID: <5460D067.3020502@topic.nl>
-Date: Mon, 10 Nov 2014 15:49:11 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753266AbaKJOt3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:49:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:56316 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753108AbaKJOt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 09:49:26 -0500
+Date: Mon, 10 Nov 2014 06:49:24 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Changman Lee <cm224.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH v2] f2fs: implement -o dirsync
+Message-ID: <20141110144924.GA25172@jaegeuk-mac02.hsd1.ca.comcast.net>
+References: <1415600662-23337-1-git-send-email-jaegeuk@kernel.org>
+ <20141110074712.GD14659@lcm>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-i2c@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-davinci: Handle signals gracefully
-References: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl> <1394779348-4084-1-git-send-email-mike.looijmans@topic.nl> <20140324161432.GA7524@katana> <20140521081727.GE2708@katana> <53808851.7060308@topic.nl> <20140601201134.GA3853@katana> <20141108215155.GA1266@katana>
-In-Reply-To: <20141108215155.GA1266@katana>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110074712.GD14659@lcm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 11/08/2014 10:51 PM, Wolfram Sang wrote:
-> On Sun, Jun 01, 2014 at 10:11:34PM +0200, Wolfram Sang wrote:
->>
->>> Feel free to adap my patch or comments and commit. Or wait a few weeks for
->>> when I have a sponsor to split and update the patch.
->>
->> OK, I'll hope you can make it for 3.17. Thanks!
->
-> I now picked the part removing the interruptible-call. The part with
-> the new exit-path would need to be resend and retested in case anyone
-> is still caring.
->
+Change log from v1:
+ o call sync after mark_inode_dirty
 
-I think that's the right thing to do. There seems to be little interest in the 
-rest of the I2C controller, and it's a tough one to test (you'd have to 
-trigger an I2C error at exactly the moment that a clock frequency change is 
-about to occur...).
+If a mount option has dirsync, we should call checkpoint for all the directory
+operations.
 
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/f2fs/namei.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-
-
-Met vriendelijke groet / kind regards,
-
-Mike Looijmans
-System Expert
-
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
-Topic zoekt gedreven (embedded) software specialisten!
-http://topic.nl/vacatures/topic-zoekt-software-engineers/
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 6312dd2..2bee559 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -138,6 +138,9 @@ static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+ 	stat_inc_inline_inode(inode);
+ 	d_instantiate(dentry, inode);
+ 	unlock_new_inode(inode);
++
++	if (IS_DIRSYNC(dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return 0;
+ out:
+ 	handle_failed_inode(inode);
+@@ -164,6 +167,9 @@ static int f2fs_link(struct dentry *old_dentry, struct inode *dir,
+ 	f2fs_unlock_op(sbi);
+ 
+ 	d_instantiate(dentry, inode);
++
++	if (IS_DIRSYNC(dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return 0;
+ out:
+ 	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
+@@ -235,6 +241,9 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 
+ 	/* In order to evict this inode, we set it dirty */
+ 	mark_inode_dirty(inode);
++
++	if (IS_DIRSYNC(dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ fail:
+ 	trace_f2fs_unlink_exit(inode, err);
+ 	return err;
+@@ -268,6 +277,9 @@ static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
+ 
+ 	d_instantiate(dentry, inode);
+ 	unlock_new_inode(inode);
++
++	if (IS_DIRSYNC(dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return err;
+ out:
+ 	handle_failed_inode(inode);
+@@ -304,6 +316,8 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	d_instantiate(dentry, inode);
+ 	unlock_new_inode(inode);
+ 
++	if (IS_DIRSYNC(dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return 0;
+ 
+ out_fail:
+@@ -346,8 +360,12 @@ static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
+ 	f2fs_unlock_op(sbi);
+ 
+ 	alloc_nid_done(sbi, inode->i_ino);
++
+ 	d_instantiate(dentry, inode);
+ 	unlock_new_inode(inode);
++
++	if (IS_DIRSYNC(dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return 0;
+ out:
+ 	handle_failed_inode(inode);
+@@ -461,6 +479,9 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	}
+ 
+ 	f2fs_unlock_op(sbi);
++
++	if (IS_DIRSYNC(old_dir) || IS_DIRSYNC(new_dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return 0;
+ 
+ put_out_dir:
+@@ -600,6 +621,9 @@ static int f2fs_cross_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	update_inode_page(new_dir);
+ 
+ 	f2fs_unlock_op(sbi);
++
++	if (IS_DIRSYNC(old_dir) || IS_DIRSYNC(new_dir))
++		f2fs_sync_fs(sbi->sb, 1);
+ 	return 0;
+ out_undo:
+ 	/* Still we may fail to recover name info of f2fs_inode here */
+-- 
+2.1.1
 
