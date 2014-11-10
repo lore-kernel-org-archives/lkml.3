@@ -1,116 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaKJVpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:45:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52349 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518AbaKJVpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:45:52 -0500
-Date: Tue, 11 Nov 2014 08:45:37 +1100
-From: NeilBrown <neilb@suse.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        GTA04 owners <gta04-owner@goldelico.com>, alsa-devel@alsa-project.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [alsa-devel] [PATCH 1/3] ASoC: twl4030: don't report EBUSY if
- no change requested.
-Message-ID: <20141111084537.1b4e726c@notabene.brown>
-In-Reply-To: <54606446.7030907@metafoo.de>
-References: <20141108002637.6561.19002.stgit@notabene.brown>
-	<20141108003803.6561.42934.stgit@notabene.brown>
-	<20141108092242.GB2722@sirena.org.uk>
-	<20141110114518.715dcd4e@notabene.brown>
-	<54606446.7030907@metafoo.de>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+	id S1753008AbaKJVrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:47:05 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:64513 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaKJVrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 16:47:03 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/ACt67OIq2_DzZqKwekjysLX"; protocol="application/pgp-signature"
+In-Reply-To: <CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+	<1415644096-3513-4-git-send-email-j.glisse@gmail.com>
+	<CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+	<20141110205814.GA4186@gmail.com>
+	<CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
+Date: Mon, 10 Nov 2014 13:47:01 -0800
+X-Google-Sender-Auth: kemoX7yYDk0nsm029CUbjQK5HiI
+Message-ID: <CA+55aFyh1ZOuLZw5Vb_ZTYhSsbwdqRFOceYSj7nh02NmKxy4AQ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page table
+ (gpt) v2.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ACt67OIq2_DzZqKwekjysLX
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 10, 2014 at 1:35 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Or do you actually have a setup where actual non-CPU hardware actually
+> walks the page tables you create and call "page tables"?
 
-On Mon, 10 Nov 2014 08:07:50 +0100 Lars-Peter Clausen <lars@metafoo.de> wro=
-te:
+So just to clarify: I haven't looked at all your follow-up patches at
+all, although I've seen the overviews in earlier versions. When trying
+to read through the latest version, I got stuck on this one, and felt
+it was crazy.
 
-> On 11/10/2014 01:45 AM, NeilBrown wrote:
-> > diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-> > index b6b0cb399599..613b61cee081 100644
-> > --- a/sound/soc/codecs/twl4030.c
-> > +++ b/sound/soc/codecs/twl4030.c
-> > @@ -957,6 +957,16 @@ static int snd_soc_put_twl4030_opmode_enum_double(=
-struct snd_kcontrol *kcontrol,
-> >   {
-> >   	struct snd_soc_codec *codec =3D snd_soc_kcontrol_codec(kcontrol);
-> >   	struct twl4030_priv *twl4030 =3D snd_soc_codec_get_drvdata(codec);
-> > +	struct snd_ctl_elem_value currentval;
-> >
->=20
-> snd_ctl_elem_value is a bit to big to be put onto the kernel stack. Just=
-=20
-> using twl4030_read() should be fine.
+But maybe I'm misreading it and it actually has good reasons for it.
+But just from the details I look at, some of it looks too incestuous
+with the system (the split PTL lock use), other parts look really
+really odd (like the 64-bit shift counts), and some of it looks just
+plain buggy (the bitops for synchronization). And none of it is all
+that easy to actually read.
 
-That's a shame, it looked so neat....
-
-Using twl4030_read forces i2c access and misses out on the regmap caching.
-
-What do you think of this?
-
-Thanks,
-NeilBrown
-
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index b6b0cb399599..bdb47a045aa5 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -957,6 +957,18 @@ static int snd_soc_put_twl4030_opmode_enum_double(stru=
-ct snd_kcontrol *kcontrol,
- {
- 	struct snd_soc_codec *codec =3D snd_soc_kcontrol_codec(kcontrol);
- 	struct twl4030_priv *twl4030 =3D snd_soc_codec_get_drvdata(codec);
-+	const struct soc_enum *e =3D &twl4030_op_modes_enum;
-+	unsigned int reg_val;
-+	int ret;
-+
-+	ret =3D snd_soc_component_read(snd_kcontrol_chip(kcontrol),
-+				     e->reg, &reg_val);
-+	if (ret)
-+		return ret;
-+	if (ucontrol->value.enumerated.item[0] =3D=3D
-+	    ((reg_val >> e->shift_l) & e->mask))
-+		/* no change requested, so do nothing */
-+		return 0;
-=20
- 	if (twl4030->configured) {
- 		dev_err(codec->dev,
-
---Sig_/ACt67OIq2_DzZqKwekjysLX
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVGEyATnsnt1WYoG5AQKHfRAAtki4hO/aJyRPxVycOfSoBja6DyiZZqHW
-WxdVpZYNJRILHAbE4hKWKXxA9g206deBP7x4rgGyrLWvqE4HwWuU/fx6iRaGViTm
-VoWofgi0HXdrEumALJ1pD1QRjqhXX/KmyENYjfUcs147tf828rkmSXlLR9W0tUMu
-U0qBgANTNuT1n7W4PPZriODWHyvogBdYxByrUoQjZhvg4vpgnhnZzvtD2sj4maj5
-SgkHQCP/Lep/xavOLL3fJGOCTB8cgnD1hOywwi2vYDXYUZSruYn+Y0CQfTi96XSJ
-oYeUjAI8oMEOifoJP/Kc3nDGG7GU5sUNam2kOkpon7mPlHcF17T9FlVHfpZzRPY3
-4Dm9YN9ZVxMyzHL3KMyJYMRpa/A2JvodtCDRT+r8tFmxpNzT//7Ru9urezhMSY3Q
-107CcJbUCoD9Ddml0tcTX15zNtmacsM9woQ4ht78JpyJSAuGQZ64rDABId9FLhPz
-LPWdaVHKPE3hVexQy6YhP3TSIjVycBkcXfqMhq6OQEV2u1sb26gTEoAb7Fe34ZI7
-zc+i8hJDp68sauBRycS3jcy2zHH0cYWeAH4YXocHJrzTqYj2gUSPS9G+I2V3Mq4E
-YTwUkxHzDCE+c0gGdjM2aUtYSNPOETTfNFRjM0DDKkCTT62rvatSWnUsMpIxgmF4
-3XJ/KwZLnIU=
-=gaRa
------END PGP SIGNATURE-----
-
---Sig_/ACt67OIq2_DzZqKwekjysLX--
+                        Linus
