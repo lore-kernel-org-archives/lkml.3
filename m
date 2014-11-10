@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaKJOrL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:47:11 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:38129 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901AbaKJOrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:47:09 -0500
-Date: Mon, 10 Nov 2014 15:47:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFD] perf syscall error handling
-Message-ID: <20141110144704.GA24040@gmail.com>
-References: <20141031122824.GZ12020@console-pimps.org>
- <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
- <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
- <20141103162548.GB18464@kernel.org>
- <20141103165019.GY10501@worktop.programming.kicks-ass.net>
- <20141103170059.GC18464@kernel.org>
- <20141110102725.GA19309@gmail.com>
- <20141110121527.GQ18464@kernel.org>
- <20141110122446.GA21503@gmail.com>
- <5460C83B.5050905@gmail.com>
+	id S1753217AbaKJOsm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:48:42 -0500
+Received: from sauhun.de ([89.238.76.85]:54217 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752963AbaKJOsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 09:48:41 -0500
+Date: Mon, 10 Nov 2014 15:49:54 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Danielle Costantino <danielle.costantino@gmail.com>
+Cc: linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: mpc: Report correct I2C error codes on Freescale
+ MPC i2c bus driver
+Message-ID: <20141110144954.GC10422@katana>
+References: <CAAVjN7cpGzokOntyyGVBksdvAw7rGt8zvggpCeMqr+g1yHEyzg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eRtJSFbw+EEWtPj3"
 Content-Disposition: inline
-In-Reply-To: <5460C83B.5050905@gmail.com>
+In-Reply-To: <CAAVjN7cpGzokOntyyGVBksdvAw7rGt8zvggpCeMqr+g1yHEyzg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Ahern <dsahern@gmail.com> wrote:
+--eRtJSFbw+EEWtPj3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 11/10/14, 5:24 AM, Ingo Molnar wrote:
-> >Programmatic use in user-spaec is very simple - go with my
-> >initial example, tooling can either just display the error string
-> >and bail out, or do:
-> >
-> >   if (unlikely(error)) {
-> >	if (!strcmp(attr->error_str, "x86/bts: BTS not supported by this CPU architecture")) {
-> >		fprintf(stderr, "x86/BTS: No hardware support falling back to branch sampling\n");
-> >		activate_x86_bts_fallback_code();
-> >		goto out;
-> >	}
-> 
-> That makes the exact string content part of the ABI. [...]
+On Tue, Oct 21, 2014 at 12:05:44AM -0700, Danielle Costantino wrote:
+> From: Danielle Costantino <danielle.costantino@gmail.com>
+>=20
+> This patch enforces correct I2C error returned codes from Freescale's
+> MPC i2c bus driver, allowing for proper user-space/kernel error
+> handling.
+>=20
+> Signed-off-by: Danielle Costantino <danielle.costantino@gmail.com>
 
-That's ok: messages might still disappear, new messages might 
-still be introduced.
+Tabs converted to spaces here? Please resend properly.
 
-> [...] As I recall ftrace had a problem with format strings 
-> changing and tooling then limiting the ability to change it.
 
-I think there's a real difference between extended strings 
-provided by an error/exception path (perf) and strings provided 
-by the primary ABI (ftrace).
+--eRtJSFbw+EEWtPj3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In the first case tooling is still functional without extended 
-strings, in the second case ftrace tooling is useless if it 
-cannot interpret the ftrace string output.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-So it's apples to oranges.
+iQIcBAEBAgAGBQJUYNCRAAoJEBQN5MwUoCm2SNYP+wTMqmAkPzgp8qvA6C/rOGST
+HxIjTxaMnTRaVliJaQ8osT1vOmIbMZYqkev3LBv9LfSgoxbw+m+9JUuxR5nT0CSV
+imySgri4plC0NkAZuZsSjlW8yNv3LouF7aq9ne7eeRBt9M0TNfgIjDnxgvo1Cl9q
+OAO02VKpsVvMtjWETKo5bq9LfSDdehA1wQCa/aEZHkLi2d73N9ArNWCbq7LhHLGa
+vq511kLTvZos6jR3a/HE/e31DfSE1tMpu6sAM97SMP7XMw2eq0rYkIiuncePB96f
+IDAtAPCtOHlBPSOg3BCe7qkj/uHn4gAp3+842szslSRSFVethwu/ASitJADiwZR7
+H8097ELfiJd7Ej/aTvq/6f0QU5KBq5oVYSM4CFh0b5PYgrcZImgxS6bmMCxZxBG4
+65B/86CAiMJh8DNQnEh45IAVhUSUpRDG8GYlPLNZXhxxT1pChqgXNuxAHAg1pJJo
+MO6i9phpv9V1Y7uOHItxdjDQqiKDZYPxcTbPnJqrDbWo+Gwwd20ltw95y5JVfsG+
+Jid6VyZIficiVHL1/E2vmDqvzBt9W7pZWnItqsJvBanrxFhKUve9J7r2NnVcdrZA
++6980pqlJr03E2jOiB21TEpUKpQyeM2vH+nYh0lPzbWabQFGO0tipIZb81BjNFpU
+/7y0d79tHsFFu2YgxZqh
+=1hxB
+-----END PGP SIGNATURE-----
 
-Thanks,
-
-	Ingo
+--eRtJSFbw+EEWtPj3--
