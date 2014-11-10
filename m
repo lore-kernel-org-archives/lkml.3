@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaKJT1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:27:10 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57769 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830AbaKJT1J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:27:09 -0500
-Date: Mon, 10 Nov 2014 19:25:39 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+	id S1751500AbaKJTaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:30:10 -0500
+Received: from mga11.intel.com ([192.55.52.93]:7596 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203AbaKJTaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:30:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,354,1413270000"; 
+   d="scan'208";a="620124155"
+From: tony.luck@intel.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Philipp Hachtmann <phacht@linux.vnet.ibm.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Emil Medve <Emilian.Medve@freescale.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20141110192539.GK3815@sirena.org.uk>
-References: <cover.1415562021.git.moinejf@free.fr>
- <d5d74f6993e9f2392008a27a2938c58d47dc8062.1415562021.git.moinejf@free.fr>
- <20141110190332.GG3815@sirena.org.uk>
- <20141110201254.65674552@armhf>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AMEHvcA7tHoZVye7"
-Content-Disposition: inline
-In-Reply-To: <20141110201254.65674552@armhf>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/2] ASoC: Remove 'const' from the device_node pointers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Subject: memblock: Refactor functions to set/clear MEMBLOCK_HOTPLUG
+Date: Mon, 10 Nov 2014 11:05:29 -0800
+Message-Id: <54610c79308447c79c@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is a lot of duplication in the rubric around actually setting or
+clearing a mem region flag. Create a new helper function to do this and
+reduce each of memblock_mark_hotplug() and memblock_clear_hotplug() to
+a single line.
 
---AMEHvcA7tHoZVye7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-On Mon, Nov 10, 2014 at 08:12:54PM +0100, Jean-Francois Moine wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+---
 
-> > Did Russell write this patch (in which case it's missing a signoff and
-> > his e-mail address above) or are you trying to say "Russell King
-> > said..."?
+This will be useful if someone were to add a new mem region flag - which
+I hope to be doing some day soon. But it looks like a plausible cleanup
+even without that - so I'd like to get it out of the way now.
 
-> Sorry, that was "Russell said ...".
-> Do you want I resubmit the patch?
-
-Let me look at the change, I didn't do that yet (what you wrote looks
-awfully like the patch submission format for sending code someone else
-wrote...).
-
---AMEHvcA7tHoZVye7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUYREyAAoJECTWi3JdVIfQOcIH/R4OtaBEhnS7rt7ToCgswYjA
-yiStjkk3UyuUHKF6Ec2QAdSGF50lZAYSHMsQF+tIC1b7vVg+rWLQjCBFTJg91jKE
-sWQau96W6FY5V/1Q6i6dzA0OgYWDunpq5YXiEp+6B/2afDcLb/SgCWBdturDj3fN
-g+L1Km86kpYOJqk3hHd+G2LTgR/abrEotdpr9uo44L9LcCVB1ubjEwlXRqGar1Pw
-C6Dgwi17Swkjl7qsXH7F8H9VI/rPQLfzFM2SrXRYyXOGxkn1SqoZw/0f49Zdu3NB
-4pDiD8Hf8xcL5UvbS0iejphbGasqwrsUzZFqn9CW8F/FVLQbdWWaDWSM1nFTP8k=
-=0aLE
------END PGP SIGNATURE-----
-
---AMEHvcA7tHoZVye7--
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 6ecb0d937fb5..252b77bdf65e 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -715,16 +715,13 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ }
+ 
+ /**
+- * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
+- * @base: the base phys addr of the region
+- * @size: the size of the region
+  *
+- * This function isolates region [@base, @base + @size), and mark it with flag
+- * MEMBLOCK_HOTPLUG.
++ * This function isolates region [@base, @base + @size), and sets/clears flag
+  *
+  * Return 0 on succees, -errno on failure.
+  */
+-int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
++static int __init_memblock memblock_setclr_flag(phys_addr_t base,
++				phys_addr_t size, int set, int flag)
+ {
+ 	struct memblock_type *type = &memblock.memory;
+ 	int i, ret, start_rgn, end_rgn;
+@@ -734,37 +731,37 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
+ 		return ret;
+ 
+ 	for (i = start_rgn; i < end_rgn; i++)
+-		memblock_set_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
++		if (set)
++			memblock_set_region_flags(&type->regions[i], flag);
++		else
++			memblock_clear_region_flags(&type->regions[i], flag);
+ 
+ 	memblock_merge_regions(type);
+ 	return 0;
+ }
+ 
+ /**
+- * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
++ * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
+  * @base: the base phys addr of the region
+  * @size: the size of the region
+  *
+- * This function isolates region [@base, @base + @size), and clear flag
+- * MEMBLOCK_HOTPLUG for the isolated regions.
++ * Return 0 on succees, -errno on failure.
++ */
++int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
++{
++	return memblock_setclr_flag(base, size, 1, MEMBLOCK_HOTPLUG);
++}
++
++/**
++ * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
++ * @base: the base phys addr of the region
++ * @size: the size of the region
+  *
+  * Return 0 on succees, -errno on failure.
+  */
+ int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
+ {
+-	struct memblock_type *type = &memblock.memory;
+-	int i, ret, start_rgn, end_rgn;
+-
+-	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
+-	if (ret)
+-		return ret;
+-
+-	for (i = start_rgn; i < end_rgn; i++)
+-		memblock_clear_region_flags(&type->regions[i],
+-					    MEMBLOCK_HOTPLUG);
+-
+-	memblock_merge_regions(type);
+-	return 0;
++	return memblock_setclr_flag(base, size, 0, MEMBLOCK_HOTPLUG);
+ }
+ 
+ /**
