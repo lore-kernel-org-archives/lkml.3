@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaKJRAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:00:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42477 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaKJRAf (ORCPT
+	id S1753418AbaKJRBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:01:32 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:50332 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229AbaKJRBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:00:35 -0500
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>
-Subject: Re: [PATCH 4/5] brd: Request from fdisk 4k alignment
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <545A2D69.8090003@plexistor.com> <545A2F52.3040303@plexistor.com>
-	<yq1k339enl5.fsf@sermon.lab.mkp.net> <545A379D.30608@plexistor.com>
-	<yq1sihwb5qz.fsf@sermon.lab.mkp.net> <545FA9D4.5080908@plexistor.com>
-Date: Mon, 10 Nov 2014 12:00:11 -0500
-In-Reply-To: <545FA9D4.5080908@plexistor.com> (Boaz Harrosh's message of "Sun,
-	09 Nov 2014 19:52:20 +0200")
-Message-ID: <yq1389r6les.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 10 Nov 2014 12:01:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] asm-generic/io.h overhaul
+Date: Mon, 10 Nov 2014 18:01:27 +0100
+Message-ID: <7499625.xm054LhcvJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141110162520.GA3926@ulmo.nvidia.com>
+References: <20141110162520.GA3926@ulmo.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:6ktZjnv365jXhUY48cIiHvqUEH/HOMbo8DlsUhavS0h
+ db1OD7hKQDhN/CpPlITBHFbbUD7CBqOlxtf+PHy6FjsU7tK9aN
+ 3/G5yGuSJ68rMF9/lXtrB12fhjn50q2O4TEzV1zCmldobwhqym
+ 92bWhiTVpfZLJMqM7yfiY80lpXnT95yPDfksqJ0l6g4g+D5PS8
+ 0oYUet6MexGlGTv+vs6JOKLqyMQvJCPTE34TkkxaL0Y7hEX+A8
+ 0p7Eqbn3mj583Ja9wIR6T03hrweqwNnqHccF8EnguuTnpn3tZ0
+ 1i2osgz4mFXfiPhL9EmV2LSM9l4CCO0TgQHbOahHUpgFF5JaSv
+ UdbvrIs4GwkVw24ekFB8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Boaz" == Boaz Harrosh <boaz@plexistor.com> writes:
+On Monday 10 November 2014 17:25:23 Thierry Reding wrote:
+> Hi Arnd,
+> 
+> The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+> 
+>   Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+> 
+> are available in the git repository at:
+> 
+>   https://github.com/thierryreding/linux.git asm-generic-io
+> 
+> for you to fetch changes up to 09a5723983e383e7d627fe3191366761722695bc:
+> 
+>   arm64: Use include/asm-generic/io.h (2014-11-10 15:59:23 +0100)
 
-Boaz> I do not know why I thought that only io_min does that, I can see
-Boaz> now that both effect the Kernel the same way. Which scares me a
-Boaz> bit.
+I've pulled this into my asm-generic branch again now, let's see if
+anything breaks.
 
-The difference is subtle. io_min is a hint from the storage about its
-preferred minimum I/O size. pbs describes the smallest unit that can be
-atomically written (like a sector on a drive with 512-byte logical/4K
-physical blocks). In most cases they are the same, pbs is just a
-slightly harder guarantee than io_min.
-
-What I was objecting to in your patch description was mostly the
-statement you made that these values affect kernel behavior. They really
-don't. Not directly, anyway. The queue limits are stacked and offsets
-are adjusted based on partitions, etc. But they don't alter the kernel
-runtime behavior.
-
-The queue limits are reported to userland and will affect things like
-partitioning, MD/DM tooling and mkfs.*. And therefore they only
-indirectly affect the kernel's behavior.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+	Arnd
