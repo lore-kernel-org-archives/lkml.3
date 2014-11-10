@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaKJOLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:11:48 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:45985 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaKJOLr (ORCPT
+	id S1753010AbaKJON1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:13:27 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58718 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaKJONZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:11:47 -0500
+	Mon, 10 Nov 2014 09:13:25 -0500
+Message-ID: <5460C7D3.10505@roeck-us.net>
+Date: Mon, 10 Nov 2014 06:12:35 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1411070948180.1214-100000@iolanthe.rowland.org>
-References: <1415347601.8532.7.camel@AMDC1943>
-	<Pine.LNX.4.44L0.1411070948180.1214-100000@iolanthe.rowland.org>
-Date: Mon, 10 Nov 2014 15:11:45 +0100
-Message-ID: <CAPDyKFpCx9XZu7xWt+koY-iLmiX4+XPu+2hGow2hrz3AR8Cb=A@mail.gmail.com>
-Subject: Re: [PATCH v10 1/5] PM / Runtime: Allow accessing irq_safe if no PM_RUNTIME
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+To: Pavel Machek <pavel@ucw.cz>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v6 00/48] kernel: Add support for power-off handler call
+ chain
+References: <1415583785-6980-1-git-send-email-linux@roeck-us.net> <20141110083347.GA29543@amd>
+In-Reply-To: <20141110083347.GA29543@amd>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.5460C805.00A5,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 18
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 November 2014 15:50, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 7 Nov 2014, Krzysztof Kozlowski wrote:
+On 11/10/2014 12:33 AM, Pavel Machek wrote:
+> Hi!
 >
->> > Well, that is a good reason to introduce a wrapper around power.irq_safe in my
->> > view.
->> >
->> > And define the wrapper so that it always returns false for CONFIG_PM_RUNTIME
->> > unset.
->> >
->> > This way not only you wouldn't need to move the flag from under the #ifdef,
->> > but also you would make the compiler skip the relevant pieces of code
->> > entiretly for CONFIG_PM_RUNTIME unset.
->>
->> Few days ago I would be happy with your opinion :), but know I think
->> this is better solution than wrapper. Consider case:
->> 1. PM_RUNTIME unset.
->> 2. System suspends.
->> 3. The pl330 in its suspend callback calls force_runtime_suspend which
->> leads us to amba/bus.
->> 4. The amba/bus.c in runtime suspend checks for irq_safe (it is FALSE),
->> so it disables and unprepares the clock.
->> 5. The pl330 in probe requested irq_safe so it assumes amba/bus will
->> only disable the clock. So the pl330 unprepares the clock. Again.
+>> Introduce a system power-off handler call chain to solve the described
+>> problems.  This call chain is expected to be executed from the architecture
+>> specific machine_power_off() function.  Drivers providing system power-off
+>> functionality are expected to register with this call chain.  By using the
+>> priority field in the notifier block, callers can control power-off
+>> handler
 >
-> To me, this sounds like a good reason to avoid using
-> force_runtime_suspend().  In fact, it sounds like a good reason to
-> avoid relying on the runtime PM mechanism to handle non-runtime-PM
-> things (like a system suspend callback).  If CONFIG_PM_RUNTIME isn't
-> enabled then the runtime PM stack simply should not be used.
+> Linus rather disliked the idea of notifier chains for this... And I
+> don't see how it got addressed.
+>
+As I understand, Linus primarily disliked the idea of callbacks, which is
+what the code does, only with no order or protection against race conditions.
 
-There are an important advantage of using the pm_runtime_force_suspend() here.
+Frankly I have no idea how to solve the power-off problem without callbacks.
+If you have one, please let me know.
 
-For the driver to handle clock gating at system PM suspend, it first
-needs to bring the device into full power, through
-pm_runtime_get_sync(). Otherwise it's not safe to gate the clock,
-since it may already be gated.
+Guenter
 
-Kind regards
-Uffe
