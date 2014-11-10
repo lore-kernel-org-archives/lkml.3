@@ -1,131 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaKJR0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:26:37 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:36166 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862AbaKJR0f (ORCPT
+	id S1753816AbaKJR2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:28:39 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45292 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752886AbaKJR2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:26:35 -0500
-Message-ID: <5460F386.1050109@linaro.org>
-Date: Mon, 10 Nov 2014 18:19:02 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req before
- idle
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org> <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org> <20141110124111.GN3337@twins.programming.kicks-ass.net> <5460D5EF.2000805@linaro.org> <20141110152803.GX10501@worktop.programming.kicks-ass.net> <5460E0A5.9040508@linaro.org> <20141110161530.GB10501@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141110161530.GB10501@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 10 Nov 2014 12:28:37 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v6 RESEND 00/10] [media] Make mediabus format subsystem neutral
+Date: Mon, 10 Nov 2014 18:28:25 +0100
+Message-Id: <1415640515-15069-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 05:15 PM, Peter Zijlstra wrote:
-> On Mon, Nov 10, 2014 at 04:58:29PM +0100, Daniel Lezcano wrote:
->>> I don't get it, I've clearly not stared at it long enough, but why is
->>> that STATE_START crap needed anywhere?
->>
->> Excellent question :)
->>
->> On x86, the config option ARCH_HAS_CPU_RELAX is set (x86 is the only one).
->> That leads to the macro CPUIDLE_DRIVER_STATE_START equal 1.
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/include/linux/cpuidle.h#n221
->>
->> Then the acpi cpuidle driver and the intel_driver begin to fill the idle
->> state at index == CPUIDLE_DRIVER_STATE_START, so leaving the 0th idle state
->> empty.
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/idle/intel_idle.c#n848
->>
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/acpi/processor_idle.c#n953
->>
->> Then when the driver is registered and if ARCH_HAS_CPU_RELAX is set, the
->> cpuidle framework insert the 0th with the poll state (reminder : only for
->> x86).
->
-> Appears to me part of the problem is right there, the intel_idle and
-> proessor_idle should register the poll state themselves. That
-> immediately makes this weirdness go away.
->
-> Registering states from two places is not something that's sane or
-> desired I think.
+Hello,
 
-I fully agree. I did a patchset in this direction but I realized the 
-poll state most of the cases was not used.
+This patch series prepares the use of media bus formats outside of
+the V4L2 subsytem (my final goal is to use it in the Atmel HLCDC DRM
+driver where I have to configure my DPI/RGB bus according to the
+connected display).
 
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/cpuidle/driver.c#n195
->>
->> If you look at the ladder governor (which I believe nobody is still using
->> it), or at the menu governor, all the indexes begin at
->> CPUIDLE_DRIVER_STATE_START, so all the code is preventing to use the 0th
->> state ... :)
->>
->> So why is needed the poll state ?
->>
->> 1. When the latency_req is 0 (it returns 0, so the poll state)
->
-> Right, that makes sense.
->
->> 2. When the select's menu governor fails to find a state *and* if the next
->> timer is before 5us
->
-> That seems rather arbitrary.
+The series first defines MEDIA_BUS_FMT_ macros, and then replace all
+references to the v4l2_mbus_pixelcode enum and its values within the
+kernel.
 
-Yeah, and I am wondering if this very particular optimization couldn't 
-be just removed. Is there still a benefit ?
+Best Regards,
 
-> Why would it fail to find a state?
+Boris
 
-To do short: it could fail to find a state fulfilling the constraints 
-(some states could be disabled or the ).
+Changes since v5:
+- fix V4L2_MBUS_FROM_MEDIA_BUS_FMT macro definition
 
->> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/cpuidle/driver.c#n195
->>
->> And when we investigate the same code but on the other archs, the
->> CPUIDLE_DRIVER_STATE_START dance makes things slightly different.
->>
->> So the conclusion is, we are inserting a state in the idle state array but
->> we do everything to prevent to use it :)
->>
->> For me it appears logical to just kill this state from the x86 idle drivers
->> and move it in the idle_mainloop in case an idle state selection fails.
->
-> But why, ppc has a latency_req==0 state too, right?
+Changes since v4:
+- put deprecated enum v4l2_mbus_pixelcode at the end of v4l2-mediabus.h
+  header
 
-Yes, this is why the arch_cpu_poll_idle, so ppc can override it with its 
-optimized pooling loop (rep(); nop(); is x86).
+Changes since v3:
+- add a comment specifying that the v4l2_mbus_pixelcode enum definition
+  is frozen
 
-> I agree that we should shoot STATE_START in the head, but I feel we
-> should do it by fixing the state registration.
+Changes since v2:
+- drop media_bus_format enum and replace its values with pre-processor
+  macros
 
-You can fix the state registration but that won't fix the STATE_START 
-usage in the governors.
+Changes since v1:
+- drop patches deprecating v4l2_mbus_pixelcode for user-space users
+- put V4L2 legacy format definitions into media-bus-format.h
 
-> I really don't get why the governors should know about this though, its
-> just another state, they should iterate all states and pick the best,
-> given the power usage this state should really never be eligible unless
-> we're QoS forced or whatnot.
 
-The governors just don't use the poll state at all, except for a couple 
-of cases in menu.c defined above in the previous email. What is the 
-rational of adding a state in the cpuidle driver and do everything we 
-can to avoid using it ? From my POV, the poll state is a special state, 
-we should remove from the driver's idle states like the arch_cpu_idle() 
-is a specific idle state only used in idle.c (but which may overlap with 
-an idle state in different archs eg. cpu_do_idle() and the 0th idle state).
+Boris Brezillon (10):
+  [media] Move mediabus format definition to a more standard place
+  [media] v4l: Update subdev-formats doc with new MEDIA_BUS_FMT values
+  [media] Make use of the new media_bus_format definitions
+  [media] i2c: Make use of media_bus_format enum
+  [media] pci: Make use of MEDIA_BUS_FMT definitions
+  [media] platform: Make use of media_bus_format enum
+  [media] usb: Make use of media_bus_format enum
+  staging: media: Make use of MEDIA_BUS_FMT_ definitions
+  gpu: ipu-v3: Make use of media_bus_format enum
+  [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the
+    kernel
 
+ Documentation/DocBook/media/v4l/subdev-formats.xml | 308 ++++++++++-----------
+ Documentation/video4linux/soc-camera.txt           |   2 +-
+ arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
+ arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
+ arch/arm/mach-davinci/dm355.c                      |   7 +-
+ arch/arm/mach-davinci/dm365.c                      |   7 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |   2 +-
+ arch/sh/boards/mach-ap325rxa/setup.c               |   2 +-
+ drivers/gpu/ipu-v3/ipu-csi.c                       |  66 ++---
+ drivers/media/i2c/adv7170.c                        |  16 +-
+ drivers/media/i2c/adv7175.c                        |  16 +-
+ drivers/media/i2c/adv7180.c                        |   6 +-
+ drivers/media/i2c/adv7183.c                        |   6 +-
+ drivers/media/i2c/adv7604.c                        |  72 ++---
+ drivers/media/i2c/adv7842.c                        |   6 +-
+ drivers/media/i2c/ak881x.c                         |   8 +-
+ drivers/media/i2c/cx25840/cx25840-core.c           |   2 +-
+ drivers/media/i2c/m5mols/m5mols_core.c             |   6 +-
+ drivers/media/i2c/ml86v7667.c                      |   6 +-
+ drivers/media/i2c/mt9m032.c                        |   6 +-
+ drivers/media/i2c/mt9p031.c                        |   8 +-
+ drivers/media/i2c/mt9t001.c                        |   8 +-
+ drivers/media/i2c/mt9v011.c                        |   6 +-
+ drivers/media/i2c/mt9v032.c                        |  12 +-
+ drivers/media/i2c/noon010pc30.c                    |  12 +-
+ drivers/media/i2c/ov7670.c                         |  16 +-
+ drivers/media/i2c/ov9650.c                         |  10 +-
+ drivers/media/i2c/s5c73m3/s5c73m3.h                |   6 +-
+ drivers/media/i2c/s5k4ecgx.c                       |   4 +-
+ drivers/media/i2c/s5k5baf.c                        |  14 +-
+ drivers/media/i2c/s5k6a3.c                         |   2 +-
+ drivers/media/i2c/s5k6aa.c                         |   8 +-
+ drivers/media/i2c/saa6752hs.c                      |   6 +-
+ drivers/media/i2c/saa7115.c                        |   2 +-
+ drivers/media/i2c/saa717x.c                        |   2 +-
+ drivers/media/i2c/smiapp/smiapp-core.c             |  32 +--
+ drivers/media/i2c/soc_camera/imx074.c              |   8 +-
+ drivers/media/i2c/soc_camera/mt9m001.c             |  14 +-
+ drivers/media/i2c/soc_camera/mt9m111.c             |  70 ++---
+ drivers/media/i2c/soc_camera/mt9t031.c             |  10 +-
+ drivers/media/i2c/soc_camera/mt9t112.c             |  22 +-
+ drivers/media/i2c/soc_camera/mt9v022.c             |  26 +-
+ drivers/media/i2c/soc_camera/ov2640.c              |  54 ++--
+ drivers/media/i2c/soc_camera/ov5642.c              |   8 +-
+ drivers/media/i2c/soc_camera/ov6650.c              |  58 ++--
+ drivers/media/i2c/soc_camera/ov772x.c              |  20 +-
+ drivers/media/i2c/soc_camera/ov9640.c              |  40 +--
+ drivers/media/i2c/soc_camera/ov9740.c              |  12 +-
+ drivers/media/i2c/soc_camera/rj54n1cb0c.c          |  54 ++--
+ drivers/media/i2c/soc_camera/tw9910.c              |  10 +-
+ drivers/media/i2c/sr030pc30.c                      |  14 +-
+ drivers/media/i2c/tvp514x.c                        |  12 +-
+ drivers/media/i2c/tvp5150.c                        |   6 +-
+ drivers/media/i2c/tvp7002.c                        |  10 +-
+ drivers/media/i2c/vs6624.c                         |  18 +-
+ drivers/media/pci/cx18/cx18-av-core.c              |   2 +-
+ drivers/media/pci/cx18/cx18-controls.c             |   2 +-
+ drivers/media/pci/cx18/cx18-ioctl.c                |   2 +-
+ drivers/media/pci/cx23885/cx23885-video.c          |   2 +-
+ drivers/media/pci/ivtv/ivtv-controls.c             |   2 +-
+ drivers/media/pci/ivtv/ivtv-ioctl.c                |   2 +-
+ drivers/media/pci/saa7134/saa7134-empress.c        |   4 +-
+ drivers/media/platform/blackfin/bfin_capture.c     |  14 +-
+ drivers/media/platform/davinci/vpbe.c              |   2 +-
+ drivers/media/platform/davinci/vpfe_capture.c      |   4 +-
+ drivers/media/platform/exynos-gsc/gsc-core.c       |   8 +-
+ drivers/media/platform/exynos-gsc/gsc-core.h       |   2 +-
+ drivers/media/platform/exynos4-is/fimc-capture.c   |   2 +-
+ drivers/media/platform/exynos4-is/fimc-core.c      |  14 +-
+ drivers/media/platform/exynos4-is/fimc-core.h      |   4 +-
+ drivers/media/platform/exynos4-is/fimc-isp.c       |  16 +-
+ drivers/media/platform/exynos4-is/fimc-lite-reg.c  |  26 +-
+ drivers/media/platform/exynos4-is/fimc-lite.c      |  14 +-
+ drivers/media/platform/exynos4-is/fimc-reg.c       |  14 +-
+ drivers/media/platform/exynos4-is/mipi-csis.c      |  14 +-
+ drivers/media/platform/marvell-ccic/mcam-core.c    |  21 +-
+ drivers/media/platform/marvell-ccic/mcam-core.h    |   2 +-
+ drivers/media/platform/omap3isp/ispccdc.c          | 112 ++++----
+ drivers/media/platform/omap3isp/ispccp2.c          |  18 +-
+ drivers/media/platform/omap3isp/ispcsi2.c          |  42 +--
+ drivers/media/platform/omap3isp/isppreview.c       |  60 ++--
+ drivers/media/platform/omap3isp/ispresizer.c       |  19 +-
+ drivers/media/platform/omap3isp/ispvideo.c         |  95 ++++---
+ drivers/media/platform/omap3isp/ispvideo.h         |  10 +-
+ drivers/media/platform/s3c-camif/camif-capture.c   |  10 +-
+ drivers/media/platform/s3c-camif/camif-regs.c      |   8 +-
+ drivers/media/platform/s5p-tv/hdmi_drv.c           |   2 +-
+ drivers/media/platform/s5p-tv/sdo_drv.c            |   2 +-
+ drivers/media/platform/sh_vou.c                    |   8 +-
+ drivers/media/platform/soc_camera/atmel-isi.c      |  22 +-
+ drivers/media/platform/soc_camera/mx2_camera.c     |  26 +-
+ drivers/media/platform/soc_camera/mx3_camera.c     |   6 +-
+ drivers/media/platform/soc_camera/omap1_camera.c   |  36 +--
+ drivers/media/platform/soc_camera/pxa_camera.c     |  16 +-
+ drivers/media/platform/soc_camera/rcar_vin.c       |  14 +-
+ .../platform/soc_camera/sh_mobile_ceu_camera.c     |  20 +-
+ drivers/media/platform/soc_camera/sh_mobile_csi2.c |  38 +--
+ drivers/media/platform/soc_camera/soc_camera.c     |   2 +-
+ .../platform/soc_camera/soc_camera_platform.c      |   2 +-
+ drivers/media/platform/soc_camera/soc_mediabus.c   |  78 +++---
+ drivers/media/platform/via-camera.c                |   8 +-
+ drivers/media/platform/vsp1/vsp1_bru.c             |  14 +-
+ drivers/media/platform/vsp1/vsp1_hsit.c            |  12 +-
+ drivers/media/platform/vsp1/vsp1_lif.c             |  10 +-
+ drivers/media/platform/vsp1/vsp1_lut.c             |  14 +-
+ drivers/media/platform/vsp1/vsp1_rwpf.c            |  10 +-
+ drivers/media/platform/vsp1/vsp1_sru.c             |  12 +-
+ drivers/media/platform/vsp1/vsp1_uds.c             |  10 +-
+ drivers/media/platform/vsp1/vsp1_video.c           |  42 +--
+ drivers/media/usb/cx231xx/cx231xx-417.c            |   2 +-
+ drivers/media/usb/cx231xx/cx231xx-video.c          |   4 +-
+ drivers/media/usb/em28xx/em28xx-camera.c           |   2 +-
+ drivers/media/usb/go7007/go7007-v4l2.c             |   2 +-
+ drivers/media/usb/pvrusb2/pvrusb2-hdw.c            |   2 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |  18 +-
+ .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    |  26 +-
+ drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 100 +++----
+ drivers/staging/media/davinci_vpfe/dm365_isif.c    |  90 +++---
+ drivers/staging/media/davinci_vpfe/dm365_resizer.c |  98 +++----
+ .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  18 +-
+ drivers/staging/media/omap4iss/iss_csi2.c          |  62 ++---
+ drivers/staging/media/omap4iss/iss_ipipe.c         |  16 +-
+ drivers/staging/media/omap4iss/iss_ipipeif.c       |  28 +-
+ drivers/staging/media/omap4iss/iss_resizer.c       |  26 +-
+ drivers/staging/media/omap4iss/iss_video.c         |  78 +++---
+ drivers/staging/media/omap4iss/iss_video.h         |  10 +-
+ include/media/davinci/vpbe.h                       |   2 +-
+ include/media/davinci/vpbe_venc.h                  |   5 +-
+ include/media/exynos-fimc.h                        |   2 +-
+ include/media/soc_camera.h                         |   2 +-
+ include/media/soc_mediabus.h                       |   6 +-
+ include/media/v4l2-mediabus.h                      |   2 +-
+ include/media/v4l2-subdev.h                        |   2 +-
+ include/uapi/linux/Kbuild                          |   1 +
+ include/uapi/linux/media-bus-format.h              | 125 +++++++++
+ include/uapi/linux/v4l2-mediabus.h                 | 213 +++++++-------
+ include/uapi/linux/v4l2-subdev.h                   |   6 +-
+ 137 files changed, 1582 insertions(+), 1481 deletions(-)
+ create mode 100644 include/uapi/linux/media-bus-format.h
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.9.1
 
