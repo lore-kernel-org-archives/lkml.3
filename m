@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaKJRG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:06:56 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50752 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaKJRGx (ORCPT
+	id S1753781AbaKJRH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:07:26 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:33596 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbaKJRHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:06:53 -0500
+	Mon, 10 Nov 2014 12:07:23 -0500
+Message-ID: <5460EF02.3000904@gmail.com>
+Date: Mon, 10 Nov 2014 18:59:46 +0200
+From: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141104062137.GC56751@vmdeb7>
-References: <1415073514-12555-1-git-send-email-coproscefalo@gmail.com>
-	<20141104062137.GC56751@vmdeb7>
-Date: Mon, 10 Nov 2014 09:58:29 -0700
-Message-ID: <CAGdLNWH9OqBO1TgNm7ZRnX_wnGwe3rUuxaqwvLfq=HdYXNmMbw@mail.gmail.com>
-Subject: Re: [PATCH] toshiba_acpi: Fix regression caused by backlight extra
- check code
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: rjw@rjwysocki.net,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nuno Lopes <nunoplopes@sapo.pt>
-Content-Type: text/plain; charset=UTF-8
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        eric.piel@tremplin-utc.net, dvhart@infradead.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: randconfig build error with next-20141110, in drivers/platform/x86/hp_accel.c
+References: <CA+r1Zhio+KeBH0FFHwj=_fTFjqzebeE7Y2O_vsvMco49Sp56jw@mail.gmail.com>
+In-Reply-To: <CA+r1Zhio+KeBH0FFHwj=_fTFjqzebeE7Y2O_vsvMco49Sp56jw@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Darren,
+Hi Jim,
 
-Sorry for the way late reply, I had to go out of town in a hurry.
+On 2014.11.10 18:20, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> drivers/built-in.o: In function `lis3lv02d_remove':
+> /home/jim/linux/drivers/platform/x86/hp_accel.c:389: undefined
+> reference to `i8042_remove_filter'
+> drivers/built-in.o: In function `lis3lv02d_add':
+> /home/jim/linux/drivers/platform/x86/hp_accel.c:370: undefined
+> reference to `i8042_install_filter'
+> make: *** [vmlinux] Error 1
+> 
 
-2014-11-03 23:21 GMT-07:00 Darren Hart <dvhart@infradead.org>:
-> On Mon, Nov 03, 2014 at 08:58:34PM -0700, Azael Avalos wrote:
->> Bug 86521 uncovered that some TOS6208 devices also return
->> non zero values on a write call to the backlight method,
->> thus getting caught and bailed out by the extra check code.
->>
->> This patch makes sure that the extra check is being done
->> on a TOS1900 device and then make the check for the broken
->> backlight code.
->>
->> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
->> ---
->>  drivers/platform/x86/toshiba_acpi.c | 8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
->> index ef3a190..e3fed12 100644
->> --- a/drivers/platform/x86/toshiba_acpi.c
->> +++ b/drivers/platform/x86/toshiba_acpi.c
->> @@ -944,9 +944,13 @@ static int set_lcd_brightness(struct toshiba_acpi_dev *dev, int value)
->>       /* Extra check for "incomplete" backlight method, where the AML code
->>        * doesn't check for HCI_SET or HCI_GET and returns TOS_SUCCESS,
->>        * the actual brightness, and in some cases the max brightness.
->> +      * Use the SPFC method as an indicator that we're on a TOS1900 device,
->> +      * otherwise some TOS6208 devices might get bailed out, see bug 86521
->
-> This needs a clearer description here in this comment, rather than redirecting
-> the reader to a bug report (which may or may not exist when needed).
+Oops, sorry. Forgot to add a depend on i8042 per this patch in Kconfig:
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=a4c724d0723b078e4ab4670e557cda1795036a7a
 
-Alright, will do whenever we reach an agreement below.
+This patch should fix it. After applying and using your .config I
+compiled the kernel without those undefined references. Should I make a
+new thread where it's submitted in the proper form? 
 
->
->>        */
->> -     if (out[2] > 0  || out[3] == 0xE000)
->> -             return -ENODEV;
->> +     if (acpi_has_method(dev->acpi_dev->handle, "SPFC")) {
->
-> Hrm, this checking for the existence of a specific method seems suspect to me.
-> We would know if we are on a TOS1900 as we matches the acpi id already. Is the
-> SPFC significant here, or is it just a "we only see SPFC on TOS1900 so it's a
-> convenient test"? If the latter, it seems rather fragile and prone to other
-> breakage to me.
+thanks,
+Giedrius
+---
+ drivers/platform/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Yeah, its the latter, the "SPFC" method is specific to TOS1900 devices.
-
-All of the TOS1900 support the Toshiba specific backlight read-only,
-and that test is just to get those implementations where the AML
-code doesn't check for read/write registers, so far I've identified three
-series of laptops with this issue (all Qosmios), X500, X505 and X75-A
-(and there might be more around).
-
-We could dissable backlight on all TOS1900 or add those three models
-to the (growing) DMI list on video.c, but of course, I would like to keep
-the code in-house, but that's just me :-)
-
->
-> Rafael, any recommendations here?
->
->> +             if (out[2] > 0  || out[3] == 0xE000)
->> +                     return -ENODEV;
->> +     }
->>
->>       return out[0] == TOS_SUCCESS ? 0 : -EIO;
->>  }
->> --
->> 2.1.1
->>
->>
->
-> --
-> Darren Hart
-> Intel Open Source Technology Center
-
-Cheers
-Azael
-
-
-
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 4dcfb71..7d146e68 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -202,6 +202,7 @@ config TC1100_WMI
+ config HP_ACCEL
+ 	tristate "HP laptop accelerometer"
+ 	depends on INPUT && ACPI
++        depends on SERIO_I8042
+ 	select SENSORS_LIS3LV02D
+ 	select NEW_LEDS
+ 	select LEDS_CLASS
 -- 
--- El mundo apesta y vosotros apestais tambien --
+2.1.3
+
