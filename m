@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaKJBpH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:45:07 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39225 "EHLO
+	id S1752841AbaKJBrh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:47:37 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39250 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaKJBpA (ORCPT
+	with ESMTP id S1752672AbaKJBpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:45:00 -0500
+	Sun, 9 Nov 2014 20:45:05 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH v6 40/48] mips: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:42:57 -0800
-Message-Id: <1415583785-6980-41-git-send-email-linux@roeck-us.net>
+        Alexander Graf <agraf@suse.de>, Michael Ellerman <mpe@ellerman.id.au>,
+        Alistair Popple <alistair@popple.id.au>,
+        Anatolij Gustschin <agust@denx.de>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        cbe-oss-dev@lists.ozlabs.org, Geoff Levand <geoff@infradead.org>,
+        Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Scott Wood <scottwood@freescale.com>
+Subject: [PATCH v6 41/48] powerpc: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:42:58 -0800
+Message-Id: <1415583785-6980-42-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +31,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.5460189C.0033,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A02020A.546018A0.020A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: 
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 240
+X-CTCH-SenderID-TotalMessages: 245
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -64,516 +71,419 @@ unless the power-off handler installation code suggests that there can be
 more than one power-off handler and the new handler is only installed
 conditionally. In this case, install the handler with low priority.
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Maciej W. Rozycki <macro@linux-mips.org>
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v6:
 - This patch: No change.
   Global: Replaced priority defines with enum.
 v5:
-- Rebase to v3.18-rc3
-v4:
-- Do not use notifiers but internal functions and data structures to manage
-  the list of power-off handlers. Drop unused parameters from callbacks, and
-  make the power-off function type void
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-v2:
-- Use defines to specify poweroff handler priorities
+- New patch
 
- arch/mips/alchemy/board-gpr.c          |  3 ++-
- arch/mips/alchemy/board-mtx1.c         |  3 ++-
- arch/mips/alchemy/board-xxs1500.c      |  3 ++-
- arch/mips/alchemy/devboards/platform.c | 14 ++++++++++++--
- arch/mips/ar7/setup.c                  |  3 ++-
- arch/mips/ath79/setup.c                |  3 ++-
- arch/mips/bcm47xx/setup.c              |  3 ++-
- arch/mips/bcm63xx/setup.c              |  3 ++-
- arch/mips/cobalt/setup.c               |  3 ++-
- arch/mips/dec/setup.c                  |  3 ++-
- arch/mips/emma/markeins/setup.c        |  3 ++-
- arch/mips/jz4740/reset.c               |  3 ++-
- arch/mips/lantiq/falcon/reset.c        |  3 ++-
- arch/mips/lantiq/xway/reset.c          |  3 ++-
- arch/mips/lasat/reset.c                |  3 ++-
- arch/mips/loongson/common/reset.c      |  3 ++-
- arch/mips/loongson1/common/reset.c     |  3 ++-
- arch/mips/mti-malta/malta-reset.c      |  3 ++-
- arch/mips/mti-sead3/sead3-reset.c      |  3 ++-
- arch/mips/netlogic/xlp/setup.c         |  3 ++-
- arch/mips/netlogic/xlr/setup.c         |  3 ++-
- arch/mips/pmcs-msp71xx/msp_setup.c     |  3 ++-
- arch/mips/pnx833x/common/setup.c       |  3 ++-
- arch/mips/ralink/reset.c               |  3 ++-
- arch/mips/rb532/setup.c                |  3 ++-
- arch/mips/sgi-ip22/ip22-reset.c        |  3 ++-
- arch/mips/sgi-ip27/ip27-reset.c        |  3 ++-
- arch/mips/sgi-ip32/ip32-reset.c        |  3 ++-
- arch/mips/sibyte/common/cfe.c          |  3 ++-
- arch/mips/sni/setup.c                  |  3 ++-
- arch/mips/txx9/generic/setup.c         |  3 ++-
- arch/mips/vr41xx/common/pmu.c          |  3 ++-
- 32 files changed, 74 insertions(+), 33 deletions(-)
+ arch/powerpc/platforms/44x/ppc476.c              |  3 ++-
+ arch/powerpc/platforms/52xx/efika.c              |  3 ++-
+ arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c   | 30 ++++++++++++++++--------
+ arch/powerpc/platforms/85xx/corenet_generic.c    |  3 ++-
+ arch/powerpc/platforms/85xx/sgy_cts1000.c        | 16 +++++++++++--
+ arch/powerpc/platforms/cell/celleb_setup.c       |  6 +++--
+ arch/powerpc/platforms/cell/qpace_setup.c        |  3 ++-
+ arch/powerpc/platforms/cell/setup.c              |  3 ++-
+ arch/powerpc/platforms/chrp/setup.c              |  3 ++-
+ arch/powerpc/platforms/embedded6xx/gamecube.c    |  3 ++-
+ arch/powerpc/platforms/embedded6xx/linkstation.c |  3 ++-
+ arch/powerpc/platforms/embedded6xx/wii.c         |  3 ++-
+ arch/powerpc/platforms/maple/setup.c             |  6 +++--
+ arch/powerpc/platforms/powermac/setup.c          |  3 ++-
+ arch/powerpc/platforms/powernv/setup.c           |  6 +++--
+ arch/powerpc/platforms/ps3/setup.c               |  3 ++-
+ arch/powerpc/platforms/pseries/setup.c           |  3 ++-
+ arch/powerpc/sysdev/fsl_soc.c                    |  6 ++---
+ 18 files changed, 73 insertions(+), 33 deletions(-)
 
-diff --git a/arch/mips/alchemy/board-gpr.c b/arch/mips/alchemy/board-gpr.c
-index acf9a2a..abfc93a 100644
---- a/arch/mips/alchemy/board-gpr.c
-+++ b/arch/mips/alchemy/board-gpr.c
-@@ -89,7 +89,8 @@ void __init board_setup(void)
+diff --git a/arch/powerpc/platforms/44x/ppc476.c b/arch/powerpc/platforms/44x/ppc476.c
+index c11ce65..590d31f 100644
+--- a/arch/powerpc/platforms/44x/ppc476.c
++++ b/arch/powerpc/platforms/44x/ppc476.c
+@@ -94,7 +94,8 @@ static int avr_probe(struct i2c_client *client,
  {
- 	printk(KERN_INFO "Trapeze ITS GPR board\n");
- 
--	pm_power_off = gpr_power_off;
-+	register_power_off_handler_simple(gpr_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 	_machine_halt = gpr_power_off;
- 	_machine_restart = gpr_reset;
- 
-diff --git a/arch/mips/alchemy/board-mtx1.c b/arch/mips/alchemy/board-mtx1.c
-index 1e3b102..a78df2c 100644
---- a/arch/mips/alchemy/board-mtx1.c
-+++ b/arch/mips/alchemy/board-mtx1.c
-@@ -98,7 +98,8 @@ void __init board_setup(void)
- 	alchemy_gpio_direction_output(211, 1);	/* green on */
- 	alchemy_gpio_direction_output(212, 0);	/* red off */
- 
--	pm_power_off = mtx1_power_off;
-+	register_power_off_handler_simple(mtx1_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 	_machine_halt = mtx1_power_off;
- 	_machine_restart = mtx1_reset;
- 
-diff --git a/arch/mips/alchemy/board-xxs1500.c b/arch/mips/alchemy/board-xxs1500.c
-index 0fc53e0..6c413db 100644
---- a/arch/mips/alchemy/board-xxs1500.c
-+++ b/arch/mips/alchemy/board-xxs1500.c
-@@ -79,7 +79,8 @@ void __init board_setup(void)
- {
- 	u32 pin_func;
- 
--	pm_power_off = xxs1500_power_off;
-+	register_power_off_handler_simple(xxs1500_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 	_machine_halt = xxs1500_power_off;
- 	_machine_restart = xxs1500_reset;
- 
-diff --git a/arch/mips/alchemy/devboards/platform.c b/arch/mips/alchemy/devboards/platform.c
-index be139a0..75eab8a 100644
---- a/arch/mips/alchemy/devboards/platform.c
-+++ b/arch/mips/alchemy/devboards/platform.c
-@@ -64,10 +64,20 @@ static void db1x_reset(char *c)
- 	bcsr_write(BCSR_SYSTEM, 0);
+ 	avr_i2c_client = client;
+ 	ppc_md.restart = avr_reset_system;
+-	pm_power_off = avr_power_off_system;
++	register_power_off_handler_simple(avr_power_off_system,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 	return 0;
  }
  
-+static void db1x_power_off_handler(struct power_off_handler_block *this)
-+{
-+	db1x_power_off();
-+}
-+
-+static struct power_off_handler_block db1x_power_off_hb = {
-+	.handler = db1x_power_off_handler,
+diff --git a/arch/powerpc/platforms/52xx/efika.c b/arch/powerpc/platforms/52xx/efika.c
+index 6af651e..321a7a7 100644
+--- a/arch/powerpc/platforms/52xx/efika.c
++++ b/arch/powerpc/platforms/52xx/efika.c
+@@ -212,7 +212,8 @@ static int __init efika_probe(void)
+ 	DMA_MODE_READ = 0x44;
+ 	DMA_MODE_WRITE = 0x48;
+ 
+-	pm_power_off = rtas_power_off;
++	register_power_off_handler_simple(rtas_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c b/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
+index 15e8021..1bf6b0e 100644
+--- a/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
++++ b/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
+@@ -19,6 +19,7 @@
+ #include <linux/gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_gpio.h>
++#include <linux/pm.h>
+ #include <linux/slab.h>
+ #include <linux/kthread.h>
+ #include <linux/reboot.h>
+@@ -86,7 +87,7 @@ static ssize_t show_status(struct device *d,
+ }
+ static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
+ 
+-static void mcu_power_off(void)
++static void mcu_power_off(struct power_off_handler_block *this)
+ {
+ 	struct mcu *mcu = glob_mcu;
+ 
+@@ -97,6 +98,11 @@ static void mcu_power_off(void)
+ 	mutex_unlock(&mcu->lock);
+ }
+ 
++static struct power_off_handler_block mcu_power_off_hb = {
++	.handler = mcu_power_off,
 +	.priority = POWER_OFF_PRIORITY_LOW,
 +};
 +
- static int __init db1x_late_setup(void)
+ static void mcu_gpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
  {
--	if (!pm_power_off)
--		pm_power_off = db1x_power_off;
-+	if (register_power_off_handler(&db1x_power_off_hb))
-+		pr_warn("dbx1: Failed to register power-off handler\n");
- 	if (!_machine_halt)
- 		_machine_halt = db1x_power_off;
- 	if (!_machine_restart)
-diff --git a/arch/mips/ar7/setup.c b/arch/mips/ar7/setup.c
-index 820b7a3..7093266 100644
---- a/arch/mips/ar7/setup.c
-+++ b/arch/mips/ar7/setup.c
-@@ -91,7 +91,8 @@ void __init plat_mem_setup(void)
+ 	struct mcu *mcu = container_of(gc, struct mcu, gc);
+@@ -167,13 +173,15 @@ static int mcu_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	if (ret)
+ 		goto err;
  
- 	_machine_restart = ar7_machine_restart;
- 	_machine_halt = ar7_machine_halt;
--	pm_power_off = ar7_machine_power_off;
-+	register_power_off_handler_simple(ar7_machine_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	io_base = (unsigned long)ioremap(AR7_REGS_BASE, 0x10000);
- 	if (!io_base)
-diff --git a/arch/mips/ath79/setup.c b/arch/mips/ath79/setup.c
-index 64807a4..66fe138 100644
---- a/arch/mips/ath79/setup.c
-+++ b/arch/mips/ath79/setup.c
-@@ -203,7 +203,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_restart = ath79_restart;
- 	_machine_halt = ath79_halt;
--	pm_power_off = ath79_halt;
-+	register_power_off_handler_simple(ath79_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- }
- 
- void __init plat_time_init(void)
-diff --git a/arch/mips/bcm47xx/setup.c b/arch/mips/bcm47xx/setup.c
-index c00585d..d0a142c 100644
---- a/arch/mips/bcm47xx/setup.c
-+++ b/arch/mips/bcm47xx/setup.c
-@@ -246,7 +246,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_restart = bcm47xx_machine_restart;
- 	_machine_halt = bcm47xx_machine_halt;
--	pm_power_off = bcm47xx_machine_halt;
-+	register_power_off_handler_simple(bcm47xx_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 	bcm47xx_board_detect();
- 	mips_set_machine_name(bcm47xx_board_get_name());
- }
-diff --git a/arch/mips/bcm63xx/setup.c b/arch/mips/bcm63xx/setup.c
-index 6660c7d..5050a19 100644
---- a/arch/mips/bcm63xx/setup.c
-+++ b/arch/mips/bcm63xx/setup.c
-@@ -149,7 +149,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_halt = bcm63xx_machine_halt;
- 	_machine_restart = __bcm63xx_machine_reboot;
--	pm_power_off = bcm63xx_machine_halt;
-+	register_power_off_handler_simple(bcm63xx_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	set_io_port_base(0);
- 	ioport_resource.start = 0;
-diff --git a/arch/mips/cobalt/setup.c b/arch/mips/cobalt/setup.c
-index 9a8c2fe..527f331 100644
---- a/arch/mips/cobalt/setup.c
-+++ b/arch/mips/cobalt/setup.c
-@@ -78,7 +78,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_restart = cobalt_machine_restart;
- 	_machine_halt = cobalt_machine_halt;
--	pm_power_off = cobalt_machine_halt;
-+	register_power_off_handler_simple(cobalt_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	set_io_port_base(CKSEG1ADDR(GT_DEF_PCI0_IO_BASE));
- 
-diff --git a/arch/mips/dec/setup.c b/arch/mips/dec/setup.c
-index 41bbffd..b5d3200 100644
---- a/arch/mips/dec/setup.c
-+++ b/arch/mips/dec/setup.c
-@@ -158,7 +158,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_restart = dec_machine_restart;
- 	_machine_halt = dec_machine_halt;
--	pm_power_off = dec_machine_power_off;
-+	register_power_off_handler_simple(dec_machine_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	ioport_resource.start = ~0UL;
- 	ioport_resource.end = 0UL;
-diff --git a/arch/mips/emma/markeins/setup.c b/arch/mips/emma/markeins/setup.c
-index 9100122..4ea7ffb 100644
---- a/arch/mips/emma/markeins/setup.c
-+++ b/arch/mips/emma/markeins/setup.c
-@@ -103,7 +103,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_restart = markeins_machine_restart;
- 	_machine_halt = markeins_machine_halt;
--	pm_power_off = markeins_machine_power_off;
-+	register_power_off_handler_simple(markeins_machine_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	/* setup resource limits */
- 	ioport_resource.start = EMMA2RH_PCI_IO_BASE;
-diff --git a/arch/mips/jz4740/reset.c b/arch/mips/jz4740/reset.c
-index b6c6343..157e0e2 100644
---- a/arch/mips/jz4740/reset.c
-+++ b/arch/mips/jz4740/reset.c
-@@ -114,5 +114,6 @@ void jz4740_reset_init(void)
- {
- 	_machine_restart = jz4740_restart;
- 	_machine_halt = jz4740_halt;
--	pm_power_off = jz4740_power_off;
-+	register_power_off_handler_simple(jz4740_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- }
-diff --git a/arch/mips/lantiq/falcon/reset.c b/arch/mips/lantiq/falcon/reset.c
-index 5682482..7b60d36 100644
---- a/arch/mips/lantiq/falcon/reset.c
-+++ b/arch/mips/lantiq/falcon/reset.c
-@@ -83,7 +83,8 @@ static int __init mips_reboot_setup(void)
- {
- 	_machine_restart = machine_restart;
- 	_machine_halt = machine_halt;
--	pm_power_off = machine_power_off;
-+	register_power_off_handler_simple(machine_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 	return 0;
- }
- 
-diff --git a/arch/mips/lantiq/xway/reset.c b/arch/mips/lantiq/xway/reset.c
-index 1fa0f17..9b37cc1 100644
---- a/arch/mips/lantiq/xway/reset.c
-+++ b/arch/mips/lantiq/xway/reset.c
-@@ -157,7 +157,8 @@ static int __init mips_reboot_setup(void)
- 
- 	_machine_restart = ltq_machine_restart;
- 	_machine_halt = ltq_machine_halt;
--	pm_power_off = ltq_machine_power_off;
-+	register_power_off_handler_simple(ltq_machine_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	return 0;
- }
-diff --git a/arch/mips/lasat/reset.c b/arch/mips/lasat/reset.c
-index e21f0b9..91dab32 100644
---- a/arch/mips/lasat/reset.c
-+++ b/arch/mips/lasat/reset.c
-@@ -56,5 +56,6 @@ void lasat_reboot_setup(void)
- {
- 	_machine_restart = lasat_machine_restart;
- 	_machine_halt = lasat_machine_halt;
--	pm_power_off = lasat_machine_halt;
-+	register_power_off_handler_simple(lasat_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- }
-diff --git a/arch/mips/loongson/common/reset.c b/arch/mips/loongson/common/reset.c
-index a60715e..32b2de8 100644
---- a/arch/mips/loongson/common/reset.c
-+++ b/arch/mips/loongson/common/reset.c
-@@ -84,7 +84,8 @@ static int __init mips_reboot_setup(void)
- {
- 	_machine_restart = loongson_restart;
- 	_machine_halt = loongson_halt;
--	pm_power_off = loongson_poweroff;
-+	register_power_off_handler_simple(loongson_poweroff,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	return 0;
- }
-diff --git a/arch/mips/loongson1/common/reset.c b/arch/mips/loongson1/common/reset.c
-index 547f34b..8a3cdd8 100644
---- a/arch/mips/loongson1/common/reset.c
-+++ b/arch/mips/loongson1/common/reset.c
-@@ -38,7 +38,8 @@ static int __init ls1x_reboot_setup(void)
- {
- 	_machine_restart = ls1x_restart;
- 	_machine_halt = ls1x_halt;
--	pm_power_off = ls1x_power_off;
-+	register_power_off_handler_simple(ls1x_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	return 0;
- }
-diff --git a/arch/mips/mti-malta/malta-reset.c b/arch/mips/mti-malta/malta-reset.c
-index 2fd2cc2..2e4489f 100644
---- a/arch/mips/mti-malta/malta-reset.c
-+++ b/arch/mips/mti-malta/malta-reset.c
-@@ -40,7 +40,8 @@ static int __init mips_reboot_setup(void)
- {
- 	_machine_restart = mips_machine_restart;
- 	_machine_halt = mips_machine_halt;
--	pm_power_off = mips_machine_power_off;
-+	register_power_off_handler_simple(mips_machine_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	return 0;
- }
-diff --git a/arch/mips/mti-sead3/sead3-reset.c b/arch/mips/mti-sead3/sead3-reset.c
-index e6fb244..039aaf6 100644
---- a/arch/mips/mti-sead3/sead3-reset.c
-+++ b/arch/mips/mti-sead3/sead3-reset.c
-@@ -33,7 +33,8 @@ static int __init mips_reboot_setup(void)
- {
- 	_machine_restart = mips_machine_restart;
- 	_machine_halt = mips_machine_halt;
--	pm_power_off = mips_machine_halt;
-+	register_power_off_handler_simple(mips_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	return 0;
- }
-diff --git a/arch/mips/netlogic/xlp/setup.c b/arch/mips/netlogic/xlp/setup.c
-index 4fdd9fd..68529dd 100644
---- a/arch/mips/netlogic/xlp/setup.c
-+++ b/arch/mips/netlogic/xlp/setup.c
-@@ -106,7 +106,8 @@ void __init plat_mem_setup(void)
- #endif
- 	_machine_restart = (void (*)(char *))nlm_linux_exit;
- 	_machine_halt	= nlm_linux_exit;
--	pm_power_off	= nlm_linux_exit;
-+	register_power_off_handler_simple(nlm_linux_exit,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	/* memory and bootargs from DT */
- 	xlp_early_init_devtree();
-diff --git a/arch/mips/netlogic/xlr/setup.c b/arch/mips/netlogic/xlr/setup.c
-index d118b9a..898e950 100644
---- a/arch/mips/netlogic/xlr/setup.c
-+++ b/arch/mips/netlogic/xlr/setup.c
-@@ -75,7 +75,8 @@ void __init plat_mem_setup(void)
- {
- 	_machine_restart = (void (*)(char *))nlm_linux_exit;
- 	_machine_halt	= nlm_linux_exit;
--	pm_power_off	= nlm_linux_exit;
-+	register_power_off_handler_simple(nlm_linux_exit,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- }
- 
- const char *get_system_type(void)
-diff --git a/arch/mips/pmcs-msp71xx/msp_setup.c b/arch/mips/pmcs-msp71xx/msp_setup.c
-index 4f925e0..a2b4722 100644
---- a/arch/mips/pmcs-msp71xx/msp_setup.c
-+++ b/arch/mips/pmcs-msp71xx/msp_setup.c
-@@ -144,7 +144,8 @@ void __init plat_mem_setup(void)
- {
- 	_machine_restart = msp_restart;
- 	_machine_halt = msp_halt;
--	pm_power_off = msp_power_off;
-+	register_power_off_handler_simple(msp_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- }
- 
- void __init prom_init(void)
-diff --git a/arch/mips/pnx833x/common/setup.c b/arch/mips/pnx833x/common/setup.c
-index 99b4d94..55f7a22 100644
---- a/arch/mips/pnx833x/common/setup.c
-+++ b/arch/mips/pnx833x/common/setup.c
-@@ -51,7 +51,8 @@ int __init plat_mem_setup(void)
- 
- 	_machine_restart = pnx833x_machine_restart;
- 	_machine_halt = pnx833x_machine_halt;
--	pm_power_off = pnx833x_machine_power_off;
-+	register_power_off_handler_simple(pnx833x_machine_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	/* IO/MEM resources. */
- 	set_io_port_base(KSEG1);
-diff --git a/arch/mips/ralink/reset.c b/arch/mips/ralink/reset.c
-index 55c7ec5..7b6dfdf3 100644
---- a/arch/mips/ralink/reset.c
-+++ b/arch/mips/ralink/reset.c
-@@ -98,7 +98,8 @@ static int __init mips_reboot_setup(void)
- {
- 	_machine_restart = ralink_restart;
- 	_machine_halt = ralink_halt;
--	pm_power_off = ralink_halt;
-+	register_power_off_handler_simple(ralink_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	return 0;
- }
-diff --git a/arch/mips/rb532/setup.c b/arch/mips/rb532/setup.c
-index d0c64e7..1b95326b 100644
---- a/arch/mips/rb532/setup.c
-+++ b/arch/mips/rb532/setup.c
-@@ -44,7 +44,8 @@ void __init plat_mem_setup(void)
- 
- 	_machine_restart = rb_machine_restart;
- 	_machine_halt = rb_machine_halt;
--	pm_power_off = rb_machine_halt;
-+	register_power_off_handler_simple(rb_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	set_io_port_base(KSEG1);
- 
-diff --git a/arch/mips/sgi-ip22/ip22-reset.c b/arch/mips/sgi-ip22/ip22-reset.c
-index 063c2dd..ecd1970 100644
---- a/arch/mips/sgi-ip22/ip22-reset.c
-+++ b/arch/mips/sgi-ip22/ip22-reset.c
-@@ -188,7 +188,8 @@ static int __init reboot_setup(void)
- 
- 	_machine_restart = sgi_machine_restart;
- 	_machine_halt = sgi_machine_halt;
--	pm_power_off = sgi_machine_power_off;
-+	register_power_off_handler_simple(sgi_machine_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	res = request_irq(SGI_PANEL_IRQ, panel_int, 0, "Front Panel", NULL);
- 	if (res) {
-diff --git a/arch/mips/sgi-ip27/ip27-reset.c b/arch/mips/sgi-ip27/ip27-reset.c
-index ac37e54..e695975 100644
---- a/arch/mips/sgi-ip27/ip27-reset.c
-+++ b/arch/mips/sgi-ip27/ip27-reset.c
-@@ -76,5 +76,6 @@ void ip27_reboot_setup(void)
- {
- 	_machine_restart = ip27_machine_restart;
- 	_machine_halt = ip27_machine_halt;
--	pm_power_off = ip27_machine_power_off;
-+	register_power_off_handler_simple(ip27_machine_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- }
-diff --git a/arch/mips/sgi-ip32/ip32-reset.c b/arch/mips/sgi-ip32/ip32-reset.c
-index 1f823da..e3522fd 100644
---- a/arch/mips/sgi-ip32/ip32-reset.c
-+++ b/arch/mips/sgi-ip32/ip32-reset.c
-@@ -189,7 +189,8 @@ static __init int ip32_reboot_setup(void)
- 
- 	_machine_restart = ip32_machine_restart;
- 	_machine_halt = ip32_machine_halt;
--	pm_power_off = ip32_machine_power_off;
-+	register_power_off_handler_simple(ip32_machine_power_off,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	init_timer(&blink_timer);
- 	blink_timer.function = blink_timeout;
-diff --git a/arch/mips/sibyte/common/cfe.c b/arch/mips/sibyte/common/cfe.c
-index 588e180..bf47de7 100644
---- a/arch/mips/sibyte/common/cfe.c
-+++ b/arch/mips/sibyte/common/cfe.c
-@@ -245,7 +245,8 @@ void __init prom_init(void)
- 
- 	_machine_restart   = cfe_linux_restart;
- 	_machine_halt	   = cfe_linux_halt;
--	pm_power_off = cfe_linux_halt;
-+	register_power_off_handler_simple(cfe_linux_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- 	/*
- 	 * Check if a loader was used; if NOT, the 4 arguments are
-diff --git a/arch/mips/sni/setup.c b/arch/mips/sni/setup.c
-index efad85c..d278f0f 100644
---- a/arch/mips/sni/setup.c
-+++ b/arch/mips/sni/setup.c
-@@ -225,7 +225,8 @@ void __init plat_mem_setup(void)
+-	/* XXX: this is potentially racy, but there is no lock for pm_power_off */
+-	if (!pm_power_off) {
+-		glob_mcu = mcu;
+-		pm_power_off = mcu_power_off;
+-		dev_info(&client->dev, "will provide power-off service\n");
++	glob_mcu = mcu;
++	ret = register_power_off_handler(&mcu_power_off_hb);
++	if (ret) {
++		dev_err(&client->dev, "Failed to register power-off handler\n");
++		goto err_handler;
  	}
  
- 	_machine_restart = sni_machine_restart;
--	pm_power_off = sni_machine_power_off;
-+	register_power_off_handler_simple(sni_machine_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 
- 	sni_display_setup();
- 	sni_console_setup();
-diff --git a/arch/mips/txx9/generic/setup.c b/arch/mips/txx9/generic/setup.c
-index 2791b86..cb48e06 100644
---- a/arch/mips/txx9/generic/setup.c
-+++ b/arch/mips/txx9/generic/setup.c
-@@ -555,7 +555,8 @@ void __init plat_mem_setup(void)
- 	/* fallback restart/halt routines */
- 	_machine_restart = (void (*)(char *))txx9_machine_halt;
- 	_machine_halt = txx9_machine_halt;
--	pm_power_off = txx9_machine_halt;
-+	register_power_off_handler_simple(txx9_machine_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
- 
- #ifdef CONFIG_PCI
- 	pcibios_plat_setup = txx9_pcibios_setup;
-diff --git a/arch/mips/vr41xx/common/pmu.c b/arch/mips/vr41xx/common/pmu.c
-index d7f7558..cd9a20d 100644
---- a/arch/mips/vr41xx/common/pmu.c
-+++ b/arch/mips/vr41xx/common/pmu.c
-@@ -127,7 +127,8 @@ static int __init vr41xx_pmu_init(void)
- 	cpu_wait = vr41xx_cpu_wait;
- 	_machine_restart = vr41xx_restart;
- 	_machine_halt = vr41xx_halt;
--	pm_power_off = vr41xx_halt;
-+	register_power_off_handler_simple(vr41xx_halt,
-+					  POWER_OFF_PRIORITY_FALLBACK);
++	dev_info(&client->dev, "will provide power-off service\n");
++
+ 	if (device_create_file(&client->dev, &dev_attr_status))
+ 		dev_err(&client->dev,
+ 			"couldn't create device file for status\n");
+@@ -182,6 +190,10 @@ static int mcu_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 				      "mcu-i2c-shdn");
  
  	return 0;
++
++err_handler:
++	mcu_gpiochip_remove(mcu);
++	glob_mcu = NULL;
+ err:
+ 	kfree(mcu);
+ 	return ret;
+@@ -196,10 +208,8 @@ static int mcu_remove(struct i2c_client *client)
+ 
+ 	device_remove_file(&client->dev, &dev_attr_status);
+ 
+-	if (glob_mcu == mcu) {
+-		pm_power_off = NULL;
+-		glob_mcu = NULL;
+-	}
++	unregister_power_off_handler(&mcu_power_off_hb);
++	glob_mcu = NULL;
+ 
+ 	ret = mcu_gpiochip_remove(mcu);
+ 	if (ret)
+diff --git a/arch/powerpc/platforms/85xx/corenet_generic.c b/arch/powerpc/platforms/85xx/corenet_generic.c
+index 1f309cc..f0c4b51 100644
+--- a/arch/powerpc/platforms/85xx/corenet_generic.c
++++ b/arch/powerpc/platforms/85xx/corenet_generic.c
+@@ -170,7 +170,8 @@ static int __init corenet_generic_probe(void)
+ 
+ 			ppc_md.get_irq = ehv_pic_get_irq;
+ 			ppc_md.restart = fsl_hv_restart;
+-			pm_power_off = fsl_hv_halt;
++			register_power_off_handler_simple(fsl_hv_halt,
++						POWER_OFF_PRIORITY_DEFAULT);
+ 			ppc_md.halt = fsl_hv_halt;
+ #ifdef CONFIG_SMP
+ 			/*
+diff --git a/arch/powerpc/platforms/85xx/sgy_cts1000.c b/arch/powerpc/platforms/85xx/sgy_cts1000.c
+index e149c9e..d849e8f 100644
+--- a/arch/powerpc/platforms/85xx/sgy_cts1000.c
++++ b/arch/powerpc/platforms/85xx/sgy_cts1000.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
++#include <linux/pm.h>
+ #include <linux/workqueue.h>
+ #include <linux/reboot.h>
+ #include <linux/interrupt.h>
+@@ -59,6 +60,16 @@ static void gpio_halt_cb(void)
+ 	gpio_set_value(gpio, trigger);
  }
+ 
++static void gpio_power_off_cb(struct power_off_handler_block *this)
++{
++	gpio_halt_cb();
++}
++
++static struct power_off_handler_block gpio_power_off_hb = {
++	.handler = gpio_power_off_cb,
++	.priority = POWER_OFF_PRIORITY_DEFAULT,
++};
++
+ /* This IRQ means someone pressed the power button and it is waiting for us
+  * to handle the shutdown/poweroff. */
+ static irqreturn_t gpio_halt_irq(int irq, void *__data)
+@@ -120,7 +131,8 @@ static int gpio_halt_probe(struct platform_device *pdev)
+ 
+ 	/* Register our halt function */
+ 	ppc_md.halt = gpio_halt_cb;
+-	pm_power_off = gpio_halt_cb;
++	if (register_power_off_handler(&gpio_power_off_hb))
++		pr_warn("gpio-halt: Failed to register power-off handler\n");
+ 
+ 	printk(KERN_INFO "gpio-halt: registered GPIO %d (%d trigger, %d"
+ 	       " irq).\n", gpio, trigger, irq);
+@@ -137,7 +149,7 @@ static int gpio_halt_remove(struct platform_device *pdev)
+ 		free_irq(irq, halt_node);
+ 
+ 		ppc_md.halt = NULL;
+-		pm_power_off = NULL;
++		unregister_power_off_handler(&gpio_power_off_hb);
+ 
+ 		gpio_free(gpio);
+ 
+diff --git a/arch/powerpc/platforms/cell/celleb_setup.c b/arch/powerpc/platforms/cell/celleb_setup.c
+index 90be8ec..e301b1a 100644
+--- a/arch/powerpc/platforms/cell/celleb_setup.c
++++ b/arch/powerpc/platforms/cell/celleb_setup.c
+@@ -142,7 +142,8 @@ static int __init celleb_probe_beat(void)
+ 	powerpc_firmware_features |= FW_FEATURE_CELLEB_ALWAYS
+ 		| FW_FEATURE_BEAT | FW_FEATURE_LPAR;
+ 	hpte_init_beat_v3();
+-	pm_power_off = beat_power_off;
++	register_power_off_handler_simple(beat_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+@@ -191,7 +192,8 @@ static int __init celleb_probe_native(void)
+ 
+ 	powerpc_firmware_features |= FW_FEATURE_CELLEB_ALWAYS;
+ 	hpte_init_native();
+-	pm_power_off = rtas_power_off;
++	register_power_off_handler_simple(rtas_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/cell/qpace_setup.c b/arch/powerpc/platforms/cell/qpace_setup.c
+index d328140..223d40a 100644
+--- a/arch/powerpc/platforms/cell/qpace_setup.c
++++ b/arch/powerpc/platforms/cell/qpace_setup.c
+@@ -127,7 +127,8 @@ static int __init qpace_probe(void)
+ 		return 0;
+ 
+ 	hpte_init_native();
+-	pm_power_off = rtas_power_off;
++	register_power_off_handler_simple(rtas_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/cell/setup.c b/arch/powerpc/platforms/cell/setup.c
+index d62aa98..ea5460c 100644
+--- a/arch/powerpc/platforms/cell/setup.c
++++ b/arch/powerpc/platforms/cell/setup.c
+@@ -259,7 +259,8 @@ static int __init cell_probe(void)
+ 		return 0;
+ 
+ 	hpte_init_native();
+-	pm_power_off = rtas_power_off;
++	register_power_off_handler_simple(rtas_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/chrp/setup.c b/arch/powerpc/platforms/chrp/setup.c
+index 860a59e..0c0288e 100644
+--- a/arch/powerpc/platforms/chrp/setup.c
++++ b/arch/powerpc/platforms/chrp/setup.c
+@@ -585,7 +585,8 @@ static int __init chrp_probe(void)
+ 	DMA_MODE_READ = 0x44;
+ 	DMA_MODE_WRITE = 0x48;
+ 
+-	pm_power_off = rtas_power_off;
++	register_power_off_handler_simple(rtas_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/embedded6xx/gamecube.c b/arch/powerpc/platforms/embedded6xx/gamecube.c
+index fe0ed6e..af40f0f 100644
+--- a/arch/powerpc/platforms/embedded6xx/gamecube.c
++++ b/arch/powerpc/platforms/embedded6xx/gamecube.c
+@@ -67,7 +67,8 @@ static int __init gamecube_probe(void)
+ 	if (!of_flat_dt_is_compatible(dt_root, "nintendo,gamecube"))
+ 		return 0;
+ 
+-	pm_power_off = gamecube_power_off;
++	register_power_off_handler_simple(gamecube_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/embedded6xx/linkstation.c b/arch/powerpc/platforms/embedded6xx/linkstation.c
+index 540eeb5..0c4dcf8 100644
+--- a/arch/powerpc/platforms/embedded6xx/linkstation.c
++++ b/arch/powerpc/platforms/embedded6xx/linkstation.c
+@@ -148,7 +148,8 @@ static int __init linkstation_probe(void)
+ 	if (!of_flat_dt_is_compatible(root, "linkstation"))
+ 		return 0;
+ 
+-	pm_power_off = linkstation_power_off;
++	register_power_off_handler_simple(linkstation_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+index 352592d..eea8824 100644
+--- a/arch/powerpc/platforms/embedded6xx/wii.c
++++ b/arch/powerpc/platforms/embedded6xx/wii.c
+@@ -211,7 +211,8 @@ static int __init wii_probe(void)
+ 	if (!of_flat_dt_is_compatible(dt_root, "nintendo,wii"))
+ 		return 0;
+ 
+-	pm_power_off = wii_power_off;
++	register_power_off_handler_simple(wii_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/maple/setup.c b/arch/powerpc/platforms/maple/setup.c
+index 56b85cd..73c3988 100644
+--- a/arch/powerpc/platforms/maple/setup.c
++++ b/arch/powerpc/platforms/maple/setup.c
+@@ -169,7 +169,8 @@ static void __init maple_use_rtas_reboot_and_halt_if_present(void)
+ 	if (rtas_service_present("system-reboot") &&
+ 	    rtas_service_present("power-off")) {
+ 		ppc_md.restart = rtas_restart;
+-		pm_power_off = rtas_power_off;
++		register_power_off_handler_simple(rtas_power_off,
++						  POWER_OFF_PRIORITY_DEFAULT);
+ 		ppc_md.halt = rtas_halt;
+ 	}
+ }
+@@ -312,7 +313,8 @@ static int __init maple_probe(void)
+ 	alloc_dart_table();
+ 
+ 	hpte_init_native();
+-	pm_power_off = maple_power_off;
++	register_power_off_handler_simple(maple_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/powermac/setup.c b/arch/powerpc/platforms/powermac/setup.c
+index 713d36d..6496ae4 100644
+--- a/arch/powerpc/platforms/powermac/setup.c
++++ b/arch/powerpc/platforms/powermac/setup.c
+@@ -632,7 +632,8 @@ static int __init pmac_probe(void)
+ 	smu_cmdbuf_abs = memblock_alloc_base(4096, 4096, 0x80000000UL);
+ #endif /* CONFIG_PMAC_SMU */
+ 
+-	pm_power_off = pmac_power_off;
++	register_power_off_handler_simple(pmac_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	return 1;
+ }
+diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+index 941831d..a03c41b 100644
+--- a/arch/powerpc/platforms/powernv/setup.c
++++ b/arch/powerpc/platforms/powernv/setup.c
+@@ -268,7 +268,8 @@ static void __init pnv_setup_machdep_opal(void)
+ 	ppc_md.get_rtc_time = opal_get_rtc_time;
+ 	ppc_md.set_rtc_time = opal_set_rtc_time;
+ 	ppc_md.restart = pnv_restart;
+-	pm_power_off = pnv_power_off;
++	register_power_off_handler_simple(pnv_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 	ppc_md.halt = pnv_halt;
+ 	ppc_md.machine_check_exception = opal_machine_check;
+ 	ppc_md.mce_check_early_recovery = opal_mce_check_early_recovery;
+@@ -285,7 +286,8 @@ static void __init pnv_setup_machdep_rtas(void)
+ 		ppc_md.set_rtc_time = rtas_set_rtc_time;
+ 	}
+ 	ppc_md.restart = rtas_restart;
+-	pm_power_off = rtas_power_off;
++	register_power_off_handler_simple(rtas_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 	ppc_md.halt = rtas_halt;
+ }
+ #endif /* CONFIG_PPC_POWERNV_RTAS */
+diff --git a/arch/powerpc/platforms/ps3/setup.c b/arch/powerpc/platforms/ps3/setup.c
+index 009a200..77e0dea 100644
+--- a/arch/powerpc/platforms/ps3/setup.c
++++ b/arch/powerpc/platforms/ps3/setup.c
+@@ -248,7 +248,8 @@ static int __init ps3_probe(void)
+ 	ps3_mm_init();
+ 	ps3_mm_vas_create(&htab_size);
+ 	ps3_hpte_init(htab_size);
+-	pm_power_off = ps3_power_off;
++	register_power_off_handler_simple(ps3_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	DBG(" <- %s:%d\n", __func__, __LINE__);
+ 	return 1;
+diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
+index db0fc0c..b3c85bb 100644
+--- a/arch/powerpc/platforms/pseries/setup.c
++++ b/arch/powerpc/platforms/pseries/setup.c
+@@ -769,7 +769,8 @@ static int __init pSeries_probe(void)
+ 	else
+ 		hpte_init_native();
+ 
+-	pm_power_off = pseries_power_off;
++	register_power_off_handler_simple(pseries_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	pr_debug("Machine is%s LPAR !\n",
+ 	         (powerpc_firmware_features & FW_FEATURE_LPAR) ? "" : " not");
+diff --git a/arch/powerpc/sysdev/fsl_soc.c b/arch/powerpc/sysdev/fsl_soc.c
+index 1e04568..eeb075f 100644
+--- a/arch/powerpc/sysdev/fsl_soc.c
++++ b/arch/powerpc/sysdev/fsl_soc.c
+@@ -238,9 +238,9 @@ void fsl_hv_restart(char *cmd)
+ /*
+  * Halt the current partition
+  *
+- * This function should be assigned to the pm_power_off and ppc_md.halt
+- * function pointers, to shut down the partition when we're running under
+- * the Freescale hypervisor.
++ * This function should be registered as power-off handler and be assigned
++ * to the ppc_md.halt function pointer, to shut down the partition when
++ * we're running under the Freescale hypervisor.
+  */
+ void fsl_hv_halt(void)
+ {
 -- 
 1.9.1
 
