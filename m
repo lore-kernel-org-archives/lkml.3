@@ -1,48 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaKJQDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:03:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421AbaKJQDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:03:50 -0500
-Date: Mon, 10 Nov 2014 17:03:45 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Len Brown <len.brown@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf, amd, ibs: Update IBS MSRs and feature definitions
-Message-ID: <20141110160345.GB9565@pd.tnic>
-References: <1415291182-4324-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20141106163430.GB4737@pd.tnic>
- <545BA884.5040406@amd.com>
- <20141108090355.GB14837@pd.tnic>
- <5460E13B.4090302@amd.com>
+	id S1753316AbaKJQED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:04:03 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:37729 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278AbaKJQD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 11:03:59 -0500
+Date: Mon, 10 Nov 2014 16:03:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Johan Hovold <johan@kernel.org>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH v11 0/3] add support for Diolan DLN-2
+Message-ID: <20141110160351.GJ24004@x1>
+References: <1415281685-14866-1-git-send-email-octavian.purdila@intel.com>
+ <20141110151019.GC24004@x1>
+ <CAE1zotLmLMLm=3HMmL55TXWf4frCryWCLGnhEUw8f9H+GpY4tA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5460E13B.4090302@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE1zotLmLMLm=3HMmL55TXWf4frCryWCLGnhEUw8f9H+GpY4tA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 10:00:59AM -0600, Aravind Gopalakrishnan wrote:
-> No, There aren't any bits in MSR_AMD64_IBS_FETCH_EXTD_CTL that we need to
-> configure right now.
-> So, have included it here mainly to keep the MSR listing consistent with the
-> manual.
+On Mon, 10 Nov 2014, Octavian Purdila wrote:
 
-Please remove it then. We put MSRs in msr-index.h which are in use only.
+> On Mon, Nov 10, 2014 at 5:10 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > Linus, Wolfram,
+> >
+> > Enjoy!
+> >
+> > The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+> >
+> >   Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+> >
+> > are available in the git repository at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-i2c-v3.19
+> 
+> Hi Lee,
+> 
+> Not sure if this matter, but this tree seems to miss the
+> mfd_add_hotplug_devices patches from Johan, which are needed by the
+> patches below.
 
-Thanks.
+Yes, that will definitely matter.
+
+> > for you to fetch changes up to e7d146b11a8a33b6033220b0f4fc4de2ab29218a:
+> >
+> >   gpio: add support for the Diolan DLN-2 USB GPIO driver (2014-11-10 15:05:49 +0000)
+> >
+> > ----------------------------------------------------------------
+> > Immutable branch between MFD, GPIO and I2C
+> >
+> > ----------------------------------------------------------------
+> > Daniel Baluta (1):
+> >       gpio: add support for the Diolan DLN-2 USB GPIO driver
+> >
+> > Laurentiu Palcu (1):
+> >       i2c: add support for Diolan DLN-2 USB-I2C adapter
+> >
+> > Octavian Purdila (1):
+> >       mfd: Add support for Diolan DLN-2 devices
+> >
+> >  drivers/gpio/Kconfig          |  12 +
+> >  drivers/gpio/Makefile         |   1 +
+> >  drivers/gpio/gpio-dln2.c      | 553 ++++++++++++++++++++++++++++++
+> >  drivers/i2c/busses/Kconfig    |  10 +
+> >  drivers/i2c/busses/Makefile   |   1 +
+> >  drivers/i2c/busses/i2c-dln2.c | 267 +++++++++++++++
+> >  drivers/mfd/Kconfig           |  10 +
+> >  drivers/mfd/Makefile          |   1 +
+> >  drivers/mfd/dln2.c            | 763 ++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/dln2.h      | 103 ++++++
+> >  10 files changed, 1721 insertions(+)
+> >  create mode 100644 drivers/gpio/gpio-dln2.c
+> >  create mode 100644 drivers/i2c/busses/i2c-dln2.c
+> >  create mode 100644 drivers/mfd/dln2.c
+> >  create mode 100644 include/linux/mfd/dln2.h
+> >
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
