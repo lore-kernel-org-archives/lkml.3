@@ -1,1119 +1,784 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaKJVLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:11:54 -0500
-Received: from mout.gmx.net ([212.227.15.19]:59194 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641AbaKJVLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:11:51 -0500
-Message-ID: <54612A0D.7020308@gmx.de>
-Date: Mon, 10 Nov 2014 22:11:41 +0100
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+	id S1752964AbaKJVNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:13:16 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:56963 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262AbaKJVNN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 16:13:13 -0500
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com> <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:+HLc7xu87/xlwudGiQgW0bCnP6ehEmK+A7eBS+8Gp2Qss9hNq3D
- DLIINiwULhW9I9/9zF09WkclFQXjlYOhjNeG/hSEpdqfFPmdNcuYR6/JtYMdJCNbGktKWQq
- 2lyYcSzAPICOkbd71TYrovVZtDMBwTrO/9anfgTTu2/DziTv3CxJVJTIC/pBW43V+JDmSyo
- EOu4GS/yKloxJRMyYKLUg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <545E0B06.6030706@gmail.com>
+References: <545E0B06.6030706@gmail.com>
+Date: Mon, 10 Nov 2014 13:13:12 -0800
+X-Google-Sender-Auth: dTsPVW61az_YBNwdz8RxuhuNMKg
+Message-ID: <CAGXu5jJ4MMZ66JzWqenaz4h5nYLnE8o_H0D5sr+M=j1YYnf0AQ@mail.gmail.com>
+Subject: Re: Edited seccomp.2 man page for review
+From: Kees Cook <keescook@chromium.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ivan T. Ivanov schrieb am 03.11.2014 16:24:
-> From: Stanimir Varbanov <svarbanov@mm-sol.com>
-> 
-> The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> 15 bits resolution and register space inside PMIC accessible across
-> SPMI bus.
-> 
-> The vadc driver registers itself through IIO interface.
-Reviewing again, I got the feeling that due to the complexity of adc reads (writing to register to start conversion, waiting a decent time for the conversion to complete, reading the result), it would be beneficial to use a mutex in vadc_read_raw or its depending functions.
-Also, I would want to double-check that the CPU in this type of chips is little endian.
-Besides that, a few minor issues inline.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->  drivers/iio/adc/Kconfig          |   14 +
->  drivers/iio/adc/Makefile         |    1 +
->  drivers/iio/adc/qcom-spmi-vadc.c | 1015 ++++++++++++++++++++++++++++++++++++++
->  3 files changed, 1030 insertions(+)
->  create mode 100644 drivers/iio/adc/qcom-spmi-vadc.c
-> 
-> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-> index 88bdc8f..af6e10b 100644
-> --- a/drivers/iio/adc/Kconfig
-> +++ b/drivers/iio/adc/Kconfig
-> @@ -206,6 +206,20 @@ config NAU7802
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called nau7802.
->  
-> +config QCOM_SPMI_VADC
-> +	tristate "Qualcomm SPMI PMIC voltage ADC"
-> +	depends on SPMI
-> +	select REGMAP_SPMI
-> +	help
-> +	  This is the IIO Voltage ADC driver for Qualcomm QPNP VADC Chip.
-> +
-> +	  The driver supports multiple channels read. The VADC is a 15-bit
-> +	  sigma-delta ADC. Some of the channels are internally used for
-> +	  calibration.
-> +
-> +	  To compile this driver as a module, choose M here: the module will
-> +	  be called qcom-spmi-vadc.
-> +
->  config ROCKCHIP_SARADC
->  	tristate "Rockchip SARADC driver"
->  	depends on ARCH_ROCKCHIP || (ARM && COMPILE_TEST)
-> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-> index cb88a6a..479b457 100644
-> --- a/drivers/iio/adc/Makefile
-> +++ b/drivers/iio/adc/Makefile
-> @@ -22,6 +22,7 @@ obj-$(CONFIG_MCP320X) += mcp320x.o
->  obj-$(CONFIG_MCP3422) += mcp3422.o
->  obj-$(CONFIG_MEN_Z188_ADC) += men_z188_adc.o
->  obj-$(CONFIG_NAU7802) += nau7802.o
-> +obj-$(CONFIG_QCOM_SPMI_VADC) += qcom-spmi-vadc.o
->  obj-$(CONFIG_ROCKCHIP_SARADC) += rockchip_saradc.o
->  obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
->  obj-$(CONFIG_TI_ADC128S052) += ti-adc128s052.o
-> diff --git a/drivers/iio/adc/qcom-spmi-vadc.c b/drivers/iio/adc/qcom-spmi-vadc.c
-> new file mode 100644
-> index 0000000..6e6881c
-> --- /dev/null
-> +++ b/drivers/iio/adc/qcom-spmi-vadc.c
-> @@ -0,0 +1,1015 @@
-> +/*
-> + * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/bitops.h>
-> +#include <linux/completion.h>
-> +#include <linux/delay.h>
-> +#include <linux/err.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/slab.h>
-> +#include <linux/log2.h>
-> +
-> +#include <dt-bindings/iio/qcom,spmi-vadc.h>
-> +
-> +/* VADC register and bit definitions */
-> +#define VADC_REVISION2				0x1
-> +#define VADC_REVISION2_SUPPORTED_VADC		1
-> +
-> +#define VADC_PERPH_TYPE				0x4
-> +#define VADC_PERPH_TYPE_ADC			8
-> +
-> +#define VADC_PERPH_SUBTYPE			0x5
-> +#define VADC_PERPH_SUBTYPE_VADC			1
-> +
-> +#define VADC_STATUS1				0x8
-> +#define VADC_STATUS1_OP_MODE			4
-> +#define VADC_STATUS1_REQ_STS			BIT(1)
-> +#define VADC_STATUS1_EOC			BIT(0)
-> +#define VADC_STATUS1_REQ_STS_EOC_MASK		0x3
-> +
-> +#define VADC_MODE_CTL				0x40
-> +#define VADC_OP_MODE_SHIFT			3
-> +#define VADC_OP_MODE_NORMAL			0
-> +#define VADC_AMUX_TRIM_EN			BIT(1)
-> +#define VADC_ADC_TRIM_EN			BIT(0)
-> +
-> +#define VADC_EN_CTL1				0x46
-> +#define VADC_EN_CTL1_SET			BIT(7)
-> +
-> +#define VADC_ADC_CH_SEL_CTL			0x48
-> +
-> +#define VADC_ADC_DIG_PARAM			0x50
-> +#define VADC_ADC_DIG_DEC_RATIO_SEL_SHIFT	2
-> +
-> +#define VADC_HW_SETTLE_DELAY			0x51
-> +
-> +#define VADC_CONV_REQ				0x52
-> +#define VADC_CONV_REQ_SET			BIT(7)
-> +
-> +#define VADC_FAST_AVG_CTL			0x5a
-> +#define VADC_FAST_AVG_EN			0x5b
-> +#define VADC_FAST_AVG_EN_SET			BIT(7)
-> +
-> +#define VADC_ACCESS				0xd0
-> +#define VADC_ACCESS_DATA			0xa5
-> +
-> +#define VADC_PERH_RESET_CTL3			0xda
-> +#define VADC_FOLLOW_WARM_RB			BIT(2)
-> +
-> +#define VADC_DATA				0x60	/* 16 bits */
-> +
-> +#define VADC_CONV_TIME_MIN_US			2000
-> +#define VADC_CONV_TIME_MAX_US			2100
-> +
-> +/* Min ADC code represents 0V */
-> +#define VADC_MIN_ADC_CODE			0x6000
-> +/* Max ADC code represents full-scale range of 1.8V */
-> +#define VADC_MAX_ADC_CODE			0xa800
-> +
-> +#define VADC_ABSOLUTE_RANGE_UV			625000
-> +#define VADC_RATIOMETRIC_RANGE_UV		1800000
-> +
-> +#define VADC_DEF_PRESCALING			0 /* 1:1 */
-> +#define VADC_DEF_DECIMATION			0 /* 512 */
-> +#define VADC_DEF_HW_SETTLE_TIME			0 /* 0 us */
-> +#define VADC_DEF_AVG_SAMPLES			0 /* 1 sample */
-> +#define VADC_DEF_CALIB_TYPE			VADC_CALIB_ABSOLUTE
-> +
-> +#define VADC_DECIMATION_MIN			512
-> +#define VADC_DECIMATION_MAX			4096
-> +
-> +#define VADC_HW_SETTLE_DELAY_MAX		10000
-> +#define VADC_AVG_SAMPLES_MAX			512
-> +
-> +#define KELVINMIL_CELSIUSMIL			273150
-> +
-> +#define VADC_CHAN_MIN			VADC_USBIN
-> +#define VADC_CHAN_MAX			VADC_LR_MUX3_BUF_PU1_PU2_XO_THERM
-> +
-> +/*
-> + * VADC_CALIB_ABSOLUTE: uses the 625mV and 1.25V as reference channels.
-> + * VADC_CALIB_RATIOMETRIC: uses the reference voltage (1.8V) and GND for
-> + * calibration.
-> + */
-> +enum vadc_calibration {
-> +	VADC_CALIB_ABSOLUTE = 0,
-> +	VADC_CALIB_RATIOMETRIC
-> +};
-> +
-> +/**
-> + * struct vadc_linear_graph - Represent ADC characteristics.
-> + * @dy: numerator slope to calculate the gain.
-> + * @dx: denominator slope to calculate the gain.
-> + * @vref: A/D word of the voltage reference used for the channel.
-> + * @gnd: A/D word of the ground reference used for the channel.
-> + *
-> + * Each ADC device has different offset and gain parameters which are
-> + * computed to calibrate the device.
-> + */
-> +struct vadc_linear_graph {
-> +	s32 dy;
-> +	s32 dx;
-> +	s32 vref;
-> +	s32 gnd;
-> +};
-> +
-> +/**
-> + * struct vadc_prescale_ratio - Represent scaling ratio for ADC input.
-> + * @num: the inverse numerator of the gain applied to the input channel.
-> + * @den: the inverse denominator of the gain applied to the input channel.
-> + */
-> +struct vadc_prescale_ratio {
-> +	u32 num;
-> +	u32 den;
-> +};
-> +
-> +/**
-> + * struct vadc_channel_prop - VADC channel property.
-> + * @channel: channel number, refer to the channel list.
-> + * @calibration: calibration type.
-> + * @decimation: sampling rate supported for the channel.
-> + * @prescale: channel scaling performed on the input signal.
-> + * @hw_settle_time: the time between AMUX being configured and the
-> + *	start of conversion.
-> + * @avg_samples: ability to provide single result from the ADC
-> + *	that is an average of multiple measurements.
-> + */
-> +struct vadc_channel_prop {
-> +	unsigned int channel;
-> +	enum vadc_calibration calibration;
-> +	unsigned int decimation;
-> +	unsigned int prescale;
-> +	unsigned int hw_settle_time;
-> +	unsigned int avg_samples;
-> +};
-> +
-> +/**
-> + * struct vadc_priv - VADC private structure.
-> + * @regmap: pointer to struct regmap.
-> + * @dev: pointer to struct device.
-> + * @base: base address for the ADC peripheral.
-> + * @nchannels: number of VADC channels.
-> + * @chan_props: array of VADC channel properties.
-> + * @iio_chans: array of IIO channels specification.
-> + * @are_ref_measured: are reference points measured.
-> + * @poll_eoc: use polling instead of interrupt.
-> + * @complete: VADC result notification after interrupt is received.
-> + * @graph: store parameters for calibration.
-> + */
-> +struct vadc_priv {
-> +	struct regmap		 *regmap;
-> +	struct device		 *dev;
-> +	u16			 base;
-> +	unsigned int		 nchannels;
-> +	struct vadc_channel_prop *chan_props;
-> +	struct iio_chan_spec	 *iio_chans;
-> +	bool			 are_ref_measured;
-> +	bool			 poll_eoc;
-> +	struct completion	 complete;
-> +	struct vadc_linear_graph graph[2];
-> +};
-> +
-> +static const struct vadc_prescale_ratio vadc_prescale_ratios[] = {
-> +	{.num =  1, .den =  1},
-> +	{.num =  1, .den =  3},
-> +	{.num =  1, .den =  4},
-> +	{.num =  1, .den =  6},
-> +	{.num =  1, .den = 20},
-> +	{.num =  1, .den =  8},
-> +	{.num = 10, .den = 81},
-> +	{.num =  1, .den = 10}
-> +};
-> +
-> +static int vadc_read(struct vadc_priv *vadc, u16 offset, u8 *data)
-> +{
-> +	return regmap_bulk_read(vadc->regmap, vadc->base + offset, data, 1);
-> +}
-> +
-> +static int vadc_write(struct vadc_priv *vadc, u16 offset, u8 data)
-> +{
-> +	return regmap_write(vadc->regmap, vadc->base + offset, data);
-> +}
-> +
-> +static int vadc_reset(struct vadc_priv *vadc)
-> +{
-> +	u8 data;
-> +	int ret;
-> +
-> +	ret = vadc_write(vadc, VADC_ACCESS, VADC_ACCESS_DATA);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = vadc_read(vadc, VADC_PERH_RESET_CTL3, &data);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = vadc_write(vadc, VADC_ACCESS, VADC_ACCESS_DATA);
-> +	if (ret)
-> +		return ret;
-> +
-> +	data |= VADC_FOLLOW_WARM_RB;
-> +
-> +	return vadc_write(vadc, VADC_PERH_RESET_CTL3, data);
-> +}
-> +
-> +static int vadc_set_state(struct vadc_priv *vadc, bool state)
-> +{
-> +	return vadc_write(vadc, VADC_EN_CTL1, state ? VADC_EN_CTL1_SET : 0);
-> +}
-> +
-> +static void vadc_show_status(struct vadc_priv *vadc)
-> +{
-> +	u8 mode, sta1, chan, dig, en, req;
-> +	int ret;
-> +
-> +	ret = vadc_read(vadc, VADC_MODE_CTL, &mode);
-> +	if (ret)
-> +		return;
-> +
-> +	ret = vadc_read(vadc, VADC_ADC_DIG_PARAM, &dig);
-> +	if (ret)
-> +		return;
-> +
-> +	ret = vadc_read(vadc, VADC_ADC_CH_SEL_CTL, &chan);
-> +	if (ret)
-> +		return;
-> +
-> +	ret = vadc_read(vadc, VADC_CONV_REQ, &req);
-> +	if (ret)
-> +		return;
-> +
-> +	ret = vadc_read(vadc, VADC_STATUS1, &sta1);
-> +	if (ret)
-> +		return;
-> +
-> +	ret = vadc_read(vadc, VADC_EN_CTL1, &en);
-> +	if (ret)
-> +		return;
-> +
-> +	dev_err(vadc->dev,
-> +		"mode:%02x en:%02x chan:%02x dig:%02x req:%02x sta1:%02x\n",
-> +		mode, en, chan, dig, req, sta1);
-> +}
-> +
-> +static int vadc_configure(struct vadc_priv *vadc,
-> +			  struct vadc_channel_prop *prop)
-> +{
-> +	u8 decimation, mode_ctrl;
-> +	int ret;
-> +
-> +	/* Mode selection */
-> +	mode_ctrl = (VADC_OP_MODE_NORMAL << VADC_OP_MODE_SHIFT) |
-> +		     VADC_ADC_TRIM_EN | VADC_AMUX_TRIM_EN;
-> +	ret = vadc_write(vadc, VADC_MODE_CTL, mode_ctrl);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* Channel selection */
-> +	ret = vadc_write(vadc, VADC_ADC_CH_SEL_CTL, prop->channel);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* Digital parameter setup */
-> +	decimation = prop->decimation << VADC_ADC_DIG_DEC_RATIO_SEL_SHIFT;
-> +	ret = vadc_write(vadc, VADC_ADC_DIG_PARAM, decimation);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* HW settle time delay */
-> +	ret = vadc_write(vadc, VADC_HW_SETTLE_DELAY, prop->hw_settle_time);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = vadc_write(vadc, VADC_FAST_AVG_CTL, prop->avg_samples);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (prop->avg_samples)
-> +		ret = vadc_write(vadc, VADC_FAST_AVG_EN, VADC_FAST_AVG_EN_SET);
-> +	else
-> +		ret = vadc_write(vadc, VADC_FAST_AVG_EN, 0);
-> +
-> +	return ret;
-> +}
-> +
-> +static int vadc_poll_wait_eoc(struct vadc_priv *vadc, unsigned int interval_us)
-> +{
-> +	unsigned int count, retry;
-> +	u8 sta1;
-> +	int ret;
-> +
-> +	retry = interval_us / VADC_CONV_TIME_MIN_US;
-> +
-> +	for (count = 0; count < retry; count++) {
-> +		ret = vadc_read(vadc, VADC_STATUS1, &sta1);
-> +		if (ret)
-> +			return ret;
-> +
-> +		sta1 &= VADC_STATUS1_REQ_STS_EOC_MASK;
-> +		if (sta1 == VADC_STATUS1_EOC)
-> +			return 0;
-> +
-> +		usleep_range(VADC_CONV_TIME_MIN_US, VADC_CONV_TIME_MAX_US);
-> +	}
-> +
-> +	vadc_show_status(vadc);
-> +
-> +	return -ETIMEDOUT;
-> +}
-> +
-> +static int vadc_read_result(struct vadc_priv *vadc, u16 *data)
-> +{
-> +	int ret;
-> +
-> +	ret = regmap_bulk_read(vadc->regmap, vadc->base + VADC_DATA, data, 2);
-> +	if (ret)
-> +		return ret;
-> +
-> +	*data = clamp_t(u16, *data, VADC_MIN_ADC_CODE, VADC_MAX_ADC_CODE);
-> +	return 0;
-> +}
-> +
-> +static struct vadc_channel_prop *vadc_get_channel(struct vadc_priv *vadc,
-> +						  unsigned int num)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < vadc->nchannels; i++)
-> +		if (vadc->chan_props[i].channel == num)
-> +			return &vadc->chan_props[i];
-> +
-> +	dev_dbg(vadc->dev, "no such channel %02x\n", num);
-> +
-> +	return NULL;
-> +}
-> +
-> +static int vadc_do_conversion(struct vadc_priv *vadc,
-> +			      struct vadc_channel_prop *prop, u16 *data)
-> +{
-> +	unsigned int timeout;
-> +	int ret;
-> +
-> +	ret = vadc_configure(vadc, prop);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (!vadc->poll_eoc)
-> +		reinit_completion(&vadc->complete);
-> +
-> +	ret = vadc_set_state(vadc, true);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = vadc_write(vadc, VADC_CONV_REQ, VADC_CONV_REQ_SET);
-> +	if (ret)
-> +		goto err_disable;
-> +
-> +	timeout = BIT(prop->avg_samples) * VADC_CONV_TIME_MIN_US * 2;
-> +
-> +	if (vadc->poll_eoc) {
-> +		ret = vadc_poll_wait_eoc(vadc, timeout);
-> +	} else {
-> +		ret = wait_for_completion_timeout(&vadc->complete, timeout);
-> +		if (!ret) {
-> +			ret = -ETIMEDOUT;
-> +			goto err_disable;
-> +		}
-> +
-> +		/* Double check conversion status */
-> +		ret = vadc_poll_wait_eoc(vadc, VADC_CONV_TIME_MIN_US);
-> +		if (ret)
-> +			goto err_disable;
-> +	}
-> +
-> +	ret = vadc_read_result(vadc, data);
-> +
-> +err_disable:
-> +	vadc_set_state(vadc, false);
-> +	if (ret)
-> +		dev_err(vadc->dev, "conversion failed\n");
-> +
-> +	return ret;
-> +}
-> +
-> +static int vadc_measure_ref_points(struct vadc_priv *vadc)
-> +{
-> +	struct vadc_channel_prop *prop;
-> +	u16 read_1, read_2;
-> +	int ret;
-> +
-> +	vadc->graph[VADC_CALIB_RATIOMETRIC].dx = VADC_RATIOMETRIC_RANGE_UV;
-> +	vadc->graph[VADC_CALIB_ABSOLUTE].dx = VADC_ABSOLUTE_RANGE_UV;
-> +
-> +	prop = vadc_get_channel(vadc, VADC_REF_1250MV);
-> +	ret = vadc_do_conversion(vadc, prop, &read_1);
-> +	if (ret)
-> +		goto err;
-> +
-> +	/* Try with buffered 625mV channel first */
-> +	prop = vadc_get_channel(vadc, VADC_SPARE1);
-> +	if (!prop)
-> +		prop = vadc_get_channel(vadc, VADC_REF_625MV);
-> +
-> +	ret = vadc_do_conversion(vadc, prop, &read_2);
-> +	if (ret)
-> +		goto err;
-> +
-> +	if (read_1 == read_2) {
-> +		ret = -EINVAL;
-> +		goto err;
-> +	}
-> +
-> +	vadc->graph[VADC_CALIB_ABSOLUTE].dy = read_1 - read_2;
-> +	vadc->graph[VADC_CALIB_ABSOLUTE].vref = read_1;
-> +	vadc->graph[VADC_CALIB_ABSOLUTE].gnd = read_2;
-> +
-> +	/* Ratiometric calibration */
-> +	prop = vadc_get_channel(vadc, VADC_VDD_VADC);
-> +	ret = vadc_do_conversion(vadc, prop, &read_1);
-> +	if (ret)
-> +		goto err;
-> +
-> +	prop = vadc_get_channel(vadc, VADC_GND_REF);
-> +	ret = vadc_do_conversion(vadc, prop, &read_2);
-> +	if (ret)
-> +		goto err;
-> +
-> +	if (read_1 == read_2) {
-> +		ret = -EINVAL;
-> +		goto err;
-> +	}
-> +
-> +	vadc->graph[VADC_CALIB_RATIOMETRIC].dy = read_1 - read_2;
-> +	vadc->graph[VADC_CALIB_RATIOMETRIC].vref = read_1;
-> +	vadc->graph[VADC_CALIB_RATIOMETRIC].gnd = read_2;
-> +err:
-> +	if (ret)
-> +		dev_err(vadc->dev, "measure reference points failed\n");
-> +
-> +	return ret;
-> +}
-> +
-> +static s32 vadc_calibrate(struct vadc_priv *vadc,
-> +			  const struct vadc_channel_prop *prop, u16 adc_code)
-> +{
-> +	const struct vadc_prescale_ratio *prescale;
-> +	s32 voltage;
-> +
-> +	voltage = adc_code - vadc->graph[prop->calibration].gnd;
-> +	voltage *= vadc->graph[prop->calibration].dx;
-> +	voltage = voltage / vadc->graph[prop->calibration].dy;
-> +
-> +	if (prop->calibration == VADC_CALIB_ABSOLUTE)
-> +		voltage += vadc->graph[prop->calibration].dx;
-> +
-> +	if (voltage < 0)
-> +		voltage = 0;
-> +
-> +	prescale = &vadc_prescale_ratios[prop->prescale];
-> +
-> +	voltage = voltage * prescale->den;
-> +
-> +	return voltage / prescale->num;
-> +}
-> +
-> +static int vadc_decimation_from_dt(u32 value)
-> +{
-> +	if (!is_power_of_2(value) || value < VADC_DECIMATION_MIN ||
-> +	    value > VADC_DECIMATION_MAX)
-> +		return -EINVAL;
-> +
-> +	return __ffs64(value / VADC_DECIMATION_MIN);
-> +}
-> +
-> +static int vadc_prescaling_from_dt(u32 num, u32 den)
-> +{
-> +	unsigned int pre;
-> +
-> +	for (pre = 0; pre < ARRAY_SIZE(vadc_prescale_ratios); pre++)
-> +		if (vadc_prescale_ratios[pre].num == num &&
-> +		    vadc_prescale_ratios[pre].den == den)
-> +			break;
-> +
-> +	if (pre == ARRAY_SIZE(vadc_prescale_ratios))
-> +		return -EINVAL;
-> +
-> +	return pre;
-> +}
-> +
-> +static int vadc_hw_settle_time_from_dt(u32 value)
-> +{
-> +	if ((value <= 1000 && value % 100) || (value > 1000 && value % 2000))
-> +		return -EINVAL;
-> +
-> +	if (value <= 1000)
-> +		value /= 100;
-> +	else
-> +		value = value / 2000 + 10;
-> +
-> +	return value;
-> +}
-> +
-> +static int vadc_avg_samples_from_dt(u32 value)
-> +{
-> +	if (!is_power_of_2(value) || value > VADC_AVG_SAMPLES_MAX)
-> +		return -EINVAL;
-> +
-> +	return __ffs64(value);
-> +}
-> +
-> +static int vadc_read_raw(struct iio_dev *indio_dev,
-> +			 struct iio_chan_spec const *chan, int *val, int *val2,
-> +			 long mask)
-> +{
-> +	struct vadc_priv *vadc = iio_priv(indio_dev);
-> +	struct vadc_channel_prop *prop;
-> +	u16 adc_code;
-> +	int ret;
-> +
-> +	if (!vadc->are_ref_measured) {
-> +		ret = vadc_measure_ref_points(vadc);
-> +		if (ret)
-> +			return ret;
-> +
-> +		vadc->are_ref_measured = true;
-> +	}
-> +
-> +	if (mask == IIO_CHAN_INFO_PROCESSED || mask == IIO_CHAN_INFO_RAW) {
-> +		prop = &vadc->chan_props[chan->address];
-> +		ret = vadc_do_conversion(vadc, prop, &adc_code);
-> +		if (ret)
-> +			return ret;
-> +
-> +		*val = vadc_calibrate(vadc, prop, adc_code);
-> +	}
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_PROCESSED:
-> +		if (chan->type != IIO_TEMP && chan->channel != VADC_DIE_TEMP)
-> +			return -EINVAL;
-> +
-> +		/* 2mV/K, return milli Celsius */
-> +		*val /= 2;
-> +		*val -= KELVINMIL_CELSIUSMIL;
-> +		return IIO_VAL_INT;
-> +	case IIO_CHAN_INFO_RAW:
-> +		return IIO_VAL_INT;
-> +	case IIO_CHAN_INFO_SCALE:
-> +		*val = 0;
-> +		*val2 = 1000;
-> +		return IIO_VAL_INT_PLUS_MICRO;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static int vadc_of_xlate(struct iio_dev *indio_dev,
-> +			 const struct of_phandle_args *iiospec)
-> +{
-> +	struct vadc_priv *vadc = iio_priv(indio_dev);
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < vadc->nchannels; i++)
-> +		if (vadc->iio_chans[i].channel == iiospec->args[0])
-> +			return i;
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +static const struct iio_info vadc_info = {
-> +	.read_raw = vadc_read_raw,
-> +	.of_xlate = vadc_of_xlate,
-> +	.driver_module = THIS_MODULE,
-> +};
-> +
-> +struct vadc_channels {
-> +	const char *datasheet_name;
-> +	unsigned int prescale_index;
-> +	enum iio_chan_type type;
-> +	long info_mask;
-> +};
-> +
-> +#define VADC_CHAN(_dname, _type, _mask, _pre)				\
-> +	[VADC_##_dname] = {						\
-> +		.datasheet_name = __stringify(_dname),			\
-> +		.prescale_index = _pre,					\
-> +		.type = _type,						\
-> +		.info_mask = _mask					\
-> +	},								\
-> +
-> +#define VADC_CHAN_TEMP(_dname, _pre)					\
-> +	VADC_CHAN(_dname, IIO_TEMP, BIT(IIO_CHAN_INFO_PROCESSED), _pre)	\
-> +
-> +#define VADC_CHAN_VOLT(_dname, _pre)					\
-> +	VADC_CHAN(_dname, IIO_VOLTAGE,					\
-> +		  BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),	\
-> +		  _pre)							\
-> +
-> +/*
-> + * The array represents all possible ADC channels found in the supported PMICs.
-> + * Every index in the array is equal to the channel number per datasheet. The
-> + * gaps in the array should be treated as reserved channels.
-> + */
-> +static const struct vadc_channels vadc_chans[] = {
-> +	VADC_CHAN_VOLT(USBIN, 4)
-> +	VADC_CHAN_VOLT(DCIN, 4)
-> +	VADC_CHAN_VOLT(VCHG_SNS, 3)
-> +	VADC_CHAN_VOLT(SPARE1_03, 1)
-> +	VADC_CHAN_VOLT(USB_ID_MV, 1)
-> +	VADC_CHAN_VOLT(VCOIN, 1)
-> +	VADC_CHAN_VOLT(VBAT_SNS, 1)
-> +	VADC_CHAN_VOLT(VSYS, 1)
-> +	VADC_CHAN_TEMP(DIE_TEMP, 0)
-> +	VADC_CHAN_VOLT(REF_625MV, 0)
-> +	VADC_CHAN_VOLT(REF_1250MV, 0)
-> +	VADC_CHAN_VOLT(CHG_TEMP, 0)
-> +	VADC_CHAN_VOLT(SPARE1, 0)
-> +	VADC_CHAN_VOLT(SPARE2, 0)
-> +	VADC_CHAN_VOLT(GND_REF, 0)
-> +	VADC_CHAN_VOLT(VDD_VADC, 0)
-> +
-> +	VADC_CHAN_VOLT(P_MUX1_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX2_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX3_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX4_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX5_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX6_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX7_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX8_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX9_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX10_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX11_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX12_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX13_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX14_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX15_1_1, 0)
-> +	VADC_CHAN_VOLT(P_MUX16_1_1, 0)
-> +
-> +	VADC_CHAN_VOLT(P_MUX1_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX2_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX3_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX4_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX5_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX6_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX7_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX8_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX9_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX10_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX11_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX12_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX13_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX14_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX15_1_3, 1)
-> +	VADC_CHAN_VOLT(P_MUX16_1_3, 1)
-> +
-> +	VADC_CHAN_VOLT(LR_MUX1_BAT_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX2_BAT_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_XO_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX4_AMUX_THM1, 0)
-> +	VADC_CHAN_VOLT(LR_MUX5_AMUX_THM2, 0)
-> +	VADC_CHAN_VOLT(LR_MUX6_AMUX_THM3, 0)
-> +	VADC_CHAN_VOLT(LR_MUX7_HW_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX8_AMUX_THM4, 0)
-> +	VADC_CHAN_VOLT(LR_MUX9_AMUX_THM5, 0)
-> +	VADC_CHAN_VOLT(LR_MUX10_USB_ID, 0)
-> +	VADC_CHAN_VOLT(AMUX_PU1, 0)
-> +	VADC_CHAN_VOLT(AMUX_PU2, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_BUF_XO_THERM, 0)
-> +
-> +	VADC_CHAN_VOLT(LR_MUX1_PU1_BAT_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX2_PU1_BAT_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_PU1_XO_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX4_PU1_AMUX_THM1, 0)
-> +	VADC_CHAN_VOLT(LR_MUX5_PU1_AMUX_THM2, 0)
-> +	VADC_CHAN_VOLT(LR_MUX6_PU1_AMUX_THM3, 0)
-> +	VADC_CHAN_VOLT(LR_MUX7_PU1_AMUX_HW_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX8_PU1_AMUX_THM4, 0)
-> +	VADC_CHAN_VOLT(LR_MUX9_PU1_AMUX_THM5, 0)
-> +	VADC_CHAN_VOLT(LR_MUX10_PU1_AMUX_USB_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_BUF_PU1_XO_THERM, 0)
-> +
-> +	VADC_CHAN_VOLT(LR_MUX1_PU2_BAT_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX2_PU2_BAT_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_PU2_XO_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX4_PU2_AMUX_THM1, 0)
-> +	VADC_CHAN_VOLT(LR_MUX5_PU2_AMUX_THM2, 0)
-> +	VADC_CHAN_VOLT(LR_MUX6_PU2_AMUX_THM3, 0)
-> +	VADC_CHAN_VOLT(LR_MUX7_PU2_AMUX_HW_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX8_PU2_AMUX_THM4, 0)
-> +	VADC_CHAN_VOLT(LR_MUX9_PU2_AMUX_THM5, 0)
-> +	VADC_CHAN_VOLT(LR_MUX10_PU2_AMUX_USB_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_BUF_PU2_XO_THERM, 0)
-> +
-> +	VADC_CHAN_VOLT(LR_MUX1_PU1_PU2_BAT_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX2_PU1_PU2_BAT_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_PU1_PU2_XO_THERM, 0)
-> +	VADC_CHAN_VOLT(LR_MUX4_PU1_PU2_AMUX_THM1, 0)
-> +	VADC_CHAN_VOLT(LR_MUX5_PU1_PU2_AMUX_THM2, 0)
-> +	VADC_CHAN_VOLT(LR_MUX6_PU1_PU2_AMUX_THM3, 0)
-> +	VADC_CHAN_VOLT(LR_MUX7_PU1_PU2_AMUX_HW_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX8_PU1_PU2_AMUX_THM4, 0)
-> +	VADC_CHAN_VOLT(LR_MUX9_PU1_PU2_AMUX_THM5, 0)
-> +	VADC_CHAN_VOLT(LR_MUX10_PU1_PU2_AMUX_USB_ID, 0)
-> +	VADC_CHAN_VOLT(LR_MUX3_BUF_PU1_PU2_XO_THERM, 0)
-> +};
-> +
-> +static int vadc_get_dt_channel_data(struct device *dev,
-> +				    struct vadc_channel_prop *prop,
-> +				    struct device_node *node)
-> +{
-> +	const char *name = node->name;
-> +	u32 chan, value, varr[2];
-> +	int ret;
-> +
-> +	ret = of_property_read_u32(node, "reg", &chan);
-> +	if (ret) {
-> +		dev_err(dev, "invalid channel number %s\n", name);
-> +		return ret;
-> +	}
-> +
-> +	if (chan > VADC_CHAN_MAX || chan < VADC_CHAN_MIN) {
-> +		dev_err(dev, "%s invalid channel number %d\n", name, chan);
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* the channel has DT description */
-> +	prop->channel = chan;
-> +
-> +	ret = of_property_read_u32(node, "qcom,decimation", &value);
-> +	if (!ret) {
-> +		ret = vadc_decimation_from_dt(value);
-> +		if (ret < 0) {
-> +			dev_err(dev, "%02x invalid decimation %d\n",
-> +				chan, value);
-> +			return ret;
-> +		}
-> +		prop->decimation = ret;
-> +	} else {
-> +		prop->decimation = VADC_DEF_DECIMATION;
-> +	}
-> +
-> +	ret = of_property_read_u32_array(node, "qcom,pre-scaling", varr, 2);
-> +	if (!ret) {
-> +		ret = vadc_prescaling_from_dt(varr[0], varr[1]);
-> +		if (ret < 0) {
-> +			dev_err(dev, "%02x invalid pre-scaling <%d %d>\n",
-> +				chan, varr[0], varr[1]);
-> +			return ret;
-> +		}
-> +		prop->prescale = ret;
-> +	} else {
-> +		prop->prescale = vadc_chans[prop->channel].prescale_index;
-> +	}
-> +
-> +	ret = of_property_read_u32(node, "qcom,hw-settle-time", &value);
-> +	if (!ret) {
-> +		ret = vadc_hw_settle_time_from_dt(value);
-> +		if (ret < 0) {
-> +			dev_err(dev, "%02x invalid hw-settle-time %d us\n",
-> +				chan, value);
-> +			return ret;
-> +		}
-> +		prop->hw_settle_time = ret;
-> +	} else {
-> +		prop->hw_settle_time = VADC_DEF_HW_SETTLE_TIME;
-> +	}
-> +
-> +	ret = of_property_read_u32(node, "qcom,avg-samples", &value);
-> +	if (!ret) {
-> +		ret = vadc_avg_samples_from_dt(value);
-> +		if (ret < 0) {
-> +			dev_err(dev, "%02x invalid avg-samples %d\n",
-> +				chan, value);
-> +			return ret;
-> +		}
-> +		prop->avg_samples = ret;
-> +	} else {
-> +		prop->avg_samples = VADC_DEF_AVG_SAMPLES;
-> +	}
-> +
-> +	if (of_property_read_bool(node, "qcom,ratiometric"))
-> +		prop->calibration = VADC_CALIB_RATIOMETRIC;
-> +	else
-> +		prop->calibration = VADC_CALIB_ABSOLUTE;
-> +
-> +	dev_dbg(dev, "%02x name %s\n", chan, name);
-> +
-> +	return 0;
-> +}
-> +
-> +static int vadc_get_dt_data(struct vadc_priv *vadc, struct device_node *node)
-> +{
-> +	const struct vadc_channels *vadc_chan;
-> +	struct iio_chan_spec *iio_chan;
-> +	struct vadc_channel_prop prop;
-> +	struct device_node *child;
-> +	unsigned int index = 0;
-> +	int ret;
-> +
-> +	vadc->nchannels = of_get_available_child_count(node);
-> +	if (!vadc->nchannels)
-> +		return -EINVAL;
-> +
-> +	vadc->iio_chans = devm_kcalloc(vadc->dev, vadc->nchannels,
-> +				       sizeof(*vadc->iio_chans), GFP_KERNEL);
-> +	if (!vadc->iio_chans)
-> +		return -ENOMEM;
-> +
-> +	vadc->chan_props = devm_kcalloc(vadc->dev, vadc->nchannels,
-> +					sizeof(*vadc->chan_props), GFP_KERNEL);
-> +	if (!vadc->chan_props)
-> +		return -ENOMEM;
-> +
-> +	iio_chan = vadc->iio_chans;
-> +
-> +	for_each_available_child_of_node(node, child) {
-> +		ret = vadc_get_dt_channel_data(vadc->dev, &prop, child);
-> +		if (ret)
-> +			return ret;
-> +
-> +		vadc->chan_props[index] = prop;
-> +
-> +		vadc_chan = &vadc_chans[prop.channel];
-> +
-> +		iio_chan->channel = prop.channel;
-> +		iio_chan->datasheet_name = vadc_chan->datasheet_name;
-> +		iio_chan->info_mask_separate = vadc_chan->info_mask;
-> +		iio_chan->type = vadc_chan->type;
-> +		iio_chan->indexed = 1;
-> +		iio_chan->address = index++;
-> +
-> +		iio_chan++;
-> +	}
-> +
-> +	/* These channels are mandatory, they are used as reference points */
-> +	if (!vadc_get_channel(vadc, VADC_REF_1250MV)) {
-> +		dev_err(vadc->dev, "Please define 1.25V channel\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	if (!vadc_get_channel(vadc, VADC_REF_625MV)) {
-> +		dev_err(vadc->dev, "Please define 0.625V channel\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	if (!vadc_get_channel(vadc, VADC_VDD_VADC)) {
-> +		dev_err(vadc->dev, "Please define VDD channel\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	if (!vadc_get_channel(vadc, VADC_GND_REF)) {
-> +		dev_err(vadc->dev, "Please define GND channel\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t vadc_isr(int irq, void *dev_id)
-> +{
-> +	struct vadc_priv *vadc = dev_id;
-> +
-> +	complete(&vadc->complete);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int vadc_check_revision(struct vadc_priv *vadc)
-> +{
-> +	u8 val;
-> +	int ret;
-> +
-> +	ret = vadc_read(vadc, VADC_PERPH_TYPE, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (val < VADC_PERPH_TYPE_ADC) {
-> +		dev_err(vadc->dev, "%d is not ADC\n", val);
-> +		return -ENODEV;
-> +	}
-> +
-> +	ret = vadc_read(vadc, VADC_PERPH_SUBTYPE, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (val < VADC_PERPH_SUBTYPE_VADC) {
-> +		dev_err(vadc->dev, "%d is not VADC\n", val);
-> +		return -ENODEV;
-> +	}
-> +
-> +	ret = vadc_read(vadc, VADC_REVISION2, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (val < VADC_REVISION2_SUPPORTED_VADC) {
-> +		dev_err(vadc->dev, "revision %d not supported\n", val);
-> +		return -ENODEV;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int vadc_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *node = pdev->dev.of_node;
-> +	struct device *dev = &pdev->dev;
-> +	struct iio_dev *indio_dev;
-> +	struct vadc_priv *vadc;
-> +	struct regmap *regmap;
-> +	int ret, irq_eoc;
-> +	u32 res;
-Since vadc->base is u16, shouldn't res be u16 as well? Also think about naming it reg, as this is the property name in DT.
-> +
-> +	regmap = dev_get_regmap(dev->parent, NULL);
-> +	if (!regmap)
-> +		return -ENODEV;
-> +
-> +	ret = of_property_read_u32(node, "reg", &res);
-For u16, there would be of_property_read_u16().
-> +	if (ret < 0)
-> +		return -ENODEV;
-Just return ret here?
-> +
-> +	indio_dev = devm_iio_device_alloc(dev, sizeof(*vadc));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +
-> +	vadc = iio_priv(indio_dev);
-> +	vadc->regmap = regmap;
-> +	vadc->dev = dev;
-> +	vadc->base = res;
-> +	vadc->are_ref_measured = false;
-> +	init_completion(&vadc->complete);
-> +
-> +	ret = vadc_check_revision(vadc);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = vadc_get_dt_data(vadc, node);
-> +	if (ret)
-> +		return ret;
-> +
-> +	irq_eoc = platform_get_irq(pdev, 0);
-> +	if (irq_eoc < 0) {
-> +		if (irq_eoc == -EPROBE_DEFER || irq_eoc == -EINVAL)
-> +			return irq_eoc;
-> +		vadc->poll_eoc = true;
-> +	} else {
-> +		ret = devm_request_irq(dev, irq_eoc, vadc_isr, 0,
-> +				       "spmi-vadc", vadc);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	ret = vadc_reset(vadc);
-> +	if (ret) {
-> +		dev_err(dev, "reset failed\n");
-> +		return ret;
-> +	}
-> +
-> +	indio_dev->dev.parent = dev;
-> +	indio_dev->dev.of_node = node;
-> +	indio_dev->name = pdev->name;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	indio_dev->info = &vadc_info;
-> +	indio_dev->channels = vadc->iio_chans;
-> +	indio_dev->num_channels = vadc->nchannels;
-> +
-> +	return devm_iio_device_register(dev, indio_dev);
-> +}
-> +
-> +static const struct of_device_id vadc_match_table[] = {
-> +	{ .compatible = "qcom,spmi-vadc" },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, vadc_match_table);
-> +
-> +static struct platform_driver vadc_driver = {
-> +	.driver = {
-> +		   .name = "qcom-spmi-vadc",
-> +		   .of_match_table = vadc_match_table,
-> +	},
-> +	.probe = vadc_probe,
-> +};
-> +module_platform_driver(vadc_driver);
-> +
-> +MODULE_ALIAS("platform:qcom-spmi-vadc");
-> +MODULE_DESCRIPTION("Qualcomm SPMI PMIC voltage ADC driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR("Stanimir Varbanov <svarbanov@mm-sol.com>");
-> +MODULE_AUTHOR("Ivan T. Ivanov <iivanov@mm-sol.com>");
-> 
+On Sat, Nov 8, 2014 at 4:22 AM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> Hi Kees, (and all),
+>
+> Thanks for the seccomp.2 draft man page that you provided a few
+> weeks ago (https://lkml.org/lkml/2014/9/25/685), and my apologies
+> for the slow follow-up.
+>
+> I have done some substantial editing of the page. Therefore, could
+> you please carefully read the revised version below, in case I have
+> somewhere injected errors.
 
+Woo! Thanks for all your work on it!
+
+> In addition, I've added a number of FIXMEs to the page source. Could
+> you please review these.
+
+Sure, I'll try to avoid being redundant with Andy. :)
+
+> I've also added long piece to the example section, describing the
+> program and demonstrating its use. Again, I'd appreciate it if you
+> could check that over.
+>
+> One other question about these man-pages changes: should we add
+> a note in prctl(2) to say that seccomp(2) is preferred over
+> PR_SET_SECCOMP for new code?
+
+Given how new it is, I was shy to suggest it. Anything needed the new
+features (TSYNC) obviously must use it, but it'll be a while before
+this syscall is in distros. I think it should be used over prctl, but
+there's no strong reason to change existing code.
+
+> I've appended the revised page at the foot of this mail. You can also
+> find the branch holding this page (and thus, the series of changes
+> I've made in Git at:
+> http://git.kernel.org/cgit/docs/man-pages/man-pages.git/log/?h=draft_seccomp
+>
+> Feedback either as inline comments to the below, or as a patch based on
+> the Git branch, would be great!
+>
+> Cheers,
+>
+> Michael
+>
+> .\" Copyright (C) 2014 Kees Cook <keescook@chromium.org>
+> .\" and Copyright (C) 2012 Will Drewry <wad@chromium.org>
+> .\" and Copyright (C) 2008, 2014 Michael Kerrisk <mtk.manpages@gmail.com>
+> .\"
+> .\" %%%LICENSE_START(VERBATIM)
+> .\" Permission is granted to make and distribute verbatim copies of this
+> .\" manual provided the copyright notice and this permission notice are
+> .\" preserved on all copies.
+> .\"
+> .\" Permission is granted to copy and distribute modified versions of this
+> .\" manual under the conditions for verbatim copying, provided that the
+> .\" entire resulting derived work is distributed under the terms of a
+> .\" permission notice identical to this one.
+> .\"
+> .\" Since the Linux kernel and libraries are constantly changing, this
+> .\" manual page may be incorrect or out-of-date.  The author(s) assume no
+> .\" responsibility for errors or omissions, or for damages resulting from
+> .\" the use of the information contained herein.  The author(s) may not
+> .\" have taken the same level of care in the production of this manual,
+> .\" which is licensed free of charge, as they might when working
+> .\" professionally.
+> .\"
+> .\" Formatted or processed versions of this manual, if unaccompanied by
+> .\" the source, must acknowledge the copyright and authors of this work.
+> .\" %%%LICENSE_END
+> .\"
+> .TH SECCOMP 2 2014-06-23 "Linux" "Linux Programmer's Manual"
+> .SH NAME
+> seccomp \- operate on Secure Computing state of the process
+> .SH SYNOPSIS
+> .nf
+> .B #include <linux/seccomp.h>
+> .B #include <linux/filter.h>
+> .B #include <linux/audit.h>
+> .B #include <linux/signal.h>
+> .\" FIXME Is sys/ptrace.h really required? It is not used in
+> .\"       the example program below.
+> .B #include <sys/ptrace.h>
+
+It's not required for this example, but anything uses the
+SECCOMP_RET_TRACE returns, it'll want it. And given the mention of
+things like PTRACE_O_TRACESECCOMP, it seemed like we should include
+the #include. I'll leave it to your discretion on what's appropriate
+for a man-page header, though. :)
+
+>
+> .BI "int seccomp(unsigned int " operation ", unsigned int " flags \
+> ", void *" args );
+> .fi
+> .SH DESCRIPTION
+> The
+> .BR seccomp ()
+> system call operates on the Secure Computing (seccomp) state of the
+> calling process.
+> .\" FIXME: This page various uses the terms "process', "thread" and "task".
+> .\" Probably only one of these (not "task"!) should be used in all
+> .\" cases. I suspect it should be "thread".
+
+Yeah, "task" should be avoided, my mistake! I will try to correct them
+below. The above general case is correct, since TSYNC can change the
+state on all threads of the process.
+
+> Currently, Linux supports the following
+> .IR operation
+> values:
+> .TP
+> .BR SECCOMP_SET_MODE_STRICT
+> The only system calls that the thread is permitted to make are
+
+Should this be clarified to "the calling thread", or is that implied?
+
+> .BR read (2),
+> .BR write (2),
+> .BR _exit (2),
+> and
+> .BR sigreturn (2).
+> Other system calls result in the delivery of a
+> .BR SIGKILL
+> signal
+
+"signal" needs a period ending the sentence above.
+
+> Strict secure computing mode is useful for number-crunching
+> applications that may need to execute untrusted byte code, perhaps
+> obtained by reading from a pipe or socket.
+>
+> This operation is available only if the kernel is configured with
+> .BR CONFIG_SECCOMP
+> enabled.
+>
+> The value of
+> .IR flags
+> must be 0, and
+> .IR args
+> must be NULL.
+>
+> This operation is functionally identical to the call:
+>
+>     prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
+> .TP
+> .BR SECCOMP_SET_MODE_FILTER
+> The system calls allowed are defined by a pointer to a Berkeley Packet
+> Filter (BPF) passed via
+> .IR args .
+> This arguMent is a pointer to a
+
+s/M/m/
+
+> .IR "struct\ sock_fprog" ;
+> it can be designed to filter arbitrary system calls and system call
+> arguments.
+> If the filter is invalid,
+> .BR seccomp ()
+> fails, returning
+> .BR EACCESS
+
+EINVAL (EACCESS would be for lacking CAP_SYS_ADMIN or no-new-privs).
+
+> in
+> .IR errno .
+>
+> .\" FIXME I (mtk) reworded the following paragraph substantially.
+> .\" Please check it.
+> If
+> .BR fork (2)
+> or
+> .BR clone (2)
+> is allowed by the filter, any child processes will be constrained to
+> the same filters and system calls as the parent.
+
+To me, "and system calls" implies something other than filters. Maybe:
+"the same system call filters as the parent"?
+
+> If
+> .BR execve (2)
+> is allowed by the filter,
+> the filters and constraints on permitted system calls are preserved across an
+> .BR execve (2).
+
+Perhaps "Similarly, if execve is allowed, the existing filters will be
+preserved across the call to execve." The filter _is_ the "constraints
+on permitted system calls", but since it can do more than constrain,
+I'm shy to imply a limit to the scope of this description.
+
+> .\" FIXME I (mtk) reworded the following paragraph substantially.
+> .\" Please check it.
+> In order to use the
+> .BR SECCOMP_SET_MODE_FILTER
+> operation, either the caller must have the
+> .BR CAP_SYS_ADMIN
+> capability or the call must be preceded by the call:
+>
+>     prctl(PR_SET_NO_NEW_PRIVS, 1);
+
+Strictly speaking, if any ancestor ever called PR_SET_NO_NEW_PRIVS,
+the process already has it set. Perhaps "... capability, or the thread
+must already have thew "no new privs" prctl bit set. If not already
+set by an ancestory, the thread must call: ..."
+
+>
+> Otherwise, the
+> .BR SECCOMP_SET_MODE_FILTER
+> operation will fail and return
+> .BR EACCES
+> in
+> .IR errno .
+> This requirement ensures that filter programs cannot be applied to child
+> .\" FIXME What does "installed" in the following line mean?
+> processes with greater privileges than the process that installed them.
+
+Andy mentioned the "why", but "installed" here means "called seccomp()
+to add filters", e.g. add (install) a filter to have
+"setuid(non-root)" return 0 instead of actually getting called, and
+then exec a setuid process that tries to drop privileges, which
+doesn't happen, and now the original caller (non-root) has a setuid
+process running as root that it may be able to influence into doing
+dangerous things because it didn't _actually_ drop privileges.
+
+>
+> If
+> .BR prctl (2)
+> or
+> .BR seccomp (2)
+> is allowed by the attached filter, further filters may be added.
+> This will increase evaluation time, but allows for further reduction of
+> the attack surface during execution of a process.
+
+Strictly speaking, "process" -> "thread"
+
+>
+> The
+> .BR SECCOMP_SET_MODE_FILTER
+> operation is available only if the kernel is configured with
+> .BR CONFIG_SECCOMP_FILTER
+> enabled.
+>
+> When
+> .IR flags
+> is 0, this operation is functionally identical to the call:
+>
+>     prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, args);
+>
+> The recognized
+> .IR flags
+> are:
+> .RS
+> .TP
+> .BR SECCOMP_FILTER_FLAG_TSYNC
+> When adding a new filter, synchronize all other threads of the calling
+> process to the same seccomp filter tree.
+> .\" FIXME Nowhere in this page is the term "filter tree" defined.
+> .\" There should be a definition somewhere.
+> .\" Is it: "the set of filters attached to a thread"?
+
+As Andy said, the list of filters attached to the process. A process
+may have multiple threads adding filters, which would cause those
+threads to have separate branches of seccomp filters (though they
+would share a common root from when the process started). It is only
+possible to use TSYNC if threads haven't diverged in this way.
+
+> If any thread cannot do this,
+> the call will not attach the new seccomp filter,
+> and will fail, returning the first thread ID found that cannot synchronize.
+> Synchronization will fail if another thread is in
+> .BR SECCOMP_MODE_STRICT
+> or if it has attached new seccomp filters to itself,
+> diverging from the calling thread's filter tree.
+> .RE
+> .SH FILTERS
+> When adding filters via
+> .BR SECCOMP_SET_MODE_FILTER ,
+> .IR args
+> points to a filter program:
+>
+> .in +4n
+> .nf
+> struct sock_fprog {
+>     unsigned short      len;    /* Number of BPF instructions */
+>     struct sock_filter *filter;
+> };
+> .fi
+> .in
+>
+> Each program must contain one or more BPF instructions:
+>
+> .in +4n
+> .nf
+> struct sock_filter {    /* Filter block */
+>     __u16   code;       /* Actual filter code */
+>     __u8    jt;         /* Jump true */
+>     __u8    jf;         /* Jump false */
+>     __u32   k;          /* Generic multiuse field */
+> };
+> .fi
+> .in
+>
+> When executing the instructions, the BPF program executes over the
+> system call information made available via:
+>
+> .in +4n
+> .nf
+> struct seccomp_data {
+>     int nr;                     /* system call number */
+>     __u32 arch;                 /* AUDIT_ARCH_* value */
+>     __u64 instruction_pointer;  /* CPU instruction pointer */
+>     __u64 args[6];              /* up to 6 system call arguments */
+> };
+> .fi
+> .in
+>
+> .\" FIXME I find the next piece a little hard to understand, so,
+> .\"       some questions:
+> .\"       * If there are multiple filters, in what order are they executed?
+> .\"         (The man page should probably detail the answer to this question.)
+
+They are executed in reverse order (most recently added is executed first).
+
+> .\"       * If there are multiple filters, are they all always executed?
+> .\"         I assume not, but the notion that
+> .\"             "the return value for the evaluation of a given system call
+> .\"              will always use the value with the highest precedence"
+> .\"         implies that even that if one filter generates (say)
+> .\"         SECCOMP_RET_ERRNO, then further filters may still be executed,
+> .\"         including one that generates (say) the "higher priority"
+> .\"         SECCOMP_RET_KILL condition.
+> .\"       Can you clarify the above?
+
+Correct. All filters are executed. The returned value is the one with
+the first seen highest priority (lowest numerical value) action of
+those returned by each filter. For example, if a filter was installed
+that returned SECCOMP_RET_ERRNO|1, and then another filter installed
+SECCOMP_RET_ERRNO|22, and then another filter installed
+SECCOMP_RET_ALLOW, SECCOMP_RET_ERRNO|22 would be returned.
+SECCOMP_RET_ERRNO is higher priority than SECCOMP_RET_ALLOW, but since
+the SECCOMP_RET_ERRNO|22 was seen first, it's data (22) will be used,
+even though the last filter returned a lower data (1), as only action
+values are compared.
+
+> A seccomp filter returns one of the values listed below.
+
+Based on discussion further below, perhaps "value" should be called
+"action" here? Maybe:
+
+A seccomp filter returns a value. The high 16 bits
+(SECCOMP_RET_ACTION) is the seccomp filter "action" to take. The low
+16 bits (SECCOMP_RET_DATA) is data specific to the action.
+
+> If multiple filters exist,
+> the return value for the evaluation of a given system call
+> will always use the value with the highest precedence.
+> (For example,
+> .BR SECCOMP_RET_KILL
+> will always take precedence.)
+>
+> In decreasing order order of precedence,
+> the values that may be returned by a seccomp filter are:
+> .TP
+> .BR SECCOMP_RET_KILL
+> Results in the task exiting immediately without executing the system call.
+> The task terminates as though killed by a
+
+Both "task" -> "process" above.
+
+> .B SIGSYS
+> signal
+> .RI ( not
+> .BR SIGKILL ).
+> .TP
+> .BR SECCOMP_RET_TRAP
+> Results in the kernel sending a
+> .BR SIGSYS
+> signal to the triggering task without executing the system call.
+
+"task" -> "process"
+
+> .IR siginfo\->si_call_addr
+> will show the address of the system call instruction, and
+> .IR siginfo\->si_syscall
+> and
+> .IR siginfo\->si_arch
+> will indicate which system call was attempted.
+> The program counter will be as though the system call happened
+> (i.e., it will not point to the system call instruction).
+> The return value register will contain an architecture\-dependent value;
+> if resuming execution, set it to something sensible.
+> (The architecture dependency is because replacing it with
+> .BR ENOSYS
+> could overwrite some useful information.)
+>
+> .\" FIXME The following sentence is the first time that SECCOMP_RET_DATA
+> .\"       is mentioned. SECCOMP_RET_DATA needs to be described in this
+> .\"       man page.
+
+How should these be detailed? (I took a stab at it further above.)
+#define SECCOMP_RET_ACTION      0x7fff0000U
+#define SECCOMP_RET_DATA        0x0000ffffU
+
+> The
+> .BR SECCOMP_RET_DATA
+> portion of the return value will be passed as
+> .IR si_errno .
+>
+> .BR SIGSYS
+> triggered by seccomp will have the value
+> .BR SYS_SECCOMP
+> in the
+> .IR si_code
+> field.
+> .TP
+> .BR SECCOMP_RET_ERRNO
+> .\" FIXME What does "the return value" refer to in the next sentence?
+> .\"       It is not obvious to me.
+
+As Andy said, the 32 bit value returned by the BPF filter.
+
+> Results in the lower 16-bits of the return value being passed
+> to user space as the
+> .IR errno
+> without executing the system call.
+> .TP
+> .BR SECCOMP_RET_TRACE
+> When returned, this value will cause the kernel to attempt to notify a
+> .BR ptrace (2)-based
+> tracer prior to executing the system call.
+> .\" FIXME I (mtk) reworded the following sentence substantially.
+> .\" Please check it.
+
+Yes, correct.
+
+> If there is no tracer present,
+> the system call is not executed and returns a failure status with
+> .I errno
+> set to
+> .BR ENOSYS .
+>
+> A tracer will be notified if it requests
+> .BR PTRACE_O_TRACESECCOMP
+> using
+> .IR ptrace(PTRACE_SETOPTIONS) .
+> The tracer will be notified of a
+> .BR PTRACE_EVENT_SECCOMP
+> and the
+> .BR SECCOMP_RET_DATA
+> portion of the BPF program return value will be available to the tracer
+> via
+> .BR PTRACE_GETEVENTMSG .
+>
+> The tracer can skip the system call by changing the system call number
+> to \-1.
+> Alternatively, the tracer can change the system call
+> requested by changing the system call to a valid system call number.
+> If the tracer asks to skip the system call, then the system call will
+> appear to return the value that the tracer puts in the return value register.
+>
+> The seccomp check will not be run again after the tracer is notified.
+> (This means that seccomp-based sandboxes
+> .B "must not"
+> allow use of
+> .BR ptrace (2)\(emeven
+> of other
+> sandboxed processes\(emwithout extreme care;
+> ptracers can use this mechanism to escape.)
+> .TP
+> .BR SECCOMP_RET_ALLOW
+> Results in the system call being executed.
+> .PP
+> If multiple filters exist, the return value for the evaluation of a
+> given system call will always use the highest precedent value.
+>
+> .\" FIXME The following sentence is the first time that SECCOMP_RET_ACTION
+> .\"       is mentioned. SECCOMP_RET_ACTION needs to be described in this
+> .\"       man page.
+
+Attempted earlier...
+
+> Precedence is determined using only the
+> .BR SECCOMP_RET_ACTION
+> mask.
+> When multiple filters return values of the same precedence,
+> only the
+> .BR SECCOMP_RET_DATA
+> from the most recently installed filter will be returned.
+
+The above tries to document what was mentioned about the order of
+return value parsing I discussed further above.
+
+> .SH RETURN VALUE
+> On success,
+> .BR seccomp ()
+> returns 0.
+> On error, if
+> .BR SECCOMP_FILTER_FLAG_TSYNC
+> was used,
+> the return value is the thread ID that caused the synchronization failure.
+> On other errors, \-1 is returned, and
+> .IR errno
+> is set to indicate the cause of the error.
+> .SH ERRORS
+> .BR seccomp ()
+> can fail for the following reasons:
+> .TP
+> .BR EACCESS
+> The caller did not have the
+> .BR CAP_SYS_ADMIN
+> capability, or had not set
+> .IR no_new_privs
+> before using
+> .BR SECCOMP_SET_MODE_FILTER .
+> .TP
+> .BR EFAULT
+> .IR args
+> was required to be a valid address.
+> .TP
+> .BR EINVAL
+> .IR operation
+> is unknown; or
+> .IR flags
+> are invalid for the given
+> .IR operation
+> .TP
+> .BR ESRCH
+> Another thread caused a failure during thread sync, but its ID could not
+> be determined.
+> .SH VERSIONS
+> The
+> .BR seccomp()
+> system call first appeared in Linux 3.17.
+> .\" FIXME Add glibc version
+> .SH CONFORMING TO
+> The
+> .BR seccomp()
+> system call is a nonstandard Linux extension.
+> .SH NOTES
+> .BR seccomp ()
+> provides a superset of the functionality provided by the
+> .BR prctl (2)
+> .BR PR_SET_SECCOMP
+> operation (which does not support
+> .IR flags ).
+> .SH EXAMPLE
+> .\" FIXME Please carefully review the following new piece that
+> .\"       demonstrates the use of your example program.
+
+This is great! Thanks for expanding this.
+
+> The program below accepts four or more arguments.
+> The first three arguments are a system call number,
+> a numeric architecture identifier, and an error number.
+> The program uses these values to construct a BPF filter
+> that is used at run time to perform the following checks:
+> .IP [1] 4
+> If the program is not running on the specified architecture,
+> the BPF filter causes system calls to fail with the error
+> .BR ENOSYS .
+> .IP [2]
+> If the program attempts to execute the system call with the specified number,
+> the BPF filter causes the system call to fail, with
+> .I errno
+> being set to the specified error number.
+> .PP
+> The remaining command-line arguments specify
+> the pathname and additional arguments of a program
+> that the example program should attempt to execute using
+> .BR execve (3)
+> (a library function that employs the
+> .BR execve (2)
+> system call).
+> Some example runs of the program are shown below.
+>
+> First, we display the architecture that we are running on (x86-64)
+> and then construct a shell function that looks up system call
+> numbers on this architecture:
+>
+> .nf
+> .in +4n
+> $ \fBuname -m\fP
+> x86_64
+> $ \fBsyscall_nr() {
+>     cat /usr/src/linux/arch/x86/syscalls/syscall_64.tbl | \\
+>     awk '$2 != "x32" && $3 == "'$1'" { print $1 }'
+> }\fP
+> .in
+> .fi
+>
+> When the BPF filter rejects a system call (case [2] above),
+> it causes the system call to fail with the error number
+> specified on the command line.
+> In the experiments shown here, we'll use error number 99:
+>
+> .nf
+> .in +4n
+> $ \fBerrno 99\fP
+> EADDRNOTAVAIL 99 Cannot assign requested address
+> .in
+> .fi
+>
+> In the following example, we attempt to run the command
+> .BR whoami (1),
+> but the BPF filter rejects the
+> .BR execve (2)
+> system call, so that the command is not even executed:
+>
+> .nf
+> .in +4n
+> $ \fBsyscall_nr execve\fP
+> 59
+> $ \fB./a.out 59 0xC000003E 99 /bin/whoami\fP
+
+It it worth showing where you got the 0xC000003E value from? (i.e.
+from just running ./a.out and looking at its hints)
+
+> execv: Cannot assign requested address
+> .in
+> .fi
+>
+> In the next example, the BPF filter rejects the
+> .BR write (2)
+> system call, so that, although it is successfully started, the
+> .BR whoami (1)
+> command is not able to write output:
+>
+> .nf
+> .in +4n
+> $ \fBsyscall_nr write\fP
+> 1
+> $ \fB./a.out 1 0xC000003E 99 /bin/whoami\fP
+> .in
+> .fi
+>
+> In the final example,
+> the BPF filter rejects a system call that is not used by the
+> .BR whoami (1)
+> command, so it is able to successfully execute and produce output:
+>
+> .nf
+> .in +4n
+> $ \fBsyscall_nr preadv\fP
+> 295
+> $ \fB./a.out 295 0xC000003E 99 /bin/whoami\fP
+> cecilia
+> .in
+> .fi
+> .SS Program source
+> .fi
+> .nf
+> #include <errno.h>
+> #include <stddef.h>
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <unistd.h>
+> #include <linux/audit.h>
+> #include <linux/filter.h>
+> #include <linux/seccomp.h>
+> #include <sys/prctl.h>
+>
+> static int
+> install_filter(int syscall, int arch, int error)
+> {
+>     struct sock_filter filter[] = {
+>         /* [0] Load architecture */
+>         BPF_STMT(BPF_LD + BPF_W + BPF_ABS,
+>                  (offsetof(struct seccomp_data, arch))),
+>
+>         /* [1] Jump forward 4 instructions on architecture mismatch */
+>         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, arch, 0, 4),
+>
+>         /* [2] Load system call number */
+>         BPF_STMT(BPF_LD + BPF_W + BPF_ABS,
+>                  (offsetof(struct seccomp_data, nr))),
+>
+>         /* [3] Jump forward 1 instruction on system call number
+>                mismatch */
+>         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, syscall, 0, 1),
+>
+>         /* [4] Matching architecture and system call: return
+>                specific errno */
+>         BPF_STMT(BPF_RET + BPF_K,
+>                  SECCOMP_RET_ERRNO | (error & SECCOMP_RET_DATA)),
+>
+>         /* [5] Destination of system call number mismatch: allow other
+>                system calls */
+>         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_ALLOW),
+>
+>         /* [6] Destination of architecture mismatch: kill process */
+>         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_KILL),
+>     };
+>
+>     struct sock_fprog prog = {
+>         .len = (unsigned short) (sizeof(filter) / sizeof(filter[0])),
+>         .filter = filter,
+>     };
+>
+>     if (seccomp(SECCOMP_SET_MODE_FILTER, 0, &prog)) {
+>         perror("seccomp");
+>         return 1;
+>     }
+>
+>     return 0;
+> }
+>
+> int
+> main(int argc, char **argv)
+> {
+>     if (argc < 5) {
+>         fprintf(stderr, "Usage:\\n"
+>                 "refuse <syscall_nr> <arch> <errno> <prog> [<args>]\\n"
+>                 "Hint:  AUDIT_ARCH_I386: 0x%X\\n"
+>                 "       AUDIT_ARCH_X86_64: 0x%X\\n"
+>                 "\\n", AUDIT_ARCH_I386, AUDIT_ARCH_X86_64);
+>         exit(EXIT_FAILURE);
+>     }
+>
+>     if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
+>         perror("prctl");
+>         exit(EXIT_FAILURE);
+>     }
+>
+>     if (install_filter(strtol(argv[1], NULL, 0),
+>                        strtol(argv[2], NULL, 0),
+>                        strtol(argv[3], NULL, 0)))
+>         exit(EXIT_FAILURE);
+>
+>     execv(argv[4], &argv[4]);
+>     perror("execv");
+>     exit(EXIT_FAILURE);
+> }
+> .fi
+> .SH SEE ALSO
+> .BR prctl (2),
+> .BR ptrace (2),
+> .BR signal (7),
+> .BR socket (7)
+> .sp
+> .\" FIXME: Is the following the best source of info on the BPF language?
+> The kernel source file
+> .IR Documentation/networking/filter.txt .
+
+I don't know of anything better.
+
+>
+> --
+> Michael Kerrisk
+> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+> Linux/UNIX System Programming Training: http://man7.org/training/
+
+Thanks! This is looking really good. :)
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
