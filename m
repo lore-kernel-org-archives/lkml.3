@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaKJLFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:05:46 -0500
-Received: from mail-bn1bon0138.outbound.protection.outlook.com ([157.56.111.138]:1913
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752703AbaKJLFl convert rfc822-to-8bit (ORCPT
+	id S1752772AbaKJLGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:06:36 -0500
+Received: from lb1-smtp-cloud6.xs4all.net ([194.109.24.24]:32981 "EHLO
+	lb1-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751926AbaKJLGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:05:41 -0500
-X-Greylist: delayed 29848 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Nov 2014 06:05:41 EST
-From: Dudley Du <dudl@cypress.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dudley Du <dudley.dulixin@gmail.com>
-CC: "rydberg@euromail.se" <rydberg@euromail.se>,
-        "bleung@google.com" <bleung@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read
- firmware image function support
-Thread-Topic: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read
- firmware image function support
-Thread-Index: AQHP90FZLjBMGvjiJUKHM+YLzb+D9pxZlUuAgAAirRA=
-Date: Mon, 10 Nov 2014 11:05:39 +0000
-Message-ID: <ad3bf85500174b25a4dc8f796d10d0a3@BN1PR06MB070.namprd06.prod.outlook.com>
-References: <1415003590-30485-1-git-send-email-dudl@cypress.com>
- <1415003590-30485-16-git-send-email-dudl@cypress.com>
- <20141110083955.GD39688@dtor-ws>
-In-Reply-To: <20141110083955.GD39688@dtor-ws>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.95.211.187]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB071;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB071;
-x-forefront-prvs: 039178EF4A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(164054003)(199003)(51704005)(189002)(24454002)(51164003)(13464003)(99286002)(62966003)(77096003)(106356001)(77156002)(106116001)(21056001)(101416001)(105586002)(120916001)(97736003)(64706001)(92566001)(66066001)(86362001)(20776003)(99396003)(19580405001)(107046002)(19580395003)(108616004)(4396001)(87936001)(76576001)(40100003)(2656002)(31966008)(33646002)(74316001)(46102003)(95666004)(122556002)(50986999)(76176999)(54356999)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR06MB071;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Nov 2014 06:06:34 -0500
+Message-ID: <54609C32.9040104@xs4all.nl>
+Date: Mon, 10 Nov 2014 12:06:26 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-X-OriginatorOrg: cypress.com
+To: Sebastian Reichel <sre@kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        linux-media@vger.kernel.org
+CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [RFCv2 0/8] [media] si4713 DT binding
+References: <1413904027-16767-1-git-send-email-sre@kernel.org> <545CBFE6.3070201@xs4all.nl>
+In-Reply-To: <545CBFE6.3070201@xs4all.nl>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Dmitry
+Hi Sebastian,
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: 2014?11?10? 16:40
-> To: Dudley Du
-> Cc: rydberg@euromail.se; Dudley Du; bleung@google.com;
-> linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v9 15/18] input: cyapa: add gen3 trackpad device read
-> firmware image function support
->
-> On Mon, Nov 03, 2014 at 04:33:07PM +0800, Dudley Du wrote:
-> > Add read firmware image function supported for gen3 trackpad device,
-> > it can be used through debugfs read_fw interface.
->
-> Why do we need this? Can we do the same via usespace program accessing
-> the i2c device through /dev/i2c-N?
+I've tested the whole 8-part patch series with my si4713 USB dev board, and it
+is working fine.
 
-This interface is used to test and debug only. It's defined and required by the chromium projects.
+I've accepted patches 1-4. The others need to be reposted since patch 5 had a
+change request.
 
-And in the driver side, becase the firmware image read process is done based on interrupt signal,
-if do this in userspace through /dev/i2c-N, there will be two issues:
-1) for gen5, after each command, an interrupt will be asserted, so if throug /dev/i2c-N,
-userspace program cannot get the interrupt signal.
-2) and when the interrupt signal assert, driver won't know it’s a command signal for image read,
-so it will try to process it as data report.
-To avoid this, additional interface must be added to mark the image read status and
-block interrupt signal to be process as data report.
+Regards,
 
->
-> Thanks.
->
+	Hans
+
+On 11/07/2014 01:49 PM, Hans Verkuil wrote:
+> On 10/21/14 17:06, Sebastian Reichel wrote:
+>> Hi,
+>>
+>> This is the RFCv2 patchset adding DT support to the si4713
+>> radio transmitter i2c driver. The changes can be summarized
+>> as follows:
+>>
+>>  * Move regulator information back into the driver. The
+>>    regulators needed are documented in the chip and have
+>>    nothing to do with boarddata. Instead devm_regulator_get_optional
+>>    is used and errors are handled quite loosely now. Maybe the USB
+>>    driver should provide dummy regulators.
+>>  * GPIO handling is updated to gpiod consumer interface, resulting
+>>    in a driver cleanup and easy DT handling
+>>  * The driver is updated to use managed resources wherever possible
+>>
+>> So much about the nice stuff. But there is also
+>>
+>>  * Instantiation of the platform device from the i2c (sub-)device. Since DT
+>>    is not supposed to contain linuxisms the device is a simple i2c node
+>>    resulting in the i2c probe function being called. Thus registering the main
+>>    v4l device must happen from there.
+>>
+>> Tested:
+>>  * Compilation on torvalds/linux.git:master (based on 52d589a)
+>>  * Booting in DT mode
+>>  * Some simply driver queries using v4l2-ctl
+>>
+>> Not tested:
+>>  * The USB driver, since I do not own the USB dongle
+> 
+> I will test this on Monday for the USB device. It looks good, but I need
+> to verify that it doesn't break the USB driver.
+> 
+> Regards,
+> 
+> 	Hans
+> 
+>>  * The legacy platform code (only DT boot has been tested).
+>>    (The legacy platform code is supposed to removed in the near future anyways)
+>>
+>> Changes since RFCv1 (requested by Hans Verkuil):
+>>  - splitted the patchset into more patches
+>>  - replaced dev_info with dev_dbg for missing regulators
+>>  - check for ENOSYS value from devm_gpiod_get (disabled GPIOLIB)
+>>
+>> -- Sebastian
+>>
+>> Sebastian Reichel (8):
+>>   [media] si4713: switch to devm regulator API
+>>   [media] si4713: switch reset gpio to devm_gpiod API
+>>   [media] si4713: use managed memory allocation
+>>   [media] si4713: use managed irq request
+>>   [media] si4713: add device tree support
+>>   [media] si4713: add DT binding documentation
+>>   ARM: OMAP2: RX-51: update si4713 platform data
+>>   [media] si4713: cleanup platform data
+>>
+>>  Documentation/devicetree/bindings/media/si4713.txt |  30 ++++
+>>  arch/arm/mach-omap2/board-rx51-peripherals.c       |  69 ++++-----
+>>  drivers/media/radio/si4713/radio-platform-si4713.c |  28 +---
+>>  drivers/media/radio/si4713/si4713.c                | 167 +++++++++++++--------
+>>  drivers/media/radio/si4713/si4713.h                |  15 +-
+>>  include/media/radio-si4713.h                       |  30 ----
+>>  include/media/si4713.h                             |   4 +-
+>>  7 files changed, 186 insertions(+), 157 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/media/si4713.txt
+>>  delete mode 100644 include/media/radio-si4713.h
+>>
+> 
 > --
-> Dmitry
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
