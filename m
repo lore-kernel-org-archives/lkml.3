@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaKJEq3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 23:46:29 -0500
-Received: from ozlabs.org ([103.22.144.67]:44644 "EHLO ozlabs.org"
+	id S1751444AbaKJEuG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 23:50:06 -0500
+Received: from ozlabs.org ([103.22.144.67]:47582 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaKJEq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 23:46:28 -0500
-Date: Mon, 10 Nov 2014 15:46:21 +1100
+	id S1751184AbaKJEuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 23:50:05 -0500
+Date: Mon, 10 Nov 2014 15:49:58 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the tty tree with the tip tree
-Message-ID: <20141110154621.3adab2e4@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Eddie Huang <eddie.huang@mediatek.com>
+Subject: linux-next: manual merge of the tty tree with the tty.current tree
+Message-ID: <20141110154958.5729e46e@canb.auug.org.au>
 X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/xs0HBTwXnmDRG=HnwmiB3b."; protocol="application/pgp-signature"
+ boundary="Sig_/R0PZF6PRl_EPEso8w9yGGav"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/xs0HBTwXnmDRG=HnwmiB3b.
+--Sig_/R0PZF6PRl_EPEso8w9yGGav
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg,
 
 Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/n_tty.c between commit 97d9e28d1a27 ("sched, tty: Deal with
-nested sleeps") from the tip tree and commits 1aa1bf111527 ("tty: Fix
-missed wakeup from packet mode status update") and 52bce7f8d4fc ("pty,
-n_tty: Simplify input processing on final close") from the tty tree.
+drivers/tty/serial/8250/8250_mtk.c between commit cd92208f6996 ("tty:
+serial: 8250_mtk: Fix quot calculation") from the tty.current tree and
+commit 2a768264eef0 ("tty: serial: Fix mediatek UART driver setting
+baudrate issue") from the tty tree.
 
-I fixed it up (I hope - see below) and can carry the fix as necessary
-(no action is required).
+I fixed it up (I just used the version from the tty tree) and can carry
+the fix as necessary (no action is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/tty/n_tty.c
-index 26f097f60b10,112eda7c56bc..000000000000
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@@ -2193,46 -2197,30 +2192,30 @@@ static ssize_t n_tty_read(struct tty_st
- =20
-  		if (!input_available_p(tty, 0)) {
-  			if (test_bit(TTY_OTHER_CLOSED, &tty->flags)) {
-- 				up_read(&tty->termios_rwsem);
-- 				tty_flush_to_ldisc(tty);
-- 				down_read(&tty->termios_rwsem);
-- 				if (!input_available_p(tty, 0)) {
-- 					retval =3D -EIO;
-- 					break;
-- 				}
-- 			} else {
-- 				if (tty_hung_up_p(file))
-- 					break;
-- 				if (!timeout)
-- 					break;
-- 				if (file->f_flags & O_NONBLOCK) {
-- 					retval =3D -EAGAIN;
-- 					break;
-- 				}
-- 				if (signal_pending(current)) {
-- 					retval =3D -ERESTARTSYS;
-- 					break;
-- 				}
-- 				n_tty_set_room(tty);
-- 				up_read(&tty->termios_rwsem);
--=20
-- 				timeout =3D wait_woken(&wait, TASK_INTERRUPTIBLE,
-- 						     timeout);
--=20
-- 				down_read(&tty->termios_rwsem);
-- 				continue;
-+ 				retval =3D -EIO;
-+ 				break;
-  			}
-- 		}
--=20
-- 		/* Deal with packet mode. */
-- 		if (packet && b =3D=3D buf) {
-- 			if (tty_put_user(tty, TIOCPKT_DATA, b++)) {
-- 				retval =3D -EFAULT;
-- 				b--;
-+ 			if (tty_hung_up_p(file))
-+ 				break;
-+ 			if (!timeout)
-+ 				break;
-+ 			if (file->f_flags & O_NONBLOCK) {
-+ 				retval =3D -EAGAIN;
-  				break;
-  			}
-- 			nr--;
-+ 			if (signal_pending(current)) {
-+ 				retval =3D -ERESTARTSYS;
-+ 				break;
-+ 			}
-+ 			n_tty_set_room(tty);
-+ 			up_read(&tty->termios_rwsem);
-+=20
- -			timeout =3D schedule_timeout(timeout);
-++			timeout =3D wait_woken(&wait, TASK_INTERRUPTIBLE,
-++					     timeout);
-+=20
-+ 			down_read(&tty->termios_rwsem);
-+ 			continue;
-  		}
- -		__set_current_state(TASK_RUNNING);
- =20
-  		if (ldata->icanon && !L_EXTPROC(tty)) {
-  			retval =3D canon_copy_from_read_buf(tty, &b, &nr);
-
---Sig_/xs0HBTwXnmDRG=HnwmiB3b.
+--Sig_/R0PZF6PRl_EPEso8w9yGGav
 Content-Type: application/pgp-signature
 Content-Description: OpenPGP digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUYEMhAAoJEMDTa8Ir7ZwVYEMP/08lDPOx/ABrzo0zN4XOAHXG
-7w0xOzj6F+oB7Gdf277P4Un61U49GqtQkt2hoinLHCHbwg70hHwozwBpm08y1HJO
-H0rapLyHq5FmI0KpeQikTj1eMzJcQ17qZKa5mCX7kILZ/J/Svlv9Upw6g5y8wyB1
-WO1pFWgaao9L7nkc0pTMxbsPPfshh832lFsiiIQEHFR/Wx6Pg2s18Be+qcyDupTH
-SoLLPWQtwaMpBI0Co6kN7a7P6yrETZLC4LT05KI1LwgdcxwkVDlHX2YUNeNgHZE+
-xlBv3NciM4Tz93QVNj5HehzT8pRhjVHOyYXPgDixVRSGjAq4hF/ejvWG44hixMJ1
-FN6zvgXnCJ46NhkOINaNHDzfc4XcM+pUfQEoIm2Fz7QeaKgTyYcnNkHW5zrEWrKV
-AkgQ85AJfK3OReNTVr7QSXnQlaPBCwNtzb4vHiBiW9VSTdNQuVMqiiGGXsI3F0jU
-SccQ5+fXcv3g4Bv0mYX8o5vur+4E9oru6HPXFHd24DkQdE6pvoO6PV5xEMPmUuL3
-bInVTqSOg5ooLmxQYJSQAk9Bt+pbOt5zd8AvignU0nrsurGwnST3iHnNetC7vl2N
-eFUcrbmxk6dzgw0NBj7qu4VAeDXxHETkrbdRuPj0bmuZzl7e39FS7iKGhXThcTnZ
-JrUGXVa18/EqVXyqYH59
-=47S3
+iQIcBAEBCAAGBQJUYEP7AAoJEMDTa8Ir7ZwVnnUP/3lda4Z+Egqqcbb1sdELcxAj
+9b9EyKlc9TQhKo5sEgj6bRKy07r4PCrh3Jjo8ediPbQZOnJUO8KqftqKvTzrTbwM
+HczawK8hilGdVviZh8T4QvswHIieFgmm2Gwt4fvNCi+RbDxayamlO/MGPd1YZGik
+QWu2hGOHB95ApQAuyJW6VTzEqUo3cQd3nD/1D1RMBRR7bi0HxioTRo/7qlm41Hn0
+aeYqYrmsi35a1t6S+yw96HaTGRRqTmY1cZoJgKIjaX8LAY2cevfAb73jOPiRIFfs
+hQwZcKFmHl+nERgVWpEdHidMB6xylsVof6co5JcCaSD9+P3YOMU9ecGoM6OdA84D
+8tZKnAqBPfG+vREFxoZuLmscaWqInOXuuJcbfvBENFsjlyo47mrCbc4gHPpXac4F
+c5S9E6tGdWzQB2ZasFBJeAvLA/19Edrzl/C9TGhAt1BJ7bH0F5XyNC2EaAHZJ+fX
+3DPbA63xUwQGn5ydGUBF3/2UjuElQEmU/NreIvi3zsUvt0Z5OZSZT9jWbyYzChHR
+3Cfa8+zTZVCjWY5dR372YIh2lr9hhZIGd50Sr06gkn1/pg5CxrUvq8Ex8QMl2VOC
+c61+DGoJzuuLDiwQpoIsgbEnNZBvHKyGLTAhavvnqOy/49YeILvD4EXcc+4WtNRn
+W9jbfFjJA1j49LO82nOM
+=R8pY
 -----END PGP SIGNATURE-----
 
---Sig_/xs0HBTwXnmDRG=HnwmiB3b.--
+--Sig_/R0PZF6PRl_EPEso8w9yGGav--
