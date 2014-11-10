@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaKJTju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:39:50 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55685 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399AbaKJTjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:39:47 -0500
-Date: Mon, 10 Nov 2014 13:40:14 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Roman Byshko <rbyshko@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: musb: replace hard coded registers with defines
-Message-ID: <20141110194013.GA1041@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414442919-28251-1-git-send-email-rbyshko@gmail.com>
- <20141103160836.GJ27425@saruman>
- <CAMXmWBnYRUiuehJ2EemtcM1wDkWwrsjyVuOVfu0CHrsRQjRc3Q@mail.gmail.com>
+	id S1752467AbaKJTkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:40:23 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:51591 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbaKJTkU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:40:20 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <CAMXmWBnYRUiuehJ2EemtcM1wDkWwrsjyVuOVfu0CHrsRQjRc3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141107064027.GA24745@yliu-dev.sh.intel.com>
+References: <20141107060040.GD30507@yliu-dev.sh.intel.com> <CALCETrVBcZ=5YJMzjKwFpjz6p32FmXcdkR=8uSPm8kCECDka4g@mail.gmail.com>
+ <20141107064027.GA24745@yliu-dev.sh.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Nov 2014 11:39:56 -0800
+Message-ID: <CALCETrXNxQ=fpVS2d5ntHQzNqMwhquDT7uK3=16GCAkWq6fh9g@mail.gmail.com>
+Subject: Re: [LKP] [x86_64,entry] f04e05b81e4: -62.7% time.user_time
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: LKP <lkp@01.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 6, 2014 at 10:40 PM, Yuanhan Liu
+<yuanhan.liu@linux.intel.com> wrote:
+> On Thu, Nov 06, 2014 at 10:26:23PM -0800, Andy Lutomirski wrote:
+>> On Thu, Nov 6, 2014 at 10:00 PM, LKP <lkp@01.org> wrote:
+>> > FYI, we noticed the below changes on
+>> >
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git x86/entry
+>> > commit f04e05b81e4d9ae88bee379f12176f551a24394a ("x86_64,entry: Use sysret to return to userspace when possible")
+>> >
+>> >
+>> > f2ee9bebb99dd4a4  f04e05b81e4d9ae88bee379f12  testbox/testcase/testparams
+>> > ----------------  --------------------------
+>> >          %stddev     %change         %stddev
+>> >              \          |                \
+>> >      24.09 ą  4%     -62.7%       8.99 ą  3%  lkp-wsx02/aim9/performance-300s-creat-clo
+>> >      24.09           -62.7%       8.99        GEO-MEAN time.user_time
+>> >
+>>
+>> I don't really know how to interpret this.  Is this a good thing or a bad thing?
+>
+> TBH, I don't, either. Here we just list the changes we captured, which
+> is then for your information to decide it's good or bad.
+>
+>>
+>> I actually expect this change to be a dramatic speedup for some
+>> workloads.
+>
+> Would you like to share your workload? If so, I can add them to our
+> testing system, and give feedback to you when datat is available.
 
-On Mon, Nov 10, 2014 at 07:31:23PM +0100, Roman Byshko wrote:
-> musb registers can be dumped using the file regdump
-> which is created in debugfs. Up to now  hard coded
-> register addresses are used for that. Different glue
-> layers however have different register addresses. The
-> patch addresses this issue by substituting bare register
-> addresses with defines.
->=20
-> Signed-off-by: Roman Byshko <rbyshko@gmail.com>
+My workload is just syscall performance under different conditions.
+There's no obvious interesting benchmark, although I may write one at
+some point.
 
-TABs were converted into spaces, please fix and rebase on my
-testing/next. Make sure TABs remain as TABs.
+>
+>> Any chance you can send me the .config, kernel command
+>> line, and whether you have any tracing features enabled?
+>
+> .config and dmesg are attached.
 
---=20
-balbi
+Hmm.  I'm not entirely sure what's going on.  I think that you have
+NO_HZ_FULL active, but I can't see what's actually activating it.  My
+initial attempt to replicate this failed, but I see a big performance
+gain if CONFIG_CONTEXT_TRACKING_FORCE=y, so I suspect that you've just
+managed to activate context tracking without forcing it.
 
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUYRSdAAoJEIaOsuA1yqREfm8P/0zEvE2Cs/GzaRsOwa5Mhibm
-sTmPUcCTMKp8Xh0E92RxhS4bdzJLVY9LM8j7KslAF+uj9RjTEBAmvxKW3XYpybeV
-mJjTsYw2nmbhn6Ly/bGKMVqoD2UShpJGm4Xe8PpKTKKkrPXnE4Ktr1Z70cK8GpCJ
-AKdrgOMdgQQQtjbXWIZSfgPfeOOjVNc9x2kbvGC9FKVC+yK1GafLLkKSNrPzC+ka
-qi9GSz/DNmQEHA3rS4WH9bwEDEE1D7Tk62EfKyqzC5Z7RDuzs2tRbalxZLhX1NZq
-HN4F5nIifCGicyn0jU2kd/ifLoEXz8dOfL3CwyJz+Is2jgDCJaXy84A1Naki7Nyu
-aRWZFxvxqmNFrxj0oOdQWGFsyXhoFtRYcpVM5SpZLETvMdYbSNjQDzgJ3TRAxX2x
-MMQu2yMYmnOCKnMKngrMh2yaIo5xLrKaC2KQX8JCLIeim+9VmW0WRWffOoMF0lSm
-YsMVYHTOIGOD/bKQ9OV9gXTNP1z/aVVI7mT0KrD/v5hrjAGl/GQxXQGX7x86nNwJ
-cqj6vjfVxQLLQxW1EBzJIzaNzGFGK99RUUXmASOHRZtjRdJCFV+4r0IlZj/OxlTf
-VrjBCpzIKPkkLre/eJfWdkvVqRnTroy1gF0DGIBerYkrX2S/V2i9GoEJe23pNPiG
-S/K4ybbuiRyiyGnV23zV
-=OuCK
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
+--Andy
