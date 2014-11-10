@@ -1,110 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaKJHgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:36:39 -0500
-Received: from mail-bl2on0101.outbound.protection.outlook.com ([65.55.169.101]:63488
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751494AbaKJHgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 02:36:38 -0500
-X-WSS-ID: 0NETBSX-08-TNZ-02
-X-M-MSG: 
-Message-ID: <54606AF7.8070506@amd.com>
-Date: Mon, 10 Nov 2014 09:36:23 +0200
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH v5 00/24] AMDKFD Kernel Driver
-References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
- <CAPM=9tyej9J13U0c+-DH-EYw_4JJQbiQM98QREZQLz4PPj+FmQ@mail.gmail.com>
-In-Reply-To: <CAPM=9tyej9J13U0c+-DH-EYw_4JJQbiQM98QREZQLz4PPj+FmQ@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.20.0.84]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(377454003)(479174003)(51704005)(189002)(199003)(24454002)(65806001)(65956001)(23676002)(92566001)(92726001)(120916001)(1411001)(36756003)(64126003)(64706001)(97736003)(21056001)(20776003)(47776003)(77156002)(62966003)(50466002)(95666004)(76176999)(54356999)(101416001)(105586002)(50986999)(106466001)(65816999)(4396001)(84676001)(99396003)(31966008)(68736004)(59896002)(107046002)(46102003)(99136001)(110136001)(19580395003)(33656002)(102836001)(86362001)(83506001)(44976005)(19580405001)(80316001)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Forefront-PRVS: 039178EF4A
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1751948AbaKJHjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 02:39:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:46294 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaKJHjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 02:39:16 -0500
+X-AuditID: cbfee68f-f791c6d000004834-a3-54606ba103bf
+Date: Mon, 10 Nov 2014 16:37:58 +0900
+From: Changman Lee <cm224.lee@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH 4/5] f2fs: write node pages if checkpoint is not
+ doing
+Message-id: <20141110073758.GC14659@lcm>
+References: <1415518569-20626-1-git-send-email-jaegeuk@kernel.org>
+ <1415518569-20626-4-git-send-email-jaegeuk@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-disposition: inline
+In-reply-to: <1415518569-20626-4-git-send-email-jaegeuk@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+Zse7C7IQQg75HphZP1s9itri0yN1i
+	z96TLBaXd81hc2Dx2LSqk81j94LPTB6fN8kFMEdx2aSk5mSWpRbp2yVwZcx6MZul4BN3xe/2
+	iewNjM84uxg5OSQETCRWndzFBGGLSVy4t56ti5GLQ0hgGaPEoUXn2GGKFs+/xg6RmM4osfTj
+	KWYI5yejxN0VP1hAqlgEVCXObGwB62AT0JJoP70WLC4ioAI06TJYnFkgU2JC/wswW1ggXKJt
+	7iU2EJtXQEPi68wJzCC2kEC1xJpv71gh4oISPybfY4Ho1ZJYv/M4E4QtLfHo7wywOZwCzhJb
+	Zn9iBLFFgXZNObkN7AUJgWXsEj/+tjBDHCcg8W3yIaBBHEAJWYlNB5ghPpOUOLjiBssERrFZ
+	SNbNQrJuFpJ1CxiZVzGKphYkFxQnpRcZ6xUn5haX5qXrJefnbmKERFH/Dsa7B6wPMQpwMCrx
+	8Hp8iQ8RYk0sK67MPcRoCnTFRGYp0eR8YKzmlcQbGpsZWZiamBobmVuaKYnzLpT6GSwkkJ5Y
+	kpqdmlqQWhRfVJqTWnyIkYmDU6qBcc+que9PFU2WyXu0XsdrTVOZ4KyVz/WvdHTlaO6ckR2a
+	pPX6Ij/L319SG6VOvfH5lRhzz1fodLBd4UrbLZnKKm4hK8OXT3FnZGgX6ZY54HBFW0/Sf2nh
+	hJ1R+RU/Zi5LaL6daNnC5fK2KWbLltMKog5ye6xMzxxecPPZnOjcP4Uth126JZdnKrEUZyQa
+	ajEXFScCABVGecGdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t9jQd2F2QkhBrv6jCyerJ/FbHFpkbvF
+	nr0nWSwu75rD5sDisWlVJ5vH7gWfmTw+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8yY9WI2S8En7orf7RPZGxifcXYxcnJICJhILJ5/jR3CFpO4cG89WxcjF4eQ
+	wHRGiaUfTzFDOD8ZJe6u+MECUsUioCpxZmMLWAebgJZE++m1YHERARWJQ4sug8WZBTIlJvS/
+	ALOFBcIl2uZeYgOxeQU0JL7OnMAMYgsJVEus+faOFSIuKPFj8j0WiF4tifU7jzNB2NISj/7O
+	AJvDKeAssWX2J0YQWxRo15ST29gmMArMQtI+C0n7LCTtCxiZVzGKphYkFxQnpeca6hUn5haX
+	5qXrJefnbmIEx+gzqR2MKxssDjEKcDAq8fA6vI0PEWJNLCuuzD3EKMHBrCTCW/sfKMSbklhZ
+	lVqUH19UmpNafIjRFBgaE5mlRJPzgekjryTe0NjEzMjSyMzCyMTcXEmc90CrdaCQQHpiSWp2
+	ampBahFMHxMHp1QDY0t59OUPk1dsfHGx5pevY03z5kqN3fdf/DixWjP9orj1uxmJ91rXvjhy
+	VHt7nml2/fbu1gjX57y1YucM8vpTwxtmqpwWXnLz9KfTxybu6NnbrfWvaebFHd1XK9OC7Px6
+	ve5Ip4dMf1bt8Sbh+cw5N+ofzJ9zL2On4vRP8/9vjfoTdNOrUNtVzF+JpTgj0VCLuag4EQAy
+	0jzS5wIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 08, 2014 at 11:36:08PM -0800, Jaegeuk Kim wrote:
+> It needs to write node pages if checkpoint is not doing in order to avoid
+> memory pressure.
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> ---
+>  fs/f2fs/node.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 4ea2c47..6f514fb 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1314,10 +1314,12 @@ static int f2fs_write_node_page(struct page *page,
+>  		return 0;
+>  	}
+>  
+> -	if (wbc->for_reclaim)
+> -		goto redirty_out;
+> -
+> -	down_read(&sbi->node_write);
+> +	if (wbc->for_reclaim) {
+> +		if (!down_read_trylock(&sbi->node_write))
+> +			goto redirty_out;
 
+Previously, we skipped write_page for reclaim path, but from now on, we
+will write out node page to reclaim memory at any time except checkpoint.
+We should remember it may occur to break merging bio.
+Got it.
 
-On 11/10/2014 04:34 AM, Dave Airlie wrote:
-> On 9 November 2014 04:37, Oded Gabbay <oded.gabbay@amd.com> wrote:
->> Hi,
->> Here is the v5 patch set of amdkfd.
->>
->> This version is released several days ahead of the release of AMD's HSA Runtime
->> library as Open Source. Coupled with the modification that Thomas Stellard
->> did for the r600 LLVM back-end, AMD will be effectively releasing a _complete_
->> userspace Open Source stack/solution for running HSA applications using
->> kernels written in OpenCL C99 on top of amdkfd.
->>
->
-> Daniel pointed out too me a major problem with the approach of having
-> two drivers
-> touching on hw at all, they are facing similiar issues with their virt stuff,
->
-> How does amdkfd interfact with runtime pm on the radeon driver? I'd expect
-> some calls to the runtime get/put functions in some places.
->
-> Dave.
->
-Hi Dave,
-Per Jerome's request from the first time he saw the driver, we removed all the 
-"register bashing" code from amdkfd and moved them to the interface file between 
-amdkfd and radeon, which is part of the radeon driver.
-See "[PATCH v5 05/24] drm/radeon: Add radeon <--> amdkfd interface" for the 
-implementation of that interface file.
+Reviewed-by: Changman Lee <cm224.lee@samsung.com>
 
-amdkfd communicates with the H/W either through that file, or through packets 
-submitted via the HIQ (a single kernel queue that is created/destroyed and 
-exclusively used by amdkfd). By using the HIQ to submit the runlist to the GPU, 
-we actually don't call to most of the interface file's functions. Those 
-functions are mostly used in bring-up of new H/W with the scheduling mode of: 
-"No CP scheduling"
-
-Regarding power management, we have two hooks from the radeon driver, that call 
-our driver (if it exists. if it doesn't exists, those call simply return without 
-doing anything). I think this is better approach than amdkfd interface directly 
-with the runtime pm, in order to prevent races between us and radeon. Do you agree ?
-
-That code is also in Patch 5/24, at cik.c:
-
-@@ -8471,6 +8476,10 @@ static int cik_startup(struct radeon_device *rdev)
-  	if (r)
-  		return r;
-
-+	r = radeon_kfd_resume(rdev);
-+	if (r)
-+		return r;
-+
-  	return 0;
-  }
-
-@@ -8519,6 +8528,7 @@ int cik_resume(struct radeon_device *rdev)
-   */
-  int cik_suspend(struct radeon_device *rdev)
-  {
-+	radeon_kfd_suspend(rdev);
-  	radeon_pm_suspend(rdev);
-  	dce6_audio_fini(rdev);
-  	radeon_vm_manager_fini(rdev);
-
-- Oded
-
+> +	} else {
+> +		down_read(&sbi->node_write);
+> +	}
+>  	set_page_writeback(page);
+>  	write_node_page(sbi, page, &fio, nid, ni.blk_addr, &new_addr);
+>  	set_node_addr(sbi, &ni, new_addr, is_fsync_dnode(page));
+> -- 
+> 2.1.1
+> 
+> 
+> ------------------------------------------------------------------------------
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
