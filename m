@@ -1,93 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaKJTe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:34:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24117 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaKJTeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:34:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,354,1413270000"; 
-   d="scan'208";a="634638026"
-From: "Verma, Vishal L" <vishal.l.verma@intel.com>
-To: "joe@perches.com" <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "willy@linux.intel.com" <willy@linux.intel.com>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH 01/11] block: nvme-scsi: Fix probable mask then right
- shift defects
-Thread-Topic: [PATCH 01/11] block: nvme-scsi: Fix probable mask then right
- shift defects
-Thread-Index: AQHP8acBncwIX8qMnE2BH3BZ4FqIhpxa3ZAA
-Date: Mon, 10 Nov 2014 19:33:54 +0000
-Message-ID: <1415648084.4373.2.camel@omniknight.lm.intel.com>
-References: <cover.1414387334.git.joe@perches.com>
-	 <8cd08200f7cc1d1a7562d61f22a0758ec7ca182a.1414387334.git.joe@perches.com>
-In-Reply-To: <8cd08200f7cc1d1a7562d61f22a0758ec7ca182a.1414387334.git.joe@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.112.163]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <49E1A205BB69D64E945222BB19A95B12@intel.com>
+	id S1752016AbaKJTiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:38:21 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:59830 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaKJTiU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:38:20 -0500
 MIME-Version: 1.0
+In-Reply-To: <545E0B06.6030706@gmail.com>
+References: <545E0B06.6030706@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Nov 2014 11:37:53 -0800
+Message-ID: <CALCETrWSz5hZJb5vavKX_kbfjm42w-e4aQjdRNsvS4m5uw4Q2w@mail.gmail.com>
+Subject: Re: Edited seccomp.2 man page for review
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAAJYVbs031424
 
-On Sun, 2014-10-26 at 22:24 -0700, Joe Perches wrote:
-> Precedence of & and >> is not the same and is not left to right.
-> shift has higher precedence and should be done after the mask.
-> 
-> Add parentheses around the mask.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Sat, Nov 8, 2014 at 4:22 AM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> Hi Kees, (and all),
+>
+> Thanks for the seccomp.2 draft man page that you provided a few
+> weeks ago (https://lkml.org/lkml/2014/9/25/685), and my apologies
+> for the slow follow-up.
+>
 
-Acked-by: Vishal Verma <vishal.l.verma@linux.intel.com>
+Answers to some of your questions below.
 
-> ---
->  drivers/block/nvme-scsi.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
-> index a4cd6d6..529ee54 100644
-> --- a/drivers/block/nvme-scsi.c
-> +++ b/drivers/block/nvme-scsi.c
-> @@ -1972,8 +1972,8 @@ static inline void nvme_trans_get_io_cdb10(u8 *cmd,
->  {
->  	cdb_info->fua = GET_U8_FROM_CDB(cmd, IO_10_CDB_FUA_OFFSET) &
->  					IO_CDB_FUA_MASK;
-> -	cdb_info->prot_info = GET_U8_FROM_CDB(cmd, IO_10_CDB_WP_OFFSET) &
-> -					IO_CDB_WP_MASK >> IO_CDB_WP_SHIFT;
-> +	cdb_info->prot_info = (GET_U8_FROM_CDB(cmd, IO_10_CDB_WP_OFFSET) &
-> +			       IO_CDB_WP_MASK) >> IO_CDB_WP_SHIFT;
->  	cdb_info->lba = GET_U32_FROM_CDB(cmd, IO_10_CDB_LBA_OFFSET);
->  	cdb_info->xfer_len = GET_U16_FROM_CDB(cmd, IO_10_CDB_TX_LEN_OFFSET);
->  }
-> @@ -1983,8 +1983,8 @@ static inline void nvme_trans_get_io_cdb12(u8 *cmd,
->  {
->  	cdb_info->fua = GET_U8_FROM_CDB(cmd, IO_12_CDB_FUA_OFFSET) &
->  					IO_CDB_FUA_MASK;
-> -	cdb_info->prot_info = GET_U8_FROM_CDB(cmd, IO_12_CDB_WP_OFFSET) &
-> -					IO_CDB_WP_MASK >> IO_CDB_WP_SHIFT;
-> +	cdb_info->prot_info = (GET_U8_FROM_CDB(cmd, IO_12_CDB_WP_OFFSET) &
-> +			       IO_CDB_WP_MASK) >> IO_CDB_WP_SHIFT;
->  	cdb_info->lba = GET_U32_FROM_CDB(cmd, IO_12_CDB_LBA_OFFSET);
->  	cdb_info->xfer_len = GET_U32_FROM_CDB(cmd, IO_12_CDB_TX_LEN_OFFSET);
->  }
-> @@ -1994,8 +1994,8 @@ static inline void nvme_trans_get_io_cdb16(u8 *cmd,
->  {
->  	cdb_info->fua = GET_U8_FROM_CDB(cmd, IO_16_CDB_FUA_OFFSET) &
->  					IO_CDB_FUA_MASK;
-> -	cdb_info->prot_info = GET_U8_FROM_CDB(cmd, IO_16_CDB_WP_OFFSET) &
-> -					IO_CDB_WP_MASK >> IO_CDB_WP_SHIFT;
-> +	cdb_info->prot_info = (GET_U8_FROM_CDB(cmd, IO_16_CDB_WP_OFFSET) &
-> +			       IO_CDB_WP_MASK) >> IO_CDB_WP_SHIFT;
->  	cdb_info->lba = GET_U64_FROM_CDB(cmd, IO_16_CDB_LBA_OFFSET);
->  	cdb_info->xfer_len = GET_U32_FROM_CDB(cmd, IO_16_CDB_TX_LEN_OFFSET);
->  }
+> .BR execve (2)
+> is allowed by the filter,
+> the filters and constraints on permitted system calls are preserved across an
+> .BR execve (2).
+>
+> .\" FIXME I (mtk) reworded the following paragraph substantially.
+> .\" Please check it.
+> In order to use the
+> .BR SECCOMP_SET_MODE_FILTER
+> operation, either the caller must have the
+> .BR CAP_SYS_ADMIN
+> capability or the call must be preceded by the call:
+>
+>     prctl(PR_SET_NO_NEW_PRIVS, 1);
+>
+> Otherwise, the
+> .BR SECCOMP_SET_MODE_FILTER
+> operation will fail and return
+> .BR EACCES
+> in
+> .IR errno .
+> This requirement ensures that filter programs cannot be applied to child
+> .\" FIXME What does "installed" in the following line mean?
+> processes with greater privileges than the process that installed them.
+>
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This requirement ensures that an unprivileged process cannot apply a
+malicious filter and then invoke a setuid or other privileged program
+using execve, thus potentially compromising that program.
+
+> If
+> .BR prctl (2)
+> or
+> .BR seccomp (2)
+> is allowed by the attached filter, further filters may be added.
+> This will increase evaluation time, but allows for further reduction of
+> the attack surface during execution of a process.
+>
+> The
+> .BR SECCOMP_SET_MODE_FILTER
+> operation is available only if the kernel is configured with
+> .BR CONFIG_SECCOMP_FILTER
+> enabled.
+>
+> When
+> .IR flags
+> is 0, this operation is functionally identical to the call:
+>
+>     prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, args);
+>
+> The recognized
+> .IR flags
+> are:
+> .RS
+> .TP
+> .BR SECCOMP_FILTER_FLAG_TSYNC
+> When adding a new filter, synchronize all other threads of the calling
+> process to the same seccomp filter tree.
+> .\" FIXME Nowhere in this page is the term "filter tree" defined.
+> .\" There should be a definition somewhere.
+> .\" Is it: "the set of filters attached to a thread"?
+
+It's the ordered list of filters attached to a thread, where attaching
+identical filters in separate syscalls results in different filters
+from this perspective.
+
+> If any thread cannot do this,
+> the call will not attach the new seccomp filter,
+> and will fail, returning the first thread ID found that cannot synchronize.
+> Synchronization will fail if another thread is in
+> .BR SECCOMP_MODE_STRICT
+> or if it has attached new seccomp filters to itself,
+> diverging from the calling thread's filter tree.
+> .RE
+> .SH FILTERS
+> When adding filters via
+> .BR SECCOMP_SET_MODE_FILTER ,
+> .IR args
+> points to a filter program:
+>
+> .in +4n
+> .nf
+> struct sock_fprog {
+>     unsigned short      len;    /* Number of BPF instructions */
+>     struct sock_filter *filter;
+> };
+> .fi
+> .in
+>
+> Each program must contain one or more BPF instructions:
+>
+> .in +4n
+> .nf
+> struct sock_filter {    /* Filter block */
+>     __u16   code;       /* Actual filter code */
+>     __u8    jt;         /* Jump true */
+>     __u8    jf;         /* Jump false */
+>     __u32   k;          /* Generic multiuse field */
+> };
+> .fi
+> .in
+>
+> When executing the instructions, the BPF program executes over the
+> system call information made available via:
+>
+> .in +4n
+> .nf
+> struct seccomp_data {
+>     int nr;                     /* system call number */
+>     __u32 arch;                 /* AUDIT_ARCH_* value */
+>     __u64 instruction_pointer;  /* CPU instruction pointer */
+>     __u64 args[6];              /* up to 6 system call arguments */
+> };
+> .fi
+> .in
+>
+> .\" FIXME I find the next piece a little hard to understand, so,
+> .\"       some questions:
+> .\"       * If there are multiple filters, in what order are they executed?
+> .\"         (The man page should probably detail the answer to this question.)
+
+All of them are executed.  The precedence rules determine what happens
+if the filters return different values.
+
+> .\"       * If there are multiple filters, are they all always executed?
+> .\"         I assume not, but the notion that
+> .\"             "the return value for the evaluation of a given system call
+> .\"              will always use the value with the highest precedence"
+> .\"         implies that even that if one filter generates (say)
+> .\"         SECCOMP_RET_ERRNO, then further filters may still be executed,
+> .\"         including one that generates (say) the "higher priority"
+> .\"         SECCOMP_RET_KILL condition.
+> .\"       Can you clarify the above?
+> A seccomp filter returns one of the values listed below.
+> If multiple filters exist,
+> the return value for the evaluation of a given system call
+> will always use the value with the highest precedence.
+> (For example,
+> .BR SECCOMP_RET_KILL
+> will always take precedence.)
+>
+> In decreasing order order of precedence,
+> the values that may be returned by a seccomp filter are:
+> .TP
+> .BR SECCOMP_RET_KILL
+> Results in the task exiting immediately without executing the system call.
+> The task terminates as though killed by a
+> .B SIGSYS
+> signal
+> .RI ( not
+> .BR SIGKILL ).
+> .TP
+> .BR SECCOMP_RET_TRAP
+> Results in the kernel sending a
+> .BR SIGSYS
+> signal to the triggering task without executing the system call.
+> .IR siginfo\->si_call_addr
+> will show the address of the system call instruction, and
+> .IR siginfo\->si_syscall
+> and
+> .IR siginfo\->si_arch
+> will indicate which system call was attempted.
+> The program counter will be as though the system call happened
+> (i.e., it will not point to the system call instruction).
+> The return value register will contain an architecture\-dependent value;
+> if resuming execution, set it to something sensible.
+> (The architecture dependency is because replacing it with
+> .BR ENOSYS
+> could overwrite some useful information.)
+>
+> .\" FIXME The following sentence is the first time that SECCOMP_RET_DATA
+> .\"       is mentioned. SECCOMP_RET_DATA needs to be described in this
+> .\"       man page.
+> The
+> .BR SECCOMP_RET_DATA
+> portion of the return value will be passed as
+> .IR si_errno .
+>
+> .BR SIGSYS
+> triggered by seccomp will have the value
+> .BR SYS_SECCOMP
+> in the
+> .IR si_code
+> field.
+> .TP
+> .BR SECCOMP_RET_ERRNO
+> .\" FIXME What does "the return value" refer to in the next sentence?
+> .\"       It is not obvious to me.
+
+The return value is the value returned by the BPF program.
+
+--Andy
