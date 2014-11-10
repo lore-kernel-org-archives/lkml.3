@@ -1,120 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbaKJKeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:34:36 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:57191 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752161AbaKJKee (ORCPT
+	id S1752382AbaKJKil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:38:41 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54354 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaKJKij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:34:34 -0500
-Message-ID: <1415615671.4862.30.camel@x220>
-Subject: Re: [PATCH v9 07/12] coresight-etm: add CoreSight ETM/PTM driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: mathieu.poirier@linaro.org
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>, gregkh@linuxfoundation.org,
-        linux@arm.linux.org.uk, pratikp@codeaurora.org, varshney@ti.com,
-        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
-        james.king@linaro.org, kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com,
-        r.sengupta@samsung.com, robbelibobban@gmail.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 11:34:31 +0100
-In-Reply-To: <1415038066-22423-8-git-send-email-mathieu.poirier@linaro.org>
-References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
-	 <1415038066-22423-8-git-send-email-mathieu.poirier@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Nov 2014 10:34:32.0219 (UTC) FILETIME=[EA0E16B0:01CFFCD1]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Nov 2014 05:38:39 -0500
+Date: Mon, 10 Nov 2014 11:38:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] perf syscall error handling
+Message-ID: <20141110103834.GB19309@gmail.com>
+References: <20141030222814.GF15602@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410302111150.2766@pianoman.cluster.toy>
+ <20141031072109.GD12706@worktop.programming.kicks-ass.net>
+ <20141031092713.GA23124@gmail.com>
+ <20141031122824.GZ12020@console-pimps.org>
+ <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-03 at 11:07 -0700, mathieu.poirier@linaro.org wrote:
-> From: Pratik Patel <pratikp@codeaurora.org>
+
+* Stephane Eranian <eranian@google.com> wrote:
+
+> Hi,
 > 
-> This driver manages CoreSight ETM (Embedded Trace Macrocell) that
-> supports processor tracing. Currently supported version are ARM
-> ETMv3.x and PTM1.x.
-> 
-> Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> 
-> coresight-etm3x: adding missing error checking
+> On Fri, Oct 31, 2014 at 1:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> > On Fri, 31 Oct, at 10:27:13AM, Ingo Molnar wrote:
+> >>
+> >>  - user-space gets back the regular errno (-EOPNOTSUPP or -ENOSYS
+> >>    or -EINVAL, etc.) and a string. Strings are really the most
+> >>    helpful information, because tools can just print that. They
+> >>    can also match on specific strings and programmatically react
+> >>    to them if they want to: we can promise to not arbitrarily
+> >>    change error strings once they are introduced. (but even if
+> >>    they change, user-space can still print them out.)
+> >
+> > I guess we'd run into a problem if userspace doesn't want to just print
+> > the kernel string but instead wants to parse it in some fashion.
+> >
+> > That may or may not be a problem in practice, Vince can probably comment
+> > on that. I'm just thinking along the lines of making the perf syscall
+> > interface as useful as possible for tools other than tools/perf.
+>
+> Maybe I missed something in the earlier thread, but I am trying 
+> to understand why perf_event_open() would need such extended 
+> error retrieval system when no other syscall does.
 
-This landed in today's linx-next (ie, next-20141110) as commit
-a939fc5a71ad ("coresight-etm: add CoreSight ETM/PTM driver").
+Frankly, Linux kind of sucks in the 'error codes and diagnostics' 
+area, as we used the old Unix method of returning a single small 
+integer and never got around further organizing errors properly, 
+for a couple of good (and a handful of bad) reasons.
 
->  arch/arm/Kconfig.debug                 |    9 +
->  arch/arm/include/asm/hardware/cp14.h   |  542 +++++++++
->  drivers/coresight/Makefile             |    1 +
->  drivers/coresight/coresight-etm-cp14.c |  591 ++++++++++
->  drivers/coresight/coresight-etm.h      |  251 +++++
->  drivers/coresight/coresight-etm3x.c    | 1928 ++++++++++++++++++++++++++++++++
->  6 files changed, 3322 insertions(+)
->  create mode 100644 arch/arm/include/asm/hardware/cp14.h
->  create mode 100644 drivers/coresight/coresight-etm-cp14.c
->  create mode 100644 drivers/coresight/coresight-etm.h
->  create mode 100644 drivers/coresight/coresight-etm3x.c
-> 
->[...]
-> diff --git a/drivers/coresight/coresight-etm3x.c b/drivers/coresight/coresight-etm3x.c
-> new file mode 100644
-> index 0000000..d9e3ed6
-> --- /dev/null
-> +++ b/drivers/coresight/coresight-etm3x.c
-> @@ -0,0 +1,1928 @@
-> +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/types.h>
-> +#include <linux/device.h>
-> +#include <linux/io.h>
-> +#include <linux/err.h>
-> +#include <linux/fs.h>
-> +#include <linux/slab.h>
-> +#include <linux/delay.h>
-> +#include <linux/smp.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/stat.h>
-> +#include <linux/clk.h>
-> +#include <linux/cpu.h>
-> +#include <linux/of.h>
-> +#include <linux/coresight.h>
-> +#include <linux/amba/bus.h>
-> +#include <linux/seq_file.h>
-> +#include <linux/uaccess.h>
-> +#include <asm/sections.h>
-> +
-> +#include "coresight-etm.h"
-> +
-> +#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
+The good reasons: not having finegrained error codes is just fine 
+if you organize your APIs and objects via other means: file 
+system structure, split-up system calls, separate fds for 
+separate objects, etc.
 
-There's no Kconfig symbol CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE. Neither
-is there a preprocessor definition of this macro. So why was this
-added? 
+The perf ABI is complex mostly because it provides bleeding edge 
+interfaces to bleeding edge hardware, while trying to be 
+transparent to the probed processes: i.e. no 'everything is a 
+file' and 'just use poll() to pass events' API simplifications 
+are possible, mostly for performance reasons.
 
-> +static int boot_enable = 1;
-> +#else
-> +static int boot_enable;
-> +#endif
-> +module_param_named(
-> +	boot_enable, boot_enable, int, S_IRUGO
-> +);
+A comparable ABI, ptrace, is considered complex as well, while 
+perf is much faster, exposes much more hardware capabilities and 
+is more capable as well.
 
+But even outside of perf, with 'other' system calls I have 
+experienced dozens of incidents where some app failed with a 
+-EINVAL in an ambiguous way and it would have been a blessing to 
+get more extended error description from the kernel. There's a 
+few meaningful error codes like -EIO or -ENOMEM, but there's tons 
+of overlapping use of -EINVAL.
 
-Paul Bolle
+The VFS and VM error codes are pretty much self explanatory (and 
+that's where we have most of Unix heritage), but for example the 
+networking code and various drivers and also perf suffers from 
+not giving finegrained enough error explanations.
 
+> In any case, I would go with Ingo's proposal.
+
+Ok, cool!
+
+Thanks,
+
+	Ingo
