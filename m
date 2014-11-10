@@ -1,108 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaKJEy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 23:54:29 -0500
-Received: from mga03.intel.com ([134.134.136.65]:55228 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228AbaKJEy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 23:54:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,350,1413270000"; 
-   d="scan'208";a="605101146"
-Date: Mon, 10 Nov 2014 12:33:50 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>
-Subject: Re: [PATCH] x86, kvm, vmx: Always use LOAD_IA32_EFER if available
-Message-ID: <20141110043350.GA3773@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <32d96cddbe65b897151b95a0e0f8326e404646f8.1415413387.git.luto@amacapital.net>
+	id S1752081AbaKJE4e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 23:56:34 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:45540 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaKJE4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 23:56:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <32d96cddbe65b897151b95a0e0f8326e404646f8.1415413387.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <c94b68be09dd4bfaa8a80d9877362fb5@DM2PR03MB574.namprd03.prod.outlook.com>
+References: <1413515616-15874-1-git-send-email-B29983@freescale.com>
+	<CAKohpokotKSvQ13uU4MnCer+qzBUUbGVTd19y7xswCAEKk3nGQ@mail.gmail.com>
+	<6aaa50ef5f234fe2896f1c66eb646dfb@DM2PR03MB574.namprd03.prod.outlook.com>
+	<CAKohpokSuKOwZ3-OWFtU0z7E1fsMg4tyPiUoFUfw26pD9Py=MA@mail.gmail.com>
+	<c94b68be09dd4bfaa8a80d9877362fb5@DM2PR03MB574.namprd03.prod.outlook.com>
+Date: Mon, 10 Nov 2014 10:26:32 +0530
+Message-ID: <CAKohpokOorF82EDwTyvCcEhpQJvMOXfLzotxj+E9Ys6Jydbk5g@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ platforms
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Yuantian Tang <Yuantian.Tang@freescale.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-On Fri, Nov 07, 2014 at 06:25:18PM -0800, Andy Lutomirski wrote:
->At least on Sandy Bridge, letting the CPU switch IA32_EFER is much
->faster than switching it manually.
->
->I benchmarked this using the vmexit kvm-unit-test (single run, but
->GOAL multiplied by 5 to do more iterations):
->
->Test                                  Before      After    Change
->cpuid                                   2000       1932    -3.40%
->vmcall                                  1914       1817    -5.07%
->mov_from_cr8                              13         13     0.00%
->mov_to_cr8                                19         19     0.00%
->inl_from_pmtimer                       19164      10619   -44.59%
->inl_from_qemu                          15662      10302   -34.22%
+On 27 October 2014 09:09, Yuantian Tang <Yuantian.Tang@freescale.com> wrote:
+> Do we have a conclusion yet?
 
-What's the difference of IA32_EFER between guest and host in your config?
-
-IIUC,
-- NX is not consistent
-  IA32_EFER will be auto load w/ and w/o the patch.
-- SCE is not consistent 
-  IA32_EFER will be switched through wrmsr(urn) w/o the patch, and auto load
-  w/ the patch.
-
-Regards,
-Wanpeng Li 
-
->inl_from_kernel                         3916       3802    -2.91%
->outl_to_kernel                          2230       2194    -1.61%
->mov_dr                                   172        176     2.33%
->ipi                                (skipped)  (skipped)
->ipi+halt                           (skipped)  (skipped)
->ple-round-robin                           13         13     0.00%
->wr_tsc_adjust_msr                       1920       1845    -3.91%
->rd_tsc_adjust_msr                       1892       1814    -4.12%
->mmio-no-eventfd:pci-mem                16394      11165   -31.90%
->mmio-wildcard-eventfd:pci-mem           4607       4645     0.82%
->mmio-datamatch-eventfd:pci-mem          4601       4610     0.20%
->portio-no-eventfd:pci-io               11507       7942   -30.98%
->portio-wildcard-eventfd:pci-io          2239       2225    -0.63%
->portio-datamatch-eventfd:pci-io         2250       2234    -0.71%
->
->I haven't explicitly computed the significance of these numbers,
->but this isn't subtle.
->
->Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->---
-> arch/x86/kvm/vmx.c | 10 ++++++++--
-> 1 file changed, 8 insertions(+), 2 deletions(-)
->
->diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->index 3e556c68351b..e72b9660e51c 100644
->--- a/arch/x86/kvm/vmx.c
->+++ b/arch/x86/kvm/vmx.c
->@@ -1659,8 +1659,14 @@ static bool update_transition_efer(struct vcpu_vmx *vmx, int efer_offset)
-> 	vmx->guest_msrs[efer_offset].mask = ~ignore_bits;
-> 
-> 	clear_atomic_switch_msr(vmx, MSR_EFER);
->-	/* On ept, can't emulate nx, and must switch nx atomically */
->-	if (enable_ept && ((vmx->vcpu.arch.efer ^ host_efer) & EFER_NX)) {
->+
->+	/*
->+	 * On EPT, we can't emulate NX, so we must switch EFER atomically.
->+	 * On CPUs that support "load IA32_EFER", always switch EFER
->+	 * atomically, since it's faster than switching it manually.
->+	 */
->+	if (cpu_has_load_ia32_efer ||
->+	    (enable_ept && ((vmx->vcpu.arch.efer ^ host_efer) & EFER_NX))) {
-> 		guest_efer = vmx->vcpu.arch.efer;
-> 		if (!(guest_efer & EFER_LMA))
-> 			guest_efer &= ~EFER_LME;
->-- 
->1.9.3
->
->--
->To unsubscribe from this list: send the line "unsubscribe kvm" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+No. You can keep your initial duplication of Kconfig entries for the time being.
