@@ -1,120 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaKJTaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:30:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:7596 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203AbaKJTaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:30:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,354,1413270000"; 
-   d="scan'208";a="620124155"
-From: tony.luck@intel.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Philipp Hachtmann <phacht@linux.vnet.ibm.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Emil Medve <Emilian.Medve@freescale.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: memblock: Refactor functions to set/clear MEMBLOCK_HOTPLUG
-Date: Mon, 10 Nov 2014 11:05:29 -0800
-Message-Id: <54610c79308447c79c@agluck-desk.sc.intel.com>
+	id S1751827AbaKJTbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:31:31 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:64545 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaKJTb3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:31:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B851058@PGSMSX102.gar.corp.intel.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-4-git-send-email-hock.leong.kweh@intel.com>
+ <20141104043247.GA23418@kroah.com> <CALCETrXjJju+cMWJfB6W5kSD=Ox5y+Hj_AfmbbbOTOh8CV8eaQ@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80EAE4@PGSMSX102.gar.corp.intel.com>
+ <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
+ <1415110688.26277.36.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CALCETrW1UaOCcb-32SOUhi_Zh5vLzV+VwyffThVvso23z04SHA@mail.gmail.com>
+ <20141104154017.GA28113@kroah.com> <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80F3A9@PGSMSX102.gar.corp.intel.com>
+ <CALCETrUi0ssZbOpHyVmh6jx68Oj=0h4BwfM0uLio8Qbaeu9gJw@mail.gmail.com> <F54AEECA5E2B9541821D670476DAE19C2B851058@PGSMSX102.gar.corp.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Nov 2014 11:31:06 -0800
+Message-ID: <CALCETrUz+5TXxuCHM+RetaR9A_Nb4BRs6bhb6vfL5ijYoUp42A@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] efi: Capsule update with user helper interface
+To: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+Cc: Sam Protsenko <semen.protsenko@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a lot of duplication in the rubric around actually setting or
-clearing a mem region flag. Create a new helper function to do this and
-reduce each of memblock_mark_hotplug() and memblock_clear_hotplug() to
-a single line.
+On Mon, Nov 10, 2014 at 12:31 AM, Kweh, Hock Leong
+<hock.leong.kweh@intel.com> wrote:
+>> -----Original Message-----
+>> From: Andy Lutomirski [mailto:luto@amacapital.net]
+>> > #!/bin/sh
+>> >
+>> > old=$(cat
+>> > /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+>> >
+>> > for arg in "$@"
+>> > do
+>> >         if [ -f $arg ]
+>> >         then
+>> >                 echo 1 > /sys/class/firmware/efi-capsule-file/loading
+>> >                 cat $arg > /sys/class/firmware/efi-capsule-file/data
+>> >                 echo 0 > /sys/class/firmware/efi-capsule-file/loading
+>>
+>> I think you have a race.  Try putting msleep(1000) after the
+>> request_firmware_nowait call, and I bet this will fail on the second try.
+>
+> Sorry for the late response. I don't really catch the race condition that
+> you are referring? Are you trying to tell that the user script could run faster
+> before the previous callback function actually end? Will such scenario happen?
+> In the callback function, after the request_firmware_nowait(), I don't have
+> any codes will delay the callback function to end. Besides, there is a mutex_lock
+> protecting the request_firmware_nowait() calling. Won't that take care of the
+> issue?
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+In callbackfn_efi_capsule, you call request_firmware_nowait.  When
+that callback is invoked, I think that the
+/sys/class/firmware/efi-capsule-file directory doesn't exist at all.
+If the callback takes longer than it takes your script to make it
+through a full iteration, then it will try uploading the second
+capsule before the firmware class directory is there, so it will fail.
 
----
+But I just realized that your script has a loop below to handle that.
+It's this:
 
-This will be useful if someone were to add a new mem region flag - which
-I hope to be doing some day soon. But it looks like a plausible cleanup
-even without that - so I'd like to get it out of the way now.
+                 oldtime=$(date +%S)
+                 oldtime=$(((time + 2) % 60))
+                 until [ -f /sys/class/firmware/efi-capsule-file/loading ]
+                 do
+                         newtime=$(date +%S)
+                         if [ $newtime -eq $oldtime ]
+                         then
+                                 break
+                         fi
+                 done
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 6ecb0d937fb5..252b77bdf65e 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -715,16 +715,13 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
- }
- 
- /**
-- * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
-- * @base: the base phys addr of the region
-- * @size: the size of the region
-  *
-- * This function isolates region [@base, @base + @size), and mark it with flag
-- * MEMBLOCK_HOTPLUG.
-+ * This function isolates region [@base, @base + @size), and sets/clears flag
-  *
-  * Return 0 on succees, -errno on failure.
-  */
--int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
-+static int __init_memblock memblock_setclr_flag(phys_addr_t base,
-+				phys_addr_t size, int set, int flag)
- {
- 	struct memblock_type *type = &memblock.memory;
- 	int i, ret, start_rgn, end_rgn;
-@@ -734,37 +731,37 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
- 		return ret;
- 
- 	for (i = start_rgn; i < end_rgn; i++)
--		memblock_set_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
-+		if (set)
-+			memblock_set_region_flags(&type->regions[i], flag);
-+		else
-+			memblock_clear_region_flags(&type->regions[i], flag);
- 
- 	memblock_merge_regions(type);
- 	return 0;
- }
- 
- /**
-- * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
-+ * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
-  * @base: the base phys addr of the region
-  * @size: the size of the region
-  *
-- * This function isolates region [@base, @base + @size), and clear flag
-- * MEMBLOCK_HOTPLUG for the isolated regions.
-+ * Return 0 on succees, -errno on failure.
-+ */
-+int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
-+{
-+	return memblock_setclr_flag(base, size, 1, MEMBLOCK_HOTPLUG);
-+}
-+
-+/**
-+ * memblock_clear_hotplug - Clear flag MEMBLOCK_HOTPLUG for a specified region.
-+ * @base: the base phys addr of the region
-+ * @size: the size of the region
-  *
-  * Return 0 on succees, -errno on failure.
-  */
- int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
- {
--	struct memblock_type *type = &memblock.memory;
--	int i, ret, start_rgn, end_rgn;
--
--	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
--	if (ret)
--		return ret;
--
--	for (i = start_rgn; i < end_rgn; i++)
--		memblock_clear_region_flags(&type->regions[i],
--					    MEMBLOCK_HOTPLUG);
--
--	memblock_merge_regions(type);
--	return 0;
-+	return memblock_setclr_flag(base, size, 0, MEMBLOCK_HOTPLUG);
- }
- 
- /**
+Aside from the fact that this loop itself is racy (it may loop forever
+if something goes wrong in the kernel, since $newtime -eq $oldtime may
+never happen), it should help, if you're lucky.  But there's another
+bug.
+
+>>
+>> I think that firmware_class doesn't call the callback until after loading is closed
+>> for the second time.  If so, then this is racy.  Try inserting msleep(1000) at the
+>> beginning of your callback and uploading a capsule that should load
+>> successfully -- this will report failure, but a future upload may get very
+>> confused. Also, what does the firmware class do when simultaneous
+>> uploads of the same file with different contents are in flight?  Is that possible?
+>
+> Sorry again, I can't really catch you on this race condition statement. Are you
+> trying to tell if user is doing this:
+>
+> echo 1 > /sys/class/firmware/efi-capsule-file/loading
+> cat capsule1 > /sys/class/firmware/efi-capsule-file/data
+> cat capsule2 > /sys/class/firmware/efi-capsule-file/data
+> echo 0 > /sys/class/firmware/efi-capsule-file/loading
+>
+> If so, capsule2 will be the one we will obtain in the callback function.
+
+Here's the race:
+
+User:
+echo 1 > /sys/class/firmware/efi-capsule-file/loading
+cat capsule1 > /sys/class/firmware/efi-capsule-file/data
+echo 0 > /sys/class/firmware/efi-capsule-file/loading
+
+Kernel: Be a little slow here due to preemption or whatever.
+
+User:
+-f /sys/class/firmware/efi-capsule-file/loading returns true
+capsules_loaded == 0
+Assume failure, incorrectly
+
+Kernel: catch up and increment capsules_loaded.
+
+If these patches get applied, then I think that the protocol needs to
+be documented in Documentation/ABI.  It should say something like:
+
+To upload an EFI capsule, do this:
+
+Write 1 to /sys/class/firmware/efi-capsule-file/loading
+Write the capsule to /sys/class/firmware/efi-capsule-file/data
+Write 0 to /sys/class/firmware/efi-capsule-file/loading
+
+Make sure that /sys/class/firmware/efi-capsule-file disappears and
+comes back, perhaps by cd-ing there and waiting for all the files in
+the directory to go away.
+
+Then, and only then, read capsules_loaded to detect success.
+
+
+Once you've written that doc, please seriously consider whether this
+interface is justifiable.  I think it sucks.
+
+--Andy
