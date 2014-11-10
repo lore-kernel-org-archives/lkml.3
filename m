@@ -1,91 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaKJVtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:49:40 -0500
-Received: from smtp-out-111.synserver.de ([212.40.185.111]:1088 "EHLO
-	smtp-out-111.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaKJVti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:49:38 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 31869
-Message-ID: <546132EF.7070008@metafoo.de>
-Date: Mon, 10 Nov 2014 22:49:35 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        GTA04 owners <gta04-owner@goldelico.com>, alsa-devel@alsa-project.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [alsa-devel] [PATCH 1/3] ASoC: twl4030: don't report EBUSY if
- no change requested.
-References: <20141108002637.6561.19002.stgit@notabene.brown>	<20141108003803.6561.42934.stgit@notabene.brown>	<20141108092242.GB2722@sirena.org.uk>	<20141110114518.715dcd4e@notabene.brown>	<54606446.7030907@metafoo.de> <20141111084537.1b4e726c@notabene.brown>
-In-Reply-To: <20141111084537.1b4e726c@notabene.brown>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S1752696AbaKJV5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:57:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47627 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797AbaKJV5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 16:57:52 -0500
+Message-ID: <1415656630.16601.291.camel@ul30vt.home>
+Subject: Re: [PATCH 02/13] KVM: Initialize VT-d Posted-Interrtups Descriptor
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Feng Wu <feng.wu@intel.com>
+Cc: gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org, joro@8bytes.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Nov 2014 14:57:10 -0700
+In-Reply-To: <1415600812-27773-3-git-send-email-feng.wu@intel.com>
+References: <1415600812-27773-1-git-send-email-feng.wu@intel.com>
+	 <1415600812-27773-3-git-send-email-feng.wu@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 10:45 PM, NeilBrown wrote:
-> On Mon, 10 Nov 2014 08:07:50 +0100 Lars-Peter Clausen <lars@metafoo.de> wrote:
->
->> On 11/10/2014 01:45 AM, NeilBrown wrote:
->>> diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
->>> index b6b0cb399599..613b61cee081 100644
->>> --- a/sound/soc/codecs/twl4030.c
->>> +++ b/sound/soc/codecs/twl4030.c
->>> @@ -957,6 +957,16 @@ static int snd_soc_put_twl4030_opmode_enum_double(struct snd_kcontrol *kcontrol,
->>>    {
->>>    	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
->>>    	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
->>> +	struct snd_ctl_elem_value currentval;
->>>
->>
->> snd_ctl_elem_value is a bit to big to be put onto the kernel stack. Just
->> using twl4030_read() should be fine.
->
-> That's a shame, it looked so neat....
->
-> Using twl4030_read forces i2c access and misses out on the regmap caching.
->
-> What do you think of this?
-
-That looks good, but either snd_soc_kcontrol_component() instead of 
-snd_kcontrol_chip() or just snd_soc_read(codec, ...
-
->
-> Thanks,
-> NeilBrown
->
-> diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-> index b6b0cb399599..bdb47a045aa5 100644
-> --- a/sound/soc/codecs/twl4030.c
-> +++ b/sound/soc/codecs/twl4030.c
-> @@ -957,6 +957,18 @@ static int snd_soc_put_twl4030_opmode_enum_double(struct snd_kcontrol *kcontrol,
->   {
->   	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
->   	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
-> +	const struct soc_enum *e = &twl4030_op_modes_enum;
-> +	unsigned int reg_val;
-> +	int ret;
+On Mon, 2014-11-10 at 14:26 +0800, Feng Wu wrote:
+> This patch initialize the VT-d Posted-interrupt Descritpor.
+> 
+> Signed-off-by: Feng Wu <feng.wu@intel.com>
+> ---
+>  arch/x86/include/asm/irq_remapping.h |    1 +
+>  arch/x86/kernel/apic/apic.c          |    1 +
+>  arch/x86/kvm/vmx.c                   |   56 ++++++++++++++++++++++++++++++++-
+>  3 files changed, 56 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+> index b7747c4..a3cc437 100644
+> --- a/arch/x86/include/asm/irq_remapping.h
+> +++ b/arch/x86/include/asm/irq_remapping.h
+> @@ -57,6 +57,7 @@ extern bool setup_remapped_irq(int irq,
+>  			       struct irq_chip *chip);
+>  
+>  void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+> +extern int irq_post_enabled;
+>  
+>  #else  /* CONFIG_IRQ_REMAP */
+>  
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index ba6cc04..987408d 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -162,6 +162,7 @@ __setup("apicpmtimer", setup_apicpmtimer);
+>  #endif
+>  
+>  int x2apic_mode;
+> +EXPORT_SYMBOL_GPL(x2apic_mode);
+>  #ifdef CONFIG_X86_X2APIC
+>  /* x2apic enabled before OS handover */
+>  int x2apic_preenabled;
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 3e556c6..a4670d3 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -45,6 +45,7 @@
+>  #include <asm/perf_event.h>
+>  #include <asm/debugreg.h>
+>  #include <asm/kexec.h>
+> +#include <asm/irq_remapping.h>
+>  
+>  #include "trace.h"
+>  
+> @@ -408,13 +409,32 @@ struct nested_vmx {
+>  };
+>  
+>  #define POSTED_INTR_ON  0
+> +#define POSTED_INTR_SN  1
 > +
-> +	ret = snd_soc_component_read(snd_kcontrol_chip(kcontrol),
-> +				     e->reg, &reg_val);
-> +	if (ret)
-> +		return ret;
-> +	if (ucontrol->value.enumerated.item[0] ==
-> +	    ((reg_val >> e->shift_l) & e->mask))
-> +		/* no change requested, so do nothing */
-> +		return 0;
->
->   	if (twl4030->configured) {
->   		dev_err(codec->dev,
->
+>  /* Posted-Interrupt Descriptor */
+>  struct pi_desc {
+>  	u32 pir[8];     /* Posted interrupt requested */
+> -	u32 control;	/* bit 0 of control is outstanding notification bit */
+> -	u32 rsvd[7];
+> +	union {
+> +		struct {
+> +			u64	on	: 1,
+> +				sn	: 1,
+> +				rsvd_1	: 13,
+> +				ndm	: 1,
+> +				nv	: 8,
+> +				rsvd_2	: 8,
+> +				ndst	: 32;
+> +		};
+> +		u64 control;
+> +	};
+> +	u32 rsvd[6];
+>  } __aligned(64);
+>  
+> +static void pi_clear_sn(struct pi_desc *pi_desc)
+> +{
+> +	return clear_bit(POSTED_INTR_SN,
+> +			(unsigned long *)&pi_desc->control);
+> +}
+> +
+>  static bool pi_test_and_set_on(struct pi_desc *pi_desc)
+>  {
+>  	return test_and_set_bit(POSTED_INTR_ON,
+> @@ -4396,6 +4416,33 @@ static void ept_set_mmio_spte_mask(void)
+>  	kvm_mmu_set_mmio_spte_mask((0x3ull << 62) | 0x6ull);
+>  }
+>  
+> +static bool pi_desc_init(struct vcpu_vmx *vmx)
+> +{
+> +	unsigned int dest;
+> +
+> +	if (irq_post_enabled == 0)
+> +		return true;
+> +
+> +	/*
+> +	 * Initialize Posted-Interrupt Descriptor
+> +	 */
+> +
+> +	pi_clear_sn(&vmx->pi_desc);
+> +	vmx->pi_desc.nv = POSTED_INTR_VECTOR;
+> +
+> +	/* Physical mode for Notificaiton Event */
+> +	vmx->pi_desc.ndm = 0;
+> +	dest = cpu_physical_id(vmx->vcpu.cpu);
+> +
+> +	if (x2apic_mode)
+> +		vmx->pi_desc.ndst = dest;
+> +	else
+> +		vmx->pi_desc.ndst = (dest << 8) & 0xFF00;
+> +
+> +	return true;
+
+Why does this bother to return anything since it can only return true?
+
+> +}
+> +
+> +
+>  /*
+>   * Sets up the vmcs for emulated real mode.
+>   */
+> @@ -4439,6 +4486,11 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
+>  
+>  		vmcs_write64(POSTED_INTR_NV, POSTED_INTR_VECTOR);
+>  		vmcs_write64(POSTED_INTR_DESC_ADDR, __pa((&vmx->pi_desc)));
+> +
+> +		if (!pi_desc_init(vmx)) {
+
+And therefore this cannot happen.
+
+> +			printk(KERN_ERR "Initialize PI descriptor error!\n");
+> +			return 1;
+
+This is the wrong error anyway, vmx_create_vcpu() returns ERR_PTR(1)
+which fails the reverse IS_ERR()
+
+Thanks,
+Alex
+
+> +		}
+>  	}
+>  
+>  	if (ple_gap) {
+
+
 
