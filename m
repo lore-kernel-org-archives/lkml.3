@@ -1,131 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaKJGqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 01:46:49 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:44003 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751547AbaKJGqq (ORCPT
+	id S1751967AbaKJGrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 01:47:07 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:12825 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaKJGrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 01:46:46 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak4/APVeYFR5LbBUPGdsb2JhbABbgw6BLYI2hQewYAaVLoVsAgIBAQKBGxcBAQEBAQYBAQEBODuEAgEBAQMBOhwcBwULCAMOCgklDwUlAwcaE4g4CM1KAQEIAgEfGIYihD6GHQeESwWGOpdqmm8pL4JLAQEB
-Date: Mon, 10 Nov 2014 17:46:40 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch] mm: vmscan: invoke slab shrinkers for each lruvec
-Message-ID: <20141110064640.GO23575@dastard>
-References: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Nov 2014 01:47:04 -0500
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat/gNPsyuGM
+X-RZG-CLASS-ID: mo00
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [Gta04-owner] [PATCH 2/3] ASoC: twl4030: allow voice port to be connected externally.
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <20141110102551.2678d342@notabene.brown>
+Date: Mon, 10 Nov 2014 07:46:50 +0100
+Cc: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        alsa-devel@alsa-project.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1B5F0B4F-2F19-4692-BB95-C6D916DAD3A7@goldelico.com>
+References: <20141108002637.6561.19002.stgit@notabene.brown> <20141108003803.6561.57464.stgit@notabene.brown> <20141108092622.GC2722@sirena.org.uk> <20141110102551.2678d342@notabene.brown>
+To: List for communicating with real GTA04 owners 
+	<gta04-owner@goldelico.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 06:50:28PM -0500, Johannes Weiner wrote:
-> The slab shrinkers currently rely on the reclaim code providing an
-> ad-hoc concept of NUMA nodes that doesn't really exist: for all
-> scanned zones and lruvecs, the nodes and available LRU pages are
-> summed up, only to have the shrinkers then again walk that nodemask
-> when scanning slab caches.  This duplication will only get worse and
-> more expensive once the shrinkers become aware of cgroups.
 
-As i said previously, it's not an "ad-hoc concept". It's exactly the
-same NUMA abstraction that the VM presents to anyone who wants to
-control memory allocation locality. i.e. node IDs and node masks.
+Am 10.11.2014 um 00:25 schrieb NeilBrown <neilb@suse.de>:
 
-> Instead, invoke the shrinkers for each lruvec scanned - which is
-> either the zone level, or in case of cgroups, the subset of a zone's
-> pages that is charged to the scanned memcg.  The number of eligible
-> LRU pages is naturally available at that level - it is even more
-> accurate than simply looking at the global state and the number of
-> available swap pages, as get_scan_count() considers many other factors
-> when deciding which LRU pages to consider.
+> On Sat, 8 Nov 2014 09:26:22 +0000 Mark Brown <broonie@kernel.org> wrote:
 > 
-> This invokes the shrinkers more often and with smaller page and scan
-> counts, but the ratios remain the same, and the shrinkers themselves
-> do not add significantly to the existing per-lruvec cost.
-
-That goes in the opposite direction is which we've found filesystem
-shrinkers operate most effectively. i.e. larger batches with less
-frequent reclaim callouts tend to result in more consistent
-performance because shrinkers take locks and do IO that other
-application operations get stuck behind (shrink_batch exists
-for this reason ;).
-
->
-> This integrates the slab shrinking nicely into the reclaim logic.  Not
-> just conceptually, but it also allows kswapd, the direct reclaim code,
-> and zone reclaim to get rid of their ad-hoc custom slab shrinking.
+>> On Sat, Nov 08, 2014 at 11:38:03AM +1100, NeilBrown wrote:
+>> 
+>>> If voice port on twl4030 is not connected to a McBSP (or similar)
+>>> then we cannot configure the format the way we normally do for a DAI.
+>> 
+>> Yes we can, you need to represent the DAI link to whatever else the
+>> device is connected to in the driver like we do anything else - and in
+>> any case this isn't a device specific issue so we shouldn't be doing
+>> something driver specific to solve it.  Look at something like speyside.
 > 
-> Lastly, this facilitates making the shrinkers cgroup-aware without a
-> fantastic amount code and runtime work duplication, and consolidation 
-> will make hierarchy walk optimizations easier later on.
-
-It still makes callers have to care about internal VM metrics
-to calculate how much work they should do. Callers should be able to
-pass in a measure of how much work the shrinker should do (e.g. as
-a percentage of cache size). Even the VM can use this - it can take
-it's scanned/pages variables and use them to calculate the
-percentage of caches to free, and the shrinker loop can then be
-completely free of any relationship to the LRU page reclaim
-implementation.....
-
-e.g. drop_caches() should just be able to call "shrink_slab_all()"
-and not have to care about nodes, batch sizes, detect when caches
-are empty, etc. Similarly shake_page() only wants
-"shrink_slab_node_nr()" to free a small amount of objects from the
-node it cares about each time.
-
-i.e. we should be writing helpers to remove shrinker implementation
-quirks from callers, not driving more of the quirks into external
-callers...
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  drivers/staging/android/ashmem.c |   1 -
->  fs/drop_caches.c                 |  15 ++--
->  include/linux/shrinker.h         |   2 -
->  mm/memory-failure.c              |   3 +-
->  mm/vmscan.c                      | 164 +++++++++++++--------------------------
->  5 files changed, 63 insertions(+), 122 deletions(-)
+> Hi Mark,
+> thanks for the reply ... I might need a little bit more help though.
 > 
-> I put this together as a result of the discussion with Vladimir about
-> memcg-aware slab shrinkers this morning.
+> I had a look at sound/soc/samsung/speyside.c, but I'm not entirely sure what
+> I'm looking for.
+> Presumably this is an audio processor not unlike the audio module in the
+> twl4030.
 > 
-> This might need some tuning, but it definitely looks like the right
-> thing to do conceptually.  I'm currently playing with various slab-
-> and memcg-heavy workloads (many numa nodes + many cgroups = many
-> shrinker invocations) but so far the numbers look okay.
+> I see that there are 3 dai-links:
+>  CPU-DSP
+>  DSP-CODEC
+>  Baseband
 > 
-> It would be great if other people could weigh in, and possibly also
-> expose it to their favorite filesystem and reclaim stress tests.
+> Presumably "Baseband" is similar, in purpose at least, to the "voice"
+> interface on the twl4030.
+> 
+> Each dai-link has a "cpu_dai_name" and a "codec_dai_name", even though it
+> appears that only "CPU-DSP" is connected to the CPU.  Maybe that naming is
+> the source of some of my confusion.
+> 
+> "Baseband" declares
+>                .cpu_dai_name = "wm8996-aif2",
+> so wm8996 is something with 2 audio interfaces, (aif), and this is the second
+> one?  Maybe the  wm8996 is the audio module, so what is the "speyside"?
+> 
+> http://opensource.wolfsonmicro.com/content/speyside-audio
+> 
+> says it is a "reference platform".  Does that mean it is a board with a bunch
+> of chips soldered onto it?  If it were a board it should be described by a
+> dts file, not by a pile of C code (I thought), so I must be wrong about that.
+> 
+> 
+> In my case, I have a board with a GSM module and the twl4030 module.  Each
+> has an audio interface and these are connected.  I assume that I need to
+> express this connection in the dts file.
+> The GSM module doesn't currently appear in the dts file as it is usb-attached.
+> However I've been thinking that we will need to add it so we can express
+> power-on controls (twiddling some GPIOs).  So let's suppose we have the GSM
+> module in the dts file (child of a USB interface)
 
-Causes substantial increase in performance variability on inode
-intensive benchmarks. On my standard fsmark benchmark, I see file
-creates sit at around 250,000/sec, but there's several second long
-dips to about 50,000/sec co-inciding with the inode cache being
-trimmed by several million inodes. Looking more deeply, this is due
-to memory pressure driving inode writeback - we're reclaiming inodes
-that haven't yet been written to disk, and so by reclaiming the
-inode cache slab more frequently it's driving larger peaks of IO
-and blocking ongoing filesystem operations more frequently.
+It is a quite complex connection pattern and I am not sure if the modem is really
+a logical child of the USB interface. Powering up/down the USB interface has nothing
+to do with the modem power. Rather, it continues to operate if USB is suspended
+and the modem notifies USB that it has become active.
 
-My initial thoughts are that this correlates with the above comments
-I made about frequency of shrinker calls and batch sizes, so I
-suspect that the aggregation of shrinker-based reclaim work is
-necessary to minimise the interference that recalim causes at the
-filesystem level...
+The connections on this GTA04 board are:
 
-Cheers,
+Modem USB <—> CPU USB
+Modem PCM <—> TWL4030 Voice <—> OMAP3 McBSP4 (yes, it is a 3-way connection)
+Modem Power control <—> 1 or 2 GPIOs (depending on board variant)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+The reason for the 3-way connection is that user space can chose if the GSM
+voice is routed directly to the TWL codec (low latency, independent of CPU) or
+goes through the CPU (e.g. for DTAM or voice scrambling by software) and
+then through the other PCM link between the CPU and the TWL.
+
+This is why I would make the McBSP4 a separate sound card.
+
+And, this is why it needs some control and tri-state of the TWL4030 and OMAP3
+McBSP4 since only one can provide a digital PCM stream to the modem.
+
+One more thing to consider for a general solution is that there are modem modules
+that communicate data through UART or SPI - but otherwise have a similar connection
+for digital audio. So forcing the power control driver to be a subnode of USB doesn’t
+appear general enough to me.
+
+Finally, this connection pattern is not specific to this modem (OPTION GTM601) on this
+GTA04 board. We plan to use a Gemalto PHS8  in the Pyra-Handheld and the Neo900
+devices - but the general connection pattern as defined above remains the same.
+
+So my proposal is to have a specific wwan-power driver for this type of modems.
+And power control can and should be kept separately from USB (except the case
+where only 1 GPIO exists and USB must be tapped to detect the modem power
+state). You can find work in progress for this approach here:
+
+<http://git.goldelico.com/?p=gta04-kernel.git;a=blob;f=drivers/misc/wwan-on-off.c;h=e13f47dbd734d14f4e38ea9cf622982dc3550212;hb=154bcd388a8f5bcc7fcf0e57e93b6388daa16980>
+
+> and the twl4030 as well
+> (beneath an i2c interface).
+> 
+> The twl4030 needs to know the master/polarity of the clk/frm lines.  The GSM
+> module declares that these are.  So presumably we need some sort of linkage.
+> Ahhhh... I found Documentation/devicetree/bindings/sound/simple-card.txt
+> 
+> So I need to make the "voice" port on the twl4030 look like a "cpu" end of a
+> dai-link, and create a "codec" end in the GSM module, and use "sound-dai" to
+> point from the twl4030 to the GSM module.
+
+What I wonder a little is that we have all these dai-links working since your 3.7
+kernel for GTA04. Is it necessary to re-invent a solution or should we just make
+the solution device tree compatible?
+
+> Then I use frame-master, bitclock-master, bitclock-inversion, frame-inversion
+> for the settings I need.
+> 
+> I suspect I can make that work.
+> 
+> Am I on the right track?
+> 
+> Thanks,
+> NeilBrown
+> _______________________________________________
+> Gta04-owner mailing list
+> Gta04-owner@goldelico.com
+> http://lists.goldelico.com/mailman/listinfo.cgi/gta04-owner
+
