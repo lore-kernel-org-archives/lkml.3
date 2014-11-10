@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaKJWAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 17:00:09 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:49000 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaKJWAG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 17:00:06 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: tglx@linutronix.de, jason@lakedaemon.net, linux-sh@vger.kernel.org,
-        arnd@arndb.de, f.fainelli@gmail.com, ralf@linux-mips.org,
-        sergei.shtylyov@cogentembedded.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org, nicolas.ferre@atmel.com,
-        alexandre.belloni@free-electrons.com, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH V4 04/14] genirq: Generic chip: Add big endian I/O accessors
-References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
-	<1415342669-30640-5-git-send-email-cernekee@gmail.com>
-Date: Mon, 10 Nov 2014 14:00:02 -0800
-In-Reply-To: <1415342669-30640-5-git-send-email-cernekee@gmail.com> (Kevin
-	Cernekee's message of "Thu, 6 Nov 2014 22:44:19 -0800")
-Message-ID: <7hy4riogwt.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752247AbaKJWA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:00:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919AbaKJWAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 17:00:23 -0500
+Date: Mon, 10 Nov 2014 22:59:59 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aaron Tomlin <atomlin@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] exit: reparent zombie fix + cleanups/optimizations
+Message-ID: <20141110215959.GA31106@redhat.com>
+References: <20141107201424.GA22209@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141107201424.GA22209@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Cernekee <cernekee@gmail.com> writes:
+Hello.
 
-> Use io{read,write}32be if the caller specified IRQ_GC_BE_IO when creating
-> the irqchip.
+On 11/07, Oleg Nesterov wrote:
 >
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> I tried to optimize the usage of tasklist_lock in exit_notify() paths
+> but found the bug which should be fixed first: the EXIT_DEAD setting
+> in reparent_leader() can break the task_ppid_nr_ns()-like code and
+> ptrace_parent().
+>
+> I am still thinking about the "right" fix, but whatever we do we need
+> to cleanup these users, probably before the fix.
 
-I bisected a couple ARM boot failures in next-20141110 on atmel sama5 platforms down to
-this patch, though I'm not quite yet sure how it's causing the failure.
-I'm not getting any console output, so haven't been able to dig deeper
-yet.  Maybe the atmel maintainers (Cc'd) can help dig.
+Yes, we need to cleanup these users but lets fix the bug first. See the
+changelog in 2/5.
 
-I've confirmed that reverting $SUBJECT patch (commit
-b79055952badbd73710685643bab44104f2509ea2) on top of next-20141110 gets
-things booting again.
+Plus cleanups + initial (micro)optimizations, more to come.
 
-Also, it only happens with sama5_defconfig, not with multi_v7_defconfig.
+Oleg.
 
-Kevin
+ include/linux/ptrace.h |    2 +-
+ kernel/exit.c          |   51 +++++++++++++++++++----------------------------
+ kernel/ptrace.c        |   23 ++------------------
+ kernel/sched/core.c    |    4 ++-
+ 4 files changed, 28 insertions(+), 52 deletions(-)
 
