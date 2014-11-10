@@ -1,217 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaKJRWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:22:01 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45055 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751918AbaKJRV5 (ORCPT
+	id S1754041AbaKJRY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:24:56 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36629 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005AbaKJRYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:21:57 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>
-Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v6 00/10]  [media] Make mediabus format subsystem neutral
-Date: Mon, 10 Nov 2014 18:21:44 +0100
-Message-Id: <1415640114-14930-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 10 Nov 2014 12:24:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/eJP4l+eZD0AQ8PXhrFEYa
+Date: Mon, 10 Nov 2014 09:24:05 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com
+Subject: Re: [PATCH 00/13 v10] omap 8250 based UART + DMA
+Message-ID: <20141110172404.GO31454@atomide.com>
+References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+ <20141106031421.GA22185@kroah.com>
+ <545B4D09.6070102@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545B4D09.6070102@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [141106 02:29]:
+> On 11/06/2014 04:14 AM, Greg KH wrote:
+> > I've now applied the patches here that I could, if I have missed any,
+> > please let me know and resend.
+> 
+> Thank you Greg. I pulled your tty-testing and it seems to work on
+> am335x-evm/dra7-evm.
+> 
+> Tony, if you could please take the two .dts files then the series would
+> be complete (that one dma patch was applied by Vinod during the merge
+> window).
 
-This patch series prepares the use of media bus formats outside of
-the V4L2 subsytem (my final goal is to use it in the Atmel HLCDC DRM
-driver where I have to configure my DPI/RGB bus according to the
-connected display).
+OK applying into omap-for-v3.19/dt thanks.
 
-The series first defines MEDIA_BUS_FMT_ macros, and then replace all
-references to the v4l2_mbus_pixelcode enum and its values within the
-kernel.
-
-Best Regards,
-
-Boris
-
-Changes since v5:
-- fix V4L2_MBUS_FROM_MEDIA_BUS_FMT macro definition
-
-Changes since v4:
-- put deprecated enum v4l2_mbus_pixelcode at the end of v4l2-mediabus.h
-  header
-
-Changes since v3:
-- add a comment specifying that the v4l2_mbus_pixelcode enum definition
-  is frozen
-
-Changes since v2:
-- drop media_bus_format enum and replace its values with pre-processor
-  macros
-
-Changes since v1:
-- drop patches deprecating v4l2_mbus_pixelcode for user-space users
-- put V4L2 legacy format definitions into media-bus-format.h
-
-Boris Brezillon (10):
-  [media] Move mediabus format definition to a more standard place
-  [media] v4l: Update subdev-formats doc with new MEDIA_BUS_FMT values
-  [media] Make use of the new media_bus_format definitions
-  [media] i2c: Make use of media_bus_format enum
-  [media] pci: Make use of MEDIA_BUS_FMT definitions
-  [media] platform: Make use of media_bus_format enum
-  [media] usb: Make use of media_bus_format enum
-  staging: media: Make use of MEDIA_BUS_FMT_ definitions
-  gpu: ipu-v3: Make use of media_bus_format enum
-  [media] v4l: Forbid usage of V4L2_MBUS_FMT definitions inside the
-    kernel
-
- Documentation/DocBook/media/v4l/subdev-formats.xml | 308 ++++++++++-----------
- Documentation/video4linux/soc-camera.txt           |   2 +-
- arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
- arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
- arch/arm/mach-davinci/dm355.c                      |   7 +-
- arch/arm/mach-davinci/dm365.c                      |   7 +-
- arch/arm/mach-shmobile/board-mackerel.c            |   2 +-
- arch/sh/boards/mach-ap325rxa/setup.c               |   2 +-
- drivers/gpu/ipu-v3/ipu-csi.c                       |  66 ++---
- drivers/media/i2c/adv7170.c                        |  16 +-
- drivers/media/i2c/adv7175.c                        |  16 +-
- drivers/media/i2c/adv7180.c                        |   6 +-
- drivers/media/i2c/adv7183.c                        |   6 +-
- drivers/media/i2c/adv7604.c                        |  72 ++---
- drivers/media/i2c/adv7842.c                        |   6 +-
- drivers/media/i2c/ak881x.c                         |   8 +-
- drivers/media/i2c/cx25840/cx25840-core.c           |   2 +-
- drivers/media/i2c/m5mols/m5mols_core.c             |   6 +-
- drivers/media/i2c/ml86v7667.c                      |   6 +-
- drivers/media/i2c/mt9m032.c                        |   6 +-
- drivers/media/i2c/mt9p031.c                        |   8 +-
- drivers/media/i2c/mt9t001.c                        |   8 +-
- drivers/media/i2c/mt9v011.c                        |   6 +-
- drivers/media/i2c/mt9v032.c                        |  12 +-
- drivers/media/i2c/noon010pc30.c                    |  12 +-
- drivers/media/i2c/ov7670.c                         |  16 +-
- drivers/media/i2c/ov9650.c                         |  10 +-
- drivers/media/i2c/s5c73m3/s5c73m3.h                |   6 +-
- drivers/media/i2c/s5k4ecgx.c                       |   4 +-
- drivers/media/i2c/s5k5baf.c                        |  14 +-
- drivers/media/i2c/s5k6a3.c                         |   2 +-
- drivers/media/i2c/s5k6aa.c                         |   8 +-
- drivers/media/i2c/saa6752hs.c                      |   6 +-
- drivers/media/i2c/saa7115.c                        |   2 +-
- drivers/media/i2c/saa717x.c                        |   2 +-
- drivers/media/i2c/smiapp/smiapp-core.c             |  32 +--
- drivers/media/i2c/soc_camera/imx074.c              |   8 +-
- drivers/media/i2c/soc_camera/mt9m001.c             |  14 +-
- drivers/media/i2c/soc_camera/mt9m111.c             |  70 ++---
- drivers/media/i2c/soc_camera/mt9t031.c             |  10 +-
- drivers/media/i2c/soc_camera/mt9t112.c             |  22 +-
- drivers/media/i2c/soc_camera/mt9v022.c             |  26 +-
- drivers/media/i2c/soc_camera/ov2640.c              |  54 ++--
- drivers/media/i2c/soc_camera/ov5642.c              |   8 +-
- drivers/media/i2c/soc_camera/ov6650.c              |  58 ++--
- drivers/media/i2c/soc_camera/ov772x.c              |  20 +-
- drivers/media/i2c/soc_camera/ov9640.c              |  40 +--
- drivers/media/i2c/soc_camera/ov9740.c              |  12 +-
- drivers/media/i2c/soc_camera/rj54n1cb0c.c          |  54 ++--
- drivers/media/i2c/soc_camera/tw9910.c              |  10 +-
- drivers/media/i2c/sr030pc30.c                      |  14 +-
- drivers/media/i2c/tvp514x.c                        |  12 +-
- drivers/media/i2c/tvp5150.c                        |   6 +-
- drivers/media/i2c/tvp7002.c                        |  10 +-
- drivers/media/i2c/vs6624.c                         |  18 +-
- drivers/media/pci/cx18/cx18-av-core.c              |   2 +-
- drivers/media/pci/cx18/cx18-controls.c             |   2 +-
- drivers/media/pci/cx18/cx18-ioctl.c                |   2 +-
- drivers/media/pci/cx23885/cx23885-video.c          |   2 +-
- drivers/media/pci/ivtv/ivtv-controls.c             |   2 +-
- drivers/media/pci/ivtv/ivtv-ioctl.c                |   2 +-
- drivers/media/pci/saa7134/saa7134-empress.c        |   4 +-
- drivers/media/platform/blackfin/bfin_capture.c     |  14 +-
- drivers/media/platform/davinci/vpbe.c              |   2 +-
- drivers/media/platform/davinci/vpfe_capture.c      |   4 +-
- drivers/media/platform/exynos-gsc/gsc-core.c       |   8 +-
- drivers/media/platform/exynos-gsc/gsc-core.h       |   2 +-
- drivers/media/platform/exynos4-is/fimc-capture.c   |   2 +-
- drivers/media/platform/exynos4-is/fimc-core.c      |  14 +-
- drivers/media/platform/exynos4-is/fimc-core.h      |   4 +-
- drivers/media/platform/exynos4-is/fimc-isp.c       |  16 +-
- drivers/media/platform/exynos4-is/fimc-lite-reg.c  |  26 +-
- drivers/media/platform/exynos4-is/fimc-lite.c      |  14 +-
- drivers/media/platform/exynos4-is/fimc-reg.c       |  14 +-
- drivers/media/platform/exynos4-is/mipi-csis.c      |  14 +-
- drivers/media/platform/marvell-ccic/mcam-core.c    |  21 +-
- drivers/media/platform/marvell-ccic/mcam-core.h    |   2 +-
- drivers/media/platform/omap3isp/ispccdc.c          | 112 ++++----
- drivers/media/platform/omap3isp/ispccp2.c          |  18 +-
- drivers/media/platform/omap3isp/ispcsi2.c          |  42 +--
- drivers/media/platform/omap3isp/isppreview.c       |  60 ++--
- drivers/media/platform/omap3isp/ispresizer.c       |  19 +-
- drivers/media/platform/omap3isp/ispvideo.c         |  95 ++++---
- drivers/media/platform/omap3isp/ispvideo.h         |  10 +-
- drivers/media/platform/s3c-camif/camif-capture.c   |  10 +-
- drivers/media/platform/s3c-camif/camif-regs.c      |   8 +-
- drivers/media/platform/s5p-tv/hdmi_drv.c           |   2 +-
- drivers/media/platform/s5p-tv/sdo_drv.c            |   2 +-
- drivers/media/platform/sh_vou.c                    |   8 +-
- drivers/media/platform/soc_camera/atmel-isi.c      |  22 +-
- drivers/media/platform/soc_camera/mx2_camera.c     |  26 +-
- drivers/media/platform/soc_camera/mx3_camera.c     |   6 +-
- drivers/media/platform/soc_camera/omap1_camera.c   |  36 +--
- drivers/media/platform/soc_camera/pxa_camera.c     |  16 +-
- drivers/media/platform/soc_camera/rcar_vin.c       |  14 +-
- .../platform/soc_camera/sh_mobile_ceu_camera.c     |  20 +-
- drivers/media/platform/soc_camera/sh_mobile_csi2.c |  38 +--
- drivers/media/platform/soc_camera/soc_camera.c     |   2 +-
- .../platform/soc_camera/soc_camera_platform.c      |   2 +-
- drivers/media/platform/soc_camera/soc_mediabus.c   |  78 +++---
- drivers/media/platform/via-camera.c                |   8 +-
- drivers/media/platform/vsp1/vsp1_bru.c             |  14 +-
- drivers/media/platform/vsp1/vsp1_hsit.c            |  12 +-
- drivers/media/platform/vsp1/vsp1_lif.c             |  10 +-
- drivers/media/platform/vsp1/vsp1_lut.c             |  14 +-
- drivers/media/platform/vsp1/vsp1_rwpf.c            |  10 +-
- drivers/media/platform/vsp1/vsp1_sru.c             |  12 +-
- drivers/media/platform/vsp1/vsp1_uds.c             |  10 +-
- drivers/media/platform/vsp1/vsp1_video.c           |  42 +--
- drivers/media/usb/cx231xx/cx231xx-417.c            |   2 +-
- drivers/media/usb/cx231xx/cx231xx-video.c          |   4 +-
- drivers/media/usb/em28xx/em28xx-camera.c           |   2 +-
- drivers/media/usb/go7007/go7007-v4l2.c             |   2 +-
- drivers/media/usb/pvrusb2/pvrusb2-hdw.c            |   2 +-
- drivers/staging/media/davinci_vpfe/dm365_ipipe.c   |  18 +-
- .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    |  26 +-
- drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 100 +++----
- drivers/staging/media/davinci_vpfe/dm365_isif.c    |  90 +++---
- drivers/staging/media/davinci_vpfe/dm365_resizer.c |  98 +++----
- .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  18 +-
- drivers/staging/media/omap4iss/iss_csi2.c          |  62 ++---
- drivers/staging/media/omap4iss/iss_ipipe.c         |  16 +-
- drivers/staging/media/omap4iss/iss_ipipeif.c       |  28 +-
- drivers/staging/media/omap4iss/iss_resizer.c       |  26 +-
- drivers/staging/media/omap4iss/iss_video.c         |  78 +++---
- drivers/staging/media/omap4iss/iss_video.h         |  10 +-
- include/media/davinci/vpbe.h                       |   2 +-
- include/media/davinci/vpbe_venc.h                  |   5 +-
- include/media/exynos-fimc.h                        |   2 +-
- include/media/soc_camera.h                         |   2 +-
- include/media/soc_mediabus.h                       |   6 +-
- include/media/v4l2-mediabus.h                      |   2 +-
- include/media/v4l2-subdev.h                        |   2 +-
- include/uapi/linux/Kbuild                          |   1 +
- include/uapi/linux/media-bus-format.h              | 125 +++++++++
- include/uapi/linux/v4l2-mediabus.h                 | 213 +++++++-------
- include/uapi/linux/v4l2-subdev.h                   |   6 +-
- 137 files changed, 1582 insertions(+), 1481 deletions(-)
- create mode 100644 include/uapi/linux/media-bus-format.h
-
--- 
-1.9.1
-
+Tony
