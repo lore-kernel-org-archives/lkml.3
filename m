@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaKJRxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:53:55 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33443 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753415AbaKJRxx (ORCPT
+	id S1754036AbaKJRyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:54:13 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33020 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415AbaKJRyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:53:53 -0500
-Date: Mon, 10 Nov 2014 17:53:43 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
- enabled
-Message-ID: <20141110175343.GB4047@n2100.arm.linux.org.uk>
-References: <20141102180756.GH31454@atomide.com>
- <20141110124019.GZ21424@x1>
+	Mon, 10 Nov 2014 12:54:11 -0500
+X-Originating-IP: 50.43.41.112
+Date: Mon, 10 Nov 2014 09:54:03 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Catalina Mocanu <catalina.mocanu@gmail.com>
+Subject: Re: linux-next: build failure after merge of the tiny tree
+Message-ID: <20141110175403.GA18766@thin>
+References: <20141110181716.3c9604fe@canb.auug.org.au>
+ <20141110075604.GA1085@thin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141110124019.GZ21424@x1>
+In-Reply-To: <20141110075604.GA1085@thin>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 12:40:19PM +0000, Lee Jones wrote:
-> On Sun, 02 Nov 2014, Tony Lindgren wrote:
-> 
-> > Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
-> > configuration") enabled configuring the PM features for twl4030.
+On Sun, Nov 09, 2014 at 11:56:04PM -0800, Josh Triplett wrote:
+> On Mon, Nov 10, 2014 at 06:17:16PM +1100, Stephen Rothwell wrote:
+> > Hi Josh,
 > > 
-> > This caused poweroff command to fail on devices that have the
-> > BCI charger on twl4030 wired, or have power wired for VBUS.
-> > Instead of powering off, the device reboots. This is because
-> > voltage is detected on charger or VBUS with the default bits
-> > enabled for the power transition registers.
+> > After merging the tiny tree, today's linux-next build (powerpc64 allnoconfig)
+> > failed like this:
 > > 
-> > To fix the issue, let's just clear VBUS and CHG bits as we want
-> > poweroff command to keep the system powered off.
+> > arch/powerpc/kernel/built-in.o: In function `sys_call_table':
+> > (.rodata+0xd58): undefined reference to `.compat_sys_adjtimex'
+> > arch/powerpc/kernel/built-in.o: In function `sys_call_table':
+> > (.rodata+0x1b48): undefined reference to `.compat_sys_clock_adjtime'
 > > 
-> > Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
-> > Cc: stable@vger.kernel.org # v3.16+
-> > Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
+> > Caused by commit be1e48a8e48f ("kernel: time: Compile out NTP support").
 > 
-> Applied to -fixes.
+> Good catch, thanks.  Not clear why that build failure didn't show up on
+> x86.
 > 
-> Not sure whether that was an Ack from Russell or not?
+> Looks like the two compat syscalls need cond_syscall lines as well.
+> I'll add those to the patch.
 
-A Tested-by would've been more appropriate than an ack.
+Done in current tiny/next.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+- Josh Triplett
