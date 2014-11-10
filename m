@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaKJBoW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:44:22 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39054 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372AbaKJBoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752385AbaKJBoS (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 9 Nov 2014 20:44:18 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39036 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaKJBoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 20:44:13 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
         Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v6 24/48] power/reset: as3722-poweroff: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:42:41 -0800
-Message-Id: <1415583785-6980-25-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v6 22/48] power/reset: restart-poweroff: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:42:39 -0800
+Message-Id: <1415583785-6980-23-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54601871.0110,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.5460186D.00A9,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 142
+X-CTCH-SenderID-TotalMessages: 134
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -52,14 +52,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with low priority to reflect that the original code
-only sets pm_power_off if it was not already set.
+directly.  Register as power-off handler of last resort since the driver
+does not really power off the system but executes a restart.
 
 Drop remove function since it is no longer needed.
 
 Cc: Sebastian Reichel <sre@kernel.org>
 Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 Cc: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
 Acked-by: Sebastian Reichel <sre@kernel.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
@@ -77,86 +78,69 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
+- Use define to sepcify poweroff handler priority
 - Use devm_register_power_off_handler
 - Drop remove function since it is no longer needed
 
- drivers/power/reset/as3722-poweroff.c | 35 +++++++++++------------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
+ drivers/power/reset/restart-poweroff.c | 29 +++++++++--------------------
+ 1 file changed, 9 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/power/reset/as3722-poweroff.c b/drivers/power/reset/as3722-poweroff.c
-index 6849711..bd4965b 100644
---- a/drivers/power/reset/as3722-poweroff.c
-+++ b/drivers/power/reset/as3722-poweroff.c
-@@ -20,28 +20,25 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
+diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
+index edd707e..ef2a602 100644
+--- a/drivers/power/reset/restart-poweroff.c
++++ b/drivers/power/reset/restart-poweroff.c
+@@ -15,34 +15,24 @@
  #include <linux/platform_device.h>
+ #include <linux/of_platform.h>
+ #include <linux/module.h>
 +#include <linux/pm.h>
- #include <linux/slab.h>
+ #include <linux/reboot.h>
+-#include <asm/system_misc.h>
  
- struct as3722_poweroff {
- 	struct device *dev;
- 	struct as3722 *as3722;
-+	struct power_off_handler_block power_off_hb;
- };
- 
--static struct as3722_poweroff *as3722_pm_poweroff;
--
--static void as3722_pm_power_off(void)
-+static void as3722_power_off(struct power_off_handler_block *this)
+-static void restart_poweroff_do_poweroff(void)
++static void restart_poweroff_do_poweroff(struct power_off_handler_block *this)
  {
-+	struct as3722_poweroff *as3722_poweroff =
-+		container_of(this, struct as3722_poweroff, power_off_hb);
- 	int ret;
+ 	reboot_mode = REBOOT_HARD;
+ 	machine_restart(NULL);
+ }
  
--	if (!as3722_pm_poweroff) {
--		pr_err("AS3722 poweroff is not initialised\n");
--		return;
+-static int restart_poweroff_probe(struct platform_device *pdev)
+-{
+-	/* If a pm_power_off function has already been added, leave it alone */
+-	if (pm_power_off != NULL) {
+-		dev_err(&pdev->dev,
+-			"pm_power_off function already registered");
+-		return -EBUSY;
 -	}
 -
--	ret = as3722_update_bits(as3722_pm_poweroff->as3722,
-+	ret = as3722_update_bits(as3722_poweroff->as3722,
- 		AS3722_RESET_CONTROL_REG, AS3722_POWER_OFF, AS3722_POWER_OFF);
- 	if (ret < 0)
--		dev_err(as3722_pm_poweroff->dev,
-+		dev_err(as3722_poweroff->dev,
- 			"RESET_CONTROL_REG update failed, %d\n", ret);
- }
- 
-@@ -63,20 +60,11 @@ static int as3722_poweroff_probe(struct platform_device *pdev)
- 
- 	as3722_poweroff->as3722 = dev_get_drvdata(pdev->dev.parent);
- 	as3722_poweroff->dev = &pdev->dev;
--	as3722_pm_poweroff = as3722_poweroff;
--	if (!pm_power_off)
--		pm_power_off = as3722_pm_power_off;
--
+-	pm_power_off = &restart_poweroff_do_poweroff;
 -	return 0;
 -}
--
--static int as3722_poweroff_remove(struct platform_device *pdev)
--{
--	if (pm_power_off == as3722_pm_power_off)
--		pm_power_off = NULL;
--	as3722_pm_poweroff = NULL;
-+	as3722_poweroff->power_off_hb.handler = as3722_power_off;
-+	as3722_poweroff->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
++static struct power_off_handler_block restart_power_off_handler = {
++	.handler = restart_poweroff_do_poweroff,
++	.priority = POWER_OFF_PRIORITY_FALLBACK,
++};
  
+-static int restart_poweroff_remove(struct platform_device *pdev)
++static int restart_poweroff_probe(struct platform_device *pdev)
+ {
+-	if (pm_power_off == &restart_poweroff_do_poweroff)
+-		pm_power_off = NULL;
+-
 -	return 0;
 +	return devm_register_power_off_handler(&pdev->dev,
-+					      &as3722_poweroff->power_off_hb);
++					      &restart_power_off_handler);
  }
  
- static struct platform_driver as3722_poweroff_driver = {
-@@ -85,7 +73,6 @@ static struct platform_driver as3722_poweroff_driver = {
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = as3722_poweroff_probe,
--	.remove = as3722_poweroff_remove,
- };
+ static const struct of_device_id of_restart_poweroff_match[] = {
+@@ -52,7 +42,6 @@ static const struct of_device_id of_restart_poweroff_match[] = {
  
- module_platform_driver(as3722_poweroff_driver);
+ static struct platform_driver restart_poweroff_driver = {
+ 	.probe = restart_poweroff_probe,
+-	.remove = restart_poweroff_remove,
+ 	.driver = {
+ 		.name = "poweroff-restart",
+ 		.owner = THIS_MODULE,
 -- 
 1.9.1
 
