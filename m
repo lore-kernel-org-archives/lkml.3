@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaKJTuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:50:22 -0500
-Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:56500 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751949AbaKJTuV (ORCPT
+	id S1752351AbaKJTvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:51:37 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33943 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751316AbaKJTvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:50:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3867:3868:3870:3872:4250:4321:5007:6119:6261:7903:8603:8957:9010:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: badge62_2c37c1cfe325
-X-Filterd-Recvd-Size: 2561
-Message-ID: <1415649017.8868.15.camel@perches.com>
-Subject: Re: [PATCHv2] checkpatch: Allow certain SI units with three
- characters
-From: Joe Perches <joe@perches.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Mon, 10 Nov 2014 14:51:36 -0500
+Date: Mon, 10 Nov 2014 19:51:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 11:50:17 -0800
-In-Reply-To: <1415648371-10586-1-git-send-email-jwerner@chromium.org>
-References: <1415405880-8520-1-git-send-email-jwerner@chromium.org>
-	 <1415407132.23530.23.camel@perches.com>
-	 <1415648371-10586-1-git-send-email-jwerner@chromium.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v2 1/2] ASoC: Remove 'const' from the device_node pointers
+Message-ID: <20141110195122.GY4042@n2100.arm.linux.org.uk>
+References: <cover.1415562021.git.moinejf@free.fr>
+ <d5d74f6993e9f2392008a27a2938c58d47dc8062.1415562021.git.moinejf@free.fr>
+ <20141110193704.GL3815@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110193704.GL3815@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 11:39 -0800, Julius Werner wrote:
-> Checkpatch flags CamelCase identifiers in strict mode, but it has a
-> feature to ignore parts with only two characters to allow for SI units
-> like mV or uA. Unfortunately, not all SI units fit in two characters,
-> and not all are lower case followed by upper case.
+On Mon, Nov 10, 2014 at 07:37:04PM +0000, Mark Brown wrote:
+> On Sun, Nov 09, 2014 at 08:33:45PM +0100, Jean-Francois Moine wrote:
 > 
-> This patch adds hardcoded detection for frequency and 1024-based size
-> units (Hz/KHz/MHz/GHz/THz and KiB/MiB/GiB/TiB), since allowing any three
-> character combinations might be too lenient. The list can later be
-> expanded as needed.
-
-Seems sensible enough, thanks.
-
-Acked-by: Joe Perches <joe@perches.com>
-
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  scripts/checkpatch.pl | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> > index 7ba7130..405f967 100644
+> > --- a/include/sound/soc.h
+> > +++ b/include/sound/soc.h
+> > @@ -886,7 +886,7 @@ struct snd_soc_platform_driver {
+> >  
+> >  struct snd_soc_dai_link_component {
+> >  	const char *name;
+> > -	const struct device_node *of_node;
+> > +	struct device_node *of_node;
+> >  	const char *dai_name;
+> >  };
+> >  
 > 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 374abf4..b947c75 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -4056,7 +4056,9 @@ sub process {
->  #Ignore Page<foo> variants
->  			    $var !~ /^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
->  #Ignore SI style variants like nS, mV and dB (ie: max_uV, regulator_min_uA_show)
-> -			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/) {
-> +			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/ &&
-> +#Ignore some three character SI units explicitly, like MiB and KHz
-> +			    $var !~ /^(?:[a-z_]*?)_?(?:[KMGT]iB|[KMGT]?Hz)(?:_[a-z_]+)?$/) {
->  				while ($var =~ m{($Ident)}g) {
->  					my $word = $1;
->  					next if ($word !~ /[A-Z][a-z]|[a-z][A-Z]/);
+> The changelog talked about of_node_put() but I'm not seeing anything in
+> the code which calls that except snd_soc_of_get_dai_name()?  Everything
+> else just does comparisons of the pointer AFIACT from a quick scan
+> through.
 
+I think it comes from these files (from a previous patch from Jean
+adding a load of inappropriate const's to places where they do not
+belong):
 
+ sound/soc/generic/simple-card.c       | 7 ++-----
+ sound/soc/samsung/odroidx2_max98090.c | 4 ++--
+ sound/soc/ux500/mop500.c              | 6 ++----
 
+That patch was trying to do this to those three files:
+
+-               np = (struct device_node *) dai_link->cpu_of_node;
+-               of_node_put(np);
+-               np = (struct device_node *) dai_link->codec_of_node;
+-               of_node_put(np);
++               of_node_put(dai_link->cpu_of_node);
++               of_node_put(dai_link->codec_of_node);
+...
+-       of_node_put((struct device_node *)odroidx2_dai[0].cpu_of_node);
+-       of_node_put((struct device_node *)odroidx2_dai[0].codec_of_node);
++       of_node_put(odroidx2_dai[0].cpu_of_node);
++       of_node_put(odroidx2_dai[0].codec_of_node);
+...
+                if (mop500_dai_links[i].cpu_of_node)
+-                       of_node_put((struct device_node *)
+-                               mop500_dai_links[i].cpu_of_node);
++                       of_node_put(mop500_dai_links[i].cpu_of_node);
+                if (mop500_dai_links[i].codec_of_node)
+-                       of_node_put((struct device_node *)
+-                               mop500_dai_links[i].codec_of_node);
++                       of_node_put(mop500_dai_links[i].codec_of_node);
+
+having made of_node_put() take a const pointer.  Since of_node_put()
+ultimately modifies the data pointed to by that pointer, making its
+argument "const" is incorrect.
+
+Moreover, Jean's latest patch is absolutely the right thing to do.
+Had he quoted me fully, then the reason would become clear.
+
+struct device_node is a ref-counted structure.  That means if you
+store a reference to it, you should "get" it, and you should "put"
+it once you've done.  The act of "put"ing the pointed-to structure
+involves writing to that structure, so it is totally unappropriate
+to store a device_node structure as a const pointer.  It forces you
+to have to cast it back to a non-const pointer at various points
+in time to use various OF function calls.
+
+So, what you have is a pointer that you would /like/ to be const, but
+ultimately you violate its const-ness at some point in time when you
+need to call of_node_put() on it.  So it isn't really const at all.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
