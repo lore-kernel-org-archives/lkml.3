@@ -1,103 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaKJJRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:17:42 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:6286 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaKJJRi (ORCPT
+	id S1752367AbaKJJSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:18:46 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:65112 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaKJJSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:17:38 -0500
-Message-ID: <546082A9.5050203@imgtec.com>
-Date: Mon, 10 Nov 2014 09:17:29 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 04:18:43 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v3 3/4] input: alps: For protocol V3, do not process data when last packet's bit7 is set
+Date: Mon, 10 Nov 2014 10:18:36 +0100
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201411091222.59595@pali> <20141109203459.GB37384@dtor-ws>
+In-Reply-To: <20141109203459.GB37384@dtor-ws>
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
-        <jay.xu@rock-chips.com>
-Subject: Re: [PATCH V5 7/7] dt-bindings: add document for dw-hdmi
-References: <1415424410-7364-1-git-send-email-andy.yan@rock-chips.com> <1415424767-7761-1-git-send-email-andy.yan@rock-chips.com>
-In-Reply-To: <1415424767-7761-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: multipart/signed;
+  boundary="nextPart1491676.ncpUQqPPFe";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Message-Id: <201411101018.40451@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nice work.
+--nextPart1491676.ncpUQqPPFe
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch should move the binding from
+On Sunday 09 November 2014 21:34:59 Dmitry Torokhov wrote:
+> On Sun, Nov 09, 2014 at 12:22:51PM +0100, Pali Roh=C3=A1r wrote:
+> > On Sunday 09 November 2014 08:50:39 Dmitry Torokhov wrote:
+> > > Hi Pali,
+> > >=20
+> > > On Sun, Nov 02, 2014 at 12:25:09AM +0100, Pali Roh=C3=A1r wrote:
+> > > > Sometimes on Dell Latitude laptops psmouse/alps driver
+> > > > receive invalid ALPS protocol V3 packets with bit7 set
+> > > > in last byte. More often it can be reproduced on Dell
+> > > > Latitude E6440 or E7440 with closed lid and pushing
+> > > > cover above touchpad.
+> > > >=20
+> > > > If bit7 in last packet byte is set then it is not valid
+> > > > ALPS packet. I was told that ALPS devices never send
+> > > > these packets. It is not know yet who send those
+> > > > packets, it could be Dell EC, bug in BIOS and also bug
+> > > > in touchpad firmware...
+> > > >=20
+> > > > With this patch alps driver does not process those
+> > > > invalid packets and drops it with PSMOUSE_FULL_PACKET
+> > > > so psmouse driver does not enter to out of sync state.
+> > > >=20
+> > > > This patch fix problem when psmouse driver still
+> > > > resetting ALPS device when laptop lid is closed because
+> > > > of receiving invalid packets in out of sync state.
+> > > >=20
+> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > > Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > > Cc: stable@vger.kernel.org
+> > > > ---
+> > > >=20
+> > > >  drivers/input/mouse/alps.c |   10 ++++++++++
+> > > >  1 file changed, 10 insertions(+)
+> > > >=20
+> > > > diff --git a/drivers/input/mouse/alps.c
+> > > > b/drivers/input/mouse/alps.c index 7c47e97..e802d28
+> > > > 100644 --- a/drivers/input/mouse/alps.c
+> > > > +++ b/drivers/input/mouse/alps.c
+> > > > @@ -1181,6 +1181,16 @@ static psmouse_ret_t
+> > > > alps_process_byte(struct psmouse *psmouse)
+> > > >=20
+> > > >  		return PSMOUSE_BAD_DATA;
+> > > >  =09
+> > > >  	}
+> > > >=20
+> > > > +	if (priv->proto_version =3D=3D ALPS_PROTO_V3 &&
+> > > > psmouse->pktcnt =3D=3D psmouse->pktsize) { +		// For
+> > > > protocol V3, do not process data when last packet's
+> > > > bit7 is set +		if (psmouse->packet[psmouse->pktcnt -=20
+1]
+> > > > & 0x80) { +			psmouse_dbg(psmouse, "v3 discard
+> > > > packet[%i] =3D
+> >=20
+> > %x\n",
+> >=20
+> > > > +				    psmouse->pktcnt - 1,
+> > > > +				    psmouse->packet[psmouse->pktcnt - 1]);
+> > > > +			return PSMOUSE_FULL_PACKET;
+> > > > +		}
+> > > > +	}
+> > >=20
+> > > I wanted to apply it, but I would like some more data.
+> > > Could you please send me the dmesg with i8042.debug wit
+> > > this patch in place?
+> > >=20
+> > > Thanks!
+> >=20
+> > See attachment. It contains debug log from both
+> > i8042.debug=3D1 and psmouse.ko with applied all 4 patches.
+>=20
+> Thank you Pali.
+>=20
+> OK, so it looks like the problematic byte is the last one and
+> we should be resynching right away. With your other patch
+> increasing number of bad packets before issuing resync this
+> special handling is no longer needed, right?
+>=20
+> Thanks.
 
-Documentation/devicetree/bindings/staging/imx-drm/hdmi.txt
-to the location instead of making a new file and leaving the old
-one in place.
+Problem is that in this special case driver is still out-of-sync=20
+and cause problems. E.g there is big dmesg flood and it is not=20
+good to have that when LID is closed for a long time.
 
-And use git format-patch -M to highlight any changes.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Regards
-ZubairLK
+--nextPart1491676.ncpUQqPPFe
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-On 08/11/14 05:32, Andy Yan wrote:
-> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-> ---
->  .../devicetree/bindings/drm/bridge/dw-hdmi.txt     | 38 ++++++++++++++++++++++
->  1 file changed, 38 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
-> new file mode 100644
-> index 0000000..aa7ed17
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
-> @@ -0,0 +1,38 @@
-> +DesignWare HDMI bridge bindings
-> +
-> +Required properities:
-> +- compatibel: platform specific such as "fsl,imx6q-hdmi","fsl,imx6dl-hdmi"
-> +	      "rockchip,rk3288-dw-hdmi"
-> +- reg: physical base address of the controller and length
-> +- ddc-i2c-bus: the ddc i2c bus
-> +- interrupts: The interrupt number to the cpu
-> +
-> +Optional properties
-> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
-> +
-> +Example:
-> +	hdmi: hdmi@0120000 {
-> +		compatible = "fsl,imx6q-hdmi";
-> +		reg = <0x00120000 0x9000>;
-> +		interrupts = <0 115 0x04>;
-> +		gpr = <&gpr>;
-> +		clocks = <&clks 123>, <&clks 124>;
-> +		clock-names = "iahb", "isfr";
-> +		ddc-i2c-bus = <&i2c2>;
-> +
-> +		port@0 {
-> +			reg = <0>;
-> +
-> +			hdmi_mux_0: endpoint {
-> +				remote-endpoint = <&ipu1_di0_hdmi>;
-> +			};
-> +		};
-> +
-> +		port@1 {
-> +			reg = <1>;
-> +
-> +			hdmi_mux_1: endpoint {
-> +				remote-endpoint = <&ipu1_di1_hdmi>;
-> +			};
-> +		};
-> +	};
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlRggvAACgkQi/DJPQPkQ1KZVwCcDRUzeln/p9eTCSwbtfDN0kVj
+M0YAn2BbDw7n1WMkmJt7vjX0nteiDd9J
+=xHri
+-----END PGP SIGNATURE-----
+
+--nextPart1491676.ncpUQqPPFe--
