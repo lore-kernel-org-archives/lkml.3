@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaKJMJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:09:29 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:40173 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbaKJMJ0 (ORCPT
+	id S1752705AbaKJMJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:09:27 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:21245 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaKJMJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Nov 2014 07:09:26 -0500
-X-AuditID: cbfec7f4-b7f6c6d00000120b-d5-5460aaf33661
+X-AuditID: cbfec7f5-b7f956d000005ed7-1f-5460aaf30540
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH 2/3] kernel: irq: use a kmem_cache for allocating struct
- irq_desc
-Date: Mon, 10 Nov 2014 15:06:57 +0300
-Message-id: <1415621218-6438-2-git-send-email-a.ryabinin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH 1/3] mm: sl[aou]b: introduce kmem_cache_zalloc_node()
+Date: Mon, 10 Nov 2014 15:06:56 +0300
+Message-id: <1415621218-6438-1-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.3
-In-reply-to: <1415621218-6438-1-git-send-email-a.ryabinin@samsung.com>
-References: <1415621218-6438-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGJMWRmVeSWpSXmKPExsVy+t/xa7qfVyWEGOx6ZG2x7dcjNovLu+aw
-	WWzeNJXZgdnj3blz7B59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CV8eLoT7aC9WIVTy/+Zm5g
-	3CrUxcjJISFgInH/6DZGCFtM4sK99WxdjFwcQgJLGSVevVnBCOH0MUl8n9LEAlLFJqAn8W/W
-	djYQW0RAQ2LjpVvMIDazgJfExqtLmUBsYYFgiSUvdgLZHBwsAqoSP+ZIgoR5BVwlznUfZQYJ
-	SwjISWxd5w0S5hRwk1h7ZCIriC0EVDK36SfjBEbeBYwMqxhFU0uTC4qT0nMN9YoTc4tL89L1
-	kvNzNzFCwuLLDsbFx6wOMQpwMCrx8Hp8iQ8RYk0sK67MPcQowcGsJMI7a1lCiBBvSmJlVWpR
-	fnxRaU5q8SFGJg5OqQZGnrzY6EedbwuvWOzrqD//RXn33NtzVBeULWl9PXVdTNK7YPPfGZsf
-	LWlpOz23mvWO+NH/Cv2C9+dMWsB1xGt6N/cObe6bn+3LExZoxvMk+os9jv2RkHKMS7Fa97Su
-	AH+LuIF5Hfums5eSpMMk26o3MJ1X+8BW3SKu4vt98lVny62tEvsCvL2UWIozEg21mIuKEwGq
-	ePu66QEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPJMWRmVeSWpSXmKPExsVy+t/xa7qfVyWEGPw/KGex7dcjNos569ew
+	WVz/9obR4vKuOWwW99b8Z7Vo+/wPSCzZyGSxedNUZgcOjwWbSj02repk89j0aRK7x7tz59g9
+	Tsz4zeLx5Mp0Jo++LasYPT5vkgvgiOKySUnNySxLLdK3S+DK6Gi4wVbwhK2iubGJpYHxFGsX
+	IyeHhICJxPWbH9kgbDGJC/fWA9lcHEICSxkl5v77wQrh9DFJfJ/SxAJSxSagJ/Fv1nawDhEB
+	DYmNl24xg9jMAr8YJe7eVgKxhQVcJVoPH2TqYuTgYBFQlXi3Xw0kzAsU/rZ1FztIWEJATmLr
+	Ou8JjNwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE0tcdjEuPWR1iFOBgVOLh9fgS
+	HyLEmlhWXJl7iFGCg1lJhHfWsoQQId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyRGVM/Sp+99XXD
+	IeGvl55fevJF7GNohaxO1JK/557uiPx75rGKcs+uGZOdkqKn5Wyd83KR5opFCf9r17pxzc/b
+	fvPQjtx/ggpWzyW+eUkmWl/6y8Ko4mcd8T7RvtIjUlqiO3Oa3zEOm/aWD8c0YpdyHdybnhl2
+	P/fCEfEejYYp2Rc5lhQDTVFiKc5INNRiLipOBACJJV12AgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After enabling alignment checks in UBSan I've noticed a lot of
-reports like this:
-
-    UBSan: Undefined behaviour in ../kernel/irq/chip.c:195:14
-    member access within misaligned address ffff88003e80d6f8
-    for type 'struct irq_desc' which requires 16 byte alignment
-
-struct irq_desc declared with ____cacheline_internodealigned_in_smp
-attribute. However in some cases it allocated dynamically via kmalloc().
-In general case kmalloc() guaranties only sizeof(void *) alignment.
-We should use a separate slab cache to make struct irq_desc
-properly aligned on SMP configuration.
-
-This also could slightly reduce memory usage on some configurations.
-E.g. in my setup sizeof(struct irq_desc) == 320. Which means that
-kmalloc-512 will be used for allocating irg_desc via kmalloc().
-In that case using separate slab cache will save us 192 bytes per
-each irq_desc.
-
-Note: UBSan reports says that 'struct irq_desc' requires 16 byte alignment.
-It's wrong, in my setup it should be 64 bytes. This looks like a gcc bug,
-but it doesn't change the fact that irq_desc is misaligned.
+kmem_cache_zalloc_node() allocates zeroed memory for a particular
+cache from a specified memory node. To be used for struct irq_desc.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- kernel/irq/irqdesc.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ include/linux/slab.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index a1782f8..f22cb87 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -23,6 +23,8 @@
-  */
- static struct lock_class_key irq_desc_lock_class;
- 
-+static struct kmem_cache *irq_desc_cachep;
-+
- #if defined(CONFIG_SMP)
- static void __init init_irq_default_affinity(void)
- {
-@@ -137,9 +139,10 @@ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
- 	struct irq_desc *desc;
- 	gfp_t gfp = GFP_KERNEL;
- 
--	desc = kzalloc_node(sizeof(*desc), gfp, node);
-+	desc = kmem_cache_zalloc_node(irq_desc_cachep, gfp, node);
- 	if (!desc)
- 		return NULL;
-+
- 	/* allocate based on nr_cpu_ids */
- 	desc->kstat_irqs = alloc_percpu(unsigned int);
- 	if (!desc->kstat_irqs)
-@@ -158,7 +161,7 @@ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
- err_kstat:
- 	free_percpu(desc->kstat_irqs);
- err_desc:
--	kfree(desc);
-+	kmem_cache_free(irq_desc_cachep, desc);
- 	return NULL;
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index c265bec..b3248fa 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -574,6 +574,12 @@ static inline void *kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
+ 	return kmem_cache_alloc(k, flags | __GFP_ZERO);
  }
  
-@@ -174,7 +177,7 @@ static void free_desc(unsigned int irq)
- 
- 	free_masks(desc);
- 	free_percpu(desc->kstat_irqs);
--	kfree(desc);
-+	kmem_cache_free(irq_desc_cachep, desc);
- }
- 
- static int alloc_descs(unsigned int start, unsigned int cnt, int node,
-@@ -218,6 +221,8 @@ int __init early_irq_init(void)
- 
- 	init_irq_default_affinity();
- 
-+	irq_desc_cachep = KMEM_CACHE(irq_desc, SLAB_PANIC);
++static inline void *kmem_cache_zalloc_node(struct kmem_cache *k, gfp_t flags,
++					int node)
++{
++	return kmem_cache_alloc_node(k, flags | __GFP_ZERO, node);
++}
 +
- 	/* Let arch update nr_irqs and return the nr of preallocated irqs */
- 	initcnt = arch_probe_nr_irqs();
- 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
+ /**
+  * kzalloc - allocate memory. The memory is set to zero.
+  * @size: how many bytes of memory are required.
 -- 
 2.1.3
 
