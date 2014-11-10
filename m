@@ -1,94 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaKJAca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 19:32:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55515 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311AbaKJAc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 19:32:29 -0500
-Date: Mon, 10 Nov 2014 11:32:21 +1100
-From: NeilBrown <neilb@suse.de>
-To: =?UTF-8?B?0JXQstCz0LXQvdC40Lkg0J/QvtC70Y/QutC+0LI=?= 
-	<zbr@ioremap.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        GTA04 owners <gta04-owner@goldelico.com>
-Subject: Re: [PATCH] w1: support auto-load of w1_bq27000 module.
-Message-ID: <20141110113221.17cb1535@notabene.brown>
-In-Reply-To: <18301415578289@web5g.yandex.ru>
-References: <20141108103249.4f86786c@notabene.brown>
-	<18301415578289@web5g.yandex.ru>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/oG_KpANRhK7=dosA7DD.B1X"; protocol="application/pgp-signature"
+	id S1751797AbaKJAcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 19:32:52 -0500
+Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:34311 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751268AbaKJAcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 19:32:50 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:966:968:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1544:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:4250:4321:4385:4605:5007:6119:6261:10004:10394:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12679:13972:14093:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: salt62_52c471f67be5b
+X-Filterd-Recvd-Size: 4833
+Message-ID: <1415579566.23530.47.camel@perches.com>
+Subject: [PATCH net-next] dsa: Use netdev_<level> instead of printk
+From: Joe Perches <joe@perches.com>
+To: netdev <netdev@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>
+Date: Sun, 09 Nov 2014 16:32:46 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/oG_KpANRhK7=dosA7DD.B1X
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Neaten and standardize the logging output.
 
-On Mon, 10 Nov 2014 03:11:29 +0300 =D0=95=D0=B2=D0=B3=D0=B5=D0=BD=D0=B8=D0=
-=B9 =D0=9F=D0=BE=D0=BB=D1=8F=D0=BA=D0=BE=D0=B2 <zbr@ioremap.net> wrote:
+Other miscellanea:
 
-> Hi
->=20
-> 08.11.2014, 02:33, "NeilBrown" <neilb@suse.de>:
-> > 1/ change request_module call to zero-pad single digit
-> > =C2=A0=C2=A0=C2=A0family numbers. =C2=A0This appears to be the intentio=
-n of
-> > =C2=A0=C2=A0=C2=A0the code, but not what it actually does.
-> >
-> > =C2=A0=C2=A0=C2=A0This means that the alias created for W1_FAMILY_SMEM_=
-01
-> > =C2=A0=C2=A0=C2=A0might actually be useful.
-> >
-> > 2/ Define a family name for the BQ27000 battery charge monitor.
-> > =C2=A0=C2=A0=C2=A0Unfortunately this is the same number as W1_FAMILY_SM=
-EM_01
-> > =C2=A0=C2=A0=C2=A0so if both a compiled on a system, one module might n=
-eed to
-> > =C2=A0=C2=A0=C2=A0be blacklisted.
-> >
-> > 3/ Add a MODULE_ALIAS for the bq27000.
-> >
-> > Signed-off-by: NeilBrown <neilb@suse.de>
->=20
-> Looks good to me.
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
->=20
-> Which tree should this patch use to get into the kernel?
+o Use pr_notice_once instead of a guard flag.
+o Convert existing pr_<level> uses too.
 
-MAINTAINERS lists you as the maintainer, so I though you would know.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/dsa/dsa.c   | 28 ++++++++++++----------------
+ net/dsa/slave.c | 10 +++++-----
+ 2 files changed, 17 insertions(+), 21 deletions(-)
 
-When is doubt: send to akpm .. or gregkh.
-It looks like greg has more Signed-off-by's in drivers/w1 than akpm,
-so I'll add your acked-by and send to him.
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index dd646a8..4648f12 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -192,12 +192,12 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
+ 	 */
+ 	drv = dsa_switch_probe(host_dev, pd->sw_addr, &name);
+ 	if (drv == NULL) {
+-		printk(KERN_ERR "%s[%d]: could not detect attached switch\n",
+-		       dst->master_netdev->name, index);
++		netdev_err(dst->master_netdev, "[%d]: could not detect attached switch\n",
++			   index);
+ 		return ERR_PTR(-EINVAL);
+ 	}
+-	printk(KERN_INFO "%s[%d]: detected a %s switch\n",
+-		dst->master_netdev->name, index, name);
++	netdev_info(dst->master_netdev, "[%d]: detected a %s switch\n",
++		    index, name);
+ 
+ 
+ 	/*
+@@ -225,7 +225,8 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
+ 
+ 		if (!strcmp(name, "cpu")) {
+ 			if (dst->cpu_switch != -1) {
+-				printk(KERN_ERR "multiple cpu ports?!\n");
++				netdev_err(dst->master_netdev,
++					   "multiple cpu ports?!\n");
+ 				ret = -EINVAL;
+ 				goto out;
+ 			}
+@@ -320,10 +321,8 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
+ 
+ 		slave_dev = dsa_slave_create(ds, parent, i, pd->port_names[i]);
+ 		if (slave_dev == NULL) {
+-			printk(KERN_ERR "%s[%d]: can't create dsa "
+-			       "slave device for port %d(%s)\n",
+-			       dst->master_netdev->name,
+-			       index, i, pd->port_names[i]);
++			netdev_err(dst->master_netdev, "[%d]: can't create dsa slave device for port %d(%s)\n",
++				   index, i, pd->port_names[i]);
+ 			continue;
+ 		}
+ 
+@@ -701,15 +700,13 @@ static inline void dsa_of_remove(struct platform_device *pdev)
+ 
+ static int dsa_probe(struct platform_device *pdev)
+ {
+-	static int dsa_version_printed;
+ 	struct dsa_platform_data *pd = pdev->dev.platform_data;
+ 	struct net_device *dev;
+ 	struct dsa_switch_tree *dst;
+ 	int i, ret;
+ 
+-	if (!dsa_version_printed++)
+-		printk(KERN_NOTICE "Distributed Switch Architecture "
+-			"driver version %s\n", dsa_driver_version);
++	pr_notice_once("Distributed Switch Architecture driver version %s\n",
++		       dsa_driver_version);
+ 
+ 	if (pdev->dev.of_node) {
+ 		ret = dsa_of_probe(pdev);
+@@ -753,9 +750,8 @@ static int dsa_probe(struct platform_device *pdev)
+ 
+ 		ds = dsa_switch_setup(dst, i, &pdev->dev, pd->chip[i].host_dev);
+ 		if (IS_ERR(ds)) {
+-			printk(KERN_ERR "%s[%d]: couldn't create dsa switch "
+-				"instance (error %ld)\n", dev->name, i,
+-				PTR_ERR(ds));
++			netdev_err(dev, "[%d]: couldn't create dsa switch instance (error %ld)\n",
++				   i, PTR_ERR(ds));
+ 			continue;
+ 		}
+ 
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index 0ea466d..528380a 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -532,7 +532,7 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
+ 		 */
+ 		ret = of_phy_register_fixed_link(port_dn);
+ 		if (ret) {
+-			pr_err("failed to register fixed PHY\n");
++			netdev_err(slave_dev, "failed to register fixed PHY\n");
+ 			return;
+ 		}
+ 		phy_is_fixed = true;
+@@ -558,8 +558,8 @@ static void dsa_slave_phy_setup(struct dsa_slave_priv *p,
+ 		phy_connect_direct(slave_dev, p->phy, dsa_slave_adjust_link,
+ 				   p->phy_interface);
+ 	} else {
+-		pr_info("attached PHY at address %d [%s]\n",
+-			p->phy->addr, p->phy->drv->name);
++		netdev_info(slave_dev, "attached PHY at address %d [%s]\n",
++			    p->phy->addr, p->phy->drv->name);
+ 	}
+ }
+ 
+@@ -657,8 +657,8 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
+ 
+ 	ret = register_netdev(slave_dev);
+ 	if (ret) {
+-		printk(KERN_ERR "%s: error %d registering interface %s\n",
+-				master->name, ret, slave_dev->name);
++		netdev_err(master, "error %d registering interface %s\n",
++			   ret, slave_dev->name);
+ 		free_netdev(slave_dev);
+ 		return NULL;
+ 	}
 
-Thanks,
-NeilBrown
 
---Sig_/oG_KpANRhK7=dosA7DD.B1X
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVGAHlTnsnt1WYoG5AQLfWA/+JX7iSX5Wv+CyThWd2h4TIEpyu4/TSPmm
-r5eXdBDj8reiOYVLQbGNGwANmUvz9xw4C/kHucktZ31L7fhjP3AdURlbAqRujA3R
-sMZH4u4+2iiG3HNboP0GiEuOz6LtakIoyf6Q58L3Il7ZwKk0lu6mFgoViHfdT84B
-QVd1VvM9VNXXyYg2EZ/pR39cUaRWAcF1NTizDgVTp56Uqf6abT8GFVh4osMliNAO
-4mg8fRuEEDerPCVngKhGrK3Yq8bi+kN+tuhEl9+wl9+m9ekV/aVeZFT0hOkIWqMe
-ObeusvQ5RmwjTGR1NkqZURB8hQ/lgJLqXcHVE9vb+yuF9svQFhGZ0c0vz5Hu+Czz
-619l2GhDZXVme3Gho9YLlzCkQJsF9U7PeP2Kdhg/bxgqSBJXfVj22BHTLENdIiom
-4qJc9jf/xtWSz8EXw1CkIe6SfyT9PltdsgpXu1WwMvFheGEBrTks+DuvG6hV1d48
-2+pFn/V+S/riWAgOjLU6y8F5Lg7VvULQs/21OGxjKfHI4cfBibdr+g3tGR3QsZ6W
-uT5X0HF5bYEIFC+a6A4Qrp23tO2VFtdzyLNsETRNWJL/ppS8JLd+37viWuzKGItX
-S68iJq3RwEyDWZ8hZqwDtP88XGtTYEy00HUXcG7klHbrxktfOYmZjKjvTlQcfKcJ
-P66m3crPIdQ=
-=uFz4
------END PGP SIGNATURE-----
-
---Sig_/oG_KpANRhK7=dosA7DD.B1X--
