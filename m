@@ -1,85 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaKJJ0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:26:04 -0500
-Received: from unicorn.mansr.com ([81.2.72.234]:38038 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671AbaKJJ0B convert rfc822-to-8bit (ORCPT
+	id S1752451AbaKJJ0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:26:32 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:42718 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752245AbaKJJ0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:26:01 -0500
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Christian Riesch <christian.riesch@omicron.at>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in receive path
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
-	<20141106203832.GB30170@kroah.com>
-	<yw1xwq78jbr6.fsf@unicorn.mansr.com>
-	<20141106205644.GA31435@kroah.com>
-	<CABkLObqLXpXfcFOW9oorvR0dj4xU0Eo0c2k0TB5njd2FZGVCPQ@mail.gmail.com>
-Date: Mon, 10 Nov 2014 09:25:57 +0000
-In-Reply-To: <CABkLObqLXpXfcFOW9oorvR0dj4xU0Eo0c2k0TB5njd2FZGVCPQ@mail.gmail.com>
-	(Christian Riesch's message of "Mon, 10 Nov 2014 08:51:54 +0100")
-Message-ID: <yw1xh9y7ieze.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	Mon, 10 Nov 2014 04:26:31 -0500
+Message-ID: <546084A8.9070601@st.com>
+Date: Mon, 10 Nov 2014 10:26:00 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@gmail.com>, <patrice.chotard@st.com>
+Cc: <lee.jones@linaro.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 10/13] ARM: STi: DT: STih410: Add dt nodes for the ehci
+ / ohci usb controllers.
+References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org> <1415361475-6218-11-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1415361475-6218-11-git-send-email-peter.griffin@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.251.17.209]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-10_01:2014-11-07,2014-11-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Riesch <christian.riesch@omicron.at> writes:
+Hi Peter,
 
-> On Thu, Nov 6, 2014 at 9:56 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
->>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->>>
->>> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
->>> >> The current implementation of put_tty_queue() causes a race condition
->>> >> when re-arranged by the compiler.
->>> >>
->>> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
->>> >>
->>> >>    *read_buf_addr(ldata, ldata->read_head++) = c;
->>> >>
->>> >> was re-arranged by the compiler to something like
->>> >>
->>> >>    x = ldata->read_head
->>> >>    ldata->read_head++
->>> >>    *read_buf_addr(ldata, x) = c;
->>> >>
->>> >> which causes a race condition. Invalid data is read if data is read
->>> >> before it is actually written to the read buffer.
->>> >
->>> > Really?  A compiler can rearange things like that and expect things to
->>> > actually work?  How is that valid?
->>>
->>> This is actually required by the C spec.  There is a sequence point
->>> before a function call, after the arguments have been evaluated.  Thus
->>> all side-effects, such as the post-increment, must be complete before
->>> the function is called, just like in the example.
->>>
->>> There is no "re-arranging" here.  The code is simply wrong.
->>
->> Ah, ok, time to dig out the C spec...
->>
->> Anyway, because of this, no need for the wmb() calls, just rearrange the
->> logic and all should be good, right?  Christian, can you test that
->> instead?
+
+On 11/07/2014 12:57 PM, Peter Griffin wrote:
+> The stih410 has some additional usb controllers. This patch adds the
+> dt nodes which will enabled them to function correctly.
 >
-> I ran a test with the patch that I posted in my first email for the
-> last 4 days. No communication errors occurred so the patch actually
-> fixes my problem. I will run another test as suggested by Greg, just
-> with rearranging the logic.
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>   arch/arm/boot/dts/stih407.dtsi | 60 ++++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 60 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+> index 967ec39..5e01db2 100644
+> --- a/arch/arm/boot/dts/stih407.dtsi
+> +++ b/arch/arm/boot/dts/stih407.dtsi
+Shouldn't you create a new stih410.dtsi file, to clearly highlight these 
+USB2 controller are not present on STiH407?
+If you create this file, you could also include the stih410-clocks.dtsi 
+file in it.
+> @@ -321,5 +321,65 @@
+>   			reset-names = "global",
+>   				      "port";
+>   		};
+> +
+> +		ohci0: usb@9a03c00 {
+> +			compatible = "st,st-ohci-300x";
+> +			status = "disabled";
+> +			reg = <0x9a03c00 0x100>;
+> +			interrupts = <GIC_SPI 180 IRQ_TYPE_NONE>;
+> +			clocks = <&clk_s_c0_flexgen CLK_TX_ICN_DISP_0>;
+> +			resets = <&powerdown STIH407_USB2_PORT0_POWERDOWN>,
+> +				 <&softreset STIH407_USB2_PORT0_SOFTRESET>;
+> +			reset-names = "power", "softreset";
+> +
+> +			phys = <&usb2_picophy0>;
+> +			phy-names = "usb";
+> +		};
+> +
+> +		ehci0: usb@9a03e00 {
+> +			compatible = "st,st-ehci-300x";
+> +			status = "disabled";
+> +			reg = <0x9a03e00 0x100>;
+> +			interrupts = <GIC_SPI 151 IRQ_TYPE_NONE>;
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&pinctrl_usb0>;
+> +			clocks = <&clk_s_c0_flexgen CLK_TX_ICN_DISP_0>;
+> +			resets = <&powerdown STIH407_USB2_PORT0_POWERDOWN>,
+> +				 <&softreset STIH407_USB2_PORT0_SOFTRESET>;
+> +			reset-names = "power", "softreset";
+> +
+> +			phys = <&usb2_picophy0>;
+> +			phy-names = "usb";
+> +		};
+> +
+> +		ohci1: usb@9a83c00 {
+> +			compatible = "st,st-ohci-300x";
+> +			status = "disabled";
+> +			reg = <0x9a83c00 0x100>;
+> +			interrupts = <GIC_SPI 181 IRQ_TYPE_NONE>;
+> +			clocks = <&clk_s_c0_flexgen CLK_TX_ICN_DISP_0>;
+> +			resets = <&powerdown STIH407_USB2_PORT1_POWERDOWN>,
+> +				 <&softreset STIH407_USB2_PORT1_SOFTRESET>;
+> +			reset-names = "power", "softreset";
+> +
+> +			phys = <&usb2_picophy1>;
+> +			phy-names = "usb";
+> +		};
+> +
+> +		ehci1: usb@9a83e00 {
+> +			compatible = "st,st-ehci-300x";
+> +			status = "disabled";
+> +			reg = <0x9a83e00 0x100>;
+> +			interrupts = <GIC_SPI 153 IRQ_TYPE_NONE>;
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&pinctrl_usb1>;
+> +			clocks = <&clk_s_c0_flexgen CLK_TX_ICN_DISP_0>;
+> +			resets = <&powerdown STIH407_USB2_PORT1_POWERDOWN>,
+> +				 <&softreset STIH407_USB2_PORT1_SOFTRESET>;
+> +			reset-names = "power", "softreset";
+> +
+> +			phys = <&usb2_picophy1>;
+> +			phy-names = "usb";
+> +		};
+>   	};
+>   };
 
-What hardware are you running on?  If it's a single-processor system,
-it won't break without barriers even if they are required for SMP.
-
--- 
-Måns Rullgård
-mans@mansr.com
