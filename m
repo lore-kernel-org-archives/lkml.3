@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaKJJBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:01:53 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:50841 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaKJJBv (ORCPT
+	id S1752428AbaKJJCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:02:39 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:42516 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751861AbaKJJCh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:01:51 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: jslaby@suse.cz, linux@arm.linux.org.uk, rostedt@goodmis.org,
-        mingo@redhat.com, nsekhar@ti.com, stefano.stabellini@eu.citrix.com,
-        christoffer.dall@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v2 00/01] arm: ftrace: Adds support for CONFIG_DYNAMIC_FTRACE_WITH_REGS
-Date: Mon, 10 Nov 2014 09:56:16 +0100
-Message-Id: <1415609777-18525-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141107115225.72bc6cbf@gandalf.local.home>
-References: <20141107115225.72bc6cbf@gandalf.local.home>
+	Mon, 10 Nov 2014 04:02:37 -0500
+Date: Mon, 10 Nov 2014 10:05:26 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/4] ASoC: simple-card: add multi-CODECs in DT
+Message-ID: <20141110100526.76790f55@armhf>
+In-Reply-To: <3271244.uSgBKXChSS@wuerfel>
+References: <cover.1415605716.git.moinejf@free.fr>
+	<d49d348da24fbd96e7be51ba2839ee8bc821ddec.1415605717.git.moinejf@free.fr>
+	<3271244.uSgBKXChSS@wuerfel>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for ftrace operations on the ARM architecture.
-This support is needed by kgraft and possibly other ftrace-based tools.
-My goal is to have kgraft working on ARM and aarch64.
+On Mon, 10 Nov 2014 09:39:57 +0100
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-I tested this patch with a toy implementation of kgraft for ARM and basic
-usage of function and function_graph tracers
-It doesn't show any problem with the ftrace selftests and the tests found
-today in branch ftrace/testing-mystuff of linux-trace repository
-(git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git)
+> On Sunday 09 November 2014 12:22:21 Jean-Francois Moine wrote:
+> > -- sound-dai                            : phandle and port of CPU/CODEC
+> > +either
+> > +  - sound-dai                          : phandle and port of CPU/CODEC
+> > +or
+> > +  - sound-dais                         : list of phandle and port of CODECs
+> 
+> Is it really necessary to change the property name here? I woudl think
+> that you can make it all work more consistently with just the existing
+> 'sound-dai' property, just extend it to allow multiple codecs
 
+This was an idea from Benoit Cousson:
 
-change since v1:
- - changed the title and the commit log of the patch to make it more
-   understandable
+ "Something like that:
 
-Jean-Jacques Hiblot (1):
-  arm: ftrace: Adds support for CONFIG_DYNAMIC_FTRACE_WITH_REGS
+   sound-dais = <&spdif_codec 1>, <&hdmi 0>;
 
- arch/arm/Kconfig               |  2 ++
- arch/arm/include/asm/ftrace.h  |  3 ++
- arch/arm/kernel/entry-common.S | 68 +++++++++++++++++++++++++++++++++++++++++-
- arch/arm/kernel/ftrace.c       | 34 +++++++++++++++++++++
- 4 files changed, 106 insertions(+), 1 deletion(-)
+ That being said, it will require changing the name with a plural form,"
+
+As I coded it, both names are accepted for a single or many codecs.
 
 -- 
-2.1.3
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
