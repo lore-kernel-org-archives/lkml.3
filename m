@@ -1,101 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbaKJQPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:15:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59369 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaKJQPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:15:32 -0500
-Date: Mon, 10 Nov 2014 17:15:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req
- before idle
-Message-ID: <20141110161530.GB10501@worktop.programming.kicks-ass.net>
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
- <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org>
- <20141110124111.GN3337@twins.programming.kicks-ass.net>
- <5460D5EF.2000805@linaro.org>
- <20141110152803.GX10501@worktop.programming.kicks-ass.net>
- <5460E0A5.9040508@linaro.org>
+	id S1753461AbaKJQPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:15:20 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:36052 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753370AbaKJQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 11:15:11 -0500
+X-IronPort-AV: E=Sophos;i="5.07,353,1413244800"; 
+   d="scan'208";a="189798982"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 09/13] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+Date: Mon, 10 Nov 2014 16:14:01 +0000
+Message-ID: <1415636045-24669-9-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5460E0A5.9040508@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 04:58:29PM +0100, Daniel Lezcano wrote:
-> >I don't get it, I've clearly not stared at it long enough, but why is
-> >that STATE_START crap needed anywhere?
-> 
-> Excellent question :)
-> 
-> On x86, the config option ARCH_HAS_CPU_RELAX is set (x86 is the only one).
-> That leads to the macro CPUIDLE_DRIVER_STATE_START equal 1.
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/include/linux/cpuidle.h#n221
-> 
-> Then the acpi cpuidle driver and the intel_driver begin to fill the idle
-> state at index == CPUIDLE_DRIVER_STATE_START, so leaving the 0th idle state
-> empty.
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/idle/intel_idle.c#n848
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/acpi/processor_idle.c#n953
-> 
-> Then when the driver is registered and if ARCH_HAS_CPU_RELAX is set, the
-> cpuidle framework insert the 0th with the poll state (reminder : only for
-> x86).
+Merge xen/mm32.c into xen/mm.c.
+As a consequence the code gets compiled on arm64 too.
 
-Appears to me part of the problem is right there, the intel_idle and
-proessor_idle should register the poll state themselves. That
-immediately makes this weirdness go away.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/xen/Makefile                      |    2 +-
+ arch/arm/xen/mm.c                          |   86 +++++++++++++++++++++++++
+ arch/arm/xen/mm32.c                        |   96 ----------------------------
+ arch/arm64/include/asm/xen/page-coherent.h |   44 +------------
+ 4 files changed, 88 insertions(+), 140 deletions(-)
+ delete mode 100644 arch/arm/xen/mm32.c
 
-Registering states from two places is not something that's sane or
-desired I think.
+diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+index 1f85bfe..1296952 100644
+--- a/arch/arm/xen/Makefile
++++ b/arch/arm/xen/Makefile
+@@ -1 +1 @@
+-obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o mm32.o
++obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o
+diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+index b0e77de..0e96023 100644
+--- a/arch/arm/xen/mm.c
++++ b/arch/arm/xen/mm.c
+@@ -1,6 +1,10 @@
++#include <linux/cpu.h>
++#include <linux/dma-mapping.h>
+ #include <linux/bootmem.h>
+ #include <linux/gfp.h>
++#include <linux/highmem.h>
+ #include <linux/export.h>
++#include <linux/of_address.h>
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/dma-mapping.h>
+@@ -16,6 +20,88 @@
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/interface.h>
+ 
++enum dma_cache_op {
++       DMA_UNMAP,
++       DMA_MAP,
++};
++
++/* functions called by SWIOTLB */
++
++static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
++	size_t size, enum dma_data_direction dir, enum dma_cache_op op)
++{
++	unsigned long pfn;
++	size_t left = size;
++
++	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
++	offset %= PAGE_SIZE;
++
++	do {
++		size_t len = left;
++	
++		BUG_ON(pfn_valid(pfn));
++
++		/* TODO: cache flush */
++
++		offset = 0;
++		pfn++;
++		left -= len;
++	} while (left);
++}
++
++static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir)
++{
++	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, DMA_UNMAP);
++}
++
++static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir)
++{
++	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, DMA_MAP);
++}
++
++void __xen_dma_map_page(struct device *hwdev, struct page *page,
++	     dma_addr_t dev_addr, unsigned long offset, size_t size,
++	     enum dma_data_direction dir, struct dma_attrs *attrs)
++{
++	if (is_device_dma_coherent(hwdev))
++		return;
++	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
++		return;
++
++	__xen_dma_page_cpu_to_dev(hwdev, dev_addr, size, dir);
++}
++
++void __xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir,
++		struct dma_attrs *attrs)
++
++{
++	if (is_device_dma_coherent(hwdev))
++		return;
++	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
++		return;
++
++	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
++}
++
++void __xen_dma_sync_single_for_cpu(struct device *hwdev,
++		dma_addr_t handle, size_t size, enum dma_data_direction dir)
++{
++	if (is_device_dma_coherent(hwdev))
++		return;
++	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
++}
++
++void __xen_dma_sync_single_for_device(struct device *hwdev,
++		dma_addr_t handle, size_t size, enum dma_data_direction dir)
++{
++	if (is_device_dma_coherent(hwdev))
++		return;
++	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
++}
++
+ int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
+ 				 unsigned int address_bits,
+ 				 dma_addr_t *dma_handle)
+diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
+deleted file mode 100644
+index d611c4b..0000000
+--- a/arch/arm/xen/mm32.c
++++ /dev/null
+@@ -1,96 +0,0 @@
+-#include <linux/cpu.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/gfp.h>
+-#include <linux/highmem.h>
+-
+-#include <xen/features.h>
+-enum dma_cache_op {
+-       DMA_UNMAP,
+-       DMA_MAP,
+-};
+-
+-/* functions called by SWIOTLB */
+-
+-static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
+-	size_t size, enum dma_data_direction dir, enum dma_cache_op op)
+-{
+-	unsigned long pfn;
+-	size_t left = size;
+-
+-	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
+-	offset %= PAGE_SIZE;
+-
+-	do {
+-		size_t len = left;
+-	
+-		BUG_ON(pfn_valid(pfn));
+-
+-		/* TODO: cache flush */
+-
+-		offset = 0;
+-		pfn++;
+-		left -= len;
+-	} while (left);
+-}
+-
+-static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir)
+-{
+-	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, DMA_UNMAP);
+-}
+-
+-static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir)
+-{
+-	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, DMA_MAP);
+-}
+-
+-void __xen_dma_map_page(struct device *hwdev, struct page *page,
+-	     dma_addr_t dev_addr, unsigned long offset, size_t size,
+-	     enum dma_data_direction dir, struct dma_attrs *attrs)
+-{
+-	if (is_device_dma_coherent(hwdev))
+-		return;
+-	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
+-		return;
+-
+-	__xen_dma_page_cpu_to_dev(hwdev, dev_addr, size, dir);
+-}
+-
+-void __xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir,
+-		struct dma_attrs *attrs)
+-
+-{
+-	if (is_device_dma_coherent(hwdev))
+-		return;
+-	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
+-		return;
+-
+-	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
+-}
+-
+-void __xen_dma_sync_single_for_cpu(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-	if (is_device_dma_coherent(hwdev))
+-		return;
+-	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
+-}
+-
+-void __xen_dma_sync_single_for_device(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-	if (is_device_dma_coherent(hwdev))
+-		return;
+-	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
+-}
+-
+-int __init xen_mm32_init(void)
+-{
+-	if (!xen_initial_domain())
+-		return 0;
+-
+-	return 0;
+-}
+-arch_initcall(xen_mm32_init);
+diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
+index d7cd4c2..2052102 100644
+--- a/arch/arm64/include/asm/xen/page-coherent.h
++++ b/arch/arm64/include/asm/xen/page-coherent.h
+@@ -1,43 +1 @@
+-#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
+-#define _ASM_ARM64_XEN_PAGE_COHERENT_H
+-
+-#include <asm/page.h>
+-#include <linux/dma-attrs.h>
+-#include <linux/dma-mapping.h>
+-
+-static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
+-		dma_addr_t *dma_handle, gfp_t flags,
+-		struct dma_attrs *attrs)
+-{
+-	return __generic_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
+-}
+-
+-static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
+-		void *cpu_addr, dma_addr_t dma_handle,
+-		struct dma_attrs *attrs)
+-{
+-	__generic_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
+-}
+-
+-static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
+-	     dma_addr_t dev_addr, unsigned long offset, size_t size,
+-	     enum dma_data_direction dir, struct dma_attrs *attrs)
+-{
+-}
+-
+-static inline void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir,
+-		struct dma_attrs *attrs)
+-{
+-}
+-
+-static inline void xen_dma_sync_single_for_cpu(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-}
+-
+-static inline void xen_dma_sync_single_for_device(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-}
+-#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
++#include <../../arm/include/asm/xen/page-coherent.h>
+-- 
+1.7.10.4
 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/cpuidle/driver.c#n195
-> 
-> If you look at the ladder governor (which I believe nobody is still using
-> it), or at the menu governor, all the indexes begin at
-> CPUIDLE_DRIVER_STATE_START, so all the code is preventing to use the 0th
-> state ... :)
-> 
-> So why is needed the poll state ?
-> 
-> 1. When the latency_req is 0 (it returns 0, so the poll state)
-
-Right, that makes sense.
-
-> 2. When the select's menu governor fails to find a state *and* if the next
-> timer is before 5us
-
-That seems rather arbitrary. Why would it fail to find a state?
-
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/cpuidle/driver.c#n195
-> 
-> And when we investigate the same code but on the other archs, the
-> CPUIDLE_DRIVER_STATE_START dance makes things slightly different.
-> 
-> So the conclusion is, we are inserting a state in the idle state array but
-> we do everything to prevent to use it :)
-> 
-> For me it appears logical to just kill this state from the x86 idle drivers
-> and move it in the idle_mainloop in case an idle state selection fails.
-
-But why, ppc has a latency_req==0 state too, right?
-
-I agree that we should shoot STATE_START in the head, but I feel we
-should do it by fixing the state registration.
-
-I really don't get why the governors should know about this though, its
-just another state, they should iterate all states and pick the best,
-given the power usage this state should really never be eligible unless
-we're QoS forced or whatnot.
