@@ -1,35 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaKJQTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:19:12 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42347 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677AbaKJQS4 (ORCPT
+	id S1753773AbaKJQTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:19:19 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:12530 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756AbaKJQTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:18:56 -0500
-Date: Mon, 10 Nov 2014 11:18:50 -0500 (EST)
-Message-Id: <20141110.111850.103241671429881179.davem@davemloft.net>
-To: viro@ZenIV.linux.org.uk
-Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bcrl@kvack.org, mst@redhat.com
-Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141110090955.GH7996@ZenIV.linux.org.uk>
-References: <20141110065817.GG7996@ZenIV.linux.org.uk>
-	<20141110.023000.1275181784917275552.davem@davemloft.net>
-	<20141110090955.GH7996@ZenIV.linux.org.uk>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Nov 2014 08:18:54 -0800 (PST)
+	Mon, 10 Nov 2014 11:19:14 -0500
+X-IronPort-AV: E=Sophos;i="5.07,353,1413244800"; 
+   d="scan'208";a="191239981"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 12/13] swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
+Date: Mon, 10 Nov 2014 16:14:04 +0000
+Message-ID: <1415636045-24669-12-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Mon, 10 Nov 2014 09:09:55 +0000
+xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
+handle as argument, not a physical address.
 
-> BTW, what's the usual regression suite used for net/* stuff?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ drivers/xen/swiotlb-xen.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-There's a regression suite? :-)
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 3725ee4..498b654 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -449,7 +449,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+ 
+ 	BUG_ON(dir == DMA_NONE);
+ 
+-	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
++	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
+ 
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr)) {
+@@ -497,14 +497,14 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+ 	BUG_ON(dir == DMA_NONE);
+ 
+ 	if (target == SYNC_FOR_CPU)
+-		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
++		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
+ 
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr))
+ 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+ 
+ 	if (target == SYNC_FOR_DEVICE)
+-		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
++		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
+ 
+ 	if (dir != DMA_FROM_DEVICE)
+ 		return;
+-- 
+1.7.10.4
+
