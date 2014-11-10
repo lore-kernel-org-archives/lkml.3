@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaKJUqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:46:01 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:60040 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752294AbaKJUqA (ORCPT
+	id S1752411AbaKJUp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:45:59 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:46978 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751847AbaKJUp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:46:00 -0500
-Message-ID: <1415652356.21229.31.camel@x220>
-Subject: Re: [GIT PULL for v3.18-rc1] media updates
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 21:45:56 +0100
-In-Reply-To: <1413793905.16435.6.camel@x220>
-References: <20141009141849.137e738d@recife.lan>
-	 <1413793905.16435.6.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Nov 2014 20:45:57.0223 (UTC) FILETIME=[54057770:01CFFD27]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Nov 2014 15:45:58 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] ARM: at91: remove CONFIG_MACH_SAMA5_DT
+Date: Mon, 10 Nov 2014 21:45:53 +0100
+Message-Id: <1415652353-15985-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+CONFIG_MACH_SAMA5_DT is useless as the only way to boot on sama5 based boards is
+to use device tree.
 
-On Mon, 2014-10-20 at 10:31 +0200, Paul Bolle wrote:
-> This became commit 38a073116525 ("[media] omap: be sure that MMU is
-> there for COMPILE_TEST").
-> 
-> As I reported in
-> http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/82299
-> it adds an (optional) test for a Kconfig symbol HAS_MMU. There's no
-> such symbol. So that test will always fail. Did you perhaps mean
-> simply "MMU"?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/configs/sama5_defconfig |  1 -
+ arch/arm/mach-at91/Kconfig       | 10 +---------
+ arch/arm/mach-at91/Makefile      |  2 +-
+ 3 files changed, 2 insertions(+), 11 deletions(-)
 
-This typo is still present in both next-20141110 and v3.18-rc4. And I've
-first reported it nearly two months ago. I see two fixes:
-    1) s/HAS_MMU/MMU/
-    2) s/ || (COMPILE_TEST && HAS_MMU)//
-
-Which would you prefer?
-
-
-Paul Bolle
+diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+index c9089c927daf..299ca18bbd75 100644
+--- a/arch/arm/configs/sama5_defconfig
++++ b/arch/arm/configs/sama5_defconfig
+@@ -20,7 +20,6 @@ CONFIG_ARCH_AT91=y
+ CONFIG_SOC_SAM_V7=y
+ CONFIG_SOC_SAMA5D3=y
+ CONFIG_SOC_SAMA5D4=y
+-CONFIG_MACH_SAMA5_DT=y
+ CONFIG_AEABI=y
+ CONFIG_UACCESS_WITH_MEMCPY=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 0e6d548b70d9..81ddd7d31d1e 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -58,6 +58,7 @@ config SOC_SAMA5
+ 	select USE_OF
+ 	select MEMORY
+ 	select ATMEL_SDRAMC
++	select PHYLIB if NETDEVICES
+ 
+ menu "Atmel AT91 System-on-Chip"
+ 
+@@ -221,15 +222,6 @@ config MACH_AT91SAM9_DT
+ 	  Select this if you want to experiment device-tree with
+ 	  an Atmel Evaluation Kit.
+ 
+-config MACH_SAMA5_DT
+-	bool "Atmel SAMA5 Evaluation Kits with device-tree support"
+-	depends on SOC_SAMA5
+-	select USE_OF
+-	select PHYLIB if NETDEVICES
+-	help
+-	  Select this if you want to experiment device-tree with
+-	  an Atmel Evaluation Kit.
+-
+ # ----------------------------------------------------------
+ 
+ comment "AT91 Feature Selections"
+diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+index 1b9ae0257a6e..25ae74837d23 100644
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@ -80,7 +80,7 @@ obj-$(CONFIG_MACH_AT91RM9200_DT) += board-dt-rm9200.o
+ obj-$(CONFIG_MACH_AT91SAM9_DT) += board-dt-sam9.o
+ 
+ # SAMA5 board with device-tree
+-obj-$(CONFIG_MACH_SAMA5_DT) += board-dt-sama5.o
++obj-$(CONFIG_SOC_SAMA5)		+= board-dt-sama5.o
+ 
+ # AT91X40 board-specific support
+ obj-$(CONFIG_MACH_AT91EB01)	+= board-eb01.o
+-- 
+2.1.0
 
