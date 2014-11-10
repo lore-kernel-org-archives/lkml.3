@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaKJK2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:28:08 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:52953 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752250AbaKJK2G (ORCPT
+	id S1752570AbaKJK2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:28:16 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:43523 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaKJK2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:28:06 -0500
-Message-ID: <54609304.4080209@st.com>
-Date: Mon, 10 Nov 2014 11:27:16 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 05:28:11 -0500
+Date: Mon, 10 Nov 2014 10:28:00 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH 06/13] ARM: multi_v7_defconfig: Enable stih407 usb picophy
+Message-ID: <20141110102800.GQ21424@x1>
+References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
+ <1415361475-6218-7-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Peter Griffin <peter.griffin@linaro.org>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: ARM: sti: SOC_STIH407 and STIH407_RESET?
-References: <1415614934.4862.22.camel@x220>
-In-Reply-To: <1415614934.4862.22.camel@x220>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.251.17.209]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-10_01:2014-11-07,2014-11-09,1970-01-01 signatures=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415361475-6218-7-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-On 11/10/2014 11:22 AM, Paul Bolle wrote:
-> Your commit c27321141915 ("ARM: sti: Add STiH407 Kconfig entry to select
-> STIH407_RESET") was included in today's linux-next (ie, next-20141110).
-> It adds a Kconfig entry for SOC_STIH407. That entry selects
-> STIH407_RESET.
->
-> There's no Kconfig symbol STIH407_RESET. And there's nothing in
-> next-20141110 that cares about SOC_STIH407. So this entry is currently a
-> nop.
->
-> I assume that there are one or more patches queued that make this entry
-> do something. Is that correct?
-Exactly.
+On Fri, 07 Nov 2014, Peter Griffin wrote:
 
-The STIH407_RESET symbol is introduced in Reset sub-system.
+> This patch enables the picoPHY usb phy which is used by
+> the usb2 and usb3 host controllers when controlling usb2/1.1
+> devices. It is found in stih407 family SoC's from STMicroelectronics.
+> 
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  arch/arm/configs/multi_v7_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
 
-The STiH407 reset has been merged in Philipp Zabel Reset tree for v3.19:
-http://git.pengutronix.de/?p=pza/linux.git;a=shortlog;h=refs/heads/reset/for_v3.19
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Commit: 3ba9204308eb51fe98fb1ab352c17d5319f26724
+> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+> index e13ab7e..ac7b536 100644
+> --- a/arch/arm/configs/multi_v7_defconfig
+> +++ b/arch/arm/configs/multi_v7_defconfig
+> @@ -427,6 +427,7 @@ CONFIG_OMAP_USB2=y
+>  CONFIG_TI_PIPE3=y
+>  CONFIG_PHY_MIPHY365X=y
+>  CONFIG_PHY_STIH41X_USB=y
+> +CONFIG_PHY_STIH407_USB=y
+>  CONFIG_PHY_SUN4I_USB=y
+>  CONFIG_EXT4_FS=y
+>  CONFIG_VFAT_FS=y
 
-Best regards,
-Maxime
-
->
->
-> Paul Bolle
->
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
