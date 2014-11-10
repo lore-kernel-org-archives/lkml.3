@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaKJCeM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 21:34:12 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:43068 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaKJCeL (ORCPT
+	id S1751853AbaKJCyI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 21:54:08 -0500
+Received: from icp-osb-irony-out7.external.iinet.net.au ([203.59.1.224]:7832
+	"EHLO icp-osb-irony-out7.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751633AbaKJCyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 21:34:11 -0500
+	Sun, 9 Nov 2014 21:54:06 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApgBAD0mYFSVhxBY/2dsb2JhbAANToQ7gwbQNQKBMAEBAQEBhQABAQQjVhALDQEKAgIFIQICDwJGBgEMAQUCAQGIJwG3MXiVHgEBAQEBAQEBAgEBAQEBAQEBGoEtj2gHgneBVAEEhjqgDoRgjWlagksBAQE
+X-IronPort-AV: E=Sophos;i="5.07,349,1413216000"; 
+   d="scan'208";a="570063852"
+Message-ID: <54602679.80505@westnet.com.au>
+Date: Mon, 10 Nov 2014 12:44:09 +1000
+From: Greg Ungerer <gregungerer@westnet.com.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
-Date: Mon, 10 Nov 2014 12:34:09 +1000
-Message-ID: <CAPM=9tyej9J13U0c+-DH-EYw_4JJQbiQM98QREZQLz4PPj+FmQ@mail.gmail.com>
-Subject: Re: [PATCH v5 00/24] AMDKFD Kernel Driver
-From: Dave Airlie <airlied@gmail.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <j.glisse@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Bolle <pebolle@tiscali.nl>, Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: remove check for CONFIG_BSEIP
+References: <1400572571.4912.7.camel@x220>
+In-Reply-To: <1400572571.4912.7.camel@x220>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 November 2014 04:37, Oded Gabbay <oded.gabbay@amd.com> wrote:
-> Hi,
-> Here is the v5 patch set of amdkfd.
->
-> This version is released several days ahead of the release of AMD's HSA Runtime
-> library as Open Source. Coupled with the modification that Thomas Stellard
-> did for the r600 LLVM back-end, AMD will be effectively releasing a _complete_
-> userspace Open Source stack/solution for running HSA applications using
-> kernels written in OpenCL C99 on top of amdkfd.
->
+Hi Paul,
 
-Daniel pointed out too me a major problem with the approach of having
-two drivers
-touching on hw at all, they are facing similiar issues with their virt stuff,
+On 20/05/14 17:56, Paul Bolle wrote:
+> There used to be a Kconfig symbol BSEIP. It was PPC specific and was
+> removed in v2.6.27. So the check for CONFIG_BSEIP can be removed. This
+> means a few defines will be removed. None of the macros involved are
+> used, so no one should care.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-How does amdkfd interfact with runtime pm on the radeon driver? I'd expect
-some calls to the runtime get/put functions in some places.
+Thanks, applied to m68knommu for-next branch.
 
-Dave.
+Regards
+Greg
+
+
+
+> ---
+> Untested.
+> 
+>  arch/m68k/include/asm/commproc.h | 22 ----------------------
+>  1 file changed, 22 deletions(-)
+> 
+> diff --git a/arch/m68k/include/asm/commproc.h b/arch/m68k/include/asm/commproc.h
+> index 66a36bd51aa1..c67e09279ea9 100644
+> --- a/arch/m68k/include/asm/commproc.h
+> +++ b/arch/m68k/include/asm/commproc.h
+> @@ -480,28 +480,6 @@ typedef struct scc_enet {
+>  #define SICR_ENET_CLKRT	((uint)0x0000003d)
+>  #endif
+>  
+> -#ifdef CONFIG_BSEIP
+> -/* This ENET stuff is for the MPC823 with ethernet on SCC2.
+> - * This is unique to the BSE ip-Engine board.
+> - */
+> -#define PA_ENET_RXD	((ushort)0x0004)
+> -#define PA_ENET_TXD	((ushort)0x0008)
+> -#define PA_ENET_TCLK	((ushort)0x0100)
+> -#define PA_ENET_RCLK	((ushort)0x0200)
+> -#define PB_ENET_TENA	((uint)0x00002000)
+> -#define PC_ENET_CLSN	((ushort)0x0040)
+> -#define PC_ENET_RENA	((ushort)0x0080)
+> -
+> -/* BSE uses port B and C bits for PHY control also.
+> -*/
+> -#define PB_BSE_POWERUP	((uint)0x00000004)
+> -#define PB_BSE_FDXDIS	((uint)0x00008000)
+> -#define PC_BSE_LOOPBACK	((ushort)0x0800)
+> -
+> -#define SICR_ENET_MASK	((uint)0x0000ff00)
+> -#define SICR_ENET_CLKRT	((uint)0x00002c00)
+> -#endif
+> -
+>  /* SCC Event register as used by Ethernet.
+>  */
+>  #define SCCE_ENET_GRA	((ushort)0x0080)	/* Graceful stop complete */
+> 
+
