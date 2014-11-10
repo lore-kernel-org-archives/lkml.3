@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaKJITE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 03:19:04 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15444 "EHLO mga02.intel.com"
+	id S1751867AbaKJIZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 03:25:23 -0500
+Received: from mout.web.de ([212.227.17.11]:59842 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933AbaKJITC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 03:19:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,351,1413270000"; 
-   d="scan'208";a="605172975"
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: jic23@kernel.org
-Cc: srinivas.pandruvada@linux.intel.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] iio: accel: kxcjk-1013: Fix kxcjk10013_set_range
-Date: Mon, 10 Nov 2014 10:20:16 +0200
-Message-Id: <1415607616-17215-1-git-send-email-daniel.baluta@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1750890AbaKJIZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 03:25:22 -0500
+Message-ID: <5460766B.8070000@web.de>
+Date: Mon, 10 Nov 2014 09:25:15 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: AMR: sun7i: CPU hotplug support?
+References: <545FC215.7010802@web.de> <20141109231744.GC2989@lukather> <5460554A.1060701@web.de>
+In-Reply-To: <5460554A.1060701@web.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="LNN8kg2J0CTvIxHUweE5Mo1oj34QutIhE"
+X-Provags-ID: V03:K0:qJ/RnKAk2mbUMDS+vh2oY+iHd/pVmLQW0M6TSjiu/mHOpPBtwrf
+ lyhrjj2P8unYxwB3E+rtctrOhqqXrvGUMHnmYfoGbphJwBnAZ4SkS5RHT66KO8DIT6o69mo
+ fpgK1OCumamU21sBy96VHvPFXwYl4O7YfyMnSGeHO/b+MDiQH8FMbS/OIPetT/sE4sx9I5w
+ gccXTUlh5aorQ9fWaY9Wg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we get the new GSEL bits by OR-ing the old values
-with the new ones. This only works first time when the old
-values are 0.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--LNN8kg2J0CTvIxHUweE5Mo1oj34QutIhE
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Startup:
-	* GSEL0 = 0, GSEL1 = 0
+On 2014-11-10 07:03, Jan Kiszka wrote:
+> On 2014-11-10 00:17, Maxime Ripard wrote:
+>> Hi Jan,
+>>
+>> On Sun, Nov 09, 2014 at 08:35:49PM +0100, Jan Kiszka wrote:
+>>> did anyone already happen to look into enabling CPU hotplug for the
+>>> Allwinner A20 in upstream? I'm currently running the sunxi-next branc=
+h
+>>> on Banana Pi, and echo 0 > .../cpu1/online just hangs the system. The=
 
-Set range to 4G: (GSEL0 = 1, GSEL1 = 0)
-	* GSEL0 = 0 | 1 = 1
-	* GSEL1 = 0 | 0 = 0
-	* correct
+>>> old 3.4 LeMaker kernel works fine in this regard. I can try to look i=
+nto
+>>> details and port things over, just want to avoid duplicate efforts.
+>>
+>> Having hotplug support would indeed be very welcome.
+>>
+>> However, it should be done in u-boot, through PSCI, and not in the
+>> kernel itself.
+>>
+>> As far as I'm aware, no one worked actively on it, beside some WIP
+>> commit from Marc a while ago:
+>> https://git.kernel.org/cgit/linux/kernel/git/maz/u-boot.git/commit/?h=3D=
+wip/psci&id=3D45379c0f9cf812f0f62722f4015ec907fa5dc144
+>=20
+> OK - I guess I will need a little guidance in then: Is there a good
+> reference board to study and to derive from? And maybe also: What is
+> missing or not working in that u-boot branch? If I get this interface
+> right, I just takes some device tree bits to enable this for the kernel=
 
-Change range to 2G: (GSEL0 = 0, GSEL1 = 0)
-	* GSEL0 = 1 | 0 = 1
-	* GSEL1 = 0 | 0 = 0
-	* wrong, GSEL0 should be 0
+> afterward, correct?
 
-This has the nice effect that we can use the full scale range,
-exported in in_accel_scale_available.
+Started to play with that patch in naive ways: CPU0 locks up when
+offlining CPU1 - unless I disable the FIQ signal from CPU1. Then it
+"works", both offlining and onlining again. However, I suspect that this
+only parks CPU1 in wfi and does not do anything interesting to it.
 
-Fixes: a735e3d7f03 (iio: accel: kxcjk-1013: Set adjustable range)
-Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
----
- drivers/iio/accel/kxcjk-1013.c | 2 ++
- 1 file changed, 2 insertions(+)
+Jan
 
-diff --git a/drivers/iio/accel/kxcjk-1013.c b/drivers/iio/accel/kxcjk-1013.c
-index 98909a9..21f1279 100644
---- a/drivers/iio/accel/kxcjk-1013.c
-+++ b/drivers/iio/accel/kxcjk-1013.c
-@@ -269,6 +269,8 @@ static int kxcjk1013_set_range(struct kxcjk1013_data *data, int range_index)
- 		return ret;
- 	}
- 
-+	ret &= ~(KXCJK1013_REG_CTRL1_BIT_GSEL0 |
-+		 KXCJK1013_REG_CTRL1_BIT_GSEL1);
- 	ret |= (KXCJK1013_scale_table[range_index].gsel_0 << 3);
- 	ret |= (KXCJK1013_scale_table[range_index].gsel_1 << 4);
- 
--- 
-1.9.1
 
+
+--LNN8kg2J0CTvIxHUweE5Mo1oj34QutIhE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlRgdmwACgkQitSsb3rl5xT/2gCg6J3vDw6Ztas4/j6cU5DolGs9
+8sQAoMTJDwuuXUhdBdAz4vHph7gbp18k
+=3t92
+-----END PGP SIGNATURE-----
+
+--LNN8kg2J0CTvIxHUweE5Mo1oj34QutIhE--
