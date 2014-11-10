@@ -1,277 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078AbaKJWXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 17:23:07 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:59140 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152AbaKJWXF (ORCPT
+	id S1752386AbaKJWYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:24:33 -0500
+Received: from smtprelay0243.hostedemail.com ([216.40.44.243]:51646 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751205AbaKJWYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 17:23:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415655141-31507-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1415655141-31507-1-git-send-email-mathieu.poirier@linaro.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon, 10 Nov 2014 16:22:42 -0600
-Message-ID: <CAL_JsqLWqHppPA=s+u-DjEQk9wbF4Kdx1OeqozHJwGbwRDSF_A@mail.gmail.com>
-Subject: Re: [PATCH v9 RESEND] coresight: bindings for coresight drivers
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Nov 2014 17:24:30 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2890:2911:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:4042:4321:4425:5007:6261:6691:10004:10400:10848:11232:11658:11914:12109:12296:12517:12519:12740:13018:13019:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: quilt83_271188d3b8900
+X-Filterd-Recvd-Size: 1622
+Message-ID: <1415658266.8868.20.camel@perches.com>
+Subject: Re: [PATCH v2 00/10 linux-next] cdrom: sysctl export + clean-up
+From: Joe Perches <joe@perches.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+Date: Mon, 10 Nov 2014 14:24:26 -0800
+In-Reply-To: <54613A75.9080307@kernel.dk>
+References: <1415650916-9975-1-git-send-email-fabf@skynet.be>
+	 <1415652861.8868.19.camel@perches.com> <54613A75.9080307@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 3:32 PM,  <mathieu.poirier@linaro.org> wrote:
-> Can someone in the bindings' maintainer brigade pick this up?  The code has been
-> added to linux-next:
->         a06ae86 coresight: add CoreSight core layer framework
+On Mon, 2014-11-10 at 15:21 -0700, Jens Axboe wrote:
+> On 2014-11-10 13:54, Joe Perches wrote:
+> > On Mon, 2014-11-10 at 21:21 +0100, Fabian Frederick wrote:
+> >> This patchset moves sysctl functions to a new file cdrom_sysctl.c
+> >> and tries to solve small code / coding style issues.
+> >
+> > Hey Fabian.
+> >
+> > You're doing a lot of these.
+> >
+> > Maybe you should setup a git tree somewhere
+> > (maybe repo.or.cz or request a kernel.org account)
+> > and let people pull your branches from there.
+> 
+> I prefer just seeing the patches, makes it easier to review in the 
+> mailer. And applying them from email is easy enough.
 
-Perhaps when I get over being annoyed that you keep sending this as a
-new version with no changes (or perhaps there are, but there is no
-change log) and that you have failed to respond to my previous 3
-emails on it. I've already acked it, so it could have been merged with
-the rest of the series. I've also just noticed you have also failed to
-address the minor comment did I have along with my ack.
-
-Rob
+I prefer seeing the patches too and I didn't suggest
+_not_ sending them, just adding the ability to do
+a git pull.
 
 
->
-> Thanks,
-> Mathieu
->
-> From 12ec0ef4753125e470a0899fabd94b46b3a93a9d Mon Sep 17 00:00:00 2001
-> From: Mathieu Poirier <mathieu.poirier@linaro.org>
-> Date: Thu, 7 Aug 2014 12:34:06 -0600
-> Subject: [PATCH v9] coresight: bindings for coresight drivers
->
-> Coresight IP blocks allow for the support of HW assisted tracing
-> on ARM SoCs.  Bindings for the currently available blocks are
-> presented herein.
->
-> Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> ---
->  .../devicetree/bindings/arm/coresight.txt          | 203 +++++++++++++++++++++
->  1 file changed, 203 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
->
-> diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
-> new file mode 100644
-> index 0000000..96dd947
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/coresight.txt
-> @@ -0,0 +1,203 @@
-> +* CoreSight Components:
-> +
-> +CoreSight components are compliant with the ARM CoreSight architecture
-> +specification and can be connected in various topologies to suit a particular
-> +SoCs tracing needs. These trace components can generally be classified as sinks,
-> +links and sources. Trace data produced by one or more sources flows through the
-> +intermediate links connecting the source to the currently selected sink. Each
-> +CoreSight component device should use these properties to describe its hardware
-> +characteristcs.
-> +
-> +* Required properties for all components *except* non-configurable replicators:
-> +
-> +       * compatible: These have to be supplemented with "arm,primecell" as
-> +         drivers are using the AMBA bus interface.  Possible values include:
-> +               - "arm,coresight-etb10", "arm,primecell";
-> +               - "arm,coresight-tpiu", "arm,primecell";
-> +               - "arm,coresight-tmc", "arm,primecell";
-> +               - "arm,coresight-funnel", "arm,primecell";
-> +               - "arm,coresight-etm3x", "arm,primecell";
-> +
-> +       * reg: physical base address and length of the register
-> +         set(s) of the component.
-> +
-> +       * clocks: the clock associated to this component.
-> +
-> +       * clock-names: the name of the clock as referenced by the code.
-> +         Since we are using the AMBA framework, the name should be
-> +         "apb_pclk".
-> +
-> +       * port or ports: The representation of the component's port
-> +         layout using the generic DT graph presentation found in
-> +         "bindings/graph.txt".
-> +
-> +* Required properties for devices that don't show up on the AMBA bus, such as
-> +  non-configurable replicators:
-> +
-> +       * compatible: Currently supported value is (note the absence of the
-> +         AMBA markee):
-> +               - "arm,coresight-replicator"
-> +
-> +       * id: a unique number that will identify this replicator.
-> +
-> +       * port or ports: same as above.
-> +
-> +* Optional properties for ETM/PTMs:
-> +
-> +       * arm,cp14: must be present if the system accesses ETM/PTM management registers
-> +         via co-processor 14.
-> +
-> +       * cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
-> +         considered to belong to CPU0.
-> +
-> +* Optional property for TMC:
-> +
-> +       * arm,buffer-size: size of contiguous buffer space for TMC ETR
-> +        (embedded trace router)
-> +
-> +
-> +Example:
-> +
-> +1. Sinks
-> +       etb@0,20010000 {
-> +               compatible = "arm,coresight-etb10", "arm,primecell";
-> +               reg = <0 0x20010000 0 0x1000>;
-> +
-> +               coresight-default-sink;
-> +               clocks = <&oscclk6a>;
-> +               clock-names = "apb_pclk";
-> +               port {
-> +                       etb_in_port: endpoint@0 {
-> +                               slave-mode;
-> +                               remote-endpoint = <&replicator_out_port0>;
-> +                       };
-> +               };
-> +       };
-> +
-> +       tpiu@0,20030000 {
-> +               compatible = "arm,coresight-tpiu", "arm,primecell";
-> +               reg = <0 0x20030000 0 0x1000>;
-> +
-> +               clocks = <&oscclk6a>;
-> +               clock-names = "apb_pclk";
-> +               port {
-> +                       tpiu_in_port: endpoint@0 {
-> +                               slave-mode;
-> +                               remote-endpoint = <&replicator_out_port1>;
-> +                       };
-> +               };
-> +       };
-> +
-> +2. Links
-> +       replicator {
-> +               /* non-configurable replicators don't show up on the
-> +                * AMBA bus.  As such no need to add "arm,primecell".
-> +                */
-> +               compatible = "arm,coresight-replicator";
-> +               /* this will show up in debugfs as "0.replicator" */
-> +               id = <0>;
-> +
-> +               ports {
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> +
-> +                       /* replicator output ports */
-> +                       port@0 {
-> +                               reg = <0>;
-> +                               replicator_out_port0: endpoint {
-> +                                       remote-endpoint = <&etb_in_port>;
-> +                               };
-> +                       };
-> +
-> +                       port@1 {
-> +                               reg = <1>;
-> +                               replicator_out_port1: endpoint {
-> +                                       remote-endpoint = <&tpiu_in_port>;
-> +                               };
-> +                       };
-> +
-> +                       /* replicator input port */
-> +                       port@2 {
-> +                               reg = <0>;
-> +                               replicator_in_port0: endpoint {
-> +                                       slave-mode;
-> +                                       remote-endpoint = <&funnel_out_port0>;
-> +                               };
-> +                       };
-> +               };
-> +       };
-> +
-> +       funnel@0,20040000 {
-> +               compatible = "arm,coresight-funnel", "arm,primecell";
-> +               reg = <0 0x20040000 0 0x1000>;
-> +
-> +               clocks = <&oscclk6a>;
-> +               clock-names = "apb_pclk";
-> +               ports {
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> +
-> +                       /* funnel output port */
-> +                       port@0 {
-> +                               reg = <0>;
-> +                               funnel_out_port0: endpoint {
-> +                                       remote-endpoint = <&replicator_in_port0>;
-> +                               };
-> +                       };
-> +
-> +                       /* funnel input ports */
-> +                       port@1 {
-> +                               reg = <0>;
-> +                               funnel_in_port0: endpoint {
-> +                                       slave-mode;
-> +                                       remote-endpoint = <&ptm0_out_port>;
-> +                               };
-> +                       };
-> +
-> +                       port@2 {
-> +                               reg = <1>;
-> +                               funnel_in_port1: endpoint {
-> +                                       slave-mode;
-> +                                       remote-endpoint = <&ptm1_out_port>;
-> +                               };
-> +                       };
-> +
-> +                       port@3 {
-> +                               reg = <2>;
-> +                               funnel_in_port2: endpoint {
-> +                                       slave-mode;
-> +                                       remote-endpoint = <&etm0_out_port>;
-> +                               };
-> +                       };
-> +
-> +               };
-> +       };
-> +
-> +3. Sources
-> +       ptm@0,2201c000 {
-> +               compatible = "arm,coresight-etm3x", "arm,primecell";
-> +               reg = <0 0x2201c000 0 0x1000>;
-> +
-> +               cpu = <&cpu0>;
-> +               clocks = <&oscclk6a>;
-> +               clock-names = "apb_pclk";
-> +               port {
-> +                       ptm0_out_port: endpoint {
-> +                               remote-endpoint = <&funnel_in_port0>;
-> +                       };
-> +               };
-> +       };
-> +
-> +       ptm@0,2201d000 {
-> +               compatible = "arm,coresight-etm3x", "arm,primecell";
-> +               reg = <0 0x2201d000 0 0x1000>;
-> +
-> +               cpu = <&cpu1>;
-> +               clocks = <&oscclk6a>;
-> +               clock-names = "apb_pclk";
-> +               port {
-> +                       ptm1_out_port: endpoint {
-> +                               remote-endpoint = <&funnel_in_port1>;
-> +                       };
-> +               };
-> +       };
-> --
-> 1.9.1
->
+
+
