@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985AbaKJHk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:40:57 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:65243 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaKJHk4 (ORCPT
+	id S1752018AbaKJHoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 02:44:37 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:54001 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340AbaKJHof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 02:40:56 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on NO_LIBELF=1
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
-	<545CE36C.7040906@gmail.com>
-Date: Mon, 10 Nov 2014 16:40:53 +0900
-In-Reply-To: <545CE36C.7040906@gmail.com> (David Ahern's message of "Fri, 07
-	Nov 2014 08:21:16 -0700")
-Message-ID: <87a93zv6yi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 10 Nov 2014 02:44:35 -0500
+Date: Mon, 10 Nov 2014 08:44:30 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: john_gong <john_gong@yeah.net>
+Cc: pbonzini@redhat.com,
+        "Gleb Natapov <gleb@kernel.org> Thomas Gleixner" <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: Re: typo of the comment
+Message-ID: <20141110074430.GA10177@gmail.com>
+References: <545D8968.4080004@yeah.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <545D8968.4080004@yeah.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
 
-On Fri, 07 Nov 2014 08:21:16 -0700, David Ahern wrote:
-> On 11/6/14, 10:20 PM, Namhyung Kim wrote:
->> It worked w/o libelf, but recent change to use vmlinux for kernel
->> symbols break it.
->
-> Do you know the recent change (commit id) that broke it?
+* john_gong <john_gong@yeah.net> wrote:
 
-Nope.  I tried to find it but failed - older versions seems also have
-the problem and some of them could not run perf record.  Anyway it looks
-like depending some external condition and broken for a while. :(
+> hi Paolo,
+> i find a typo of the comment.
+> 
+> 
+> From 09d5df31f0930e8e3eb10ad60a3debc53d6ce992 Mon Sep 17 00:00:00 2001
+> From: john_gong <john_gong@yeah.net>
+> Date: Fri, 7 Nov 2014 07:32:17 +0800
+> Subject: [PATCH] modify a typo of the comment
+> 
+> Signed-off-by: john_gong <john_gong@yeah.net>
+> ---
+>  arch/x86/kvm/x86.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index ef432f8..42bb2c8 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -214,7 +214,7 @@ void kvm_define_shared_msr(unsigned slot, u32 msr)
+>      if (slot >= shared_msrs_global.nr)
+>          shared_msrs_global.nr = slot + 1;
+>      shared_msrs_global.msrs[slot] = msr;
+> -    /* we need ensured the shared_msr_global have been updated */
+> +    /* we need ensured the shared_msrs_global have been updated */
+>      smp_wmb();
+
+That's not the only typo in that sentence though.
 
 Thanks,
-Namhyung
+
+	Ingo
