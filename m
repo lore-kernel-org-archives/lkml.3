@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaKJOAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:00:09 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:58900 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaKJOAG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:00:06 -0500
-Date: Mon, 10 Nov 2014 22:00:02 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: crypto: algif_skcipher: check for IV size superfluous?
-Message-ID: <20141110140002.GC8578@gondor.apana.org.au>
-References: <8150359.mtACJVFlUb@tachyon.chronox.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8150359.mtACJVFlUb@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753001AbaKJOCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:02:03 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55960 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992AbaKJOCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 09:02:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,353,1413270000"; 
+   d="scan'208";a="619965492"
+Message-ID: <1415628106.22887.122.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/4] UBIFS: Add xattr support for symlinks
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ben Shelton <ben.shelton@ni.com>
+Cc: linux-mtd@lists.infradead.org, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Subodh Nijsure <snijsure@grid-net.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Date: Mon, 10 Nov 2014 16:01:46 +0200
+In-Reply-To: <1414781431-2911-3-git-send-email-ben.shelton@ni.com>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+	 <1414781431-2911-3-git-send-email-ben.shelton@ni.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 08, 2014 at 01:32:30AM +0100, Stephan Mueller wrote:
-> Hi Herbert,
+On Fri, 2014-10-31 at 13:50 -0500, Ben Shelton wrote:
+> From: Subodh Nijsure <snijsure@grid-net.com>
 > 
-> I am in the process to extend algif_skcipher to support AEAD ciphers as well. 
-> The code already works but I want to run final tests before releasing it.
+> Signed-off-by: Subodh Nijsure <snijsure@grid-net.com>
+> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+> Signed-off-by: Ben Shelton <ben.shelton@ni.com>
+> Acked-by: Terry Wilcox <terry.wilcox@ni.com>
+> Acked-by: Gratian Crisan <gratian.crisan@ni.com>
+> ---
+>  fs/ubifs/file.c  |  4 ++++
+>  fs/ubifs/xattr.c | 17 ++++++++++++-----
+>  2 files changed, 16 insertions(+), 5 deletions(-)
 > 
-> In the course of the development I stumbled over the following code:
-> 
-> static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
-> 			    struct msghdr *msg, size_t size)
-> {
-> ...
-> 		if (con.iv && con.iv->ivlen != ivsize)
-> 			return -EINVAL;
-> 
-> This code effectively requires that any user space code trying to use a cipher 
-> must provide an IV that is equal to the blocksize of the cipher.
-> 
-> I am wondering why this check is there or whether we can remove that.
-> 
-> When using the kernel crypto API inside the kernel, there is no such 
-> enforcement. One can take shorter IVs which are implicitly padded with 
-> trailing zeros.
+> diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+> index b5b593c..4a1d4cf 100644
+> --- a/fs/ubifs/file.c
+> +++ b/fs/ubifs/file.c
+> @@ -1573,6 +1573,10 @@ const struct inode_operations ubifs_symlink_inode_operations = {
+>  	.follow_link = ubifs_follow_link,
+>  	.setattr     = ubifs_setattr,
+>  	.getattr     = ubifs_getattr,
+> +	.setxattr    = ubifs_setxattr,
+> +	.getxattr    = ubifs_getxattr,
+> +	.listxattr   = ubifs_listxattr,
+> +	.removexattr = ubifs_removexattr,
 
-The kernel requires you to provide an IV that's exactly the size
-required by the algorithm.  As otherwise the API would need to
-specify an explicit IV size per request.
- 
-> However, if we conclude that the check should remain, then I am wondering 
-> whether we have to move it to the various _setiv functions of the kernel 
-> crypto API instead of leaving it in the skcipher interface. 
+Could you please re-test this with any kernel and carefully verify
+symlinks. I think this should not work, because in case of symlinks we
+already store the link target path in the inode, and with this patch the
+target patch will be over-written with the SELinux label. I expect this
+to be seen easily on testing - symlink targets should be corrupted.
 
-The kernel interface does not have an explicit IV size in the
-request.  Therefore there is no way for us to check.
+Artem.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+
