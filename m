@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaKJSPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 13:15:20 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60135 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaKJSPS (ORCPT
+	id S1751477AbaKJSQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 13:16:31 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60522 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaKJSQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 13:15:18 -0500
-Message-ID: <546100AF.40201@infradead.org>
-Date: Mon, 10 Nov 2014 10:15:11 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 10 Nov 2014 13:16:29 -0500
+Date: Mon, 10 Nov 2014 19:15:59 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Feng Wu <feng.wu@intel.com>
+cc: gleb@kernel.org, pbonzini@redhat.com,
+        David Woodhouse <dwmw2@infradead.org>, joro@8bytes.org,
+        mingo@redhat.com, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: several messages
+In-Reply-To: <1415600812-27773-14-git-send-email-feng.wu@intel.com>
+Message-ID: <alpine.DEB.2.11.1411101913340.3935@nanos>
+References: <1415600812-27773-1-git-send-email-feng.wu@intel.com> <1415600812-27773-14-git-send-email-feng.wu@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Nov 10 (net/ipv4/ip_tunnel.c)
-References: <20141110205945.51af32a6@canb.auug.org.au>
-In-Reply-To: <20141110205945.51af32a6@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/14 01:59, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20141106:
-> 
+On Mon, 10 Nov 2014, Feng Wu wrote:
 
-on x86_64:
-when CONFIG_NET_IP_TUNNEL=y and CONFIG_NET_FOU=m:
+> VT-d Posted-Interrupts is an enhancement to CPU side Posted-Interrupt.
+> With VT-d Posted-Interrupts enabled, external interrupts from
+> direct-assigned devices can be delivered to guests without VMM
+> intervention when guest is running in non-root mode.
 
-net/built-in.o: In function `ip_tunnel_encap':
-(.text+0xb04d8): undefined reference to `gue_build_header'
-net/built-in.o: In function `ip_tunnel_encap':
-(.text+0xb04ea): undefined reference to `fou_build_header'
+Can you please talk to Jiang and synchronize your work with his
+refactoring of the x86 interrupt handling subsystem.
 
+I want this stuff cleaned up first before we add new stuff to it.
 
+Thanks,
 
--- 
-~Randy
+	tglx
