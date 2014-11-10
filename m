@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaKJPuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:50:15 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42621 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaKJPuN (ORCPT
+	id S1753171AbaKJPuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:50:24 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39453 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753094AbaKJPuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:50:13 -0500
-Date: Mon, 10 Nov 2014 16:50:09 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Vikas Shivappa <vikas.shivappa@intel.com>, Tejun Heo <tj@kernel.org>,
-        "Auld, Will" <will.auld@intel.com>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+	Mon, 10 Nov 2014 10:50:18 -0500
+Message-ID: <1415634616.22736.9.camel@jarvis.lan>
+Subject: Re: linux-next: build failure after merge of the scsi tree
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Anish Bhatt <anish@chelsio.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>, h.peter.anvin@intel.com
-Subject: Re: Cache Allocation Technology Design
-Message-ID: <20141110155009.GY10501@worktop.programming.kicks-ass.net>
-References: <20141029134526.GC3337@twins.programming.kicks-ass.net>
- <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
- <20141029172845.GP12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
- <20141029182234.GA13393@mtj.dyndns.org>
- <20141030070725.GG3337@twins.programming.kicks-ass.net>
- <20141030124333.GA29540@htj.dyndns.org>
- <alpine.DEB.2.10.1410301610000.27874@vshiva-Udesk>
- <20141104131714.GR3219@twins.programming.kicks-ass.net>
- <20141106170323.GJ3592@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141106170323.GJ3592@console-pimps.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+        Karen Xie <kxie@chelsio.com>
+Date: Mon, 10 Nov 2014 07:50:16 -0800
+In-Reply-To: <20141110154802.GA11895@lst.de>
+References: <20141110171533.63b2dfcc@canb.auug.org.au>
+	 <525DB349B3FB5444AE057A887CB2A8D8D71B12@nice.asicdesigners.com>
+	 <20141110134607.GA3621@lst.de> <1415632890.22736.1.camel@jarvis.lan>
+	 <20141110154802.GA11895@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 05:03:23PM +0000, Matt Fleming wrote:
-> On Tue, 04 Nov, at 02:17:14PM, Peter Zijlstra wrote:
-> > 
-> > I don't like extending cpusets further. Its already a weird and too big
-> > controller.
-> > 
-> > What is wrong with having a specific CQM controller and using it
-> > together with cpusets where desired?
+On Mon, 2014-11-10 at 16:48 +0100, Christoph Hellwig wrote:
+> On Mon, Nov 10, 2014 at 07:21:30AM -0800, James Bottomley wrote:
+> > so that's adding the 3.18-incoming trees?
 > 
-> The specific problem that conflating cpusets and the CAT controller is
-> trying to solve is that on some platforms the CLOS ID doesn't move with
-> data that travels up the cache hierarchy, i.e. we lose the CLOS ID when
-> data moves from LLC to L2.
-> 
-> I think the idea with pinning CLOS IDs to a specific cpu and any tasks
-> that are using that ID is that it works around this problem out of the
-> box, rather than requiring sysadmins to configure things.
+> Not yet.  Those are for the buildbolt to find any issues before pushing
+> it to the actual for-3.x branch.  It's a trick I picked up from the nfsd tree.
 
-So either the user needs to set that mode _and_ set cpu masks, or the
-user needs to use cpusets and set masks, same difference to me.
+So your idea is Fenguang first then linux-next.
+
+OK.
+
+James
 
 
