@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaKJKXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:23:20 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55375 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaKJKXS (ORCPT
+	id S1752238AbaKJK1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:27:32 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:62155 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725AbaKJK1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:23:18 -0500
-Date: Mon, 10 Nov 2014 10:23:08 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Feng Kan <fkan@apm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@apm.com" <patches@apm.com>, Bao Truong <btruong@apm.com>
-Subject: Re: [PATCH RESEND 1/7] arm64: dts: Add APM X-Gene USB DTS node
-Message-ID: <20141110102308.GB21366@e104818-lin.cambridge.arm.com>
-References: <1414438108-8384-1-git-send-email-fkan@apm.com>
- <1414438108-8384-2-git-send-email-fkan@apm.com>
- <1414599817.1870.15.camel@deneb.redhat.com>
+	Mon, 10 Nov 2014 05:27:31 -0500
+Date: Mon, 10 Nov 2014 11:27:25 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] perf syscall error handling
+Message-ID: <20141110102725.GA19309@gmail.com>
+References: <20141030222814.GF15602@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410302111150.2766@pianoman.cluster.toy>
+ <20141031072109.GD12706@worktop.programming.kicks-ass.net>
+ <20141031092713.GA23124@gmail.com>
+ <20141031122824.GZ12020@console-pimps.org>
+ <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
+ <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
+ <20141103162548.GB18464@kernel.org>
+ <20141103165019.GY10501@worktop.programming.kicks-ass.net>
+ <20141103170059.GC18464@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414599817.1870.15.camel@deneb.redhat.com>
+In-Reply-To: <20141103170059.GC18464@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:23:37PM +0000, Mark Salter wrote:
-> On Mon, 2014-10-27 at 12:28 -0700, Feng Kan wrote:
-> > This parch adds the device tree nodes for APM X-Gnene USB host controller.
-> > Since X-Gene SOC supports maximum 2 USB ports, 2 dts node are added.
-> > 
-> > Signed-off-by: Bao Truong <btruong@apm.com>
-> > Signed-off-by: Feng Kan <fkan@apm.com>
-> > ---
-> >  arch/arm64/boot/dts/apm-storm.dtsi | 14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-> > index 3eef74b..a80f2fa 100644
-> > --- a/arch/arm64/boot/dts/apm-storm.dtsi
-> > +++ b/arch/arm64/boot/dts/apm-storm.dtsi
-> > @@ -587,6 +587,20 @@
-> >  			phy-names = "sata-phy";
-> >  		};
-> >  
-> > +		usb0: dwusb@19000000 {
-> > +			status = "disabled";
-> > +			compatible = "xhci-platform";
-> > +			reg =  <0x0 0x19000000 0x0 0x100000>;
-> > +			interrupts = <0x0 0x89 0x4>;
-> > +		};
-> > +
-> > +		usb1: dwusb@19800000 {
-> > +			status = "disabled";
-> > +			compatible = "xhci-platform";
-> > +			reg =  <0x0 0x19800000 0x0 0x100000>;
-> > +			interrupts = <0x0 0x8a 0x4>;
-> > +		};
-> > +
+
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+
+> Em Mon, Nov 03, 2014 at 05:50:19PM +0100, Peter Zijlstra escreveu:
+> > On Mon, Nov 03, 2014 at 02:25:48PM -0200, Arnaldo Carvalho de Melo wrote:
+>  
+> > > The way that peterz suggested, i.e. returning information about which
+> > > perf_event_attr and which of the parameters was invalid/had issues could
+> > > help with fallbacking/capability querying, i.e. tooling may want to use
+> > > some features if available automagically, fallbacking to something else
+> > > when that fails.
+>  
+> > > We already do that to some degree in various cases, but for some if the
+> > > only way that becomes available to disambiguate some EINVAL return is a
+> > > string, code will start having strcmps :-\
 > 
-> Should these have "dma-coherent" properties?
+> > OK, so how about we do both, the offset+mask for the tools 
+> > and the string for the humans?
+> 
+> Yeah, tooling tries to provide the best it can with the 
+> offset+mask, and if doesn't manage to do anything smart with 
+> it, just show the string and hope that helps the user to figure 
+> out what is happening.
 
-Just a note here: if the device is coherent but the DT does not specify
-it as such, it's not just a matter of performance but potentially data
-corruption. The current DMA ops for non-coherent devices perform a
-D-cache invalidate on the unmap path with the FROM_DEVICE direction. If
-the device is coherent and the DMA transfer (FROM_DEVICE) allocated data
-in the system cache (L3), the CPU cache invalidation after the transfer
-would corrupt such data.
+Almost: tooling should generally always consider the string as 
+well, for the (not so uncommon) case where there can be multiple 
+problems with the same field.
 
-We had a similar discussion internally around coherency properties for
-ACPI. If we don't have guarantees that the DT (or ACPI) tables always
-pass the correct information, we should change the kernel DMA ops to
-perform the safe clean+invalidate on the unmap path (some CPU
-implementations do this by default).
+Really, I think the string will give the most bang for the buck, 
+because it's really simple and straightforward on the kernel side 
+(so that we have a good chance of achieving full coverage 
+relatively quickly), and later on we could still complicate it 
+all with offset+mask if there's really a need.
 
--- 
-Catalin
+So lets start with an error string...
+
+Thanks,
+
+	Ingo
