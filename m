@@ -1,91 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaKJMbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:31:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577AbaKJMby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:31:54 -0500
-Date: Mon, 10 Nov 2014 10:31:31 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        brendan.d.gregg@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC] perf-cache command interface design
-Message-ID: <20141110123131.GD4468@redhat.com>
-References: <20141102105006.21708.28734.stgit@hemant-fedora>
- <20141102105557.21708.19032.stgit@hemant-fedora>
- <87lhnr5sbl.fsf@sejong.aot.lge.com>
- <54588905.7040002@linux.vnet.ibm.com>
- <5458CD15.4010101@hitachi.com>
- <874muew2hk.fsf@sejong.aot.lge.com>
- <5459E865.6050207@hitachi.com>
- <545B1DDE.9000202@linux.vnet.ibm.com>
- <545C80F4.4020905@hitachi.com>
- <CAPh34mfj5DJSbUBhQSZS_QpTUubV5a7UEsiyzfNSia3bjU2kww@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPh34mfj5DJSbUBhQSZS_QpTUubV5a7UEsiyzfNSia3bjU2kww@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752845AbaKJMcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:32:43 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:58780 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577AbaKJMcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:32:42 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] mfd: tps65090: Fix bonkers indenting strategy
+Date: Mon, 10 Nov 2014 12:32:31 +0000
+Message-Id: <1415622751-23396-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 10, 2014 at 01:05:45PM +0100, Hagen Paul Pfeifer escreveu:
-> On 7 November 2014 09:21, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
-> > File Format
-> > ===========
-> > All the cache files are placed under ~/.debug/ by default.
-> > The paths of buildid cache of binary/symbols are not changed.
-> >
-> > The SDT/probe caches are placed under the ~/.debug/.probes/path/to/bin/bu/ildid
-> > and that is linked to ~/.debug/.probes/.buildid/bu/ildid
-> > # To avoid conflict with files under /probes/*, I picked up .probes/.
-> 
-> A little bit late: but why ~/.debug? Why not $XDG_CACHE_HOME/perf/ as
+First spotted pointless (incorrect) indent of 'if (ret)', then double
+indentations of a struct attribute 'mask'.  Decided to go through the
+whole file and make amendments instead and this is the result.
 
-Why "perf"?
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/tps65090.c | 62 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
-> the root for all perf related files? debug is not unique nor is it sufficient
+diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+index 1c3e6e2..14b62e1 100644
+--- a/drivers/mfd/tps65090.c
++++ b/drivers/mfd/tps65090.c
+@@ -76,58 +76,58 @@ static struct mfd_cell tps65090s[] = {
+ static const struct regmap_irq tps65090_irqs[] = {
+ 	/* INT1 IRQs*/
+ 	[TPS65090_IRQ_VAC_STATUS_CHANGE] = {
+-			.mask = TPS65090_INT1_MASK_VAC_STATUS_CHANGE,
++		.mask = TPS65090_INT1_MASK_VAC_STATUS_CHANGE,
+ 	},
+ 	[TPS65090_IRQ_VSYS_STATUS_CHANGE] = {
+-			.mask = TPS65090_INT1_MASK_VSYS_STATUS_CHANGE,
++		.mask = TPS65090_INT1_MASK_VSYS_STATUS_CHANGE,
+ 	},
+ 	[TPS65090_IRQ_BAT_STATUS_CHANGE] = {
+-			.mask = TPS65090_INT1_MASK_BAT_STATUS_CHANGE,
++		.mask = TPS65090_INT1_MASK_BAT_STATUS_CHANGE,
+ 	},
+ 	[TPS65090_IRQ_CHARGING_STATUS_CHANGE] = {
+-			.mask = TPS65090_INT1_MASK_CHARGING_STATUS_CHANGE,
++		.mask = TPS65090_INT1_MASK_CHARGING_STATUS_CHANGE,
+ 	},
+ 	[TPS65090_IRQ_CHARGING_COMPLETE] = {
+-			.mask = TPS65090_INT1_MASK_CHARGING_COMPLETE,
++		.mask = TPS65090_INT1_MASK_CHARGING_COMPLETE,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_DCDC1] = {
+-			.mask = TPS65090_INT1_MASK_OVERLOAD_DCDC1,
++		.mask = TPS65090_INT1_MASK_OVERLOAD_DCDC1,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_DCDC2] = {
+-			.mask = TPS65090_INT1_MASK_OVERLOAD_DCDC2,
++		.mask = TPS65090_INT1_MASK_OVERLOAD_DCDC2,
+ 	},
+ 	/* INT2 IRQs*/
+ 	[TPS65090_IRQ_OVERLOAD_DCDC3] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_DCDC3,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_DCDC3,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET1] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET1,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET1,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET2] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET2,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET2,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET3] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET3,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET3,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET4] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET4,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET4,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET5] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET5,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET5,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET6] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET6,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET6,
+ 	},
+ 	[TPS65090_IRQ_OVERLOAD_FET7] = {
+-			.reg_offset = 1,
+-			.mask = TPS65090_INT2_MASK_OVERLOAD_FET7,
++		.reg_offset = 1,
++		.mask = TPS65090_INT2_MASK_OVERLOAD_FET7,
+ 	},
+ };
+ 
+@@ -176,7 +176,7 @@ MODULE_DEVICE_TABLE(of, tps65090_of_match);
+ #endif
+ 
+ static int tps65090_i2c_probe(struct i2c_client *client,
+-					const struct i2c_device_id *id)
++			      const struct i2c_device_id *id)
+ {
+ 	struct tps65090_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	int irq_base = 0;
+@@ -210,11 +210,11 @@ static int tps65090_i2c_probe(struct i2c_client *client,
+ 
+ 	if (client->irq) {
+ 		ret = regmap_add_irq_chip(tps65090->rmap, client->irq,
+-			IRQF_ONESHOT | IRQF_TRIGGER_LOW, irq_base,
+-			&tps65090_irq_chip, &tps65090->irq_data);
+-			if (ret) {
+-				dev_err(&client->dev,
+-					"IRQ init failed with err: %d\n", ret);
++					  IRQF_ONESHOT | IRQF_TRIGGER_LOW, irq_base,
++					  &tps65090_irq_chip, &tps65090->irq_data);
++		if (ret) {
++			dev_err(&client->dev,
++				"IRQ init failed with err: %d\n", ret);
+ 			return ret;
+ 		}
+ 	} else {
+@@ -223,8 +223,8 @@ static int tps65090_i2c_probe(struct i2c_client *client,
+ 	}
+ 
+ 	ret = mfd_add_devices(tps65090->dev, -1, tps65090s,
+-		ARRAY_SIZE(tps65090s), NULL,
+-		0, regmap_irq_get_domain(tps65090->irq_data));
++			      ARRAY_SIZE(tps65090s), NULL,
++			      0, regmap_irq_get_domain(tps65090->irq_data));
+ 	if (ret) {
+ 		dev_err(&client->dev, "add mfd devices failed with err: %d\n",
+ 			ret);
+-- 
+1.9.1
 
-Probably should be some other name then, but ~/.debug/ is there since
-the build-id cache was introduced, guess this is why it is being kept so
-far in Masami's proposal.
-
-> to meet file hierarchy: man file-hierarchy(8)
-
-Humm,
-
-It starts in $HOME/.debug/ because this is not supposed to be a system
-wide cache, a developer can, for instance:
-
-1. perf record myapp
-2. edit myapp.c
-3. rebuild it
-4. perf record myapp
-5. perf diff
-
-And it will show the difference from the previous version, for which it
-stored a copy of its binary on its private, keyed by build-id, cache.
-
-So this is not merely a place where we will read stuff from.
-
-If somebody decides to have it in a place accessible by multiple users
-on the same system, then, yes, some more suitable place outside its
-$HOME is needed, and then tooling should look there as well as on the
-places it already looks for such files, i.e. $HOME/.debug/,
-/usr/lib/debug (where foo-debuginfo packages store stuff, also keyed by
-build-id), /lib/modules/$KVR/, etc.
-
-- Arnaldo
