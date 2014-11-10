@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaKJXVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 18:21:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44996 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaKJXVf (ORCPT
+	id S1751760AbaKJXbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 18:31:48 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43243 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750904AbaKJXbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 18:21:35 -0500
-Date: Mon, 10 Nov 2014 15:21:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Faisal Abbas <90.abbasfaisal@gmail.com>
-Cc: dhowells@redhat.com, fabf@skynet.be, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FRV: Wire up new syscalls
-Message-Id: <20141110152135.17dde96612eb81d8725967a4@linux-foundation.org>
-In-Reply-To: <1415550363-6172-1-git-send-email-90.abbasfaisal@gmail.com>
-References: <1415550363-6172-1-git-send-email-90.abbasfaisal@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Nov 2014 18:31:46 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX187m2RtXnr0/Vf5jjg5XxJl
+Date: Mon, 10 Nov 2014 15:30:51 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bcousson@baylibre.com, linux@arm.linux.org.uk, tomi.valkeinen@ti.com,
+        plagnioj@jcrosoft.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org, hns@goldelico.com
+Subject: Re: [PATCH 3/4] arm: dts: omap3-gta04: Add handling for tv output
+Message-ID: <20141110233050.GC31454@atomide.com>
+References: <1415051968-4878-1-git-send-email-marek@goldelico.com>
+ <1415051968-4878-4-git-send-email-marek@goldelico.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415051968-4878-4-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  9 Nov 2014 21:26:03 +0500 Faisal Abbas <90.abbasfaisal@gmail.com> wrote:
-
-> Compiling source tree for FRV generates following warnings so wire these syscalls up.
+* Marek Belisko <marek@goldelico.com> [141103 14:01]:
+> Add handling for gta04 tv out chain:
+> venc -> opa362 -> svideo
 > 
-> <stdin>:1187:2: warning: #warning syscall recvmmsg not implemented [-Wcpp]
-> <stdin>:1190:2: warning: #warning syscall fanotify_init not implemented [-Wcpp]
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> ---
+>  arch/arm/boot/dts/omap3-gta04.dtsi | 48 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 48 insertions(+)
 
-It's David's call, but I'd be reluctant to make changes like this
-unless it's shown that each of these syscalls actually works correctly
-on FRV.
+Applying this patch into omap-for-v3.19/dt thanks.
 
+Tony
