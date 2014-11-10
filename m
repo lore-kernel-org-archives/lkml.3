@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435AbaKJG1X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 01:27:23 -0500
-Received: from stargate.chelsio.com ([67.207.112.58]:5658 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaKJG1V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 01:27:21 -0500
-From: Anish Bhatt <anish@chelsio.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Christoph Hellwig" <hch@lst.de>, Karen Xie <kxie@chelsio.com>
-Subject: RE: linux-next: build failure after merge of the scsi tree
-Thread-Topic: linux-next: build failure after merge of the scsi tree
-Thread-Index: AQHP/K6J8i3rGWaZTEqyAMXQFzemVJxZZGyZ
-Date: Mon, 10 Nov 2014 06:27:13 +0000
-Message-ID: <525DB349B3FB5444AE057A887CB2A8D8D71B12@nice.asicdesigners.com>
-References: <20141110171533.63b2dfcc@canb.auug.org.au>
-In-Reply-To: <20141110171533.63b2dfcc@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.163.150]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751500AbaKJG33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 01:29:29 -0500
+Received: from ozlabs.org ([103.22.144.67]:53800 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814AbaKJG32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 01:29:28 -0500
+Date: Mon, 10 Nov 2014 17:29:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Zhong <zyw@rock-chips.com>
+Subject: linux-next: manual merge of the pinctrl tree with the driver-core
+ tree
+Message-ID: <20141110172921.1e2c12d9@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/LJszOZElMo9TTMOQeyORs_m"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for this was sent out on thursday itself, but does not seem to be applied yet :
-http://marc.info/?l=linux-scsi&m=141529629911520&w=2
-________________________________________
-From: Stephen Rothwell [sfr@canb.auug.org.au]
-Sent: Sunday, November 09, 2014 10:15 PM
-To: James Bottomley
-Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Anish Bhatt; Christoph Hellwig; Karen Xie
-Subject: linux-next: build failure after merge of the scsi tree
+--Sig_/LJszOZElMo9TTMOQeyORs_m
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi James,
+Hi Linus,
 
-After merging the scsi tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Today's linux-next merge of the pinctrl tree got a conflict in
+drivers/pinctrl/pinctrl-rockchip.c between commit 9198f509c888
+("pinctrl: rockchip: add suspend/resume functions") from the
+driver-core tree and commit 5c759d73b022 ("pinctrl: drop owner
+assignment from platform_drivers") from the pinctrl tree.
 
-drivers/scsi/cxgbi/cxgb4i/cxgb4i.c: In function 'do_abort_req_rss':
-drivers/scsi/cxgbi/cxgb4i/cxgb4i.c:942:3: error: too many arguments to function 'send_tx_flowc_wr'
-   send_tx_flowc_wr(csk, 0);
-   ^
-drivers/scsi/cxgbi/cxgb4i/cxgb4i.c:492:20: note: declared here
- static inline void send_tx_flowc_wr(struct cxgbi_sock *csk)
-                    ^
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Caused by commit 4be50d4f7649 ("cxgb4i: send abort_rpl correctly").
-
-I have used the scsi tree from next-20141106 for today.
---
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/pinctrl/pinctrl-rockchip.c
+index 71d5835d864b,40970c305dd0..000000000000
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@@ -1982,6 -2053,8 +2053,7 @@@ static struct platform_driver rockchip_
+  	.probe		=3D rockchip_pinctrl_probe,
+  	.driver =3D {
+  		.name	=3D "rockchip-pinctrl",
+ -		.owner	=3D THIS_MODULE,
++ 		.pm =3D &rockchip_pinctrl_dev_pm_ops,
+  		.of_match_table =3D rockchip_pinctrl_dt_match,
+  	},
+  };
+
+--Sig_/LJszOZElMo9TTMOQeyORs_m
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUYFtGAAoJEMDTa8Ir7ZwVap0P/19w6EZkBRwfwdk7sEX97669
+SGwdtAiKTfORHUd65tsBeAymcEpBezmtO+2Fz7d+0q1x3R0ZY93rbUGgodKaFZwl
+PCmyCiT4SYhRrR5KEz5JOqrsUQoMHBupIzEoAQW8cw863UzuHIMrbk2AFcTL4eA/
+e7dRo4ArtJ22euqeOcIkcOd3PPVymeJGOn7t6+LivDTuzf71+runEhm/v6ILgN23
+sKGYXVlWw923fMXTle+IxxDZC0lQvQP2sxpTw6E/DP3NHHgwOtY8rXZos7/RiZgt
+f8qeywQUaRp0LRBT7zIH/23OBKGBGk5/O8fH0fJVm/2UlAtVKZdIDlI7RWh//zua
+rKPsNWyCK6PU6zinQV0vvlasgo9M5Q7+k+dE3VbC1k6cVJBkhYrbhmlB8Xm4yjLz
+ykIEnAraCmQ2gihp9lD5eqng8Noio+GdjOz3kXF/gwI9bCQU1uRcn6DicXMGaOzj
+vmPLSf72KXFXVjZL5mA50DzQXvvVobSa/A4Guy+EsxNmIJjZJAj3jQCeJFIoZG2j
+CaZiMEU8iNo4lFaAQWutryBxAC9lKqdAwfecZAOyOixhkveSQ+hzPYlhVbHxdYGg
+pqGno2kYgY59M63ykzCh7ZUXLKAE7E7l+zLx4KeGHy5Y1yxSUwUB9WGEJUOhe1fk
+fnGT1ZCKBMEhP/qME48Z
+=miKk
+-----END PGP SIGNATURE-----
+
+--Sig_/LJszOZElMo9TTMOQeyORs_m--
