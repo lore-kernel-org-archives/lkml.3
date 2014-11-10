@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaKJBwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:52:25 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39028 "EHLO
+	id S1752319AbaKJBoJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:44:09 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39009 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaKJBoL (ORCPT
+	with ESMTP id S1752275AbaKJBoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:44:11 -0500
+	Sun, 9 Nov 2014 20:44:04 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Corey Minyard <minyard@acm.org>,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH v6 21/48] ipmi: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:42:38 -0800
-Message-Id: <1415583785-6980-22-git-send-email-linux@roeck-us.net>
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-omap@vger.kernel.org
+Subject: [PATCH v6 18/48] mfd: twl4030-power: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:42:35 -0800
+Message-Id: <1415583785-6980-19-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.5460186A.01B4,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.54601864.002D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 127
+X-CTCH-SenderID-TotalMessages: 113
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -51,14 +51,16 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with high priority to reflect that the original code
-overwrites pm_power_off unconditionally.
+directly. Register with low priority to reflect that the original code
+only sets pm_power_off if it was not already set.
 
-Register power-off handler after the ipmi system is ready, and unregister
-it prior to cleanup. This avoids having to check for the ready variable
-in the poweroff callback.
+Make twl4030_power_off static as it is only called from the twl4030-power
+driver. Drop remove function as it is no longer needed.
 
-Reviewed-by: Corey Minyard <minyard@acm.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: linux-omap@vger.kernel.org
+Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v6:
@@ -76,88 +78,106 @@ v3:
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
 - Use define to specify poweroff handler priority
-- Use pr_warn instead of pr_err
-- Call unregister_power_off_handler on exit only if not already unregistered
+- Use dev_warn instead of dev_err
+- Use devm_register_power_off_handler
+- Drop remove function as it is no longer needed.
 
- drivers/char/ipmi/ipmi_poweroff.c | 25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/mfd/twl4030-power.c | 25 +++++++++++++++----------
+ include/linux/i2c/twl.h     |  1 -
+ 2 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_poweroff.c b/drivers/char/ipmi/ipmi_poweroff.c
-index 9f2e3be..4ae2f22 100644
---- a/drivers/char/ipmi/ipmi_poweroff.c
-+++ b/drivers/char/ipmi/ipmi_poweroff.c
-@@ -63,9 +63,6 @@ static ipmi_user_t ipmi_user;
- static int ipmi_ifnum;
- static void (*specific_poweroff_func)(ipmi_user_t user);
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index cf92a6d..88fd33c 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -25,9 +25,9 @@
+  */
  
--/* Holds the old poweroff function so we can restore it on removal. */
--static void (*old_poweroff_func)(void);
--
- static int set_param_ifnum(const char *val, struct kernel_param *kp)
+ #include <linux/module.h>
+-#include <linux/pm.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ 
+@@ -611,7 +611,7 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
+  * After a successful execution, TWL shuts down the power to the SoC
+  * and all peripherals connected to it.
+  */
+-void twl4030_power_off(void)
++static void twl4030_power_off(struct power_off_handler_block *this)
  {
- 	int rv = param_set_int(val, kp);
-@@ -544,15 +541,17 @@ static struct poweroff_function poweroff_functions[] = {
+ 	int err;
  
- 
- /* Called on a powerdown request. */
--static void ipmi_poweroff_function(void)
-+static void ipmi_poweroff_function(struct power_off_handler_block *this)
- {
--	if (!ready)
--		return;
--
- 	/* Use run-to-completion mode, since interrupts may be off. */
- 	specific_poweroff_func(ipmi_user);
+@@ -621,6 +621,11 @@ void twl4030_power_off(void)
+ 		pr_err("TWL4030 Unable to power off\n");
  }
  
-+static struct power_off_handler_block ipmi_power_off_hb = {
-+	.handler = ipmi_poweroff_function,
-+	.priority = POWER_OFF_PRIORITY_HIGH,
++static struct power_off_handler_block twl4030_power_off_hb = {
++	.handler = twl4030_power_off,
++	.priority = POWER_OFF_PRIORITY_LOW,
 +};
 +
- /* Wait for an IPMI interface to be installed, the first one installed
-    will be grabbed by this code and used to perform the powerdown. */
- static void ipmi_po_new_smi(int if_num, struct device *device)
-@@ -631,9 +630,12 @@ static void ipmi_po_new_smi(int if_num, struct device *device)
- 	printk(KERN_INFO PFX "Found a %s style poweroff function\n",
- 	       poweroff_functions[i].platform_type);
- 	specific_poweroff_func = poweroff_functions[i].poweroff_func;
--	old_poweroff_func = pm_power_off;
--	pm_power_off = ipmi_poweroff_function;
-+
- 	ready = 1;
-+
-+	rv = register_power_off_handler(&ipmi_power_off_hb);
-+	if (rv)
-+		pr_warn(PFX "failed to register power-off handler\n");
- }
- 
- static void ipmi_po_smi_gone(int if_num)
-@@ -644,9 +646,10 @@ static void ipmi_po_smi_gone(int if_num)
- 	if (ipmi_ifnum != if_num)
- 		return;
- 
-+	unregister_power_off_handler(&ipmi_power_off_hb);
-+
- 	ready = 0;
- 	ipmi_destroy_user(ipmi_user);
--	pm_power_off = old_poweroff_func;
- }
- 
- static struct ipmi_smi_watcher smi_watcher = {
-@@ -733,11 +736,11 @@ static void __exit ipmi_poweroff_cleanup(void)
- 	ipmi_smi_watcher_unregister(&smi_watcher);
- 
- 	if (ready) {
-+		unregister_power_off_handler(&ipmi_power_off_hb);
- 		rv = ipmi_destroy_user(ipmi_user);
- 		if (rv)
- 			printk(KERN_ERR PFX "could not cleanup the IPMI"
- 			       " user: 0x%x\n", rv);
--		pm_power_off = old_poweroff_func;
+ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+ 					struct device_node *node)
+ {
+@@ -839,7 +844,9 @@ static int twl4030_power_probe(struct platform_device *pdev)
  	}
+ 
+ 	/* Board has to be wired properly to use this feature */
+-	if (twl4030_power_use_poweroff(pdata, node) && !pm_power_off) {
++	if (twl4030_power_use_poweroff(pdata, node)) {
++		int ret;
++
+ 		/* Default for SEQ_OFFSYNC is set, lets ensure this */
+ 		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &val,
+ 				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
+@@ -856,7 +863,11 @@ static int twl4030_power_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 
+-		pm_power_off = twl4030_power_off;
++		ret = devm_register_power_off_handler(&pdev->dev,
++						      &twl4030_power_off_hb);
++		if (ret)
++			dev_warn(&pdev->dev,
++				 "Failed to register power-off handler\n");
+ 	}
+ 
+ relock:
+@@ -870,11 +881,6 @@ relock:
+ 	return err;
  }
- module_exit(ipmi_poweroff_cleanup);
+ 
+-static int twl4030_power_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ static struct platform_driver twl4030_power_driver = {
+ 	.driver = {
+ 		.name	= "twl4030_power",
+@@ -882,7 +888,6 @@ static struct platform_driver twl4030_power_driver = {
+ 		.of_match_table = of_match_ptr(twl4030_power_of_match),
+ 	},
+ 	.probe		= twl4030_power_probe,
+-	.remove		= twl4030_power_remove,
+ };
+ 
+ module_platform_driver(twl4030_power_driver);
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 8cfb50f..f8544f1 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -680,7 +680,6 @@ struct twl4030_power_data {
+ };
+ 
+ extern int twl4030_remove_script(u8 flags);
+-extern void twl4030_power_off(void);
+ 
+ struct twl4030_codec_data {
+ 	unsigned int digimic_delay; /* in ms */
 -- 
 1.9.1
 
