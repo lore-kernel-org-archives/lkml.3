@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaKJI5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 03:57:39 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:56099 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaKJI5i (ORCPT
+	id S1752198AbaKJI5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 03:57:49 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:56433 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaKJI5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 03:57:38 -0500
-Date: Mon, 10 Nov 2014 16:57:28 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.18
-Message-ID: <20141110085728.GA6685@gondor.apana.org.au>
-References: <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
- <20131203124129.GA12067@gondor.apana.org.au>
- <20131209115705.GA1361@gondor.apana.org.au>
- <20140101061016.GA22579@gondor.apana.org.au>
- <20140203125944.GA31446@gondor.apana.org.au>
- <20140710090314.GA15729@gondor.apana.org.au>
- <20140915113506.GA4736@gondor.apana.org.au>
- <20140924132720.GA31661@gondor.apana.org.au>
+	Mon, 10 Nov 2014 03:57:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924132720.GA31661@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140719113513.GA23586@himangi-Dell>
+References: <20140719113513.GA23586@himangi-Dell>
+Date: Mon, 10 Nov 2014 09:57:45 +0100
+X-Google-Sender-Auth: NUOM9_nJU9RSk6whk3DczYRIB1o
+Message-ID: <CAMuHMdX46dEKLm6cD3gEEvc_aW52NAKgWG5zNmthCs5jMciU3g@mail.gmail.com>
+Subject: Re: [PATCH] mm/m68k: Eliminate memset after alloc_bootmem_pages
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Sat, Jul 19, 2014 at 1:35 PM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> alloc_bootmem and related functions always return a zeroed region of memory.
+> Thus a memset after calls to these functions is unnecessary.
+>
+> The following Coccinelle semantic patch was used for making the change:
+>
+> @@
+> expression E,E1;
+> @@
+>
+> E = \(alloc_bootmem\|alloc_bootmem_low\|alloc_bootmem_pages\|alloc_bootmem_low_pages\)(...)
+> ... when != E
+> - memset(E,0,E1);
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-This push fixes these issues:
+Thanks, applied and queued for v3.19.
 
-* Stack corruption in pseries hwrng driver.
-* Missing DMA unmap in caam crypto driver.
-* NUMA crash in qat crypto driver.
-* Buggy mapping of zero-length associated data in qat crypto driver.
+Gr{oetje,eeting}s,
 
-Please pull from
+                        Geert
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Cristian Stoica (1):
-      crypto: caam - fix missing dma unmap on error path
-
-Greg Kurz (1):
-      hwrng: pseries - port to new read API and fix stack corruption
-
-Tadeusz Struk (2):
-      crypto: qat - Prevent dma mapping zero length assoc data
-      crypto: qat - Enforce valid numa configuration
-
- drivers/char/hw_random/pseries-rng.c              |   11 ++++---
- drivers/crypto/caam/key_gen.c                     |   29 +++++++++----------
- drivers/crypto/qat/qat_common/adf_accel_devices.h |    3 +-
- drivers/crypto/qat/qat_common/adf_transport.c     |   12 ++++----
- drivers/crypto/qat/qat_common/qat_algs.c          |    7 +++--
- drivers/crypto/qat/qat_common/qat_crypto.c        |    8 ++++--
- drivers/crypto/qat/qat_dh895xcc/adf_admin.c       |    2 +-
- drivers/crypto/qat/qat_dh895xcc/adf_drv.c         |   32 ++++++++-------------
- drivers/crypto/qat/qat_dh895xcc/adf_isr.c         |    2 +-
- 9 files changed, 53 insertions(+), 53 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
