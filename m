@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaKJFs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 00:48:27 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44422 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaKJFs0 (ORCPT
+	id S1751793AbaKJFsn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 00:48:43 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52496 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaKJFsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 00:48:26 -0500
+	Mon, 10 Nov 2014 00:48:42 -0500
 From: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, mturquette@linaro.org, amit.kucheria@linaro.org,
@@ -15,195 +15,197 @@ Cc: linux-pm@vger.kernel.org, mturquette@linaro.org, amit.kucheria@linaro.org,
         dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
         peterz@infradead.org, mingo@kernel.org, linaro-kernel@lists.linaro.org,
         Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
-Subject: [RFC 1/2] sched/fair: Add cumulative average of load_avg_contrib to a task
-Date: Mon, 10 Nov 2014 11:15:57 +0530
-Message-Id: <1415598358-26505-2-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
+Subject: [RFC 2/2] cpufreq: governor: CPU frequency scaled from task's cumulative-load on an idle wakeup
+Date: Mon, 10 Nov 2014 11:15:58 +0530
+Message-Id: <1415598358-26505-3-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1415598358-26505-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
 References: <1415598358-26505-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111005-0025-0000-0000-00000077B7DB
+x-cbid: 14111005-0029-0000-0000-0000008FD0AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch aims to identify a suitable metric which can define
-the nature of the task as CPU intensive or non-intensive. This
-metric's value will be used to optimize the logic to scale CPU
-frequency during an idle wakeup scenario i.e., to make the cpufreq
-governor to scale the frequency optimized for workloads.
+"18b46a cpufreq: governor: Be friendly towards latency-sensitive
+bursty workloads" patch by Srivatsa tried to solve a problem in
+cpufreq governor's CPU load calculation logic. The fix is to detect
+wakeup from cpuidle scenario and to start the workload at reasonably
+high frequency and thus avoiding the redundant step to bring down
+the frequency when a task wakes up on an idle CPU.
 
-Given the properties of 'load_avg_contrib' of a task's sched entity,
-it forms a potential candidate for frequency scaling. By the virtue of
-its design this metric picks up the load slowly during an idle wakeup.
-So at that instant of wakeup we cannot account on the latest value of
-this metric as it is unreliable. This can be seen in the test results
-below.
+This logic used the 'previous load' as the CPU load for the alternate
+wakeup-from-cpuidle and not newly calculating the load. The issue is
+that sometimes the 'previous load' which is meant to help certain
+latency sensitive tasks can get used by some kworker or similar task
+to its advantage if it woke up first on the cpu. This will deprive
+important tasks of high cpu frequency thus replicating the issue that
+we set out to solve. Also if the bursty workloads were in a constant
+migration of cpus then they will be deprived from running at high
+frequency on every wakeup-on-idle-cpu scenarios. This is explained
+below:
 
-I ran a modified version of ebizzy which sleeps in between its
-execution such that its utilization can be user defined value. The
-below trace was observed for a single thread ebizzy run for a 40%
-utilization.
+   Time(ms)		Events on CPU
 
-T1 ebizzy   309.613862: .__update_entity_load_avg_contrib: ebizzy load_avg_contrib=1022
-T2 ebizzy   309.613864: sched_switch: prev_comm=ebizzy ==> next_comm=swapper/8
-T3 <idle>   310.062932: .__update_entity_load_avg_contrib: ebizzy load_avg_contrib=0
-T4 <idle>   310.062936: sched_switch: prev_comm=swapper/8 ==> next_comm=ebizzy
-T5 ebizzy   310.063104: .__update_entity_load_avg_contrib: ebizzy load_avg_contrib=67
-T6 ebizzy   310.063106: .__update_entity_load_avg_contrib: kworker/8:1 load_avg_contrib=0
-T7 ebizzy   310.063108: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:1
+   100		Task A is running on CPU
 
-At 309.613862 the 'load_avg_contrib' value of ebizzy is equal to 1022
-which indicates its high utilization. It goes to sleep at 309.613864.
-After a long idle peroid ebizzy wakes up at 310.062932. Once a cpu
-wakes up from an idle state all the timers that were deferred on that
-cpu will be fired. The cpufreq governor's timer is one such deferred
-timer which gets fired consequently after ebizzy wakes up. On next
-context_switch at 310.063104 we can see that load_avg_contrib's value
-gets updated to 67. Further at 310.063108 the cpufreq governor gets
-switched in to calculate the load, now if it were to consider ebizzy's
-'load_avg_contrib' value then we will not benefit as the recent value
-is far less compared to the value ebizzy had before going to sleep.
+   110		Governor's timer fires and calculates CPU load:
+   		load=100 prev_load=100. It marks the high load
+   		and increases the CPU frequency
 
-We can hide these fluctuations of 'load_avg_contrib' by calculating
-the average of all the values of 'load_avg_contrib'. The cumulative
-average of 'load_avg_contrib' will always preserve the long-term
-behavior of the task. Thus using the cumulative average of
-'load_avg_contrib' we can scale the cpu frequency as best suited for
-the task.
+   110.5	Task A is running
 
-'load_avg_contrib' of ebizzy is updated at T1, T3 and T5. So in
-a period from T1-T7 ebizzy has the following values :
-	load_avg_contrib 	cumulative_average
-T1		1022		1022/1        = 1022
-T3		0		(1022+0)/2    = 511
-T5		67		(1022+0+67)/3 = 363
+   118		Task A went to sleep and CPU became idle
 
-At T5 the cumulative_average is 363 which is better than the
-load_avg_contrib value 67 when used to decide the nature of the task.
-Thus we can use cumulative_average to scale the cpu frequency during
-an idle wakeup.
+   140		Task B starts to run
+
+   141		Governor's deferred timer fires and calculates CPU load.
+   		It notices the long idle period and uses the prev_load
+		as the current CPU load. load=100 prev_load=0. It
+		increases the CPU frequency as it sees the high load.
+
+   141.5	Task B is running
+
+   142		Task B went to sleep and CPU became idle
+
+   174		Task A woke up and started running again
+
+   175		Governor's deferred timer fires and calculates CPU load.
+   		load=3 prev_load=3. Even though it is a long idle
+		period the CPU load is freshly calculated as the
+		prev_load is copied for alternate wake_ups. The
+		governor decides to decrease the frequency as it
+		notices low load.
+
+At 175ms governor decreases the CPU frequency as it freshly calculates
+the load. So Task A is deprived from running at high frequency for the
+next 10ms of its execution until the governor's timer fires again to
+compute the load. This happened because Task B woke up first on the
+CPU consuming the prev_load.
+
+Considering latency sensitive bursty workloads like Task A and short
+bursty housekeeping kernel functions like Task B; Task A will surely
+fall short of chances of running at high frequency on its wakeup if
+Task B continues to pop up in this fashion.
+
+If the governor was aware of the history of the incoming task it could
+make decisions more appropriately to scale the CPU frequency.
+So instead of cpu load use a task's cumulative-load to calculate the
+load on every wakeup from idle state. The cumulative-load of task will
+explain the nature of the task's cpu utilization. But we cannot directly
+map cumulative-load to scale cpu frequency. Because the current
+cpufreq governor logic is implemented keeping cpu load in mind. This
+logic intends to increase the CPU frequency if the task's cumulative
+load is above a threshold limit.
 
 Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
 Suggested-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
- include/linux/sched.h |  4 ++++
- kernel/sched/core.c   | 35 +++++++++++++++++++++++++++++++++++
- kernel/sched/fair.c   |  6 +++++-
- kernel/sched/sched.h  |  2 +-
- 4 files changed, 45 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq_governor.c | 39 +++++++++++++++-----------------------
+ drivers/cpufreq/cpufreq_governor.h |  9 ++-------
+ 2 files changed, 17 insertions(+), 31 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5e344bb..212a0a7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1081,6 +1081,8 @@ struct sched_avg {
- 	u64 last_runnable_update;
- 	s64 decay_count;
- 	unsigned long load_avg_contrib;
-+	unsigned long cumulative_avg;
-+	unsigned long cumulative_avg_count;
- };
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 1b44496..de4896c 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -19,6 +19,7 @@
+ #include <linux/export.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/slab.h>
++#include <linux/sched.h>
  
- #ifdef CONFIG_SCHEDSTATS
-@@ -3032,3 +3034,5 @@ static inline unsigned long rlimit_max(unsigned int limit)
- }
+ #include "cpufreq_governor.h"
  
- #endif
+@@ -119,37 +120,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+ 		 * actually is. This is undesirable for latency-sensitive bursty
+ 		 * workloads.
+ 		 *
+-		 * To avoid this, we reuse the 'load' from the previous
+-		 * time-window and give this task a chance to start with a
+-		 * reasonably high CPU frequency. (However, we shouldn't over-do
+-		 * this copy, lest we get stuck at a high load (high frequency)
+-		 * for too long, even when the current system load has actually
+-		 * dropped down. So we perform the copy only once, upon the
+-		 * first wake-up from idle.)
++		 * To avoid this, we use the task's cumulative load which woke
++		 * up the idle CPU to suitably scale the CPU frequency. For a
++		 * sibling CPU we use the cumulative load of the current task on
++		 * that CPU.
++		 *
++		 * A task is considered to be CPU intensive if its cumulative
++		 * load is greater than 10. Hence it is desirable to increase
++		 * the CPU frequency to frequency_max.
+ 		 *
+ 		 * Detecting this situation is easy: the governor's deferrable
+ 		 * timer would not have fired during CPU-idle periods. Hence
+ 		 * an unusually large 'wall_time' (as compared to the sampling
+ 		 * rate) indicates this scenario.
+-		 *
+-		 * prev_load can be zero in two cases and we must recalculate it
+-		 * for both cases:
+-		 * - during long idle intervals
+-		 * - explicitly set to zero
+ 		 */
+-		if (unlikely(wall_time > (2 * sampling_rate) &&
+-			     j_cdbs->prev_load)) {
+-			load = j_cdbs->prev_load;
+ 
+-			/*
+-			 * Perform a destructive copy, to ensure that we copy
+-			 * the previous load only once, upon the first wake-up
+-			 * from idle.
+-			 */
+-			j_cdbs->prev_load = 0;
++		if (unlikely(wall_time > (2 * sampling_rate))) {
++			load = task_cumulative_load(j);
++			if (load > 10) {
++				max_load = MAX_LOAD;
++				break;
++			}
+ 		} else {
+ 			load = 100 * (wall_time - idle_time) / wall_time;
+-			j_cdbs->prev_load = load;
+ 		}
+ 
+ 		if (load > max_load)
+@@ -381,8 +374,6 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 
+ 			prev_load = (unsigned int)
+ 				(j_cdbs->prev_cpu_wall - j_cdbs->prev_cpu_idle);
+-			j_cdbs->prev_load = 100 * prev_load /
+-					(unsigned int) j_cdbs->prev_cpu_wall;
+ 
+ 			if (ignore_nice)
+ 				j_cdbs->prev_cpu_nice =
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index cc401d1..bfae4fe 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -36,6 +36,8 @@
+ #define MIN_LATENCY_MULTIPLIER			(20)
+ #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
+ 
++#define MAX_LOAD				(99)
 +
-+extern unsigned int task_cumulative_load(int cpu);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4499950..b3d0d5a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2853,6 +2853,7 @@ need_resched:
- 	if (likely(prev != next)) {
- 		rq->nr_switches++;
- 		rq->curr = next;
-+		rq->prev = prev;
- 		++*switch_count;
+ /* Ondemand Sampling types */
+ enum {OD_NORMAL_SAMPLE, OD_SUB_SAMPLE};
  
- 		context_switch(rq, prev, next); /* unlocks the rq */
-@@ -8219,3 +8220,37 @@ void dump_cpu_task(int cpu)
- 	pr_info("Task dump for CPU %d:\n", cpu);
- 	sched_show_task(cpu_curr(cpu));
- }
-+
-+/**
-+ * task_cumulative_load - return the cumulative load of
-+ * the previous task if cpu is the current cpu OR the
-+ * cumulative load of current task on the cpu. If cpu
-+ * is idle then return 0.
-+ *
-+ * Invoked by the cpufreq governor to calculate the
-+ * load when the CPU is woken from an idle state.
-+ *
-+ */
-+unsigned int task_cumulative_load(int cpu)
-+{
-+	struct rq *rq = cpu_rq(cpu);
-+	struct task_struct *p;
-+
-+	if (cpu == smp_processor_id()) {
-+		if (rq->prev == rq->idle)
-+			goto idle;
-+		p = rq->prev;
-+	} else {
-+		if (rq->curr == rq->idle)
-+			goto idle;
-+		p = rq->curr;
-+	}
-+	/*
-+	 * Removing the priority as we are interested in CPU
-+	 * utilization of the task
-+	 */
-+	return (100 * p->se.avg.cumulative_avg / p->se.load.weight);
-+idle:
-+	return 0;
-+}
-+EXPORT_SYMBOL(task_cumulative_load);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0b069bf..58c27e3 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -680,6 +680,8 @@ void init_task_runnable_average(struct task_struct *p)
- 	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
- 	p->se.avg.runnable_avg_sum = slice;
- 	p->se.avg.runnable_avg_period = slice;
-+	p->se.avg.cumulative_avg_count = 1;
-+	p->se.avg.cumulative_avg = p->se.load.weight;
- 	__update_task_entity_contrib(&p->se);
- }
- #else
-@@ -2476,11 +2478,13 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
- static inline void __update_task_entity_contrib(struct sched_entity *se)
- {
- 	u32 contrib;
--
- 	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
- 	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
- 	contrib /= (se->avg.runnable_avg_period + 1);
- 	se->avg.load_avg_contrib = scale_load(contrib);
-+	se->avg.cumulative_avg *= se->avg.cumulative_avg_count;
-+	se->avg.cumulative_avg += se->avg.load_avg_contrib;
-+	se->avg.cumulative_avg /= ++se->avg.cumulative_avg_count;
- }
- 
- /* Compute the current contribution to load_avg by se, return any delta */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 24156c84..064d6b1 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -565,7 +565,7 @@ struct rq {
- 	 */
- 	unsigned long nr_uninterruptible;
- 
--	struct task_struct *curr, *idle, *stop;
-+	struct task_struct *curr, *idle, *stop, *prev;
- 	unsigned long next_balance;
- 	struct mm_struct *prev_mm;
- 
+@@ -134,13 +136,6 @@ struct cpu_dbs_common_info {
+ 	u64 prev_cpu_idle;
+ 	u64 prev_cpu_wall;
+ 	u64 prev_cpu_nice;
+-	/*
+-	 * Used to keep track of load in the previous interval. However, when
+-	 * explicitly set to zero, it is used as a flag to ensure that we copy
+-	 * the previous load to the current interval only once, upon the first
+-	 * wake-up from idle.
+-	 */
+-	unsigned int prev_load;
+ 	struct cpufreq_policy *cur_policy;
+ 	struct delayed_work work;
+ 	/*
 -- 
 1.9.3
 
