@@ -1,373 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaKJVGy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:06:54 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:43510 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaKJVGx (ORCPT
+	id S1752733AbaKJVHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:07:35 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:62187 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaKJVHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:06:53 -0500
-From: mathieu.poirier@linaro.org
-To: gregkh@linuxfoundation.org
-Cc: akpm@linux-foundation.org, davem@davemloft.net, joe@perches.com,
-        linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mathieu.poirier@linaro.org
-Subject: [PATCH] coresight:  Adding ABI documentation
-Date: Mon, 10 Nov 2014 14:06:42 -0700
-Message-Id: <1415653602-25347-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Mon, 10 Nov 2014 16:07:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <54611D86.4040306@de.ibm.com>
+References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+	<54611D86.4040306@de.ibm.com>
+Date: Mon, 10 Nov 2014 13:07:33 -0800
+X-Google-Sender-Auth: 8r1ujl39llorpGeQ8eSbVkfPVYk
+Message-ID: <CA+55aFyEigSL64RJH8AO86gFBBB84+dgk7eEUPx=CaLwJMcO_w@mail.gmail.com>
+Subject: Re: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Mon, Nov 10, 2014 at 12:18 PM, Christian Borntraeger
+<borntraeger@de.ibm.com> wrote:
+>
+> Now: I can reproduces belows miscompile on gcc46 and gcc 47
+> gcc 45 seems ok, gcc 48 is fixed.  This makes blacklisting
+> a bit hard, especially since it is not limited to s390, but
+> covers all architectures.
+> In essence ACCESS_ONCE will not work reliably on aggregate
+> types with gcc 4.6 and gcc 4.7.
+> In Linux we seem to use ACCESS_ONCE mostly on scalar types,
+> below code is an example were we dont - and break.
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Hmm. I think we should see how painful it would be to make it a rule
+that ACCESS_ONCE() only works on scalar types.
+
+Even in the actual code you show as an example, the "fix" is really to
+use the "unsigned long val" member of the union for the ACCESS_ONCE().
+And that seems to be true in many other cases too.
+
+So before blacklisting any compilers, let's first see if
+
+ (a) we can actually make it a real rule that we only use ACCESS_ONCE on scalars
+ (b) we can somehow enforce this with a compiler warning/error for mis-uses
+
+For example, the attached patch works for some cases, but shows how we
+use ACCESS_ONCE() on pointers to pte_t's etc, so it doesn't come even
+close to compiling the whole kernel. But I wonder how painful that
+would be to change.. The places where it complains are actually
+somewhat debatable to begin with, like:
+
+ - handle_pte_fault(.. pte_t *pte ..):
+
+        entry = ACCESS_ONCE(*pte);
+
+and the thing is, "pte" is actually possibly an 8-byte entity on
+x86-32, and that ACCESS_ONCE() fundamentally will be two 32-byte
+reads.
+
+So there is a very valid argument for saying "well, you shouldn't do
+that, then", and that we might be better off cleaning up our
+ACCESS_ONCE() uses, than to just blindly blacklist compilers.
+
+NOTE! I'm not at all advocating the attached patch. I'm sending it out
+white-space damaged on purpose, it's more of a "hey, something like
+this might be the direction we want to go in", with the spinlock.h
+part of the patch also acting as an example of the kind of changes the
+"ACCESS_ONCE() only works on scalars" rule would require.
+
+So I do agree with Heiko that we generally don't want to work around
+compiler bugs if we can avoid it. But sometimes the compiler bugs do
+end up saying "your'e doing something very fragile". Maybe we should
+try to be less fragile here.
+
+And in your example, the whole
+
+        old = ACCESS_ONCE(*ic);
+
+*could* just be a
+
+        old->val = ACCESS_ONCE(ic->val);
+
+the same way the x86 spinlock.h changes below.
+
+I did *not* try to see how many other cases we have. It's possible
+that your "don't use ACCESS_ONCE, use a barrier() instead" ends up
+being a valid workaround. For the pte case, that may well be the
+solution, for example (because what we really care about is not so
+much "it's an atomic access" but "it's still the same that we
+originally assumed").  Sometimes we want ACCESS_ONCE() because we
+really want an atomic value (and we just don't care if it's old or
+new), but sometimes it's really because we don't want the compiler to
+re-load it and possibly see two different values - one that we check,
+and one that we actually use (and then a barrier() would generally be
+perfectly sufficient)
+
+Adding some more people to the discussion just to see if anybody else
+has comments about ACCESS_ONCE() on aggregate types.
+
+(Btw, it's not just aggregate types, even non-aggregate types like
+"long long" are not necessarily safe, to give the same 64-bit on
+x86-32 example. So adding an assert that it's smaller or equal in size
+to a "long" might also not be unreasonable)
+
+                   Linus
+
 ---
- .../ABI/testing/sysfs-bus-coresight-devices-etb10  |  24 ++
- .../ABI/testing/sysfs-bus-coresight-devices-etm3x  | 253 +++++++++++++++++++++
- .../ABI/testing/sysfs-bus-coresight-devices-funnel |  12 +
- .../ABI/testing/sysfs-bus-coresight-devices-tmc    |   8 +
- MAINTAINERS                                        |   1 +
- 5 files changed, 298 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-coresight-devices-etb10
- create mode 100644 Documentation/ABI/testing/sysfs-bus-coresight-devices-etm3x
- create mode 100644 Documentation/ABI/testing/sysfs-bus-coresight-devices-funnel
- create mode 100644 Documentation/ABI/testing/sysfs-bus-coresight-devices-tmc
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index d5ad7b1118fc..63e82f1dfc1a 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -378,7 +378,11 @@ void ftrace_likely_update(struct
+ftrace_branch_data *f, int val, int expect);
+  * use is to mediate communication between process-level code and irq/NMI
+  * handlers, all running on the same CPU.
+  */
+-#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
++#define get_scalar_volatile_pointer(x) ({ \
++       typeof(x) *__p = &(x); \
++       volatile typeof(x) *__vp = __p; \
++       (void)(long)*__p; __vp; })
++#define ACCESS_ONCE(x) (*get_scalar_volatile_pointer(x))
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-coresight-devices-etb10 b/Documentation/ABI/testing/sysfs-bus-coresight-devices-etb10
-new file mode 100644
-index 0000000..4b8d6ec
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-coresight-devices-etb10
-@@ -0,0 +1,24 @@
-+What:		/sys/bus/coresight/devices/<memory_map>.etb/enable_sink
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Add/remove a sink from a trace path.  There can be multiple
-+		source for a single sink.
-+		ex: echo 1 > /sys/bus/coresight/devices/20010000.etb/enable_sink
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.etb/status
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(R) List various control and status registers.  The specific
-+		layout and content is driver specific.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.etb/trigger_cntr
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Disables write access to the Trace RAM by stopping the
-+		formatter after a defined number of words have been stored
-+		following the trigger event. The number of 32-bit words written
-+		into the Trace RAM following the trigger event is equal to the
-+		value stored in this register+1 (from ARM ETB-TRM).
-diff --git a/Documentation/ABI/testing/sysfs-bus-coresight-devices-etm3x b/Documentation/ABI/testing/sysfs-bus-coresight-devices-etm3x
-new file mode 100644
-index 0000000..b4d0b99
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-coresight-devices-etm3x
-@@ -0,0 +1,253 @@
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/enable_source
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Enable/disable tracing on this specific trace entiry.
-+		Enabling a source implies the source has been configured
-+		properly and a sink has been identidifed for it.  The path
-+		of coresight components linking the source to the sink is
-+		configured and managed automatically by the coresight framework.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/status
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(R) List various control and status registers.  The specific
-+		layout and content is driver specific.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/addr_idx
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	Select which address comparator or pair (of comparators) to
-+		work with.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/addr_acctype
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Used in conjunction with @addr_idx.  Specifies
-+		characteristics about the address comparator being configure,
-+		for example the access type, the kind of instruction to trace,
-+		processor contect ID to trigger on, etc.  Individual fields in
-+		the access type register may vary on the version of the trace
-+		entity.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/addr_range
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Used in conjunction with @addr_idx.  Specifies the range of
-+		addresses to trigger on.  Inclusion or exclusion is specificed
-+		in the corresponding access type register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/addr_single
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Used in conjunction with @addr_idx.  Specifies the single
-+		address to trigger on, highly influenced by the configuration
-+		options of the corresponding access type register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/addr_start
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Used in conjunction with @addr_idx.  Specifies the single
-+		address to start tracing on, highly influenced by the
-+		configuration options of the corresponding access type register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/addr_stop
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Used in conjunction with @addr_idx.  Specifies the single
-+		address to stop tracing on, highly influenced by the
-+		configuration options of the corresponding access type register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/cntr_idx
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Specifies the counter to work on.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/cntr_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Used in conjunction with cntr_idx, give access to the
-+		counter event register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/cntr_val
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Used in conjunction with cntr_idx, give access to the
-+		counter value register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/cntr_rld_val
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Used in conjunction with cntr_idx, give access to the
-+		counter reload value register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/cntr_rld_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Used in conjunction with cntr_idx, give access to the
-+		counter reload event register.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/ctxid_idx
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Specifies the index of the context ID register to be
-+		selected.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/ctxid_mask
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Mask to apply to all the context ID comparator.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/ctxid_val
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Used with the ctxid_idx, specify with context ID to trigger
-+		on.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/enable_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines which event triggers a trace.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/etmsr
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Gives access to the ETM status register, which holds
-+		programming information and status on certains events.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/fifofull_level
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Number of byte left in the fifo before considering it full.
-+		Depending on the tracer's version, can also hold threshold for
-+		data suppression.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/mode
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Interface with the driver's 'mode' field, controlling
-+		various aspect of the trace entity such as time stamping,
-+		context ID size and cycle accurate tracing.  Driver specific
-+		and bound to change depending on the driver.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/nr_addr_cmp
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(R) Provides the number of address comparators pairs accessible
-+		on a trace unit, as specified by bit 3:0 of register ETMCCR.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/nr_cntr
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(R) Provides the number of counters accessible on a trace unit,
-+		as specified by bit 15:13 of register ETMCCR.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/nr_ctxid_cmp
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(R) Provides the number of context ID comparator available on a
-+		trace unit, as specified by bit 25:24 of register ETMCCR.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/reset
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(W) Cancels all configuration on a trace unit and set it back
-+		to its boot configuration.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/seq_12_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines the event that causes the sequencer to transition
-+		from state 1 to state 2.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/seq_13_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines the event that causes the sequencer to transition
-+		from state 1 to state 3.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/seq_21_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines the event that causes the sequencer to transition
-+		from state 2 to state 1.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/seq_23_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines the event that causes the sequencer to transition
-+		from state 2 to state 3.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/seq_31_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines the event that causes the sequencer to transition
-+		from state 3 to state 1.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/seq_32_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines the event that causes the sequencer to transition
-+		from state 3 to state 2.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/curr_seq_state
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(R) Holds the current state of the sequencer.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/sync_freq
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Holds the trace synchronization frequency value - must be
-+		programmed with the various implementation behavior in mind.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/timestamp_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Defines an event that requests the insertion of a timestamp
-+		into the trace stream.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/traceid
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Holds the trace ID that will appear in the trace stream
-+		coming from this trace entity.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.[etm|ptm]/trigger_event
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description: 	(RW) Define the event that controls the trigger.
-diff --git a/Documentation/ABI/testing/sysfs-bus-coresight-devices-funnel b/Documentation/ABI/testing/sysfs-bus-coresight-devices-funnel
-new file mode 100644
-index 0000000..d75acda
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-coresight-devices-funnel
-@@ -0,0 +1,12 @@
-+What:		/sys/bus/coresight/devices/<memory_map>.funnel/funnel_ctrl
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Enables the slave ports and defines the hold time of the
-+		slave ports.
-+
-+What:		/sys/bus/coresight/devices/<memory_map>.funnel/priority
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Defines input port priority order.
-diff --git a/Documentation/ABI/testing/sysfs-bus-coresight-devices-tmc b/Documentation/ABI/testing/sysfs-bus-coresight-devices-tmc
-new file mode 100644
-index 0000000..f38cded5
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-coresight-devices-tmc
-@@ -0,0 +1,8 @@
-+What:		/sys/bus/coresight/devices/<memory_map>.tmc/trigger_cntr
-+Date:		November 2014
-+KernelVersion:	3.19
-+Contact:	Mathieu Poirier <mathieu.poirier@linaro.org>
-+Description:	(RW) Disables write access to the Trace RAM by stopping the
-+		formatter after a defined number of words have been stored
-+		following the trigger event. Additional interface for this
-+		driver are expected to be added as it matures.
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3995263..7d18080 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -925,6 +925,7 @@ S:	Maintained
- F:	drivers/coresight/*
- F:	Documentation/trace/coresight.txt
- F:	Documentation/devicetree/bindings/arm/coresight.txt
-+F:	Documentation/ABI/testing/sysfs-bus-coresight-devices-*
- 
- ARM/CORGI MACHINE SUPPORT
- M:	Richard Purdie <rpurdie@rpsys.net>
--- 
-1.9.1
+ /* Ignore/forbid kprobes attach on very low level functions marked by
+this attribute: */
+ #ifdef CONFIG_KPROBES
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 9295016485c9..b7e6825af5e3 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -105,7 +105,7 @@ static __always_inline int
+arch_spin_trylock(arch_spinlock_t *lock)
+ {
+        arch_spinlock_t old, new;
 
+-       old.tickets = ACCESS_ONCE(lock->tickets);
++       old.head_tail = ACCESS_ONCE(lock->head_tail);
+        if (old.tickets.head != (old.tickets.tail & ~TICKET_SLOWPATH_FLAG))
+                return 0;
+
+@@ -162,16 +162,14 @@ static __always_inline void
+arch_spin_unlock(arch_spinlock_t *lock)
+
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+ {
+-       struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+-
+-       return tmp.tail != tmp.head;
++       struct arch_spinlock tmp = { .head_tail =
+ACCESS_ONCE(lock->head_tail) };
++       return tmp.tickets.tail != tmp.tickets.head;
+ }
+
+ static inline int arch_spin_is_contended(arch_spinlock_t *lock)
+ {
+-       struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+-
+-       return (__ticket_t)(tmp.tail - tmp.head) > TICKET_LOCK_INC;
++       struct arch_spinlock tmp = { .head_tail =
+ACCESS_ONCE(lock->head_tail) };
++       return (__ticket_t)(tmp.tickets.tail - tmp.tickets.head) >
+TICKET_LOCK_INC;
+ }
+ #define arch_spin_is_contended arch_spin_is_contended
