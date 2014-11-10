@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaKJKDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:03:53 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55437 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311AbaKJKDu (ORCPT
+	id S1752619AbaKJKEH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:04:07 -0500
+Received: from mx-relay42-dus.antispameurope.com ([94.100.134.242]:45297 "EHLO
+	mx-relay42-dus.antispameurope.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752092AbaKJKED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:03:50 -0500
-Date: Mon, 10 Nov 2014 10:02:24 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>
-Message-ID: <20141110100224.GG3815@sirena.org.uk>
-References: <20141110153132.259d49d9@canb.auug.org.au>
- <20141110043853.GA25797@kroah.com>
- <20141110155142.6c76de7b@canb.auug.org.au>
- <20141110050719.GA16980@kroah.com>
+	Mon, 10 Nov 2014 05:04:03 -0500
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Nov 2014 05:04:03 EST
+From: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH] iio: gyro: itg3200: add suspend/resume support.
+Date: Mon, 10 Nov 2014 10:57:30 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: NeilBrown <neilb@suse.de>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>,
+        "chr >> Doug Anderson" <dianders@chromium.org>,
+        Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>,
+        "christian.strobel@iis.fraunhofer.de >> Christian Strobel" 
+	<christian.strobel@iis.fraunhofer.de>
+References: <20141108111833.3829480c@notabene.brown> <545E0401.2000505@kernel.org>
+In-Reply-To: <545E0401.2000505@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P5xTlxNLdns8vXW+"
-Content-Disposition: inline
-In-Reply-To: <20141110050719.GA16980@kroah.com>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- sound-asoc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411101057.30228.manuel.stahl@iis.fraunhofer.de>
+X-cloud-security-sender: manuel.stahl@iis.fraunhofer.de
+X-cloud-security-recipient: linux-kernel@vger.kernel.org
+X-cloud-security-Virusscan: CLEAN
+X-cloud-security-disclaimer: This E-Mail was scanned by E-Mailservice on mx-gate42-dus with 5A8692018004
+X-cloud-security-connect: mailgw1.iis.fraunhofer.de[153.96.172.4], TLS=, IP=153.96.172.4
+X-cloud-security: scantime:.1145
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Looks good to me.
 
---P5xTlxNLdns8vXW+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Regards,
+Manuel Stahl
 
-On Mon, Nov 10, 2014 at 02:07:19PM +0900, Greg KH wrote:
-> On Mon, Nov 10, 2014 at 03:51:42PM +1100, Stephen Rothwell wrote:
+Am Samstag, 8. November 2014, 12:52:33 schrieb Jonathan Cameron:
+> On 08/11/14 00:18, NeilBrown wrote:
+> > 
+> > 
+> > Unless we put the device to sleep when not it use, it wastes
+> > 6mA.
+> > 
+> > If the device is asleep on probe, the 'id' register
+> > sometimes mis-reads - so reset first.  If the device responds
+> > at all a command sent to the address, it is almost certainly
+> > the correct device already.
+> > 
+> > Signed-off-by: NeilBrown <neil@brown.name>
+> Hi Neil,
+> 
+> Looks fine to me - but you should have cc'd a few people from
+> the listed driver authors.  Will give them a few days to respond...
+> 
+> Jonathan
+> > 
+> > diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_core.c
+> > index 6a8020d48140..394667fb23f9 100644
+> > --- a/drivers/iio/gyro/itg3200_core.c
+> > +++ b/drivers/iio/gyro/itg3200_core.c
+> > @@ -223,6 +223,7 @@ static int itg3200_initial_setup(struct iio_dev *indio_dev)
+> >  	int ret;
+> >  	u8 val;
+> >  
+> > +	ret = itg3200_reset(indio_dev);
+> >  	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_ADDRESS, &val);
+> >  	if (ret)
+> >  		goto err_ret;
+> > @@ -351,6 +352,35 @@ static int itg3200_remove(struct i2c_client *client)
+> >  	return 0;
+> >  }
+> >  
+> > +#ifdef CONFIG_PM_SLEEP
+> > +static int itg3200_suspend(struct device *dev)
+> > +{
+> > +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> > +	struct itg3200 *st = iio_priv(indio_dev);
+> > +	int ret;
+> > +
+> > +	dev_dbg(&st->i2c->dev, "suspend device");
+> > +
+> > +	ret = itg3200_write_reg_8(indio_dev,
+> > +			ITG3200_REG_POWER_MANAGEMENT,
+> > +			ITG3200_SLEEP);
+> > +	return ret;
+> > +}
+> > +
+> > +static int itg3200_resume(struct device *dev)
+> > +{
+> > +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> > +
+> > +	itg3200_reset(indio_dev);
+> > +	return 0;
+> > +}
+> > +
+> > +static SIMPLE_DEV_PM_OPS(itg3200_pm_ops, itg3200_suspend, itg3200_resume);
+> > +#define ITG3200_PM_OPS (&itg3200_pm_ops)
+> > +#else
+> > +#define ITG3200_PM_OPS NULL
+> > +#endif
+> > +
+> >  static const struct i2c_device_id itg3200_id[] = {
+> >  	{ "itg3200", 0 },
+> >  	{ }
+> > @@ -361,6 +391,7 @@ static struct i2c_driver itg3200_driver = {
+> >  	.driver = {
+> >  		.owner  = THIS_MODULE,
+> >  		.name	= "itg3200",
+> > +		.pm	= ITG3200_PM_OPS,
+> >  	},
+> >  	.id_table	= itg3200_id,
+> >  	.probe		= itg3200_probe,
+> > 
+> 
+> 
 
-> > I assume that there was a good reason not to farm these patches out to
-> > their respective maintainers?
-
-> Yes, It was easier to hit everything in one tree, at one time, so that
-> is what Wolfram did.  Sorry for the merge conflicts, I didn't think
-> anyone would be adding .driver attributes to files after they had been
-> added to the tree.
-
-People are rather more likely to do that if they know that not adding
-driver attributes is a thing, and that's more likely to happen if you
-tell people that this change is happening, for example by sending the
-patches to them.  This merge conflict was the first I'd heard of this
-being something we wanted to do.
-
---P5xTlxNLdns8vXW+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUYI0vAAoJECTWi3JdVIfQ6bMH/R+In8J+XvqgARfGFcdrVJV0
-GznxqoqrMFolgcAMvTAtcF2s0ZHYVUkHYD619AB/6WodhS+GFikyBlGqV98TIwKv
-ps3qjtJQbe8Z1hx+CO6TyF0aEHjmu3utFzME5HjUCHlduQdoJoTaPNYCCLHO2OvW
-5C9gfkzSF1aj3mj5bXlSRDXA1g8SMsrN0Dqj2Q4bk2+sUs9P7KDXRAhJdAKios/q
-mWklA7ATaDD2pQpYKXHBzshaIdBYuHhaPEbQVTxhLygERg+/RczZggVyBo5D2htk
-2CsWAJ/PTlZsyKrCZ1Cdnv+QYof4DoAtf+0jjbDoFPvfFkfp0Tea6VScLJ22zHA=
-=SNfm
------END PGP SIGNATURE-----
-
---P5xTlxNLdns8vXW+--
