@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaKJTs2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:48:28 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:41860 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbaKJTs0 (ORCPT
+	id S1752164AbaKJTuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:50:22 -0500
+Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:56500 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751949AbaKJTuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:48:26 -0500
-Date: Mon, 10 Nov 2014 20:48:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req
- before idle
-Message-ID: <20141110194820.GD10501@worktop.programming.kicks-ass.net>
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
- <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org>
- <20141110124111.GN3337@twins.programming.kicks-ass.net>
- <5460D5EF.2000805@linaro.org>
- <20141110152803.GX10501@worktop.programming.kicks-ass.net>
- <5460E0A5.9040508@linaro.org>
- <20141110161530.GB10501@worktop.programming.kicks-ass.net>
- <5460F386.1050109@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5460F386.1050109@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Mon, 10 Nov 2014 14:50:21 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3867:3868:3870:3872:4250:4321:5007:6119:6261:7903:8603:8957:9010:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: badge62_2c37c1cfe325
+X-Filterd-Recvd-Size: 2561
+Message-ID: <1415649017.8868.15.camel@perches.com>
+Subject: Re: [PATCHv2] checkpatch: Allow certain SI units with three
+ characters
+From: Joe Perches <joe@perches.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Nov 2014 11:50:17 -0800
+In-Reply-To: <1415648371-10586-1-git-send-email-jwerner@chromium.org>
+References: <1415405880-8520-1-git-send-email-jwerner@chromium.org>
+	 <1415407132.23530.23.camel@perches.com>
+	 <1415648371-10586-1-git-send-email-jwerner@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 06:19:02PM +0100, Daniel Lezcano wrote:
-> >I really don't get why the governors should know about this though, its
-> >just another state, they should iterate all states and pick the best,
-> >given the power usage this state should really never be eligible unless
-> >we're QoS forced or whatnot.
+On Mon, 2014-11-10 at 11:39 -0800, Julius Werner wrote:
+> Checkpatch flags CamelCase identifiers in strict mode, but it has a
+> feature to ignore parts with only two characters to allow for SI units
+> like mV or uA. Unfortunately, not all SI units fit in two characters,
+> and not all are lower case followed by upper case.
 > 
-> The governors just don't use the poll state at all, except for a couple of
-> cases in menu.c defined above in the previous email. What is the rational of
-> adding a state in the cpuidle driver and do everything we can to avoid using
-> it ? From my POV, the poll state is a special state, we should remove from
-> the driver's idle states like the arch_cpu_idle() is a specific idle state
-> only used in idle.c (but which may overlap with an idle state in different
-> archs eg. cpu_do_idle() and the 0th idle state).
+> This patch adds hardcoded detection for frequency and 1024-based size
+> units (Hz/KHz/MHz/GHz/THz and KiB/MiB/GiB/TiB), since allowing any three
+> character combinations might be too lenient. The list can later be
+> expanded as needed.
 
-So I disagree, I think poll-idle is an idle mode just like all the
-others. It should be an available state to the governor and it should
-treat it like any other.
+Seems sensible enough, thanks.
 
-I don't tihnk the whole ARCH_HAS_CPU_RELAX thing makes any kind of
-sense, _every_ arch has some definition of it, the generic polling loop
-is always a valid idle implementation.
+Acked-by: Joe Perches <joe@perches.com>
 
-What we can do is always populate the idle state table with it before
-calling the regular drivers.
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> ---
+>  scripts/checkpatch.pl | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 374abf4..b947c75 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -4056,7 +4056,9 @@ sub process {
+>  #Ignore Page<foo> variants
+>  			    $var !~ /^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
+>  #Ignore SI style variants like nS, mV and dB (ie: max_uV, regulator_min_uA_show)
+> -			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/) {
+> +			    $var !~ /^(?:[a-z_]*?)_?[a-z][A-Z](?:_[a-z_]+)?$/ &&
+> +#Ignore some three character SI units explicitly, like MiB and KHz
+> +			    $var !~ /^(?:[a-z_]*?)_?(?:[KMGT]iB|[KMGT]?Hz)(?:_[a-z_]+)?$/) {
+>  				while ($var =~ m{($Ident)}g) {
+>  					my $word = $1;
+>  					next if ($word !~ /[A-Z][a-z]|[a-z][A-Z]/);
 
-If the arch drivers have a 'better' latency_req==0 idle routine -- note
-my argument on the ppc issue, I think its wrong -- it can replace the
-existing one.
 
-We should further remove all the special casing in the governors, its
-always a valid state, but it should hardly ever be the most desirable
-state.
 
-I think the whole arch specific idle loop is a mistake, we already have
-an (arch) interface into the idle routines, we don't need yet another.
