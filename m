@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaKJTGX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:06:23 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33521 "EHLO mail.skyhub.de"
+	id S1752177AbaKJTHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:07:36 -0500
+Received: from mga14.intel.com ([192.55.52.115]:59423 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109AbaKJTGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:06:21 -0500
-Date: Mon, 10 Nov 2014 20:06:17 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: tony.luck@intel.com, ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] x86, mce: support memory error recovery for both
- UCNA and Deferred error in machine_check_poll
-Message-ID: <20141110190617.GJ4359@pd.tnic>
+	id S1751178AbaKJTHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:07:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,354,1413270000"; 
+   d="scan'208";a="620111668"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Chen Yucong <slaoub@gmail.com>, "ak@linux.intel.com" <ak@linux.intel.com>,
+        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 0/2]RAS: add the support for handling UCNA/DEFERRED
+ error
+Thread-Topic: [PATCH v3 0/2]RAS: add the support for handling UCNA/DEFERRED
+ error
+Thread-Index: AQHP/QVmmYjXeH47ZESsTS0jCvwVH5xaMvPA
+Date: Mon, 10 Nov 2014 18:47:10 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F32927DE6@ORSMSX114.amr.corp.intel.com>
 References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
- <1415410821-15063-3-git-send-email-slaoub@gmail.com>
+ <20141110164223.GG4359@pd.tnic>
+In-Reply-To: <20141110164223.GG4359@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1415410821-15063-3-git-send-email-slaoub@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAAJ7fpF031267
 
-On Sat, Nov 08, 2014 at 09:40:21AM +0800, Chen Yucong wrote:
-> Uncorrected no action required (UCNA) - is a uncorrected recoverable
-> machine check error that is not signaled via a machine check exception
-> and, instead, is reported to system software as a corrected machine
-> check error. UCNA errors indicate that some data in the system is
-> corrupted, but the data has not been consumed and the processor state
-> is valid and you may continue execution on this processor. UCNA errors
-> require no action from system software to continue execution. Note that
-> UCNA errors are supported by the processor only when IA32_MCG_CAP[24]
-> (MCG_SER_P) is set.
->                                                -- Intel SDM Volume 3B
-> 
-> Deferred errors are errors that cannot be corrected by hardware, but
-> do not cause an immediate interruption in program flow, loss of data
-> integrity, or corruption of processor state. These errors indicate
-> that data has been corrupted but not consumed. Hardware writes information
-> to the status and address registers in the corresponding bank that
-> identifies the source of the error if deferred errors are enabled for
-> logging. Deferred errors are not reported via machine check exceptions;
-> they can be seen by polling the MCi_STATUS registers.
->                                                 -- AMD64 APM Volume 2
-> 
-> Above two items, both UCNA and Deferred errors belong to detected
-> errors, but they can't be corrected by hardware, and this is very
-> similar to Software Recoverable Action Optional (SRAO) errors.
-> Therefore, we can take some actions that have been used for handling
-> SRAO errors to handle UCNA and Deferred errors.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |   50 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 50 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 453e9bf..4b6e4cdf 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -575,6 +575,41 @@ static void mce_read_aux(struct mce *m, int i)
->  	}
->  }
->  
-> +static bool memory_error(struct mce *m)
-> +{
-> +	struct cpuinfo_x86 *c = &boot_cpu_data;
-> +
-> +	if (c->x86_vendor == X86_VENDOR_AMD) {
-> +		/*
-> +		 * AMD BKDGs - Machine Check Error Codes
-> +		 *
-> +		 * Bit 8 of ErrCode[15:0] of MCi_STATUS is used for indicating
-> +		 * a memory-specific error. Note that this field encodes info-
-> +		 * rmation about memory-hierarchy level involved in the error.
-> +		 */
-> +		return (m->status & 0xff00) == BIT(8);
+> Looks ok to me.
 
-Grrr, you copied this from a patch of mine, correct?
+And also to me
 
-So if you copy it why did you go and change it up and break it on top of
-that?! Testing bit 8 is wrong!
+> Tony, let me know if I should pick them up or you want to. Btw, there's
+> already tip/x86/ras for 3.19.
 
-NAK!
+I can take it - if you retype the "Looks ok" in the form of an "Acked-by" tag :-)
 
-Before you go and "fix" this again, wait for me to clear up something
-else before you even go do that. I'll let you know.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
