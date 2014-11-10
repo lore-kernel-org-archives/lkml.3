@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489AbaKJTmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:42:09 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:35269 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbaKJTmG (ORCPT
+	id S1751866AbaKJTs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:48:28 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41860 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410AbaKJTs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:42:06 -0500
-Message-ID: <5461150B.2010907@codeaurora.org>
-Date: Mon, 10 Nov 2014 11:42:03 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 14:48:26 -0500
+Date: Mon, 10 Nov 2014 20:48:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
+Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req
+ before idle
+Message-ID: <20141110194820.GD10501@worktop.programming.kicks-ass.net>
+References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
+ <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org>
+ <20141110124111.GN3337@twins.programming.kicks-ass.net>
+ <5460D5EF.2000805@linaro.org>
+ <20141110152803.GX10501@worktop.programming.kicks-ass.net>
+ <5460E0A5.9040508@linaro.org>
+ <20141110161530.GB10501@worktop.programming.kicks-ass.net>
+ <5460F386.1050109@linaro.org>
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>,
-        Frank Rowand <frowand.list@gmail.com>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
-In-Reply-To: <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5460F386.1050109@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 10:54 AM, Kevin Hilman wrote:
-> On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> We rely on probe order of this driver to determine the line number for
->> the uart port. This makes it impossible to know the line number
->> when these devices are populated via DT. Use the DT alias
->> mechanism to assign the line based on the aliases node.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> FYI... this patch hit linux-next and caused multiple boot failures on
-> qcom platforms[1] as of next-20141110.  I'm assuming this is because
-> the corresponding DTS changes have not hit linux-next yet.
->
-> Kevin
->
-> [1] http://status.armcloud.us/boot/?qcom
+On Mon, Nov 10, 2014 at 06:19:02PM +0100, Daniel Lezcano wrote:
+> >I really don't get why the governors should know about this though, its
+> >just another state, they should iterate all states and pick the best,
+> >given the power usage this state should really never be eligible unless
+> >we're QoS forced or whatnot.
+> 
+> The governors just don't use the poll state at all, except for a couple of
+> cases in menu.c defined above in the previous email. What is the rational of
+> adding a state in the cpuidle driver and do everything we can to avoid using
+> it ? From my POV, the poll state is a special state, we should remove from
+> the driver's idle states like the arch_cpu_idle() is a specific idle state
+> only used in idle.c (but which may overlap with an idle state in different
+> archs eg. cpu_do_idle() and the 0th idle state).
 
-Hmm the intention was to make it optional so that dts changes aren't
-necessary unless you want deterministic numbering. I screwed that up
-badly :/ Thanks for finding this.
+So I disagree, I think poll-idle is an idle mode just like all the
+others. It should be an available state to the governor and it should
+treat it like any other.
 
-Greg, can you also apply this patch or squash it into the bad one?
+I don't tihnk the whole ARCH_HAS_CPU_RELAX thing makes any kind of
+sense, _every_ arch has some definition of it, the generic polling loop
+is always a valid idle implementation.
 
-----8<-----
+What we can do is always populate the idle state table with it before
+calling the regular drivers.
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] tty: serial: msm_serial: Don't required DT aliases
+If the arch drivers have a 'better' latency_req==0 idle routine -- note
+my argument on the ppc issue, I think its wrong -- it can replace the
+existing one.
 
-If there isn't a DT alias then of_alias_get_id() will return
--ENODEV. This will cause the msm_serial driver to fail probe,
-when we want to keep the previous behavior where we generated a
-dynamic line number at probe time. Restore this behavior by
-generating a dynamic id if the line number is still negative
-after checking for an alias or (in the non-DT case) looking at the
-.id field of the platform device.
+We should further remove all the special casing in the governors, its
+always a valid state, but it should hardly ever be the most desirable
+state.
 
-Reported-by: Kevin Hilman <khilman@kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/tty/serial/msm_serial.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index 09364dd8cf3a..d1bc6b6cbc70 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -1046,14 +1046,14 @@ static int msm_serial_probe(struct platform_device *pdev)
- 	const struct of_device_id *id;
- 	int irq, line;
- 
--	if (pdev->id == -1)
--		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
--
- 	if (pdev->dev.of_node)
- 		line = of_alias_get_id(pdev->dev.of_node, "serial");
- 	else
- 		line = pdev->id;
- 
-+	if (line < 0)
-+		line = atomic_inc_return(&msm_uart_next_id) - 1;
-+
- 	if (unlikely(line < 0 || line >= UART_NR))
- 		return -ENXIO;
- 
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+I think the whole arch specific idle loop is a mistake, we already have
+an (arch) interface into the idle routines, we don't need yet another.
