@@ -1,156 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaKJXFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 18:05:03 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:64768 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbaKJXE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 18:04:59 -0500
-Date: Mon, 10 Nov 2014 16:04:54 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: [PATCH RFC v2 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-Message-ID: <20141110230454.GA21470@google.com>
-References: <1414168089-8130-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
+	id S1751851AbaKJXOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 18:14:52 -0500
+Received: from mout.gmx.net ([212.227.15.19]:60124 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399AbaKJXOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 18:14:51 -0500
+Message-ID: <546145FF.5050407@gmx.de>
+Date: Tue, 11 Nov 2014 00:10:55 +0100
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Eric Paris <eparis@parisplace.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] ftruncate, truncate: create fanotify events
+References: <20141007192330.GE30038@quack.suse.cz> <1414100107-3750-1-git-send-email-xypron.glpk@gmx.de> <20141110203029.GA8125@quack.suse.cz>
+In-Reply-To: <20141110203029.GA8125@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:NeT1RQixI2BHExFcNW3HXlbI3JguAqFCNj1cUq4gBp0iYH4d3RG
+ AgL1nBqRYmJb/nl8hbiyM8EcunDIz/bgc5swpjukswaoWM2HFPbdI9XAL3h+Aq37gnPQc6y
+ Mfwbe7/YbtS6tkj6i6H/XiMut/2CmdNSbHoOykpkMkJHfm9fs1xWOh/+3SKCtwZ+M+qGvIv
+ czj3AcgOf0zbbbMzw5yKQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Michael, since he merged 2311b1f2bbd3, which added
-pci_resource_to_user()]
+Hello Andrew,
 
-On Fri, Oct 24, 2014 at 05:28:05PM +0100, Lorenzo Pieralisi wrote:
-> The addresses stored in PCI device resources for memory spaces
-> correspond to CPU physical addresses, which do not necessarily
-> map 1:1 to PCI bus addresses as programmed in PCI devices configuration
-> spaces.
-> 
-> Therefore, the changes applied by commits:
-> 
-> 8c05cd08a7504b855c26526
-> 3b519e4ea618b6943a82931
-> 
-> imply that the sanity checks carried out in pci_mmap_fits() to
-> ensure that the user executes an mmap of a "real" pci resource are
-> erroneous when executed through procfs. Some platforms (ie SPARC)
-> expect the offset value to be passed in (procfs mapping) to be the
-> PCI BAR configuration value as read from the PCI device configuration
-> space, not the fixed-up CPU physical address that is present in PCI
-> device resources.
-> 
-> The required pgoff (offset in mmap syscall) value passed from userspace
-> is supposed to represent the resource value exported through
-> /proc/bus/pci/devices when the resource is mmapped though procfs (and 0
-> when the mapping is carried out through sysfs resource files), which
-> corresponds to the PCI resource filtered through the pci_resource_to_user()
-> API.
-> 
-> This patch converts the PCI resource to the expected "user visible"
-> value through pci_resource_to_user() before carrying out sanity checks
-> in pci_mmap_fits() so that the check is carried out on the resource
-> values as expected from the userspace mmap API.
+please, consider the patch in
+https://lkml.org/lkml/2014/10/23/611
+for inclusion in the MM tree.
 
-I'm trying to figure out what's going on here.  I think this fix is
-correct, but it seems like there might be some additional simplification we
-could do.
+It will ensure that FAN_MODIFY events are created for truncate() and 
+ftruncate().
 
-This patch is apparently a bug fix for mmap via procfs.  And the bug
-apparently affects platforms where pci_resource_to_user() applies a
-non-zero offset, i.e., microblaze, mips, power, and sparc.  It would be
-helpful to have a bug report or an example of something that doesn't work.
+To my knowledge these are the last two system calls changing files 
+directly that are not creating fanotify events.
 
-The second patch fixes a bug on ARM.  How does that patch depend on this
-one?  Since ARM doesn't implement pci_resource_to_user(), I wouldn't think
-this first patch would change anything on ARM.
+As Jan Kara correctly points there a few other sources of changes to the 
+file system for which we still have to analyze if they should create 
+fanotify events.
 
-Here's what I think I understand so far:
+E.g. meta-filesystems like ecryptfs and overlayfs trigger changes of the 
+underlying file systems.
 
-  Applications can mmap PCI memory space via either sysfs or procfs (the
-  procfs method is deprecated but still supported):
+Best regards
 
-    - In sysfs, there's a separate /sys/devices/pci*/.../resource* file
-      for each device BAR, and the application opens the appropriate
-      file and supplies the offset from the beginning of the BAR as the
-      mmap(2) offset.
+Heinrich Schuchardt
 
-    - In procfs, the application opens the single /proc/bus/pci/... file
-      for the device.  On most platforms, it supplies the CPU physical
-      address as the mmap(2) offset.  On a few platforms, such as SPARC,
-      it supplies the bus address, i.e., a BAR value, instead.
 
-But I'm not sure I have this right.  If the procfs offset is either the
-CPU physical address or the BAR value, then pci_resource_to_user()
-should be (depending on the arch) either a no-op or use
-pci_resource_to_bus().
+On 10.11.2014 21:30, Jan Kara wrote:
+> On Thu 23-10-14 23:35:07, Heinrich Schuchardt wrote:
+>> :: On Tue, 7 Oct 2014 21:23:30 Jan Kara wrote:
+>> ::
+>> ::   Yeah, so the reason why we don't generate FSNOTIFY_EVENT_PATH in
+>> :: notify_change() is because we have only dentry available there. OTOH from a
+>> :: quick look it doesn't look impossible to pass path there from the callers.
+>> :: So I'd rather propagate path to notify_change() and generate also fanotify
+>> :: events there than generating truncate events for fanotify separately
+>> :: somewhere else...
+>>
+>> The attached second version of the patch follows this idea of Jan.
+>>
+>> The fanotify and fanotify API can be used to monitor changes of the file
+>> system.
+>>
+>> System calls ftruncate and truncate  modify files. Hence they should trigger
+>> the corresponding fanotify (FAN_MODIFY) event.
+>>
+>> Prior to the patch only a inotify (IN_MODIFY) event is triggered because
+>> the path information is not passed to the notification framework.
+>>
+>> The patch changes the interface of fsnotify_change to allow path information
+>> to be passed. Fsnotify_change is only called by notify_change and by
+>> fat_ioctl_set_attributes.
+>>
+>> notify_change is called by a larger number of callers. Not all of these
+>> have access to path object. To limit the number of changes the patch renames
+>> notify_change to do_notify_change and adds a path parameter. The patch further
+>> adds two wrappers: notify_change for callers that cannot provide a path
+>> and notify_change_path for callers that can provide a path.
+>>
+>> The patch changes do_truncate to accept a path parameter passed to
+>> notify_change_path and adjusts all callers of do_truncate.
+>    So what I somewhat dislike about this patch is that notify_change() is
+> sometimes called with dentry and sometimes with path. That way it's not
+> completely clear when fanotify events will be generated and when not.
+> Sadly it isn't easy to provide struct path in all the places where we are
+> calling notify_change() so I'm not sure what would a better solution look
+> like either :(
+>
+> 								Honza
+>>
+>> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+>> ---
+>>   fs/attr.c                | 35 ++++++++++++++++++++++++++++++++---
+>>   fs/fat/file.c            |  2 +-
+>>   fs/namei.c               |  2 +-
+>>   fs/open.c                | 10 ++++++----
+>>   include/linux/fs.h       |  3 ++-
+>>   include/linux/fsnotify.h | 12 +++++++++---
+>>   6 files changed, 51 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/fs/attr.c b/fs/attr.c
+>> index 6530ced..894967e 100644
+>> --- a/fs/attr.c
+>> +++ b/fs/attr.c
+>> @@ -168,13 +168,17 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
+>>   EXPORT_SYMBOL(setattr_copy);
+>>
+>>   /**
+>> - * notify_change - modify attributes of a filesytem object
+>> + * do_notify_change - modify attributes of a filesytem object
+>> + * @path:	path of object affected
+>>    * @dentry:	object affected
+>>    * @iattr:	new attributes
+>>    * @delegated_inode: returns inode, if the inode is delegated
+>>    *
+>>    * The caller must hold the i_mutex on the affected object.
+>>    *
+>> + * If NULL is passed in attribute path, fanotify events cannot be
+>> + * created.
+>> + *
+>>    * If notify_change discovers a delegation in need of breaking,
+>>    * it will return -EWOULDBLOCK and return a reference to the inode in
+>>    * delegated_inode.  The caller should then break the delegation and
+>> @@ -187,7 +191,8 @@ EXPORT_SYMBOL(setattr_copy);
+>>    * the file open for write, as there can be no conflicting delegation in
+>>    * that case.
+>>    */
+>> -int notify_change(struct dentry * dentry, struct iattr * attr, struct inode **delegated_inode)
+>> +int do_notify_change(struct path *path, struct dentry *dentry,
+>> +	struct iattr *attr, struct inode **delegated_inode)
+>>   {
+>>   	struct inode *inode = dentry->d_inode;
+>>   	umode_t mode = inode->i_mode;
+>> @@ -268,11 +273,35 @@ int notify_change(struct dentry * dentry, struct iattr * attr, struct inode **de
+>>   		error = simple_setattr(dentry, attr);
+>>
+>>   	if (!error) {
+>> -		fsnotify_change(dentry, ia_valid);
+>> +		fsnotify_change(path, dentry, ia_valid);
+>>   		ima_inode_post_setattr(dentry);
+>>   		evm_inode_post_setattr(dentry, ia_valid);
+>>   	}
+>>
+>>   	return error;
+>>   }
+>> +
+>> +/*
+>> + * notify_change - modify attributes of a filesytem object
+>> + *
+>> + * This call will not create fanotify events. It should be replaced by
+>> + * notify_change_path where possible.
+>> + */
+>> +int notify_change(struct dentry *dentry, struct iattr *attr,
+>> +	struct inode **delegated_inode)
+>> +{
+>> +	return do_notify_change(NULL, dentry, attr, delegated_inode);
+>> +}
+>>   EXPORT_SYMBOL(notify_change);
+>> +
+>> +/*
+>> + * notify_change_path - modify attributes of a filesytem object
+>> + *
+>> + * This call is a replacement for notify_change. It creates fanotify events.
+>> + */
+>> +int notify_change_path(struct path *path, struct iattr *attr,
+>> +	struct inode **delegated_inode)
+>> +{
+>> +	return do_notify_change(path, path->dentry, attr, delegated_inode);
+>> +}
+>> +EXPORT_SYMBOL(notify_change_path);
+>> diff --git a/fs/fat/file.c b/fs/fat/file.c
+>> index f2c73ae..d293a0b 100644
+>> --- a/fs/fat/file.c
+>> +++ b/fs/fat/file.c
+>> @@ -101,7 +101,7 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
+>>   	if (err)
+>>   		goto out_unlock_inode;
+>>
+>> -	fsnotify_change(file->f_path.dentry, ia.ia_valid);
+>> +	fsnotify_change(&file->f_path, file->f_path.dentry, ia.ia_valid);
+>>   	if (sbi->options.sys_immutable) {
+>>   		if (attr & ATTR_SYS)
+>>   			inode->i_flags |= S_IMMUTABLE;
+>> diff --git a/fs/namei.c b/fs/namei.c
+>> index 43927d1..0a1f3b7 100644
+>> --- a/fs/namei.c
+>> +++ b/fs/namei.c
+>> @@ -2603,7 +2603,7 @@ static int handle_truncate(struct file *filp)
+>>   	if (!error)
+>>   		error = security_path_truncate(path);
+>>   	if (!error) {
+>> -		error = do_truncate(path->dentry, 0,
+>> +		error = do_truncate(path, 0,
+>>   				    ATTR_MTIME|ATTR_CTIME|ATTR_OPEN,
+>>   				    filp);
+>>   	}
+>> diff --git a/fs/open.c b/fs/open.c
+>> index d6fd3ac..390e322 100644
+>> --- a/fs/open.c
+>> +++ b/fs/open.c
+>> @@ -34,11 +34,12 @@
+>>
+>>   #include "internal.h"
+>>
+>> -int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+>> +int do_truncate(struct path *path, loff_t length, unsigned int time_attrs,
+>>   	struct file *filp)
+>>   {
+>>   	int ret;
+>>   	struct iattr newattrs;
+>> +	struct dentry *dentry = path->dentry;
+>>
+>>   	/* Not pretty: "inode->i_size" shouldn't really be signed. But it is. */
+>>   	if (length < 0)
+>> @@ -58,7 +59,7 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+>>
+>>   	mutex_lock(&dentry->d_inode->i_mutex);
+>>   	/* Note any delegations or leases have already been broken: */
+>> -	ret = notify_change(dentry, &newattrs, NULL);
+>> +	ret = notify_change_path(path, &newattrs, NULL);
+>>   	mutex_unlock(&dentry->d_inode->i_mutex);
+>>   	return ret;
+>>   }
+>> @@ -104,7 +105,7 @@ long vfs_truncate(struct path *path, loff_t length)
+>>   	if (!error)
+>>   		error = security_path_truncate(path);
+>>   	if (!error)
+>> -		error = do_truncate(path->dentry, length, 0, NULL);
+>> +		error = do_truncate(path, length, 0, NULL);
+>>
+>>   put_write_and_out:
+>>   	put_write_access(inode);
+>> @@ -188,7 +189,8 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
+>>   	if (!error)
+>>   		error = security_path_truncate(&f.file->f_path);
+>>   	if (!error)
+>> -		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, f.file);
+>> +		error = do_truncate(&f.file->f_path, length,
+>> +				ATTR_MTIME|ATTR_CTIME, f.file);
+>>   	sb_end_write(inode->i_sb);
+>>   out_putf:
+>>   	fdput(f);
+>> diff --git a/include/linux/fs.h b/include/linux/fs.h
+>> index 4111ee0..e5b0b05 100644
+>> --- a/include/linux/fs.h
+>> +++ b/include/linux/fs.h
+>> @@ -2031,7 +2031,7 @@ struct filename {
+>>   };
+>>
+>>   extern long vfs_truncate(struct path *, loff_t);
+>> -extern int do_truncate(struct dentry *, loff_t start, unsigned int time_attrs,
+>> +extern int do_truncate(struct path *, loff_t start, unsigned int time_attrs,
+>>   		       struct file *filp);
+>>   extern int do_fallocate(struct file *file, int mode, loff_t offset,
+>>   			loff_t len);
+>> @@ -2253,6 +2253,7 @@ extern void emergency_remount(void);
+>>   extern sector_t bmap(struct inode *, sector_t);
+>>   #endif
+>>   extern int notify_change(struct dentry *, struct iattr *, struct inode **);
+>> +extern int notify_change_path(struct path *, struct iattr *, struct inode **);
+>>   extern int inode_permission(struct inode *, int);
+>>   extern int generic_permission(struct inode *, int);
+>>
+>> diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
+>> index 1c804b0..0fd594b 100644
+>> --- a/include/linux/fsnotify.h
+>> +++ b/include/linux/fsnotify.h
+>> @@ -276,7 +276,8 @@ static inline void fsnotify_xattr(struct dentry *dentry)
+>>    * fsnotify_change - notify_change event.  file was modified and/or metadata
+>>    * was changed.
+>>    */
+>> -static inline void fsnotify_change(struct dentry *dentry, unsigned int ia_valid)
+>> +static inline void fsnotify_change(struct path *path, struct dentry *dentry,
+>> +	unsigned int ia_valid)
+>>   {
+>>   	struct inode *inode = dentry->d_inode;
+>>   	__u32 mask = 0;
+>> @@ -303,8 +304,13 @@ static inline void fsnotify_change(struct dentry *dentry, unsigned int ia_valid)
+>>   		if (S_ISDIR(inode->i_mode))
+>>   			mask |= FS_ISDIR;
+>>
+>> -		fsnotify_parent(NULL, dentry, mask);
+>> -		fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
+>> +		fsnotify_parent(path, dentry, mask);
+>> +		if (path == NULL)
+>> +			fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE,
+>> +				NULL, 0);
+>> +		else
+>> +			fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH,
+>> +				NULL, 0);
+>>   	}
+>>   }
+>>
+>> --
+>> 2.1.1
+>>
 
-But that's not how it's implemented.  Maybe it *could* be?  If
-pci_resource_to_user() gives you something that's not a CPU physical
-address and not a bus address, what *does* it give you, and why would we
-need this third kind of thing?
-
-FWIW, I think the discussion leading up to pci_resource_to_user() is here:
-http://lkml.iu.edu/hypermail/linux/kernel/0504.3/0467.html
-
-Bjorn
-
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>
-> Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> ---
->  drivers/pci/pci-sysfs.c | 13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 92b6d9a..777d8bc 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -963,17 +963,20 @@ void pci_remove_legacy_files(struct pci_bus *b)
->  int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
->  		  enum pci_mmap_api mmap_api)
->  {
-> -	unsigned long nr, start, size, pci_start;
-> +	unsigned long nr, start, size, pci_offset;
-> +	resource_size_t pci_start, pci_end;
->  
->  	if (pci_resource_len(pdev, resno) == 0)
->  		return 0;
->  	nr = vma_pages(vma);
->  	start = vma->vm_pgoff;
-> +	pci_resource_to_user(pdev, resno, &pdev->resource[resno],
-> +			     &pci_start, &pci_end);
->  	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
-> -	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
-> -			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
-> -	if (start >= pci_start && start < pci_start + size &&
-> -			start + nr <= pci_start + size)
-> +	pci_offset = (mmap_api == PCI_MMAP_PROCFS) ?
-> +			pci_start >> PAGE_SHIFT : 0;
-> +	if (start >= pci_offset && start < pci_offset + size &&
-> +			start + nr <= pci_offset + size)
->  		return 1;
->  	return 0;
->  }
-> -- 
-> 2.1.2
-> 
