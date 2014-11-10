@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaKJMoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:44:08 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:59896 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaKJMoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:44:06 -0500
-Date: Mon, 10 Nov 2014 13:43:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 3/6] sched: idle: Get the next timer event and pass it
- the cpuidle framework
-Message-ID: <20141110124353.GO3337@twins.programming.kicks-ass.net>
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
- <1415370687-18688-4-git-send-email-daniel.lezcano@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415370687-18688-4-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1752766AbaKJMoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:44:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10698 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268AbaKJMoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:44:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,352,1413270000"; 
+   d="scan'208";a="634415409"
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: jic23@kernel.org, knaack.h@gmx.de
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        irina.tirdea@intel.com, daniel.baluta@inte.com
+Subject: [PATCH v4 0/7] Introduce IIO interface for Android advanced features
+Date: Mon, 10 Nov 2014 14:45:28 +0200
+Message-Id: <1415623535-24337-1-git-send-email-daniel.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 03:31:24PM +0100, Daniel Lezcano wrote:
->  static void cpu_idle_loop(void)
->  {
-> -	unsigned int latency_req;
-> +	unsigned int latency_req, next_timer_event;
->  
->  	while (1) {
->  		/*
-> @@ -221,6 +222,9 @@ static void cpu_idle_loop(void)
->  
->  			latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
->  
-> +			next_timer_event =
-> +				ktime_to_us(tick_nohz_get_sleep_length());
-> +
->  			/*
->  			 * In poll mode we reenable interrupts and spin.
->  			 *
-> @@ -238,7 +242,8 @@ static void cpu_idle_loop(void)
->  			    tick_check_broadcast_expired())
->  				cpu_idle_poll();
->  			else
-> -				cpuidle_idle_call(latency_req);
-> +				cpuidle_idle_call(latency_req,
-> +						  next_timer_event);
->  
->  			arch_cpu_idle_exit();
->  		}
+This patchset introduces a new interface for supporting some of the composite
+sensors in Android [1]. First supported sensors are activity and pedometer.
 
-Why do we want to query the next timer in the poll case? Afaict the
-other patches don't make use of this either.
+This is a follow up of the discussion about adding new channels to IIO
+initiated some time ago on IIO list [2].
 
+A device that has the activity/pedometer functionality is Freescale's MMA9553L ([3]).
+
+Because we don't have yet the hardware, to demonstrate these new channels we
+update iio_dummy kernel module and iio_event_monitor test program. We want
+to get an early feedback about extending the IIO interface in the correct
+direction.
+
+[1] http://source.android.com/devices/sensors/composite_sensors.html
+[2] http://marc.info/?l=linux-iio&m=138374342831057&w=2
+[3] http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+
+Changes since v3:
+	* rebased on latest togreg branch (head at 5e62863aea)
+	* fix typos reported by Hartmut
+
+Changes since v2: (comments from Jonathan and Hartmut)
+	* dropped the RFC tag
+	* use int instead of unsigned long for ret in iio_evgen_poke
+	* remove TRANSITION event and use THRESHOLD instead
+	* remove IIO_HEIGHT channel and use CALIBHEIGHT mask instead
+	* adapt iio_dummy modules and iio_event_monitor to reflect IIO
+	  interface changes.
+
+Daniel Baluta (4):
+  iio: dummy: Add virtual registers for dummy device
+  iio: core: Introduce IIO_ACTIVITY channel
+  iio: dummy: Demonstrate the usage of new channel types
+  iio: event_monitor: Add support for new channel types
+
+Irina Tirdea (3):
+  iio: core: Introduce IIO_EV_DIR_NONE
+  iio: core: Introduce STEPS channel, ENABLE mask and INSTANCE event
+  iio: core: Introduce IIO_CHAN_INFO_CALIBHEIGHT
+
+ Documentation/ABI/testing/sysfs-bus-iio            |  74 ++++++++
+ drivers/iio/industrialio-core.c                    |   8 +
+ drivers/iio/industrialio-event.c                   |  13 +-
+ .../staging/iio/Documentation/iio_event_monitor.c  |  23 ++-
+ drivers/staging/iio/iio_dummy_evgen.c              |  17 ++
+ drivers/staging/iio/iio_dummy_evgen.h              |   6 +
+ drivers/staging/iio/iio_simple_dummy.c             | 199 +++++++++++++++++++--
+ drivers/staging/iio/iio_simple_dummy.h             |   7 +
+ drivers/staging/iio/iio_simple_dummy_events.c      |  66 ++++++-
+ include/linux/iio/iio.h                            |   2 +
+ include/linux/iio/types.h                          |  10 +-
+ 11 files changed, 395 insertions(+), 30 deletions(-)
+
+-- 
+1.9.1
 
