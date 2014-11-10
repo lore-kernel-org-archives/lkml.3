@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaKJHT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:19:58 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:39506 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaKJHTw (ORCPT
+	id S1752165AbaKJHUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 02:20:04 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:59290 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaKJHT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 02:19:52 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-2c-5460671509bd
+	Mon, 10 Nov 2014 02:19:57 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-71-54606715caff
 From: Beomho Seo <beomho.seo@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         devicetree@vger.kernel.org
 Cc: cw00.choi@samsung.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
         sw0312.kim@samsung.com, Beomho Seo <beomho.seo@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v2 5/5] Documentation: Add documentation for rt5033
- multifunction device
-Date: Mon, 10 Nov 2014 16:19:47 +0900
-Message-id: <1415603987-32475-6-git-send-email-beomho.seo@samsung.com>
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH v2 2/5] regulator: rt5033: Add RT5033 Regulator device driver
+Date: Mon, 10 Nov 2014 16:19:44 +0900
+Message-id: <1415603987-32475-3-git-send-email-beomho.seo@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1415603987-32475-1-git-send-email-beomho.seo@samsung.com>
 References: <1415603987-32475-1-git-send-email-beomho.seo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkUFc0PSHEoPuuuMXpT9vYLa5/ec5q
-	Mf/IOVaL/jcLWS3+TGhlszj3aiWjxaT7E1gsLu+aw2bxufcIo8XS6xeZLCZMX8ti0br3CLvF
-	jMkv2Rx4PdbMW8Pocbmvl8lj5fIvbB6bVnWyefRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfG
-	vvuL2ApOq1Vs74xrYNwj38XIySEhYCKxaulKNghbTOLCvfVANheHkMBSRolDv3sZYYo2vX7M
-	ApFYxCjx/8wyVginjUni86XLTCBVbAKaEu+nXGEBsUUEIiTOLpsF1sEscIxJ4uKThewgCWGB
-	KInr+88AJTg4WARUJU4uVwUJ8wq4Seyfc4ARJCwhoCAxZ5INSJhTwF3i9swdYNcJAZVcnfkT
-	7DoJgXPsEv/3TWMGSbAICEh8m3yIBaJXVmLTAWaIoyUlDq64wTKBUXgBI8MqRtHUguSC4qT0
-	IiO94sTc4tK8dL3k/NxNjMBYOf3vWd8OxpsHrA8xCnAwKvHwOryNDxFiTSwrrsw9xGgKtGEi
-	s5Rocj4wIvNK4g2NzYwsTE1MjY3MLc2UxHkTpH4GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCU
-	amBczuvkmMPIyPTI48ctvVsuce9n7bQNXmb6Q+LIn6ItHdaWbHsKY35Eq34rZXT/JDajw2BC
-	/t9bxmzMO7QnLs/eocF/f2p8rcuvNOXHh+e8fXjoZN11ASaGll7px2GG/tF9jR3Od580J81w
-	dq2NU1yaa8GdnPFult/JwLZ1f6bJaxtUFdXLHFRiKc5INNRiLipOBACBx2XWkAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jAV3R9IQQg1Pr+CxOf9rGbnH9y3NW
-	i/lHzrFa9L9ZyGrxZ0Irm8W5VysZLSbdn8BicXnXHDaLz71HGC2WXr/IZDFh+loWi9a9R9gt
-	Zkx+yebA67Fm3hpGj8t9vUweK5d/YfPYtKqTzaNvyypGj8+b5ALYohoYbTJSE1NSixRS85Lz
-	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOATlVSKEvMKQUKBSQWFyvp22Ga
-	EBripmsB0xih6xsSBNdjZIAGEtYwZuy7v4it4LRaxfbOuAbGPfJdjJwcEgImEpteP2aBsMUk
-	Ltxbz9bFyMUhJLCIUeL/mWWsEE4bk8TnS5eZQKrYBDQl3k+5AtYhIhAhcXbZLBaQImaBY0wS
-	F58sZAdJCAtESVzffwYowcHBIqAqcXK5KkiYV8BNYv+cA4wgYQkBBYk5k2xAwpwC7hK3Z+5g
-	A7GFgEquzvzJNoGRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Eh8Jr2DcVWDxSFG
-	AQ5GJR5eh7fxIUKsiWXFlbmHGCU4mJVEeGv/A4V4UxIrq1KL8uOLSnNSiw8xmgLdNJFZSjQ5
-	H5gk8kriDY1NzIwsjcwNLYyMzZXEeQ+2WgcKCaQnlqRmp6YWpBbB9DFxcEo1MEqdFm+90/pz
-	cYjId8kE10l7Zknen9cova/dvuli/T3NAL2ikNOFT1YpcM8vllmUVCCy5qv6k9ePVXeKcjbn
-	Hhf76PhrxtTldaoW7G4/G3P3l817daR9usqiR6Ur9/R2d10OZW2TLFPe3JGx2NG5fqLdd4nL
-	R3K+fJ1423vTZwGzTyUtNxyt25VYijMSDbWYi4oTAblQg1baAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsWyRsSkRFc0PSHE4Esvt8XpT9vYLaY+fMJm
+	cf3Lc1aL+UfOsVr8mdDKZjHp/gQWi29XOpgsLu+aw2bxufcIo8WMyS/ZHLg8ds66y+6xaVUn
+	m0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBlPHz9l71gqUHF/eZtzA2M6zS6GDk5JARMJM7f
+	P8QCYYtJXLi3nq2LkYtDSGApo8SR442MMEVvJ3QxQiQWMUoca1jLDOG0MUl8vnSZCaSKTUBT
+	4v2UK2CjRAQiJM4um8UCUsQscJ5R4kzvfrBRwgK+Es9m7GYGsVkEVCVOXZ3FBmLzCrhJdF9u
+	A7I5gNYpSMyZZAMS5hRwl7g9cwdYiRBQydWZP8HOkxBYxy6xt7ODFWKOgMS3ySA/gPTKSmw6
+	wAxxtaTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERj8p/89m7CD8d4B
+	60OMAhyMSjy8Dm/jQ4RYE8uKK3MPMZoCbZjILCWanA+MsbySeENjMyMLUxNTYyNzSzMlcd7X
+	Uj+DhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTC6O9WvcfPYuclkgvmClwHf/M5K37VJXGlh
+	q9J4oPAxo5icucSy6kOaL1RnOF6NFlPM4vgkGvFuzrtcLr9lm0V+1FRF9l/9eUbsOXPbszPb
+	XrgGv120aKH9up/visxqp6yy/JLGKrz27+fa1q7iVRt9M9l3/FBaH/tMIHbTJ/0Ty/ZHaTlY
+	tvErsRRnJBpqMRcVJwIA4l7UcXkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t9jAV3R9IQQgxeXGC1Of9rGbjH14RM2
+	i+tfnrNazD9yjtXiz4RWNotJ9yewWHy70sFkcXnXHDaLz71HGC1mTH7J5sDlsXPWXXaPTas6
+	2Tz6tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfV
+	VsnFJ0DXLTMH6CIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bD13/Z
+	C5YaVNxv3sbcwLhOo4uRk0NCwETi7YQuRghbTOLCvfVsXYxcHEICixgljjWsZYZw2pgkPl+6
+	zARSxSagKfF+yhUWEFtEIELi7LJZLCBFzALnGSXO9O4HGyUs4CvxbMZuZhCbRUBV4tTVWWwg
+	Nq+Am0T35TYgmwNonYLEnEk2IGFOAXeJ2zN3gJUIAZVcnfmTbQIj7wJGhlWMoqkFyQXFSem5
+	hnrFibnFpXnpesn5uZsYwbH1TGoH48oGi0OMAhyMSjy8Dm/jQ4RYE8uKK3MPMUpwMCuJ8Nb+
+	BwrxpiRWVqUW5ccXleakFh9iNAU6aiKzlGhyPjDu80riDY1NzIwsjcwNLYyMzZXEeQ+0WgcK
+	CaQnlqRmp6YWpBbB9DFxcEo1MHJxTX/b+GOatNSOzZszj71hZK3QyFHm8LIxnHDAZpr310sO
+	Z/0qNst5MSzIe7Jh96qnvBX/Lu/+H7h6ooq/iYT8x46CgBmp221sVTM7c/qnPkotfb3k7L/1
+	P21OCCR7X5PmWqJrc+/rktNfnx1uP8kXL+Fgb3f4jcA3yd64/OBgyeXv21XOLlBiKc5INNRi
+	LipOBADYWHO9wwIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,150 +52,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch device tree binding documentation for rt5033 multifunction device.
+This patch add device driver of Richtek RT5033 PMIC.
+The driver support multiple regulator like LDO and synchronous Buck.
+The integrated synchronous buck converter is designed to provide 0.6 A
+application with high efficiency. Two LDOs are integrated. One safe LDO is
+for 60mA and the other one LDO is for 150 mA.
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
 Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
 Changes in v2:
-- Revise binding documentation.
+- Remove unnecessary device specific code.
 ---
- Documentation/devicetree/bindings/mfd/rt5033.txt   |  108 ++++++++++++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 2 files changed, 109 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+ drivers/regulator/Kconfig            |    8 +++
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/rt5033-regulator.c |  123 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 132 insertions(+)
+ create mode 100644 drivers/regulator/rt5033-regulator.c
 
-diff --git a/Documentation/devicetree/bindings/mfd/rt5033.txt b/Documentation/devicetree/bindings/mfd/rt5033.txt
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 55d7b7b..8558e1b 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -521,6 +521,14 @@ config REGULATOR_RN5T618
+ 	help
+ 	  Say y here to support the regulators found on Ricoh RN5T618 PMIC.
+ 
++config REGULATOR_RT5033
++	tristate "Richtek RT5033 Regulators"
++	depends on MFD_RT5033
++	help
++	  This adds support for voltage and current regulators in Richtek
++	  RT5033 PMIC. The device supports multiple regulators like
++	  current source, LDO and Buck.
++
+ config REGULATOR_S2MPA01
+ 	tristate "Samsung S2MPA01 voltage regulator"
+ 	depends on MFD_SEC_CORE
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 1029ed3..1f28ebf 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+ obj-$(CONFIG_REGULATOR_RK808)   += rk808-regulator.o
+ obj-$(CONFIG_REGULATOR_RN5T618) += rn5t618-regulator.o
++obj-$(CONFIG_REGULATOR_RT5033)	+= rt5033-regulator.o
+ obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
+ obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
+ obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
+diff --git a/drivers/regulator/rt5033-regulator.c b/drivers/regulator/rt5033-regulator.c
 new file mode 100644
-index 0000000..52a6d33
+index 0000000..782ba2d
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/rt5033.txt
-@@ -0,0 +1,108 @@
-+Richtek RT5033 Power management Integrated Circuit
++++ b/drivers/regulator/rt5033-regulator.c
+@@ -0,0 +1,123 @@
++/*
++ * Regulator driver for the Richtek RT5033
++ *
++ * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
++ * Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
 +
-+RT5033 is a Multifunction device which includes battery charger, fuel gauge,
-+flash LED current source, LDO and synchronous Buck converter for portable
-+applications. It is interfaced to host controller using i2c interface.
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/mfd/rt5033.h>
++#include <linux/mfd/rt5033-private.h>
++#include <linux/regulator/of_regulator.h>
 +
-+Required properties:
-+- compatible : Must be "richtek,rt5033"
-+- reg : Specifies the i2c slave address of general part.
-+- interrupts : This i2c devices has an IRQ line connected to the main SoC.
-+- interrupt-parent : The parent interrupt controller.
++static struct regulator_ops rt5033_safe_ldo_ops = {
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
++	.list_voltage		= regulator_list_voltage_linear,
++};
 +
-+Optional node:
-+Regulators: The regulators of RT5033 have to be instantiated under sub-node
-+named "regulators" usinge the following format.
++static struct regulator_ops rt5033_buck_ops = {
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++};
 +
-+	regulators {
-+		regulator-name {
-+			regulator-name = LDO/BUCK
-+			regulator subnodes called X, Y and Z
-+		};
-+	};
-+	refer Documentation/devicetree/bindings/regulator/regulator.txt
++static const struct regulator_desc rt5033_supported_regulators[] = {
++	[RT5033_BUCK] = {
++		.name		= "BUCK",
++		.id		= RT5033_BUCK,
++		.ops		= &rt5033_buck_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= RT5033_REGULATOR_BUCK_VOLTAGE_STEP_NUM,
++		.min_uV		= RT5033_REGULATOR_BUCK_VOLTAGE_MIN,
++		.uV_step	= RT5033_REGULATOR_BUCK_VOLTAGE_STEP,
++		.enable_reg	= RT5033_REG_CTRL,
++		.enable_mask	= RT5033_CTRL_EN_BUCK_MASK,
++		.vsel_reg	= RT5033_REG_BUCK_CTRL,
++		.vsel_mask	= RT5033_BUCK_CTRL_MASK,
++	},
++	[RT5033_LDO] = {
++		.name		= "LDO",
++		.id		= RT5033_LDO,
++		.ops		= &rt5033_buck_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= RT5033_REGULATOR_LDO_VOLTAGE_STEP_NUM,
++		.min_uV		= RT5033_REGULATOR_LDO_VOLTAGE_MIN,
++		.uV_step	= RT5033_REGULATOR_LDO_VOLTAGE_STEP,
++		.enable_reg	= RT5033_REG_CTRL,
++		.enable_mask	= RT5033_CTRL_EN_LDO_MASK,
++		.vsel_reg	= RT5033_REG_LDO_CTRL,
++		.vsel_mask	= RT5033_LDO_CTRL_MASK,
++	},
++	[RT5033_SAFE_LDO] = {
++		.name		= "SAFE_LDO",
++		.id		= RT5033_SAFE_LDO,
++		.ops		= &rt5033_safe_ldo_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= 1,
++		.min_uV		= RT5033_REGULATOR_SAFE_LDO_VOLTAGE,
++		.enable_reg	= RT5033_REG_CTRL,
++		.enable_mask	= RT5033_CTRL_EN_SAFE_LDO_MASK,
++	},
++};
 +
++static int rt5033_regulator_probe(struct platform_device *pdev)
++{
++	struct rt5033_dev *rt5033 = dev_get_drvdata(pdev->dev.parent);
++	int ret, i;
++	struct regulator_config config = {};
 +
-+Battery charger: There battery charger of RT5033 have to be instantiated under
-+sub-node named "charger" using the following format.
++	config.dev = &pdev->dev;
++	config.driver_data = rt5033;
 +
-+Required properties:
-+- compatible : Must be "richtek,rt5033-charger".
-+- richtek,pre-uamp : Current of pre-charge mode. The pre-charge current levels
-+  are 350 mA to 650 mA programmed by I2C per 100 mA.
-+- richtek,pre-threshold-uvolt : Voltage of threshold pre-charge mode. Battery
-+  voltage is below pre-charge threshold voltage, the charger is in pre-charge
-+  mode with pre-charge current. Its levels are 2.3 V  to 3.8 V programmed
-+  by I2C per 0.1 V.
-+- richtek,fast-uamp : Current of fast-charge mode. The fast-charge current
-+  levels are 700 mA to 2000 mA programmed by I2C per 100 mA.
-+- richtek,const-uvolt :  Battery regulation voltage of constant voltage mode.
-+  This voltage level 3.65 V to 4.4 V bye I2C per 0.025 V.
-+- richtek,eoc-uamp : This property is end of charge current. Its level 150 mA
-+  to 200 mA.
++	for (i = 0; i < ARRAY_SIZE(rt5033_supported_regulators); i++) {
++		struct regulator_dev *regulator;
 +
-+	charger {
-+		compatible = "richtek,rt5033-charger";
-+		richtek,pre-uamp = <350000>;
-+		richtek,pre-threshold-uvolt = <3400000>;
-+		richtek,fast-uamp = <2000000>;
-+		richtek,const-uvolt = <4350000>;
-+		richtek,eoc-uamp = <250000>;
-+	};
++		config.regmap = rt5033->regmap;
 +
++		regulator = devm_regulator_register(&pdev->dev,
++				&rt5033_supported_regulators[i], &config);
++		if (IS_ERR(regulator)) {
++			ret = PTR_ERR(regulator);
++			dev_err(&pdev->dev,
++				"Regulator init failed %d: with error: %d\n",
++				i, ret);
++			return ret;
++		}
++	}
 +
-+Fuelgauge: There fuelgauge of RT5033 to be instantiated node named "fuelgauge"
-+using the following format.
++	return 0;
++}
 +
-+Required properties:
-+- compatible = Must be "richtek,rt5033-battery".
++static const struct platform_device_id rt5033_regulator_id[] = {
++	{ "rt5033-regulator", },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, rt5033_regulator_id);
 +
-+	i2c_fuel: i2c@1 {
-+		compatible = "i2c-gpio";
-+		standard i2c-gpio constraints...
-+		fuelgauge {
-+			compatible = "richtek,rt5033-battery".
-+		};
-+	};
++static struct platform_driver rt5033_regulator_driver = {
++	.driver = {
++		.name = "rt5033-regulator",
++	},
++	.probe		= rt5033_regulator_probe,
++	.id_table	= rt5033_regulator_id,
++};
++module_platform_driver(rt5033_regulator_driver);
 +
-+
-+Example:
-+
-+		rt5033@34 {
-+			compatible = "richtek,rt5033";
-+			reg = <0x34>;
-+			interrupt-parent = <&gpx1>;
-+			interrupts = <5 0>;
-+
-+			regulators {
-+				buck_reg: BUCK {
-+					regulator-name = "BUCK";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+			};
-+
-+			charger {
-+				compatible = "richtek,rt5033-charger";
-+				richtek,pre-uamp = <350000>;
-+				richtek,pre-threshold-uvolt = <3400000>;
-+				richtek,fast-uamp = <2000000>;
-+				richtek,const-uvolt = <4350000>;
-+				richtek,eoc-uamp = <250000>;
-+			};
-+
-+		};
-+
-+		i2c_fuel: i2c@10 {
-+			compatible = "i2c-gpio";
-+			gpios = <&gpm3 1 0
-+				&gpm3 0 0>;
-+
-+			fuel: rt5033-battery@35 {
-+				compatible = "richtek,rt5033-battery";
-+				interrupt-parent = <&gpx2>;
-+				interrupts = <3 0>;
-+				reg = <0x35>;
-+			};
-+		};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 723999d..611b543 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -124,6 +124,7 @@ ralink	Mediatek/Ralink Technology Corp.
- ramtron	Ramtron International
- realtek Realtek Semiconductor Corp.
- renesas	Renesas Electronics Corporation
-+richtek	Richtek Technology Corporation
- ricoh	Ricoh Co. Ltd.
- rockchip	Fuzhou Rockchip Electronics Co., Ltd
- samsung	Samsung Semiconductor
++MODULE_DESCRIPTION("Richtek RT5033 Regulator driver");
++MODULE_AUTHOR("Beomho Seo <beomho.seo@samsung.com>");
++MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
