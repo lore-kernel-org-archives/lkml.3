@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaKJBpO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:45:14 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39266 "EHLO
+	id S1752839AbaKJBqv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:46:51 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39271 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695AbaKJBpK (ORCPT
+	with ESMTP id S1752694AbaKJBpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:45:10 -0500
+	Sun, 9 Nov 2014 20:45:12 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, lguest@lists.ozlabs.org,
-        x86@kernel.org
-Subject: [PATCH v6 43/48] x86: lguest: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:43:00 -0800
-Message-Id: <1415583785-6980-44-git-send-email-linux@roeck-us.net>
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v6 44/48] x86: ce4100: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:43:01 -0800
+Message-Id: <1415583785-6980-45-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -26,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.546018A5.01DF,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A02020A.546018A8.0013,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 254
+X-CTCH-SenderID-TotalMessages: 257
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -55,7 +53,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Register with kernel power-off handler instead of setting pm_power_off
 directly.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: H. Peter Anvin <hpa@zytor.com>
@@ -76,23 +73,21 @@ v3:
 v2:
 - Use define to specify poweroff handler priority
 
- arch/x86/lguest/boot.c | 3 ++-
+ arch/x86/platform/ce4100/ce4100.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index aae9413..9dff406 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1441,7 +1441,8 @@ __init void lguest_init(void)
- 	 * the Guest routine to power off, and the reboot hook to our restart
- 	 * routine.
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index 701fd58..1816bc1 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -164,5 +164,6 @@ void __init x86_ce4100_early_setup(void)
  	 */
--	pm_power_off = lguest_power_off;
-+	register_power_off_handler_simple(lguest_power_off,
-+					  POWER_OFF_PRIORITY_DEFAULT);
- 	machine_ops.restart = lguest_restart;
+ 	reboot_type = BOOT_KBD;
  
- 	/*
+-	pm_power_off = ce4100_power_off;
++	register_power_off_handler_simple(ce4100_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ }
 -- 
 1.9.1
 
