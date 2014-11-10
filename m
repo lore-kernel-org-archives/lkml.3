@@ -1,182 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaKJP2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:28:42 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33108 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886AbaKJP2l (ORCPT
+	id S1753429AbaKJP3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:29:42 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:55391 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787AbaKJP3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:28:41 -0500
-Date: Mon, 10 Nov 2014 15:28:34 +0000
+	Mon, 10 Nov 2014 10:29:41 -0500
+Date: Mon, 10 Nov 2014 15:29:35 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: arizona: Document HP_CTRL_1L and HP_CTRL_1R
- registers
-Message-ID: <20141110152834.GF24004@x1>
-References: <1415114676-32614-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: tc3589x: get rid of static base
+Message-ID: <20141110152935.GG24004@x1>
+References: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415114676-32614-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-Reply-To: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014, Charles Keepax wrote:
+On Tue, 28 Oct 2014, Linus Walleij wrote:
 
-> These registers are documented in the datasheet and used as part of the
-> extcon driver. Expose them properly through regmap as the datasheet
-> notes they should be treated as volatile do so.
+> The TC3589x driver is now a device tree-only driver, so we want
+> only dynamic IRQs and GPIO numbers from the tc3589x, no static
+> assignments.
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  drivers/mfd/wm5102-tables.c           |    6 +++-
->  drivers/mfd/wm5110-tables.c           |    4 +++
->  drivers/mfd/wm8997-tables.c           |    4 +++
->  include/linux/mfd/arizona/registers.h |   42 +++++++++++++++++++++++++++++++++
->  4 files changed, 54 insertions(+), 2 deletions(-)
+>  drivers/gpio/gpio-tc3589x.c | 2 +-
+>  drivers/mfd/tc3589x.c       | 9 +++------
+>  include/linux/mfd/tc3589x.h | 8 --------
+>  3 files changed, 4 insertions(+), 15 deletions(-)
 
 Applied, thanks.
 
-> diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-> index d6f35bb..b326a82 100644
-> --- a/drivers/mfd/wm5102-tables.c
-> +++ b/drivers/mfd/wm5102-tables.c
-> @@ -336,8 +336,6 @@ static const struct reg_default wm5102_reg_default[] = {
->  	{ 0x00000218, 0x01A6 },   /* R536   - Mic Bias Ctrl 1 */ 
->  	{ 0x00000219, 0x01A6 },   /* R537   - Mic Bias Ctrl 2 */ 
->  	{ 0x0000021A, 0x01A6 },   /* R538   - Mic Bias Ctrl 3 */ 
-> -	{ 0x00000225, 0x0400 },   /* R549   - HP Ctrl 1L */
-> -	{ 0x00000226, 0x0400 },   /* R550   - HP Ctrl 1R */
->  	{ 0x00000293, 0x0000 },   /* R659   - Accessory Detect Mode 1 */ 
->  	{ 0x0000029B, 0x0020 },   /* R667   - Headphone Detect 1 */ 
->  	{ 0x0000029C, 0x0000 },   /* R668   - Headphone Detect 2 */
-> @@ -1112,6 +1110,8 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_MIC_BIAS_CTRL_1:
->  	case ARIZONA_MIC_BIAS_CTRL_2:
->  	case ARIZONA_MIC_BIAS_CTRL_3:
-> +	case ARIZONA_HP_CTRL_1L:
-> +	case ARIZONA_HP_CTRL_1R:
->  	case ARIZONA_ACCESSORY_DETECT_MODE_1:
->  	case ARIZONA_HEADPHONE_DETECT_1:
->  	case ARIZONA_HEADPHONE_DETECT_2:
-> @@ -1949,6 +1949,8 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_DSP1_SCRATCH_1:
->  	case ARIZONA_DSP1_SCRATCH_2:
->  	case ARIZONA_DSP1_SCRATCH_3:
-> +	case ARIZONA_HP_CTRL_1L:
-> +	case ARIZONA_HP_CTRL_1R:
->  	case ARIZONA_HEADPHONE_DETECT_2:
->  	case ARIZONA_HP_DACVAL:
->  	case ARIZONA_MIC_DETECT_3:
-> diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-> index 64eab95..12cad94 100644
-> --- a/drivers/mfd/wm5110-tables.c
-> +++ b/drivers/mfd/wm5110-tables.c
-> @@ -1798,6 +1798,8 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_MIC_BIAS_CTRL_1:
->  	case ARIZONA_MIC_BIAS_CTRL_2:
->  	case ARIZONA_MIC_BIAS_CTRL_3:
-> +	case ARIZONA_HP_CTRL_1L:
-> +	case ARIZONA_HP_CTRL_1R:
->  	case ARIZONA_ACCESSORY_DETECT_MODE_1:
->  	case ARIZONA_HEADPHONE_DETECT_1:
->  	case ARIZONA_HEADPHONE_DETECT_2:
-> @@ -2841,6 +2843,8 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
->  	case ARIZONA_ASYNC_SAMPLE_RATE_2_STATUS:
->  	case ARIZONA_MIC_DETECT_3:
-> +	case ARIZONA_HP_CTRL_1L:
-> +	case ARIZONA_HP_CTRL_1R:
->  	case ARIZONA_HEADPHONE_DETECT_2:
->  	case ARIZONA_INPUT_ENABLES_STATUS:
->  	case ARIZONA_OUTPUT_STATUS_1:
-> diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
-> index 510da3b..06c3093 100644
-> --- a/drivers/mfd/wm8997-tables.c
-> +++ b/drivers/mfd/wm8997-tables.c
-> @@ -886,6 +886,8 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_MIC_BIAS_CTRL_1:
->  	case ARIZONA_MIC_BIAS_CTRL_2:
->  	case ARIZONA_MIC_BIAS_CTRL_3:
-> +	case ARIZONA_HP_CTRL_1L:
-> +	case ARIZONA_HP_CTRL_1R:
->  	case ARIZONA_ACCESSORY_DETECT_MODE_1:
->  	case ARIZONA_HEADPHONE_DETECT_1:
->  	case ARIZONA_HEADPHONE_DETECT_2:
-> @@ -1477,6 +1479,8 @@ static bool wm8997_volatile_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_SAMPLE_RATE_3_STATUS:
->  	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
->  	case ARIZONA_MIC_DETECT_3:
-> +	case ARIZONA_HP_CTRL_1L:
-> +	case ARIZONA_HP_CTRL_1R:
->  	case ARIZONA_HEADPHONE_DETECT_2:
->  	case ARIZONA_INPUT_ENABLES_STATUS:
->  	case ARIZONA_OUTPUT_STATUS_1:
-> diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-> index fbf6489..aacc10d 100644
-> --- a/include/linux/mfd/arizona/registers.h
-> +++ b/include/linux/mfd/arizona/registers.h
-> @@ -125,6 +125,8 @@
->  #define ARIZONA_MIC_BIAS_CTRL_1                  0x218
->  #define ARIZONA_MIC_BIAS_CTRL_2                  0x219
->  #define ARIZONA_MIC_BIAS_CTRL_3                  0x21A
-> +#define ARIZONA_HP_CTRL_1L                       0x225
-> +#define ARIZONA_HP_CTRL_1R                       0x226
->  #define ARIZONA_ACCESSORY_DETECT_MODE_1          0x293
->  #define ARIZONA_HEADPHONE_DETECT_1               0x29B
->  #define ARIZONA_HEADPHONE_DETECT_2               0x29C
-> @@ -2253,6 +2255,46 @@
->  #define ARIZONA_MICB3_ENA_WIDTH                       1  /* MICB3_ENA */
+> diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+> index ae0f6466eb09..abdcf58935f5 100644
+> --- a/drivers/gpio/gpio-tc3589x.c
+> +++ b/drivers/gpio/gpio-tc3589x.c
+> @@ -262,7 +262,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
+>  	tc3589x_gpio->chip = template_chip;
+>  	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
+>  	tc3589x_gpio->chip.dev = &pdev->dev;
+> -	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
+> +	tc3589x_gpio->chip.base = -1;
 >  
->  /*
-> + * R549 (0x225) - HP Ctrl 1L
-> + */
-> +#define ARIZONA_RMV_SHRT_HP1L                    0x4000  /* RMV_SHRT_HP1L */
-> +#define ARIZONA_RMV_SHRT_HP1L_MASK               0x4000  /* RMV_SHRT_HP1L */
-> +#define ARIZONA_RMV_SHRT_HP1L_SHIFT                  14  /* RMV_SHRT_HP1L */
-> +#define ARIZONA_RMV_SHRT_HP1L_WIDTH                   1  /* RMV_SHRT_HP1L */
-> +#define ARIZONA_HP1L_FLWR                        0x0004  /* HP1L_FLWR */
-> +#define ARIZONA_HP1L_FLWR_MASK                   0x0004  /* HP1L_FLWR */
-> +#define ARIZONA_HP1L_FLWR_SHIFT                       2  /* HP1L_FLWR */
-> +#define ARIZONA_HP1L_FLWR_WIDTH                       1  /* HP1L_FLWR */
-> +#define ARIZONA_HP1L_SHRTI                       0x0002  /* HP1L_SHRTI */
-> +#define ARIZONA_HP1L_SHRTI_MASK                  0x0002  /* HP1L_SHRTI */
-> +#define ARIZONA_HP1L_SHRTI_SHIFT                      1  /* HP1L_SHRTI */
-> +#define ARIZONA_HP1L_SHRTI_WIDTH                      1  /* HP1L_SHRTI */
-> +#define ARIZONA_HP1L_SHRTO                       0x0001  /* HP1L_SHRTO */
-> +#define ARIZONA_HP1L_SHRTO_MASK                  0x0001  /* HP1L_SHRTO */
-> +#define ARIZONA_HP1L_SHRTO_SHIFT                      0  /* HP1L_SHRTO */
-> +#define ARIZONA_HP1L_SHRTO_WIDTH                      1  /* HP1L_SHRTO */
-> +
-> +/*
-> + * R550 (0x226) - HP Ctrl 1R
-> + */
-> +#define ARIZONA_RMV_SHRT_HP1R                    0x4000  /* RMV_SHRT_HP1R */
-> +#define ARIZONA_RMV_SHRT_HP1R_MASK               0x4000  /* RMV_SHRT_HP1R */
-> +#define ARIZONA_RMV_SHRT_HP1R_SHIFT                  14  /* RMV_SHRT_HP1R */
-> +#define ARIZONA_RMV_SHRT_HP1R_WIDTH                   1  /* RMV_SHRT_HP1R */
-> +#define ARIZONA_HP1R_FLWR                        0x0004  /* HP1R_FLWR */
-> +#define ARIZONA_HP1R_FLWR_MASK                   0x0004  /* HP1R_FLWR */
-> +#define ARIZONA_HP1R_FLWR_SHIFT                       2  /* HP1R_FLWR */
-> +#define ARIZONA_HP1R_FLWR_WIDTH                       1  /* HP1R_FLWR */
-> +#define ARIZONA_HP1R_SHRTI                       0x0002  /* HP1R_SHRTI */
-> +#define ARIZONA_HP1R_SHRTI_MASK                  0x0002  /* HP1R_SHRTI */
-> +#define ARIZONA_HP1R_SHRTI_SHIFT                      1  /* HP1R_SHRTI */
-> +#define ARIZONA_HP1R_SHRTI_WIDTH                      1  /* HP1R_SHRTI */
-> +#define ARIZONA_HP1R_SHRTO                       0x0001  /* HP1R_SHRTO */
-> +#define ARIZONA_HP1R_SHRTO_MASK                  0x0001  /* HP1R_SHRTO */
-> +#define ARIZONA_HP1R_SHRTO_SHIFT                      0  /* HP1R_SHRTO */
-> +#define ARIZONA_HP1R_SHRTO_WIDTH                      1  /* HP1R_SHRTO */
-> +
-> +/*
->   * R659 (0x293) - Accessory Detect Mode 1
+>  #ifdef CONFIG_OF_GPIO
+>  	tc3589x_gpio->chip.of_node = np;
+> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+> index 0072e668c208..aacb3720065c 100644
+> --- a/drivers/mfd/tc3589x.c
+> +++ b/drivers/mfd/tc3589x.c
+> @@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
+>  
+>  static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+>  {
+> -	int base = tc3589x->irq_base;
+> -
+>  	tc3589x->domain = irq_domain_add_simple(
+> -		np, TC3589x_NR_INTERNAL_IRQS, base,
+> +		np, TC3589x_NR_INTERNAL_IRQS, 0,
+>  		&tc3589x_irq_ops, tc3589x);
+>  
+>  	if (!tc3589x->domain) {
+> @@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+>  	if (blocks & TC3589x_BLOCK_GPIO) {
+>  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
+>  				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
+> -				      tc3589x->irq_base, tc3589x->domain);
+> +				      0, tc3589x->domain);
+>  		if (ret) {
+>  			dev_err(tc3589x->dev, "failed to add gpio child\n");
+>  			return ret;
+> @@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+>  	if (blocks & TC3589x_BLOCK_KEYPAD) {
+>  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
+>  				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
+> -				      tc3589x->irq_base, tc3589x->domain);
+> +				      0, tc3589x->domain);
+>  		if (ret) {
+>  			dev_err(tc3589x->dev, "failed to keypad child\n");
+>  			return ret;
+> @@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
+>  	tc3589x->dev = &i2c->dev;
+>  	tc3589x->i2c = i2c;
+>  	tc3589x->pdata = pdata;
+> -	tc3589x->irq_base = pdata->irq_base;
+>  
+>  	switch (version) {
+>  	case TC3589X_TC35893:
+> diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
+> index e6088c2e2092..e1c12d84c26a 100644
+> --- a/include/linux/mfd/tc3589x.h
+> +++ b/include/linux/mfd/tc3589x.h
+> @@ -164,13 +164,10 @@ struct tc3589x_keypad_platform_data {
+>  
+>  /**
+>   * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
+> - * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
+> - *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
+>   * @setup: callback for board-specific initialization
+>   * @remove: callback for board-specific teardown
 >   */
->  #define ARIZONA_ACCDET_SRC                       0x2000  /* ACCDET_SRC */
+>  struct tc3589x_gpio_platform_data {
+> -	int gpio_base;
+>  	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
+>  	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
+>  };
+> @@ -178,18 +175,13 @@ struct tc3589x_gpio_platform_data {
+>  /**
+>   * struct tc3589x_platform_data - TC3589x platform data
+>   * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
+> - * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
+>   * @gpio: GPIO-specific platform data
+>   * @keypad: keypad-specific platform data
+>   */
+>  struct tc3589x_platform_data {
+>  	unsigned int block;
+> -	int irq_base;
+>  	struct tc3589x_gpio_platform_data *gpio;
+>  	const struct tc3589x_keypad_platform_data *keypad;
+>  };
+>  
+> -#define TC3589x_NR_GPIOS	24
+> -#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
+> -
+>  #endif
 
 -- 
 Lee Jones
