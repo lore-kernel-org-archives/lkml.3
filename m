@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077AbaKJOKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:10:19 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:58807 "EHLO
+	id S1753143AbaKJOKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:10:42 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:59978 "EHLO
 	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815AbaKJOKR (ORCPT
+	with ESMTP id S1752861AbaKJOKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:10:17 -0500
-Date: Mon, 10 Nov 2014 22:10:11 +0800
+	Mon, 10 Nov 2014 09:10:40 -0500
+Date: Mon, 10 Nov 2014 22:10:34 +0800
 From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] crypto: drbg - add MODULE_ALIAS for all DRBG types
-Message-ID: <20141110141011.GA9152@gondor.apana.org.au>
-References: <6130984.PGBGVNdX6r@tachyon.chronox.de>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] crypto: ux500/cryp: Silence compiler warning for
+ !CONFIG_PM
+Message-ID: <20141110141034.GB9152@gondor.apana.org.au>
+References: <1415280455-14056-1-git-send-email-ulf.hansson@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6130984.PGBGVNdX6r@tachyon.chronox.de>
+In-Reply-To: <1415280455-14056-1-git-send-email-ulf.hansson@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 03:08:09AM +0100, Stephan Mueller wrote:
-> The kernel module drbg.ko is currently not loaded automatically when a
-> DRBG is requested by a consumer. This is due to missing MODULE_ALIAS
-> flags for each of the implemented DRBG types.
+On Thu, Nov 06, 2014 at 02:27:35PM +0100, Ulf Hansson wrote:
+> The system PM functions were unused when CONFIG_PM is unset. Let's move
+> them inside CONFIG_PM_SLEEP to silence the compiler warning.
 > 
-> This patch adds aliases for each of the 22 defined DRBGs.
-> 
-> Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Applied.
+Both patches applied.
 -- 
 Email: Herbert Xu <herbert@gondor.apana.org.au>
 Home Page: http://gondor.apana.org.au/~herbert/
