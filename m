@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaKJTDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:03:01 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:45478 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaKJTC6 (ORCPT
+	id S1752335AbaKJTDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:03:43 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57614 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaKJTDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:02:58 -0500
-From: Roman Byshko <rbyshko@gmail.com>
-To: linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: [PATCH v2 2/5] ARM: dtsi: sunxi: add common VBUS regulator
-Date: Mon, 10 Nov 2014 19:55:07 +0100
-Message-Id: <d6e966ae198fa018e0f13a7cbd3e8593641f7e80.1415645258.git.rbyshko@gmail.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <cover.1415645258.git.rbyshko@gmail.com>
-References: <cover.1415645258.git.rbyshko@gmail.com>
-In-Reply-To: <cover.1415645258.git.rbyshko@gmail.com>
-References: <cover.1415645258.git.rbyshko@gmail.com>
+	Mon, 10 Nov 2014 14:03:41 -0500
+Date: Mon, 10 Nov 2014 19:02:10 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141110190210.GF3815@sirena.org.uk>
+References: <cover.1415562021.git.moinejf@free.fr>
+ <7d82dde0dc838d41bfb44ab734d10f838b49c47b.1415562021.git.moinejf@free.fr>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hzXMyaO2bax00huC"
+Content-Disposition: inline
+In-Reply-To: <7d82dde0dc838d41bfb44ab734d10f838b49c47b.1415562021.git.moinejf@free.fr>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] ASoC: simple-card: Remove useless casts
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now the regulator nodes for powering USB VBUS
-existed only for the two host controllers. Now the regulator
-is added for USB OTG too.
 
-Signed-off-by: Roman Byshko <rbyshko@gmail.com>
----
- arch/arm/boot/dts/sunxi-common-regulators.dtsi | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+--hzXMyaO2bax00huC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/boot/dts/sunxi-common-regulators.dtsi b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-index c9c5b10..f521672 100644
---- a/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-+++ b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-@@ -21,6 +21,13 @@
- 				allwinner,pull = <0>;
- 			};
- 
-+			usb0_vbus_pin_a: usb0_vbus_pin@0 {
-+				allwinner,pins = "PB9";
-+				allwinner,function = "gpio_out";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+
- 			usb1_vbus_pin_a: usb1_vbus_pin@0 {
- 				allwinner,pins = "PH6";
- 				allwinner,function = "gpio_out";
-@@ -49,6 +56,18 @@
- 		status = "disabled";
- 	};
- 
-+	reg_usb0_vbus: usb0-vbus {
-+		compatible = "regulator-fixed";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&usb0_vbus_pin_a>;
-+		regulator-name = "usb0-vbus";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		enable-active-high;
-+		gpio = <&pio 1 9 0>;
-+		status = "disabled";
-+	};
-+
- 	reg_usb1_vbus: usb1-vbus {
- 		compatible = "regulator-fixed";
- 		pinctrl-names = "default";
--- 
-2.1.2
+On Sun, Nov 09, 2014 at 12:38:56PM +0100, Jean-Francois Moine wrote:
+> There is no need to cast the cpu_of_node or codec_of_node of the
+> dai_links when calling of_put_node.
 
+Applied, thanks.
+
+--hzXMyaO2bax00huC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUYQuyAAoJECTWi3JdVIfQXo4H/jXy3vUrltx40VffYwA/XQNl
+cnzubESsR7edtgk1wYKMEHZvlhWmOV8d6l5W1FnPjF49N3ViSLXwSESkLLrdXzdL
+EIjPaDpM2vAOEOP5zy4MXlNmX0EJrRNDXcqZ0AAa1hfCPGE+SB5hwLSB9YEQs0Zw
+3uTDHA61rt5F6Cw7xMniG4ZsoqVFkg+c2sfDe/jKbr9b39Mgy8MQ75D8NWey1j7g
+eykcyu1ZDinR+PSJyvopiCoeOzZ1sbH6S5wPfwAj4iRqZW+BziKWyATOOy+bZsqh
+c0DHViKtbyZbaofVkglXzJGNFwsvlJmVOndsnRj6N6tpUlmWHRo/SAJPREm+zk4=
+=QIYa
+-----END PGP SIGNATURE-----
+
+--hzXMyaO2bax00huC--
