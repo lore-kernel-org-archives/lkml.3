@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaKJHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:07:56 -0500
-Received: from smtp-out-039.synserver.de ([212.40.185.39]:1095 "EHLO
-	smtp-out-039.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaKJHHy (ORCPT
+	id S1751910AbaKJHLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 02:11:40 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:35228 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaKJHLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 02:07:54 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16960
-Message-ID: <54606446.7030907@metafoo.de>
-Date: Mon, 10 Nov 2014 08:07:50 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 10 Nov 2014 02:11:39 -0500
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Mark Brown <broonie@kernel.org>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        GTA04 owners <gta04-owner@goldelico.com>, alsa-devel@alsa-project.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [alsa-devel] [PATCH 1/3] ASoC: twl4030: don't report EBUSY if
- no change requested.
-References: <20141108002637.6561.19002.stgit@notabene.brown> <20141108003803.6561.42934.stgit@notabene.brown> <20141108092242.GB2722@sirena.org.uk> <20141110114518.715dcd4e@notabene.brown>
-In-Reply-To: <20141110114518.715dcd4e@notabene.brown>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
+References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
+	<alpine.DEB.2.11.1411012003390.5308@nanos>
+	<alpine.DEB.2.11.1411011646280.7732@gentwo.org>
+	<alpine.DEB.2.11.1411012313320.5308@nanos>
+	<alpine.DEB.2.11.1411061057470.5591@gentwo.org>
+Date: Mon, 10 Nov 2014 12:41:38 +0530
+Message-ID: <CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com>
+Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qti.qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 01:45 AM, NeilBrown wrote:
-> diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-> index b6b0cb399599..613b61cee081 100644
-> --- a/sound/soc/codecs/twl4030.c
-> +++ b/sound/soc/codecs/twl4030.c
-> @@ -957,6 +957,16 @@ static int snd_soc_put_twl4030_opmode_enum_double(struct snd_kcontrol *kcontrol,
->   {
->   	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
->   	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
-> +	struct snd_ctl_elem_value currentval;
->
+On 6 November 2014 22:54, Christoph Lameter <cl@linux.com> wrote:
 
-snd_ctl_elem_value is a bit to big to be put onto the kernel stack. Just 
-using twl4030_read() should be fine.
+> We did not need to housekeeper in the dynticks idle case. What is so
+> different about dynticks busy?
+
+We do have a running task here and so the stats are important..
+
+> I may not have the complete picture of the timer tick processing in my
+> mind these days (it has been a lots of years since I did any work there
+> after all) but as far as my arguably simplistic reading of the code goes I
+> do not see why a housekeeper would be needed there. The load is constant
+> and known in the dynticks busy case as it is in the dynticks idle case.
+
+I tried to initiate a thread on similar stuff, might be helpful:
+
+https://lkml.org/lkml/2014/5/22/131
