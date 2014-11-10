@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296AbaKJSKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 13:10:05 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44961 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaKJSKC (ORCPT
+	id S1751358AbaKJSKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 13:10:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42927 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaKJSKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 13:10:02 -0500
+	Mon, 10 Nov 2014 13:10:50 -0500
+Date: Tue, 11 Nov 2014 03:09:29 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, peter@hurleysoftware.com
+Subject: Re: randconfig build error with next-20141110, in drivers/tty/vt/vt.c
+Message-ID: <20141110180929.GA13084@kroah.com>
+References: <CA+r1ZhjfVNHOL_ZON2bpt9y6CB0J5rtrNhuV0XNRWqc2hGA57Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw9MV1n8T7_k5oftfY-sOu8s1ywKYM-3k4+PF022vv9ow@mail.gmail.com>
-References: <5458A9600200007800044AE5@mail.emea.novell.com>
-	<20141110100117.GA15841@gmail.com>
-	<CA+55aFw9MV1n8T7_k5oftfY-sOu8s1ywKYM-3k4+PF022vv9ow@mail.gmail.com>
-Date: Mon, 10 Nov 2014 10:10:01 -0800
-X-Google-Sender-Auth: er0CCMPy4TT9fPC95NOIY28G9Bw
-Message-ID: <CA+55aFwZYeFtuQbxtAbOoMVNFN_fQKnxGbRybdz-LYRzwMqX9w@mail.gmail.com>
-Subject: Re: [PATCH, RFC] x86: also CFI-annotate certain inline asm()s
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Anvin <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tony Jones <tonyj@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+r1ZhjfVNHOL_ZON2bpt9y6CB0J5rtrNhuV0XNRWqc2hGA57Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 9:56 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So no. A very strong NACK. The code was too ugly to live, there is no good
-> stated reason for it, and the only reason I can even remotely imagine is
-> wrong and complete crap anyway (ie making the CFI annotations a correctness
-> issue by introducing other infrastructure that depends on it always being
-> right).
+On Mon, Nov 10, 2014 at 09:13:25AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> drivers/tty/vt/vt.c: In function ‘tioclinux’:
+> drivers/tty/vt/vt.c:2703:4: error: implicit declaration of function
+> ‘vt_get_kmsg_redirect’ [-Werror=implicit-function-declaration]
+>     data = vt_get_kmsg_redirect();
+>     ^
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/tty/vt/vt.o] Error 1
 
-Btw, the sane thing to do is to make your infrastructure just say "If
-my frame walker hits a push/pop without CFI information, I'll just add
-it myself".
+This is due to a patch from Peter Hurley, but I can't work out what to
+do to fix it...
 
-Yes, that involved having to actuall ylook at the instruction. Tough
-shit. Just do it right. There aren't that many push/pop patterns.
-Don't make the kernel more fragile by introducing these kinds of hacky
-macros-from-hell.
+Peter?
 
-Improve the debugger, don't make kernel code worse because your
-out-of-tree debugging infrastructure is too broken to live.
-
-                      Linus
