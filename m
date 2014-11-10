@@ -1,101 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaKJRZi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:25:38 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45085 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752910AbaKJRV7 (ORCPT
+	id S1754122AbaKJR0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:26:37 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36166 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862AbaKJR0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:21:59 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>
-Cc: linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v6 03/10] [media] Make use of the new media_bus_format definitions
-Date: Mon, 10 Nov 2014 18:21:47 +0100
-Message-Id: <1415640114-14930-4-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415640114-14930-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1415640114-14930-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 10 Nov 2014 12:26:35 -0500
+Message-ID: <5460F386.1050109@linaro.org>
+Date: Mon, 10 Nov 2014 18:19:02 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
+Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req before
+ idle
+References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org> <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org> <20141110124111.GN3337@twins.programming.kicks-ass.net> <5460D5EF.2000805@linaro.org> <20141110152803.GX10501@worktop.programming.kicks-ass.net> <5460E0A5.9040508@linaro.org> <20141110161530.GB10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141110161530.GB10501@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace references to the v4l2_mbus_pixelcode enum with the new
-media_bus_format enum in all common headers.
+On 11/10/2014 05:15 PM, Peter Zijlstra wrote:
+> On Mon, Nov 10, 2014 at 04:58:29PM +0100, Daniel Lezcano wrote:
+>>> I don't get it, I've clearly not stared at it long enough, but why is
+>>> that STATE_START crap needed anywhere?
+>>
+>> Excellent question :)
+>>
+>> On x86, the config option ARCH_HAS_CPU_RELAX is set (x86 is the only one).
+>> That leads to the macro CPUIDLE_DRIVER_STATE_START equal 1.
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/include/linux/cpuidle.h#n221
+>>
+>> Then the acpi cpuidle driver and the intel_driver begin to fill the idle
+>> state at index == CPUIDLE_DRIVER_STATE_START, so leaving the 0th idle state
+>> empty.
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/idle/intel_idle.c#n848
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/acpi/processor_idle.c#n953
+>>
+>> Then when the driver is registered and if ARCH_HAS_CPU_RELAX is set, the
+>> cpuidle framework insert the 0th with the poll state (reminder : only for
+>> x86).
+>
+> Appears to me part of the problem is right there, the intel_idle and
+> proessor_idle should register the poll state themselves. That
+> immediately makes this weirdness go away.
+>
+> Registering states from two places is not something that's sane or
+> desired I think.
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
----
- include/media/v4l2-mediabus.h    | 2 +-
- include/media/v4l2-subdev.h      | 2 +-
- include/uapi/linux/v4l2-subdev.h | 6 +++---
- 3 files changed, 5 insertions(+), 5 deletions(-)
+I fully agree. I did a patchset in this direction but I realized the 
+poll state most of the cases was not used.
 
-diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-index 395c4a9..59d7397 100644
---- a/include/media/v4l2-mediabus.h
-+++ b/include/media/v4l2-mediabus.h
-@@ -98,7 +98,7 @@ static inline void v4l2_fill_pix_format(struct v4l2_pix_format *pix_fmt,
- 
- static inline void v4l2_fill_mbus_format(struct v4l2_mbus_framefmt *mbus_fmt,
- 			   const struct v4l2_pix_format *pix_fmt,
--			   enum v4l2_mbus_pixelcode code)
-+			   u32 code)
- {
- 	mbus_fmt->width = pix_fmt->width;
- 	mbus_fmt->height = pix_fmt->height;
-diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
-index d746572..5860292 100644
---- a/include/media/v4l2-subdev.h
-+++ b/include/media/v4l2-subdev.h
-@@ -341,7 +341,7 @@ struct v4l2_subdev_video_ops {
- 	int (*query_dv_timings)(struct v4l2_subdev *sd,
- 			struct v4l2_dv_timings *timings);
- 	int (*enum_mbus_fmt)(struct v4l2_subdev *sd, unsigned int index,
--			     enum v4l2_mbus_pixelcode *code);
-+			     u32 *code);
- 	int (*enum_mbus_fsizes)(struct v4l2_subdev *sd,
- 			     struct v4l2_frmsizeenum *fsize);
- 	int (*g_mbus_fmt)(struct v4l2_subdev *sd,
-diff --git a/include/uapi/linux/v4l2-subdev.h b/include/uapi/linux/v4l2-subdev.h
-index a619cdd..e0a7e3d 100644
---- a/include/uapi/linux/v4l2-subdev.h
-+++ b/include/uapi/linux/v4l2-subdev.h
-@@ -68,7 +68,7 @@ struct v4l2_subdev_crop {
-  * struct v4l2_subdev_mbus_code_enum - Media bus format enumeration
-  * @pad: pad number, as reported by the media API
-  * @index: format index during enumeration
-- * @code: format code (from enum v4l2_mbus_pixelcode)
-+ * @code: format code (MEDIA_BUS_FMT_ definitions)
-  */
- struct v4l2_subdev_mbus_code_enum {
- 	__u32 pad;
-@@ -81,7 +81,7 @@ struct v4l2_subdev_mbus_code_enum {
-  * struct v4l2_subdev_frame_size_enum - Media bus format enumeration
-  * @pad: pad number, as reported by the media API
-  * @index: format index during enumeration
-- * @code: format code (from enum v4l2_mbus_pixelcode)
-+ * @code: format code (MEDIA_BUS_FMT_ definitions)
-  */
- struct v4l2_subdev_frame_size_enum {
- 	__u32 index;
-@@ -109,7 +109,7 @@ struct v4l2_subdev_frame_interval {
-  * struct v4l2_subdev_frame_interval_enum - Frame interval enumeration
-  * @pad: pad number, as reported by the media API
-  * @index: frame interval index during enumeration
-- * @code: format code (from enum v4l2_mbus_pixelcode)
-+ * @code: format code (MEDIA_BUS_FMT_ definitions)
-  * @width: frame width in pixels
-  * @height: frame height in pixels
-  * @interval: frame interval in seconds
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/cpuidle/driver.c#n195
+>>
+>> If you look at the ladder governor (which I believe nobody is still using
+>> it), or at the menu governor, all the indexes begin at
+>> CPUIDLE_DRIVER_STATE_START, so all the code is preventing to use the 0th
+>> state ... :)
+>>
+>> So why is needed the poll state ?
+>>
+>> 1. When the latency_req is 0 (it returns 0, so the poll state)
+>
+> Right, that makes sense.
+>
+>> 2. When the select's menu governor fails to find a state *and* if the next
+>> timer is before 5us
+>
+> That seems rather arbitrary.
+
+Yeah, and I am wondering if this very particular optimization couldn't 
+be just removed. Is there still a benefit ?
+
+> Why would it fail to find a state?
+
+To do short: it could fail to find a state fulfilling the constraints 
+(some states could be disabled or the ).
+
+>> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/tree/drivers/cpuidle/driver.c#n195
+>>
+>> And when we investigate the same code but on the other archs, the
+>> CPUIDLE_DRIVER_STATE_START dance makes things slightly different.
+>>
+>> So the conclusion is, we are inserting a state in the idle state array but
+>> we do everything to prevent to use it :)
+>>
+>> For me it appears logical to just kill this state from the x86 idle drivers
+>> and move it in the idle_mainloop in case an idle state selection fails.
+>
+> But why, ppc has a latency_req==0 state too, right?
+
+Yes, this is why the arch_cpu_poll_idle, so ppc can override it with its 
+optimized pooling loop (rep(); nop(); is x86).
+
+> I agree that we should shoot STATE_START in the head, but I feel we
+> should do it by fixing the state registration.
+
+You can fix the state registration but that won't fix the STATE_START 
+usage in the governors.
+
+> I really don't get why the governors should know about this though, its
+> just another state, they should iterate all states and pick the best,
+> given the power usage this state should really never be eligible unless
+> we're QoS forced or whatnot.
+
+The governors just don't use the poll state at all, except for a couple 
+of cases in menu.c defined above in the previous email. What is the 
+rational of adding a state in the cpuidle driver and do everything we 
+can to avoid using it ? From my POV, the poll state is a special state, 
+we should remove from the driver's idle states like the arch_cpu_idle() 
+is a specific idle state only used in idle.c (but which may overlap with 
+an idle state in different archs eg. cpu_do_idle() and the 0th idle state).
+
+
 -- 
-1.9.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
