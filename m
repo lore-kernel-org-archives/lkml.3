@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbaKJSyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 13:54:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41912 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228AbaKJSyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 13:54:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
-Date: Mon, 10 Nov 2014 10:54:00 -0800
-Message-ID: <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-From: Kevin Hilman <khilman@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>,
-        Frank Rowand <frowand.list@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751905AbaKJSzZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 13:55:25 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:35466 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbaKJSzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 13:55:23 -0500
+From: Roman Byshko <rbyshko@gmail.com>
+To: linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH v2 0/5] ARM: sunxi: Add support for USB OTG PHY
+Date: Mon, 10 Nov 2014 19:55:05 +0100
+Message-Id: <cover.1415645258.git.rbyshko@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> We rely on probe order of this driver to determine the line number for
-> the uart port. This makes it impossible to know the line number
-> when these devices are populated via DT. Use the DT alias
-> mechanism to assign the line based on the aliases node.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Hi,
 
-FYI... this patch hit linux-next and caused multiple boot failures on
-qcom platforms[1] as of next-20141110.  I'm assuming this is because
-the corresponding DTS changes have not hit linux-next yet.
+There is already support for two USB phys, which are used for
+USB host controllers on Allwinner SoC aka sunxi.
 
-Kevin
+This patch series add support for the USB OTG phy (aka phy0).
 
-[1] http://status.armcloud.us/boot/?qcom
+The code has been tested on Allwinner A20 aka sun7i (Cubietruck).
+
+Best regards,
+Roman Byshko
+
+Changes since v1:
+	* Improved comment about 45 Ohm resistor calibration
+	* Added Signed-off-by to all patches
+
+Roman Byshko (5):
+  phy: sun4i: add support for USB phy0
+  ARM: dtsi: sunxi: add common VBUS regulator
+  ARM: sun7i: dtsi: add support for usbphy0
+  ARM: dts: sun7i: Cubietruck: override regulator pin
+  ARM: dts: sun7i: Cubietruck: add power supply regulator for USB OTG
+    VBUS
+
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts     | 14 ++++++++++++++
+ arch/arm/boot/dts/sun7i-a20.dtsi               |  4 ++--
+ arch/arm/boot/dts/sunxi-common-regulators.dtsi | 19 +++++++++++++++++++
+ drivers/phy/phy-sun4i-usb.c                    |  9 ++++++---
+ 4 files changed, 41 insertions(+), 5 deletions(-)
+
+-- 
+2.1.2
+
