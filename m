@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaKJWYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 17:24:33 -0500
-Received: from smtprelay0243.hostedemail.com ([216.40.44.243]:51646 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751205AbaKJWYa (ORCPT
+	id S1751470AbaKJWei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:34:38 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22678 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750799AbaKJWeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 17:24:30 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2890:2911:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:4042:4321:4425:5007:6261:6691:10004:10400:10848:11232:11658:11914:12109:12296:12517:12519:12740:13018:13019:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: quilt83_271188d3b8900
-X-Filterd-Recvd-Size: 1622
-Message-ID: <1415658266.8868.20.camel@perches.com>
-Subject: Re: [PATCH v2 00/10 linux-next] cdrom: sysctl export + clean-up
-From: Joe Perches <joe@perches.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-Date: Mon, 10 Nov 2014 14:24:26 -0800
-In-Reply-To: <54613A75.9080307@kernel.dk>
-References: <1415650916-9975-1-git-send-email-fabf@skynet.be>
-	 <1415652861.8868.19.camel@perches.com> <54613A75.9080307@kernel.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Nov 2014 17:34:36 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+3YDm7VvWtz0Hxi6a1tO+M
+Date: Mon, 10 Nov 2014 14:33:51 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+Cc: bcousson@baylibre.com, nm@ti.com, devicetree@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM: dts: dra72x-evm: Enable CPSW and MDIO
+Message-ID: <20141110223351.GZ31454@atomide.com>
+References: <1415008693-28552-1-git-send-email-mugunthanvnm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415008693-28552-1-git-send-email-mugunthanvnm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 15:21 -0700, Jens Axboe wrote:
-> On 2014-11-10 13:54, Joe Perches wrote:
-> > On Mon, 2014-11-10 at 21:21 +0100, Fabian Frederick wrote:
-> >> This patchset moves sysctl functions to a new file cdrom_sysctl.c
-> >> and tries to solve small code / coding style issues.
-> >
-> > Hey Fabian.
-> >
-> > You're doing a lot of these.
-> >
-> > Maybe you should setup a git tree somewhere
-> > (maybe repo.or.cz or request a kernel.org account)
-> > and let people pull your branches from there.
+* Mugunthan V N <mugunthanvnm@ti.com> [141103 01:59]:
+> Adding CPSW phy-id, CPSW and MDIO pinmux configuration for active and
+> sleep states and enable them in board evm dts file.
 > 
-> I prefer just seeing the patches, makes it easier to review in the 
-> mailer. And applying them from email is easy enough.
+> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+> ---
+> 
+> Adding device tree entry for CPSW to make it work in Switch mode.
+> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pushed
+> my tree to [2].
+> 
+> Did a boot test with CPSW and ping test with suspend/resume, the boot logs
+> on DRA72x EVM are posted at [3]
+> 
+> This patch depends on the DRA7xx CPSW support patch series [4] and one driver
+> patch (47276fc drivers: net:cpsw: fix probe_dt when only slave 1 is pinned out)
+> which is already present in linux-next
 
-I prefer seeing the patches too and I didn't suggest
-_not_ sending them, just adding the ability to do
-a git pull.
+Applying into omap-for-v3.19/dt thanks.
 
-
-
-
+Tony
+ 
+> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git for-v3.19/dra72-evm-cpsw
+> [3] http://pastebin.ubuntu.com/8800549/
+> [4] http://comments.gmane.org/gmane.linux.kernel/1810171
