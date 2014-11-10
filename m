@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaKJKk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:40:57 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:41528 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181AbaKJKky (ORCPT
+	id S1752646AbaKJKlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:41:25 -0500
+Received: from mail-yk0-f194.google.com ([209.85.160.194]:65482 "EHLO
+	mail-yk0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaKJKlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:40:54 -0500
-From: Arianna Avanzini <avanzini.arianna@gmail.com>
-To: namhyung@kernel.org, rostedt@goodmis.org, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Cc: avanzini.arianna@gmail.com
-Subject: [PATCH RFC v2] trace, blktrace: don't let the sysfs interface remove trace from running list
-Date: Mon, 10 Nov 2014 11:40:49 +0100
-Message-Id: <1415616049-1132-1-git-send-email-avanzini.arianna@gmail.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <8761env4vf.fsf@sejong.aot.lge.com>
-References: <8761env4vf.fsf@sejong.aot.lge.com>
+	Mon, 10 Nov 2014 05:41:23 -0500
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Zubair.Kakakhel@imgtec.com, rmk+kernel@arm.linux.org.uk,
+        fabio.estevam@freescale.com, heiko@sntech.de
+Cc: Andy Yan <andy.yan@rock-chips.com>, Arnd Bergmann <arnd@arndb.de>,
+        Yakir Yang <ykk@rock-chips.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>, dri-devel@lists.freedesktop.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Inki Dae <inki.dae@samsung.com>, Lucas Stach <l.stach@pengutronix.de>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Airlie <airlied@redhat.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
+        Mark Rutland <mark.rutland@arm.com>, Sean Paul <seanpaul@chromium.org>
+Subject: [PATCH v6 0/7] dw-hdmi: convert imx hdmi to bridge/dw-hdmi
+Date: Mon, 10 Nov 2014 18:40:55 +0800
+Message-Id: <1415616062-30583-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, blktrace can be started/stopped via its ioctl-based interface
-(used by the userspace blktrace tool) or via its ftrace interface. The
-function blk_trace_remove_queue(), called each time an "enable" tunable
-of the ftrace interface transitions to zero, removes the trace from the
-running list, even if no function from the sysfs interface adds it to
-such a list. This leads to a null pointer dereference.
-This commit changes the blk_trace_remove_queue() function so that it
-does not remove the blk_trace from the running list.
 
-v2:
-    - Now the patch removes the invocation of list_del() instead of
-      adding an useless if branch, as suggested by Namhyung Kim.
+We found freescale imx6 and rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
+use the interface compatible Designware HDMI IP, but they also have some
+lightly difference, such as phy pll configuration, register width(imx hdmi
+register is one byte, but rk3288 is 4 bytes width and can only access by word),
+4K support(imx6 doesn't support 4k, but rk3288 does).
 
-Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
----
- kernel/trace/blktrace.c | 3 ---
- 1 file changed, 3 deletions(-)
+To reuse the imx-hdmi driver, we do this patch set:
+(1): fix some codingstyle warning to make checkpatch happy
+(2): split out imx-soc code from imx-hdmi to dw_hdmi-imx.c
+(3): move imx-hdmi to bridge/dw-hdmi, and convert it to a drm_bridge driver
+And we will add rockchip platform specific code dw_hdmi-rockchip.c later,
+this is depend on drm-rockchip.
 
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c1bd4ad..bd05fd2 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -1493,9 +1493,6 @@ static int blk_trace_remove_queue(struct request_queue *q)
- 	if (atomic_dec_and_test(&blk_probes_ref))
- 		blk_unregister_tracepoints();
- 
--	spin_lock_irq(&running_trace_lock);
--	list_del(&bt->running_list);
--	spin_unlock_irq(&running_trace_lock);
- 	blk_trace_free(bt);
- 	return 0;
- }
+Changes in v6:
+- rearrange the patch order
+- move some modification from patch#5 to  patch#6
+- refactor register access without reg_shift
+
+Changes in v5:
+- refactor reg-io-width
+
+Changes in v4:
+- fix checkpatch CHECK
+- defer probe ddc i2c adapter
+
+Changes in v3:
+- split multi register access to one indepent patch
+
+Changes in v2:
+- use git format -M to generate these patch
+
+Andy Yan (6):
+  staging: imx-drm: imx-hdmi: make checkpatch happy
+  staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
+  staging: imx-drm: imx-hdmi: split imx soc specific code from imx-hdmi
+  staging: imx-drm: imx-hdmi: move imx-hdmi to bridge/dw-hdmi
+  drm: bridge/dw-hdmi: add support for multi byte register width access
+  dt-bindings: add document for dw-hdmi
+
+Yakir Yang (1):
+  drm: bridge/dw-hdmi: convert dw-hdmi to drm_bridge mode
+
+ .../devicetree/bindings/drm/bridge/dw-hdmi.txt     |  38 ++
+ drivers/gpu/drm/bridge/Kconfig                     |   5 +
+ drivers/gpu/drm/bridge/Makefile                    |   1 +
+ .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 725 +++++++++------------
+ .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   5 +-
+ drivers/staging/imx-drm/Kconfig                    |   1 +
+ drivers/staging/imx-drm/Makefile                   |   2 +-
+ drivers/staging/imx-drm/dw_hdmi-imx.c              | 263 ++++++++
+ include/drm/bridge/dw_hdmi.h                       |  52 ++
+ 9 files changed, 668 insertions(+), 424 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
+ rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (71%)
+ rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
+ create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
+ create mode 100644 include/drm/bridge/dw_hdmi.h
+
 -- 
-2.1.2
+1.9.1
 
