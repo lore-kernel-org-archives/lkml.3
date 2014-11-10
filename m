@@ -1,148 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaKJJhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:37:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55642 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaKJJhA (ORCPT
+	id S1752351AbaKJJik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:38:40 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:52132 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaKJJii convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:37:00 -0500
-Date: Mon, 10 Nov 2014 01:36:35 -0800
-From: tip-bot for Andrey Ryabinin <tipbot@zytor.com>
-Message-ID: <tip-c123588b3b193d06588dfb51f475407f835ebfb2@git.kernel.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, a.ryabinin@samsung.com,
-        riel@redhat.com, mingo@kernel.org, tglx@linutronix.de
-Reply-To: hpa@zytor.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        a.ryabinin@samsung.com, riel@redhat.com, tglx@linutronix.de
-In-Reply-To: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
-References: <1415372020-1871-1-git-send-email-a.ryabinin@samsung.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/numa:
-  Fix out of bounds read in sched_init_numa()
-Git-Commit-ID: c123588b3b193d06588dfb51f475407f835ebfb2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 10 Nov 2014 04:38:38 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <yw1xh9y7ieze.fsf@unicorn.mansr.com>
+References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
+	<20141106203832.GB30170@kroah.com>
+	<yw1xwq78jbr6.fsf@unicorn.mansr.com>
+	<20141106205644.GA31435@kroah.com>
+	<CABkLObqLXpXfcFOW9oorvR0dj4xU0Eo0c2k0TB5njd2FZGVCPQ@mail.gmail.com>
+	<yw1xh9y7ieze.fsf@unicorn.mansr.com>
+Date: Mon, 10 Nov 2014 10:38:34 +0100
+X-Google-Sender-Auth: 8Tmpn1PdyjETQ-E1EuSyKomyBPI
+Message-ID: <CABkLObp-nXLTLYQ=dLQmDXz=1j4tLFDgJoau_MTi9QqLEuus6A@mail.gmail.com>
+Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in
+ receive path
+From: Christian Riesch <christian.riesch@omicron.at>
+To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c123588b3b193d06588dfb51f475407f835ebfb2
-Gitweb:     http://git.kernel.org/tip/c123588b3b193d06588dfb51f475407f835ebfb2
-Author:     Andrey Ryabinin <a.ryabinin@samsung.com>
-AuthorDate: Fri, 7 Nov 2014 17:53:40 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 10 Nov 2014 10:33:22 +0100
+Hi Måns,
 
-sched/numa: Fix out of bounds read in sched_init_numa()
+On Mon, Nov 10, 2014 at 10:25 AM, Måns Rullgård <mans@mansr.com> wrote:
+> Christian Riesch <christian.riesch@omicron.at> writes:
+>
+>> On Thu, Nov 6, 2014 at 9:56 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>>> On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
+>>>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+>>>>
+>>>> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
+>>>> >> The current implementation of put_tty_queue() causes a race condition
+>>>> >> when re-arranged by the compiler.
+>>>> >>
+>>>> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
+>>>> >>
+>>>> >>    *read_buf_addr(ldata, ldata->read_head++) = c;
+>>>> >>
+>>>> >> was re-arranged by the compiler to something like
+>>>> >>
+>>>> >>    x = ldata->read_head
+>>>> >>    ldata->read_head++
+>>>> >>    *read_buf_addr(ldata, x) = c;
+>>>> >>
+>>>> >> which causes a race condition. Invalid data is read if data is read
+>>>> >> before it is actually written to the read buffer.
+>>>> >
+>>>> > Really?  A compiler can rearange things like that and expect things to
+>>>> > actually work?  How is that valid?
+>>>>
+>>>> This is actually required by the C spec.  There is a sequence point
+>>>> before a function call, after the arguments have been evaluated.  Thus
+>>>> all side-effects, such as the post-increment, must be complete before
+>>>> the function is called, just like in the example.
+>>>>
+>>>> There is no "re-arranging" here.  The code is simply wrong.
+>>>
+>>> Ah, ok, time to dig out the C spec...
+>>>
+>>> Anyway, because of this, no need for the wmb() calls, just rearrange the
+>>> logic and all should be good, right?  Christian, can you test that
+>>> instead?
+>>
+>> I ran a test with the patch that I posted in my first email for the
+>> last 4 days. No communication errors occurred so the patch actually
+>> fixes my problem. I will run another test as suggested by Greg, just
+>> with rearranging the logic.
+>
+> What hardware are you running on?  If it's a single-processor system,
+> it won't break without barriers even if they are required for SMP.
 
-On latest mm + KASan patchset I've got this:
+Yes, single processor. Texas Instruments AM1808 SoC.
 
-    ==================================================================
-    BUG: AddressSanitizer: out of bounds access in sched_init_smp+0x3ba/0x62c at addr ffff88006d4bee6c
-    =============================================================================
-    BUG kmalloc-8 (Not tainted): kasan error
-    -----------------------------------------------------------------------------
-
-    Disabling lock debugging due to kernel taint
-    INFO: Allocated in alloc_vfsmnt+0xb0/0x2c0 age=75 cpu=0 pid=0
-     __slab_alloc+0x4b4/0x4f0
-     __kmalloc_track_caller+0x15f/0x1e0
-     kstrdup+0x44/0x90
-     alloc_vfsmnt+0xb0/0x2c0
-     vfs_kern_mount+0x35/0x190
-     kern_mount_data+0x25/0x50
-     pid_ns_prepare_proc+0x19/0x50
-     alloc_pid+0x5e2/0x630
-     copy_process.part.41+0xdf5/0x2aa0
-     do_fork+0xf5/0x460
-     kernel_thread+0x21/0x30
-     rest_init+0x1e/0x90
-     start_kernel+0x522/0x531
-     x86_64_start_reservations+0x2a/0x2c
-     x86_64_start_kernel+0x15b/0x16a
-    INFO: Slab 0xffffea0001b52f80 objects=24 used=22 fp=0xffff88006d4befc0 flags=0x100000000004080
-    INFO: Object 0xffff88006d4bed20 @offset=3360 fp=0xffff88006d4bee70
-
-    Bytes b4 ffff88006d4bed10: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
-    Object ffff88006d4bed20: 70 72 6f 63 00 6b 6b a5                          proc.kk.
-    Redzone ffff88006d4bed28: cc cc cc cc cc cc cc cc                          ........
-    Padding ffff88006d4bee68: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-    CPU: 0 PID: 1 Comm: swapper/0 Tainted: G    B          3.18.0-rc3-mm1+ #108
-    Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-     ffff88006d4be000 0000000000000000 ffff88006d4bed20 ffff88006c86fd18
-     ffffffff81cd0a59 0000000000000058 ffff88006d404240 ffff88006c86fd48
-     ffffffff811fa3a8 ffff88006d404240 ffffea0001b52f80 ffff88006d4bed20
-    Call Trace:
-    dump_stack (lib/dump_stack.c:52)
-    print_trailer (mm/slub.c:645)
-    object_err (mm/slub.c:652)
-    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
-    kasan_report_error (mm/kasan/report.c:102 mm/kasan/report.c:178)
-    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
-    ? kasan_unpoison_shadow (mm/kasan/kasan.c:54)
-    ? kasan_poison_shadow (mm/kasan/kasan.c:48)
-    ? kasan_kmalloc (mm/kasan/kasan.c:311)
-    __asan_load4 (mm/kasan/kasan.c:371)
-    ? sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
-    sched_init_smp (kernel/sched/core.c:6552 kernel/sched/core.c:7063)
-    kernel_init_freeable (init/main.c:869 init/main.c:997)
-    ? finish_task_switch (kernel/sched/sched.h:1036 kernel/sched/core.c:2248)
-    ? rest_init (init/main.c:924)
-    kernel_init (init/main.c:929)
-    ? rest_init (init/main.c:924)
-    ret_from_fork (arch/x86/kernel/entry_64.S:348)
-    ? rest_init (init/main.c:924)
-    Read of size 4 by task swapper/0:
-    Memory state around the buggy address:
-     ffff88006d4beb80: fc fc fc fc fc fc fc fc fc fc 00 fc fc fc fc fc
-     ffff88006d4bec00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bec80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bed00: fc fc fc fc 00 fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bed80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-    >ffff88006d4bee00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc 04 fc
-                                                              ^
-     ffff88006d4bee80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bef00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-     ffff88006d4bef80: fc fc fc fc fc fc fc fc fb fb fb fb fb fb fb fb
-     ffff88006d4bf000: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-     ffff88006d4bf080: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-    ==================================================================
-
-Zero 'level' (e.g. on non-NUMA system) causing out of bounds
-access in this line:
-
-     sched_max_numa_distance = sched_domains_numa_distance[level - 1];
-
-Fix this by exiting from sched_init_numa() earlier.
-
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Fixes: 9942f79ba ("sched/numa: Export info needed for NUMA balancing on complex topologies")
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1415372020-1871-1-git-send-email-a.ryabinin@samsung.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 6841fb4..5f12ca6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6368,6 +6368,10 @@ static void sched_init_numa(void)
- 		if (!sched_debug())
- 			break;
- 	}
-+
-+	if (!level)
-+		return;
-+
- 	/*
- 	 * 'level' contains the number of unique distances, excluding the
- 	 * identity distance node_distance(i,i).
+Thanks,
+Christian
