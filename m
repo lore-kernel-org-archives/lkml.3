@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaKJRoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:44:06 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:64948 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181AbaKJRoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:44:03 -0500
-Date: Mon, 10 Nov 2014 17:43:55 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, arnd@arndb.de,
-        johan@kernel.org, daniel.baluta@intel.com, laurentiu.palcu@intel.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [GIT PULL] Immutable branch between MFD, GPIO and I2C
-Message-ID: <20141110174355.GM24004@x1>
-References: <1415281685-14866-1-git-send-email-octavian.purdila@intel.com>
- <20141110151226.GD24004@x1>
- <20141110160426.GK24004@x1>
+	id S1753969AbaKJRpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:45:22 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:54960 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257AbaKJRpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 12:45:20 -0500
+Date: Mon, 10 Nov 2014 10:45:11 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com
+Subject: Re: [PATCH v6 04/10] tpm: rename chip->dev to chip->pdev
+Message-ID: <20141110174511.GA5296@obsidianresearch.com>
+References: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1415623794-6090-5-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141110160426.GK24004@x1>
+In-Reply-To: <1415623794-6090-5-git-send-email-jarkko.sakkinen@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Please don't pull this -- it is missing a patch.
-> 
-> Will fix.
+On Mon, Nov 10, 2014 at 02:49:48PM +0200, Jarkko Sakkinen wrote:
+> Rename chip->dev to chip->pdev to make it explicit that this not the
+> character device but actually represents the platform device.
 
-Okay, dependency fixed.  Sorry for the fuss.  Pull when ready.
+I don't really have time to take a detailed look at this for a few
+weeks, but I like this entire patch set.
 
-> > [Subject change -- in case you miss it]
-> > 
-> > Linus, Wolfram,
-> > 
-> > Enjoy!
-> > 
-> > The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-> > 
-> >   Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-i2c-v3.19
-> > 
-> > for you to fetch changes up to e7d146b11a8a33b6033220b0f4fc4de2ab29218a:
-> > 
-> >   gpio: add support for the Diolan DLN-2 USB GPIO driver (2014-11-10 15:05:49 +0000)
-> > 
-> > ----------------------------------------------------------------
-> > Immutable branch between MFD, GPIO and I2C
-> > 
-> > ----------------------------------------------------------------
-> > Daniel Baluta (1):
-> >       gpio: add support for the Diolan DLN-2 USB GPIO driver
-> > 
-> > Laurentiu Palcu (1):
-> >       i2c: add support for Diolan DLN-2 USB-I2C adapter
-> > 
-> > Octavian Purdila (1):
-> >       mfd: Add support for Diolan DLN-2 devices
-> > 
-> >  drivers/gpio/Kconfig          |  12 +
-> >  drivers/gpio/Makefile         |   1 +
-> >  drivers/gpio/gpio-dln2.c      | 553 ++++++++++++++++++++++++++++++
-> >  drivers/i2c/busses/Kconfig    |  10 +
-> >  drivers/i2c/busses/Makefile   |   1 +
-> >  drivers/i2c/busses/i2c-dln2.c | 267 +++++++++++++++
-> >  drivers/mfd/Kconfig           |  10 +
-> >  drivers/mfd/Makefile          |   1 +
-> >  drivers/mfd/dln2.c            | 763 ++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/dln2.h      | 103 ++++++
-> >  10 files changed, 1721 insertions(+)
-> >  create mode 100644 drivers/gpio/gpio-dln2.c
-> >  create mode 100644 drivers/i2c/busses/i2c-dln2.c
-> >  create mode 100644 drivers/mfd/dln2.c
-> >  create mode 100644 include/linux/mfd/dln2.h
-> > 
-> 
+ 
+> -		if (try_module_get(pos->dev->driver->owner)) {
+> +		if (try_module_get(pos->pdev->driver->owner)) {
+>  			chip = pos;
+>  			break;
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes, this needs to be pdev
+
+>  	if (test_and_set_bit(0, &chip->is_open)) {
+> -		dev_dbg(chip->dev, "Another process owns this TPM\n");
+> +		dev_dbg(chip->pdev, "Another process owns this TPM\n");
+>  		return -EBUSY;
+
+This should be moved to the class dev, ie it should ultimately say dev_dbg(&chip->dev,..
+
+Similar comments all over the place.
+
+Jason
