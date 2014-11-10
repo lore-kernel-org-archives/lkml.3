@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaKJMNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:13:36 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55921 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaKJMNe (ORCPT
+	id S1752828AbaKJMN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:13:57 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:56882 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534AbaKJMN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:13:34 -0500
-Date: Mon, 10 Nov 2014 12:11:55 +0000
-From: Mark Brown <broonie@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        GTA04 owners <gta04-owner@goldelico.com>, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20141110121155.GN3815@sirena.org.uk>
-References: <20141108002637.6561.19002.stgit@notabene.brown>
- <20141108003803.6561.57464.stgit@notabene.brown>
- <20141108092622.GC2722@sirena.org.uk>
- <20141110102551.2678d342@notabene.brown>
+	Mon, 10 Nov 2014 07:13:56 -0500
+Date: Mon, 10 Nov 2014 13:13:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        akpm@linux-foundation.org, mingo@redhat.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] irqflags: fix (at least latent) code generation issue
+Message-ID: <20141110121349.GA21120@gmail.com>
+References: <54589AFA0200007800044A77@mail.emea.novell.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ghgy3zzpkChQqL5M"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141110102551.2678d342@notabene.brown>
-X-Cookie: Some optional equipment shown.
+In-Reply-To: <54589AFA0200007800044A77@mail.emea.novell.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/3] ASoC: twl4030: allow voice port to be connected
- externally.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ghgy3zzpkChQqL5M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Jan Beulich <JBeulich@suse.com> wrote:
 
-On Mon, Nov 10, 2014 at 10:25:51AM +1100, NeilBrown wrote:
+> The conditional in local_irq_restore() otherwise can cause code bloat
+> (the if and else blocks may get translated into separate code paths
+> despite the generated code being identical, dependent on compiler
+> internal heuristics). Note that this adjustment gets the code in sync
+> with the comment preceding it (which was slightly wrong from at least
+> from 2.6.37 onwards).
+> 
+> The code bloat was observed in reality with an experimental x86 patch
+> I'm about to post as RFC.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> ---
+>  include/linux/irqflags.h |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> --- 3.18-rc3/include/linux/irqflags.h
+> +++ 3.18-rc3-irqflags/include/linux/irqflags.h
+> @@ -85,7 +85,7 @@
+>   * The local_irq_*() APIs are equal to the raw_local_irq*()
+>   * if !TRACE_IRQFLAGS.
+>   */
+> -#ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
+> +#ifdef CONFIG_TRACE_IRQFLAGS
+>  #define local_irq_enable() \
+>  	do { trace_hardirqs_on(); raw_local_irq_enable(); } while (0)
+>  #define local_irq_disable() \
+> @@ -131,7 +131,7 @@
+>  	} while (0)
+>  
+>  
+> -#else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
+> +#else /* !CONFIG_TRACE_IRQFLAGS */
+>  
+>  #define local_irq_enable()	do { raw_local_irq_enable(); } while (0)
+>  #define local_irq_disable()	do { raw_local_irq_disable(); } while (0)
+> @@ -145,6 +145,6 @@
+>  #define irqs_disabled_flags(flags) (raw_irqs_disabled_flags(flags))
+>  #define safe_halt()		do { raw_safe_halt(); } while (0)
+>  
+> -#endif /* CONFIG_TRACE_IRQFLAGS_SUPPORT */
+> +#endif /* CONFIG_TRACE_IRQFLAGS */
 
-> says it is a "reference platform".  Does that mean it is a board with a bunch
-> of chips soldered onto it?  If it were a board it should be described by a
-> dts file, not by a pile of C code (I thought), so I must be wrong about that.
+So this breaks a couple of non-x86 architectures, such as MIPS:
 
-No, like I say please see previous discussion ad nauseum about this.
+/home/mingo/tip/include/acpi/platform/aclinuxex.h: In function 'acpi_os_allocate':
+/home/mingo/tip/include/acpi/platform/aclinuxex.h:86: error: implicit declaration of function 'arch_irqs_disabled'
 
-> The twl4030 needs to know the master/polarity of the clk/frm lines.  The GSM
-> module declares that these are.  So presumably we need some sort of linkage.
-> Ahhhh... I found Documentation/devicetree/bindings/sound/simple-card.txt
+Thanks,
 
-Or just write a machine driver.  simple-card is one such machine driver
-but it's not going to be suitable for non-trivial systems.  Possibly
-your system is simple enough, possibly it isn't - I don't know anything
-about it really.  Regardless of how you do this it shouldn't have
-individual devices needing to open code configuration for links, it's
-something essentially every device is going to need to do and forcing
-the DT to configure the same thing twice for a link isn't a good idea
-either.
-
---ghgy3zzpkChQqL5M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUYKuKAAoJECTWi3JdVIfQjGkH+wX0fAdnJ788cNfzTWedEw81
-K/BjIh8vHOTnCu8h3zx9qi2fM7oYu9ZrocFkJoNaj4XeilDdaEv86mrKB9neV+2r
-RELNoX682GmfY/+5dPIc2tD4JHIf8I2mCOqyNyqmsMHwLIlhv8Ihmv9s58GX2Luy
-QiLoZzRn5oPzW+eSx6A7fmNx89B3cBgMRMGaykjsFxd/Iwe/iVmLSNz7lgkwJfak
-bV3CeIZL7uiHvyp7a2kPbvgyUyOt7KHB90Ej+WbJUcaby2RZx4BEjbkOWVQtXnuQ
-EJOC1SgmH9BQiGFhHpSBU7JqKvL906PkozQ69ARAtUf+9H58clXlHFt+7MXmz6Q=
-=QAuy
------END PGP SIGNATURE-----
-
---ghgy3zzpkChQqL5M--
+	Ingo
