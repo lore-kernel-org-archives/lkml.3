@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaKJPKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:10:31 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60186 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaKJPK1 (ORCPT
+	id S1753223AbaKJPMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:12:36 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:40548 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799AbaKJPMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:10:27 -0500
-Date: Mon, 10 Nov 2014 15:10:19 +0000
+	Mon, 10 Nov 2014 10:12:33 -0500
+Date: Mon, 10 Nov 2014 15:12:26 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: Octavian Purdila <octavian.purdila@intel.com>
 Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
@@ -15,8 +15,8 @@ Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
         johan@kernel.org, daniel.baluta@intel.com, laurentiu.palcu@intel.com,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-gpio@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v11 0/3] add support for Diolan DLN-2
-Message-ID: <20141110151019.GC24004@x1>
+Subject: [GIT PULL] Immutable branch between MFD, GPIO and I2C
+Message-ID: <20141110151226.GD24004@x1>
 References: <1415281685-14866-1-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -27,6 +27,8 @@ User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+[Subject change -- in case you miss it]
 
 Linus, Wolfram,
 
