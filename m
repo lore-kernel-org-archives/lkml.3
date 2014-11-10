@@ -1,129 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaKJMXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:23:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742AbaKJMXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:23:43 -0500
-Date: Mon, 10 Nov 2014 10:23:21 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        brendan.d.gregg@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC] perf-cache command interface design
-Message-ID: <20141110122321.GC4468@redhat.com>
-References: <20141102105006.21708.28734.stgit@hemant-fedora>
- <20141102105557.21708.19032.stgit@hemant-fedora>
- <87lhnr5sbl.fsf@sejong.aot.lge.com>
- <54588905.7040002@linux.vnet.ibm.com>
- <5458CD15.4010101@hitachi.com>
- <874muew2hk.fsf@sejong.aot.lge.com>
- <5459E865.6050207@hitachi.com>
- <545B1DDE.9000202@linux.vnet.ibm.com>
- <545C80F4.4020905@hitachi.com>
- <54609A8C.4050308@hitachi.com>
+	id S1752683AbaKJMYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:24:53 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:54154 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaKJMYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:24:52 -0500
+Date: Mon, 10 Nov 2014 13:24:47 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] perf syscall error handling
+Message-ID: <20141110122446.GA21503@gmail.com>
+References: <20141031072109.GD12706@worktop.programming.kicks-ass.net>
+ <20141031092713.GA23124@gmail.com>
+ <20141031122824.GZ12020@console-pimps.org>
+ <CABPqkBS0gKWyTc=TFpGxRwOQkAe1o5zXtWaUyHezpO53LhCqrQ@mail.gmail.com>
+ <alpine.DEB.2.10.1411010130170.6256@pianoman.cluster.toy>
+ <20141103162548.GB18464@kernel.org>
+ <20141103165019.GY10501@worktop.programming.kicks-ass.net>
+ <20141103170059.GC18464@kernel.org>
+ <20141110102725.GA19309@gmail.com>
+ <20141110121527.GQ18464@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54609A8C.4050308@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20141110121527.GQ18464@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 10, 2014 at 07:59:24PM +0900, Masami Hiramatsu escreveu:
-> Hello,
+
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+
+> Em Mon, Nov 10, 2014 at 11:27:25AM +0100, Ingo Molnar escreveu:
+> > 
+> > * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > 
+> > > Em Mon, Nov 03, 2014 at 05:50:19PM +0100, Peter Zijlstra escreveu:
+> > > > On Mon, Nov 03, 2014 at 02:25:48PM -0200, Arnaldo Carvalho de Melo wrote:
+> > >  
+> > > > > The way that peterz suggested, i.e. returning information about which
+> > > > > perf_event_attr and which of the parameters was invalid/had issues could
+> > > > > help with fallbacking/capability querying, i.e. tooling may want to use
+> > > > > some features if available automagically, fallbacking to something else
+> > > > > when that fails.
+> > >  
+> > > > > We already do that to some degree in various cases, but for some if the
+> > > > > only way that becomes available to disambiguate some EINVAL return is a
+> > > > > string, code will start having strcmps :-\
+> > > 
+> > > > OK, so how about we do both, the offset+mask for the tools 
+> > > > and the string for the humans?
+> > > 
+> > > Yeah, tooling tries to provide the best it can with the 
+> > > offset+mask, and if doesn't manage to do anything smart with 
+> > > it, just show the string and hope that helps the user to figure 
+> > > out what is happening.
+> > 
+> > Almost: tooling should generally always consider the string as 
+> > well, for the (not so uncommon) case where there can be multiple 
+> > problems with the same field.
+> > 
+> > Really, I think the string will give the most bang for the buck, 
+> > because it's really simple and straightforward on the kernel side 
+> > (so that we have a good chance of achieving full coverage 
+> > relatively quickly), and later on we could still complicate it 
+> > all with offset+mask if there's really a need.
+> > 
+> > So lets start with an error string...
 > 
-> Here is the second try for the probe-cache. This version simplifies
-> the synopsis, and unifies the SDT and probe caches.
-> Please give me your comments/ideas!
+> I don't have a problem with the order of introduction of new 
+> error reporting mechanisms, or at least I can't think of one 
+> right now.
 > 
-> Command-line Synopsis
-> =====================
+> So if we introduce strings now then tools/perf/ will trow them 
+> to the user when it still don't have fallbacks or any other UI 
+> indication of such an error.
 > 
-> Add elf(or symbols) and probe-caches of SDT if exists in <FILES>
->  perf cache --add <FILES> [--probe <SPEC>] # for user programs
+> I wonder tho if we have any previous experience on some other 
+> project (or even in the kernel?) and how userspace ended up 
+> using it, if just presenting those strings to the user or if 
+> trying to parse it, etc, anybody?
 
-Why the --probe above? Shouldn't this be just (if you are talking about
-ELF files only):
+I'm not aware of any such efforts in the Linux space - subsystems 
+with administrative interfaces generally just tend to printk() a 
+reason - that's obviously suboptimal in several ways.
 
-perf cache --add <FILES>
- 
->  perf cache --kcore <FILE> [--probe <SPEC>] # for kcore ?
+Programmatic use in user-spaec is very simple - go with my 
+initial example, tooling can either just display the error string 
+and bail out, or do:
 
-Adrian, aren't kcore files easily identifiable as such and thus could be
-added as:
+  if (unlikely(error)) {
+	if (!strcmp(attr->error_str, "x86/bts: BTS not supported by this CPU architecture")) {
+		fprintf(stderr, "x86/BTS: No hardware support falling back to branch sampling\n");
+		activate_x86_bts_fallback_code();
+		goto out;
+	}
+	if (!strcmp(attr->error_str, "x86/lbr: LBR not supported by this CPU architecture"))
+		goto out_err;
+  }
 
- perf cache --add <FILES>
- 
->  perf cache --probe <SPEC>  # for the current kernel
+or it may do any number of other things, such as convert it to 
+its internal error code. Note that the error messages should have 
+some minimal structure (the 'x86/bts:' and 'x86/lbr' prefixes) to 
+organize things nicely and to make string clashes less likely.
 
-Why do we need a --probe here? Don't they always start with a character
-that is seldomly used in ELF file names and thus we could get away with
-not requiring --probe?
- 
-> Remove caches related to <FILES> or <BUILDIDS>
->  perf cache --remove <FILES>|<BUILDIDS>
-> 
-> Show all probe caches(including SDT) or buildids
->  perf cache --list [probe|buildid]
-> 
-> Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
->  perf cache　--probe-del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+as this is a slowpath the performance of strcmp() doesn't matter, 
+and in any case it's hardware accelerated or optimized well on 
+most platforms.
 
-Ditto, i.e. can't we just use:
+Thanks,
 
- perf cache　--remove [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-
-And it figure out that this is a probe that is being removed?
-
-> Query the probe definitions.
->  perf cache --query [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-
-Replace --query with --show?
- 
-> File Format
-> ===========
-> All the cache files are placed under ~/.debug/ by default.
-> Elf caches are ~/.debug/path/to/file/bu/ildid/elf
-> Symbols caches are ~/.debug/path/to/file/bu/ildid/syms
-> Probes(and SDT) are ~/.debug/path/to/file/bu/ildid/probes
-> And ~/.debug/path/to/file/bu/ildid/ is linked to ~/.debug/.buildid/bu/ildid
-> Optionally, we can gzip the probes file.
-
-Ok!
- 
-> This probe caches contain probe-definitions as following format.
-> ----
-> #buildid:BUILDID
-> #spec:SDT
-> p:sdt_<PROVIDER>/<EVENT> PATH:OFFSET [ARGS]
-> ...
-> #spec:* $params
-> p:probe_<GROUP>/<EVENT> _text+OFFSET [ARGS]
-> ...
-> ----
-> So the #spec: line gives the information what probe spec has been given.
-> This will be used for updating.
-> 
-> And all the "probe_" and "sdt_" prefix will be replaced by % in the command line,
-> e.g.
-> 
->  perf record -e %<PROVIDER>/<EVENT> -> this records sdt_PROVIDER/EVENT
-> 
-> Thank you,
-> 
-> -- 
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Research Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
-> 
+	Ingo
