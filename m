@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaKJKHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:07:07 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:33459 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaKJKHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:07:04 -0500
-Date: Mon, 10 Nov 2014 10:06:58 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 09/13] ARM: STi: DT: STiH410:  Add pinctl config for usb
- controllers.
-Message-ID: <20141110100658.GN21424@x1>
-References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
- <1415361475-6218-10-git-send-email-peter.griffin@linaro.org>
+	id S1752557AbaKJKIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:08:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34476 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751928AbaKJKIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 05:08:02 -0500
+Date: Mon, 10 Nov 2014 11:08:00 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, live-patching@vger.kernel.org,
+        kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel: add support for live patching
+In-Reply-To: <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+Message-ID: <alpine.LNX.2.00.1411101101470.4454@pobox.suse.cz>
+References: <1415284748-14648-1-git-send-email-sjenning@redhat.com> <1415284748-14648-3-git-send-email-sjenning@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415361475-6218-10-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov 2014, Peter Griffin wrote:
+On Thu, 6 Nov 2014, Seth Jennings wrote:
 
-> This patch adds the required pin configiguration for the extra usb
-> controllers found on the stih410 device.
-> 
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  arch/arm/boot/dts/stih407-pinctrl.dtsi | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
+> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+> new file mode 100644
+> index 0000000..b32dbb5
+> --- /dev/null
+> +++ b/kernel/livepatch/core.c
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+[ ... snip ... ]
 
-> diff --git a/arch/arm/boot/dts/stih407-pinctrl.dtsi b/arch/arm/boot/dts/stih407-pinctrl.dtsi
-> index 402844c..fdaad5d 100644
-> --- a/arch/arm/boot/dts/stih407-pinctrl.dtsi
-> +++ b/arch/arm/boot/dts/stih407-pinctrl.dtsi
-> @@ -539,6 +539,24 @@
->  				};
->  			};
->  
-> +			usb0 {
-> +				pinctrl_usb0: usb2-0 {
-> +					st,pins {
-> +						usb-oc-detect = <&pio35 0 ALT1 IN>;
-> +						usb-pwr-enable = <&pio35 1 ALT1 OUT>;
-> +					};
-> +				};
-> +			};
+> +/****************************************
+> + * dynamic relocations (load-time linker)
+> + ****************************************/
 > +
-> +			usb1 {
-> +				pinctrl_usb1: usb2-1 {
-> +					st,pins {
-> +						usb-oc-detect = <&pio35 2 ALT1 IN>;
-> +						usb-pwr-enable = <&pio35 3 ALT1 OUT>;
-> +					};
-> +				};
-> +			};
+> +/*
+> + * external symbols are located outside the parent object (where the parent
+> + * object is either vmlinux or the kmod being patched).
+> + */
+> +static int lpc_find_external_symbol(struct module *pmod, const char *name,
+> +					unsigned long *addr)
+> +{
+> +	const struct kernel_symbol *sym;
 > +
->  			usb3 {
->  				pinctrl_usb3: usb3-2 {
->  					st,pins {
+> +	/* first, check if it's an exported symbol */
+> +	preempt_disable();
+> +	sym = find_symbol(name, NULL, NULL, true, true);
+> +	preempt_enable();
+> +	if (sym) {
+> +		*addr = sym->value;
+> +		return 0;
+> +	}
+> +
+> +	/* otherwise check if it's in another .o within the patch module */
+> +	return lpc_find_symbol(pmod->name, name, addr);
+> +}
+> +
+> +static int lpc_write_object_relocations(struct module *pmod,
+> +					struct lpc_object *obj)
+> +{
+> +	int ret, size, readonly = 0, numpages;
+> +	struct lp_dynrela *dynrela;
+> +	u64 loc, val;
+> +	unsigned long core = (unsigned long)pmod->module_core;
+> +	unsigned long core_ro_size = pmod->core_ro_size;
+> +	unsigned long core_size = pmod->core_size;
+> +
+> +	for (dynrela = obj->dynrelas; dynrela->name; dynrela++) {
+> +		if (!strcmp(obj->name, "vmlinux")) {
+> +			ret = lpc_verify_vmlinux_symbol(dynrela->name,
+> +							dynrela->src);
+> +			if (ret)
+> +				return ret;
+> +		} else {
+> +			/* module, dynrela->src needs to be discovered */
+> +			if (dynrela->external)
+> +				ret = lpc_find_external_symbol(pmod,
+> +							       dynrela->name,
+> +							       &dynrela->src);
+> +			else
+> +				ret = lpc_find_symbol(obj->mod->name,
+> +						      dynrela->name,
+> +						      &dynrela->src);
+> +			if (ret)
+> +				return -EINVAL;
+> +		}
+> +
+> +		switch (dynrela->type) {
+> +		case R_X86_64_NONE:
+> +			continue;
+> +		case R_X86_64_PC32:
+> +			loc = dynrela->dest;
+> +			val = (u32)(dynrela->src + dynrela->addend -
+> +				    dynrela->dest);
+> +			size = 4;
+> +			break;
+> +		case R_X86_64_32S:
+> +			loc = dynrela->dest;
+> +			val = (s32)dynrela->src + dynrela->addend;
+> +			size = 4;
+> +			break;
+> +		case R_X86_64_64:
+> +			loc = dynrela->dest;
+> +			val = dynrela->src;
+> +			size = 8;
+> +			break;
+
+This is x86-specific, so it definitely needs to go to arch/x86. The only 
+hard precondition for arch to support live patching is ftrace with regs 
+saving (we are currently in parallel working on extending the set of 
+architectures that support this), so we shouldn't introduce any x86-isms 
+into the generic code.
+
+It seems to me that what basically needs to be done is to teach 
+apply_relocate_add() about this kind of relocations and apply them as 
+needed.
+
+Thanks,
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jiri Kosina
+SUSE Labs
