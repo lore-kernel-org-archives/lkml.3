@@ -1,32 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaKJJ3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:29:36 -0500
-Received: from atlas.dci.ubiobio.cl ([146.83.195.21]:54438 "EHLO
-	relay.ubiobio.cl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaKJJ3e convert rfc822-to-8bit (ORCPT
+	id S1752388AbaKJJaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:30:13 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:42575 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaKJJaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:29:34 -0500
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Nov 2014 04:29:33 EST
-Content-Type: text/plain; charset="iso-8859-1"
+	Mon, 10 Nov 2014 04:30:11 -0500
+Date: Mon, 10 Nov 2014 09:30:05 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laurentiu Palcu <laurentiu.palcu@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Johan Havold <johan@kernel.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mfd: dln2: add support for USB-SPI module
+Message-ID: <20141110093005.GF21424@x1>
+References: <1415364314-30320-1-git-send-email-laurentiu.palcu@intel.com>
+ <1415364314-30320-3-git-send-email-laurentiu.palcu@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Reminder
-To: Recipients <linyan@weigusteelco.com>
-From: "Thaung Lin Yan" <linyan@weigusteelco.com>
-Date: Mon, 10 Nov 2014 10:22:53 +0100
-Reply-To: 1989576889@qq.com
-Message-Id: <20141110092302.EDEF0B73215@relay.ubiobio.cl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415364314-30320-3-git-send-email-laurentiu.palcu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 07 Nov 2014, Laurentiu Palcu wrote:
 
-Your partnership is needed for a profitable business transaction involving huge amounts of fund please contact me for more details.
+> Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
+> ---
+>  drivers/mfd/dln2.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
+> index 9765a17..0cdad2d 100644
+> --- a/drivers/mfd/dln2.c
+> +++ b/drivers/mfd/dln2.c
+> @@ -52,6 +52,7 @@ enum dln2_handle {
+>  	DLN2_HANDLE_CTRL,
+>  	DLN2_HANDLE_GPIO,
+>  	DLN2_HANDLE_I2C,
+> +	DLN2_HANDLE_SPI,
+>  	DLN2_HANDLES
+>  };
+>  
+> @@ -634,6 +635,12 @@ static struct dln2_platform_data dln2_pdata_i2c = {
+>  	.port = 0,
+>  };
+>  
+> +/* Only one SPI port supported */
+> +static struct dln2_platform_data dln2_pdata_spi = {
 
------------------------------------------------------------
-Uw partnerschap is nodig voor een winstgevende business transactie waarbij enorme hoeveelheden fonds kunt u contact met mij op voor meer details.
-------------------------------------------------------------
+Is this ever fiddled with?  If not, const?
 
-Ihre Partnerschaft ist für ein profitables Geschäft Transaktion mit riesigen Mengen von Fonds kontaktieren Sie mich bitte für weitere Einzelheiten benötig
+> +	.handle = DLN2_HANDLE_SPI,
+> +	.port = 0,
+> +};
+> +
+>  static const struct mfd_cell dln2_devs[] = {
+>  	{
+>  		.name = "dln2-gpio",
+> @@ -645,6 +652,11 @@ static const struct mfd_cell dln2_devs[] = {
+>  		.platform_data = &dln2_pdata_i2c,
+>  		.pdata_size = sizeof(struct dln2_platform_data),
+>  	},
+> +	{
+> +		.name = "dln2-spi",
+> +		.platform_data = &dln2_pdata_spi,
+> +		.pdata_size = sizeof(struct dln2_platform_data),
+> +	},
+>  };
+>  
+>  static void dln2_disconnect(struct usb_interface *interface)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
