@@ -1,111 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318AbaKJPNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:13:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56623 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728AbaKJPNQ (ORCPT
+	id S1753344AbaKJPNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:13:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40827 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaKJPNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:13:16 -0500
-Date: Mon, 10 Nov 2014 15:11:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: linux-spi@vger.kernel.org, Carlo Caione <carlo@caione.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>
-Message-ID: <20141110151140.GA3815@sirena.org.uk>
-References: <1415525113-25598-1-git-send-email-b.galvani@gmail.com>
- <1415525113-25598-3-git-send-email-b.galvani@gmail.com>
- <20141109101712.GM2722@sirena.org.uk>
- <20141109225650.GA27950@gmail.com>
+	Mon, 10 Nov 2014 10:13:41 -0500
+Message-ID: <5460D601.70504@ti.com>
+Date: Mon, 10 Nov 2014 17:13:05 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8LcJRZYx/wLV/pN5"
-Content-Disposition: inline
-In-Reply-To: <20141109225650.GA27950@gmail.com>
-X-Cookie: Some optional equipment shown.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/3] spi: meson: Add support for Amlogic Meson SPIFC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <khilman@linaro.org>
+CC: <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v4 0/2] ARM: keystone: pm: switch to use generic pm domains
+References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Santosh,
 
---8LcJRZYx/wLV/pN5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/10/2014 04:59 PM, Grygorii Strashko wrote:
+> Hi Santosh, Kevin,
+> 
+> This series switches Keystone 2 PM code to use Generic PM domains
+> instead of PM clock domains because of the lack of DT support
+> for the last.
+> It will finally allow to enable Runtime PM for Keystone 2.
+> 
+> This series based on top
+> 
+> Changes in v4:
+>   - changes for Generic clock manipulation PM callbacks (clock_ops.c)
+>     were separated in standalone series [3] and Keystone 2 specific
+>     patches were rebased on top of it.
 
-On Sun, Nov 09, 2014 at 11:56:50PM +0100, Beniamino Galvani wrote:
-> On Sun, Nov 09, 2014 at 10:17:12AM +0000, Mark Brown wrote:
+I've just found that prerequisite patches have been taken by Rafael in linux-pm.git/linux-next,
+first two patches from series:
+ "[PATCH v4 0/3] PM / clock_ops: add pm_clk_add_clk()"
+ https://lkml.org/lkml/2014/11/6/319 
 
-> > This will busy wait for up to a second, that seems like a long time to
-> > busy wait.  We also appear to be using this for the entire duration of
-> > the transfer which could be a fairly long time even during normal
-> > operation if doing a large transfer such as a firmware download, or if
-> > the bus speed is low.
+Thanks a lot Rafael.
 
-> Yes, probably the timeout value is too long since the maximum length
-> of a basic transfer is 64 bytes. Can you suggest a reasonable value?
+So, if no complains, this series is ready.
 
-10ms?  It depends somewhat=20
+> 
+> Changes in v3:
+>   - handling of the case when !CONFIG_PM_RUNTIME has been
+>     moved in PM clock framework.
+> 
+> Changes in v2:
+> - minor comments applied and rebased on top of Linux 3.18-rc1.
+> 
+> Links on previous versions:
+> v2:  https://lkml.org/lkml/2014/10/20/248
+> v1:  https://lkml.org/lkml/2014/9/29/382
+> 
+> RFC version of patches can be found at [2].
+> 
+> [1] "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
+>    https://lkml.org/lkml/2014/4/24/1118
+> 
+> [2] "[RFC PATCH 0/4] ARM: keystone: pm: switch to use generic pm domains"
+>    https://lkml.org/lkml/2014/9/25/364
+> 
+> [3] "[PATCH v4 0/3] PM / clock_ops: add pm_clk_add_clk()"
+>    https://lkml.org/lkml/2014/11/6/319
+> 
+> CC: Santosh Shilimkar <ssantosh@kernel.org>
+> CC: Kevin Hilman <khilman@linaro.org>
+> CC: Ulf Hansson <ulf.hansson@linaro.org>
+> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> 
+> Grygorii Strashko (2):
+>    ARM: keystone: pm: switch to use generic pm domains
+>    ARM: dts: keystone: add generic pm controller node
+> 
+>   .../bindings/power/ti,keystone-powerdomain.txt     |  31 ++++++
+>   arch/arm/boot/dts/keystone.dtsi                    |   6 ++
+>   arch/arm/mach-keystone/Kconfig                     |   1 +
+>   arch/arm/mach-keystone/pm_domain.c                 | 106 ++++++++++++++-------
+>   4 files changed, 107 insertions(+), 37 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+> 
 
-> > > +	while (done < xfer->len && !ret) {
-> > > +		len =3D min_t(int, xfer->len - done, SPIFC_BUFFER_SIZE);
-> > > +		ret =3D meson_spifc_txrx(spifc, xfer, done, len,
-> > > +				       last_xfer, done + len >=3D xfer->len);
-> > > +		done +=3D len;
-> > > +	}
-
-> > I noticed that the handling of /CS was done in the spifc_txrx() function
-> > - will this do the right thing if the transfer needs to be split for the
-> > buffer size?
-
-> It should. When the transfer gets split, CS is kept active for all the
-> chunks and the value of CS after that depends on the value of
-> cs_change.
-
-Can you be more specific about how that works?  I'm just not seeing the
-code that handles this.
-
-> > > +	if (!ret && xfer->delay_usecs)
-> > > +		udelay(xfer->delay_usecs);
-
-> > The core will do this for you if you implement this as transfer_one().
-
-> Please correct me if I'm wrong, but I think that transfer_one() can't
-> be used in this case. The hardware doesn't support direct manipulation
-> of CS and allows only to specify if CS must be kept active after the
-> current transfer. So I need to know for each transfer if it's the last
-> and this can be achieved only implementing transfer_one_message().
-
-This is already in a function that's operating at the transfer_one()
-level, the function is even called transfer_one() and besides it's
-clearly not something specific to this hardware so should be factored
-out into the core instead of open coded.
-
---8LcJRZYx/wLV/pN5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUYNWsAAoJECTWi3JdVIfQUbQH/R+WA5WkTd5kxqYoVA77kn/3
-CX0Rs9IR+peXFR0ZkVYxQA+Or/APV3EiJ8O6ECf0aiHh4oRv+a5NyZSgELarfOiL
-jraGi5PKLWW3Ac2DUL4RFeGHQ6NgAMOMKH+6nMxE/d6IS81zVLzFdQrBTNORzWmQ
-cftA0dfZNYDqMGtLYt5zrvC/ZdRiu2qRZgF8AoHy/TWep/xthjPcO2YquXB45DBk
-jPDSl8pEe5gSKoSvhG9udCOSpaah40tSoi+45GXqKbzshWmiKtM3CqpuGljFH/FG
-dJLOUog401k4j3DYFX6oE3MUmJ9qPBCySBnrCrYQOvjxf4DAF7rHJK1+WRUfdrs=
-=X4Go
------END PGP SIGNATURE-----
-
---8LcJRZYx/wLV/pN5--
+regards,
+-grygorii
