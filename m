@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaKJLnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:43:32 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:52077 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaKJLna (ORCPT
+	id S1752602AbaKJLr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:47:27 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64837 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaKJLrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:43:30 -0500
+	Mon, 10 Nov 2014 06:47:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <1415321293-17521-1-git-send-email-wenyou.yang@atmel.com>
-References: <1415321293-17521-1-git-send-email-wenyou.yang@atmel.com>
-Date: Mon, 10 Nov 2014 12:43:29 +0100
-Message-ID: <CAPDyKFp6wXqP1x0uO12=mgrCsjvx4vfkr9cCJVAtjkFQ7s=q2A@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: atmel-mci: adopt pinctrl support
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: Chris Ball <chris@printf.net>, Kevin Hilman <khilman@kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CAGC3nLBsX9fEjjmX2OGKnyTxuxbV_FNfndsoPbjob4UQqpuPpg@mail.gmail.com>
+References: <1415004836-22871-1-git-send-email-danieru.dressler@gmail.com>
+	<20141107134854.56305dbb@lwn.net>
+	<CAGC3nLBsX9fEjjmX2OGKnyTxuxbV_FNfndsoPbjob4UQqpuPpg@mail.gmail.com>
+Date: Mon, 10 Nov 2014 09:47:24 -0200
+Message-ID: <CAAXmX-kid7K8kWGnhe-AahrqHPiwpnggfQbVBD+A3cVK6rmAuQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Input: xpad - update docs to reflect current state
+From: Thomaz de Oliveira dos Reis <thor27@gmail.com>
+To: Daniel Dressler <danieru.dressler@gmail.com>
+Cc: Jonathan Corbet <corbet@lwn.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Ted Mielczarek <ted@mielczarek.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Frank Razenberg <frank@zzattack.org>,
+        Benjamin Valentin <benpicco@zedat.fu-berlin.de>,
+        Petr Sebor <petr@scssoft.com>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 November 2014 01:48, Wenyou Yang <wenyou.yang@atmel.com> wrote:
-> Amend the atmel mci pin controller to optionally take a pin control
-> handle and set the state of the pins to:
-> - "default" on boot, resume and before performing an transfer.
-> - "sleep" on suspend().
->
-> This should make it possible to optimize energy usage for the pins
-> both for the suspend/resume cycle.
->
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+I totally agree that the behavior should be exactly the same in all
+XBOX gamepads. But In my opinion this should be mapped as axis only,
+since mapping for both could make a confusion in some games.
 
-Thanks! Applied for next.
+If you need the axis to be buttons, you can set as a option while
+loading the module.
 
-Kind regards
-Uffe
 
-> ---
-> Hi Ulf,
+
+
+2014-11-10 6:06 GMT-02:00 Daniel Dressler <danieru.dressler@gmail.com>:
+> Thanks Jon
 >
-> Thanks a lot.
+> I've sent a second version of the patch without the TODO list edits.
 >
-> According to your advice, remove pinctrl_pm_select_default_state(&pdev->dev) from the _probe function.
 >
-> Best Regards,
-> Wenyou Yang
+> Now I would like to ask about a backwards compact issue related to this driver.
 >
->  drivers/mmc/host/atmel-mci.c |    5 +++++
->  1 file changed, 5 insertions(+)
+> Eons ago in patch 99de0912b [0] when support for the wireless 360
+> controllers were added the decision was made to map their Dpad to the
+> discrete buttons.
 >
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index 4df1599..a7b59ba 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -39,6 +39,7 @@
->  #include <linux/atmel_pdc.h>
->  #include <linux/pm.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/pinctrl/consumer.h>
+> There is reasonable justification for this behavior since the Dpad has
+> never functioned like an analog stick on Xbox hardware.
 >
->  #include <asm/cacheflush.h>
->  #include <asm/io.h>
-> @@ -2568,6 +2569,8 @@ static int atmci_runtime_suspend(struct device *dev)
+> Except support for wired 360 controllers had been added a year earlier
+> and used the opposite behavior. In fact the wireless 360 controllers
+> are the only controllers which use the dpad_to_button behavior.
 >
->         clk_disable_unprepare(host->mck);
+> Original Xbox, wired Xbox 360, and all Xbox One controllers all expose
+> the dpad as a set of axises.
 >
-> +       pinctrl_pm_select_sleep_state(dev);
-> +
->         return 0;
->  }
+> This has caused pain for downstream developers. It means two
+> controllers  have wildly different behavior. Many developers have just
+> ignored the issue or suggested users unload xpand and use the userland
+> replacement. Even Arch's wiki suggests such [1]. Which to be honest is
+> all one can do. The xpad driver does not expose the information
+> developers need to even incorporate a workaround without nasty hacks.
 >
-> @@ -2575,6 +2578,8 @@ static int atmci_runtime_resume(struct device *dev)
->  {
->         struct atmel_mci *host = dev_get_drvdata(dev);
+> As a downstream developer I've been bitten by this twice. The first
+> time I didn't even know that wired vs wireless made a difference and I
+> was disturbed to learn the truth.
 >
-> +       pinctrl_pm_select_default_state(dev);
-> +
->         return clk_prepare_enable(host->mck);
->  }
->  #endif
-> --
-> 1.7.9.5
+> So here is what I want to hear opinions on: should the wireless 360's
+> dpad be exposed as both axises _and_ buttons?
 >
+> [0]: https://github.com/torvalds/linux/commit/99de0912b when t
+> [1]: https://wiki.archlinux.org/index.php/joystick#Xbox_360_controllers
+>
+> Daniel
+>
+> 2014-11-08 3:48 GMT+09:00 Jonathan Corbet <corbet@lwn.net>:
+>> On Mon,  3 Nov 2014 17:53:06 +0900
+>> Daniel Dressler <danieru.dressler@gmail.com> wrote:
+>>
+>>> The last time this documentation was accurate was
+>>> just over 8 years ago. In this time we've added
+>>> support for two new generations of Xbox console
+>>> controllers and dozens of third-party controllers.
+>>>
+>>> This patch unifies terminology and makes it explicit
+>>> which model of controller a sentence refers to.
+>>
+>> So this seems like a useful update, and I was looking at pulling it into
+>> the docs tree.  But this hunk:
+>>
+>>> diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+>>> index 2ed7905..7e2e047 100644
+>>> --- a/drivers/input/joystick/xpad.c
+>>> +++ b/drivers/input/joystick/xpad.c
+>>> @@ -40,8 +40,8 @@
+>>>   *
+>>>   * TODO:
+>>>   *  - fine tune axes (especially trigger axes)
+>>> - *  - fix "analog" buttons (reported as digital now)
+>>> - *  - get rumble working
+>>> + *  - add original xbox rumble pack support
+>>> + *  - add xbox one rumble support
+>>>   *  - need USB IDs for other dance pads
+>>>   *
+>>>   * History:
+>>
+>> Seems like a different change that shouldn't be mixed up with the doc
+>> update.  Send me a version without that change and, in the absence
+>> of complaints, I'll apply it.
+>>
+>> Thanks,
+>>
+>> jon
