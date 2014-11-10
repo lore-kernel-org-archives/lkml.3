@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaKJBtw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:49:52 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39114 "EHLO
+	id S1752497AbaKJBod (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:44:33 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39102 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaKJBoe (ORCPT
+	with ESMTP id S1752451AbaKJBo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:44:34 -0500
+	Sun, 9 Nov 2014 20:44:29 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jiri Kosina <jkosina@suse.cz>,
-        x86@kernel.org
-Subject: [PATCH v6 31/48] x86: apm: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:42:48 -0800
-Message-Id: <1415583785-6980-32-git-send-email-linux@roeck-us.net>
+        David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCH v6 29/48] power/reset: ltc2952-poweroff: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:42:46 -0800
+Message-Id: <1415583785-6980-30-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.54601881.01F7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A02020A.5460187C.0186,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 175
+X-CTCH-SenderID-TotalMessages: 169
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -52,15 +52,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with high priority to reflect that the original code
-overwrites existing power-off handlers.
+directly. Register with low priority to reflect that the original code
+sets pm_power_off only if it was not already set.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Sebastian Reichel <sre@kernel.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v6:
@@ -77,61 +72,79 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
+- Added patch
 
- arch/x86/kernel/apm_32.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/power/reset/ltc2952-poweroff.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 5848744..04910de 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -981,7 +981,7 @@ recalc:
-  *	on their first cpu.
-  */
+diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
+index 116a1ce..e622824 100644
+--- a/drivers/power/reset/ltc2952-poweroff.c
++++ b/drivers/power/reset/ltc2952-poweroff.c
+@@ -80,6 +80,8 @@ struct ltc2952_poweroff_data {
+ 	 * 2: kill
+ 	 */
+ 	struct gpio_desc *gpio[3];
++
++	struct power_off_handler_block power_off_hb;
+ };
  
--static void apm_power_off(void)
-+static void apm_power_off(struct power_off_handler_block *this)
- {
- 	/* Some bioses don't like being called from CPU != 0 */
- 	if (apm_info.realmode_power_off) {
-@@ -992,6 +992,11 @@ static void apm_power_off(void)
- 	}
+ static int ltc2952_poweroff_panic;
+@@ -180,7 +182,8 @@ irq_ok:
+ 	return IRQ_HANDLED;
  }
  
-+static struct power_off_handler_block apm_power_off_hb = {
-+	.handler = apm_power_off,
-+	.priority = POWER_OFF_PRIORITY_HIGH,
-+};
+-static void ltc2952_poweroff_kill(void)
++static void ltc2952_poweroff_kill(struct power_off_handler_block *this)
 +
- #ifdef CONFIG_APM_DO_ENABLE
+ {
+ 	gpiod_set_value(ltc2952_data->gpio[POWERPATH_IO_KILL], 1);
+ }
+@@ -285,12 +288,7 @@ err_io:
  
- /**
-@@ -1847,8 +1852,11 @@ static int apm(void *unused)
- 	}
+ static int ltc2952_poweroff_probe(struct platform_device *pdev)
+ {
+-	int ret;
+-
+-	if (pm_power_off) {
+-		dev_err(&pdev->dev, "pm_power_off already registered");
+-		return -EBUSY;
+-	}
++	int i, ret;
  
- 	/* Install our power off handler.. */
--	if (power_off)
--		pm_power_off = apm_power_off;
-+	if (power_off) {
-+		error = register_power_off_handler(&apm_power_off_hb);
-+		if (error)
-+			pr_warn("apm: Failed to register power-off handler\n");
-+	}
+ 	ltc2952_data = kzalloc(sizeof(*ltc2952_data), GFP_KERNEL);
+ 	if (!ltc2952_data)
+@@ -302,12 +300,20 @@ static int ltc2952_poweroff_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err;
  
- 	if (num_online_cpus() == 1 || smp) {
- #if defined(CONFIG_APM_DISPLAY_BLANK) && defined(CONFIG_VT)
-@@ -2408,9 +2416,8 @@ static void __exit apm_exit(void)
- 			apm_error("disengage power management", error);
- 	}
- 	misc_deregister(&apm_device);
-+	unregister_power_off_handler(&apm_power_off_hb);
- 	remove_proc_entry("apm", NULL);
--	if (power_off)
--		pm_power_off = NULL;
- 	if (kapmd_task) {
- 		kthread_stop(kapmd_task);
- 		kapmd_task = NULL;
+-	pm_power_off = &ltc2952_poweroff_kill;
++	ltc2952_data->power_off_hb.handler = ltc2952_poweroff_kill;
++	ltc2952_data->power_off_hb.priority = POWER_OFF_PRIORITY_LOW;
++	ret = register_power_off_handler(&ltc2952_data->power_off_hb);
++	if (ret)
++		goto err_power;
+ 
+ 	dev_info(&pdev->dev, "probe successful\n");
+ 
+ 	return 0;
+ 
++err_power:
++	free_irq(ltc2952_data->virq, ltc2952_data);
++	for (i = 0; i < ARRAY_SIZE(ltc2952_data->gpio); i++)
++		gpiod_put(ltc2952_data->gpio[i]);
+ err:
+ 	kfree(ltc2952_data);
+ 	return ret;
+@@ -317,7 +323,7 @@ static int ltc2952_poweroff_remove(struct platform_device *pdev)
+ {
+ 	unsigned int i;
+ 
+-	pm_power_off = NULL;
++	unregister_power_off_handler(&ltc2952_data->power_off_hb);
+ 
+ 	if (ltc2952_data) {
+ 		free_irq(ltc2952_data->virq, ltc2952_data);
 -- 
 1.9.1
 
