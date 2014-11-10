@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaKJPtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:49:06 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22442 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250AbaKJPtE (ORCPT
+	id S1753084AbaKJPuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:50:15 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:42621 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaKJPuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:49:04 -0500
-Message-ID: <5460DE4C.6050306@oracle.com>
-Date: Mon, 10 Nov 2014 10:48:28 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 10:50:13 -0500
+Date: Mon, 10 Nov 2014 16:50:09 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Vikas Shivappa <vikas.shivappa@intel.com>, Tejun Heo <tj@kernel.org>,
+        "Auld, Will" <will.auld@intel.com>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>, h.peter.anvin@intel.com
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141110155009.GY10501@worktop.programming.kicks-ass.net>
+References: <20141029134526.GC3337@twins.programming.kicks-ass.net>
+ <96EC5A4F3149B74492D2D9B9B1602C27349EEB88@ORSMSX105.amr.corp.intel.com>
+ <20141029172845.GP12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1410291036070.26215@vshiva-Udesk>
+ <20141029182234.GA13393@mtj.dyndns.org>
+ <20141030070725.GG3337@twins.programming.kicks-ass.net>
+ <20141030124333.GA29540@htj.dyndns.org>
+ <alpine.DEB.2.10.1410301610000.27874@vshiva-Udesk>
+ <20141104131714.GR3219@twins.programming.kicks-ass.net>
+ <20141106170323.GJ3592@console-pimps.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>
-CC: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v4] sched/numa: fix unsafe get_task_struct() in task_numa_assign()
-References: <1413962231.19914.130.camel@tkhai> <545D928B.2070508@oracle.com> <1415542020.474.22.camel@tkhai> <20141110100328.GF29390@twins.programming.kicks-ass.net>
-In-Reply-To: <20141110100328.GF29390@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106170323.GJ3592@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 05:03 AM, Peter Zijlstra wrote:
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1268,6 +1268,13 @@ static void task_numa_compare(struct tas
->  	raw_spin_unlock_irq(&dst_rq->lock);
->  
->  	/*
-> +	 * Because we have preemption enabled we can get migrated around and
-> +	 * end try selecting ourselves (current == env->p) as a swap candidate.
-> +	 */
-> +	if (cur == env->p)
-> +		goto unlock;
+On Thu, Nov 06, 2014 at 05:03:23PM +0000, Matt Fleming wrote:
+> On Tue, 04 Nov, at 02:17:14PM, Peter Zijlstra wrote:
+> > 
+> > I don't like extending cpusets further. Its already a weird and too big
+> > controller.
+> > 
+> > What is wrong with having a specific CQM controller and using it
+> > together with cpusets where desired?
+> 
+> The specific problem that conflating cpusets and the CAT controller is
+> trying to solve is that on some platforms the CLOS ID doesn't move with
+> data that travels up the cache hierarchy, i.e. we lose the CLOS ID when
+> data moves from LLC to L2.
+> 
+> I think the idea with pinning CLOS IDs to a specific cpu and any tasks
+> that are using that ID is that it works around this problem out of the
+> box, rather than requiring sysadmins to configure things.
 
-This is too late though, because currently the lockup happens couple of lines
-above that at:
-
-        raw_spin_lock_irq(&dst_rq->lock); <=== here
-        cur = dst_rq->curr;
-
-Which got me a bit stuck trying to use your old patch since we can't access '->curr'
-without locking dst_rq, but locking dst_rq is causing a lockup.
+So either the user needs to set that mode _and_ set cpu masks, or the
+user needs to use cpusets and set masks, same difference to me.
 
 
-Thanks,
-Sasha
