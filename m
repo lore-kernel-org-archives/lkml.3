@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaKJBqv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:46:51 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39271 "EHLO
+	id S1752719AbaKJBpL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:45:11 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39257 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694AbaKJBpM (ORCPT
+	with ESMTP id S1752625AbaKJBpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:45:12 -0500
+	Sun, 9 Nov 2014 20:45:08 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v6 44/48] x86: ce4100: Register with kernel power-off handler
-Date: Sun,  9 Nov 2014 17:43:01 -0800
-Message-Id: <1415583785-6980-45-git-send-email-linux@roeck-us.net>
+        linux-sh@vger.kernel.org
+Subject: [PATCH v6 42/48] sh: Register with kernel power-off handler
+Date: Sun,  9 Nov 2014 17:42:59 -0800
+Message-Id: <1415583785-6980-43-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +23,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.546018A8.0013,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A02020A.546018A3.010D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 257
+X-CTCH-SenderID-TotalMessages: 248
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -53,10 +52,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Register with kernel power-off handler instead of setting pm_power_off
 directly.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v6:
@@ -71,22 +66,99 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify poweroff handler priority
+- Use defines to specify poweroff handler priorities
 
- arch/x86/platform/ce4100/ce4100.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/sh/boards/board-sh7785lcr.c       | 3 ++-
+ arch/sh/boards/board-urquell.c         | 3 ++-
+ arch/sh/boards/mach-highlander/setup.c | 3 ++-
+ arch/sh/boards/mach-landisk/setup.c    | 3 ++-
+ arch/sh/boards/mach-r2d/setup.c        | 3 ++-
+ arch/sh/boards/mach-sdk7786/setup.c    | 3 ++-
+ 6 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index 701fd58..1816bc1 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -164,5 +164,6 @@ void __init x86_ce4100_early_setup(void)
- 	 */
- 	reboot_type = BOOT_KBD;
+diff --git a/arch/sh/boards/board-sh7785lcr.c b/arch/sh/boards/board-sh7785lcr.c
+index 2c4771e..f7d2ffb 100644
+--- a/arch/sh/boards/board-sh7785lcr.c
++++ b/arch/sh/boards/board-sh7785lcr.c
+@@ -332,7 +332,8 @@ static void __init sh7785lcr_setup(char **cmdline_p)
  
--	pm_power_off = ce4100_power_off;
-+	register_power_off_handler_simple(ce4100_power_off,
+ 	printk(KERN_INFO "Renesas Technology Corp. R0P7785LC0011RL support.\n");
+ 
+-	pm_power_off = sh7785lcr_power_off;
++	register_power_off_handler_simple(sh7785lcr_power_off,
 +					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	/* sm501 DRAM configuration */
+ 	sm501_reg = ioremap_nocache(SM107_REG_ADDR, SM501_DRAM_CONTROL);
+diff --git a/arch/sh/boards/board-urquell.c b/arch/sh/boards/board-urquell.c
+index b52abcc..8f44256 100644
+--- a/arch/sh/boards/board-urquell.c
++++ b/arch/sh/boards/board-urquell.c
+@@ -204,7 +204,8 @@ static void __init urquell_setup(char **cmdline_p)
+ {
+ 	printk(KERN_INFO "Renesas Technology Corp. Urquell support.\n");
+ 
+-	pm_power_off = urquell_power_off;
++	register_power_off_handler_simple(urquell_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	register_smp_ops(&shx3_smp_ops);
+ }
+diff --git a/arch/sh/boards/mach-highlander/setup.c b/arch/sh/boards/mach-highlander/setup.c
+index 4a52590..fc9110a 100644
+--- a/arch/sh/boards/mach-highlander/setup.c
++++ b/arch/sh/boards/mach-highlander/setup.c
+@@ -385,7 +385,8 @@ static void __init highlander_setup(char **cmdline_p)
+ 
+ 	__raw_writew(__raw_readw(PA_IVDRCTL) | 0x01, PA_IVDRCTL);	/* Si13112 */
+ 
+-	pm_power_off = r7780rp_power_off;
++	register_power_off_handler_simple(r7780rp_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ }
+ 
+ static unsigned char irl2irq[HL_NR_IRL];
+diff --git a/arch/sh/boards/mach-landisk/setup.c b/arch/sh/boards/mach-landisk/setup.c
+index f1147ca..56adabc 100644
+--- a/arch/sh/boards/mach-landisk/setup.c
++++ b/arch/sh/boards/mach-landisk/setup.c
+@@ -89,7 +89,8 @@ static void __init landisk_setup(char **cmdline_p)
+ 	__raw_writeb(__raw_readb(PA_LED) | 0x03, PA_LED);
+ 
+ 	printk(KERN_INFO "I-O DATA DEVICE, INC. \"LANDISK Series\" support.\n");
+-	pm_power_off = landisk_power_off;
++	register_power_off_handler_simple(landisk_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ }
+ 
+ /*
+diff --git a/arch/sh/boards/mach-r2d/setup.c b/arch/sh/boards/mach-r2d/setup.c
+index 4b98a52..4a23bce 100644
+--- a/arch/sh/boards/mach-r2d/setup.c
++++ b/arch/sh/boards/mach-r2d/setup.c
+@@ -279,7 +279,8 @@ static void __init rts7751r2d_setup(char **cmdline_p)
+ 					(ver >> 4) & 0xf, ver & 0xf);
+ 
+ 	__raw_writew(0x0000, PA_OUTPORT);
+-	pm_power_off = rts7751r2d_power_off;
++	register_power_off_handler_simple(rts7751r2d_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	/* sm501 dram configuration:
+ 	 * ColSizeX = 11 - External Memory Column Size: 256 words.
+diff --git a/arch/sh/boards/mach-sdk7786/setup.c b/arch/sh/boards/mach-sdk7786/setup.c
+index c29268b..2d77760 100644
+--- a/arch/sh/boards/mach-sdk7786/setup.c
++++ b/arch/sh/boards/mach-sdk7786/setup.c
+@@ -252,7 +252,8 @@ static void __init sdk7786_setup(char **cmdline_p)
+ 	pr_info("\tPCB revision:\t%d\n", fpga_read_reg(PCBRR) & 0xf);
+ 
+ 	machine_ops.restart = sdk7786_restart;
+-	pm_power_off = sdk7786_power_off;
++	register_power_off_handler_simple(sdk7786_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
+ 
+ 	register_smp_ops(&shx3_smp_ops);
  }
 -- 
 1.9.1
