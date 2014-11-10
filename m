@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaKJKki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:40:38 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:49658 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751977AbaKJKkg (ORCPT
+	id S1752587AbaKJKkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:40:51 -0500
+Received: from mail-wg0-f67.google.com ([74.125.82.67]:49358 "EHLO
+	mail-wg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181AbaKJKkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:40:36 -0500
-Message-ID: <546095EC.2040501@st.com>
-Date: Mon, 10 Nov 2014 11:39:40 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 05:40:37 -0500
+Date: Mon, 10 Nov 2014 11:40:32 +0100
+From: Arianna Avanzini <avanzini.arianna@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] trace, blktrace: remove trace from running list only
+ if trace is running
+Message-ID: <20141110104031.GA941@gmail.com>
+Reply-To: avanzini.arianna@gmail.com
+References: <1415459680-1749-1-git-send-email-avanzini.arianna@gmail.com>
+ <8761env4vf.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>, Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: Re: [PATCH v5 2/8] phy: miphy28lp: Add PHY header file for DT x Driver
- defines
-References: <1415098284-11182-1-git-send-email-gabriel.fernandez@linaro.org> <1415098284-11182-3-git-send-email-gabriel.fernandez@linaro.org> <545B1C53.9010406@ti.com> <545B3FA4.8040109@st.com> <20141106112825.GC26543@x1> <545B6144.2020503@st.com> <20141106153659.GD26543@x1> <545B9F15.5070404@st.com> <20141107130538.GB3745@x1>
-In-Reply-To: <20141107130538.GB3745@x1>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.251.17.209]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-11-10_01:2014-11-07,2014-11-09,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8761env4vf.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 10, 2014 at 05:25:56PM +0900, Namhyung Kim wrote:
+> Hi Arianna,
 
-On 11/07/2014 02:05 PM, Lee Jones wrote:
+Hi Namhyung,
 
-<snip>
-> If the merge turns out to be simple, then Git will do the correct
-> thing; however, if the first version of the patch is applied, then
-> some changes around the same area of the file occur _then_ when the
-> second version (of the same patch differing only by SHA1) is applied
-> Git will get confused.  If it has the same SHA1 however, Git will
-> discard it as 'already applied'.  This is the reason we pass around
-> shared tags to immutable branches.
-Looking at how the patch is trivial, I persist to think there is no issue.
-But OK, I will prepare an immutable branch..
+thank you for replying.
 
-Kishon, checkpatch complains because this new file has no maintainer.
-Is it ok for you if I add it to the Generic PHY subsystem?
+> 
+> On Sat,  8 Nov 2014 16:14:40 +0100, Arianna Avanzini wrote:
+> > Currently, blktrace can be started/stopped via its ioctl-based interface
+> > (used by the userspace blktrace tool) or via its ftrace interface. The
+> > function blk_trace_remove_queue(), called each time an "enable" tunable
+> > of the ftrace interface transitions to zero, removes unconditionally the
+> > trace from the running list, even if its state is not Blktrace_running.
+> > In fact, the state of a blk_trace is modified only by the ioctl-based
+> > interface, and a blk_trace is added to the running list only when its
+> > state transitions from Blktrace_setup or Blktrace_stopped to
+> > Blktrace_running. If the ioctl-based interface is not being used, the
+> > state of the blk_trace is undefined.
+> > In this case, using the sysfs tunable to stop a trace would trigger a
+> > removal of a blk_trace from the running list while it is not on such a
+> > list, leading to a null pointer dereference. This commit attempts to fix
+> > the issue by letting the blk_trace_remove_queue() function remove the
+> > blk_trace from the running list only if its state is Blktrace_running.
+> 
+> What about just getting rid of the list_del()?  blk_trace_setup_queue()
+> doesn't add it to running_trace_list and I think we should prevent mix
+> of ioctl and sysfs usage somehow..
+> 
 
-Regards,
-Maxime
+And blk_trace_remove_queue() is used only by the sysfs interface, you're
+right. I'm re-sending the patch with your comment applied.
 
+Thank you,
+Arianna
+
+
+> Thanks,
+> Namhyung
+> 
+> 
+> >
+> > Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+> > ---
+> >  kernel/trace/blktrace.c | 8 +++++---
+> >  1 file changed, 5 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> > index c1bd4ad..f58b617 100644
+> > --- a/kernel/trace/blktrace.c
+> > +++ b/kernel/trace/blktrace.c
+> > @@ -1493,9 +1493,11 @@ static int blk_trace_remove_queue(struct request_queue *q)
+> >  	if (atomic_dec_and_test(&blk_probes_ref))
+> >  		blk_unregister_tracepoints();
+> >  
+> > -	spin_lock_irq(&running_trace_lock);
+> > -	list_del(&bt->running_list);
+> > -	spin_unlock_irq(&running_trace_lock);
+> > +	if (bt->trace_state == Blktrace_running) {
+> > +		spin_lock_irq(&running_trace_lock);
+> > +		list_del(&bt->running_list);
+> > +		spin_unlock_irq(&running_trace_lock);
+> > +	}
+> >  	blk_trace_free(bt);
+> >  	return 0;
+> >  }
+
+-- 
+/*
+ * Arianna Avanzini
+ * avanzini.arianna@gmail.com
+ * http://ava.webhop.me
+ */
