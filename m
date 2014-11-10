@@ -1,57 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaKJUfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:35:40 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52445 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752732AbaKJUfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:35:36 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Odwq7dcRgDSXEsdTyVh4Z
-Date: Mon, 10 Nov 2014 12:34:52 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: [PATCH V2 3/3] ARM: dts: dra72-evm: Add MMC nodes
-Message-ID: <20141110203451.GU31454@atomide.com>
-References: <1413901848-32268-1-git-send-email-nm@ti.com>
- <1413902156-32684-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413902156-32684-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752544AbaKJUf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:35:28 -0500
+Received: from ring0.de ([5.45.105.125]:52934 "EHLO ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665AbaKJUfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 15:35:23 -0500
+X-Spam-Report: =?ISO-8859-1?Q?
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: nokia.com]
+	* -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	*  1.0 UNWANTED_LANGUAGE_BODY BODY: Nachrichtentext in unerw=fcnschter
+	*      Sprache
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers?=
+From: Sebastian Reichel <sre@kernel.org>
+To: Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org
+Cc: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCHv3 1/4] [media] si4713: add device tree support
+Date: Mon, 10 Nov 2014 21:34:41 +0100
+Message-Id: <1415651684-3894-2-git-send-email-sre@kernel.org>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415651684-3894-1-git-send-email-sre@kernel.org>
+References: <1415651684-3894-1-git-send-email-sre@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [141021 07:37]:
-> Add MMC1 and 2 nodes. MMC1 is SDcard and MMC2 is eMMC.
-> 
-> NOTE on MMC1 card detect: Ideally, we should be using in-built SDCD
-> support, but we dont have it yet. So, use the fact that control module
-> of DRA7 is setup such that no matter what mode one configures it, GPIO
-> option is always hardwired in - use GPIO mode for SDcard detection.
-> 
-> [peter.ujfalusi@ti.com]
-> The power line feeding the SD card is also used by other devices on the EVM.
-> Use generic name instead of mmc2_3v3 so when other devices want to use the
-> same regulator it will look a bit better.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
-> 
-> Apologies on the spam, I got my own name screwed up -fixing that right now
+Add device tree support by changing the device registration order.
+In the device tree the si4713 node is a normal I2C device, which
+will be probed as such. Thus the V4L device must be probed from
+the I2C device and not the other way around.
 
-Applying all three into omap-for-v3.19/dt thanks.
+Signed-off-by: Sebastian Reichel <sre@kernel.org>
+---
+ drivers/media/radio/si4713/radio-platform-si4713.c | 28 +++++--------------
+ drivers/media/radio/si4713/si4713.c                | 31 ++++++++++++++++++++--
+ drivers/media/radio/si4713/si4713.h                |  6 +++++
+ include/media/radio-si4713.h                       | 30 ---------------------
+ include/media/si4713.h                             |  1 +
+ 5 files changed, 42 insertions(+), 54 deletions(-)
+ delete mode 100644 include/media/radio-si4713.h
 
-Tony
+diff --git a/drivers/media/radio/si4713/radio-platform-si4713.c b/drivers/media/radio/si4713/radio-platform-si4713.c
+index a47502a..2de5439 100644
+--- a/drivers/media/radio/si4713/radio-platform-si4713.c
++++ b/drivers/media/radio/si4713/radio-platform-si4713.c
+@@ -34,7 +34,7 @@
+ #include <media/v4l2-fh.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-event.h>
+-#include <media/radio-si4713.h>
++#include "si4713.h"
  
-> Changes in V2: Fixes the formatting error in author name.
-> V1: https://patchwork.kernel.org/patch/5125291/
+ /* module parameters */
+ static int radio_nr = -1;	/* radio device minor (-1 ==> auto assign) */
+@@ -153,7 +153,6 @@ static int radio_si4713_pdriver_probe(struct platform_device *pdev)
+ {
+ 	struct radio_si4713_platform_data *pdata = pdev->dev.platform_data;
+ 	struct radio_si4713_device *rsdev;
+-	struct i2c_adapter *adapter;
+ 	struct v4l2_subdev *sd;
+ 	int rval = 0;
+ 
+@@ -177,20 +176,11 @@ static int radio_si4713_pdriver_probe(struct platform_device *pdev)
+ 		goto exit;
+ 	}
+ 
+-	adapter = i2c_get_adapter(pdata->i2c_bus);
+-	if (!adapter) {
+-		dev_err(&pdev->dev, "Cannot get i2c adapter %d\n",
+-			pdata->i2c_bus);
+-		rval = -ENODEV;
+-		goto unregister_v4l2_dev;
+-	}
+-
+-	sd = v4l2_i2c_new_subdev_board(&rsdev->v4l2_dev, adapter,
+-				       pdata->subdev_board_info, NULL);
+-	if (!sd) {
++	sd = i2c_get_clientdata(pdata->subdev);
++	rval = v4l2_device_register_subdev(&rsdev->v4l2_dev, sd);
++	if (rval) {
+ 		dev_err(&pdev->dev, "Cannot get v4l2 subdevice\n");
+-		rval = -ENODEV;
+-		goto put_adapter;
++		goto unregister_v4l2_dev;
+ 	}
+ 
+ 	rsdev->radio_dev = radio_si4713_vdev_template;
+@@ -202,14 +192,12 @@ static int radio_si4713_pdriver_probe(struct platform_device *pdev)
+ 	if (video_register_device(&rsdev->radio_dev, VFL_TYPE_RADIO, radio_nr)) {
+ 		dev_err(&pdev->dev, "Could not register video device.\n");
+ 		rval = -EIO;
+-		goto put_adapter;
++		goto unregister_v4l2_dev;
+ 	}
+ 	dev_info(&pdev->dev, "New device successfully probed\n");
+ 
+ 	goto exit;
+ 
+-put_adapter:
+-	i2c_put_adapter(adapter);
+ unregister_v4l2_dev:
+ 	v4l2_device_unregister(&rsdev->v4l2_dev);
+ exit:
+@@ -220,14 +208,10 @@ exit:
+ static int radio_si4713_pdriver_remove(struct platform_device *pdev)
+ {
+ 	struct v4l2_device *v4l2_dev = platform_get_drvdata(pdev);
+-	struct v4l2_subdev *sd = list_entry(v4l2_dev->subdevs.next,
+-					    struct v4l2_subdev, list);
+-	struct i2c_client *client = v4l2_get_subdevdata(sd);
+ 	struct radio_si4713_device *rsdev;
+ 
+ 	rsdev = container_of(v4l2_dev, struct radio_si4713_device, v4l2_dev);
+ 	video_unregister_device(&rsdev->radio_dev);
+-	i2c_put_adapter(client->adapter);
+ 	v4l2_device_unregister(&rsdev->v4l2_dev);
+ 
+ 	return 0;
+diff --git a/drivers/media/radio/si4713/si4713.c b/drivers/media/radio/si4713/si4713.c
+index ebec16d..c90004d 100644
+--- a/drivers/media/radio/si4713/si4713.c
++++ b/drivers/media/radio/si4713/si4713.c
+@@ -1446,9 +1446,12 @@ static int si4713_probe(struct i2c_client *client,
+ 					const struct i2c_device_id *id)
+ {
+ 	struct si4713_device *sdev;
+-	struct si4713_platform_data *pdata = client->dev.platform_data;
+ 	struct v4l2_ctrl_handler *hdl;
+-	int rval, i;
++	struct si4713_platform_data *pdata = client->dev.platform_data;
++	struct device_node *np = client->dev.of_node;
++	struct radio_si4713_platform_data si4713_pdev_pdata;
++	struct platform_device *si4713_pdev;
++	int rval;
+ 
+ 	sdev = devm_kzalloc(&client->dev, sizeof(*sdev), GFP_KERNEL);
+ 	if (!sdev) {
+@@ -1608,8 +1611,30 @@ static int si4713_probe(struct i2c_client *client,
+ 		goto free_ctrls;
+ 	}
+ 
++	if (!np && (!pdata || !pdata->is_platform_device))
++		return 0;
++
++	si4713_pdev = platform_device_alloc("radio-si4713", -1);
++	if (!si4713_pdev)
++		goto put_main_pdev;
++
++	si4713_pdev_pdata.subdev = client;
++	rval = platform_device_add_data(si4713_pdev, &si4713_pdev_pdata,
++					sizeof(si4713_pdev_pdata));
++	if (rval)
++		goto put_main_pdev;
++
++	rval = platform_device_add(si4713_pdev);
++	if (rval)
++		goto put_main_pdev;
++
++	sdev->pd = si4713_pdev;
++
+ 	return 0;
+ 
++put_main_pdev:
++	platform_device_put(si4713_pdev);
++	v4l2_device_unregister_subdev(&sdev->sd);
+ free_ctrls:
+ 	v4l2_ctrl_handler_free(hdl);
+ exit:
+@@ -1622,6 +1647,8 @@ static int si4713_remove(struct i2c_client *client)
+ 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+ 	struct si4713_device *sdev = to_si4713_device(sd);
+ 
++	platform_device_unregister(sdev->pd);
++
+ 	if (sdev->power_state)
+ 		si4713_set_power_state(sdev, POWER_DOWN);
+ 
+diff --git a/drivers/media/radio/si4713/si4713.h b/drivers/media/radio/si4713/si4713.h
+index 7c2479f..8a376e1 100644
+--- a/drivers/media/radio/si4713/si4713.h
++++ b/drivers/media/radio/si4713/si4713.h
+@@ -15,6 +15,7 @@
+ #ifndef SI4713_I2C_H
+ #define SI4713_I2C_H
+ 
++#include <linux/platform_device.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/gpio/consumer.h>
+ #include <media/v4l2-subdev.h>
+@@ -238,6 +239,7 @@ struct si4713_device {
+ 	struct regulator *vdd;
+ 	struct regulator *vio;
+ 	struct gpio_desc *gpio_reset;
++	struct platform_device *pd;
+ 	u32 power_state;
+ 	u32 rds_enabled;
+ 	u32 frequency;
+@@ -245,4 +247,8 @@ struct si4713_device {
+ 	u32 stereo;
+ 	u32 tune_rnl;
+ };
++
++struct radio_si4713_platform_data {
++	struct i2c_client *subdev;
++};
+ #endif /* ifndef SI4713_I2C_H */
+diff --git a/include/media/radio-si4713.h b/include/media/radio-si4713.h
+deleted file mode 100644
+index f6aae29..0000000
+--- a/include/media/radio-si4713.h
++++ /dev/null
+@@ -1,30 +0,0 @@
+-/*
+- * include/media/radio-si4713.h
+- *
+- * Board related data definitions for Si4713 radio transmitter chip.
+- *
+- * Copyright (c) 2009 Nokia Corporation
+- * Contact: Eduardo Valentin <eduardo.valentin@nokia.com>
+- *
+- * This file is licensed under the terms of the GNU General Public License
+- * version 2. This program is licensed "as is" without any warranty of any
+- * kind, whether express or implied.
+- *
+- */
+-
+-#ifndef RADIO_SI4713_H
+-#define RADIO_SI4713_H
+-
+-#include <linux/i2c.h>
+-
+-#define SI4713_NAME "radio-si4713"
+-
+-/*
+- * Platform dependent definition
+- */
+-struct radio_si4713_platform_data {
+-	int i2c_bus;
+-	struct i2c_board_info *subdev_board_info;
+-};
+-
+-#endif /* ifndef RADIO_SI4713_H*/
+diff --git a/include/media/si4713.h b/include/media/si4713.h
+index f98a0a7..343b8fb5 100644
+--- a/include/media/si4713.h
++++ b/include/media/si4713.h
+@@ -26,6 +26,7 @@ struct si4713_platform_data {
+ 	const char * const *supply_names;
+ 	unsigned supplies;
+ 	int gpio_reset; /* < 0 if not used */
++	bool is_platform_device;
+ };
+ 
+ /*
+-- 
+2.1.1
+
