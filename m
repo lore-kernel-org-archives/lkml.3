@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaKJXC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 18:02:27 -0500
-Received: from mail-bn1bon0096.outbound.protection.outlook.com ([157.56.111.96]:60480
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751339AbaKJXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 18:02:26 -0500
-Date: Mon, 10 Nov 2014 15:02:15 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Peter Crosthwaite <crosthwaitepeter@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <michals@xilinx.com>, <sorenb@xilinx.com>,
-        Steve Wang <steven.wang@digilentinc.com>
-Subject: Re: [PATCH 1/2] arm: dts: zynq: Move crystal freq. to board level
-References: <1415504283-31321-1-git-send-email-crosthwaite.peter@gmail.com>
- <38537ddd8ce845cd9929db4ffcb33031@BN1AFFO11FD006.protection.gbl>
- <CAPokK=p-LXJ0C7_Xy8DR0R0k_YrMRKJSMuh5Z48NWR=wmrQwhg@mail.gmail.com>
+	id S1752151AbaKJXDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 18:03:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:47556 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751352AbaKJXDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 18:03:05 -0500
+Date: Tue, 11 Nov 2014 00:03:01 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Kevin Hilman <khilman@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, linux-sh@vger.kernel.org,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        nicolas.ferre@atmel.com, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: Re: [PATCH V4 04/14] genirq: Generic chip: Add big endian I/O
+ accessors
+Message-ID: <20141110230301.GV4068@piout.net>
+References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
+ <1415342669-30640-5-git-send-email-cernekee@gmail.com>
+ <7hy4riogwt.fsf@deeprootsystems.com>
+ <CAJiQ=7CYjy-sWc-M3m2Mg8si8JacpDH=RPPm8S-Q4m88wk3Sqg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPokK=p-LXJ0C7_Xy8DR0R0k_YrMRKJSMuh5Z48NWR=wmrQwhg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21090.003
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <4c9d54e106214449a1602e6a697b822b@BY2FFO11FD018.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(189002)(377454003)(377424004)(51694002)(24454002)(199003)(102836001)(1411001)(54356999)(92566001)(46102003)(64706001)(53416004)(120916001)(23676002)(31966008)(76176999)(47776003)(83506001)(85182001)(20776003)(86362001)(108616004)(110136001)(104016003)(85202003)(4396001)(44976005)(6806004)(107046002)(21056001)(99396003)(62966003)(95666004)(87936001)(77096003)(77156002)(74316001)(50466002)(19580395003)(19580405001)(50986999)(106466001)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB025;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB025;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB025;
-X-Forefront-PRVS: 039178EF4A
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB025;
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <CAJiQ=7CYjy-sWc-M3m2Mg8si8JacpDH=RPPm8S-Q4m88wk3Sqg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 08:35AM +1000, Peter Crosthwaite wrote:
-> On Mon, Nov 10, 2014 at 7:34 AM, Sören Brinkmann
-> <soren.brinkmann@xilinx.com> wrote:
-> > On Sun, 2014-11-09 at 01:38PM +1000, Peter Crosthwaite wrote:
-> >> The fact that all supported boards use the same 33MHz crystal is a
-> >> co-incidence. The Zynq PS support a range of crystal freqs so the
-> >> hardcoded setting should be removed from the dtsi. Re-implement it
-> >> on the board level.
+Adding Boris in Cc: as he wrote that part.
+
+On 10/11/2014 at 14:11:44 -0800, Kevin Cernekee wrote :
+> On Mon, Nov 10, 2014 at 2:00 PM, Kevin Hilman <khilman@kernel.org> wrote:
+> > Kevin Cernekee <cernekee@gmail.com> writes:
+> >
+> >> Use io{read,write}32be if the caller specified IRQ_GC_BE_IO when creating
+> >> the irqchip.
 > >>
-> >> This prepares support for Zynq boards with different crystal
-> >> frequencies (e.g. the Digilent ZYBO).
+> >> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 > >
-> > Even with the 33MHz in the dtsi you can override it on the board-level.
-> > Just like the 'status' property is overriden in board dts files.
+> > I bisected a couple ARM boot failures in next-20141110 on atmel sama5 platforms down to
+> > this patch, though I'm not quite yet sure how it's causing the failure.
+> > I'm not getting any console output, so haven't been able to dig deeper
+> > yet.  Maybe the atmel maintainers (Cc'd) can help dig.
 > >
-> 
-> Do you want the deletion undone? Even with override capability I think
-> it should be removed as the number is board level specific and the
-> dtsi should be limited to SoC level information.
-
-I'm fine with it. Just wanted to point out that patch 2 does not
-strictly require this change and can stand on its own.
-
-[...]
-> >> Im guessing long term this should be converted to a fixed clock. But
-> >> I think this at least steps in that direction.
+> > I've confirmed that reverting $SUBJECT patch (commit
+> > b79055952badbd73710685643bab44104f2509ea2) on top of next-20141110 gets
+> > things booting again.
 > >
-> > I was against that since it makes juggling with clock names more
-> > difficult. The problem is that the CCF uses a global name space of clock
-> > names.
+> > Also, it only happens with sama5_defconfig, not with multi_v7_defconfig.
 > 
-> I thought it was just a
+> In drivers/irqchip/irq-atmel-aic-common.c I see:
 > 
-> clocks = < &phandle >
+>         ret = irq_alloc_domain_generic_chips(domain, 32, 1, name,
+>                                              handle_level_irq, 0, 0,
+>                                              IRQCHIP_SKIP_SET_WAKE);
 > 
-> Where's the namespacing issue?
+> and IRQCHIP_SKIP_SET_WAKE is (1 << 4), same as IRQ_GC_BE_IO.
 > 
-> Btw I think the clocks=phandle would be populated the the dts as well.
-> So the DTSI would have no clocks = node, and the dts must populate it.
-> This allows support for an on-board off-soc clock controller
-> controlling the PS clock (which is in theory supported by the SoC).
+> Is it possible that the caller is passing values intended for
+> irq_chip->flags into a function expecting
+> irq_domain_chip_generic->gc_flags ?
 
-Every call to clk_register needs to be passed in the clock's parent
-(unless it's a root clock). That parent is specified by its name. You
-won't see it as user/consumer, but when implementing a clock-provider.
-I think there is nothing preventing such a change, but it would make
-things more complicated for no good reason. Even if you have an off-chip
-clock controller, if that one doesn't provide a fixed clock input to
-Zynq, things are likely to break.
-
-	Sören
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
