@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbaKJJWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:22:24 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:47377 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaKJJWW (ORCPT
+	id S1752400AbaKJJXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:23:48 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:52542 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaKJJXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:22:22 -0500
-Message-ID: <546083C5.8060502@imgtec.com>
-Date: Mon, 10 Nov 2014 09:22:13 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 04:23:46 -0500
+Date: Mon, 10 Nov 2014 10:20:39 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Preston Fick <pffick@gmail.com>
+Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial: cp210x: Adding IDs for CEL MeshConnect USB
+ Stick
+Message-ID: <20141110092039.GA29789@localhost>
+References: <1415424371-4900-1-git-send-email-pffick@gmail.com>
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
-        <jay.xu@rock-chips.com>
-Subject: Re: [PATCH V5 3/7] dw-hdmi: make checkpatch happy
-References: <1415424410-7364-1-git-send-email-andy.yan@rock-chips.com> <1415424598-7533-1-git-send-email-andy.yan@rock-chips.com>
-In-Reply-To: <1415424598-7533-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415424371-4900-1-git-send-email-pffick@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-
-In 3.18 rc4, I cannot find checkpatch errors in imx-hdmi.c
-
-Have these errors come during the previous 2 patches.
-
-If yes, then these changes need to be squashed into the previous
-patches. No patch should add a checkpatch error and then fix it in a later patch.
-
-Regards
-ZubairLK
-
-On 08/11/14 05:29, Andy Yan wrote:
-> CHECK: Alignment should match open parenthesis
-> +       if ((hdmi->vic == 10) || (hdmi->vic == 11) ||
-> +               (hdmi->vic == 12) || (hdmi->vic == 13) ||
-> 
-> CHECK: braces {} should be used on all arms of this statement
-> +       if (hdmi->hdmi_data.video_mode.mdvi)
-> [...]
-> +       else {
-> [...]
-> 
-> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+On Fri, Nov 07, 2014 at 11:26:11PM -0600, Preston Fick wrote:
+> Signed-off-by: Preston Fick <pffick@gmail.com>
 > ---
->  drivers/gpu/drm/bridge/dw_hdmi.c | 97 ++++++++++++++++++++--------------------
->  1 file changed, 48 insertions(+), 49 deletions(-)
+>  drivers/usb/serial/cp210x.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+> index cfd009d..6c4eb3c 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -120,6 +120,7 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+>  	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+>  	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+> +	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+>  	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+>  	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+>  	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
+
+Applied, thanks.
+
+Johan
