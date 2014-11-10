@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbaKJKB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:01:26 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49760 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992AbaKJKBZ (ORCPT
+	id S1752245AbaKJKDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:03:45 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:51364 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaKJKDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:01:25 -0500
-Date: Mon, 10 Nov 2014 11:01:17 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        Tony Jones <tonyj@suse.de>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH, RFC] x86: also CFI-annotate certain inline asm()s
-Message-ID: <20141110100117.GA15841@gmail.com>
-References: <5458A9600200007800044AE5@mail.emea.novell.com>
+	Mon, 10 Nov 2014 05:03:42 -0500
+Date: Mon, 10 Nov 2014 11:03:28 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v4] sched/numa: fix unsafe get_task_struct() in
+ task_numa_assign()
+Message-ID: <20141110100328.GF29390@twins.programming.kicks-ass.net>
+References: <1413962231.19914.130.camel@tkhai>
+ <545D928B.2070508@oracle.com>
+ <1415542020.474.22.camel@tkhai>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5458A9600200007800044AE5@mail.emea.novell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415542020.474.22.camel@tkhai>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 09, 2014 at 05:07:00PM +0300, Kirill Tkhai wrote:
+> > I've complained about an unrelated issue in that part of the code
+> > a while back (https://lkml.org/lkml/2014/5/12/508) which PeterZ
+> > ended up fixing (https://lkml.org/lkml/2014/5/21/428) but it seems
+> > that both of us forgot to follow up on that and the fix never got
+> > upstream.
 
-* Jan Beulich <JBeulich@suse.com> wrote:
+Argh, sorry for that!
 
-> @@ -11,6 +14,7 @@
->  static inline unsigned long native_save_fl(void)
->  {
->  	unsigned long flags;
-> +	CFI_DECL;
+> The bellow is equal to the patch suggested by Peter.
+> 
+> The only thing, I'm doubt, is about the comparison of cpus instead of nids.
+> Should task_numa_compare() be able to be called with src_nid == dst_nid
+> like this may happens now?! Maybe better, we should change task_numa_migrate()
+> and check for env.dst_nid != env.src.nid.
+> 
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 826fdf3..c18129e 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1380,6 +1380,8 @@ static void task_numa_find_cpu(struct task_numa_env *env,
+>  		/* Skip this CPU if the source task cannot migrate */
+>  		if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(env->p)))
+>  			continue;
+> +		if (cpu == env->src_cpu)
+> +			continue;
 >  
->  	/*
->  	 * "=rm" is safe here, because "pop" adjusts the stack before
-> @@ -18,9 +22,10 @@ static inline unsigned long native_save_
->  	 * documented behavior of the "pop" instruction.
->  	 */
->  	asm volatile("# __raw_save_flags\n\t"
-> -		     "pushf ; pop %0"
-> +		     "pushf" CFI_ADJUST_CFA_OFFSET(1) "\n\t"
-> +		     "pop %0" CFI_ADJUST_CFA_OFFSET(-1)
->  		     : "=rm" (flags)
-> -		     : /* no input */
-> +		     : CFI_INPUTS()
->  		     : "memory");
->  
->  	return flags;
-> @@ -28,10 +33,13 @@ static inline unsigned long native_save_
->  
->  static inline void native_restore_fl(unsigned long flags)
->  {
-> -	asm volatile("push %0 ; popf"
-> +	CFI_DECL;
-> +
-> +	asm volatile("push %[flags]" CFI_ADJUST_CFA_OFFSET(1) "\n\t"
-> +		     "popf" CFI_ADJUST_CFA_OFFSET(-1)
->  		     : /* no output */
-> -		     :"g" (flags)
-> -		     :"memory", "cc");
-> +		     : CFI_INPUTS([flags] "g" (flags))
-> +		     : "memory", "cc");
->  }
+>  		env->dst_cpu = cpu;
+>  		task_numa_compare(env, taskimp, groupimp);
 
-In principle I'm not against generating better debug info for our 
-assembly code, but I think it should be more readable - for 
-example I would not hide 'cfi_var' in the CFI_DECL above but I'd 
-make it something like:
+Not quite the same, current can still get migrated to another cpu than
+env->src_cpu, at which point we can still end up selecting ourselves.
 
-	CFI_DECL(cfi_var);
+How about the below instead, that is pretty much the old patch, but with
+a nice comment.
 
-	...
-		CFI_ADJUST_CFA_OFFSET(cfi_var, ...);
+---
+Subject: sched, numa: Avoid selecting oneself as swap target
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Mon Nov 10 10:54:35 CET 2014
 
-etc. - even if this is slightly more verbose than what you wrote.
+Because the whole numa task selection stuff runs with preemption
+enabled (its long and expensive) we can end up migrating and selecting
+oneself as a swap target. This doesn't really work out well -- we end
+up trying to acquire the same lock twice for the swap migrate -- so
+avoid this.
 
-There's few things worse than hidden state connections between 
-various primitives - even if this is build only.
+Cc: Rik van Riel <riel@redhat.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ kernel/sched/fair.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-I'd also suggest splitting up the patch into 'add new primitives' 
-and 'use them to improve stuff' parts.
-
-(Assuming nobody objects strongly.)
-
-Thanks,
-
-	Ingo
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1268,6 +1268,13 @@ static void task_numa_compare(struct tas
+ 	raw_spin_unlock_irq(&dst_rq->lock);
+ 
+ 	/*
++	 * Because we have preemption enabled we can get migrated around and
++	 * end try selecting ourselves (current == env->p) as a swap candidate.
++	 */
++	if (cur == env->p)
++		goto unlock;
++
++	/*
+ 	 * "imp" is the fault differential for the source task between the
+ 	 * source and destination node. Calculate the total differential for
+ 	 * the source task and potential destination task. The more negative
