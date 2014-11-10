@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaKJEuG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 23:50:06 -0500
-Received: from ozlabs.org ([103.22.144.67]:47582 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184AbaKJEuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 23:50:05 -0500
-Date: Mon, 10 Nov 2014 15:49:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Eddie Huang <eddie.huang@mediatek.com>
-Subject: linux-next: manual merge of the tty tree with the tty.current tree
-Message-ID: <20141110154958.5729e46e@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751705AbaKJEuc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 23:50:32 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56077 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751565AbaKJEua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 23:50:30 -0500
+X-Sasl-enc: 5CZ4ONncRELu2aWsClkMi9eiMXq9Bub3SPcOFJWK1uj8 1415595028
+Date: Mon, 10 Nov 2014 13:38:53 +0900
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ sound-asoc tree
+Message-ID: <20141110043853.GA25797@kroah.com>
+References: <20141110153132.259d49d9@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/R0PZF6PRl_EPEso8w9yGGav"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110153132.259d49d9@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/R0PZF6PRl_EPEso8w9yGGav
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 10, 2014 at 03:31:32PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the driver-core tree got a conflict in
+> sound/soc/intel/sst-haswell-pcm.c between commit 2e4f75919e5a ("ASoC:
+> Intel: Add PM support to HSW/BDW PCM driver") from the sound-asoc tree
+> and commit 3c1af8802e45 ("ASoC: intel: drop owner assignment from
+> platform_drivers") from the driver-core tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc sound/soc/intel/sst-haswell-pcm.c
+> index 7eb9afc9b33d,ad21e636edc6..000000000000
+> --- a/sound/soc/intel/sst-haswell-pcm.c
+> +++ b/sound/soc/intel/sst-haswell-pcm.c
+> @@@ -1173,9 -899,6 +1173,8 @@@ static const struct dev_pm_ops hsw_pcm_
+>   static struct platform_driver hsw_pcm_driver = {
+>   	.driver = {
+>   		.name = "haswell-pcm-audio",
+> - 		.owner = THIS_MODULE,
+>  +		.pm = &hsw_pcm_pm,
+>  +
+>   	},
+>   
+>   	.probe = hsw_pcm_dev_probe,
 
-Hi Greg,
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/8250/8250_mtk.c between commit cd92208f6996 ("tty:
-serial: 8250_mtk: Fix quot calculation") from the tty.current tree and
-commit 2a768264eef0 ("tty: serial: Fix mediatek UART driver setting
-baudrate issue") from the tty tree.
+Fix looks good, thanks.
 
-I fixed it up (I just used the version from the tty tree) and can carry
-the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/R0PZF6PRl_EPEso8w9yGGav
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUYEP7AAoJEMDTa8Ir7ZwVnnUP/3lda4Z+Egqqcbb1sdELcxAj
-9b9EyKlc9TQhKo5sEgj6bRKy07r4PCrh3Jjo8ediPbQZOnJUO8KqftqKvTzrTbwM
-HczawK8hilGdVviZh8T4QvswHIieFgmm2Gwt4fvNCi+RbDxayamlO/MGPd1YZGik
-QWu2hGOHB95ApQAuyJW6VTzEqUo3cQd3nD/1D1RMBRR7bi0HxioTRo/7qlm41Hn0
-aeYqYrmsi35a1t6S+yw96HaTGRRqTmY1cZoJgKIjaX8LAY2cevfAb73jOPiRIFfs
-hQwZcKFmHl+nERgVWpEdHidMB6xylsVof6co5JcCaSD9+P3YOMU9ecGoM6OdA84D
-8tZKnAqBPfG+vREFxoZuLmscaWqInOXuuJcbfvBENFsjlyo47mrCbc4gHPpXac4F
-c5S9E6tGdWzQB2ZasFBJeAvLA/19Edrzl/C9TGhAt1BJ7bH0F5XyNC2EaAHZJ+fX
-3DPbA63xUwQGn5ydGUBF3/2UjuElQEmU/NreIvi3zsUvt0Z5OZSZT9jWbyYzChHR
-3Cfa8+zTZVCjWY5dR372YIh2lr9hhZIGd50Sr06gkn1/pg5CxrUvq8Ex8QMl2VOC
-c61+DGoJzuuLDiwQpoIsgbEnNZBvHKyGLTAhavvnqOy/49YeILvD4EXcc+4WtNRn
-W9jbfFjJA1j49LO82nOM
-=R8pY
------END PGP SIGNATURE-----
-
---Sig_/R0PZF6PRl_EPEso8w9yGGav--
+greg k-h
