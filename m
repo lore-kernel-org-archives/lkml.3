@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaKJIZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 03:25:59 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56104 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaKJIZ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 03:25:58 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arianna Avanzini <avanzini.arianna@gmail.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] trace, blktrace: remove trace from running list only if trace is running
-References: <1415459680-1749-1-git-send-email-avanzini.arianna@gmail.com>
-Date: Mon, 10 Nov 2014 17:25:56 +0900
-In-Reply-To: <1415459680-1749-1-git-send-email-avanzini.arianna@gmail.com>
-	(Arianna Avanzini's message of "Sat, 8 Nov 2014 16:14:40 +0100")
-Message-ID: <8761env4vf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752110AbaKJI0h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 03:26:37 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:2721 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751741AbaKJI0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 03:26:36 -0500
+X-Mailbox-Line: From 3b3dcd0172b0bdd0a661d65d697a73f837565309 Mon Sep 17 00:00:00 2001
+Message-Id: <cover.1415605716.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Mon, 10 Nov 2014 08:48:36 +0100
+Subject: [PATCH v4 0/4] ASoC: simple-card: Add multi-CODEC support
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arianna,
+This patch set adds multi-CODEC support to the simple card.
 
-On Sat,  8 Nov 2014 16:14:40 +0100, Arianna Avanzini wrote:
-> Currently, blktrace can be started/stopped via its ioctl-based interface
-> (used by the userspace blktrace tool) or via its ftrace interface. The
-> function blk_trace_remove_queue(), called each time an "enable" tunable
-> of the ftrace interface transitions to zero, removes unconditionally the
-> trace from the running list, even if its state is not Blktrace_running.
-> In fact, the state of a blk_trace is modified only by the ioctl-based
-> interface, and a blk_trace is added to the running list only when its
-> state transitions from Blktrace_setup or Blktrace_stopped to
-> Blktrace_running. If the ioctl-based interface is not being used, the
-> state of the blk_trace is undefined.
-> In this case, using the sysfs tunable to stop a trace would trigger a
-> removal of a blk_trace from the running list while it is not on such a
-> list, leading to a null pointer dereference. This commit attempts to fix
-> the issue by letting the blk_trace_remove_queue() function remove the
-> blk_trace from the running list only if its state is Blktrace_running.
+v4: (Mark Brown)
+	- document the new core function
+	- calculation of the number of codecs moved to the core function
+	- split the patch about simple-card.c
+	- less code changes
+	- remove the cast of pointers
+	- less changes in the DT binding example 2
+v3: rebase on broonie git 2014/11/03
+v2: accept list of CODECs in 'sound-dais' (Benoit Cousson)
 
-What about just getting rid of the list_del()?  blk_trace_setup_queue()
-doesn't add it to running_trace_list and I think we should prevent mix
-of ioctl and sysfs usage somehow..
+Jean-Francois Moine (4):
+  ASoC: core: add multi-codec support in DT
+  ASoC: simple-card: Remove useless function argument
+  ASoC: simple-card: add multi-CODECs in DT
+  ASoC: simple-card: Remove useless check
 
-Thanks,
-Namhyung
+ .../devicetree/bindings/sound/simple-card.txt      |  20 ++--
+ include/sound/soc.h                                |   3 +
+ sound/soc/generic/simple-card.c                    |  87 ++++++++--------
+ sound/soc/soc-core.c                               | 113 ++++++++++++++++++---
+ 4 files changed, 154 insertions(+), 69 deletions(-)
 
+-- 
+2.1.3
 
->
-> Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
-> ---
->  kernel/trace/blktrace.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-> index c1bd4ad..f58b617 100644
-> --- a/kernel/trace/blktrace.c
-> +++ b/kernel/trace/blktrace.c
-> @@ -1493,9 +1493,11 @@ static int blk_trace_remove_queue(struct request_queue *q)
->  	if (atomic_dec_and_test(&blk_probes_ref))
->  		blk_unregister_tracepoints();
->  
-> -	spin_lock_irq(&running_trace_lock);
-> -	list_del(&bt->running_list);
-> -	spin_unlock_irq(&running_trace_lock);
-> +	if (bt->trace_state == Blktrace_running) {
-> +		spin_lock_irq(&running_trace_lock);
-> +		list_del(&bt->running_list);
-> +		spin_unlock_irq(&running_trace_lock);
-> +	}
->  	blk_trace_free(bt);
->  	return 0;
->  }
