@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaKJTHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:07:36 -0500
-Received: from mga14.intel.com ([192.55.52.115]:59423 "EHLO mga14.intel.com"
+	id S1751962AbaKJTKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:10:07 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:61736 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178AbaKJTHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:07:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,354,1413270000"; 
-   d="scan'208";a="620111668"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Chen Yucong <slaoub@gmail.com>, "ak@linux.intel.com" <ak@linux.intel.com>,
-        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 0/2]RAS: add the support for handling UCNA/DEFERRED
- error
-Thread-Topic: [PATCH v3 0/2]RAS: add the support for handling UCNA/DEFERRED
- error
-Thread-Index: AQHP/QVmmYjXeH47ZESsTS0jCvwVH5xaMvPA
-Date: Mon, 10 Nov 2014 18:47:10 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F32927DE6@ORSMSX114.amr.corp.intel.com>
-References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
- <20141110164223.GG4359@pd.tnic>
-In-Reply-To: <20141110164223.GG4359@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1751431AbaKJTKF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:10:05 -0500
+Date: Mon, 10 Nov 2014 20:12:54 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] ASoC: Remove 'const' from the device_node
+ pointers
+Message-ID: <20141110201254.65674552@armhf>
+In-Reply-To: <20141110190332.GG3815@sirena.org.uk>
+References: <cover.1415562021.git.moinejf@free.fr>
+	<d5d74f6993e9f2392008a27a2938c58d47dc8062.1415562021.git.moinejf@free.fr>
+	<20141110190332.GG3815@sirena.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAAJ7fpF031267
 
-> Looks ok to me.
+On Mon, 10 Nov 2014 19:03:32 +0000
+Mark Brown <broonie@kernel.org> wrote:
 
-And also to me
+> On Sun, Nov 09, 2014 at 08:33:45PM +0100, Jean-Francois Moine wrote:
+> > From Russell King:
+> > of_node_put() modifies the struct device_node contents.  Therefore,
+> > of_node_put() definitely not treating the data pointed to as read-only,
+> > and therefore it is completely inappropriate for it to be marked "const".
+> 
+> Did Russell write this patch (in which case it's missing a signoff and
+> his e-mail address above) or are you trying to say "Russell King
+> said..."?
 
-> Tony, let me know if I should pick them up or you want to. Btw, there's
-> already tip/x86/ras for 3.19.
+Sorry, that was "Russell said ...".
+Do you want I resubmit the patch?
 
-I can take it - if you retype the "Looks ok" in the form of an "Acked-by" tag :-)
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Ken ar c'hentaÃ±	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
