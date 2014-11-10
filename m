@@ -1,125 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaKJO1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:27:25 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:33451 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787AbaKJO1X (ORCPT
+	id S1752946AbaKJO3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:29:06 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59572 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaKJO3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:27:23 -0500
-Message-ID: <5460CB43.4050008@6wind.com>
-Date: Mon, 10 Nov 2014 15:27:15 +0100
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 09:29:04 -0500
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Remi Denis-Courmont <courmisch@gmail.com>
-Subject: Re: [RFC PATCH net-next] net: Convert LIMIT_NETDEBUG to net_dbg_ratelimited
-References: <1415230929.6634.38.camel@perches.com>	 <20141106.151149.1321164537677873976.davem@davemloft.net>	 <1415307221.21526.0.camel@perches.com>	 <20141108.204202.2273082249078358608.davem@davemloft.net> <1415560642.23530.43.camel@perches.com>
-In-Reply-To: <1415560642.23530.43.camel@perches.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <5460B553.5060401@codeaurora.org>
+References: <1415531185-2343-1-git-send-email-tlinder@codeaurora.org>
+	<1415621918.22887.80.camel@sauron.fi.intel.com>
+	<5460B553.5060401@codeaurora.org>
+Date: Mon, 10 Nov 2014 15:29:02 +0100
+Message-ID: <CAFLxGvz2ye7mSuUg6spm0YZ90UZuC-JdADZZ2YPU8MuCfvTaPA@mail.gmail.com>
+Subject: Re: [PATCH] UBI: Extend UBI layer debug/messaging capabilities - cosmetics
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, hujianyang <hujianyang@huawei.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 09/11/2014 20:17, Joe Perches a écrit :
-> Use the more common dynamic_debug capable net_dbg_ratelimited
-> and remove the LIMIT_NETDEBUG macro.
+On Mon, Nov 10, 2014 at 1:53 PM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
+> On 11/10/2014 2:18 PM, Artem Bityutskiy wrote:
+>>
+>> On Sun, 2014-11-09 at 13:06 +0200, Tanya Brokhman wrote:
+>>>
+>>>
+>>>   /* Normal UBI messages */
+>>>   #define ubi_msg(ubi, fmt, ...) pr_notice("UBI-%d: %s:" fmt "\n", \
+>>> -                                        ubi->ubi_num, __func__,
+>>> ##__VA_ARGS__)
+>>> +                               (ubi ? ubi->ubi_num : UBI_MAX_DEVICES), \
+>>> +                               __func__, ##__VA_ARGS__)
+>>>   /* UBI warning messages */
+>>>   #define ubi_warn(ubi, fmt, ...) pr_warn("UBI-%d warning: %s: " fmt
+>>> "\n", \
+>>> -                                       ubi->ubi_num, __func__,
+>>> ##__VA_ARGS__)
+>>> +                               (ubi ? ubi->ubi_num : UBI_MAX_DEVICES), \
+>>> +                               __func__, ##__VA_ARGS__)
+>>>   /* UBI error messages */
+>>>   #define ubi_err(ubi, fmt, ...) pr_err("UBI-%d error: %s: " fmt "\n", \
+>>> -                                     ubi->ubi_num, __func__,
+>>> ##__VA_ARGS__)
+>>> +                               (ubi ? ubi->ubi_num : UBI_MAX_DEVICES), \
+>>> +                               __func__, ##__VA_ARGS__)
+>>
+>>
+>> Why did you make these changes? It is preferable to not add another 'if'
+>> statement to this macro to handle one or 2 cases - much bloat, little
+>> gain.
+>>
+>> Could we please avoid this?
 >
-> This may have some negative impact on messages that were
-> emitted at KERN_INFO that are not not enabled at all unless
-> DEBUG is defined or dynamic_debug is enabled.  Even so,
-> these messages are now _not_ emitted by default.
 >
-> This eliminates the use of the net_msg_warn sysctl
-> "/proc/sys/net/core/warnings".
+> I just wanted to be on the safe side and prevent this macro being called
+> with ubi=NULL that may crash the system. If you still prefer the "if"
+> removed will do.
 >
-> All messages are still ratelimited.
+>>
+>>>
+>>> -       if (!ubi->free.rb_node || (ubi->free_count - ubi->beb_rsvd_pebs <
+>>> 1)) {
+>>> -               ubi_warn(ubi, "Can't get peb for fastmap:anchor=%d,
+>>> free_cnt=%d, reserved=%d",
+>>> -                        anchor, ubi->free_count, ubi->beb_rsvd_pebs);
+>>> +       if (!ubi->free.rb_node || (ubi->free_count - ubi->beb_rsvd_pebs <
+>>> 1))
+>>>                  goto out;
+>>
+>>
+>> The warning looks pretty poor, so I do not mind to remove it, but I
+>> thought your patch is about adding a parameter, but you mix different
+>> kinds of things there. Please, be stricter to the similar UBIFS patch
+>> which you was going to send.
 >
-> Some KERN_LEVEL uses are changed to KERN_DEBUG.
 >
-> Miscellanea:
->
-> o Update the sysctl documentation
-> o Remove the embedded uses of pr_fmt
-> o Coalesce format fragments
-> o Realign arguments
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->
-> Let me know if you want this consolidate patch broken up
-> into multiple patches or any of the messages and the
-> macro kept.
->
->   Documentation/sysctl/net.txt | 12 ++++++++----
->   include/net/sock.h           |  8 +-------
->   include/net/udplite.h        |  6 +++---
->   net/ipv4/icmp.c              |  8 ++++----
->   net/ipv4/inet_fragment.c     |  2 +-
->   net/ipv4/ip_fragment.c       |  3 +--
->   net/ipv4/tcp_input.c         |  8 ++++----
->   net/ipv4/tcp_timer.c         | 18 ++++++++++--------
->   net/ipv4/udp.c               | 30 +++++++++++++++---------------
->   net/ipv6/addrconf.c          |  6 ++----
->   net/ipv6/ah6.c               |  7 +++----
->   net/ipv6/datagram.c          |  4 ++--
->   net/ipv6/esp6.c              |  4 ++--
->   net/ipv6/exthdrs.c           | 18 +++++++++---------
->   net/ipv6/icmp.c              | 15 +++++++--------
->   net/ipv6/mip6.c              | 11 ++++++-----
->   net/ipv6/netfilter.c         |  2 +-
->   net/ipv6/udp.c               | 31 +++++++++++++------------------
->   net/phonet/af_phonet.c       |  9 +++++----
->   net/phonet/pep-gprs.c        |  3 +--
->   net/phonet/pep.c             | 12 ++++++------
->   21 files changed, 104 insertions(+), 113 deletions(-)
->
-> diff --git a/Documentation/sysctl/net.txt b/Documentation/sysctl/net.txt
-> index 04892b8..46cd03d 100644
-> --- a/Documentation/sysctl/net.txt
-> +++ b/Documentation/sysctl/net.txt
-> @@ -120,10 +120,14 @@ seconds.
->   warnings
->   --------
->
-> -This controls console messages from the networking stack that can occur because
-> -of problems on the network like duplicate address or bad checksums. Normally,
-> -this should be enabled, but if the problem persists the messages can be
-> -disabled.
-> +This sysctl is now unused.
-> +
-> +This was used to control console messages from the networking stack that
-> +occur because of problems on the network like duplicate address or bad
-> +checksums.
-> +
-> +These messages are now emitted at KERN_DEBUG and can generally be enabled
-> +and controlled by the dynamic_debug facility.
->
->   netdev_budget
->   -------------
-> diff --git a/include/net/sock.h b/include/net/sock.h
-> index 6767d75..db363ad 100644
-> --- a/include/net/sock.h
-> +++ b/include/net/sock.h
-> @@ -2276,13 +2276,7 @@ bool sk_ns_capable(const struct sock *sk,
->   bool sk_capable(const struct sock *sk, int cap);
->   bool sk_net_capable(const struct sock *sk, int cap);
->
-> -/*
-> - *	Enable debug/info messages
-> - */
-> -extern int net_msg_warn;
-> -#define LIMIT_NETDEBUG(fmt, args...) \
-> -	do { if (net_msg_warn && net_ratelimit()) printk(fmt,##args); } while(0)
-> -
-> +extern int net_msg_warn;	/* Unused, but still a sysctl */
-Why not removing this variable from this header and from net/core/utils.c?
-Just declaring a static variable in net/core/sysctl_net_core.c should be enough.
-Am I missing something?
+> Now I'm confused. I added this msg as part of the patch you already pushed
+> to your branch but later you requested NOT to add additional msgs and if
+> required add it in a different patch. So this was added by me and now
+> removed by me - as per your request.
 
-Nicolas
+Why do you need that new warning anyways?
+It was added by "UBI: Extend UBI layer debug/messaging capabilities".
+
+>>
+>>
+>>> -               if (kthread_should_stop()) {
+>>> -                       ubi_msg(ubi, "background thread \"%s\" should
+>>> stop, PID %d",
+>>> -                               ubi->bgt_name, task_pid_nr(current));
+>>> +               if (kthread_should_stop())
+>>>                          break;
+>>> -               }
+>>
+>>
+>> How about just turning this into a debug message, not removing?
+>
+>
+> Same here. Removing this because *you* requested it.
+> Quoting you from V5:
+> "Yes, please, remove these messages or turn them into debugging messages.
+> And yes, these should have been added in a separate patch."
+>
+>>
+>> Artem.
+>>
+>
+>
+> Thanks,
+> Tanya Brokhman
+> --
+> Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> a Linux Foundation Collaborative Project
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Thanks,
+//richard
