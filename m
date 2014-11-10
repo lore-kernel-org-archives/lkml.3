@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaKJUoC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:44:02 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:59446 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaKJUoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:44:00 -0500
-Date: Mon, 10 Nov 2014 20:43:53 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v3 10/11] perf/x86/intel: Perform rotation on Intel CQM
- RMIDs
-Message-ID: <20141110204353.GD1292@console-pimps.org>
-References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
- <1415276602-10337-11-git-send-email-matt@console-pimps.org>
- <20141107120612.GB3337@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141107120612.GB3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752155AbaKJUpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:45:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50349 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373AbaKJUpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 15:45:33 -0500
+Message-ID: <1415652328.16601.277.camel@ul30vt.home>
+Subject: Re: [PATCH] PCI: pciehp: Flush slot control prior to reset
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org, rajatxjain@gmail.com,
+        yinghai@kernel.org
+Date: Mon, 10 Nov 2014 13:45:28 -0700
+In-Reply-To: <20141107225359.1937.61243.stgit@gimli.home>
+References: <20141107225359.1937.61243.stgit@gimli.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov, at 01:06:12PM, Peter Zijlstra wrote:
-> On Thu, Nov 06, 2014 at 12:23:21PM +0000, Matt Fleming wrote:
-> > +/*
-> > + * Exchange the RMID of a group of events.
-> > + */
-> > +static unsigned int
-> > +intel_cqm_xchg_rmid(struct perf_event *group, unsigned int rmid)
-> > +{
-> > +	struct perf_event *event;
-> > +	unsigned int old_rmid = group->hw.cqm_rmid;
-> > +	struct list_head *head = &group->hw.cqm_group_entry;
-> > +
-> > +	lockdep_assert_held(&cache_mutex);
-> > +
-> > +	/*
-> > +	 * If our RMID is being deallocated, perform a read now.
-> > +	 */
-> > +	if (__rmid_valid(old_rmid) && !__rmid_valid(rmid)) {
-> > +		struct intel_cqm_count_info info;
-> > +
-> > +		local64_set(&group->count, 0);
-> > +		info.event = group;
-> > +
-> > +		preempt_disable();
-> > +		smp_call_function_many(&cqm_cpumask, __intel_cqm_event_count,
-> > +				       &info, 1);
-> > +		preempt_enable();
-> > +	}
+On Fri, 2014-11-07 at 15:54 -0700, Alex Williamson wrote:
+> Since 3461a068661c we don't automatically do a pcie_wait_cmd() for
+> as part of pcie_write_cmd(), it needs to be called explicitly or
+> triggered by the next pcie_write_cmd().  However, when we do a
+> secondary bus reset and we're using pcie_write_cmd() to make sure
+> that we don't see that bus reset as a hotplug event, we really want
+> to make sure the update is complete.  Testing on an old Lenovo S20
+> system, which sets surprise hotplug for some slots, this failure to
+> flush results in a link down event seen by the hotplug controller
+> when we issue the bus reset and returns us to the undesireable
+> behavior of removing and re-adding the device.  Force a flush by
+> adding an explicit call to pcie_wait_cmd().
 > 
-> This suffers the same issue as before, why not call that one function
-> and not reimplement it?
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: stable@vger.kernel.org [3.17]
+> ---
 > 
-> Also, I don't think we'd ever swap an rmid for another valid one, right?
-> So we could do this read/update unconditionally.
+>  drivers/pci/hotplug/pciehp_hpc.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+> index 0ebf754..e540966 100644
+> --- a/drivers/pci/hotplug/pciehp_hpc.c
+> +++ b/drivers/pci/hotplug/pciehp_hpc.c
+> @@ -660,6 +660,7 @@ int pciehp_reset_slot(struct slot *slot, int probe)
+>  		 pci_pcie_cap(ctrl->pcie->port) + PCI_EXP_SLTCTL, 0);
+>  	if (pciehp_poll_mode)
+>  		del_timer_sync(&ctrl->poll_timer);
+> +	pcie_wait_cmd(ctrl);
+>  
+>  	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
+>  
+> 
 
-No, we never swap a valid RMID for another valid one, but we do make a
-invalid -> valid transition, so doing the read wouldn't make sense
-in that situation.
+I think we might need a similar change on the other side of the reset,
+calling pcie_wait_cmd() explicitly before we re-enable polling.  The
+patch above passed about 7000 VM startup/shutdown cycles (up from zero
+w/o the patch), but it did eventually get a spurious hotplug.  With the
+additional pcie_wait_cmd() I'm thinking about, I've passed 8000 cycles.
+TL;DR, I'm probably sending a v2 of this patch.  Thanks,
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Alex
+
