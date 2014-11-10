@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaKJMvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:51:08 -0500
-Received: from mga11.intel.com ([192.55.52.93]:10797 "EHLO mga11.intel.com"
+	id S1752423AbaKJMvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:51:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30336 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905AbaKJMvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:51:03 -0500
+	id S1752076AbaKJMvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:51:14 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="414246206"
+X-IronPort-AV: E=Sophos;i="5.07,352,1413270000"; 
+   d="scan'208";a="634417624"
 From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
         Marcel Selhorst <tpmdd@selhorst.net>
 Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         josh.triplett@intel.com, christophe.ricard@gmail.com,
         jason.gunthorpe@obsidianresearch.com,
-        Will Arthur <will.c.arthur@intel.com>,
         Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v6 09/10] tpm: TPM 2.0 FIFO Interface
-Date: Mon, 10 Nov 2014 14:49:53 +0200
-Message-Id: <1415623794-6090-10-git-send-email-jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v6 10/10] tpm: TPM 2.0 sysfs attributes
+Date: Mon, 10 Nov 2014 14:49:54 +0200
+Message-Id: <1415623794-6090-11-git-send-email-jarkko.sakkinen@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
 References: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
@@ -27,179 +26,420 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Arthur <will.c.arthur@intel.com>
+Manadatory sysfs attributes for TPM 2.0 devices so that it is easy
+to check whether storage hierarchies are enabled.
 
-Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
-instead of calling tpm_get_timeouts(), assign duration and timeout
-values defined in the TPM 2.0 PTP specification.
-
-Signed-off-by: Will Arthur <will.c.arthur@intel.com>
 Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 ---
- drivers/char/tpm/tpm_tis.c | 71 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 56 insertions(+), 15 deletions(-)
+ Documentation/ABI/stable/sysfs-class-tpm2 |  57 +++++++++++
+ drivers/char/tpm/Makefile                 |   2 +-
+ drivers/char/tpm/tpm-chip.c               |  15 ++-
+ drivers/char/tpm/tpm-dev.c                |   6 +-
+ drivers/char/tpm/tpm.h                    |  19 ++++
+ drivers/char/tpm/tpm2-sysfs.c             | 152 ++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_crb.c                |  20 ++--
+ 7 files changed, 248 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/ABI/stable/sysfs-class-tpm2
+ create mode 100644 drivers/char/tpm/tpm2-sysfs.c
 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 7a2c59b..0b3c089 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -1,5 +1,6 @@
- /*
-  * Copyright (C) 2005, 2006 IBM Corporation
-+ * Copyright (C) 2014 Intel Corporation
-  *
-  * Authors:
-  * Leendert van Doorn <leendert@watson.ibm.com>
-@@ -44,6 +45,10 @@ enum tis_status {
- 	TPM_STS_DATA_EXPECT = 0x08,
+diff --git a/Documentation/ABI/stable/sysfs-class-tpm2 b/Documentation/ABI/stable/sysfs-class-tpm2
+new file mode 100644
+index 0000000..301ab2e
+--- /dev/null
++++ b/Documentation/ABI/stable/sysfs-class-tpm2
+@@ -0,0 +1,57 @@
++What:		/sys/class/misc/tpmX/device/
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The device/ directory under a specific TPM instance exposes
++		the properties of that TPM chip.
++
++What:		/sys/class/misc/tpmX/device/family
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The protocol family in the major.minor format.
++
++What:		/sys/class/misc/tpmX/device/sh_enabled
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The "sh_enabled" property prints a '1' if the Storage Hierarchy
++		is enabled, i.e. if PM_PT_STARTUP_CLEAR.shEnable is set.
++
++What:		/sys/class/misc/tpmX/device/sh_owned
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The "sh_owned" property prints a '1' if the ownership of the
++		Storage Hierarchy has been taken, i.e. if
++		TPM_PT_PERMANENT.ownerAuthSet is set.
++
++What:		/sys/class/misc/tpmX/device/eh_enabled
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The "eh_enabled" property prints a '1' if the Endorsement
++		Hierarchy is enabled, i.e if PM_PT_STARTUP_CLEAR.ehEnable is
++		set.
++
++What:		/sys/class/misc/tpmX/device/eh_owned
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The "eh_owned" property prints a '1' if the ownership of the
++		Endrosoment Hierarchy has been taken, i.e if
++		TPM_PT_PERMANENT.endorsementAuthSet is set.
++
++What:		/sys/class/misc/tpmX/device/manufacturer
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The "manufacturer" property prints the vendor ID of the TPM
++		manufacturer.
++
++What:		/sys/class/misc/tpmX/device/firmware
++Date:		October 2014
++KernelVersion:	3.19
++Contact:	tpmdd-devel@lists.sf.net
++Description:	The property prints the vendor-specific value indicating the
++		version of the firmware.
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index e6d26dd..15e3b4c 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the kernel tpm device drivers.
+ #
+ obj-$(CONFIG_TCG_TPM) += tpm.o
+-tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o
++tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o tpm2-sysfs.o
+ tpm-$(CONFIG_ACPI) += tpm_ppi.o
+ 
+ ifdef CONFIG_ACPI
+diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
+index 811e431..b334252 100644
+--- a/drivers/char/tpm/tpm-chip.c
++++ b/drivers/char/tpm/tpm-chip.c
+@@ -144,14 +144,12 @@ int tpm_chip_register(struct tpm_chip *chip)
+ 	if (rc)
+ 		return rc;
+ 
+-	/* Populate sysfs for TPM1 devices. */
+-	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
+-		rc = tpm_add_ppi(chip);
+-		if (rc)
+-			goto out_err;
++	rc = tpm_add_ppi(chip);
++	if (rc)
++		goto out_err;
+ 
++	if (!(chip->flags & TPM_CHIP_FLAG_TPM2))
+ 		chip->bios_dir = tpm_bios_log_setup(chip->devname);
+-	}
+ 
+ 	/* Make the chip available. */
+ 	spin_lock(&driver_lock);
+@@ -182,8 +180,9 @@ void tpm_chip_unregister(struct tpm_chip *chip)
+ 	spin_unlock(&driver_lock);
+ 	synchronize_rcu();
+ 
+-	/* Clean up sysfs for TPM1 devices. */
+-	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
++	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
++		tpm_remove_ppi(chip);
++	} else {
+ 		if (chip->bios_dir)
+ 			tpm_bios_log_teardown(chip->bios_dir);
+ 		tpm_remove_ppi(chip);
+diff --git a/drivers/char/tpm/tpm-dev.c b/drivers/char/tpm/tpm-dev.c
+index 42b61776..d567ec6 100644
+--- a/drivers/char/tpm/tpm-dev.c
++++ b/drivers/char/tpm/tpm-dev.c
+@@ -23,6 +23,7 @@
+ #include "tpm.h"
+ 
+ ATTRIBUTE_GROUPS(tpm_dev);
++ATTRIBUTE_GROUPS(tpm2_dev);
+ 
+ struct file_priv {
+ 	struct tpm_chip *chip;
+@@ -201,7 +202,10 @@ int tpm_dev_add_device(struct tpm_chip *chip)
+ 	else
+ 		chip->dev.devt = MKDEV(MAJOR(tpm_devt), chip->dev_num);
+ 
+-	chip->dev.groups = tpm_dev_groups;
++	if (chip->flags & TPM_CHIP_FLAG_TPM2)
++		chip->dev.groups = tpm2_dev_groups;
++	else
++		chip->dev.groups = tpm_dev_groups;
+ 
+ 	dev_set_name(&chip->dev, chip->devname);
+ 
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index feadbff..fc37f88 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -108,6 +108,24 @@ enum tpm2_capabilities {
+ 	TPM2_CAP_TPM_PROPERTIES = 6,
  };
  
-+enum tis_status3 {
-+	TPM_STS3_TPM2_FAM = 0x04,
++enum tpm2_tpm_properties {
++	TPM2_PT_MANUFACTURER		= 0x00000105,
++	TPM2_PT_FIRMWARE_VERSION_1	= 0x0000010C,
++	TPM2_PT_FIRMWARE_VERSION_2	= 0x0000010D,
++	TPM2_PT_PERMANENT		= 0x00000200,
++	TPM2_PT_STARTUP_CLEAR		= 0x00000201,
 +};
 +
- enum tis_int_flags {
- 	TPM_GLOBAL_INT_ENABLE = 0x80000000,
- 	TPM_INTF_BURST_COUNT_STATIC = 0x100,
-@@ -70,6 +75,7 @@ enum tis_defaults {
- #define	TPM_INT_STATUS(l)		(0x0010 | ((l) << 12))
- #define	TPM_INTF_CAPS(l)		(0x0014 | ((l) << 12))
- #define	TPM_STS(l)			(0x0018 | ((l) << 12))
-+#define	TPM_STS3(l)			(0x001b | ((l) << 12))
- #define	TPM_DATA_FIFO(l)		(0x0024 | ((l) << 12))
++enum tpm2_pt_startup_clear {
++	TPM2_PT_SC_SH_ENABLE	= BIT(1),
++	TPM2_PT_SC_EH_ENABLE	= BIT(2),
++};
++
++enum tpm2_pt_permanent {
++	TPM2_PT_PM_OWNER_AUTH_SET	= BIT(0),
++	TPM2_PT_PM_ENDORSEMENT_AUTH_SET	= BIT(1),
++};
++
+ enum tpm2_startup_types {
+ 	TPM2_SU_CLEAR	= 0x0000,
+ 	TPM2_SU_STATE	= 0x0001,
+@@ -381,6 +399,7 @@ struct tpm_cmd_t {
+ extern struct class *tpm_class;
+ extern dev_t tpm_devt;
+ extern struct attribute *tpm_dev_attrs[];
++extern struct attribute *tpm2_dev_attrs[];
  
- #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
-@@ -344,6 +350,7 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
- {
+ ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
+ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+diff --git a/drivers/char/tpm/tpm2-sysfs.c b/drivers/char/tpm/tpm2-sysfs.c
+new file mode 100644
+index 0000000..9e5e2e3
+--- /dev/null
++++ b/drivers/char/tpm/tpm2-sysfs.c
+@@ -0,0 +1,152 @@
++/*
++ * Copyright (C) 2014 Intel Corporation
++ *
++ * Authors:
++ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
++ *
++ * TPM2 sysfs attributes
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ *
++ */
++#include <linux/device.h>
++#include <linux/slab.h>
++#include "tpm.h"
++
++static ssize_t sh_enabled_show(struct device *dev, struct device_attribute *attr,
++		     char *buf)
++{
++	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
++	u32 value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_STARTUP_CLEAR, &value,
++			     "could not retrieve STARTUP_CLEAR property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", (value & TPM2_PT_SC_SH_ENABLE) > 0);
++	return rc;
++}
++static DEVICE_ATTR_RO(sh_enabled);
++
++static ssize_t sh_owned_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
++	u32 value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_PERMANENT, &value,
++			     "could not retrieve PERMANENT property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", (value & TPM2_PT_PM_OWNER_AUTH_SET) > 0);
++	return rc;
++}
++static DEVICE_ATTR_RO(sh_owned);
++
++static ssize_t eh_enabled_show(struct device *dev, struct device_attribute *attr,
++		     char *buf)
++{
++	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
++	u32 value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_STARTUP_CLEAR, &value,
++			     "could not retrieve STARTUP_CLEAR property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", (value & TPM2_PT_SC_EH_ENABLE) > 0);
++	return rc;
++}
++static DEVICE_ATTR_RO(eh_enabled);
++
++static ssize_t eh_owned_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
++	u32 value;
++	ssize_t rc;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_PERMANENT, &value,
++			     "could not retrieve PERMANENT property");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", (value & TPM2_PT_PM_ENDORSEMENT_AUTH_SET) > 0);
++	return rc;
++}
++static DEVICE_ATTR_RO(eh_owned);
++
++static ssize_t manufacturer_show(struct device *dev,
++				 struct device_attribute *attr,
++				 char *buf)
++{
++	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
++	u32 manufacturer;
++	ssize_t rc;
++	char *str = buf;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_MANUFACTURER, (u32 *) &manufacturer,
++			     "could not retrieve MANUFACTURER property");
++	if (rc)
++		return 0;
++
++	str += sprintf(str, "0x%08x\n", be32_to_cpu(manufacturer));
++
++	return str - buf;
++}
++static DEVICE_ATTR_RO(manufacturer);
++
++static ssize_t firmware_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
++	u32 firmware1;
++	u32 firmware2;
++	ssize_t rc;
++	char *str = buf;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_FIRMWARE_VERSION_1, (u32 *) &firmware1,
++			     "could not retrieve FIRMWARE_VERSION_1 property");
++	if (rc)
++		return 0;
++
++	rc = tpm2_get_tpm_pt(chip, TPM2_PT_FIRMWARE_VERSION_2, (u32 *) &firmware2,
++			     "could not retrieve FIRMWARE_VERSION_2 property");
++	if (rc)
++		return 0;
++
++	str += sprintf(str, "0x%08x.0x%08x\n", firmware1, firmware2);
++
++	return str - buf;
++}
++static DEVICE_ATTR_RO(firmware);
++
++static ssize_t family_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
++{
++	char *str = buf;
++
++	str += sprintf(str, "2.0\n");
++
++	return str - buf;
++}
++static DEVICE_ATTR_RO(family);
++
++struct attribute *tpm2_dev_attrs[] = {
++	&dev_attr_sh_enabled.attr,
++	&dev_attr_sh_owned.attr,
++	&dev_attr_eh_enabled.attr,
++	&dev_attr_eh_owned.attr,
++	&dev_attr_manufacturer.attr,
++	&dev_attr_firmware.attr,
++	&dev_attr_family.attr,
++	NULL,
++};
+diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
+index e36f637..c9b95c0 100644
+--- a/drivers/char/tpm/tpm_crb.c
++++ b/drivers/char/tpm/tpm_crb.c
+@@ -167,7 +167,7 @@ static int crb_send(struct tpm_chip *chip, u8 *buf, size_t len)
+ 	cca = priv->cca;
+ 
+ 	if (len > le32_to_cpu(cca->cmd_size)) {
+-		dev_err(chip->dev,
++		dev_err(&chip->dev,
+ 			"invalid command count value %x %zx\n",
+ 			(unsigned int) len,
+ 			(size_t) le32_to_cpu(cca->cmd_size));
+@@ -198,7 +198,7 @@ static void crb_cancel(struct tpm_chip *chip)
+ 	wmb();
+ 
+ 	if (crb_do_acpi_start(chip))
+-		dev_err(chip->dev, "ACPI Start failed\n");
++		dev_err(&chip->dev, "ACPI Start failed\n");
+ 
+ 	cca->cancel = 0;
+ }
+@@ -231,24 +231,22 @@ static int crb_acpi_add(struct acpi_device *device)
  	int rc;
- 	u32 ordinal;
-+	unsigned long dur;
  
- 	rc = tpm_tis_send_data(chip, buf, len);
- 	if (rc < 0)
-@@ -355,9 +362,14 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+ 	chip = tpmm_chip_alloc(dev, &tpm_crb);
+-	if (IS_ERR(chip)) {
+-		dev_err(dev, "allocating chip failed\n");
++	if (IS_ERR(chip))
+ 		return PTR_ERR(chip);
+-	}
  
- 	if (chip->vendor.irq) {
- 		ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
-+
-+		if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+			dur = tpm_calc_ordinal_duration(chip, ordinal);
-+		else
-+			dur = tpm_calc_ordinal_duration(chip, ordinal);
-+
- 		if (wait_for_tpm_stat
--		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
--		     tpm_calc_ordinal_duration(chip, ordinal),
-+		    (chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID, dur,
- 		     &chip->vendor.read_queue, false) < 0) {
- 			rc = -ETIME;
- 			goto out_err;
-@@ -543,6 +555,7 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
- 	struct tpm_chip *chip;
-+	u8 sts3;
+ 	chip->flags = TPM_CHIP_FLAG_TPM2;
  
- 	chip = tpmm_chip_alloc(dev, &tpm_tis);
- 	if (IS_ERR(chip))
-@@ -554,11 +567,28 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
- 	if (!chip->vendor.iobase)
- 		return -EIO;
- 
-+	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
-+	if (sts3 & TPM_STS3_TPM2_FAM)
-+		chip->flags = TPM_CHIP_FLAG_TPM2;
-+
- 	/* Default timeouts */
--	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
--	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
--	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
--	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-+		chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
-+		chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
-+		chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
-+		chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
-+		chip->vendor.duration[TPM_SHORT] =
-+			usecs_to_jiffies(TPM2_DURATION_SHORT);
-+		chip->vendor.duration[TPM_MEDIUM] =
-+			usecs_to_jiffies(TPM2_DURATION_MEDIUM);
-+		chip->vendor.duration[TPM_LONG] =
-+			usecs_to_jiffies(TPM2_DURATION_LONG);
-+	} else {
-+		chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+		chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
-+		chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+		chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	}
- 
- 	if (wait_startup(chip, 0) != 0) {
- 		rc = -ENODEV;
-@@ -573,8 +603,8 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
- 	vendor = ioread32(chip->vendor.iobase + TPM_DID_VID(0));
- 	chip->vendor.manufacturer_id = vendor;
- 
--	dev_info(dev,
--		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
-+	dev_info(dev, "%s TPM (device-id 0x%X, rev-id %d)\n",
-+		 (chip->flags & TPM_CHIP_FLAG_TPM2) ? "2.0" : "1.2",
- 		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
- 
- 	if (!itpm) {
-@@ -616,13 +646,17 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
- 		dev_dbg(dev, "\tData Avail Int Support\n");
- 
- 	/* get the timeouts before testing for irqs */
--	if (tpm_get_timeouts(chip)) {
-+	if (!(chip->flags & TPM_CHIP_FLAG_TPM2) && tpm_get_timeouts(chip)) {
- 		dev_err(dev, "Could not get TPM timeouts and durations\n");
- 		rc = -ENODEV;
- 		goto out_err;
+ 	status = acpi_get_table(ACPI_SIG_TPM2, 1,
+ 				(struct acpi_table_header **) &buf);
+ 	if (ACPI_FAILURE(status)) {
+-		dev_err(dev, "could not get TPM2 ACPI table\n");
++		dev_err(dev, "failed to get TPM2 ACPI table\n");
+ 		return -ENODEV;
  	}
  
--	if (tpm_do_selftest(chip)) {
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		rc = tpm2_do_selftest(chip);
-+	else
-+		rc = tpm_do_selftest(chip);
-+	if (rc) {
- 		dev_err(dev, "TPM self test failed\n");
- 		rc = -ENODEV;
- 		goto out_err;
-@@ -683,7 +717,10 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
- 			chip->vendor.probed_irq = 0;
+ 	priv = (struct crb_priv *) devm_kzalloc(dev, sizeof(struct crb_priv),
+ 						GFP_KERNEL);
+ 	if (!priv) {
+-		dev_err(dev, "allocating memory failed\n");
++		dev_err(dev, "failed to devm_kzalloc for private data\n");
+ 		return -ENOMEM;
+ 	}
  
- 			/* Generate Interrupts */
--			tpm_gen_interrupt(chip);
-+			if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+				tpm2_gen_interrupt(chip);
-+			else
-+				tpm_gen_interrupt(chip);
+@@ -285,16 +283,12 @@ static int crb_acpi_add(struct acpi_device *device)
+ 	chip->acpi_dev_handle = device->handle;
  
- 			chip->vendor.irq = chip->vendor.probed_irq;
+ 	rc = tpm2_do_selftest(chip);
+-	if (rc) {
+-		dev_err(dev, "self-test failed\n");
++	if (rc)
+ 		return rc;
+-	}
  
-@@ -759,14 +796,18 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
- static int tpm_tis_resume(struct device *dev)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
--	int ret;
-+	int ret = 0;
+ 	rc = tpm_chip_register(chip);
+-	if (rc) {
+-		dev_err(dev, "registering the chip failed\n");
++	if (rc)
+ 		return rc;
+-	}
  
- 	if (chip->vendor.irq)
- 		tpm_tis_reenable_interrupts(chip);
- 
--	ret = tpm_pm_resume(dev);
--	if (!ret)
--		tpm_do_selftest(chip);
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		tpm2_do_selftest(chip);
-+	else {
-+		ret = tpm_pm_resume(dev);
-+		if (!ret)
-+			tpm_do_selftest(chip);
-+	}
- 
- 	return ret;
+ 	return 0;
  }
 -- 
 2.1.0
