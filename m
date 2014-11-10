@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398AbaKJPPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:15:05 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:44260 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753173AbaKJPOm (ORCPT
+	id S1753414AbaKJPPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:15:22 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:59365 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850AbaKJPPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:14:42 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/3] ARM: at91: sama5d4: Add SFR
-Date: Mon, 10 Nov 2014 16:14:31 +0100
-Message-Id: <1415632471-14672-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415632471-14672-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1415632471-14672-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 10 Nov 2014 10:15:18 -0500
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] misc: Remove unused subdirectory
+Date: Mon, 10 Nov 2014 16:09:56 +0100
+Message-Id: <1415632196-13516-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sama4d4 has Special Function Registers that allow to manage DDR, OHCI, EBI
-and AIC interrupt redirection.
+From: Thierry Reding <treding@nvidia.com>
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Commit 783c8f4c8445 ("soc/tegra: Add efuse driver for Tegra") added a
+fuse directory in drivers/misc along with a Makefile that were never
+used. They were leftovers from an earlier version of the patch series.
+
+Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- arch/arm/boot/dts/sama5d4.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/misc/fuse/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
+ delete mode 100644 drivers/misc/fuse/Makefile
 
-diff --git a/arch/arm/boot/dts/sama5d4.dtsi b/arch/arm/boot/dts/sama5d4.dtsi
-index e0157b0f075c..580486b056fc 100644
---- a/arch/arm/boot/dts/sama5d4.dtsi
-+++ b/arch/arm/boot/dts/sama5d4.dtsi
-@@ -826,6 +826,11 @@
- 				status = "disabled";
- 			};
- 
-+			sfr: sfr@f8028000 {
-+				compatible = "atmel,sama5d4-sfr", "syscon";
-+				reg = <0xf0038000 0x4000>;
-+			};
-+
- 			mmc1: mmc@fc000000 {
- 				compatible = "atmel,hsmci";
- 				reg = <0xfc000000 0x600>;
+diff --git a/drivers/misc/fuse/Makefile b/drivers/misc/fuse/Makefile
+deleted file mode 100644
+index 0679c4febc89..000000000000
+--- a/drivers/misc/fuse/Makefile
++++ /dev/null
+@@ -1 +0,0 @@
+-obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
 -- 
-2.1.0
+2.1.3
 
