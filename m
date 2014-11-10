@@ -1,133 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaKJJ05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:26:57 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:56550 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaKJJ0x (ORCPT
+	id S1752433AbaKJJ2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:28:33 -0500
+Received: from lhrrgout.huawei.com ([194.213.3.17]:11649 "EHLO
+	lhrrgout.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaKJJ2c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:26:53 -0500
-Date: Mon, 10 Nov 2014 09:26:45 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Vignesh R <vigneshr@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Brad Griffis <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 3/5] mfd: ti_am335x_tscadc: Remove unwanted reg_se_cache
- save
-Message-ID: <20141110092645.GE21424@x1>
-References: <1415339350-17679-1-git-send-email-vigneshr@ti.com>
- <1415339350-17679-4-git-send-email-vigneshr@ti.com>
- <20141110091527.GD21424@x1>
+	Mon, 10 Nov 2014 04:28:32 -0500
+From: Frediano Ziglio <frediano.ziglio@huawei.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Frediano Ziglio <freddy77@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>
+Subject: RE: [Xen-devel] [PATCH] xen/arm: Return correct code error for
+ xen_swiotlb_map_page
+Thread-Topic: [Xen-devel] [PATCH] xen/arm: Return correct code error for
+ xen_swiotlb_map_page
+Thread-Index: AQHP+eQybFi0WqSOD0+2fx6E4sVCLJxT2xKAgAAaXQCAAAKpgIABRwSAgARd4YA=
+Date: Mon, 10 Nov 2014 09:27:49 +0000
+Message-ID: <B944B469BF5302468AC6EB05E56CC70D17E083@lhreml509-mbb>
+References: <1415293651-13917-1-git-send-email-frediano.ziglio@huawei.com>
+ <alpine.DEB.2.02.1411061730240.22875@kaball.uk.xensource.com>
+ <CAHt6W4cDvgK=jdkMot5E4COoC=3aeZn8vPxiR5K5XS53g=+FXA@mail.gmail.com>
+ <alpine.DEB.2.02.1411061914440.22875@kaball.uk.xensource.com>
+ <20141107144517.GA13259@laptop.dumpdata.com>
+In-Reply-To: <20141107144517.GA13259@laptop.dumpdata.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.47.68.131]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141110091527.GD21424@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014, Lee Jones wrote:
-
-> On Fri, 07 Nov 2014, Vignesh R wrote:
+> On Thu, Nov 06, 2014 at 07:14:51PM +0000, Stefano Stabellini wrote:
+> > On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> > > 2014-11-06 17:30 GMT+00:00 Stefano Stabellini
+> <stefano.stabellini@eu.citrix.com>:
+> > >       On Thu, 6 Nov 2014, Frediano Ziglio wrote:
+> > >       > On ARM error code is not 0 so avoid to return it as error.
+> > >       >
+> > >       > Signed-off-by: Frediano Ziglio <frediano.ziglio@huawei.com>
+> > >
+> > >       Acked-by: Stefano Stabellini
+> > > <stefano.stabellini@eu.citrix.com>
+> > >
+> > >
+> > >       Could you please fix the same error in lib/swiotlb.c too
+> please?
+> > >
+> > >
+> > > Same patch or another ?
+> > >
+> >
+> > Another
 > 
-> > In one shot mode, sequencer automatically disables all enabled steps at
-> > the end of each cycle. (both ADC steps and TSC steps) Hence these steps
-> > need not be saved in reg_se_cache for clearing these steps at a later
-> > stage.
-> > Also, when ADC wakes up Sequencer should not be busy executing any of the
-> > config steps except for the charge step. Previously charge step was 1 ADC
-> > clock cycle and hence it was ignored.
-> > 
-> > Signed-off-by: Vignesh R <vigneshr@ti.com>
-> > ---
-> >  drivers/mfd/ti_am335x_tscadc.c       | 7 +++++--
-> >  include/linux/mfd/ti_am335x_tscadc.h | 1 +
-> >  2 files changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> > index d877e777cce6..94ef8992f46b 100644
-> > --- a/drivers/mfd/ti_am335x_tscadc.c
-> > +++ b/drivers/mfd/ti_am335x_tscadc.c
-> > @@ -86,8 +86,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
-> >  		spin_lock_irq(&tsadc->reg_lock);
-> >  		finish_wait(&tsadc->reg_se_wait, &wait);
-> >  
-> > +		/*
-> > +		 * Sequencer should either be idle or
-> > +		 * busy applying the charge step.
-> > +		 */
-> >  		reg = tscadc_readl(tsadc, REG_ADCFSM);
-> > -		WARN_ON(reg & SEQ_STATUS);
-> > +		WARN_ON(reg & SEQ_STATUS & (!CHARGE_STEP));
+> It might break the build. Please double-check that it does not affect
+> ia64.
+> >
+
+Code in lin/swiotlb.c does not require any changes as the error value is completely different here (is the pa address of a static allocated buffer). On ia64 the constant I used in my previous patch is 0 so it produce the same assembly code.
+
+Frediano
+
+> > >
+> > >       >  drivers/xen/swiotlb-xen.c | 2 +-
+> > >       >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >       >
+> > >       > diff --git a/drivers/xen/swiotlb-xen.c
+> b/drivers/xen/swiotlb-xen.c
+> > >       > index ebd8f21..3b8d628 100644
+> > >       > --- a/drivers/xen/swiotlb-xen.c
+> > >       > +++ b/drivers/xen/swiotlb-xen.c
+> > >       > @@ -425,7 +425,7 @@ dma_addr_t xen_swiotlb_map_page(struct
+> device *dev, struct page *page,
+> > >       >        */
+> > >       >       if (!dma_capable(dev, dev_addr, size)) {
+> > >       >               swiotlb_tbl_unmap_single(dev, map, size, dir);
+> > >       > -             dev_addr = 0;
+> > >       > +             dev_addr = DMA_ERROR_CODE;
 > 
-> This is almost certainly not correct.
+> That looks Ok to me.
 > 
-> Please take another look at the logic.
+> > >       >       }
+> > >       >       return dev_addr;
+> > >       >  }
+> > >       > --
+> > >       > 1.9.1
+> > >       >
+> > >       >
+> > >       > --
+> > >       > To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> > >       > the body of a message to majordomo@vger.kernel.org
+> > >       > More majordomo info at  http://vger.kernel.org/majordomo-
+> info.html
+> > >       > Please read the FAQ at http://secure-
+> web.cisco.com/1cvjROyUxV6SnA0uBTMRubqrQWsaXGhps-
+> FWjY3vly9AxaKKlt2DPY7GjL0FCHeP4rsbjKsc-P4zH2_7-kpcxwEH-udGrGCCq
+> > >       kCLlH1-fLOo1X6Nlui6EwEVHUpB2r7gt-
+> Gsgxbep9QWPnIdypDPNf8Hf5clxCMXYcvWsOK5s3qg/http%3A%2F%2Fwww.tux.org%2Fl
+> kml%2F
+> > >       >
+> > >
+> > >       _______________________________________________
+> > >       Xen-devel mailing list
+> > >       Xen-devel@lists.xen.org
+> > >       http://lists.xen.org/xen-devel
+> > >
+> > >
+> > >
+> > >
 > 
-> I'm _assuming_ you mean (reg & SEQ_STATUS && !CHARGE_STEP).
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
 
-So I just saw that CHARGE_STEP is actually the new macro below.
-
-So you're currently ANDing these together.
-
-xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx  reg
-00000000 00000000 00000000 00100000  #define SEQ_STATUS   BIT(5)
-00000000 00000000 00000000 00010001  #define CHARGE_STEP  0x11
-
-... which will always equate to 0.
-
-> >  		tsadc->adc_waiting = false;
-> >  	}
-> >  	tsadc->adc_in_use = true;
-> > @@ -96,7 +100,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
-> >  void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
-> >  {
-> >  	spin_lock_irq(&tsadc->reg_lock);
-> > -	tsadc->reg_se_cache |= val;
-
-Didn't you add this line a little over 1 month ago?
-
-Why the change of heart?
-
-> >  	am335x_tscadc_need_adc(tsadc);
-> >  
-> >  	tscadc_writel(tsadc, REG_SE, val);
-> > diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> > index c99be5dc0f5c..fcce182e4a35 100644
-> > --- a/include/linux/mfd/ti_am335x_tscadc.h
-> > +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> > @@ -128,6 +128,7 @@
-> >  
-> >  /* Sequencer Status */
-> >  #define SEQ_STATUS BIT(5)
-> > +#define CHARGE_STEP		0x11
-> >  
-> >  #define ADC_CLK			3000000
-> >  #define TOTAL_STEPS		16
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
