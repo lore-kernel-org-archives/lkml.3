@@ -1,134 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaKJRC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:02:29 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:44922 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752244AbaKJRC1 (ORCPT
+	id S1753532AbaKJRCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:02:41 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:39047 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244AbaKJRCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:02:27 -0500
-Date: Mon, 10 Nov 2014 18:02:22 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
-        linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v5 10/10] [media] v4l: Forbid usage of V4L2_MBUS_FMT
- definitions inside the kernel
-Message-ID: <20141110180222.39508a63@bbrezillon>
-In-Reply-To: <54609CDF.8030303@xs4all.nl>
-References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1415461632-31236-1-git-send-email-boris.brezillon@free-electrons.com>
-	<54609CDF.8030303@xs4all.nl>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 10 Nov 2014 12:02:39 -0500
+Message-ID: <1415638955.9613.4.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [Xen-devel] BUG in xennet_make_frags with paged skb data
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Zoltan Kiss <zoltan.kiss@linaro.org>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Date: Mon, 10 Nov 2014 09:02:35 -0800
+In-Reply-To: <5460EAF1.5020903@citrix.com>
+References: <20141106214940.GD44162@ubuntu-hedt>
+	 <545CA27F.4070400@citrix.com>	<20141110143517.GA74005@ubuntu-hedt>
+	 <5460CEA5.3070201@citrix.com> <5460EA45.2080202@linaro.org>
+	 <5460EAF1.5020903@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014 12:09:19 +0100
-Hans Verkuil <hverkuil@xs4all.nl> wrote:
-
-> On 11/08/2014 04:47 PM, Boris Brezillon wrote:
-> > Place v4l2_mbus_pixelcode in a #ifndef __KERNEL__ section so that kernel
-> > users don't have access to these definitions.
+On Mon, 2014-11-10 at 16:42 +0000, David Vrabel wrote:
+> On 10/11/14 16:39, Zoltan Kiss wrote:
 > > 
-> > We have to keep this definition for user-space users even though they're
-> > encouraged to move to the new media_bus_format enum.
+> > The BUG_ON suggested by Stefan would be still reasonable:
 > > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-> > ---
-> >  include/uapi/linux/v4l2-mediabus.h | 45 ++++++++++++++++++++++++--------------
-> >  1 file changed, 28 insertions(+), 17 deletions(-)
-> > 
-> > diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
-> > index d712df8..5c9410d 100644
-> > --- a/include/uapi/linux/v4l2-mediabus.h
-> > +++ b/include/uapi/linux/v4l2-mediabus.h
-> > @@ -15,6 +15,33 @@
-> >  #include <linux/types.h>
-> >  #include <linux/videodev2.h>
-> >  
-> > +/**
-> > + * struct v4l2_mbus_framefmt - frame format on the media bus
-> > + * @width:	frame width
-> > + * @height:	frame height
-> > + * @code:	data format code (from enum v4l2_mbus_pixelcode)
-> > + * @field:	used interlacing type (from enum v4l2_field)
-> > + * @colorspace:	colorspace of the data (from enum v4l2_colorspace)
-> > + */
-> > +struct v4l2_mbus_framefmt {
-> > +	__u32			width;
-> > +	__u32			height;
-> > +	__u32			code;
-> > +	__u32			field;
-> > +	__u32			colorspace;
-> > +	__u32			reserved[7];
-> > +};
-> > +
-> > +#ifndef __KERNEL__
-> > +/*
-> > + * enum v4l2_mbus_pixelcode and its definitions are now deprecated, and
-> > + * MEDIA_BUS_FMT_ definitions (defined in media-bus-format.h) should be
-> > + * used instead.
-> > + *
-> > + * New defines should only be added to media-bus-format.h. The
-> > + * v4l2_mbus_pixelcode enum is frozen.
-> > + */
-> > +
-> >  #define V4L2_MBUS_FROM_MEDIA_BUS_FMT(name)	\
-> >  	MEDIA_BUS_FMT_ ## name = V4L2_MBUS_FMT_ ## name
+> > BUG_ON(((page-compound_head(page))*PAGE_SIZE)+offset+len >
+> > PAGE_SIZE<<compound_order(compound_head(page)));
 > 
-> Shouldn't this be the other way around?
-> 
->   	V4L2_MBUS_FMT_ ## name = MEDIA_BUS_FMT_ ## name
+> Well, it wouldn't trigger but I don't think it is useful any more.
 
-Argh! Absolutely, I'll fix that.
+Right.
 
-> 
-> Regards,
-> 
-> 	Hans
-> 
-> >  
-> > @@ -102,22 +129,6 @@ enum v4l2_mbus_pixelcode {
-> >  
-> >  	V4L2_MBUS_FROM_MEDIA_BUS_FMT(AHSV8888_1X32),
-> >  };
-> > -
-> > -/**
-> > - * struct v4l2_mbus_framefmt - frame format on the media bus
-> > - * @width:	frame width
-> > - * @height:	frame height
-> > - * @code:	data format code (from enum v4l2_mbus_pixelcode)
-> > - * @field:	used interlacing type (from enum v4l2_field)
-> > - * @colorspace:	colorspace of the data (from enum v4l2_colorspace)
-> > - */
-> > -struct v4l2_mbus_framefmt {
-> > -	__u32			width;
-> > -	__u32			height;
-> > -	__u32			code;
-> > -	__u32			field;
-> > -	__u32			colorspace;
-> > -	__u32			reserved[7];
-> > -};
-> > +#endif /* __KERNEL__ */
-> >  
-> >  #endif
-> > 
-> 
+This BUG_ON() does not make sense (its current implementation is
+assuming a very precise layout anyway)
+
+If we really wanted some debugging, we would need something more generic
+and done in core networking stack, not in a particular driver.
 
 
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
