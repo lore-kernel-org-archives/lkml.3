@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaKJVQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:16:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:46715 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473AbaKJVQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:16:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,355,1413270000"; 
-   d="scan'208";a="620185094"
-From: kan.liang@intel.com
-To: acme@kernel.org, jolsa@redhat.com, namhyung@kernel.org
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V2 2/3] perf tool:perf diff support for different binaries
-Date: Mon, 10 Nov 2014 16:01:19 -0500
-Message-Id: <1415653280-1374-3-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1415653280-1374-1-git-send-email-kan.liang@intel.com>
-References: <1415653280-1374-1-git-send-email-kan.liang@intel.com>
+	id S1753042AbaKJVQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:16:27 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:51421 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019AbaKJVQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 16:16:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <54606AF7.8070506@amd.com>
+References: <1415471865-1893-1-git-send-email-oded.gabbay@amd.com>
+	<CAPM=9tyej9J13U0c+-DH-EYw_4JJQbiQM98QREZQLz4PPj+FmQ@mail.gmail.com>
+	<54606AF7.8070506@amd.com>
+Date: Tue, 11 Nov 2014 07:16:23 +1000
+Message-ID: <CAPM=9tyTcgiFqg+DyjzLX82_TV5Pa7wbN0Z_40rfLL5cWT_XKA@mail.gmail.com>
+Subject: Re: [PATCH v5 00/24] AMDKFD Kernel Driver
+From: Dave Airlie <airlied@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+>> How does amdkfd interfact with runtime pm on the radeon driver? I'd expect
+>> some calls to the runtime get/put functions in some places.
+>>
+>> Dave.
+>>
+> Hi Dave,
+> Per Jerome's request from the first time he saw the driver, we removed all
+> the "register bashing" code from amdkfd and moved them to the interface file
+> between amdkfd and radeon, which is part of the radeon driver.
+> See "[PATCH v5 05/24] drm/radeon: Add radeon <--> amdkfd interface" for the
+> implementation of that interface file.
 
-Currently, the perf diff only works with same binaries. That's because
-it compares the symbol start address. It doesn't work if the perf.data
-comes from different binaries. This patch matches the function names.
+So in GPU offload mode, how does amdkfd wake the GPU up to execute
+stuff?
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/util/sort.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+GPU offload is where the radeon GPU is a secondary GPU and we power it
+down automatically.
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9402885..ee235ab 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1430,6 +1430,15 @@ int sort_dimension__add(const char *tok)
- 			sort__has_parent = 1;
- 		} else if (sd->entry == &sort_sym) {
- 			sort__has_sym = 1;
-+			/*
-+			 * perf diff displays the performance difference amongst
-+			 * two or more perf.data files. Those files could come from
-+			 * different binaries. So we should not compare their ips.
-+			 * The name of symble should be the key we do compare.
-+			 */
-+			if (sort__mode == SORT_MODE__DIFF)
-+				sd->entry->se_collapse = sort__sym_sort;
-+
- 		} else if (sd->entry == &sort_dso) {
- 			sort__has_dso = 1;
- 		}
--- 
-1.8.3.2
+Granted I think our powerdown should probably check if the GPU is executing
+anything a bit more, but I don't think amdkfd can even wake it up to submit
+work at the moment.
 
+Dave.
