@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaKJSuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 13:50:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:23071 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaKJSuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 13:50:23 -0500
-Message-ID: <5461091E.6090708@oracle.com>
-Date: Mon, 10 Nov 2014 10:51:10 -0800
-From: "santosh.shilimkar@oracle.com" <santosh.shilimkar@oracle.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751622AbaKJSyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 13:54:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41912 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228AbaKJSyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 13:54:04 -0500
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>, ssantosh@kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, khilman@linaro.org
-CC: linux-pm@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v4 0/2] ARM: keystone: pm: switch to use generic pm domains
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <5460D601.70504@ti.com>
-In-Reply-To: <5460D601.70504@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
+References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
+Date: Mon, 10 Nov 2014 10:54:00 -0800
+Message-ID: <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
+Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
+From: Kevin Hilman <khilman@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>,
+        Frank Rowand <frowand.list@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/14 7:13 AM, Grygorii Strashko wrote:
-> Hi Santosh,
+On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> We rely on probe order of this driver to determine the line number for
+> the uart port. This makes it impossible to know the line number
+> when these devices are populated via DT. Use the DT alias
+> mechanism to assign the line based on the aliases node.
 >
-> On 11/10/2014 04:59 PM, Grygorii Strashko wrote:
->> Hi Santosh, Kevin,
->>
->> This series switches Keystone 2 PM code to use Generic PM domains
->> instead of PM clock domains because of the lack of DT support
->> for the last.
->> It will finally allow to enable Runtime PM for Keystone 2.
->>
->> This series based on top
->>
->> Changes in v4:
->>    - changes for Generic clock manipulation PM callbacks (clock_ops.c)
->>      were separated in standalone series [3] and Keystone 2 specific
->>      patches were rebased on top of it.
->
-> I've just found that prerequisite patches have been taken by Rafael in linux-pm.git/linux-next,
-> first two patches from series:
->   "[PATCH v4 0/3] PM / clock_ops: add pm_clk_add_clk()"
->   https://lkml.org/lkml/2014/11/6/319
->
-> Thanks a lot Rafael.
->
-> So, if no complains, this series is ready.
->
-Thanks for the note and good to see the series is converged. To avoid
-dependency issues, I will merge them immediately after the upcoming
-merge window. Meanwhile please continue to sort out any outstanding
-comments/concerns like the one you are discussing with Arnd.
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-regards,
-Santosh
+FYI... this patch hit linux-next and caused multiple boot failures on
+qcom platforms[1] as of next-20141110.  I'm assuming this is because
+the corresponding DTS changes have not hit linux-next yet.
+
+Kevin
+
+[1] http://status.armcloud.us/boot/?qcom
