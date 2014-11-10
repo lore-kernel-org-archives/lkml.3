@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773AbaKJQTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:19:19 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:12530 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756AbaKJQTO (ORCPT
+	id S1753805AbaKJQTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:19:45 -0500
+Received: from resqmta-ch2-06v.sys.comcast.net ([69.252.207.38]:56456 "EHLO
+	resqmta-ch2-06v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753788AbaKJQTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:19:14 -0500
-X-IronPort-AV: E=Sophos;i="5.07,353,1413244800"; 
-   d="scan'208";a="191239981"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 12/13] swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
-Date: Mon, 10 Nov 2014 16:14:04 +0000
-Message-ID: <1415636045-24669-12-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+	Mon, 10 Nov 2014 11:19:43 -0500
+Date: Mon, 10 Nov 2014 10:19:39 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qti.qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
+In-Reply-To: <CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1411100959390.6094@gentwo.org>
+References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org> <alpine.DEB.2.11.1411012313320.5308@nanos> <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
+ <CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
-handle as argument, not a physical address.
+On Mon, 10 Nov 2014, Viresh Kumar wrote:
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/swiotlb-xen.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> On 6 November 2014 22:54, Christoph Lameter <cl@linux.com> wrote:
+>
+> > We did not need to housekeeper in the dynticks idle case. What is so
+> > different about dynticks busy?
+>
+> We do have a running task here and so the stats are important..
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 3725ee4..498b654 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -449,7 +449,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
- 
- 	BUG_ON(dir == DMA_NONE);
- 
--	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-+	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
- 
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr)) {
-@@ -497,14 +497,14 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	if (target == SYNC_FOR_CPU)
--		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-+		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
- 
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr))
- 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
- 
- 	if (target == SYNC_FOR_DEVICE)
--		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-+		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
- 
- 	if (dir != DMA_FROM_DEVICE)
- 		return;
--- 
-1.7.10.4
+The task is running in user space only and if there is any important
+kernel action the tick will be coming on. Stats are not that important and
+predictable I would say.
+
+We could add stuff to the vmstat kworker thread to check for activity that
+requires updates.
+
+> > I may not have the complete picture of the timer tick processing in my
+> > mind these days (it has been a lots of years since I did any work there
+> > after all) but as far as my arguably simplistic reading of the code goes I
+> > do not see why a housekeeper would be needed there. The load is constant
+> > and known in the dynticks busy case as it is in the dynticks idle case.
+>
+> I tried to initiate a thread on similar stuff, might be helpful:
+>
+> https://lkml.org/lkml/2014/5/22/131
+
+Hmmm... yes that is interesting. I agree that the process should be
+exempted from load balancing since the idea of NOHZ is to lower OS noise
+and load balancing would add significant amounts of noise.
+
+NUMA balancing is also a source of noise and so we should have that off by
+default as well.
 
