@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaKJUX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:23:26 -0500
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:13936 "EHLO
+	id S1752602AbaKJUXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:23:41 -0500
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:12858 "EHLO
 	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751827AbaKJUXM (ORCPT
+	by vger.kernel.org with ESMTP id S1751759AbaKJUXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:23:12 -0500
+	Mon, 10 Nov 2014 15:23:11 -0500
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtsNAMAdYVRXQ4qy/2dsb2JhbABcgw6BLbgoBQF0miwCgScXAQEBAQF9hAMBBScvIxBROR4ZiEUBvRyPfwEBAQEGIoY6ilsHFoQ1BZ4llmCDezwvgksBAQE
+X-IronPort-Anti-Spam-Result: AtsNAMAdYVRXQ4qy/2dsb2JhbABcgw6BLbgoBQF0miwCgScXAQEBAQF9hAMBBScvIxBROR4ZiEUBvRyPfwEBAQEGIoY6ilsHFoQ1BZ4ljQOJXYN7PC+CSwEBAQ
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Joe Perches <joe@perches.com>, Jens Axboe <axboe@kernel.dk>,
         Fabian Frederick <fabf@skynet.be>
-Subject: [PATCH v2 09/10 linux-next] cdrom: remove unnecessary status
-Date: Mon, 10 Nov 2014 21:21:54 +0100
-Message-Id: <1415650916-9975-10-git-send-email-fabf@skynet.be>
+Subject: [PATCH v2 08/10 linux-next] cdrom: fix init_cdrom_command in dvd_do_auth
+Date: Mon, 10 Nov 2014 21:21:53 +0100
+Message-Id: <1415650916-9975-9-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415650916-9975-1-git-send-email-fabf@skynet.be>
 References: <1415650916-9975-1-git-send-email-fabf@skynet.be>
@@ -24,8 +24,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cdrom_number_of_slots returns nslots and doesn't need status
-variable. Just remove it and test cdrom_read_mech_status().
+Remove memset 0 (init_cdrom_command already does it)
+and send sizeof(buf) instead of 0 for buffer size.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
@@ -33,26 +33,19 @@ Signed-off-by: Fabian Frederick <fabf@skynet.be>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index d397591..9a6fa8f 100644
+index 9b08f91..d397591 100644
 --- a/drivers/cdrom/cdrom.c
 +++ b/drivers/cdrom/cdrom.c
-@@ -1343,7 +1343,6 @@ out_free:
-  */
- int cdrom_number_of_slots(struct cdrom_device_info *cdi) 
- {
--	int status;
- 	int nslots = 1;
- 	struct cdrom_changer_info *info;
+@@ -1639,8 +1639,7 @@ static int dvd_do_auth(struct cdrom_device_info *cdi, dvd_authinfo *ai)
+ 	struct cdrom_device_ops *cdo = cdi->ops;
+ 	rpc_state_t rpc_state;
  
-@@ -1355,7 +1354,7 @@ int cdrom_number_of_slots(struct cdrom_device_info *cdi)
- 	if (!info)
- 		return -ENOMEM;
+-	memset(buf, 0, sizeof(buf));
+-	init_cdrom_command(&cgc, buf, 0, CGC_DATA_READ);
++	init_cdrom_command(&cgc, buf, sizeof(buf), CGC_DATA_READ);
  
--	if ((status = cdrom_read_mech_status(cdi, info)) == 0)
-+	if (!cdrom_read_mech_status(cdi, info))
- 		nslots = info->hdr.nslots;
- 
- 	kfree(info);
+ 	switch (ai->type) {
+ 	/* LU data send */
 -- 
 1.9.1
 
