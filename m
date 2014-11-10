@@ -1,50 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaKJIdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 03:33:52 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36345 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaKJIdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 03:33:51 -0500
-Date: Mon, 10 Nov 2014 09:33:48 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>
-Subject: Re: [PATCH v6 00/48] kernel: Add support for power-off handler call
- chain
-Message-ID: <20141110083347.GA29543@amd>
-References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
+	id S1752144AbaKJIem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 03:34:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15601 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751861AbaKJIek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 03:34:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,351,1413270000"; 
+   d="scan'208";a="634323712"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Sam Protsenko <semen.protsenko@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+Subject: RE: [PATCH v2 3/3] efi: Capsule update with user helper interface
+Thread-Topic: [PATCH v2 3/3] efi: Capsule update with user helper interface
+Thread-Index: AQHP9+iuHUs9oVBcgkKjHBOxgX5ANZxPaE0AgACL8cD//4fqAIAAgjoAgAAK9YCAAAv/gIAAD3kAgANofuD//8DLgIAGNTzQ
+Date: Mon, 10 Nov 2014 08:31:56 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B851058@PGSMSX102.gar.corp.intel.com>
+References: <1414984030-13859-1-git-send-email-hock.leong.kweh@intel.com>
+ <1414984030-13859-4-git-send-email-hock.leong.kweh@intel.com>
+ <20141104043247.GA23418@kroah.com>
+ <CALCETrXjJju+cMWJfB6W5kSD=Ox5y+Hj_AfmbbbOTOh8CV8eaQ@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80EAE4@PGSMSX102.gar.corp.intel.com>
+ <CALCETrU2wk_FdcD6E+oMcp-tF97zN7f+w7q5rfPWBaNKrrmxVg@mail.gmail.com>
+ <1415110688.26277.36.camel@mfleming-mobl1.ger.corp.intel.com>
+ <CALCETrW1UaOCcb-32SOUhi_Zh5vLzV+VwyffThVvso23z04SHA@mail.gmail.com>
+ <20141104154017.GA28113@kroah.com>
+ <CALCETrV6M5D4iPjxPwNkMWTfVYDf3wSuZ9P23miUSR-jMGRyvg@mail.gmail.com>
+ <F54AEECA5E2B9541821D670476DAE19C2B80F3A9@PGSMSX102.gar.corp.intel.com>
+ <CALCETrUi0ssZbOpHyVmh6jx68Oj=0h4BwfM0uLio8Qbaeu9gJw@mail.gmail.com>
+In-Reply-To: <CALCETrUi0ssZbOpHyVmh6jx68Oj=0h4BwfM0uLio8Qbaeu9gJw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAA8YlaJ027460
 
-Hi!
+> -----Original Message-----
+> From: Andy Lutomirski [mailto:luto@amacapital.net]
+> > #!/bin/sh
+> >
+> > old=$(cat
+> > /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+> >
+> > for arg in "$@"
+> > do
+> >         if [ -f $arg ]
+> >         then
+> >                 echo 1 > /sys/class/firmware/efi-capsule-file/loading
+> >                 cat $arg > /sys/class/firmware/efi-capsule-file/data
+> >                 echo 0 > /sys/class/firmware/efi-capsule-file/loading
+> 
+> I think you have a race.  Try putting msleep(1000) after the
+> request_firmware_nowait call, and I bet this will fail on the second try.
 
-> Introduce a system power-off handler call chain to solve the described
-> problems.  This call chain is expected to be executed from the architecture
-> specific machine_power_off() function.  Drivers providing system power-off
-> functionality are expected to register with this call chain.  By using the
-> priority field in the notifier block, callers can control power-off
-> handler
+Sorry for the late response. I don't really catch the race condition that
+you are referring? Are you trying to tell that the user script could run faster
+before the previous callback function actually end? Will such scenario happen?
+In the callback function, after the request_firmware_nowait(), I don't have
+any codes will delay the callback function to end. Besides, there is a mutex_lock
+protecting the request_firmware_nowait() calling. Won't that take care of the
+issue?
 
-Linus rather disliked the idea of notifier chains for this... And I
-don't see how it got addressed.
+> 
+> >
+> >                 oldtime=$(date +%S)
+> >                 oldtime=$(((time + 2) % 60))
+> >                 until [ -f /sys/class/firmware/efi-capsule-file/loading ]
+> >                 do
+> >                         newtime=$(date +%S)
+> >                         if [ $newtime -eq $oldtime ]
+> >                         then
+> >                                 break
+> >                         fi
+> >                 done
+> >
+> >                 old=$((old + 1))
+> >                 new=$(cat
+> > /sys/devices/platform/efi_capsule_user_helper/capsule_loaded)
+> 
+> I think that firmware_class doesn't call the callback until after loading is closed
+> for the second time.  If so, then this is racy.  Try inserting msleep(1000) at the
+> beginning of your callback and uploading a capsule that should load
+> successfully -- this will report failure, but a future upload may get very
+> confused. Also, what does the firmware class do when simultaneous
+> uploads of the same file with different contents are in flight?  Is that possible?
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Sorry again, I can't really catch you on this race condition statement. Are you
+trying to tell if user is doing this:
+
+echo 1 > /sys/class/firmware/efi-capsule-file/loading
+cat capsule1 > /sys/class/firmware/efi-capsule-file/data
+cat capsule2 > /sys/class/firmware/efi-capsule-file/data
+echo 0 > /sys/class/firmware/efi-capsule-file/loading
+
+If so, capsule2 will be the one we will obtain in the callback function.
+
+
+Regards,
+Wilson
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
