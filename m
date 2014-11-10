@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaKIXza (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 18:55:30 -0500
-Received: from ozlabs.org ([103.22.144.67]:42015 "EHLO ozlabs.org"
+	id S1751545AbaKJAJW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 19:09:22 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:59778 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689AbaKIXz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 18:55:28 -0500
-Date: Mon, 10 Nov 2014 10:55:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-ID: <20141110105520.79a01c90@canb.auug.org.au>
-In-Reply-To: <20141106112359.GJ26297@ulmo>
-References: <20141106193618.461c3ae7@canb.auug.org.au>
-	<20141106112359.GJ26297@ulmo>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751268AbaKJAJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 19:09:20 -0500
+Date: Mon, 10 Nov 2014 00:09:15 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm radeon and i915 fixes
+Message-ID: <alpine.DEB.2.00.1411100007470.5288@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/votWREneJCcvUWwtDkQ_MHZ"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/votWREneJCcvUWwtDkQ_MHZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Thierry,
+Hi Linus,
 
-On Thu, 6 Nov 2014 12:24:00 +0100 Thierry Reding <thierry.reding@gmail.com>=
- wrote:
->
-> I fixed this using the attached patch.
+I probably should have sent these earlier, but nothing too urgent in them,
+i915, blackscreen and corruption fixes
+radeon, oops, locking and stability.
 
-I will apply this to linux-next today (unless Andrew beats me to it).
+Dave.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The following changes since commit ed78bb846e8bc1a8589fa6e0d9bf2b0f518893d5:
 
---Sig_/votWREneJCcvUWwtDkQ_MHZ
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+  Merge tag 'pci-v3.18-fixes-2' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci (2014-11-06 11:33:06 -0800)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+are available in the git repository at:
 
-iQIcBAEBCAAGBQJUX/7tAAoJEMDTa8Ir7ZwVRYYQAJItnr9qaCAmwIFCYOdH6nZo
-xiwMknY8f8pEXRkLYRdtRzpqq2o8fHpJ69mlfE6DGqHv6tBYMQKud/96UIc5SGgD
-GYZRZSX54EumwfPr+DbY7MHwlr0skJNiDrVULBfWYkGir+sQP8kq3jMuptuZPXjO
-nJFkHTiqhwPhzZkoBcNqHuXmstztQHWZ8pIM0bPVPXxW62o+Dn7POXAMG6TuFmXD
-gGlox4QT55R9GKwnKK93CKpIbiksCzMiptyI970E3v8nBfcgLQAp+4Fp+UpT0x8H
-mcaQoTBFFguzX72euwxou4A+YCE1pPS5Utw8gAl63pwLt9yv4TgMXKfcwXMBe5Vs
-SS5isAit/bMxeJtNdBr0qfXm7Wp3A8eXFvhH9mWakvOB7a6KMXfA/M1h/oK7mYpH
-P1pZqlns/adCg1UVBauWeNVDwJg0gpzBdP3FerYLPTjOmYE2NfnEmtdddUhI0EOb
-GuLvMslTEuk+w3NOj+mLiK19ZbLey5Xx/muTYgo1BNMHMIY46fGhRMeiBwnUvVzG
-3zGzjXpnaUhFmY+z1WQmSRKijlkjLa5b36iXWRudmV/hVcw3zz3mdQv8t6SZ2Eku
-m4DzKi1lc4Ey4gJydawFUFWht7DpuAp9rlMICHG9Ei4zItA6sfCSM5WZZXw1M35y
-e38V8Sq+vu1WzH1rLuRa
-=V+hn
------END PGP SIGNATURE-----
 
---Sig_/votWREneJCcvUWwtDkQ_MHZ--
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 03dca708521d30153fc5c7e2ff136f780a7372c9:
+
+  Merge tag 'drm-intel-fixes-2014-11-07' of git://anongit.freedesktop.org/drm-intel into drm-fixes (2014-11-10 10:05:37 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (3):
+      drm/radeon: make sure mode init is complete in bandwidth_update
+      drm/radeon: use gart for DMA IB tests
+      drm/radeon: add missing crtc unlock when setting up the MC
+
+Dave Airlie (2):
+      Merge branch 'drm-fixes-3.18' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge tag 'drm-intel-fixes-2014-11-07' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+
+Imre Deak (1):
+      drm/i915: vlv: fix gunit HW state corruption during S4 suspend
+
+Jammy Zhou (1):
+      drm/radeon: set correct CE ram size for CIK
+
+Jani Nikula (1):
+      drm/i915: safeguard against too high minimum brightness
+
+Rodrigo Vivi (1):
+      drm/i915: Disable caches for Global GTT.
+
+ drivers/gpu/drm/i915/i915_drv.c     | 10 ++++++++++
+ drivers/gpu/drm/i915/i915_gem_gtt.c | 16 ++++++++++++++++
+ drivers/gpu/drm/i915/intel_panel.c  | 17 +++++++++++++++--
+ drivers/gpu/drm/radeon/cik.c        |  7 +++++--
+ drivers/gpu/drm/radeon/cik_sdma.c   | 21 ++++++++++++---------
+ drivers/gpu/drm/radeon/evergreen.c  |  4 ++++
+ drivers/gpu/drm/radeon/r100.c       |  3 +++
+ drivers/gpu/drm/radeon/r600_dma.c   | 20 ++++++++++----------
+ drivers/gpu/drm/radeon/rs600.c      |  3 +++
+ drivers/gpu/drm/radeon/rs690.c      |  3 +++
+ drivers/gpu/drm/radeon/rv515.c      |  3 +++
+ drivers/gpu/drm/radeon/si.c         |  3 +++
+ 12 files changed, 87 insertions(+), 23 deletions(-)
