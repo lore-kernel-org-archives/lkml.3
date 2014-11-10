@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaKJHVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:21:16 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:59290 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993AbaKJHT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752095AbaKJHT4 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Nov 2014 02:19:56 -0500
-X-AuditID: cbfee68f-f791c6d000004834-1b-546067144acd
+Received: from mailout1.samsung.com ([203.254.224.24]:61609 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaKJHTw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 02:19:52 -0500
+X-AuditID: cbfee68f-f791c6d000004834-1e-54606715bfb5
 From: Beomho Seo <beomho.seo@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         devicetree@vger.kernel.org
 Cc: cw00.choi@samsung.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, Beomho Seo <beomho.seo@samsung.com>
-Subject: [PATCH v2 0/5] mfd: rt5033: Add Richtek RT5033 drivers
-Date: Mon, 10 Nov 2014 16:19:42 +0900
-Message-id: <1415603987-32475-1-git-send-email-beomho.seo@samsung.com>
+        sw0312.kim@samsung.com, Beomho Seo <beomho.seo@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jone@linaro.org>
+Subject: [PATCH v2 1/5] mfd: rt5033: Add Richtek RT5033 driver core.
+Date: Mon, 10 Nov 2014 16:19:43 +0900
+Message-id: <1415603987-32475-2-git-send-email-beomho.seo@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsWyRsSkUFc0PSHE4Px0JovTn7axW1z/8pzV
-	Yv6Rc6wWfya0sllMuj+BxeLyrjlsFp97jzBazJj8ks2Bw6NvyypGj8+b5AKYorhsUlJzMstS
-	i/TtErgy1vRPZCr4L1ixZHlEA2MTbxcjJ4eEgInEvPfv2CBsMYkL99aD2UICSxklNh7IhanZ
-	u7qFqYuRCyi+iFHi+M5WFginjUni86XLTCBVbAKaEu+nXGEBsUUEIiTOLpsFVsQs0M4o8W5m
-	CztIQljAXqJpzRrGLkYODhYBVYmFc/xAwrwCbhKzTp5nBglLCChIzJlkA9IqIfCZTWJV01tG
-	kBoWAQGJb5MPsUDUyEpsOsAMcZykxMEVN1gmMAouYGRYxSiaWpBcUJyUXmSsV5yYW1yal66X
-	nJ+7iREYnqf/PevfwXj3gPUhRgEORiUeXo8v8SFCrIllxZW5hxhNgTZMZJYSTc4HRkFeSbyh
-	sZmRhamJqbGRuaWZkjjvQqmfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYt9y7/m5W6R+m
-	lLo3AUbic+p37p7fbtT8NH5ZBmPHnjNWJ/dcfhqsE/dD0HFNfYDFdv/XR+ojGbK096081fh+
-	/+kbaxxDVn2abNrFzP/oifqnmWWrb4a26TyoXWi1ulDOv/ixdqW0a92ap9E82btdwves3vb6
-	/J3rfYf0WS7PMtP26rpo/kv7uRJLcUaioRZzUXEiAHnjBBxKAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xgK5IekKIwfkr5hanP21jt7j+5Tmr
-	xfwj51gt/kxoZbOYdH8Ci8XlXXPYLD73HmG0mDH5JZsDh0ffllWMHp83yQUwRTUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZqzpn8hU8F+wYsnyiAbGJt4uRk4OCQETib2r
-	W5ggbDGJC/fWs3UxcnEICSxilDi+s5UFwmljkvh86TJYFZuApsT7KVdYQGwRgQiJs8tmgRUx
-	C7QzSryb2cIOkhAWsJdoWrOGsYuRg4NFQFVi4Rw/kDCvgJvErJPnmUHCEgIKEnMm2Uxg5F7A
-	yLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzj8n0ntYFzZYHGIUYCDUYmH1+FtfIgQa2JZ
-	cWXuIUYJDmYlEd7a/0Ah3pTEyqrUovz4otKc1OJDjKZAuycyS4km5wNjM68k3tDYxMzI0sjc
-	0MLI2FxJnPdAq3WgkEB6YklqdmpqQWoRTB8TB6dUA2Pjs4nTF8f8Xa/rZTRrlqhyVffDvfEe
-	+owPomf7nH9YYhqyfI3jhvRXpe8/XP8ww/Z1lRS75rWMGU+n7lzcGFvwTiujWaOea/7PpohH
-	63PY5tn1LVuwOcL0cczPcG3PkDldsWu/vLFPl3mnlPv/N/Occ5fLLi2d7CHMwcI+z27Ojg1P
-	Xq8VYI1TYinOSDTUYi4qTgQAL3dFapUCAAA=
+In-reply-to: <1415603987-32475-1-git-send-email-beomho.seo@samsung.com>
+References: <1415603987-32475-1-git-send-email-beomho.seo@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsWyRsSkSFc0PSHE4MwcbovTn7axW1z/8pzV
+	Yv6Rc6wWfya0sllMuj+BxeL9njOMFpd3zWGz+Nx7hNHidDerxYzJL9kcuDzuXNvD5jHvZKBH
+	35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZezZPpO94F8TY8Wli7/ZGxh/53QxcnJICJhIPG88
+	wgRhi0lcuLeerYuRi0NIYCmjRNvGmYwwRW8P/WOCSCxilFi28gMrhNPGJPH50mWwdjYBTYn3
+	U66wgNgiAhESZ5fNYgEpYha4wCjx/NsSoCIODmEBF4kjU7hBalgEVCV+T5sH1ssr4CbxZ9ZV
+	sBIJAQWJOZNsQMKcAu4St2fuYAOxhYBKrs78CXadhMAqdomPfVfYIeYISHybfIgFoldWYtMB
+	ZoijJSUOrrjBMoFReAEjwypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MwMA//e9Z/w7Guwes
+	DzEKcDAq8fB6fIkPEWJNLCuuzD3EaAq0YSKzlGhyPjC+8kriDY3NjCxMTUyNjcwtzZTEeRdK
+	/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwOg1U/Z+zoF0i5A9sZYWoSvbj3ovFvjjKvBD
+	6KuP3B6FEOcZcyLqOEL+v3urxzdt7Wdn1p2nTSZb6J9dZsEde7bQpdLcIG/S96fr7yZ9O6la
+	ymx7lyfzYvg/U90Fq39fWiBTKbqXT5GXl/OszfuydXMeTko7JyuQPueupYNtn1vM3YywC5Ec
+	lUosxRmJhlrMRcWJAL7p2JZ3AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t9jAV2R9IQQgwtXbSxOf9rGbnH9y3NW
+	i/lHzrFa/JnQymYx6f4EFov3e84wWlzeNYfN4nPvEUaL092sFjMmv2Rz4PK4c20Pm8e8k4Ee
+	fVtWMXp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
+	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFjz/aZ7AX/
+	mhgrLl38zd7A+Duni5GTQ0LAROLtoX9MELaYxIV769m6GLk4hAQWMUosW/mBFcJpY5L4fOky
+	WBWbgKbE+ylXWEBsEYEIibPLZrGAFDELXGCUeP5tCVARB4ewgIvEkSncIDUsAqoSv6fNA+vl
+	FXCT+DPrKliJhICCxJxJNiBhTgF3idszd7CB2EJAJVdn/mSbwMi7gJFhFaNoakFyQXFSeq6R
+	XnFibnFpXrpecn7uJkZwXD2T3sG4qsHiEKMAB6MSD6/D2/gQIdbEsuLK3EOMEhzMSiK8tf+B
+	QrwpiZVVqUX58UWlOanFhxhNgY6ayCwlmpwPjPm8knhDYxMzI0sjc0MLI2NzJXHeg63WgUIC
+	6YklqdmpqQWpRTB9TBycUg2MKSfv91R0n3mwf631p9xZIfwJbdcW8hqL3Yr98raML6zlv9K2
+	c2yzeff+2PXoUO+FhhLOR/+qe+rklUp+nLuzwNakflf+L16F+IS7+Uez/Zh26882OX41JKNN
+	8+Cfj3mijNLhoVfE8iuvvqt+3Gswlc3Jh6FNVfvEpSeCjxwnvlU7W3nugTerEktxRqKhFnNR
+	cSIAupkccsECAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -47,51 +52,550 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- This patchset adds driver for Richtek rt5033 chip The chip contains
-switching charge mode Li-Ion/Li-Polymer battery charger, fuelgauge, regulators.
-This patchset provides common support for accessing the device.
-This patchset have been tested base on exynos board.
+This patch adds a new driver for Richtek RT5033 driver.
+RT5033 is a Multifunction device which includes battery charger, fuel gauge,
+flash LED current source, LDO and synchronous Buck converter. It is interfaced
+to host controller using I2C interface.
 
-Changes in v2:
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jone@linaro.org>
+Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+Changes in v2
 - Remove volatile_reg callback. Because this driver not in use regmap cache.
-- Remove unnecessary subnode of_compatible.
-- Add definde for set high impedance mode of charger.
-- Remove unnecessary device specific code.
-- Fix wrong register name.
-- Fix wrong error message.
-- Fix return vallue at error case.
-- Revise binding documentation.
+- Revmoe unnecessary subnode of_compatible.
+- Add define for set_high impedance mode of charger.
+---
 
-Beomho Seo (5):
-  mfd: rt5033: Add Richtek RT5033 driver core.
-  regulator: rt5033: Add RT5033 Regulator device driver
-  power: rt5033_battery: Add RT5033 Fuel gauge device driver
-  power: rt5033_charger: Add RT5033 charger device driver
-  Documentation: Add documentation for rt5033 multifunction device
-
- Documentation/devicetree/bindings/mfd/rt5033.txt   |  108 +++++
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- drivers/mfd/Kconfig                                |   11 +
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/rt5033.c                               |  156 +++++++
- drivers/power/Kconfig                              |   16 +
- drivers/power/Makefile                             |    2 +
- drivers/power/rt5033_battery.c                     |  177 +++++++
- drivers/power/rt5033_charger.c                     |  485 ++++++++++++++++++++
- drivers/regulator/Kconfig                          |    8 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/rt5033-regulator.c               |  123 +++++
- include/linux/mfd/rt5033-private.h                 |  260 +++++++++++
- include/linux/mfd/rt5033.h                         |   64 +++
- 14 files changed, 1413 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+ drivers/mfd/Kconfig                |   11 ++
+ drivers/mfd/Makefile               |    1 +
+ drivers/mfd/rt5033.c               |  142 ++++++++++++++++++++
+ include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rt5033.h         |   64 +++++++++
+ 5 files changed, 478 insertions(+)
  create mode 100644 drivers/mfd/rt5033.c
- create mode 100644 drivers/power/rt5033_battery.c
- create mode 100644 drivers/power/rt5033_charger.c
- create mode 100644 drivers/regulator/rt5033-regulator.c
  create mode 100644 include/linux/mfd/rt5033-private.h
  create mode 100644 include/linux/mfd/rt5033.h
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index cbdb109..6800068 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -607,6 +607,17 @@ config MFD_RTSX_PCI
+ 	  types of memory cards, such as Memory Stick, Memory Stick Pro,
+ 	  Secure Digital and MultiMediaCard.
+ 
++config MFD_RT5033
++	bool "Richtek RT5033 Power Management IC"
++	depends on I2C=y
++	select MFD_CORE
++	select REGMAP_I2C
++	help
++	  This support for Richtek RT5033 Power Management IC. This includes
++	  the I2C driver and the Core APIs. This driver provides common support
++	  for accessing the device. The device supports multiple sub-devices
++	  like charger, fuel gauge, flash LED, current source, LDO and Buck.
++
+ config MFD_RTSX_USB
+ 	tristate "Realtek USB card reader"
+ 	depends on USB
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 8e679d6..94e0f1c 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -175,6 +175,7 @@ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+ obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+ obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+ obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
++obj-$(CONFIG_MFD_RT5033)	+= rt5033.o
+ 
+ intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+ obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+diff --git a/drivers/mfd/rt5033.c b/drivers/mfd/rt5033.c
+new file mode 100644
+index 0000000..8f5aee0
+--- /dev/null
++++ b/drivers/mfd/rt5033.c
+@@ -0,0 +1,142 @@
++/*
++ * MFD core driver for the Richtek RT5033.
++ *
++ * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
++ * Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
++
++#include <linux/err.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/of_device.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/rt5033.h>
++#include <linux/mfd/rt5033-private.h>
++
++static const struct regmap_irq rt5033_irqs[] = {
++	{ .mask = RT5033_PMIC_IRQ_BUCKOCP, },
++	{ .mask = RT5033_PMIC_IRQ_BUCKLV, },
++	{ .mask = RT5033_PMIC_IRQ_SAFELDOLV, },
++	{ .mask = RT5033_PMIC_IRQ_LDOLV, },
++	{ .mask = RT5033_PMIC_IRQ_OT, },
++	{ .mask = RT5033_PMIC_IRQ_VDDA_UV, },
++};
++
++static const struct regmap_irq_chip rt5033_irq_chip = {
++	.name		= "rt5033",
++	.status_base	= RT5033_REG_PMIC_IRQ_STAT,
++	.mask_base	= RT5033_REG_PMIC_IRQ_CTRL,
++	.mask_invert	= true,
++	.num_regs	= 1,
++	.irqs		= rt5033_irqs,
++	.num_irqs	= ARRAY_SIZE(rt5033_irqs),
++};
++
++static const struct mfd_cell rt5033_devs[] = {
++	{
++		.name = "rt5033-regulator",
++	}, {
++		.name = "rt5033-charger",
++		.of_compatible = "richtek,rt5033-charger",
++	}, {
++		.name = "rt5033-battery",
++		.of_compatible = "richtek,rt5033-battery",
++	},
++};
++
++static const struct of_device_id rt5033_dt_match[] = {
++	{ .compatible = "richtek,rt5033", },
++	{ }
++};
++
++static const struct regmap_config rt5033_regmap_config = {
++	.reg_bits	= 8,
++	.val_bits	= 8,
++	.max_register	= RT5033_REG_END,
++};
++
++static int rt5033_i2c_probe(struct i2c_client *i2c,
++				const struct i2c_device_id *id)
++{
++	struct rt5033_dev *rt5033;
++	unsigned int data;
++	int ret = 0;
++
++	rt5033 = devm_kzalloc(&i2c->dev, sizeof(*rt5033), GFP_KERNEL);
++	if (!rt5033)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, rt5033);
++	rt5033->dev = &i2c->dev;
++	rt5033->i2c = i2c;
++	rt5033->irq = i2c->irq;
++	rt5033->wakeup = 1;
++
++	rt5033->regmap = devm_regmap_init_i2c(i2c, &rt5033_regmap_config);
++	if (IS_ERR(rt5033->regmap)) {
++		dev_err(&i2c->dev, "Failed to allocate register map.\n");
++		return PTR_ERR(rt5033->regmap);
++	}
++
++	ret = regmap_read(rt5033->regmap, RT5033_REG_DEVICE_ID, &data);
++	if (ret < 0) {
++		dev_err(&i2c->dev, "Device not found\n");
++		return -ENODEV;
++	}
++	dev_info(&i2c->dev, "Device found Device ID: %04x\n", data);
++
++	ret = regmap_add_irq_chip(rt5033->regmap, rt5033->irq,
++			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++			0, &rt5033_irq_chip, &rt5033->irq_data);
++	if (ret < 0) {
++		dev_err(&i2c->dev, "Failed to request IRQ %d: %d\n",
++							rt5033->irq, ret);
++		return ret;
++	}
++
++	ret = mfd_add_devices(rt5033->dev, -1, rt5033_devs,
++			ARRAY_SIZE(rt5033_devs), NULL, 0,
++			regmap_irq_get_domain(rt5033->irq_data));
++	if (ret < 0) {
++		dev_err(&i2c->dev, "Failed to add rt5033 mfd device.\n");
++		return ret;
++	}
++
++	device_init_wakeup(rt5033->dev, rt5033->wakeup);
++
++	return 0;
++}
++
++static int rt5033_i2c_remove(struct i2c_client *i2c)
++{
++	struct rt5033_dev *rt5033 = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(rt5033->dev);
++
++	return 0;
++}
++
++static const struct i2c_device_id rt5033_i2c_id[] = {
++	{ "rt5033", },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, rt5033_i2c_id);
++
++static struct i2c_driver rt5033_driver = {
++	.driver = {
++		.name = "rt5033",
++		.of_match_table = rt5033_dt_match,
++	},
++	.probe = rt5033_i2c_probe,
++	.remove = rt5033_i2c_remove,
++	.id_table = rt5033_i2c_id,
++};
++module_i2c_driver(rt5033_driver);
++
++MODULE_DESCRIPTION("Richtek RT5033 multi-function core driver");
++MODULE_AUTHOR("Beomho Seo <beomho.seo@samsung.com>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/rt5033-private.h b/include/linux/mfd/rt5033-private.h
+new file mode 100644
+index 0000000..9eff0e5
+--- /dev/null
++++ b/include/linux/mfd/rt5033-private.h
+@@ -0,0 +1,260 @@
++/*
++ * MFD core driver for Richtek RT5033
++ *
++ * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
++ * Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
++
++#ifndef __RT5033_PRIVATE_H__
++#define __RT5033_PRIVATE_H__
++
++enum rt5033_reg {
++	RT5033_REG_CHG_STAT		= 0x00,
++	RT5033_REG_CHG_CTRL1		= 0x01,
++	RT5033_REG_CHG_CTRL2		= 0x02,
++	RT5033_REG_DEVICE_ID		= 0x03,
++	RT5033_REG_CHG_CTRL3		= 0x04,
++	RT5033_REG_CHG_CTRL4		= 0x05,
++	RT5033_REG_CHG_CTRL5		= 0x06,
++	RT5033_REG_RT_CTRL0		= 0x07,
++	RT5033_REG_CHG_RESET		= 0x08,
++	/* Reserved 0x09~0x18 */
++	RT5033_REG_RT_CTRL1		= 0x19,
++	/* Reserved 0x1A~0x20 */
++	RT5033_REG_FLED_FUNCTION1	= 0x21,
++	RT5033_REG_FLED_FUNCTION2	= 0x22,
++	RT5033_REG_FLED_STROBE_CTRL1	= 0x23,
++	RT5033_REG_FLED_STROBE_CTRL2	= 0x24,
++	RT5033_REG_FLED_CTRL1		= 0x25,
++	RT5033_REG_FLED_CTRL2		= 0x26,
++	RT5033_REG_FLED_CTRL3		= 0x27,
++	RT5033_REG_FLED_CTRL4		= 0x28,
++	RT5033_REG_FLED_CTRL5		= 0x29,
++	/* Reserved 0x2A~0x40 */
++	RT5033_REG_CTRL			= 0x41,
++	RT5033_REG_BUCK_CTRL		= 0x42,
++	RT5033_REG_LDO_CTRL		= 0x43,
++	/* Reserved 0x44~0x46 */
++	RT5033_REG_MANUAL_RESET_CTRL	= 0x47,
++	/* Reserved 0x48~0x5F */
++	RT5033_REG_CHG_IRQ1		= 0x60,
++	RT5033_REG_CHG_IRQ2		= 0x61,
++	RT5033_REG_CHG_IRQ3		= 0x62,
++	RT5033_REG_CHG_IRQ1_CTRL	= 0x63,
++	RT5033_REG_CHG_IRQ2_CTRL	= 0x64,
++	RT5033_REG_CHG_IRQ3_CTRL	= 0x65,
++	RT5033_REG_LED_IRQ_STAT		= 0x66,
++	RT5033_REG_LED_IRQ_CTRL		= 0x67,
++	RT5033_REG_PMIC_IRQ_STAT	= 0x68,
++	RT5033_REG_PMIC_IRQ_CTRL	= 0x69,
++	RT5033_REG_SHDN_CTRL		= 0x6A,
++	RT5033_REG_OFF_EVENT		= 0x6B,
++
++	RT5033_REG_END,
++};
++
++/* RT5033 Charger state register */
++#define RT5033_CHG_STAT_MASK		0x20
++#define RT5033_CHG_STAT_DISCHARGING	0x00
++#define RT5033_CHG_STAT_FULL		0x10
++#define RT5033_CHG_STAT_CHARGING	0x20
++#define RT5033_CHG_STAT_NOT_CHARGING	0x30
++#define RT5033_CHG_STAT_TYPE_MASK	0x60
++#define RT5033_CHG_STAT_TYPE_PRE	0x20
++#define RT5033_CHG_STAT_TYPE_FAST	0x60
++
++/* RT5033 CHGCTRL1 register */
++#define RT5033_CHGCTRL1_IAICR_MASK	0xe0
++#define RT5033_CHGCTRL1_MODE_MASK	0x01
++
++/* RT5033 CHGCTRL2 register */
++#define RT5033_CHGCTRL2_CV_MASK		0xfc
++
++/* RT5033 CHGCTRL3 register */
++#define RT5033_CHGCTRL3_CFO_EN_MASK	0x40
++#define RT5033_CHGCTRL3_TIMER_MASK	0x38
++#define RT5033_CHGCTRL3_TIMER_EN_MASK	0x01
++
++/* RT5033 CHGCTRL4 register */
++#define RT5033_CHGCTRL4_EOC_MASK	0x07
++#define RT5033_CHGCTRL4_IPREC_MASK	0x18
++
++/* RT5033 CHGCTRL5 register */
++#define RT5033_CHGCTRL5_VPREC_MASK	0x0f
++#define RT5033_CHGCTRL5_ICHG_MASK	0xf0
++#define RT5033_CHGCTRL5_ICHG_SHIFT	0x04
++#define RT5033_CHG_MAX_CURRENT		0x0d
++
++/* RT5033 RT CTRL1 register */
++#define RT5033_RT_CTRL1_UUG_MASK	0x02
++#define RT5033_RT_HZ_MASK		0x01
++
++/* RT5033 control register */
++#define RT5033_CTRL_FCCM_BUCK_MASK		0x00
++#define RT5033_CTRL_BUCKOMS_MASK		0x01
++#define RT5033_CTRL_LDOOMS_MASK			0x02
++#define RT5033_CTRL_SLDOOMS_MASK		0x03
++#define RT5033_CTRL_EN_BUCK_MASK		0x04
++#define RT5033_CTRL_EN_LDO_MASK			0x05
++#define RT5033_CTRL_EN_SAFE_LDO_MASK		0x06
++#define RT5033_CTRL_LDO_SLEEP_MASK		0x07
++
++/* RT5033 BUCK control register */
++#define RT5033_BUCK_CTRL_MASK			0x1f
++
++/* RT5033 LDO control register */
++#define RT5033_LDO_CTRL_MASK			0x1f
++
++/* RT5033 charger property - model, manufacturer */
++
++#define RT5033_CHARGER_MODEL	"RT5033WSC Charger"
++#define RT5033_MANUFACTURER	"Richtek Technology Corporation"
++
++/*
++ * RT5033 charger fast-charge current lmits (as in CHGCTRL1 register),
++ * AICR mode limits the input current for example,
++ * the AIRC 100 mode limits the input current to 100 mA.
++ */
++#define RT5033_AICR_100_MODE			0x20
++#define RT5033_AICR_500_MODE			0x40
++#define RT5033_AICR_700_MODE			0x60
++#define RT5033_AICR_900_MODE			0x80
++#define RT5033_AICR_1500_MODE			0xc0
++#define RT5033_AICR_2000_MODE			0xe0
++#define RT5033_AICR_MODE_MASK			0xe0
++
++/* RT5033 use internal timer need to set time */
++#define RT5033_FAST_CHARGE_TIMER4		0x00
++#define RT5033_FAST_CHARGE_TIMER6		0x01
++#define RT5033_FAST_CHARGE_TIMER8		0x02
++#define RT5033_FAST_CHARGE_TIMER9		0x03
++#define RT5033_FAST_CHARGE_TIMER12		0x04
++#define RT5033_FAST_CHARGE_TIMER14		0x05
++#define RT5033_FAST_CHARGE_TIMER16		0x06
++
++#define RT5033_INT_TIMER_ENABLE			0x01
++
++/* RT5033 charger termination enable mask */
++#define RT5033_TE_ENABLE_MASK			0x08
++
++/*
++ * RT5033 charger opa mode. RT50300 have two opa mode charger mode
++ * and boost mode for OTG
++ */
++
++#define RT5033_CHARGER_MODE			0x00
++#define RT5033_BOOST_MODE			0x01
++
++/* RT5033 charger termination enable */
++#define RT5033_TE_ENABLE			0x08
++
++/* RT5033 charger CFO enable */
++#define RT5033_CFO_ENABLE			0x40
++
++/* RT5033 charger constant charge voltage (as in CHGCTRL2 register), uV */
++#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MIN	3650000U
++#define RT5033_CHARGER_CONST_VOLTAGE_STEP_NUM   25000U
++#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MAX	4400000U
++
++/* RT5033 charger pre-charge current limits (as in CHGCTRL4 register), uA */
++#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MIN	350000U
++#define RT5033_CHARGER_PRE_CURRENT_STEP_NUM	100000U
++#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MAX	650000U
++
++/* RT5033 charger fast-charge current (as in CHGCTRL5 register), uA */
++#define RT5033_CHARGER_FAST_CURRENT_MIN		700000U
++#define RT5033_CHARGER_FAST_CURRENT_STEP_NUM	100000U
++#define RT5033_CHARGER_FAST_CURRENT_MAX		2000000U
++
++/*
++ * RT5033 charger const-charge end of charger current (
++ * as in CHGCTRL4 register), uA
++ */
++#define RT5033_CHARGER_EOC_MIN			150000U
++#define RT5033_CHARGER_EOC_REF			300000U
++#define RT5033_CHARGER_EOC_STEP_NUM1		50000U
++#define RT5033_CHARGER_EOC_STEP_NUM2		100000U
++#define RT5033_CHARGER_EOC_MAX			600000U
++
++/*
++ * RT5033 charger pre-charge threshold volt limits
++ * (as in CHGCTRL5 register), uV
++ */
++
++#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MIN	2300000U
++#define RT5033_CHARGER_PRE_THRESHOLD_STEP_NUM	100000U
++#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MAX	3800000U
++
++/*
++ * RT5033 charger enable UUG, If UUG enable MOS auto control by H/W charger
++ * circuit.
++ */
++#define RT5033_CHARGER_UUG_ENABLE		0x02
++
++/* RT5033 charger High impedance mode */
++#define RT5033_CHARGER_HZ_DISABLE		0x00
++#define RT5033_CHARGER_HZ_ENABLE		0x01
++
++/* RT5033 regulator BUCK output voltage uV */
++#define RT5033_REGULATOR_BUCK_VOLTAGE_MIN		1000000U
++#define RT5033_REGULATOR_BUCK_VOLTAGE_MAX		3000000U
++#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP		100000U
++#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP_NUM		32
++
++/* RT5033 regulator LDO output voltage uV */
++#define RT5033_REGULATOR_LDO_VOLTAGE_MIN		1200000U
++#define RT5033_REGULATOR_LDO_VOLTAGE_MAX		3000000U
++#define RT5033_REGULATOR_LDO_VOLTAGE_STEP		100000U
++#define RT5033_REGULATOR_LDO_VOLTAGE_STEP_NUM		32
++
++/* RT5033 regulator SAFE LDO output voltage uV */
++#define RT5033_REGULATOR_SAFE_LDO_VOLTAGE		4900000U
++
++enum rt5033_fuel_reg {
++	RT5033_FUEL_REG_OCV_H		= 0x00,
++	RT5033_FUEL_REG_OCV_L		= 0x01,
++	RT5033_FUEL_REG_VBAT_H		= 0x02,
++	RT5033_FUEL_REG_VBAT_L		= 0x03,
++	RT5033_FUEL_REG_SOC_H		= 0x04,
++	RT5033_FUEL_REG_SOC_L		= 0x05,
++	RT5033_FUEL_REG_CTRL_H		= 0x06,
++	RT5033_FUEL_REG_CTRL_L		= 0x07,
++	RT5033_FUEL_REG_CRATE		= 0x08,
++	RT5033_FUEL_REG_DEVICE_ID	= 0x09,
++	RT5033_FUEL_REG_AVG_VOLT_H	= 0x0A,
++	RT5033_FUEL_REG_AVG_VOLT_L	= 0x0B,
++	RT5033_FUEL_REG_CONFIG_H	= 0x0C,
++	RT5033_FUEL_REG_CONFIG_L	= 0x0D,
++	/* Reserved 0x0E~0x0F */
++	RT5033_FUEL_REG_IRQ_CTRL	= 0x10,
++	RT5033_FUEL_REG_IRQ_FLAG	= 0x11,
++	RT5033_FUEL_VMIN		= 0x12,
++	RT5033_FUEL_SMIN		= 0x13,
++	/* Reserved 0x14~0x1F */
++	RT5033_FUEL_VGCOMP1		= 0x20,
++	RT5033_FUEL_VGCOMP2		= 0x21,
++	RT5033_FUEL_VGCOMP3		= 0x22,
++	RT5033_FUEL_VGCOMP4		= 0x23,
++	/* Reserved 0x24~0xFD */
++	RT5033_FUEL_MFA_H		= 0xFE,
++	RT5033_FUEL_MFA_L		= 0xFF,
++
++	RT5033_FUEL_REG_END,
++};
++
++/* RT5033 fuel gauge battery present property */
++#define RT5033_FUEL_BAT_PRESENT		0x02
++
++/* RT5033 PMIC interrupts */
++#define RT5033_PMIC_IRQ_BUCKOCP		2
++#define RT5033_PMIC_IRQ_BUCKLV		3
++#define RT5033_PMIC_IRQ_SAFELDOLV	4
++#define RT5033_PMIC_IRQ_LDOLV		5
++#define RT5033_PMIC_IRQ_OT		6
++#define RT5033_PMIC_IRQ_VDDA_UV		7
++
++#endif /* __RT5033_PRIVATE_H__ */
+diff --git a/include/linux/mfd/rt5033.h b/include/linux/mfd/rt5033.h
+new file mode 100644
+index 0000000..5fb8ab1
+--- /dev/null
++++ b/include/linux/mfd/rt5033.h
+@@ -0,0 +1,64 @@
++/*
++ * MFD core driver for the RT5033
++ *
++ * Copyright (C) 2014 Samsung Electronics
++ * Beomho Seo <beomho.seo@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published bythe Free Software Foundation.
++ */
++
++#ifndef __RT5033_H__
++#define __RT5033_H__
++
++#include <linux/regulator/consumer.h>
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++#include <linux/power_supply.h>
++
++/* RT5033 regulator IDs */
++enum rt5033_regulators {
++	RT5033_BUCK = 0,
++	RT5033_LDO,
++	RT5033_SAFE_LDO,
++
++	RT5033_REGULATOR_NUM,
++};
++
++struct rt5033_dev {
++	struct device *dev;
++	struct i2c_client *i2c;
++
++	struct regmap *regmap;
++	struct regmap_irq_chip_data *irq_data;
++	int irq;
++	bool wakeup;
++};
++
++struct rt5033_battery {
++	struct i2c_client	*client;
++	struct rt5033_dev	*rt5033;
++	struct regmap		*regmap;
++	struct power_supply	psy;
++};
++
++/* RT5033 charger platform data */
++struct rt5033_charger_data {
++	unsigned int pre_uamp;
++	unsigned int pre_uvolt;
++	unsigned int const_uvolt;
++	unsigned int eoc_uamp;
++	unsigned int fast_uamp;
++};
++
++struct rt5033_charger {
++	struct device		*dev;
++	struct rt5033_dev	*rt5033;
++	struct power_supply	psy;
++
++	struct rt5033_charger_data	*data;
++};
++
++
++#endif /* __RT5033_H__ */
 -- 
 1.7.9.5
 
