@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaKJWMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 17:12:10 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:33746 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaKJWMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 17:12:07 -0500
+	id S1751877AbaKJWRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:17:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34939 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138AbaKJWRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 17:17:31 -0500
+Date: Mon, 10 Nov 2014 23:17:28 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: Chen Yucong <slaoub@gmail.com>, tony.luck@intel.com, ak@linux.intel.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] x86, mce, severity: extend the the mce_severity
+ mechanism to handle UCNA/DEFERRED error
+Message-ID: <20141110221728.GA23419@pd.tnic>
+References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
+ <1415410821-15063-2-git-send-email-slaoub@gmail.com>
+ <546136C8.5060104@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <7hy4riogwt.fsf@deeprootsystems.com>
-References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
- <1415342669-30640-5-git-send-email-cernekee@gmail.com> <7hy4riogwt.fsf@deeprootsystems.com>
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Mon, 10 Nov 2014 14:11:44 -0800
-Message-ID: <CAJiQ=7CYjy-sWc-M3m2Mg8si8JacpDH=RPPm8S-Q4m88wk3Sqg@mail.gmail.com>
-Subject: Re: [PATCH V4 04/14] genirq: Generic chip: Add big endian I/O accessors
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-sh@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        nicolas.ferre@atmel.com, alexandre.belloni@free-electrons.com,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <546136C8.5060104@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 2:00 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> Kevin Cernekee <cernekee@gmail.com> writes:
->
->> Use io{read,write}32be if the caller specified IRQ_GC_BE_IO when creating
->> the irqchip.
->>
->> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
->
-> I bisected a couple ARM boot failures in next-20141110 on atmel sama5 platforms down to
-> this patch, though I'm not quite yet sure how it's causing the failure.
-> I'm not getting any console output, so haven't been able to dig deeper
-> yet.  Maybe the atmel maintainers (Cc'd) can help dig.
->
-> I've confirmed that reverting $SUBJECT patch (commit
-> b79055952badbd73710685643bab44104f2509ea2) on top of next-20141110 gets
-> things booting again.
->
-> Also, it only happens with sama5_defconfig, not with multi_v7_defconfig.
+On Mon, Nov 10, 2014 at 04:06:00PM -0600, Aravind Gopalakrishnan wrote:
+> >+	MCESEV(
+> >+		DEFERRED, "Deferred error",
+> >+		NOSER, MASK(MCI_STATUS_UC|MCI_STATUS_DEFERRED|MCI_STATUS_POISON, MCI_STATUS_DEFERRED)
+> >  		),
+> 
+> We don't need to have MCI_STATUS_POISON in the MASK() here as a deferred
+> error is indicated by a {UC=0, Deferred = 1}
+> (Older docs might be unclear on that..)
 
-In drivers/irqchip/irq-atmel-aic-common.c I see:
+Well, I think that's ok because the MASK() macro actually makes the
+check do:
 
-        ret = irq_alloc_domain_generic_chips(domain, 32, 1, name,
-                                             handle_level_irq, 0, 0,
-                                             IRQCHIP_SKIP_SET_WAKE);
+look at bits MCI_STATUS_UC|MCI_STATUS_DEFERRED|MCI_STATUS_POISON and of
+them three MCI_STATUS_DEFERRED has to be the only one set.
 
-and IRQCHIP_SKIP_SET_WAKE is (1 << 4), same as IRQ_GC_BE_IO.
+And that makes sense - we want deferred errors where we didn't attempt
+to consume poisoned data (which is signalled by MCI_STATUS_POISON)....
 
-Is it possible that the caller is passing values intended for
-irq_chip->flags into a function expecting
-irq_domain_chip_generic->gc_flags ?
+Provided I'm reading this mce_severity thing correct, of course - more
+often than not I don't because it is insanely ugly and hard to read.
+
+> And it still says ADM on the commit message :)
+
+Yeah, Advanced Devices Micro - that's the new name. :-P
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
