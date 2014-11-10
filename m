@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaKJEvu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 23:51:50 -0500
-Received: from ozlabs.org ([103.22.144.67]:43136 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251AbaKJEvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 23:51:48 -0500
-Date: Mon, 10 Nov 2014 15:51:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- sound-asoc tree
-Message-ID: <20141110155142.6c76de7b@canb.auug.org.au>
-In-Reply-To: <20141110043853.GA25797@kroah.com>
-References: <20141110153132.259d49d9@canb.auug.org.au>
-	<20141110043853.GA25797@kroah.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751881AbaKJEwT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 23:52:19 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:61991 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaKJEwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 23:52:18 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Z_SJK+W+TrXiFtOW/h9.Kdc"; protocol="application/pgp-signature"
+In-Reply-To: <1414161563-16812-13-git-send-email-mikko.perttunen@kapsi.fi>
+References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
+	<1414161563-16812-13-git-send-email-mikko.perttunen@kapsi.fi>
+Date: Mon, 10 Nov 2014 10:22:15 +0530
+Message-ID: <CAKohpo=Kdh2vuvSoQBLdWfZJn3xDezpNBjqM389u45_BdizPXQ@mail.gmail.com>
+Subject: Re: [PATCH v5 12/16] cpufreq: tegra: Rename tegra-cpufreq to tegra20-cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>, Vince Hsu <vinceh@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Z_SJK+W+TrXiFtOW/h9.Kdc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Greg,
-
-On Mon, 10 Nov 2014 13:38:53 +0900 Greg KH <greg@kroah.com> wrote:
+On 24 October 2014 20:09, Mikko Perttunen <mikko.perttunen@kapsi.fi> wrote:
+> From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 >
-> On Mon, Nov 10, 2014 at 03:31:32PM +1100, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the driver-core tree got a conflict in
-> > sound/soc/intel/sst-haswell-pcm.c between commit 2e4f75919e5a ("ASoC:
-> > Intel: Add PM support to HSW/BDW PCM driver") from the sound-asoc tree
-> > and commit 3c1af8802e45 ("ASoC: intel: drop owner assignment from
-> > platform_drivers") from the driver-core tree.
-> >=20
-> > I fixed it up (see below) and can carry the fix as necessary (no action
-> > is required).
-> >=20
-> > --=20
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> >=20
-> > diff --cc sound/soc/intel/sst-haswell-pcm.c
-> > index 7eb9afc9b33d,ad21e636edc6..000000000000
-> > --- a/sound/soc/intel/sst-haswell-pcm.c
-> > +++ b/sound/soc/intel/sst-haswell-pcm.c
-> > @@@ -1173,9 -899,6 +1173,8 @@@ static const struct dev_pm_ops hsw_pcm_
-> >   static struct platform_driver hsw_pcm_driver =3D {
-> >   	.driver =3D {
-> >   		.name =3D "haswell-pcm-audio",
-> > - 		.owner =3D THIS_MODULE,
-> >  +		.pm =3D &hsw_pcm_pm,
-> >  +
-> >   	},
-> >  =20
-> >   	.probe =3D hsw_pcm_dev_probe,
->=20
->=20
-> Fix looks good, thanks.
+> The Tegra124 will use a different driver for frequency scaling, so
+> rename the old driver (which handles only Tegra20) appropriately.
+>
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> ---
+>  drivers/cpufreq/Kconfig.arm       |   6 +-
+>  drivers/cpufreq/Makefile          |   2 +-
+>  drivers/cpufreq/tegra-cpufreq.c   | 218 --------------------------------------
+>  drivers/cpufreq/tegra20-cpufreq.c | 218 ++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 222 insertions(+), 222 deletions(-)
+>  delete mode 100644 drivers/cpufreq/tegra-cpufreq.c
+>  create mode 100644 drivers/cpufreq/tegra20-cpufreq.c
 
-I assume that there was a good reason not to farm these patches out to
-their respective maintainers?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/Z_SJK+W+TrXiFtOW/h9.Kdc
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUYERiAAoJEMDTa8Ir7ZwVZR4QAJWbwHVPSv4XDAyNFQFgq2Vx
-qUPkdKM6/H8evJd+ca/IELjVOBFKDMOyfYny/VYaKoaM2cdMHor9rOjvyDL1ffwk
-9hF/m0KUJ7jPck7DPdfVGgV3qUOAr1QzPI0+hZ/KUXAwIAlaAqxJMzY5pNtwNlxJ
-Zci7vKz2UOsx4MdsctTeIX3GnXjFDQXDonADiJnbURBAC0bRMAHFP39lOHTN22lT
-hcnocbQCyNgkqPvVKQ5ddpdZscRdnMTpRPpdzbTCSIxxCevXwRHVR1Wwu08zlwJl
-DvMJCdfz02udg/7eWr0JhUJQuz1VDMpQGDst5iFx+ejTPSJEjVEmUJa56NSbjZb3
-Rr38jdI6wqdf4a90TWmBfLqPeO12/vCADjxDCwOh6z/hvi+zSqLj/Mpa3pDwLDsa
-jXTk0r2Q1BG7TOe6829TqzCSGYNvqcYZaU9+CsQkwm6+dammv4M0Ltq5Tfc55GW3
-oicH8FHOz49xmoqgP06btXdDVrh7kC/uGWo+1rGGhRdjJeDK78vTd9JjY6K+kBCJ
-+lmMtj26/8AgQYn9b9MHPkIsn2LEB8D4eTGHMQ+e9zoNvH2XqeDNSlD3gWccWrtN
-XJKnKAfAvP4w9hbyXCz49DSMf8QIXmlhkfCjMUSL/bg9VG1x2AlUjzV4xGxqEktO
-tCrA2PL4k6hfV1aFRsTf
-=sHK4
------END PGP SIGNATURE-----
-
---Sig_/Z_SJK+W+TrXiFtOW/h9.Kdc--
+Its just not readable enough.. You should have used: git format-patch -C -M
