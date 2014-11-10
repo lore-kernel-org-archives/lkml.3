@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364AbaKJP1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:27:01 -0500
-Received: from smtprelay0019.hostedemail.com ([216.40.44.19]:60295 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752895AbaKJP07 (ORCPT
+	id S1753404AbaKJP2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:28:11 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:34075 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaKJP2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:26:59 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:6120:6261:6691:7808:7903:9389:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357:13894:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sky65_1f870758cc617
-X-Filterd-Recvd-Size: 2498
-Message-ID: <1415633215.8868.4.camel@perches.com>
-Subject: Re: [RFC PATCH net-next] net: Convert LIMIT_NETDEBUG to
- net_dbg_ratelimited
-From: Joe Perches <joe@perches.com>
-To: nicolas.dichtel@6wind.com
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Remi Denis-Courmont <courmisch@gmail.com>
-Date: Mon, 10 Nov 2014 07:26:55 -0800
-In-Reply-To: <5460CB43.4050008@6wind.com>
-References: <1415230929.6634.38.camel@perches.com>
-	 <20141106.151149.1321164537677873976.davem@davemloft.net>
-	 <1415307221.21526.0.camel@perches.com>
-	 <20141108.204202.2273082249078358608.davem@davemloft.net>
-	 <1415560642.23530.43.camel@perches.com> <5460CB43.4050008@6wind.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 10 Nov 2014 10:28:08 -0500
+Date: Mon, 10 Nov 2014 16:28:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: rjw@rjwysocki.net, preeti@linux.vnet.ibm.com, nicolas.pitre@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, lenb@kernel.org
+Subject: Re: [PATCH V3 2/6] sched: idle: cpuidle: Check the latency req
+ before idle
+Message-ID: <20141110152803.GX10501@worktop.programming.kicks-ass.net>
+References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org>
+ <1415370687-18688-3-git-send-email-daniel.lezcano@linaro.org>
+ <20141110124111.GN3337@twins.programming.kicks-ass.net>
+ <5460D5EF.2000805@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5460D5EF.2000805@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 15:27 +0100, Nicolas Dichtel wrote:
-> Le 09/11/2014 20:17, Joe Perches a écrit :
-> > Use the more common dynamic_debug capable net_dbg_ratelimited
-> > and remove the LIMIT_NETDEBUG macro.
-> >
-> > This may have some negative impact on messages that were
-> > emitted at KERN_INFO that are not not enabled at all unless
-> > DEBUG is defined or dynamic_debug is enabled.  Even so,
-> > these messages are now _not_ emitted by default.
-> >
-> > This eliminates the use of the net_msg_warn sysctl
-> > "/proc/sys/net/core/warnings".
-[]
-> > diff --git a/include/net/sock.h b/include/net/sock.h
-[]
-> > @@ -2276,13 +2276,7 @@ bool sk_ns_capable(const struct sock *sk,
-> >   bool sk_capable(const struct sock *sk, int cap);
-> >   bool sk_net_capable(const struct sock *sk, int cap);
-> >
-> > -/*
-> > - *	Enable debug/info messages
-> > - */
-> > -extern int net_msg_warn;
-> > -#define LIMIT_NETDEBUG(fmt, args...) \
-> > -	do { if (net_msg_warn && net_ratelimit()) printk(fmt,##args); } while(0)
-> > -
-> > +extern int net_msg_warn;	/* Unused, but still a sysctl */
-> Why not removing this variable from this header and from net/core/utils.c?
-> Just declaring a static variable in net/core/sysctl_net_core.c should be enough.
-> Am I missing something?
+On Mon, Nov 10, 2014 at 04:12:47PM +0100, Daniel Lezcano wrote:
+> All this is to remove the poll idle state from the x86 cpuidle driver in
+> order to remove the CPUIDLE_DRIVER_STATE_START (this one forces to write
+> always ugly code in the cpuidle framework).
+> 
+> This poll state introduces the CPUIDLE_DRIVER_STATE_START macro. If you look
+> at the different governors and the code, you can checkout what kind of
+> tricks this macro introduces and how that makes the code ugly.
+> 
+> For the sake of what ? Just a small optimization in the menu governor.
+> 
+> I suppose that has been introduce and then evolved on a wrong basis. So now
+> we have to deal with that.
+> 
+> This patchset provides a first round of cleanup around the poll function,
+> the next patchset will move the 5us timer optimization from the menu
+> governor and the last patchset will remove the CPUIDLE_DRIVER_STATE_START
+> ugly macro.
 
-No.  It's reasonable to remove its EXPORT_SYMBOL use too.
+I don't get it, I've clearly not stared at it long enough, but why is
+that STATE_START crap needed anywhere?
 
-First let's see if there are any objections to the removal.
-
-
+To me it appears 'natural' to have a latency_req==0 state, why does it
+need so much special casing?
