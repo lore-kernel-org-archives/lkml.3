@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaKJKsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:48:18 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:56935 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaKJKsQ (ORCPT
+	id S1752411AbaKJKtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:49:36 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:53409 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751928AbaKJKte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:48:16 -0500
-Date: Mon, 10 Nov 2014 10:48:10 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 04/13] ARM: multi_v7_defconfig: Enable st ohci and ehci
- HCD drivers.
-Message-ID: <20141110104810.GS21424@x1>
-References: <1415361475-6218-1-git-send-email-peter.griffin@linaro.org>
- <1415361475-6218-5-git-send-email-peter.griffin@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415361475-6218-5-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Nov 2014 05:49:34 -0500
+Message-ID: <1415616570.4862.37.camel@x220>
+Subject: Re: ARM: sti: SOC_STIH407 and STIH407_RESET?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Peter Griffin <peter.griffin@linaro.org>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Nov 2014 11:49:30 +0100
+In-Reply-To: <54609304.4080209@st.com>
+References: <1415614934.4862.22.camel@x220> <54609304.4080209@st.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Nov 2014 10:49:31.0194 (UTC) FILETIME=[01E2C9A0:01CFFCD4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov 2014, Peter Griffin wrote:
+Hi Maxime,
 
-> Enable the ehci and ohci drivers in the multi_v7_defconfig so that
-> the USB controllers on stih41x work by default.
-> 
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  arch/arm/configs/multi_v7_defconfig | 2 ++
->  1 file changed, 2 insertions(+)
+On Mon, 2014-11-10 at 11:27 +0100, Maxime Coquelin wrote:
+> The STiH407 reset has been merged in Philipp Zabel Reset tree for v3.19:
+> http://git.pengutronix.de/?p=pza/linux.git;a=shortlog;h=refs/heads/reset/for_v3.19
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+That tree isn't part of linux-next, is it? Is it included in a tree that
+itself is included in linux-next, so that it will end up in linux-next
+one of these days?
 
-> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-> index 491b7d5..c7a9517 100644
-> --- a/arch/arm/configs/multi_v7_defconfig
-> +++ b/arch/arm/configs/multi_v7_defconfig
-> @@ -318,9 +318,11 @@ CONFIG_USB_XHCI_HCD=y
->  CONFIG_USB_XHCI_MVEBU=y
->  CONFIG_USB_EHCI_HCD=y
->  CONFIG_USB_EHCI_TEGRA=y
-> +CONFIG_USB_EHCI_HCD_STI=y
->  CONFIG_USB_EHCI_HCD_PLATFORM=y
->  CONFIG_USB_ISP1760_HCD=y
->  CONFIG_USB_OHCI_HCD=y
-> +CONFIG_USB_OHCI_HCD_STI=y
->  CONFIG_USB_OHCI_HCD_PLATFORM=y
->  CONFIG_USB_STORAGE=y
->  CONFIG_USB_CHIPIDEA=y
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Paul Bolle
+
