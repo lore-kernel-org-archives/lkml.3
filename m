@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932AbaKJOFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 09:05:24 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:33728 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541AbaKJOFX (ORCPT
+	id S1753076AbaKJOG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 09:06:59 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:47535 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577AbaKJOG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 09:05:23 -0500
-Date: Mon, 10 Nov 2014 22:05:18 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: crypto: zeroization of sensitive data in af_alg
-Message-ID: <20141110140518.GD8578@gondor.apana.org.au>
-References: <1979092.odOtqL46qU@tachyon.chronox.de>
+	Mon, 10 Nov 2014 09:06:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1979092.odOtqL46qU@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415596626.5769.14.camel@kernel.crashing.org>
+References: <1415342031.4925.27.camel@kernel.crashing.org> <1415342117.4925.29.camel@kernel.crashing.org>
+ <1415596626.5769.14.camel@kernel.crashing.org>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 10 Nov 2014 08:06:35 -0600
+Message-ID: <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com>
+Subject: Re: [RFC] Add of_path property for all devices with a node
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 09, 2014 at 11:33:52PM +0100, Stephan Mueller wrote:
-> 
-> while working on the AF_ALG interface, I saw no active zeroizations of memory 
-> that may hold sensitive data that is maintained outside the kernel crypto API 
-> cipher handles. I think the following memory segments fall under that 
-> category:
+Adding Grant.
 
-Are you talking about temporary data that we generate as part of
-the processing? If so they should be zeroed by the entity that
-generates them.
- 
-> However, I am failing to find the right spot to add a zeroization for the 
-> latter one, i.e. the code that handles the pages send in by the user or the 
-> pages that are returned by the crypto API. Initially I thought 
-> skcipher_pull_sgl is a good spot for the symmetric ciphers as it evicts the 
-> used pages out of the scope of the kernel crypto API. I added a 
-> clear_page(sg_page(sg+1)) as well as memset(sg_page(sg+1), 0, plen) right 
-> before the put_page call. All that I got in return was a BUG() from the memory 
-> management layer.
+On Sun, Nov 9, 2014 at 11:17 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Fri, 2014-11-07 at 17:35 +1100, Benjamin Herrenschmidt wrote:
+>> On Fri, 2014-11-07 at 17:33 +1100, Benjamin Herrenschmidt wrote:
+>>
+>> > So I came up with this patch,
+>>
+>> And here is the actual patch, which might help :-) It's pretty trivial
+>> and small...
+>
+> So not much reactions here .. a bit more on IRC, where Olof suggested
+> that rather than a file containing a path, we could use a symlink since
+> the devtree is now in sysfs, so we can do relative links.
 
-I don't think I understand what exactly you're trying to zero.
-Can you give an example?
++1 on this. That was part of the motivation to move DT into sysfs.
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Rob
+
+> That means keeping the legacy "devspec" files in the few places where
+> they exist, possibly behind a deprecated-default-y config option (though
+> we might never be able to deprecate them...), but there aren't many.
+>
+> Any preference either way ?
+>
+> Cheers,
+> Ben.
+>
+>
