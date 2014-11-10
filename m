@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaKJTFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:05:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49298 "EHLO mx2.suse.de"
+	id S1752426AbaKJTGX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:06:23 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33521 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513AbaKJTFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:05:47 -0500
-Message-ID: <54610C86.9090002@suse.de>
-Date: Mon, 10 Nov 2014 20:05:42 +0100
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751109AbaKJTGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 14:06:21 -0500
+Date: Mon, 10 Nov 2014 20:06:17 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: tony.luck@intel.com, ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] x86, mce: support memory error recovery for both
+ UCNA and Deferred error in machine_check_poll
+Message-ID: <20141110190617.GJ4359@pd.tnic>
+References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
+ <1415410821-15063-3-git-send-email-slaoub@gmail.com>
 MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>, arm@kernel.org,
-        Olof Johansson <olof@lixom.net>
-CC: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        device tree <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] arm64: Add Juno SoC device tree.
-References: <1415618875-8469-1-git-send-email-Liviu.Dudau@arm.com> <1415618875-8469-3-git-send-email-Liviu.Dudau@arm.com>
-In-Reply-To: <1415618875-8469-3-git-send-email-Liviu.Dudau@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1415410821-15063-3-git-send-email-slaoub@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Am 10.11.2014 um 12:27 schrieb Liviu Dudau:
-> diff --git a/arch/arm64/boot/dts/juno.dts b/arch/arm64/boot/dts/juno.dts
-> new file mode 100644
-> index 0000000..7f998de
-> --- /dev/null
-> +++ b/arch/arm64/boot/dts/juno.dts
-> @@ -0,0 +1,374 @@
-> +/*
-> + * ARM Ltd. Juno Plaform
-
-"Platform"
-
-> + *
-
-Shouldn't this mention a license, ideally dual-licensed?
-
-> + */
+On Sat, Nov 08, 2014 at 09:40:21AM +0800, Chen Yucong wrote:
+> Uncorrected no action required (UCNA) - is a uncorrected recoverable
+> machine check error that is not signaled via a machine check exception
+> and, instead, is reported to system software as a corrected machine
+> check error. UCNA errors indicate that some data in the system is
+> corrupted, but the data has not been consumed and the processor state
+> is valid and you may continue execution on this processor. UCNA errors
+> require no action from system software to continue execution. Note that
+> UCNA errors are supported by the processor only when IA32_MCG_CAP[24]
+> (MCG_SER_P) is set.
+>                                                -- Intel SDM Volume 3B
+> 
+> Deferred errors are errors that cannot be corrected by hardware, but
+> do not cause an immediate interruption in program flow, loss of data
+> integrity, or corruption of processor state. These errors indicate
+> that data has been corrupted but not consumed. Hardware writes information
+> to the status and address registers in the corresponding bank that
+> identifies the source of the error if deferred errors are enabled for
+> logging. Deferred errors are not reported via machine check exceptions;
+> they can be seen by polling the MCi_STATUS registers.
+>                                                 -- AMD64 APM Volume 2
+> 
+> Above two items, both UCNA and Deferred errors belong to detected
+> errors, but they can't be corrected by hardware, and this is very
+> similar to Software Recoverable Action Optional (SRAO) errors.
+> Therefore, we can take some actions that have been used for handling
+> SRAO errors to handle UCNA and Deferred errors.
+> 
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   50 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 50 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 453e9bf..4b6e4cdf 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -575,6 +575,41 @@ static void mce_read_aux(struct mce *m, int i)
+>  	}
+>  }
+>  
+> +static bool memory_error(struct mce *m)
+> +{
+> +	struct cpuinfo_x86 *c = &boot_cpu_data;
 > +
-> +/dts-v1/;
-> +
-> +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> +
-> +/ {
-> +	model = "Juno";
-> +	compatible = "arm,juno", "arm,vexpress";
-> +	interrupt-parent = <&gic>;
-> +	#address-cells = <2>;
-> +	#size-cells = <2>;
-> +
-> +	aliases {
-> +		serial0 = &soc_uart0;
-> +	};
-> +
-> +	cpus {
-> +		#address-cells = <2>;
-> +		#size-cells = <0>;
-> +
-> +		A53_0:cpu@100 {
-[snip]
+> +	if (c->x86_vendor == X86_VENDOR_AMD) {
+> +		/*
+> +		 * AMD BKDGs - Machine Check Error Codes
+> +		 *
+> +		 * Bit 8 of ErrCode[15:0] of MCi_STATUS is used for indicating
+> +		 * a memory-specific error. Note that this field encodes info-
+> +		 * rmation about memory-hierarchy level involved in the error.
+> +		 */
+> +		return (m->status & 0xff00) == BIT(8);
 
-Can you please add a space after colon, like you did for non-CPU nodes?
+Grrr, you copied this from a patch of mine, correct?
 
-Regards,
-Andreas
+So if you copy it why did you go and change it up and break it on top of
+that?! Testing bit 8 is wrong!
+
+NAK!
+
+Before you go and "fix" this again, wait for me to clear up something
+else before you even go do that. I'll let you know.
 
 -- 
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
