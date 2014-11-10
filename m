@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbaKJJxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:53:19 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:57193 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaKJJxR (ORCPT
+	id S1752456AbaKJJxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:53:33 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:32791 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbaKJJxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:53:17 -0500
-Message-ID: <54608B03.9050805@imgtec.com>
-Date: Mon, 10 Nov 2014 09:53:07 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 04:53:31 -0500
+Date: Mon, 10 Nov 2014 10:53:26 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: swarren@wwwdotorg.org, daniel.lezcano@linaro.org, linux@arm.linux.org.uk,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, tony@atomide.com, mark.rutland@arm.com
+Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
+ from ARM to kernel
+Message-ID: <20141110095325.GC12126@ulmo>
+References: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com>
 MIME-Version: 1.0
-To: Andy Yan <andy.yan@rock-chips.com>, <airlied@linux.ie>, <heiko@sntech.de>,
-        <fabio.estevam@freescale.com>, <rmk+kernel@arm.linux.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lucas Stach <l.stach@pengutronix.de>, <djkurtz@google.com>,
-        <ykk@rock-chips.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>, <devel@driverdev.osuosl.org>,
-        <devicetree@vger.kernel.org>, <linux-rockchip@lists.infradead.org>,
-        <jay.xu@rock-chips.com>
-Subject: Re: [PATCH V5 7/7] dt-bindings: add document for dw-hdmi
-References: <1415424410-7364-1-git-send-email-andy.yan@rock-chips.com> <1415424767-7761-1-git-send-email-andy.yan@rock-chips.com> <546082A9.5050203@imgtec.com> <546088F6.4090505@rock-chips.com>
-In-Reply-To: <546088F6.4090505@rock-chips.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.89]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LwW0XdcUbUexiWVK"
+Content-Disposition: inline
+In-Reply-To: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--LwW0XdcUbUexiWVK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 10/11/14 09:44, Andy Yan wrote:
-> Hi ZubairLK
-> On 2014年11月10日 17:17, Zubair Lutfullah Kakakhel wrote:
->> Nice work.
->>
->> This patch should move the binding from
->>
->> Documentation/devicetree/bindings/staging/imx-drm/hdmi.txt
->> to the location instead of making a new file and leaving the old
->> one in place.
->>
->> And use git format-patch -M to highlight any changes.
->>
->> Regards
->> ZubairLK
->    I add these bindings for dw-hdmi core, because
->   properities like reg, interrupts, ddc-i2c-bus, reg-io-width are used
->   by dw-hdmi core, but properities like compatible, gpr,clk, are platform
->   specific , they are handled by the platform code like dw_hdmi-imx.c
->   and described in platform specific dt binds like /imx-drm/hdmi.txt
+On Fri, Nov 07, 2014 at 11:34:15AM -0800, Anatol Pomozov wrote:
+> ARM timekeeping functionality allows to register persistent/boot clock dy=
+namically.
+> This code is arch-independent and can be useful on other plaforms as well.
+>=20
+> As a byproduct of this change, tegra20_timer becomes ARM64 compatible.
+>=20
+> Tested: backported the change to chromeos-3.14 kernel ran on tegra 64bit
+> board, made sure high-resolution clock works.
 
-I understand. 
+Using this on an upstream kernel doesn't work, though, because 64-bit
+ARM doesn't implement struct delay_timer which the driver needs since
+v3.17.
 
-Are there any changes to imx-drm/hdmi.txt?
+But I suppose the delay timer infrastructure could be moved into the
+core similar to the persistent and boot clock as this patch does.
 
-Some properties for imx-drm/hdmi.txt would become optional/inherited from the parent hdmi drm binding?
+Thierry
 
-The changes should be highlighted in the commit message. Or we'll
-be confused which is which..
+--LwW0XdcUbUexiWVK
+Content-Type: application/pgp-signature
 
-ZubairLK
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->> On 08/11/14 05:32, Andy Yan wrote:
->>> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
->>> ---
->>>   .../devicetree/bindings/drm/bridge/dw-hdmi.txt     | 38 ++++++++++++++++++++++
->>>   1 file changed, 38 insertions(+)
->>>   create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
->>> new file mode 100644
->>> index 0000000..aa7ed17
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
->>> @@ -0,0 +1,38 @@
->>> +DesignWare HDMI bridge bindings
->>> +
->>> +Required properities:
->>> +- compatibel: platform specific such as "fsl,imx6q-hdmi","fsl,imx6dl-hdmi"
+iQIcBAEBAgAGBQJUYIsVAAoJEN0jrNd/PrOhP2gQAIq3dXzLlzPdAUe5ZqwwaVjw
+2bG24nAbEOrSYTFov6xv2/p4PlveZlA5e7dHSohjLWWqwB3OjxLB1GRjmb2felU2
+sJ+lViGQZjh0fOuPI++ByrKa38fUrtHf2WgdyOIO2rsAUOKLFMJhxShtEi+i7ISJ
+jhvioOZpHd2FZzF22em13jVx0HQX+sSpups5JDb6hFDtJGUr/2hIa/x/DW0nM2oU
+4bqNfUddk7OlssL/npjn4X5eTEUun7gyodRrw71JVW249nDj08dnqjlSsA/GBVxJ
+gpUsX0vyG0bC+kQZKJg4lHPR2l0YvbgPmLzfMxelUB0siLvetCYIGbHCNBk1MSq1
+uAO5uxmI1BupvxSssAPwdZYoqi9YsFVXmhUhEqZaqd1TfJGwXIyS0SVunY/AzebB
+fcCDyGJUbWwekRrzIiyDVjZqHVzeqoTxP6N1stE9mVIlkp/kr5Zsae2LabcHDFDf
+g2TbkzpcUkNiaQASIRFFcl6AOVLl823LeaqRono7CHBX/9/uczgpOkespsjdPqqR
+THtvd5YXodacMfh0N338E12KNjciY6xzCRDEISmfBfqnJTErhPa0gZaawdiOD5K8
+TMk5aQjeHlElRgu+AeuYIsKhFnX5PXD3rW/uiwC0mLqPaE8NAfdK6UsdDXejKIJE
+2Adhu06JP7uWM+4QOVik
+=nFkv
+-----END PGP SIGNATURE-----
 
-spellcheck. compatible
-
->>> +          "rockchip,rk3288-dw-hdmi"
->>> +- reg: physical base address of the controller and length
->>> +- ddc-i2c-bus: the ddc i2c bus
->>> +- interrupts: The interrupt number to the cpu
->>> +
->>> +Optional properties
->>> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
->>> +
->>> +Example:
->>> +    hdmi: hdmi@0120000 {
->>> +        compatible = "fsl,imx6q-hdmi";
->>> +        reg = <0x00120000 0x9000>;
->>> +        interrupts = <0 115 0x04>;
->>> +        gpr = <&gpr>;
->>> +        clocks = <&clks 123>, <&clks 124>;
->>> +        clock-names = "iahb", "isfr";
->>> +        ddc-i2c-bus = <&i2c2>;
->>> +
->>> +        port@0 {
->>> +            reg = <0>;
->>> +
->>> +            hdmi_mux_0: endpoint {
->>> +                remote-endpoint = <&ipu1_di0_hdmi>;
->>> +            };
->>> +        };
->>> +
->>> +        port@1 {
->>> +            reg = <1>;
->>> +
->>> +            hdmi_mux_1: endpoint {
->>> +                remote-endpoint = <&ipu1_di1_hdmi>;
->>> +            };
->>> +        };
->>> +    };
->>>
->>
->>
-> 
-> 
+--LwW0XdcUbUexiWVK--
