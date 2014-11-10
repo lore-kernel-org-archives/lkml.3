@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaKJSfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 13:35:45 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:32999 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaKJSfo (ORCPT
+	id S1752043AbaKJSfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 13:35:47 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:55366 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbaKJSfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 13:35:44 -0500
+	Mon, 10 Nov 2014 13:35:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1411101133100.5793-100000@netrider.rowland.org>
-References: <CAPDyKFpCx9XZu7xWt+koY-iLmiX4+XPu+2hGow2hrz3AR8Cb=A@mail.gmail.com>
-	<Pine.LNX.4.44L0.1411101133100.5793-100000@netrider.rowland.org>
-Date: Mon, 10 Nov 2014 19:35:39 +0100
-Message-ID: <CAPDyKFp+cZa6PrAwQHbQE4xEzmRKBwN5J_uRByOdM0h8yoV2vg@mail.gmail.com>
-Subject: Re: [PATCH v10 1/5] PM / Runtime: Allow accessing irq_safe if no PM_RUNTIME
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+X-Originating-IP: [2620:0:1000:157d:8979:aa8b:9dc7:1343]
+In-Reply-To: <1415616611.4862.38.camel@x220>
+References: <sbranden@broadcom.com>
+	<1414538111-11668-1-git-send-email-sbranden@broadcom.com>
+	<1414538111-11668-5-git-send-email-sbranden@broadcom.com>
+	<1415616611.4862.38.camel@x220>
+Date: Mon, 10 Nov 2014 10:35:36 -0800
+Message-ID: <CAOesGMgqsvOtgxKa6aBwvTqW3CO5Q7E_YsVVuS83yR4GdQEHUw@mail.gmail.com>
+Subject: Re: [PATCH v9 4/8] ARM: dts: Enable Broadcom Cygnus SoC
+From: Olof Johansson <olof@lixom.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Scott Branden <sbranden@broadcom.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 November 2014 17:36, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Mon, 10 Nov 2014, Ulf Hansson wrote:
->
->> > To me, this sounds like a good reason to avoid using
->> > force_runtime_suspend().  In fact, it sounds like a good reason to
->> > avoid relying on the runtime PM mechanism to handle non-runtime-PM
->> > things (like a system suspend callback).  If CONFIG_PM_RUNTIME isn't
->> > enabled then the runtime PM stack simply should not be used.
+On Mon, Nov 10, 2014 at 2:50 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Tue, 2014-10-28 at 16:15 -0700, Scott Branden wrote:
+>> DT files to enable cygnus consisting on reference designs
+>> and cygnus core configuration.
 >>
->> There are an important advantage of using the pm_runtime_force_suspend() here.
+>> Reviewed-by: Ray Jui <rjui@broadcom.com>
+>> Reviewed-by: Arun Parameswaran <aparames@broadcom.com>
+>> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+>> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+>> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+>
+> This landed in today's linux-next (ie, next-21041110) as commit
+> 8872fc22c267 ("ARM: dts: Enable Broadcom Cygnus SoC").
+>
+>>  arch/arm/boot/dts/Makefile              |    4 ++
+>>  arch/arm/boot/dts/bcm-cygnus-clock.dtsi |   73 ++++++++++++++++++++++
+>>  arch/arm/boot/dts/bcm-cygnus.dtsi       |  100 +++++++++++++++++++++++++++++++
+>>  arch/arm/boot/dts/bcm911360_entphn.dts  |   32 ++++++++++
+>>  arch/arm/boot/dts/bcm911360k.dts        |   32 ++++++++++
+>>  arch/arm/boot/dts/bcm958300k.dts        |   32 ++++++++++
+>>  6 files changed, 273 insertions(+)
+>>  create mode 100644 arch/arm/boot/dts/bcm-cygnus-clock.dtsi
+>>  create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+>>  create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
+>>  create mode 100644 arch/arm/boot/dts/bcm911360k.dts
+>>  create mode 100644 arch/arm/boot/dts/bcm958300k.dts
 >>
->> For the driver to handle clock gating at system PM suspend, it first
->> needs to bring the device into full power, through
->> pm_runtime_get_sync(). Otherwise it's not safe to gate the clock,
->> since it may already be gated.
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index 38c89ca..4b3a590 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -54,6 +54,10 @@ dtb-$(CONFIG_ARCH_AT91)    += at91-sama5d4ek.dtb
+>>  dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
+>>  dtb-$(CONFIG_ARCH_AXXIA) += axm5516-amarillo.dtb
+>>  dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+>> +dtb-$(CONFIG_ARCH_BCM_CYGNUS) += \
+>> +     bcm911360_entphn.dtb \
+>> +     bcm911360k.dtb \
+>> +     bcm958300k.dtb
+>>  dtb-$(CONFIG_ARCH_BCM_5301X) += bcm4708-netgear-r6250.dtb
+>>  dtb-$(CONFIG_ARCH_BCM_63XX) += bcm963138dvt.dtb
+>>  dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm28155-ap.dtb \
 >
-> That's fine, but it has nothing to do with pm_runtime_force_suspend().
->
-> Besides, if the real question is whether or not to gate the clock (or
-> in other words, has the clock already been gated), why not just store a
-> "clock_is_gated" flag somewhere?
+> Without patch 1/8 ("ARM: cygnus: Initial support for Broadcom Cygnus
+> SoC") CONFIG_ARCH_BCM_CYGNUS will not be set. I guess patch 1/8 will be
+> added to linux-next one of these days. Is that correct?
 
-You could do that, but it's easier to not.
+Yes.
 
-You will need to update the runtime PM status and disable runtime PM
-anyway, done by the API.
 
-Kind regards
-Uffe
+-Olof
