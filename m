@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaKJWjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 17:39:55 -0500
-Received: from mail.cybernetics.com ([173.71.130.66]:61049 "EHLO
-	mail.cybernetics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaKJWjy (ORCPT
+	id S1751949AbaKJWmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 17:42:09 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:57600 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178AbaKJWmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 17:39:54 -0500
-Message-ID: <54613EC2.8010304@cybernetics.com>
-Date: Mon, 10 Nov 2014 17:40:02 -0500
-From: Tony Battersby <tonyb@cybernetics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 17:42:07 -0500
 MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: Fix more error handling in SCSI_IOCTL_SEND_COMMAND
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1415368177-6637-3-git-send-email-zyw@rock-chips.com>
+References: <1415368177-6637-1-git-send-email-zyw@rock-chips.com>
+	<1415368177-6637-3-git-send-email-zyw@rock-chips.com>
+Date: Mon, 10 Nov 2014 14:42:06 -0800
+X-Google-Sender-Auth: ZxrgU9Vw-iT9MTWjbEjhTY0H1fo
+Message-ID: <CAD=FV=Wdw5OqSv3Zbw=wd19swaRV6QtNdVAzdTf4pCV37r4MKw@mail.gmail.com>
+Subject: Re: [PATCH v7 2/5] ARM: rockchip: add suspend and resume for RK3288
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Tony Xie <xxx@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix an error path in SCSI_IOCTL_SEND_COMMAND that calls
-blk_put_request(rq) on an invalid IS_ERR(rq) pointer.
+Chris,
 
-Fixes: a492f075450f ("block,scsi: fixup blk_get_request dead queue scenarios")
-Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
----
+On Fri, Nov 7, 2014 at 5:49 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+> It's a basic version of suspend and resume for rockchip,
+> it only support RK3288 now.
+>
+> Signed-off-by: Tony Xie <xxx@rock-chips.com>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> Tested-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>
+> ---
+>
+> Changes in v7:
+> - get rid all of unused code
+>
+> Changes in v6:
+> - get rid of the save/restore of SRAM
+> - doing the copy of resume code once at init time
+> - remove ROCKCHIP_ARM_OFF_LOGIC_DEEP from rk3288_fill_in_bootram
+> - add of_platform_populate in rockchip_dt_init
+>
+> Changes in v5:
+> - use rk3288_bootram_sz for memcpy size
+> - fixed error of sram save and restore
+>
+> Changes in v4:
+> - remove grf regmap
+>
+> Changes in v3:
+> - move the pinmux of gpio6_c6 save and restore to pinctrl-rockchip
+>
+> Changes in v2:
+> - add the regulator calls in prepare and finish.
+> - add the pinmux of gpio6_c6 save and restore
+>
+>  arch/arm/mach-rockchip/Makefile   |   1 +
+>  arch/arm/mach-rockchip/pm.c       | 264 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-rockchip/pm.h       |  99 ++++++++++++++
+>  arch/arm/mach-rockchip/rockchip.c |   2 +
+>  arch/arm/mach-rockchip/sleep.S    |  73 +++++++++++
+>  5 files changed, 439 insertions(+)
 
-(resending, since no one picked it up last time)
+I haven't done a full re-review of this version, but...
 
-For inclusion in 3.18 only.  This fixes a problem
-introduced in 3.18.
 
-Note: this fixes a *different* problem from Jan Kara's
-patch with a similar subject line, which has already
-been applied to mainline.
+> +static int rk3288_suspend_iomap(void)
+> +{
+> +       struct device_node *node;
+> +       struct resource res;
+> +
+> +       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3288-pmu-sram");
+> +       if (!node) {
+> +               pr_err("%s: could not find bootram dt node\n", __func__);
+> +               return -1;
+> +       }
+> +
+> +       rk3288_bootram_base = of_iomap(node, 0);
+> +       if (!rk3288_bootram_base) {
+> +               pr_err("%s: could not map bootram base\n", __func__);
+> +               return -1;
+> +       }
+> +
+> +       if (of_address_to_resource(node, 0, &res)) {
+> +               pr_err("%s: could not get bootram phy addr\n", __func__);
+> +               return -1;
+> +       }
+> +
+> +       rk3288_bootram_phy = res.start;
+> +
+> +       /* copy resume code and data to bootsram */
+> +       memcpy(rk3288_bootram_base, rockchip_slp_cpu_resume,
+> +              rk3288_bootram_sz);
+> +
+> +       rk3288_config_bootdata();
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -458,7 +458,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 	rq = blk_get_request(q, in_len ? WRITE : READ, __GFP_WAIT);
- 	if (IS_ERR(rq)) {
- 		err = PTR_ERR(rq);
--		goto error;
-+		goto error_free_buffer;
- 	}
- 	blk_rq_set_block_pc(rq);
- 
-@@ -531,9 +531,11 @@ out:
- 	}
- 	
- error:
-+	blk_put_request(rq);
-+
-+error_free_buffer:
- 	kfree(buffer);
--	if (rq)
--		blk_put_request(rq);
-+
- 	return err;
- }
- EXPORT_SYMBOL_GPL(sg_scsi_ioctl);
-
+Note that much of the above is no longer really part of the "iomap".
+It should probably be moved out into "rk3288_suspend_init".
