@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaKJM6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:58:10 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53676 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaKJM6I (ORCPT
+	id S1752884AbaKJM6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:58:47 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:54209 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaKJM6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:58:08 -0500
-Date: Mon, 10 Nov 2014 13:58:06 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg
-Subject: dtb size limit? was Re: Tiny dts change breaks boot on n900
-Message-ID: <20141110125806.GA16650@amd>
-References: <20141110123118.GA31134@amd>
+	Mon, 10 Nov 2014 07:58:45 -0500
+From: Bintian Wang <bintian.wang@huawei.com>
+To: <mturquette@linaro.org>, <haojian.zhuang@linaro.org>,
+        <zhangfei.gao@linaro.org>, <arnd@arndb.de>, <jh80.chung@samsung.com>,
+        <li.xin@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <huxinwei@huawei.com>
+CC: <bintian.wang@huawei.com>
+Subject: [PATCH] clk: hi3620: Move const initdata into correct code section
+Date: Mon, 10 Nov 2014 20:58:31 +0800
+Message-ID: <1415624311-18980-1-git-send-email-bintian.wang@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141110123118.GA31134@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.111.68.244]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-11-10 13:31:18, Pavel Machek wrote:
-> Hi!
-> 
-> I'm confused:
-> 
-> This fixes boot on n900. Strange thing is ... adp1653 driver is not
-> even compiled in -- it is module.
-> 
-> It looks like tiny change in dts noone should care about breaks
-> boot... I don't even have adp1653 device parsing code written.
-> 
-> Something similar happened before -- change in device tree order broke
-> boot.
-> 
-> Any ideas? What is going on?
+Use __initconst instead of __initdata for constant init data.
 
-If I replace the blog below with
+Signed-off-by: Bintian Wang <bintian.wang@huawei.com>
+---
+ drivers/clk/hisilicon/clk-hi3620.c | 70 +++++++++++++++++++-------------------
+ 1 file changed, 35 insertions(+), 35 deletions(-)
 
- a = <1>;
- b = <2>;
- c = <3>;
- d = <4>;
-
-Resulting kernel boots. Replacing it with
-
- a-really-long-attribute-name-hopefully-this-breaks-stuff = <1>;
- b = <2>;
- c = <3>;
- d = <4>;
-
-Breaks the boot. I'm using dtb append option. Any ideas? Nonbooting
-dtb is 68910 bytes.
-
-pavel@amd:/data/l/linux-n900$ ls -al arch/arm/boot/dts/omap3-n900.dtb 
--rw-r--r-- 1 pavel pavel 68910 Nov 10 13:52 arch/arm/boot/dts/omap3-n900.dtb
-
-I removed some "smsc,lan91c94" settings, and it boots again. Weird.
-
-> 								Pavel
-> 
-> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-> index f3118bf..557a19e 100644
-> --- a/arch/arm/boot/dts/omap3-n900.dts
-> +++ b/arch/arm/boot/dts/omap3-n900.dts
-> @@ -565,11 +565,6 @@
->  	adp1653: adp1653@30 {
->  		compatible = "ad,adp1653";
->  		reg = <0x30>;
-> -
-> -		max-flash-timeout-usec = <500000>;
-> -		max-flash-intensity-mA = <0>;
-> -		max-torch-intensity-mA = <0>;
-> -		max-indicator-intensity-uA = <0>;
->  	};
->  };
->  
-> 
-
+diff --git a/drivers/clk/hisilicon/clk-hi3620.c b/drivers/clk/hisilicon/clk-hi3620.c
+index 339945d..640ea33 100644
+--- a/drivers/clk/hisilicon/clk-hi3620.c
++++ b/drivers/clk/hisilicon/clk-hi3620.c
+@@ -38,44 +38,44 @@
+ #include "clk.h"
+ 
+ /* clock parent list */
+-static const char *timer0_mux_p[] __initdata = { "osc32k", "timerclk01", };
+-static const char *timer1_mux_p[] __initdata = { "osc32k", "timerclk01", };
+-static const char *timer2_mux_p[] __initdata = { "osc32k", "timerclk23", };
+-static const char *timer3_mux_p[] __initdata = { "osc32k", "timerclk23", };
+-static const char *timer4_mux_p[] __initdata = { "osc32k", "timerclk45", };
+-static const char *timer5_mux_p[] __initdata = { "osc32k", "timerclk45", };
+-static const char *timer6_mux_p[] __initdata = { "osc32k", "timerclk67", };
+-static const char *timer7_mux_p[] __initdata = { "osc32k", "timerclk67", };
+-static const char *timer8_mux_p[] __initdata = { "osc32k", "timerclk89", };
+-static const char *timer9_mux_p[] __initdata = { "osc32k", "timerclk89", };
+-static const char *uart0_mux_p[] __initdata = { "osc26m", "pclk", };
+-static const char *uart1_mux_p[] __initdata = { "osc26m", "pclk", };
+-static const char *uart2_mux_p[] __initdata = { "osc26m", "pclk", };
+-static const char *uart3_mux_p[] __initdata = { "osc26m", "pclk", };
+-static const char *uart4_mux_p[] __initdata = { "osc26m", "pclk", };
+-static const char *spi0_mux_p[] __initdata = { "osc26m", "rclk_cfgaxi", };
+-static const char *spi1_mux_p[] __initdata = { "osc26m", "rclk_cfgaxi", };
+-static const char *spi2_mux_p[] __initdata = { "osc26m", "rclk_cfgaxi", };
++static const char *timer0_mux_p[] __initconst = { "osc32k", "timerclk01", };
++static const char *timer1_mux_p[] __initconst = { "osc32k", "timerclk01", };
++static const char *timer2_mux_p[] __initconst = { "osc32k", "timerclk23", };
++static const char *timer3_mux_p[] __initconst = { "osc32k", "timerclk23", };
++static const char *timer4_mux_p[] __initconst = { "osc32k", "timerclk45", };
++static const char *timer5_mux_p[] __initconst = { "osc32k", "timerclk45", };
++static const char *timer6_mux_p[] __initconst = { "osc32k", "timerclk67", };
++static const char *timer7_mux_p[] __initconst = { "osc32k", "timerclk67", };
++static const char *timer8_mux_p[] __initconst = { "osc32k", "timerclk89", };
++static const char *timer9_mux_p[] __initconst = { "osc32k", "timerclk89", };
++static const char *uart0_mux_p[] __initconst = { "osc26m", "pclk", };
++static const char *uart1_mux_p[] __initconst = { "osc26m", "pclk", };
++static const char *uart2_mux_p[] __initconst = { "osc26m", "pclk", };
++static const char *uart3_mux_p[] __initconst = { "osc26m", "pclk", };
++static const char *uart4_mux_p[] __initconst = { "osc26m", "pclk", };
++static const char *spi0_mux_p[] __initconst = { "osc26m", "rclk_cfgaxi", };
++static const char *spi1_mux_p[] __initconst = { "osc26m", "rclk_cfgaxi", };
++static const char *spi2_mux_p[] __initconst = { "osc26m", "rclk_cfgaxi", };
+ /* share axi parent */
+-static const char *saxi_mux_p[] __initdata = { "armpll3", "armpll2", };
+-static const char *pwm0_mux_p[] __initdata = { "osc32k", "osc26m", };
+-static const char *pwm1_mux_p[] __initdata = { "osc32k", "osc26m", };
+-static const char *sd_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *mmc1_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *mmc1_mux2_p[] __initdata = { "osc26m", "mmc1_div", };
+-static const char *g2d_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *venc_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *vdec_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *vpp_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *edc0_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *ldi0_mux_p[] __initdata = { "armpll2", "armpll4",
++static const char *saxi_mux_p[] __initconst = { "armpll3", "armpll2", };
++static const char *pwm0_mux_p[] __initconst = { "osc32k", "osc26m", };
++static const char *pwm1_mux_p[] __initconst = { "osc32k", "osc26m", };
++static const char *sd_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *mmc1_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *mmc1_mux2_p[] __initconst = { "osc26m", "mmc1_div", };
++static const char *g2d_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *venc_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *vdec_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *vpp_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *edc0_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *ldi0_mux_p[] __initconst = { "armpll2", "armpll4",
+ 					     "armpll3", "armpll5", };
+-static const char *edc1_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *ldi1_mux_p[] __initdata = { "armpll2", "armpll4",
++static const char *edc1_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *ldi1_mux_p[] __initconst = { "armpll2", "armpll4",
+ 					     "armpll3", "armpll5", };
+-static const char *rclk_hsic_p[] __initdata = { "armpll3", "armpll2", };
+-static const char *mmc2_mux_p[] __initdata = { "armpll2", "armpll3", };
+-static const char *mmc3_mux_p[] __initdata = { "armpll2", "armpll3", };
++static const char *rclk_hsic_p[] __initconst = { "armpll3", "armpll2", };
++static const char *mmc2_mux_p[] __initconst = { "armpll2", "armpll3", };
++static const char *mmc3_mux_p[] __initconst = { "armpll2", "armpll3", };
+ 
+ 
+ /* fixed rate clocks */
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
+
