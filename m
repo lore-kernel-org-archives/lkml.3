@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaKJKmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:42:24 -0500
-Received: from mail-yk0-f194.google.com ([209.85.160.194]:33914 "EHLO
-	mail-yk0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992AbaKJKmV (ORCPT
+	id S1752448AbaKJKo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:44:59 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:57109 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaKJKo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:42:21 -0500
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Zubair.Kakakhel@imgtec.com, rmk+kernel@arm.linux.org.uk,
-        fabio.estevam@freescale.com, heiko@sntech.de
-Cc: Andy Yan <andy.yan@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 7/7] dt-bindings: add document for dw-hdmi
-Date: Mon, 10 Nov 2014 18:41:02 +0800
-Message-Id: <1415616062-30583-8-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415616062-30583-1-git-send-email-andy.yan@rock-chips.com>
-References: <1415616062-30583-1-git-send-email-andy.yan@rock-chips.com>
+	Mon, 10 Nov 2014 05:44:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415199239-19019-3-git-send-email-prarit@redhat.com>
+References: <1415199239-19019-1-git-send-email-prarit@redhat.com>
+	<1415199239-19019-3-git-send-email-prarit@redhat.com>
+Date: Mon, 10 Nov 2014 16:14:57 +0530
+Message-ID: <CAKohpomZNwZWjmi8hkZ6QXUeDTaXTwzx_fPz1_byh3xmmkPNrQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] cpufreq, fix locking around CPUFREQ_GOV_POLICY_EXIT calls
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Robert_Sch=C3=B6ne?= <robert.schoene@tu-dresden.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
----
+On 5 November 2014 20:23, Prarit Bhargava <prarit@redhat.com> wrote:
+> commit 955ef4833574636819cd269cfbae12f79cbde63a (" cpufreq: Drop rwsem
+> lock around CPUFREQ_GOV_POLICY_EXIT") opens up a hole in the locking
+> scheme for cpufreq.
+>
+> Simple tests such as rapidly switching the governor between ondemand and
+> performance or attempting to read policy values while a governor switch occurs
+> now fail with very NULL pointer warnings, sysfs namespace collisions, and
+> system hangs.  In short, the locking that policy->rwsem is supposed to provide
+> is currently broken.
+>
+> The identified commit attempts to resolve a lockdep warning by removing
+> a lock around a section of code which does a shutdown of the
+> existing policy.  The problem is that this is part of the _critical_ section of
+> code that switches the governors and must be protected by the lock; without
+> locking readers may access now NULL or stale data, and writes may collide with
+> each other.
+>
+> With the previous patch, which now returns -EBUSY during times of
+> contention the deadlock reported in
+> 955ef4833574636819cd269cfbae12f79cbde63a (" cpufreq: Drop rwsem lock
+> around CPUFREQ_GOV_POLICY_EXIT") cannot occur, so adding the locks back
+> into this section of code is possible.
 
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-Changes in v2: None
-
- .../devicetree/bindings/drm/bridge/dw-hdmi.txt     | 38 ++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
-
-diff --git a/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
-new file mode 100644
-index 0000000..aa7ed17
---- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
-@@ -0,0 +1,38 @@
-+DesignWare HDMI bridge bindings
-+
-+Required properities:
-+- compatibel: platform specific such as "fsl,imx6q-hdmi","fsl,imx6dl-hdmi"
-+	      "rockchip,rk3288-dw-hdmi"
-+- reg: physical base address of the controller and length
-+- ddc-i2c-bus: the ddc i2c bus
-+- interrupts: The interrupt number to the cpu
-+
-+Optional properties
-+- reg-io-width: the width of the reg:1,4, default set to 1 if not present
-+
-+Example:
-+	hdmi: hdmi@0120000 {
-+		compatible = "fsl,imx6q-hdmi";
-+		reg = <0x00120000 0x9000>;
-+		interrupts = <0 115 0x04>;
-+		gpr = <&gpr>;
-+		clocks = <&clks 123>, <&clks 124>;
-+		clock-names = "iahb", "isfr";
-+		ddc-i2c-bus = <&i2c2>;
-+
-+		port@0 {
-+			reg = <0>;
-+
-+			hdmi_mux_0: endpoint {
-+				remote-endpoint = <&ipu1_di0_hdmi>;
-+			};
-+		};
-+
-+		port@1 {
-+			reg = <1>;
-+
-+			hdmi_mux_1: endpoint {
-+				remote-endpoint = <&ipu1_di1_hdmi>;
-+			};
-+		};
-+	};
--- 
-1.9.1
-
+I still fail to understand why ? What will the _trylock() change ?
