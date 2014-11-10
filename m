@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271AbaKJP0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:26:10 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:51079 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170AbaKJP0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:26:08 -0500
-Date: Mon, 10 Nov 2014 15:25:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm8997: Mark INTERRUPT_STATUS_2_MASK as readable
-Message-ID: <20141110152546.GE24004@x1>
-References: <1415114782-32691-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1753332AbaKJP01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:26:27 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52207 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753170AbaKJP0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 10:26:25 -0500
+Date: Mon, 10 Nov 2014 09:26:45 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>
+Subject: Re: [RFC v5] usb: phy: Hold wakeupsource when USB is enumerated in
+ peripheral mode
+Message-ID: <20141110152645.GF20766@saruman>
+Reply-To: <balbi@ti.com>
+References: <1415095254-24683-1-git-send-email-kiran.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rMWmSaSbD7nr+du9"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415114782-32691-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415095254-24683-1-git-send-email-kiran.kumar@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Nov 2014, Charles Keepax wrote:
+--rMWmSaSbD7nr+du9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Technically this register is not used on wm8997 however the regmap core
-> requires a continuous block of IRQs. The simplest solution is just to
-> add the register.
-> 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm8997-tables.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+Hi,
 
-Applied, thanks.
+On Tue, Nov 04, 2014 at 03:30:54PM +0530, Kiran Kumar Raparthy wrote:
+> @@ -1469,6 +1484,7 @@ static int ab8500_usb_probe(struct platform_device =
+*pdev)
+> =20
+>  	abx500_usb_link_status_update(ab);
+> =20
+> +	usb_phy_wsource_init(&ab->phy);
 
-> diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
-> index 06c3093..c0c25d7 100644
-> --- a/drivers/mfd/wm8997-tables.c
-> +++ b/drivers/mfd/wm8997-tables.c
-> @@ -670,6 +670,7 @@ static const struct reg_default wm8997_reg_default[] = {
->  	{ 0x00000C23, 0x0000 },    /* R3107  - Misc Pad Ctrl 4 */
->  	{ 0x00000C24, 0x0000 },    /* R3108  - Misc Pad Ctrl 5 */
->  	{ 0x00000D08, 0xFFFF },    /* R3336  - Interrupt Status 1 Mask */
-> +	{ 0x00000D09, 0xFFFF },    /* R3337  - Interrupt Status 2 Mask */
->  	{ 0x00000D0A, 0xFFFF },    /* R3338  - Interrupt Status 3 Mask */
->  	{ 0x00000D0B, 0xFFFF },    /* R3339  - Interrupt Status 4 Mask */
->  	{ 0x00000D0C, 0xFEFF },    /* R3340  - Interrupt Status 5 Mask */
-> @@ -1330,6 +1331,7 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
->  	case ARIZONA_INTERRUPT_STATUS_4:
->  	case ARIZONA_INTERRUPT_STATUS_5:
->  	case ARIZONA_INTERRUPT_STATUS_1_MASK:
-> +	case ARIZONA_INTERRUPT_STATUS_2_MASK:
->  	case ARIZONA_INTERRUPT_STATUS_3_MASK:
->  	case ARIZONA_INTERRUPT_STATUS_4_MASK:
->  	case ARIZONA_INTERRUPT_STATUS_5_MASK:
+instead of adding this to all drivers, you can just it to
+usb_add_phy_dev() and conversely, to usb_remove_phy().
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--=20
+balbi
+
+--rMWmSaSbD7nr+du9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUYNk1AAoJEIaOsuA1yqREPC4P/ig8HerTLB9qXu8B45rGSmiU
+Cg0Rx3qXU4nGro4qIXekxK+b5vJxZfZZ2D8PmCu3S3Zi2YWmwCJCtGvoV4roarYe
+MLgQqtQKrXunH2eW0dlU2NYGHcY88MuaYs5vXpayrrqRMVb6YmXfsOzx2F9ysvzk
+L0TC+HlcjLbHOxmttLvF6OZCf9I7/4iM/bxaCDpdndfk4qem6cILEHXsUE/TQCoQ
+wo5tnRnSdSiZ8AQLPvLsEG8bHEX2xDDewcao7pdyIbPeHqhmdUMQTSVCRaA9Nt8Z
+VfwNmLn+gC5ZFkce6wzRp+8DI5qRVleNoOo5jhgj0HoqX5WIwp3MPHKXT20Daaq6
+kNVV8FZfQVkLm+365dEhRi9gRfLQXyZE4KqxM0ZgELHZGAwZlVJ60kkmBBkBbMrp
+BmrKn3KPwfnslfQmn4I4BiBb59yR+nbOmu4TXodqEz//Ew3s9O5vzfN+exOyugmV
+jtSxTWt2lVGHuxqMfAn7J03AOyc7nD75SeDLbeaXTmjd7rQrYUfVePfiUjrqLIVD
+mFRAJZFZDU+ol+g/PnEAv1uaE4te/k+Y1KQUuOHsLCHLmp4UnfkmbLp1DyI2s6cS
+6ik78lLTFt5z9MqNwRGv/YPBH/DRqMbKi1FAZLilpC21w6mRdwRHSacs0c5/zEJg
+rHMuBufCcvFSZPUTP7vb
+=+mvK
+-----END PGP SIGNATURE-----
+
+--rMWmSaSbD7nr+du9--
