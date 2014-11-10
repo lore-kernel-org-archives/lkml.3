@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863AbaKJDFM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 22:05:12 -0500
-Received: from mout.gmx.com ([74.208.4.201]:55449 "EHLO mout.gmx.com"
+	id S1751931AbaKJDLE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 22:11:04 -0500
+Received: from mout.gmx.com ([74.208.4.201]:57542 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735AbaKJDFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 22:05:10 -0500
+	id S1751735AbaKJDLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Nov 2014 22:11:02 -0500
 MIME-Version: 1.0
-Message-ID: <trinity-92da1679-0327-43cf-9a13-635f68f6baeb-1415588709300@3capp-mailcom-lxa05>
+Message-ID: <trinity-cc2ebd33-8299-46a0-91bb-40222a42f4fc-1415589059755@3capp-mailcom-lxa05>
 From: "Brad Townshend" <bradtownshend83a@email.com>
 To: linux-kernel@vger.kernel.org
-Subject: Why systemD sucks: an infographic.
+Subject: Linus why do you betray us by supporting systemD?
 Content-Type: text/plain; charset=UTF-8
-Date: Mon, 10 Nov 2014 04:05:09 +0100
+Date: Mon, 10 Nov 2014 04:11:00 +0100
 Importance: normal
 Sensitivity: Normal
 X-Priority: 3
-X-Provags-ID: V03:K0:GMQXmdYTAAEpSl4HIXepd9Ml3H0uC9lu02mHNmjEb7R
- SC8sv2Ie64DLxuxzJGD1SPU9/niBNTAgsxFMtRKDsrg4gZp1Ui
- LrHBv3OXoEheCtOIlYX8Ee1pzwH8Hf/GRhcyHq+iWq/mQrk+IT
- Pl2NvlcURP+JNoS0WxQNYIbwIRvqm97qEx+VZVIZRVg5q3Ce2i
- 0eGwbT56YWT3AxuUPxFSzeB/7v7GbPIAJwh5Eg341isek02r9q
- s8AFbfB7IjlQWMyU1u3w5f/Ov87t5hF1A3GQb733fuTgOth5GD
- jr3bvnf4PexT6bJkbQ1A8f/33Se
+X-Provags-ID: V03:K0:937Qj+HaJgFX44W6GZB/imITp4YhlzAPBSlWEM+dpAW
+ NfrX+SOn3vISyzRm4A57rJaIBMbURjpdAA089VEBAJrOW4KWCU
+ 6ChFD9Gue01r9c8LuZLUI4/4qDoHl5/Y9YrJj7sog252cC4yY8
+ T6k1LlYja/IYeuWwlm4a53Cw2StlXMY8/a6Xf0+Z0u9bQdJmVn
+ +iAcdOm2rVbUie9T+4pDFMzAKAY0uQK00uOV+LTsrpb0DF1cYG
+ TOEk5LfFa/4fuRbBgiPY3s0oHOCHjVJxuagBHsA6VhDhvxIcLz
+ biTiZaeytZOR4MEg0uEf3ZV+7C6
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My friend and I sat down, and we though, and wrote some
-words to describe how we, how I, how all of us feel
-about, well, systemD and Mr Lennart Poettering.
+Linus why do you betray us by supporting systemD?
+Why? We saw what you had to say at debconf '14.
+Is it you, or is it your redhat stock talking?
+Is there anything good in your life besides that money and security?
+(which that money brings).
 
-We then recorded it on audio device.
-And put it to archive.
+You know, I think the first 20/30/40 min of interstellar is better than
+what you got. At least that guy, well he LEFT and adorable young girl
+that he should have kept forever. It's a movie tho, but in the past
+that was some men's real life (first 20/30/40 min, not the rest).
 
-http://youtu.be/y0aTqsl-vfU
+BTW Poettering is a male feminist. Are you one too? Do you reject the notion
+of marriage to young female children (allowed in the Old Testament(Deut 22 28-29 in hebrew as one example), Vedic religions,
+and others) and swear allegiance to the grown ass woman (ever growing and growing
+to very large proportions)
 
-Please take some time, sit down, have some whiskey
-and take a listen and a look.
+Is that you?
 
-Thank you.
-FK SystemD.
-They took linux from us.
-They took linus from us.
+Are you happy that the Feminist USA and UK are drone-bombing the last non-feminist
+cultures in existance where men can have nice young girls and be happy?
+
+You happy that redhat linux makes that happen?
+You triumphal (like Lennart) of the degradation of your (male) species?
+
+Not like you like pretty girls or anything (by your choices and actions).
+Guess you wouldn't understand.
+And the same mental processes block you from caring about the problems
+systemD brings. Grows from the same root.
+
+
+I like the thing you made, and above that, I like the things others made
+for the thing you made (PaX, Grsecurity, etc). I don't like systemD
+I don't like the social justice warrior Lennart Poettering, and I don't like
+that I nor any male in the western world can marry and adorable cute young girl.
+
+Not that I matter. But you do. Why you fk our system. Why you do this?
