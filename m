@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaKJJik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 04:38:40 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:52132 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaKJJii convert rfc822-to-8bit (ORCPT
+	id S1752228AbaKJJlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 04:41:10 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:38387 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbaKJJlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 04:38:38 -0500
+	Mon, 10 Nov 2014 04:41:09 -0500
+Message-ID: <54608706.6030109@huawei.com>
+Date: Mon, 10 Nov 2014 17:36:06 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <yw1xh9y7ieze.fsf@unicorn.mansr.com>
-References: <ef53eefc-6310-447e-bc8f-1ff05c0d7b8e@EXC02-ATKLA.omicron.at>
-	<20141106203832.GB30170@kroah.com>
-	<yw1xwq78jbr6.fsf@unicorn.mansr.com>
-	<20141106205644.GA31435@kroah.com>
-	<CABkLObqLXpXfcFOW9oorvR0dj4xU0Eo0c2k0TB5njd2FZGVCPQ@mail.gmail.com>
-	<yw1xh9y7ieze.fsf@unicorn.mansr.com>
-Date: Mon, 10 Nov 2014 10:38:34 +0100
-X-Google-Sender-Auth: 8Tmpn1PdyjETQ-E1EuSyKomyBPI
-Message-ID: <CABkLObp-nXLTLYQ=dLQmDXz=1j4tLFDgJoau_MTi9QqLEuus6A@mail.gmail.com>
-Subject: Re: [PATCH] n_tty: Add memory barrier to fix race condition in
- receive path
-From: Christian Riesch <christian.riesch@omicron.at>
-To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
+        <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.co>, <fabf@skynet.be>, <nzimmer@sgi.com>,
+        <wangnan0@huawei.com>, <vdavydov@parallels.com>, <toshi.kani@hp.com>,
+        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
+        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
+        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
+        <mgorman@suse.de>, <rientjes@google.com>, <hannes@cmpxchg.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v2 0/2] Fix node meminfo and zoneinfo corruption.
+References: <1415353481-3140-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1415353481-3140-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.54608816.0046,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 378efc8d4105691f2e049f082ed273a1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Måns,
+On 2014/11/7 17:44, Tang Chen wrote:
 
-On Mon, Nov 10, 2014 at 10:25 AM, Måns Rullgård <mans@mansr.com> wrote:
-> Christian Riesch <christian.riesch@omicron.at> writes:
->
->> On Thu, Nov 6, 2014 at 9:56 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->>> On Thu, Nov 06, 2014 at 08:49:01PM +0000, Måns Rullgård wrote:
->>>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->>>>
->>>> > On Thu, Nov 06, 2014 at 12:39:59PM +0100, Christian Riesch wrote:
->>>> >> The current implementation of put_tty_queue() causes a race condition
->>>> >> when re-arranged by the compiler.
->>>> >>
->>>> >> On my build with gcc 4.8.3, cross-compiling for ARM, the line
->>>> >>
->>>> >>    *read_buf_addr(ldata, ldata->read_head++) = c;
->>>> >>
->>>> >> was re-arranged by the compiler to something like
->>>> >>
->>>> >>    x = ldata->read_head
->>>> >>    ldata->read_head++
->>>> >>    *read_buf_addr(ldata, x) = c;
->>>> >>
->>>> >> which causes a race condition. Invalid data is read if data is read
->>>> >> before it is actually written to the read buffer.
->>>> >
->>>> > Really?  A compiler can rearange things like that and expect things to
->>>> > actually work?  How is that valid?
->>>>
->>>> This is actually required by the C spec.  There is a sequence point
->>>> before a function call, after the arguments have been evaluated.  Thus
->>>> all side-effects, such as the post-increment, must be complete before
->>>> the function is called, just like in the example.
->>>>
->>>> There is no "re-arranging" here.  The code is simply wrong.
->>>
->>> Ah, ok, time to dig out the C spec...
->>>
->>> Anyway, because of this, no need for the wmb() calls, just rearrange the
->>> logic and all should be good, right?  Christian, can you test that
->>> instead?
->>
->> I ran a test with the patch that I posted in my first email for the
->> last 4 days. No communication errors occurred so the patch actually
->> fixes my problem. I will run another test as suggested by Greg, just
->> with rearranging the logic.
->
-> What hardware are you running on?  If it's a single-processor system,
-> it won't break without barriers even if they are required for SMP.
+> There are two problems in memory hot-add progress:
+> 
+> 1. When hot-adding a node without onlining any page, node meminfo corrupted:
+> 
+> # hot-add node2 (memory not onlined)
+> # cat /sys/device/system/node/node2/meminfo
+> Node 2 MemTotal:       33554432 kB			/* corrupted */
+> Node 2 MemFree:               0 kB
+> Node 2 MemUsed:        33554432 kB
+> Node 2 Active:                0 kB
+> ......
+> 
+> 
+> 2. When onlining memory on node2, node2 zoneinfo and node3 meminfo corrupted:
+> 
+> # for ((i = 2048; i < 2064; i++)); do echo online_movable > /sys/devices/system/node/node2/memory$i/state; done
+> # cat /sys/devices/system/node/node2/meminfo
+> Node 2 MemTotal:       33554432 kB
+> Node 2 MemFree:        33549092 kB
+> Node 2 MemUsed:            5340 kB
+> ......
+> # cat /sys/devices/system/node/node3/meminfo
+> Node 3 MemTotal:              0 kB
+> Node 3 MemFree:               248 kB      /* corrupted, should be 0 */
+> Node 3 MemUsed:               0 kB
+> ......
+> 
+> # cat /proc/zoneinfo
+> ......
+> Node 2, zone   Movable
+> ......
+>         spanned  8388608
+>         present  16777216		/* corrupted, should be 8388608 */
+>         managed  8388608
+> 
+> 
+> 
+> Change log v1 -> v2:
+> 1. Replace patch 2/2 with a new one. It provides the simplest way to
+>    fix problem 2. 
+> 
+> Tang Chen (2):
+>   mem-hotplug: Reset node managed pages when hot-adding a new pgdat.
+>   mem-hotplug: Reset node present pages when hot-adding a new pgdat.
+> 
+>  include/linux/bootmem.h |  1 +
+>  mm/bootmem.c            |  9 +++++----
+>  mm/memory_hotplug.c     | 24 ++++++++++++++++++++++++
+>  mm/nobootmem.c          |  8 +++++---
+>  4 files changed, 35 insertions(+), 7 deletions(-)
+> 
 
-Yes, single processor. Texas Instruments AM1808 SoC.
+Hi Tang,
 
-Thanks,
-Christian
+How about cc stable ?
+ 
+
