@@ -1,225 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaKJLNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:13:37 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64820 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaKJLNe (ORCPT
+	id S1752685AbaKJLPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:15:45 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:61278 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187AbaKJLPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:13:34 -0500
-Date: Mon, 10 Nov 2014 12:13:29 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Robert Bragg <robert@sixbynine.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Rob Clark <robdclark@gmail.com>,
-        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Expose gpu counters via perf pmu driver
-Message-ID: <20141110111329.GA19706@gmail.com>
-References: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
- <20141030190841.GI23531@worktop.programming.kicks-ass.net>
- <CAMou1-12ggxAuaPQ8VG7Gf5BZM6CVj6773HRB1QJXagB-okuGg@mail.gmail.com>
- <20141105123354.GR3337@twins.programming.kicks-ass.net>
- <CAMou1-0VQW-P=wPiOmWKXRJV9cqe2OR3yppYG9j0irKwnb78uw@mail.gmail.com>
+	Mon, 10 Nov 2014 06:15:44 -0500
+Message-ID: <54609E56.3050403@plexistor.com>
+Date: Mon, 10 Nov 2014 13:15:34 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMou1-0VQW-P=wPiOmWKXRJV9cqe2OR3yppYG9j0irKwnb78uw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Karel Zak <kzak@redhat.com>, Matthew Wilcox <willy@linux.intel.com>
+CC: Jens Axboe <axboe@fb.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] brd: Add getgeo to block ops for fdisk
+References: <545A2D69.8090003@plexistor.com> <545A2FEA.3050101@plexistor.com> <20141107092313.GH6880@x2.net.home> <545F9CF7.6090306@plexistor.com> <20141110095403.GL6880@x2.net.home>
+In-Reply-To: <20141110095403.GL6880@x2.net.home>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Robert Bragg <robert@sixbynine.org> wrote:
-
-> On Wed, Nov 5, 2014 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, Nov 03, 2014 at 09:47:17PM +0000, Robert Bragg wrote:
-> >
-> >> > And do I take it right that if you're able/allowed/etc.. to open/have
-> >> > the fd to the GPU/DRM/DRI whatever context you have the right
-> >> > credentials to also observe these counters?
-> >>
-> >> Right and in particular since we want to allow OpenGL clients to be
-> >> able the profile their own gpu context with out any special privileges
-> >> my current pmu driver accepts a device file descriptor via config1 + a
-> >> context id via attr->config, both for checking credentials and
-> >> uniquely identifying which context should be profiled. (A single
-> >> client can open multiple contexts via one drm fd)
-> >
-> > Ah interesting. So we've got fd+context_id+event_id to identify any one
-> > number provided by the GPU.
+On 11/10/2014 11:58 AM, Karel Zak wrote:
+> On Sun, Nov 09, 2014 at 06:57:27PM +0200, Boaz Harrosh wrote:
+>> with a small 4M disk
 > 
-> Roughly.
+>  This is the problem, for small disks (<= 4MiB) we don't use 1MiB
+>  grain because it does not make sense. For so small devices the grain
+>  (and the first partition offset) is the same as physical sector size. 
 > 
-> The fd represents the device we're interested in.
+>  Try something bigger in your tests :-)
 > 
-> Since a single application can manage multiple unique gpu contexts for
-> submitting work we have the context_id to identify which one in
-> particular we want to collect metrics for.
+
+OK thanks, I saw that. Only I was not sure what is the threshold.
+just that 4MiB is the default for brd at Kconfig so I naturally hit it.
+
+>> I see brd_getgeo() getting called on fdisk load and when pressing
+>> g or o. But it no longer has any effect at all if I have it defined
+>> returning CHS(4,64,32) or returning CHS(1,1,1) or not defined at all
+>> I get the same exact below experience:
 > 
-> The event_id here though really represents a set of counters that are
-> written out together in a hardware specific report layout.
+>  The alignment and topology code is generic, it gathers all
+>  information about the device, but it's fine if the device does not
+>  provide HDIO_GETGEO.  The geometry is currently used for DOS
+>  compatible mode, or SGI and  SUN only.
 > 
-> On Haswell there are 8 different report layouts that basically trade
-> off how many counters to include from 13 to 61 32bit counters plus 1
-> 64bit timestamp. I exposed this format choice in the event
-> configuration. It's notable that all of the counter values written in
-> one report are captured atomically with respect to the gpu clock.
+
+OK cool. So we should just remove it. Thanks for confirming.
+(When I started all this, fdisk used to prompt for these values which started
+ the all land slide. Cool one problem fixed, me happy)
+
+>> ======== 4k physical_block_size PATCH ===============================================================
+>>
+>> Command (m for help): g
+>> Command (m for help): n
+>> First sector (34-8158, default 40): 
+>> Last sector, +sectors or +size{K,M,G,T,P} (40-8158, default 8158): 1717
+>> Command (m for help): n
+>> First sector (34-8158, default 1720): 
+>> # NOTE 34-8158 again, only with gpt
 > 
-> Within the reports most of the counters are hard-wired and they are
-> referred to as Aggregating counters, including things like:
+>  It seems like a fdisk bug, the gap between 34-40 is smaller than phy sector
+>  size.. I'll fix it, thanks!
 > 
-> * number of cycles the render engine was busy for
-> * number of cycles the gpu was active
-> * number of cycles the gpu was stalled
-> (i'll just gloss over what distinguishes each of these states)
-> * number of active cycles spent running a vertex shader
-> * number of stalled cycles spent running a vertex shader
-> * number of vertex shader threads spawned
-> * number of active cycles spent running a pixel shader
-> * number of stalled cycles spent running a pixel shader"
-> * number of pixel shader threads spawned
-> ...
 
-Just curious:
+Please note that the final output needs to be 1718-8158 not
+40-8158. I was not sure if you noticed from your explanation above.
 
-Beyond aggregated counts, do the GPU reports also allow sampling 
-the PC of the vertex shader and pixel shader execution?
-
-That would allow effective annotated disassembly of them and 
-bottleneck analysis - much like 'perf annotate' and how you can 
-drill into annotated assembly code in 'perf report' and 'perf 
-top'.
-
-Secondly, do you also have cache hit/miss counters (with sampling 
-ability) for the various caches the GPU utilizes: such as the LLC 
-it shares with the CPU, or GPU-specific caches (if any) such as 
-the vertex cache? Most GPU shader performance problems relate to 
-memory access patterns and the above aggregate counts only tell 
-us the global picture.
-
-Thirdly, if taken branch instructions block/stall non-taken 
-threads within an execution unit (like it happens on other vector 
-CPUs) then being able to measure/sample current effective thread 
-concurrency within an execution unit is generally useful as well, 
-to be able to analyze this major class of GPU/GPGPU performance 
-problems.
-
-> The values are aggregated across all of the gpu's execution 
-> units (e.g. up to 40 units on Haswell)
+>> Dave, Karel, what would you say fdisk should do? do you think it behaves correctly
+>> to only align with the 4k-physical_block_size or must it always align ?
 > 
-> Besides these aggregating counters the reports also include a 
-> gpu clock counter which allows us to normalize these values 
-> into something more intuitive for profiling.
-
-Modern GPUs can also change their clock frequency depending on 
-load - is the GPU clock normalized by the hardware to a known 
-fixed frequency, or does it change as the GPU's clock changes?
-
-> [...]
+>  If you expect partitions aligned to 4K (~pagesize?) then you have to
+>  provide proper information to userspace (sector size or min/opt_io),
+>  so from my point of view the patch makes sense.
 > 
-> I had considered uniquely identifying each of the A counters 
-> with separate perf event ids, but I think the main reasons I 
-> decided against that in the end are:
+>  Note that for example zram uses 4K logical and physical sector sizes
+>  as well as all I/O limits are aligned to 4K at all:
 > 
-> Since they are written atomically the counters in a snapshot 
-> are all related and the analysis to derive useful values for 
-> benchmarking typically needs to refer to multiple counters in a 
-> single snapshot at a time. E.g. to report the "Average cycles 
-> per vertex shader thread" would need to measure the number of 
-> cycles spent running a vertex shader / the number of vertex 
-> shader threads spawned. If we split the counters up we'd then 
-> need to do work to correlate them again in userspace.
+
+In theory this is a great idea and makes perfect sense. Even the
+page addressing instead of the sector addressing. But what I'm afraid
+will happen at Kernel is that it will attempt to do read-modify-write
+on small writes, but with memory technology this makes no sense.
+Actually memory is *byte* addressable.
+
+It is good for zram because I'd guess it compresses each page so the
+read-modify-write done by Kernel is good for zram, less coding.
+
+>  # modprobe zram
+>  # zramctl --find --size 4MiB
+>  /dev/zram0
 > 
-> My other concern was actually with memory bandwidth, 
-> considering that it's possible to request the gpu to write out 
-> periodic snapshots at a very high frequency (we can program a 
-> period as low as 160 nanoseconds) and pushing this to the limit 
-> (running as root + overriding perf_event_max_sample_rate) can 
-> start to expose some interesting details about how the gpu is 
-> working - though notable observer effects too. I was expecting 
-> memory bandwidth to be the limiting factor for what resolution 
-> we can achieve this way and splitting the counters up looked 
-> like it would have quite a big impact, due to the extra sample 
-> headers and that the gpu timestamp would need to be repeated 
-> with each counter. e.g. in the most extreme case, instead of 
-> 8byte header + 61 counters * 4 bytes + 8byte timestamp every 
-> 160ns ~= 1.6GB/s, each counter would need to be paired with a 
-> gpu timestamp + header so we could have 61 * (8 + 4 + 8)bytes 
-> ~= 7.6GB/s. To be fair though it's likely that if the counters 
-> were split up we probably wouldn't often need a full set of 61 
-> counters.
-
-If you really want to collect such high frequency data then you 
-are probably right in trying to compress the report format as 
-much as possible.
-
-> One last thing to mention here is that this first pmu driver 
-> that I have written only relates to one very specific 
-> observation unit within the gpu that happens to expose counters 
-> via reports/snapshots. There are other interesting gpu counters 
-> I could imagine exposing through separate pmu drivers too where 
-> the counters might simply be accessed via mmio and for those 
-> cases I would imagine having a 1:1 mapping between event-ids 
-> and counters.
-
-I'd strong suggest thinking about sampling as well, if the 
-hardware exposes sample information: at least for profiling CPU 
-loads the difference is like day and night, compared to 
-aggregated counts and self-profiling.
-
-> > [...]
-> >
-> > If the GPU provides interrupts to notify you of new data or 
-> > whatnot, you can make that drive the thing.
+>  # fdisk -l /dev/zram0
+>  Disk /dev/zram0: 4 MiB, 4194304 bytes, 1024 sectors
+>  Units: sectors of 1 * 4096 = 4096 bytes
+>  Sector size (logical/physical): 4096 bytes / 4096 bytes
+>  I/O size (minimum/optimal): 4096 bytes / 4096 bytes
 > 
-> Right, I'm already ensuring the events will be forwarded within 
-> a finite time using a hrtimer, currently at 200Hz but there are 
-> also times where userspace wants to pull at the driver too.
 > 
-> The use case here is supporting the INTEL_performance_query 
-> OpenGL extension, where an application which can submit work to 
-> render on the gpu and can also start and stop performance 
-> queries around specific work and then ask for the results. 
-> Given how the queries are delimited Mesa can determine when the 
-> work being queried has completed and at that point the 
-> application can request the results of the query.
+>  Is there a reason for brd to behave differently?
 > 
-> In this model Mesa will have configured a perf event to deliver 
-> periodic counter snapshots, but it only really cares about 
-> snapshots that fall between the start and end of a query. For 
-> this use case the periodic snapshots are just to detect 
-> counters wrapping and so the period will be relatively low at 
-> ~50milliseconds. At the end of a query Mesa won't know whether 
-> there are any periodic snapshots that fell between the 
-> start-end so it wants to explicitly flush at a point where it 
-> knows any snapshots will be ready if there are any.
+>     Karel
 > 
-> Alternatively I think I could arrange it so that Mesa relies on 
-> knowing the driver will forward snapshots @ 200Hz and we could 
-> delay informing the application that results are ready until we 
-> are certain they must have been forwarded. I think the api 
-> could allow us to do that (except for one awkward case where 
-> the application can demand a synchronous response where we'd 
-> potentially have to sleep) My concern here is having to rely on 
-> a fixed and relatively high frequency for forwarding events 
-> which seems like it should be left as an implementation detail 
-> that userspace shouldn't need to know.
 
-It's a very good idea to not expose such limitations to 
-user-space - the GPU driver doing the necessary hrtimer polling 
-to construct a proper count is a much higher quality solution.
+Thanks Karel
+Boaz
 
-The last thing you want to ask yourself when seeing some weird 
-profiling result is 'did user-space properly poll the PMU or did 
-we overflow??'. Instrumentation needs to be rock solid dependable 
-and fast, in that order.
-
-Thanks,
-
-	Ingo
