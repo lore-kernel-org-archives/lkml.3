@@ -1,146 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaKJMTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:19:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56816 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaKJMTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:19:18 -0500
-Date: Mon, 10 Nov 2014 04:18:49 -0800
-From: tip-bot for Boris Ostrovsky <tipbot@zytor.com>
-Message-ID: <tip-54279552bd260532d90e7a59fbc931924bbb0f7b@git.kernel.org>
-Cc: hpa@zytor.com, boris.ostrovsky@oracle.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        david.vrabel@citrix.com, tglx@linutronix.de
-Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de,
-        david.vrabel@citrix.com, torvalds@linux-foundation.org
-In-Reply-To: <1414770572-7950-1-git-send-email-boris.ostrovsky@oracle.com>
-References: <1414770572-7950-1-git-send-email-boris.ostrovsky@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/core, x86/xen/smp: Use 'die_complete'
-  completion when taking CPU down
-Git-Commit-ID: 54279552bd260532d90e7a59fbc931924bbb0f7b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752534AbaKJMXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:23:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51650 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742AbaKJMXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:23:43 -0500
+Date: Mon, 10 Nov 2014 10:23:21 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
+        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
+        brendan.d.gregg@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [RFC] perf-cache command interface design
+Message-ID: <20141110122321.GC4468@redhat.com>
+References: <20141102105006.21708.28734.stgit@hemant-fedora>
+ <20141102105557.21708.19032.stgit@hemant-fedora>
+ <87lhnr5sbl.fsf@sejong.aot.lge.com>
+ <54588905.7040002@linux.vnet.ibm.com>
+ <5458CD15.4010101@hitachi.com>
+ <874muew2hk.fsf@sejong.aot.lge.com>
+ <5459E865.6050207@hitachi.com>
+ <545B1DDE.9000202@linux.vnet.ibm.com>
+ <545C80F4.4020905@hitachi.com>
+ <54609A8C.4050308@hitachi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54609A8C.4050308@hitachi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  54279552bd260532d90e7a59fbc931924bbb0f7b
-Gitweb:     http://git.kernel.org/tip/54279552bd260532d90e7a59fbc931924bbb0f7b
-Author:     Boris Ostrovsky <boris.ostrovsky@oracle.com>
-AuthorDate: Fri, 31 Oct 2014 11:49:32 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 10 Nov 2014 11:16:40 +0100
+Em Mon, Nov 10, 2014 at 07:59:24PM +0900, Masami Hiramatsu escreveu:
+> Hello,
+> 
+> Here is the second try for the probe-cache. This version simplifies
+> the synopsis, and unifies the SDT and probe caches.
+> Please give me your comments/ideas!
+> 
+> Command-line Synopsis
+> =====================
+> 
+> Add elf(or symbols) and probe-caches of SDT if exists in <FILES>
+>  perf cache --add <FILES> [--probe <SPEC>] # for user programs
 
-x86/core, x86/xen/smp: Use 'die_complete' completion when taking CPU down
+Why the --probe above? Shouldn't this be just (if you are talking about
+ELF files only):
 
-Commit 2ed53c0d6cc9 ("x86/smpboot: Speed up suspend/resume by
-avoiding 100ms sleep for CPU offline during S3") introduced
-completions to CPU offlining process. These completions are not
-initialized on Xen kernels causing a panic in
-play_dead_common().
+perf cache --add <FILES>
+ 
+>  perf cache --kcore <FILE> [--probe <SPEC>] # for kcore ?
 
-Move handling of die_complete into common routines to make them
-available to Xen guests.
+Adrian, aren't kcore files easily identifiable as such and thus could be
+added as:
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Cc: tianyu.lan@intel.com
-Cc: konrad.wilk@oracle.com
-Cc: xen-devel@lists.xenproject.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1414770572-7950-1-git-send-email-boris.ostrovsky@oracle.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/smp.h |  1 +
- arch/x86/kernel/smpboot.c  | 15 +++++++++++----
- arch/x86/xen/smp.c         |  3 +++
- 3 files changed, 15 insertions(+), 4 deletions(-)
+ perf cache --add <FILES>
+ 
+>  perf cache --probe <SPEC>  # for the current kernel
 
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 8cd27e0..8cd1cc3 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -150,6 +150,7 @@ static inline void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- }
+Why do we need a --probe here? Don't they always start with a character
+that is seldomly used in ELF file names and thus we could get away with
+not requiring --probe?
  
- void cpu_disable_common(void);
-+void cpu_die_common(unsigned int cpu);
- void native_smp_prepare_boot_cpu(void);
- void native_smp_prepare_cpus(unsigned int max_cpus);
- void native_smp_cpus_done(unsigned int max_cpus);
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 4d2128a..668d8f2 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1303,10 +1303,14 @@ static void __ref remove_cpu_from_maps(int cpu)
- 	numa_remove_cpu(cpu);
- }
+> Remove caches related to <FILES> or <BUILDIDS>
+>  perf cache --remove <FILES>|<BUILDIDS>
+> 
+> Show all probe caches(including SDT) or buildids
+>  perf cache --list [probe|buildid]
+> 
+> Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
+>  perf cache　--probe-del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+
+Ditto, i.e. can't we just use:
+
+ perf cache　--remove [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+
+And it figure out that this is a probe that is being removed?
+
+> Query the probe definitions.
+>  perf cache --query [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+
+Replace --query with --show?
  
-+static DEFINE_PER_CPU(struct completion, die_complete);
-+
- void cpu_disable_common(void)
- {
- 	int cpu = smp_processor_id();
+> File Format
+> ===========
+> All the cache files are placed under ~/.debug/ by default.
+> Elf caches are ~/.debug/path/to/file/bu/ildid/elf
+> Symbols caches are ~/.debug/path/to/file/bu/ildid/syms
+> Probes(and SDT) are ~/.debug/path/to/file/bu/ildid/probes
+> And ~/.debug/path/to/file/bu/ildid/ is linked to ~/.debug/.buildid/bu/ildid
+> Optionally, we can gzip the probes file.
+
+Ok!
  
-+	init_completion(&per_cpu(die_complete, smp_processor_id()));
-+
- 	remove_siblinginfo(cpu);
- 
- 	/* It's now safe to remove this processor from the online map */
-@@ -1316,8 +1320,6 @@ void cpu_disable_common(void)
- 	fixup_irqs();
- }
- 
--static DEFINE_PER_CPU(struct completion, die_complete);
--
- int native_cpu_disable(void)
- {
- 	int ret;
-@@ -1327,16 +1329,21 @@ int native_cpu_disable(void)
- 		return ret;
- 
- 	clear_local_APIC();
--	init_completion(&per_cpu(die_complete, smp_processor_id()));
- 	cpu_disable_common();
- 
- 	return 0;
- }
- 
-+void cpu_die_common(unsigned int cpu)
-+{
-+	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-+}
-+
- void native_cpu_die(unsigned int cpu)
- {
- 	/* We don't do anything here: idle task is faking death itself. */
--	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
-+
-+	cpu_die_common(cpu);
- 
- 	/* They ack this in play_dead() by setting CPU_DEAD */
- 	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 8650cdb..4c071ae 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -510,6 +510,9 @@ static void xen_cpu_die(unsigned int cpu)
- 		current->state = TASK_UNINTERRUPTIBLE;
- 		schedule_timeout(HZ/10);
- 	}
-+
-+	cpu_die_common(cpu);
-+
- 	xen_smp_intr_free(cpu);
- 	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
+> This probe caches contain probe-definitions as following format.
+> ----
+> #buildid:BUILDID
+> #spec:SDT
+> p:sdt_<PROVIDER>/<EVENT> PATH:OFFSET [ARGS]
+> ...
+> #spec:* $params
+> p:probe_<GROUP>/<EVENT> _text+OFFSET [ARGS]
+> ...
+> ----
+> So the #spec: line gives the information what probe spec has been given.
+> This will be used for updating.
+> 
+> And all the "probe_" and "sdt_" prefix will be replaced by % in the command line,
+> e.g.
+> 
+>  perf record -e %<PROVIDER>/<EVENT> -> this records sdt_PROVIDER/EVENT
+> 
+> Thank you,
+> 
+> -- 
+> Masami HIRAMATSU
+> Software Platform Research Dept. Linux Technology Research Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
+> 
