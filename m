@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaKJQVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:21:17 -0500
-Received: from resqmta-ch2-02v.sys.comcast.net ([69.252.207.34]:39622 "EHLO
-	resqmta-ch2-02v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752886AbaKJQVN (ORCPT
+	id S1753948AbaKJQVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:21:36 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:54036 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886AbaKJQVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:21:13 -0500
-Date: Mon, 10 Nov 2014 10:21:11 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
-In-Reply-To: <20141110153147.GK4901@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1411101020180.6094@gentwo.org>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org> <alpine.DEB.2.11.1411012313320.5308@nanos> <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
- <CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com> <20141110153147.GK4901@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 10 Nov 2014 11:21:18 -0500
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 0/7] DRBD updates for the 3.19 merge window
+Date: Mon, 10 Nov 2014 17:21:08 +0100
+Message-Id: <1415636475-7883-1-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014, Paul E. McKenney wrote:
+Hi Jens,
 
-> Would it make sense for unlimited max deferment to be available as
-> a boot parameter?  That would allow people who want tick-free execution
-> more than accurate stats to get that easily, while keeping stats accurate
-> for everyone else.
+please take these patches for you for-3.19/drivers branch.
+They where posted for review on 2014-10-29.
 
-Well at least it would help us to get started on figuring out how to
-deal with other  processor interruptions that occur in intervals of
-seconds or minutes.
+Some cleanups and 3 fixes. Two of them marked for stable:
+0005-drbd-merge_bvec_fn-properly-remap-bvm-bi_bdev.patch and
+0006-drbd-Fix-state-change-in-case-of-connection-timeout.patch
+(marked for stable)
+
+Thanks!
+
+
+Andreas Gruenbacher (2):
+  drbd: Minor cleanups
+  drbd: Only use drbd_msg_put_info() in drbd_nl.c
+
+Lars Ellenberg (2):
+  drbd: fix resync throttling initialization
+  drbd: merge_bvec_fn: properly remap bvm->bi_bdev
+
+Philipp Reisner (3):
+  drbd: fix race between role change and handshake
+  drbd: Fix state change in case of connection timeout
+  drbd: Remove an useless copy of kernel_setsockopt()
+
+ drivers/block/drbd/drbd_actlog.c   |  3 +-
+ drivers/block/drbd/drbd_int.h      | 39 +++++------------------
+ drivers/block/drbd/drbd_main.c     | 23 ++++----------
+ drivers/block/drbd/drbd_nl.c       | 64 +++++++++++++++++---------------------
+ drivers/block/drbd/drbd_receiver.c |  2 +-
+ drivers/block/drbd/drbd_req.c      |  3 +-
+ drivers/block/drbd/drbd_state.c    | 42 ++++++++++++++++++++-----
+ drivers/block/drbd/drbd_state.h    |  5 +++
+ drivers/block/drbd/drbd_worker.c   |  5 ++-
+ include/linux/drbd.h               |  2 +-
+ 10 files changed, 90 insertions(+), 98 deletions(-)
+
+-- 
+1.9.1
+
