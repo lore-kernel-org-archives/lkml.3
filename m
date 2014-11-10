@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939AbaKJBnY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:43:24 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:38849 "EHLO
+	id S1751998AbaKJBn1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:43:27 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38857 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaKJBnU (ORCPT
+	with ESMTP id S1751905AbaKJBnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:43:20 -0500
+	Sun, 9 Nov 2014 20:43:24 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH v6 03/48] hibernate: Call have_kernel_power_off instead of checking pm_power_off
-Date: Sun,  9 Nov 2014 17:42:20 -0800
-Message-Id: <1415583785-6980-4-git-send-email-linux@roeck-us.net>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Ungerer <gerg@uclinux.org>, Joshua Thompson <funaho@jurai.org>,
+        linux-m68k@vger.kernel.org
+Subject: [PATCH v6 04/48] m68k: Replace mach_power_off with pm_power_off
+Date: Sun,  9 Nov 2014 17:42:21 -0800
+Message-Id: <1415583785-6980-5-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
 References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54601838.011B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.5460183C.007D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 11
+X-CTCH-SenderID-TotalMessages: 15
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,15 +51,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Power-off handlers may now be installed with register_power_off_handler.
-Use the new API function have_kernel_power_off to determine if a power-off
-handler has been installed.
+Replace mach_power_off with pm_power_off to simplify the subsequent
+move of pm_power_off to generic code.
 
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Len Brown <len.brown@intel.com>
-Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Joshua Thompson <funaho@jurai.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v6:
@@ -72,22 +71,113 @@ v3:
 v2:
 - have_kernel_poweroff -> have_kernel_power_off
 
- kernel/power/hibernate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/m68k/emu/natfeat.c         | 3 ++-
+ arch/m68k/include/asm/machdep.h | 1 -
+ arch/m68k/kernel/process.c      | 5 +++--
+ arch/m68k/kernel/setup_mm.c     | 1 -
+ arch/m68k/kernel/setup_no.c     | 1 -
+ arch/m68k/mac/config.c          | 3 ++-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 1f35a34..1202cf0 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -608,7 +608,7 @@ static void power_down(void)
- 	case HIBERNATION_PLATFORM:
- 		hibernation_platform_enter();
- 	case HIBERNATION_SHUTDOWN:
--		if (pm_power_off)
-+		if (have_kernel_power_off())
- 			kernel_power_off();
- 		break;
- #ifdef CONFIG_SUSPEND
+diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+index 71b78ec..91e2ae7 100644
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -15,6 +15,7 @@
+ #include <linux/string.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/io.h>
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
+@@ -90,5 +91,5 @@ void __init nf_init(void)
+ 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
+ 		version & 0xffff);
+ 
+-	mach_power_off = nf_poweroff;
++	pm_power_off = nf_poweroff;
+ }
+diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
+index 953ca21..f9fac51 100644
+--- a/arch/m68k/include/asm/machdep.h
++++ b/arch/m68k/include/asm/machdep.h
+@@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
+ extern int (*mach_set_clock_mmss)(unsigned long);
+ extern void (*mach_reset)( void );
+ extern void (*mach_halt)( void );
+-extern void (*mach_power_off)( void );
+ extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
+ extern void (*mach_hd_setup)(char *, int *);
+ extern long mach_max_dma_address;
+diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
+index c55ff71..afe3d6e 100644
+--- a/arch/m68k/kernel/process.c
++++ b/arch/m68k/kernel/process.c
+@@ -22,6 +22,7 @@
+ #include <linux/unistd.h>
+ #include <linux/ptrace.h>
+ #include <linux/user.h>
++#include <linux/pm.h>
+ #include <linux/reboot.h>
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
+@@ -77,8 +78,8 @@ void machine_halt(void)
+ 
+ void machine_power_off(void)
+ {
+-	if (mach_power_off)
+-		mach_power_off();
++	if (pm_power_off)
++		pm_power_off();
+ 	for (;;);
+ }
+ 
+diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
+index 5b8ec4d..002fea6 100644
+--- a/arch/m68k/kernel/setup_mm.c
++++ b/arch/m68k/kernel/setup_mm.c
+@@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
+ EXPORT_SYMBOL(mach_set_rtc_pll);
+ void (*mach_reset)( void );
+ void (*mach_halt)( void );
+-void (*mach_power_off)( void );
+ long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
+ #ifdef CONFIG_HEARTBEAT
+ void (*mach_heartbeat) (int);
+diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
+index 88c27d9..1520156 100644
+--- a/arch/m68k/kernel/setup_no.c
++++ b/arch/m68k/kernel/setup_no.c
+@@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
+ /* machine dependent reboot functions */
+ void (*mach_reset)(void);
+ void (*mach_halt)(void);
+-void (*mach_power_off)(void);
+ 
+ #ifdef CONFIG_M68000
+ #if defined(CONFIG_M68328)
+diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
+index a471eab..677913ff 100644
+--- a/arch/m68k/mac/config.c
++++ b/arch/m68k/mac/config.c
+@@ -16,6 +16,7 @@
+ #include <linux/tty.h>
+ #include <linux/console.h>
+ #include <linux/interrupt.h>
++#include <linux/pm.h>
+ /* keyb */
+ #include <linux/random.h>
+ #include <linux/delay.h>
+@@ -159,7 +160,7 @@ void __init config_mac(void)
+ 	mach_set_clock_mmss = mac_set_clock_mmss;
+ 	mach_reset = mac_reset;
+ 	mach_halt = mac_poweroff;
+-	mach_power_off = mac_poweroff;
++	pm_power_off = mac_poweroff;
+ 	mach_max_dma_address = 0xffffffff;
+ #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
+ 	mach_beep = mac_mksound;
 -- 
 1.9.1
 
