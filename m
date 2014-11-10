@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaKJTkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:40:23 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:51591 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbaKJTkU convert rfc822-to-8bit (ORCPT
+	id S1752489AbaKJTmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:42:09 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35269 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbaKJTmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:40:20 -0500
+	Mon, 10 Nov 2014 14:42:06 -0500
+Message-ID: <5461150B.2010907@codeaurora.org>
+Date: Mon, 10 Nov 2014 11:42:03 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141107064027.GA24745@yliu-dev.sh.intel.com>
-References: <20141107060040.GD30507@yliu-dev.sh.intel.com> <CALCETrVBcZ=5YJMzjKwFpjz6p32FmXcdkR=8uSPm8kCECDka4g@mail.gmail.com>
- <20141107064027.GA24745@yliu-dev.sh.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Nov 2014 11:39:56 -0800
-Message-ID: <CALCETrXNxQ=fpVS2d5ntHQzNqMwhquDT7uK3=16GCAkWq6fh9g@mail.gmail.com>
-Subject: Re: [LKP] [x86_64,entry] f04e05b81e4: -62.7% time.user_time
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: LKP <lkp@01.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Kevin Hilman <khilman@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>,
+        Frank Rowand <frowand.list@gmail.com>
+Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
+References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
+In-Reply-To: <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 10:40 PM, Yuanhan Liu
-<yuanhan.liu@linux.intel.com> wrote:
-> On Thu, Nov 06, 2014 at 10:26:23PM -0800, Andy Lutomirski wrote:
->> On Thu, Nov 6, 2014 at 10:00 PM, LKP <lkp@01.org> wrote:
->> > FYI, we noticed the below changes on
->> >
->> > git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git x86/entry
->> > commit f04e05b81e4d9ae88bee379f12176f551a24394a ("x86_64,entry: Use sysret to return to userspace when possible")
->> >
->> >
->> > f2ee9bebb99dd4a4  f04e05b81e4d9ae88bee379f12  testbox/testcase/testparams
->> > ----------------  --------------------------
->> >          %stddev     %change         %stddev
->> >              \          |                \
->> >      24.09 ą  4%     -62.7%       8.99 ą  3%  lkp-wsx02/aim9/performance-300s-creat-clo
->> >      24.09           -62.7%       8.99        GEO-MEAN time.user_time
->> >
+On 11/10/2014 10:54 AM, Kevin Hilman wrote:
+> On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> We rely on probe order of this driver to determine the line number for
+>> the uart port. This makes it impossible to know the line number
+>> when these devices are populated via DT. Use the DT alias
+>> mechanism to assign the line based on the aliases node.
 >>
->> I don't really know how to interpret this.  Is this a good thing or a bad thing?
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> FYI... this patch hit linux-next and caused multiple boot failures on
+> qcom platforms[1] as of next-20141110.  I'm assuming this is because
+> the corresponding DTS changes have not hit linux-next yet.
 >
-> TBH, I don't, either. Here we just list the changes we captured, which
-> is then for your information to decide it's good or bad.
+> Kevin
 >
->>
->> I actually expect this change to be a dramatic speedup for some
->> workloads.
->
-> Would you like to share your workload? If so, I can add them to our
-> testing system, and give feedback to you when datat is available.
+> [1] http://status.armcloud.us/boot/?qcom
 
-My workload is just syscall performance under different conditions.
-There's no obvious interesting benchmark, although I may write one at
-some point.
+Hmm the intention was to make it optional so that dts changes aren't
+necessary unless you want deterministic numbering. I screwed that up
+badly :/ Thanks for finding this.
 
->
->> Any chance you can send me the .config, kernel command
->> line, and whether you have any tracing features enabled?
->
-> .config and dmesg are attached.
+Greg, can you also apply this patch or squash it into the bad one?
 
-Hmm.  I'm not entirely sure what's going on.  I think that you have
-NO_HZ_FULL active, but I can't see what's actually activating it.  My
-initial attempt to replicate this failed, but I see a big performance
-gain if CONFIG_CONTEXT_TRACKING_FORCE=y, so I suspect that you've just
-managed to activate context tracking without forcing it.
+----8<-----
 
---Andy
+From: Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH] tty: serial: msm_serial: Don't required DT aliases
+
+If there isn't a DT alias then of_alias_get_id() will return
+-ENODEV. This will cause the msm_serial driver to fail probe,
+when we want to keep the previous behavior where we generated a
+dynamic line number at probe time. Restore this behavior by
+generating a dynamic id if the line number is still negative
+after checking for an alias or (in the non-DT case) looking at the
+.id field of the platform device.
+
+Reported-by: Kevin Hilman <khilman@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/tty/serial/msm_serial.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index 09364dd8cf3a..d1bc6b6cbc70 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -1046,14 +1046,14 @@ static int msm_serial_probe(struct platform_device *pdev)
+ 	const struct of_device_id *id;
+ 	int irq, line;
+ 
+-	if (pdev->id == -1)
+-		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
+-
+ 	if (pdev->dev.of_node)
+ 		line = of_alias_get_id(pdev->dev.of_node, "serial");
+ 	else
+ 		line = pdev->id;
+ 
++	if (line < 0)
++		line = atomic_inc_return(&msm_uart_next_id) - 1;
++
+ 	if (unlikely(line < 0 || line >= UART_NR))
+ 		return -ENXIO;
+ 
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
