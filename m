@@ -1,216 +1,535 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaKJUSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:18:40 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60478 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaKJUSi (ORCPT
+	id S1752021AbaKJUTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:19:30 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:40306 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaKJUT2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:18:38 -0500
-Message-ID: <54611D86.4040306@de.ibm.com>
-Date: Mon, 10 Nov 2014 21:18:14 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 10 Nov 2014 15:19:28 -0500
+Date: Mon, 10 Nov 2014 20:19:24 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        device tree <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 2/2] arm64: Add Juno SoC device tree.
+Message-ID: <20141110201924.GB10247@e106497-lin.cambridge.arm.com>
+References: <1415618875-8469-1-git-send-email-Liviu.Dudau@arm.com>
+ <1415618875-8469-3-git-send-email-Liviu.Dudau@arm.com>
+ <CAOesGMhNcT4xoKaMgvihk3Lc6XWWiaKeRNt_C04dV4ZSAwjZQQ@mail.gmail.com>
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org
-CC: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
-References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
-In-Reply-To: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
-X-Forwarded-Message-Id: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111020-0029-0000-0000-0000019B2D1F
+In-Reply-To: <CAOesGMhNcT4xoKaMgvihk3Lc6XWWiaKeRNt_C04dV4ZSAwjZQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 10 Nov 2014 20:19:25.0727 (UTC) FILETIME=[9F6A72F0:01CFFD23]
+X-MC-Unique: 114111020192501401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, Nov 10, 2014 at 05:42:59PM +0000, Olof Johansson wrote:
+> Hi,
+> 
+> Nice to see this posted! Thanks for doing so.
+> 
+> On Mon, Nov 10, 2014 at 3:27 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> 
+> Care to give a brief patch description?
 
-Last week I sent belows patch to Paolo for kvm/next.
-Heiko Carstens pointed out that the kernel often does not 
-work around compiler bugs, instead we blacklist the 
-compiler, make a buildbug on or similar when we cant be 
-sure to catch all broken cases, e.g. Heiko mentioned 
-the the x86 specific test cases for stack protector.
+Bah, I've managed to screw this! I will add a description, of course.
 
-Now: I can reproduces belows miscompile on gcc46 and gcc 47
-gcc 45 seems ok, gcc 48 is fixed.  This makes blacklisting
-a bit hard, especially since it is not limited to s390, but
-covers all architectures.
-In essence ACCESS_ONCE will not work reliably on aggregate 
-types with gcc 4.6 and gcc 4.7.
-In Linux we seem to use ACCESS_ONCE mostly on scalar types,
-below code is an example were we dont - and break.
+> 
+> > ---
+> >  arch/arm64/boot/dts/Makefile |   2 +-
+> >  arch/arm64/boot/dts/juno.dts | 374 +++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 375 insertions(+), 1 deletion(-)
+> >  create mode 100644 arch/arm64/boot/dts/juno.dts
+> >
+> > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+> > index f8001a6..0100eca 100644
+> > --- a/arch/arm64/boot/dts/Makefile
+> > +++ b/arch/arm64/boot/dts/Makefile
+> > @@ -1,5 +1,5 @@
+> >  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+> > -dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+> > +dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb juno.dtb
+> 
+> We've applied the series that creates subdirectories per vendor, so
+> this won't apply. Care to respin on top of our next/cleanup branch?
 
-Linus, what is your take on workarounds of compiler bugs?
-The barrier solution below will fix that particular case, but
-are there others? Maybe we can come with a clever trick of
-creating a build-bug for ACCESS_ONCE on non-scalar types?
-A testcase is not trivial, since we have to rely on other
-optimization steps to actually do the wrong thing and the 
-gcc testcase test will dump the internal tree and check
-that - something that does not seem to be ok for the kernel.
+Sure, will do.
 
-Christian
+> 
+> >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+> >
+> >  targets += dtbs
+> > diff --git a/arch/arm64/boot/dts/juno.dts b/arch/arm64/boot/dts/juno.dts
+> > new file mode 100644
+> > index 0000000..7f998de
+> > --- /dev/null
+> > +++ b/arch/arm64/boot/dts/juno.dts
+> > @@ -0,0 +1,374 @@
+> > +/*
+> > + * ARM Ltd. Juno Plaform
+> > + *
+> > + */
+> > +
+> > +/dts-v1/;
+> > +
+> > +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> > +
+> > +/ {
+> > +       model = "Juno";
+> 
+> This could probably be a bit more descriptive.
+
+I will add something to the tune: "ARM Juno development board (r0)" ? Not sure
+that the format usually is.
+
+> 
+> > +       compatible = "arm,juno", "arm,vexpress";
+> > +       interrupt-parent = <&gic>;
+> > +       #address-cells = <2>;
+> > +       #size-cells = <2>;
+> > +
+> > +       aliases {
+> > +               serial0 = &soc_uart0;
+> > +       };
+> > +
+> > +       cpus {
+> > +               #address-cells = <2>;
+> > +               #size-cells = <0>;
+> > +
+> > +               A53_0:cpu@100 {
+> > +                       compatible = "arm,cortex-a53","arm,armv8";
+> > +                       reg = <0x0 0x100>;
+> > +                       device_type = "cpu";
+> > +                       enable-method = "psci";
+> > +               };
+> > +
+> > +               A53_1:cpu@101 {
+> > +                       compatible = "arm,cortex-a53","arm,armv8";
+> > +                       reg = <0x0 0x101>;
+> > +                       device_type = "cpu";
+> > +                       enable-method = "psci";
+> > +               };
+> > +
+> > +               A53_2:cpu@102 {
+> > +                       compatible = "arm,cortex-a53","arm,armv8";
+> > +                       reg = <0x0 0x102>;
+> > +                       device_type = "cpu";
+> > +                       enable-method = "psci";
+> > +               };
+> > +
+> > +               A53_3:cpu@103 {
+> > +                       compatible = "arm,cortex-a53","arm,armv8";
+> > +                       reg = <0x0 0x103>;
+> > +                       device_type = "cpu";
+> > +                       enable-method = "psci";
+> > +               };
+> > +
+> > +               A57_0:cpu@0 {
+> > +                       compatible = "arm,cortex-a57","arm,armv8";
+> > +                       reg = <0x0 0x0>;
+> > +                       device_type = "cpu";
+> > +                       enable-method = "psci";
+> > +               };
+> > +
+> > +               A57_1:cpu@1 {
+> > +                       compatible = "arm,cortex-a57","arm,armv8";
+> > +                       reg = <0x0 0x1>;
+> > +                       device_type = "cpu";
+> > +                       enable-method = "psci";
+> > +               };
+> 
+> These cpus are not ordered by reg, they probably should be (i.e. 57s
+> before 53s).
+
+That's because the A53s are the boot cluster. And yes, HW guys though it
+was fun to confuse people by making the little cluster second in line.
+
+Is that a hard requirement to order by reg or can I keep the current
+order? AFAIK (but I need to check tomorrow with the board) the boot
+code gets confused if the first node is not the boot node.
 
 
--------- Forwarded Message --------
-Subject: [GIT PULL 1/4] KVM: s390: Fix ipte locking
-Date: Fri,  7 Nov 2014 12:45:13 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>, Alexander Graf <agraf@suse.de>, Cornelia Huck <cornelia.huck@de.ibm.com>, Jens Freimann <jfrei@linux.vnet.ibm.com>, linux-s390 <linux-s390@vger.kernel.org>, Christian Borntraeger <borntraeger@de.ibm.com>, stable@vger.kernel.org
+> 
+> > +       };
+> > +
+> > +       memory@80000000 {
+> > +               device_type = "memory";
+> > +               /* last 16MB of the first memory area is reserved for secure world use by firmware */
+> > +               reg = <0x00000000 0x80000000 0x0 0x7f000000>,
+> > +                     <0x00000008 0x80000000 0x1 0x80000000>;
+> > +       };
+> > +
+> > +       gic: interrupt-controller@2c001000 {
+> > +               compatible = "arm,gic-400", "arm,cortex-a15-gic";
+> > +               reg = <0x0 0x2c010000 0 0x1000>,
+> > +                     <0x0 0x2c02f000 0 0x2000>,
+> > +                     <0x0 0x2c04f000 0 0x2000>,
+> > +                     <0x0 0x2c06f000 0 0x2000>;
+> > +               #address-cells = <0>;
+> > +               #interrupt-cells = <3>;
+> > +               interrupt-controller;
+> > +               interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>;
+> > +       };
+> > +
+> > +       timer {
+> > +               compatible = "arm,armv8-timer";
+> > +               interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> > +                            <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> > +                            <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> > +                            <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
+> > +       };
+> > +
+> > +       pmu {
+> > +               compatible = "arm,armv8-pmuv3";
+> > +               interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 02 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 06 IRQ_TYPE_LEVEL_HIGH>;
+> > +       };
+> > +
+> > +       psci {
+> > +               compatible = "arm,psci-0.2";
+> > +               method = "smc";
+> > +       };
+> 
+> This dt is just a pile of nodes in a flat directory today. You're not
+> the first to add psci at toplevel, but it'd be nice to do some sort of
+> structure for this at some point.
 
-ipte_unlock_siif uses cmpxchg to replace the in-memory data of the ipte
-lock together with ACCESS_ONCE for the intial read.
+I agree and apologise for the linear dump. I know that there are other
+platform coming but I don't have enough details on what parts are going
+to end up being common and what not.
 
-union ipte_control {
-        unsigned long val;
-        struct {
-                unsigned long k  : 1;
-                unsigned long kh : 31;
-                unsigned long kg : 32;
-        };
-};
-[...]
-static void ipte_unlock_siif(struct kvm_vcpu *vcpu)
-{
-        union ipte_control old, new, *ic;
+As for psci, should I create a small include file that contains just the
+psci node and include that? 
 
-        ic = &vcpu->kvm->arch.sca->ipte_control;
-        do {
-                new = old = ACCESS_ONCE(*ic);
-                new.kh--;
-                if (!new.kh)
-                        new.k = 0;
-        } while (cmpxchg(&ic->val, old.val, new.val) != old.val);
-        if (!new.kh)
-                wake_up(&vcpu->kvm->arch.ipte_wq);
-}
+> 
+> Same for the timer and pmu nodes, they should probably go somewhere
+> else than the top.
 
-The new value, is loaded twice from memory with gcc 4.7.2 of
-fedora 18, despite the ACCESS_ONCE:
+OK, I will try to break this DT in pieces.
 
---->
+> 
+> > +
+> > +       /* SoC fixed clocks */
+> > +       soc_uartclk: refclk72738khz {
+> > +               compatible = "fixed-clock";
+> > +               #clock-cells = <0>;
+> > +               clock-frequency = <7273800>;
+> > +               clock-output-names = "juno:uartclk";
+> > +       };
+> > +
+> > +       soc_usb48mhz: clk48mhz {
+> > +               compatible = "fixed-clock";
+> > +               #clock-cells = <0>;
+> > +               clock-frequency = <48000000>;
+> > +               clock-output-names = "clk48mhz";
+> > +       };
+> > +
+> > +       soc_smc50mhz: clk50mhz {
+> > +               compatible = "fixed-clock";
+> > +               #clock-cells = <0>;
+> > +               clock-frequency = <50000000>;
+> > +               clock-output-names = "smc_clk";
+> > +       };
+> > +
+> > +       soc_refclk100mhz: refclk100mhz {
+> > +               compatible = "fixed-clock";
+> > +               #clock-cells = <0>;
+> > +               clock-frequency = <100000000>;
+> > +               clock-output-names = "apb_pclk";
+> > +       };
+> > +
+> > +       soc_faxiclk: refclk533mhz {
+> > +               compatible = "fixed-clock";
+> > +               #clock-cells = <0>;
+> > +               clock-frequency = <533000000>;
+> > +               clock-output-names = "faxi_clk";
+> > +       };
+> > +
+> > +       mb_eth25mhz: clk25mhz {
+> > +               compatible = "fixed-clock";
+> > +               #clock-cells = <0>;
+> > +               clock-frequency = <25000000>;
+> > +               clock-output-names = "ethclk25mhz";
+> > +       };
+> > +
+> > +       memory-controller@7ffd0000 {
+> > +               compatible = "arm,pl354", "arm,primecell";
+> > +               reg = <0 0x7ffd0000 0 0x1000>;
+> > +               interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
+> > +               clocks = <&soc_smc50mhz>;
+> > +               clock-names = "apb_pclk";
+> > +       };
+> > +
+> > +       dma0: dma@7ff00000 {
+> 
+> We're trying to encourate DT contents to be sorted per unit address /
+> reg, to cause fewer conflicts when new stuff is added. Care to reorder
+> the devices based on that?
 
-l       %r4,0(%r3)      <--- load first 32 bit of lock (k and kh) in r4
-alfi    %r4,2147483647  <--- add -1 to r4
-llgtr   %r4,%r4         <--- zero out the sign bit of r4
-lg      %r1,0(%r3)      <--- load all 64 bit of lock into new
-lgr     %r2,%r1         <--- load the same into old
-risbg   %r1,%r4,1,31,32 <--- shift and insert r4 into the bits 1-31 of
-new
-llihf   %r4,2147483647
-ngrk    %r4,%r1,%r4
-jne     aa0 <ipte_unlock+0xf8>
-nihh    %r1,32767
-lgr     %r4,%r2
-csg     %r4,%r1,0(%r3)
-cgr     %r2,%r4
-jne     a70 <ipte_unlock+0xc8>
+Absolutely, sorry for the mistake.
 
-If the memory value changes between the first load (l) and the second
-load (lg) we are broken. If that happens VCPU threads will hang
-(unkillable) in handle_ipte_interlock.
+> 
+> 
+> > +               compatible = "arm,pl330", "arm,primecell";
+> > +               reg = <0x0 0x7ff00000 0 0x1000>;
+> > +               #dma-cells = <1>;
+> > +               #dma-channels = <8>;
+> > +               #dma-requests = <32>;
+> > +               interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>,
+> > +                            <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
+> > +               clocks = <&soc_faxiclk>;
+> > +               clock-names = "apb_pclk";
+> > +       };
+> > +
+> > +       soc_uart0: uart@7ff80000 {
+> > +               compatible = "arm,pl011", "arm,primecell";
+> > +               reg = <0x0 0x7ff80000 0x0 0x1000>;
+> > +               interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
+> > +               clocks = <&soc_uartclk>, <&soc_refclk100mhz>;
+> > +               clock-names = "uartclk", "apb_pclk";
+> > +       };
+> > +
+> > +       ulpi_phy: phy@0 {
+> > +               compatible = "phy-ulpi-generic";
+> > +               reg = <0x0 0x94 0x0 0x4>;
+> > +               phy-id = <0>;
+> > +       };
+> 
+> phy@0? Hmm. Doesn't seem to belong in the same address space as
+> everything else here.
 
-Andreas Krebbel analyzed this and tracked it down to a compiler bug in
-that version:
-"while it is not that obvious the C99 standard basically forbids
-duplicating the memory access also in that case. For an argumentation of
-a similiar case please see:
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=22278#c43
+And the bindings are not defined either. I wonder if I need to define
+this at all after my patch to add the SMSC USB334x PHY ID. Will check
+tomorrow when I have access to the board.
 
-For the implementation-defined cases regarding volatile there are some
-GCC-specific clarifications which can be found here:
-https://gcc.gnu.org/onlinedocs/gcc/Volatiles.html#Volatiles
+Thanks for reviewing this!
 
-I've tracked down the problem with a reduced testcase. The problem was
-that during a tree level optimization (SRA - scalar replacement of
-aggregates) the volatile marker is lost. And an RTL level optimizer (CSE
-- common subexpression elimination) then propagated the memory read into
-  its second use introducing another access to the memory location. So
-indeed Christian's suspicion that the union access has something to do
-with it is correct (since it triggered the SRA optimization).
+Best regards,
+Liviu
 
-This issue has been reported and fixed in the GCC 4.8 development cycle:
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145"
 
-This patch replaces the ACCESS_ONCE scheme with a barrier() based scheme
-that should work for all supported compilers.
+> 
+> 
+> > +
+> > +       ehci@7ffc0000 {
+> > +               compatible = "generic-ehci";
+> > +               reg = <0x0 0x7ffc0000 0x0 0x10000>;
+> > +               interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
+> > +               clocks = <&soc_usb48mhz>;
+> > +               phys = <&ulpi_phy>;
+> > +               phy-names = "usb_ulpi";
+> > +       };
+> > +
+> > +       ohci@7ffb0000 {
+> > +               compatible = "generic-ohci";
+> > +               reg = <0x0 0x7ffb0000 0x0 0x10000>;
+> > +               interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
+> > +               clocks = <&soc_usb48mhz>;
+> > +               phys = <&ulpi_phy>;
+> > +               phy-names = "usb_ulpi";
+> > +       };
+> > +
+> > +       i2c@7ffa0000 {
+> > +               compatible = "snps,designware-i2c";
+> > +               reg = <0x0 0x7ffa0000 0x0 0x1000>;
+> > +               #address-cells = <1>;
+> > +               #size-cells = <0>;
+> > +               interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>;
+> > +               clock-frequency = <400000>;
+> > +               i2c-sda-hold-time-ns = <500>;
+> > +               clocks = <&soc_smc50mhz>;
+> > +
+> > +               dvi0: dvi-transmitter@70 {
+> > +                       compatible = "nxp,tda998x";
+> > +                       reg = <0x70>;
+> > +               };
+> > +
+> > +               dvi1: dvi-transmitter@71 {
+> > +                       compatible = "nxp,tda998x";
+> > +                       reg = <0x71>;
+> > +               };
+> > +       };
+> > +
+> > +       smb {
+> > +               compatible = "simple-bus";
+> > +               #address-cells = <2>;
+> > +               #size-cells = <1>;
+> > +               ranges = <0 0 0 0x08000000 0x04000000>,
+> > +                        <1 0 0 0x14000000 0x04000000>,
+> > +                        <2 0 0 0x18000000 0x04000000>,
+> > +                        <3 0 0 0x1c000000 0x04000000>,
+> > +                        <4 0 0 0x0c000000 0x04000000>,
+> > +                        <5 0 0 0x10000000 0x04000000>;
+> > +
+> > +               #interrupt-cells = <1>;
+> > +               interrupt-map-mask = <0 0 15>;
+> > +               interrupt-map = <0 0  0 &gic 0  68 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  1 &gic 0  69 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  2 &gic 0  70 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  3 &gic 0 160 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  4 &gic 0 161 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  5 &gic 0 162 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  6 &gic 0 163 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  7 &gic 0 164 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  8 &gic 0 165 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0  9 &gic 0 166 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0 10 &gic 0 167 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0 11 &gic 0 168 IRQ_TYPE_LEVEL_HIGH>,
+> > +                               <0 0 12 &gic 0 169 IRQ_TYPE_LEVEL_HIGH>;
+> > +
+> > +               mb_clk24mhz: clk24mhz {
+> > +                       compatible = "fixed-clock";
+> > +                       #clock-cells = <0>;
+> > +                       clock-frequency = <24000000>;
+> > +                       clock-output-names = "juno_mb:clk24mhz";
+> > +               };
+> > +
+> > +               motherboard {
+> > +                       compatible = "arm,vexpress,v2p-p1", "simple-bus";
+> > +                       #address-cells = <2>;  /* SMB chipselect number and offset */
+> > +                       #size-cells = <1>;
+> > +                       #interrupt-cells = <1>;
+> > +                       ranges;
+> > +                       model = "V2M-Juno";
+> > +                       arm,hbi = <0x252>;
+> > +                       arm,vexpress,site = <0>;
+> > +                       arm,v2m-memory-map = "rs1";
+> > +
+> > +                       mb_fixed_3v3: fixedregulator@0 {
+> > +                               compatible = "regulator-fixed";
+> > +                               regulator-name = "MCC_SB_3V3";
+> > +                               regulator-min-microvolt = <3300000>;
+> > +                               regulator-max-microvolt = <3300000>;
+> > +                               regulator-always-on;
+> > +                       };
+> > +
+> > +                       ethernet@2,00000000 {
+> > +                               compatible = "smsc,lan9118", "smsc,lan9115";
+> > +                               reg = <2 0x00000000 0x10000>;
+> > +                               interrupts = <3>;
+> > +                               phy-mode = "mii";
+> > +                               reg-io-width = <4>;
+> > +                               smsc,irq-active-high;
+> > +                               smsc,irq-push-pull;
+> > +                               clocks = <&mb_eth25mhz>;
+> > +                               vdd33a-supply = <&mb_fixed_3v3>;
+> > +                               vddvario-supply = <&mb_fixed_3v3>;
+> > +                       };
+> > +
+> > +                       usb@5,00000000 {
+> > +                               compatible = "nxp,usb-isp1763";
+> > +                               reg = <5 0x00000000 0x20000>;
+> > +                               bus-width = <16>;
+> > +                               interrupts = <4>;
+> > +                       };
+> > +
+> > +                       iofpga@3,00000000 {
+> > +                               compatible = "arm,amba-bus", "simple-bus";
+> > +                               #address-cells = <1>;
+> > +                               #size-cells = <1>;
+> > +                               ranges = <0 3 0 0x200000>;
+> > +
+> > +                               mmci@050000 {
+> > +                                       compatible = "arm,pl180", "arm,primecell";
+> > +                                       reg = <0x050000 0x1000>;
+> > +                                       interrupts = <5>;
+> > +                                       /* cd-gpios = <&v2m_mmc_gpios 0 0>;
+> > +                                       wp-gpios = <&v2m_mmc_gpios 1 0>; */
+> > +                                       max-frequency = <12000000>;
+> > +                                       vmmc-supply = <&mb_fixed_3v3>;
+> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
+> > +                                       clock-names = "mclk", "apb_pclk";
+> > +                               };
+> > +
+> > +                               kmi@060000 {
+> > +                                       compatible = "arm,pl050", "arm,primecell";
+> > +                                       reg = <0x060000 0x1000>;
+> > +                                       interrupts = <8>;
+> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
+> > +                                       clock-names = "KMIREFCLK", "apb_pclk";
+> > +                               };
+> > +
+> > +                               kmi@070000 {
+> > +                                       compatible = "arm,pl050", "arm,primecell";
+> > +                                       reg = <0x070000 0x1000>;
+> > +                                       interrupts = <8>;
+> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
+> > +                                       clock-names = "KMIREFCLK", "apb_pclk";
+> > +                               };
+> > +
+> > +                               wdt@0f0000 {
+> > +                                       compatible = "arm,sp805", "arm,primecell";
+> > +                                       reg = <0x0f0000 0x10000>;
+> > +                                       interrupts = <7>;
+> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
+> > +                                       clock-names = "wdogclk", "apb_pclk";
+> > +                               };
+> > +
+> > +                               v2m_timer01: timer@110000 {
+> > +                                       compatible = "arm,sp804", "arm,primecell";
+> > +                                       reg = <0x110000 0x10000>;
+> > +                                       interrupts = <9>;
+> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
+> > +                                       clock-names = "timclken1", "apb_pclk";
+> > +                               };
+> > +
+> > +                               v2m_timer23: timer@120000 {
+> > +                                       compatible = "arm,sp804", "arm,primecell";
+> > +                                       reg = <0x120000 0x10000>;
+> > +                                       interrupts = <9>;
+> > +                                       clocks = <&mb_clk24mhz>, <&soc_smc50mhz>;
+> > +                                       clock-names = "timclken1", "apb_pclk";
+> > +                               };
+> > +
+> > +                               rtc@170000 {
+> > +                                       compatible = "arm,pl031", "arm,primecell";
+> > +                                       reg = <0x170000 0x10000>;
+> > +                                       interrupts = <0>;
+> > +                                       clocks = <&soc_smc50mhz>;
+> > +                                       clock-names = "apb_pclk";
+> > +                               };
+> > +                       };
+> > +               };
+> > +       };
+> > +};
+> > --
+> > 2.1.3
+> >
+> 
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: stable@vger.kernel.org # v3.16+
----
- arch/s390/kvm/gaccess.c | 20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
-index 0f961a1..6dc0ad9 100644
---- a/arch/s390/kvm/gaccess.c
-+++ b/arch/s390/kvm/gaccess.c
-@@ -229,10 +229,12 @@ static void ipte_lock_simple(struct kvm_vcpu *vcpu)
- 		goto out;
- 	ic = &vcpu->kvm->arch.sca->ipte_control;
- 	do {
--		old = ACCESS_ONCE(*ic);
-+		old = *ic;
-+		barrier();
- 		while (old.k) {
- 			cond_resched();
--			old = ACCESS_ONCE(*ic);
-+			old = *ic;
-+			barrier();
- 		}
- 		new = old;
- 		new.k = 1;
-@@ -251,7 +253,9 @@ static void ipte_unlock_simple(struct kvm_vcpu *vcpu)
- 		goto out;
- 	ic = &vcpu->kvm->arch.sca->ipte_control;
- 	do {
--		new = old = ACCESS_ONCE(*ic);
-+		old = *ic;
-+		barrier();
-+		new = old;
- 		new.k = 0;
- 	} while (cmpxchg(&ic->val, old.val, new.val) != old.val);
- 	wake_up(&vcpu->kvm->arch.ipte_wq);
-@@ -265,10 +269,12 @@ static void ipte_lock_siif(struct kvm_vcpu *vcpu)
-
- 	ic = &vcpu->kvm->arch.sca->ipte_control;
- 	do {
--		old = ACCESS_ONCE(*ic);
-+		old = *ic;
-+		barrier();
- 		while (old.kg) {
- 			cond_resched();
--			old = ACCESS_ONCE(*ic);
-+			old = *ic;
-+			barrier();
- 		}
- 		new = old;
- 		new.k = 1;
-@@ -282,7 +288,9 @@ static void ipte_unlock_siif(struct kvm_vcpu *vcpu)
-
- 	ic = &vcpu->kvm->arch.sca->ipte_control;
- 	do {
--		new = old = ACCESS_ONCE(*ic);
-+		old = *ic;
-+		barrier();
-+		new = old;
- 		new.kh--;
- 		if (!new.kh)
- 			new.k = 0;
 -- 
-1.9.3
-
-
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
