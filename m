@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaKJP3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 10:29:42 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:55391 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787AbaKJP3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 10:29:41 -0500
-Date: Mon, 10 Nov 2014 15:29:35 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc3589x: get rid of static base
-Message-ID: <20141110152935.GG24004@x1>
-References: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
+	id S1753446AbaKJPaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 10:30:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38732 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874AbaKJPaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 10:30:09 -0500
+Date: Mon, 10 Nov 2014 16:29:34 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 14/18] perf tools: Make vmlinux short name more like
+ kallsyms short name
+Message-ID: <20141110152934.GA8123@krava.redhat.com>
+References: <1415307879-912-1-git-send-email-acme@kernel.org>
+ <1415307879-912-15-git-send-email-acme@kernel.org>
+ <20141109075126.GB3366@krava.redhat.com>
+ <87r3xbvazp.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87r3xbvazp.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014, Linus Walleij wrote:
+On Mon, Nov 10, 2014 at 03:13:46PM +0900, Namhyung Kim wrote:
 
-> The TC3589x driver is now a device tree-only driver, so we want
-> only dynamic IRQs and GPIO numbers from the tc3589x, no static
-> assignments.
+SNIP
+
+> >> +			dso__set_short_name(dso, "[kernel.vmlinux]", false);
+> >> +
+> >
+> > heya,
+> > I've got attached segfault in perf script because of this,
+> > if I revert it's ok..
 > 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/gpio/gpio-tc3589x.c | 2 +-
->  drivers/mfd/tc3589x.c       | 9 +++------
->  include/linux/mfd/tc3589x.h | 8 --------
->  3 files changed, 4 insertions(+), 15 deletions(-)
+> Oops, sorry.  It seems somehow to fail to find a matching kernel dso
+> from the build-id table..  anyway we need to access 'kernel' instead of
+> 'dso' since it might be invalid at this time.
+> 
+> Could you please check below patch?
+> 
+> 
+> From e28ec815465721b81669c47eb00d8307f4b424cd Mon Sep 17 00:00:00 2001
+> From: Namhyung Kim <namhyung@kernel.org>
+> Date: Mon, 10 Nov 2014 15:05:26 +0900
+> Subject: [PATCH] perf tools: Fix segfault due to invalid kernel dso access
+> 
+> When processing kernel mmap event, it should access the 'kernel'
+> variable as sometimes it cannot find a matching dso from build-id
+> table so 'dso' might be invalid.
+> 
+> Reported-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-Applied, thanks.
+yep, works nicely now
 
-> diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
-> index ae0f6466eb09..abdcf58935f5 100644
-> --- a/drivers/gpio/gpio-tc3589x.c
-> +++ b/drivers/gpio/gpio-tc3589x.c
-> @@ -262,7 +262,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
->  	tc3589x_gpio->chip = template_chip;
->  	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
->  	tc3589x_gpio->chip.dev = &pdev->dev;
-> -	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
-> +	tc3589x_gpio->chip.base = -1;
->  
->  #ifdef CONFIG_OF_GPIO
->  	tc3589x_gpio->chip.of_node = np;
-> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-> index 0072e668c208..aacb3720065c 100644
-> --- a/drivers/mfd/tc3589x.c
-> +++ b/drivers/mfd/tc3589x.c
-> @@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
->  
->  static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
->  {
-> -	int base = tc3589x->irq_base;
-> -
->  	tc3589x->domain = irq_domain_add_simple(
-> -		np, TC3589x_NR_INTERNAL_IRQS, base,
-> +		np, TC3589x_NR_INTERNAL_IRQS, 0,
->  		&tc3589x_irq_ops, tc3589x);
->  
->  	if (!tc3589x->domain) {
-> @@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
->  	if (blocks & TC3589x_BLOCK_GPIO) {
->  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
->  				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
-> -				      tc3589x->irq_base, tc3589x->domain);
-> +				      0, tc3589x->domain);
->  		if (ret) {
->  			dev_err(tc3589x->dev, "failed to add gpio child\n");
->  			return ret;
-> @@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
->  	if (blocks & TC3589x_BLOCK_KEYPAD) {
->  		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
->  				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
-> -				      tc3589x->irq_base, tc3589x->domain);
-> +				      0, tc3589x->domain);
->  		if (ret) {
->  			dev_err(tc3589x->dev, "failed to keypad child\n");
->  			return ret;
-> @@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
->  	tc3589x->dev = &i2c->dev;
->  	tc3589x->i2c = i2c;
->  	tc3589x->pdata = pdata;
-> -	tc3589x->irq_base = pdata->irq_base;
->  
->  	switch (version) {
->  	case TC3589X_TC35893:
-> diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
-> index e6088c2e2092..e1c12d84c26a 100644
-> --- a/include/linux/mfd/tc3589x.h
-> +++ b/include/linux/mfd/tc3589x.h
-> @@ -164,13 +164,10 @@ struct tc3589x_keypad_platform_data {
->  
->  /**
->   * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
-> - * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
-> - *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
->   * @setup: callback for board-specific initialization
->   * @remove: callback for board-specific teardown
->   */
->  struct tc3589x_gpio_platform_data {
-> -	int gpio_base;
->  	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
->  	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
->  };
-> @@ -178,18 +175,13 @@ struct tc3589x_gpio_platform_data {
->  /**
->   * struct tc3589x_platform_data - TC3589x platform data
->   * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
-> - * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
->   * @gpio: GPIO-specific platform data
->   * @keypad: keypad-specific platform data
->   */
->  struct tc3589x_platform_data {
->  	unsigned int block;
-> -	int irq_base;
->  	struct tc3589x_gpio_platform_data *gpio;
->  	const struct tc3589x_keypad_platform_data *keypad;
->  };
->  
-> -#define TC3589x_NR_GPIOS	24
-> -#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
-> -
->  #endif
+Tested-by: Jiri Olsa <jolsa@redhat.com>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+thanks,
+jirka
