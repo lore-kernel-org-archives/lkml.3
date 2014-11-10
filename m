@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaKJU1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:27:13 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:33294 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaKJU1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:27:11 -0500
-Date: Mon, 10 Nov 2014 21:26:59 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
-Message-ID: <20141110202655.GB29741@lerouge>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
- <alpine.DEB.2.11.1411012003390.5308@nanos>
- <alpine.DEB.2.11.1411011646280.7732@gentwo.org>
+	id S1752233AbaKJU1Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:27:24 -0500
+Received: from mail-bn1bon0115.outbound.protection.outlook.com ([157.56.111.115]:29830
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752037AbaKJU1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 15:27:21 -0500
+X-WSS-ID: 0NEUBHC-07-XH8-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+To: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
+        <acme@kernel.org>, <tglx@linutronix.de>, <hpa@zytor.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Len Brown <len.brown@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH V2] perf, amd, ibs: Update IBS MSRs and feature definitions
+Date: Mon, 10 Nov 2014 14:24:26 -0600
+Message-ID: <1415651066-13523-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411011646280.7732@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(50466002)(46102003)(101416001)(87286001)(31966008)(21056001)(87936001)(4396001)(50226001)(89996001)(48376002)(102836001)(53416004)(104166001)(20776003)(47776003)(64706001)(120916001)(99396003)(50986999)(2201001)(92726001)(92566001)(86362001)(575784001)(93916002)(97736003)(229853001)(95666004)(105586002)(88136002)(44976005)(107046002)(84676001)(62966003)(36756003)(68736004)(19580405001)(19580395003)(77156002)(77096003)(106466001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB202;H:atltwp01.amd.com;FPR:;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-Forefront-PRVS: 039178EF4A
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB202;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 01, 2014 at 04:52:13PM -0500, Christoph Lameter wrote:
-> On Sat, 1 Nov 2014, Thomas Gleixner wrote:
-> 
-> > On Fri, 31 Oct 2014, Christoph Lameter wrote:
-> > > The reasoning behind this function is not clear to me and removal seems
-> >
-> > The comment above the function is clear enough.
-> 
-> I looked around into the functions called by the timer interrupt for
-> accounting etc. They have measures to compensate if the HZ is not
-> occurring for some time.
+New Fam15h models carry extra feature bits and extend
+the MSR register space for IBS ops. Adding them here.
 
-Not very well. They handle correctly dynticks idle but not dynticks full.
-Checkout update_cpu_load_active() -> __update_cpu_load() for example.
+While at it, add functionality to read IbsBrTarget and
+OpData4 depending on their availability if user wants a
+PERF_SAMPLE_RAW.
 
-There is a pending_update argument that take care of tickless delta but
-decay_load_miss() catch up with the missing cpu load assuming it was all 0 (idle)
-all that time.
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+---
+Changes in V2 (per Boris suggestion)
+ - Remove unused MSR listing
 
-Generally speaking the scheduler assume dynticks to be idle dynticks. And that
-concerns the above example and probably many other accounting.
+ arch/x86/include/asm/perf_event.h        |  3 +++
+ arch/x86/include/uapi/asm/msr-index.h    |  1 +
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c | 15 +++++++++++++++
+ 3 files changed, 19 insertions(+)
 
-Now the issue with update_cpu_load_active() is there, whether we keep 1 Hz or not,
-any delta of full dynticks workload makes it buggy because it's accounted as idle
-load.
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 8dfc9fd..dc0f6ed 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -177,6 +177,9 @@ struct x86_pmu_capability {
+ #define IBS_CAPS_BRNTRGT		(1U<<5)
+ #define IBS_CAPS_OPCNTEXT		(1U<<6)
+ #define IBS_CAPS_RIPINVALIDCHK		(1U<<7)
++#define IBS_CAPS_OPBRNFUSE		(1U<<8)
++#define IBS_CAPS_FETCHCTLEXTD		(1U<<9)
++#define IBS_CAPS_OPDATA4		(1U<<10)
+ 
+ #define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
+ 					 | IBS_CAPS_FETCHSAM	\
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index e21331c..8f02f69 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -206,6 +206,7 @@
+ #define MSR_AMD64_IBSOP_REG_MASK	((1UL<<MSR_AMD64_IBSOP_REG_COUNT)-1)
+ #define MSR_AMD64_IBSCTL		0xc001103a
+ #define MSR_AMD64_IBSBRTARGET		0xc001103b
++#define MSR_AMD64_IBSOPDATA4		0xc001103d
+ #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
+ 
+ /* Fam 16h MSRs */
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index cbb1be3e..a61f5c6 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -565,6 +565,21 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
+ 				       perf_ibs->offset_max,
+ 				       offset + 1);
+ 	} while (offset < offset_max);
++	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
++		/*
++		 * Read IbsBrTarget and IbsOpData4 separately
++		 * depending on their availability.
++		 * Can't add to offset_max as they are staggered
++		 */
++		if (ibs_caps & IBS_CAPS_BRNTRGT) {
++			rdmsrl(MSR_AMD64_IBSBRTARGET, *buf++);
++			size++;
++		}
++		if (ibs_caps & IBS_CAPS_OPDATA4) {
++			rdmsrl(MSR_AMD64_IBSOPDATA4, *buf++);
++			size++;
++		}
++	}
+ 	ibs_data.size = sizeof(u64) * size;
+ 
+ 	regs = *iregs;
+-- 
+1.9.1
 
-But removing the 1 Hz residual tick is dangerous because many accounting in the
-scheduler tick assume regular updates. It's mostly ok as long as the accounting
-is exclusively updated and read locally. But some accounting is also updated locally
-and read remotely. So if CPU 0 is full dynticks and runs for 1 hour in userspace and
-CPU 1 reads its stats, those will be buggy because of the missing updates. At best
-in this scenarion CPU 1 may consider that CPU 0 has been idle for 1 hour, at worst
-the stats can be junk and there can be crashes. Also a lot of the scheduler decisions
-is based on these accountings. Load balancing to the least.
-
-So we have two possible solutions:
-
-1) Make the scheduler more full-dynticks aware. Which means that any remote
-stat accounting read must handle out of date results. That's going to be tricky: if
-you check scheduler_tick() and sched_class::task_tick(), even simply trying to
-sort out which stat is updated, can handle busy dynticks load, is read only locally
-or can be read remotely, handles overflow, etc... That's enough work for an army of ants.
-
-2) Offload scheduler_tick() to the housekeeping. It looks like many of the updaters
-there can easily take a remote rq argument. There doesn't seem to be much local rq
-assumption. So that's the easiest solution.
-
-But we can't just remove scheduler_tick_max_deferment() and not fix things behind.
-The result will be unpredictably insane and dangerous. The only predictable thing
-that's going to happen if we do that is that nobody will ever fix it properly.
