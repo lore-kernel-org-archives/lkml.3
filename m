@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaKJHoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 02:44:37 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54001 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaKJHof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 02:44:35 -0500
-Date: Mon, 10 Nov 2014 08:44:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: john_gong <john_gong@yeah.net>
-Cc: pbonzini@redhat.com,
-        "Gleb Natapov <gleb@kernel.org> Thomas Gleixner" <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
-Subject: Re: typo of the comment
-Message-ID: <20141110074430.GA10177@gmail.com>
-References: <545D8968.4080004@yeah.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <545D8968.4080004@yeah.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752073AbaKJHqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 02:46:15 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:60067 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803AbaKJHqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 02:46:13 -0500
+Message-ID: <1415605592.22935.3.camel@mm-sol.com>
+Subject: Re: [PATCH] mfd: qcom-spmi-pmic: Add support for more chips versions
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Gilad Avidov <gavidov@codeaurora.org>
+Cc: Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Date: Mon, 10 Nov 2014 09:46:32 +0200
+In-Reply-To: <545D5EEA.8020800@codeaurora.org>
+References: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
+		 <CAJAp7OgU64=KCuDhYEZTYppVeBz6wKvTDsof5vDRznfdZgAfZw@mail.gmail.com>
+		 <1415212271.14949.1.camel@mm-sol.com>
+		 <CAJAp7OgXHGWQj7MWh51LTUdmZpgZc=6m=o-Az=z8QxR7yfrw7g@mail.gmail.com>
+	 <1415260480.13103.3.camel@mm-sol.com> <545D5EEA.8020800@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.6-fta3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* john_gong <john_gong@yeah.net> wrote:
+Hi Gilad,
 
-> hi Paolo,
-> i find a typo of the comment.
-> 
-> 
-> From 09d5df31f0930e8e3eb10ad60a3debc53d6ce992 Mon Sep 17 00:00:00 2001
-> From: john_gong <john_gong@yeah.net>
-> Date: Fri, 7 Nov 2014 07:32:17 +0800
-> Subject: [PATCH] modify a typo of the comment
-> 
-> Signed-off-by: john_gong <john_gong@yeah.net>
-> ---
->  arch/x86/kvm/x86.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index ef432f8..42bb2c8 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -214,7 +214,7 @@ void kvm_define_shared_msr(unsigned slot, u32 msr)
->      if (slot >= shared_msrs_global.nr)
->          shared_msrs_global.nr = slot + 1;
->      shared_msrs_global.msrs[slot] = msr;
-> -    /* we need ensured the shared_msr_global have been updated */
-> +    /* we need ensured the shared_msrs_global have been updated */
->      smp_wmb();
+On Fri, 2014-11-07 at 17:08 -0700, Gilad Avidov wrote:
+> On 11/6/2014 12:54 AM, Ivan T. Ivanov wrote:
+> > On Wed, 2014-11-05 at 17:36 -0800, Bjorn Andersson wrote:
+> > > On Wed, Nov 5, 2014 at 10:31 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> > > > On Wed, 2014-11-05 at 10:11 -0800, Bjorn Andersson wrote:
+> > > > > On Tue, Nov 4, 2014 at 5:33 AM, Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > > > wrote:
+> > > > > [..]
+> > > > > > @@ -28,11 +144,27 @@ static int pmic_spmi_probe(struct spmi_device
+> > > > > > *sdev)
+> > > > > >   {
+> > > > > >          struct device_node *root = sdev->dev.of_node;
+> > > > > >          struct regmap *regmap;
+> > > > > > +       struct property *prop;
+> > > > > > +       int major, minor, ret;
+> > > > > > +       char *name, compatible[32];
+> > > > > > 
+> > > > > >          regmap = devm_regmap_init_spmi_ext(sdev,
+> > > > > > &spmi_regmap_config);
+> Hi Ivan, I have a general question about this driver/layer.
+> Since the driver is using regmap, why does it need to be
+> qcom-*spmi*-pmic ? could we drop the spmi part?
+> regmap's point is abstraction of  the bus technology, and indeed some
+> PMICs use i2c.
 
-That's not the only typo in that sentence though.
+This is driver for SPMI device, so no. The child device/drivers are
+different question, but I don't want to start that discussion again.
 
-Thanks,
-
-	Ingo
+Regards,
+Ivan
