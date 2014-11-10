@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaKJSEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 13:04:31 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50843 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaKJSE3 (ORCPT
+	id S1751296AbaKJSKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 13:10:05 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:44961 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaKJSKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 13:04:29 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <5460EF02.3000904@gmail.com>
-References: <CA+r1Zhio+KeBH0FFHwj=_fTFjqzebeE7Y2O_vsvMco49Sp56jw@mail.gmail.com> <5460EF02.3000904@gmail.com>
+	Mon, 10 Nov 2014 13:10:02 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: randconfig build error with next-20141110, in drivers/platform/x86/hp_accel.c
-From: Darren Hart <dvhart@infradead.org>
-Date: Mon, 10 Nov 2014 09:19:15 -0800
-To: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>,
-        Jim Davis <jim.epost@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        eric.piel@tremplin-utc.net, platform-driver-x86@vger.kernel.org
-Message-ID: <56A55F6D-4EA5-4A54-8727-97D3E4A875A5@infradead.org>
+In-Reply-To: <CA+55aFw9MV1n8T7_k5oftfY-sOu8s1ywKYM-3k4+PF022vv9ow@mail.gmail.com>
+References: <5458A9600200007800044AE5@mail.emea.novell.com>
+	<20141110100117.GA15841@gmail.com>
+	<CA+55aFw9MV1n8T7_k5oftfY-sOu8s1ywKYM-3k4+PF022vv9ow@mail.gmail.com>
+Date: Mon, 10 Nov 2014 10:10:01 -0800
+X-Google-Sender-Auth: er0CCMPy4TT9fPC95NOIY28G9Bw
+Message-ID: <CA+55aFwZYeFtuQbxtAbOoMVNFN_fQKnxGbRybdz-LYRzwMqX9w@mail.gmail.com>
+Subject: Re: [PATCH, RFC] x86: also CFI-annotate certain inline asm()s
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Anvin <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Jones <tonyj@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On November 10, 2014 8:59:46 AM PST, Giedrius Statkevicius <giedrius.statkevicius@gmail.com> wrote:
->Hi Jim,
+On Mon, Nov 10, 2014 at 9:56 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
->On 2014.11.10 18:20, Jim Davis wrote:
->> Building with the attached random configuration file,
->> 
->> drivers/built-in.o: In function `lis3lv02d_remove':
->> /home/jim/linux/drivers/platform/x86/hp_accel.c:389: undefined
->> reference to `i8042_remove_filter'
->> drivers/built-in.o: In function `lis3lv02d_add':
->> /home/jim/linux/drivers/platform/x86/hp_accel.c:370: undefined
->> reference to `i8042_install_filter'
->> make: *** [vmlinux] Error 1
->> 
->
->Oops, sorry. Forgot to add a depend on i8042 per this patch in Kconfig:
->https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=a4c724d0723b078e4ab4670e557cda1795036a7a
->
->This patch should fix it. After applying and using your .config I
->compiled the kernel without those undefined references. Should I make a
->new thread where it's submitted in the proper form? 
+> So no. A very strong NACK. The code was too ugly to live, there is no good
+> stated reason for it, and the only reason I can even remotely imagine is
+> wrong and complete crap anyway (ie making the CFI annotations a correctness
+> issue by introducing other infrastructure that depends on it always being
+> right).
 
-Yes please.
+Btw, the sane thing to do is to make your infrastructure just say "If
+my frame walker hits a push/pop without CFI information, I'll just add
+it myself".
 
+Yes, that involved having to actuall ylook at the instruction. Tough
+shit. Just do it right. There aren't that many push/pop patterns.
+Don't make the kernel more fragile by introducing these kinds of hacky
+macros-from-hell.
 
--- 
-Sent from my Android device with K-9 Mail. Please excuse my brevity.
+Improve the debugger, don't make kernel code worse because your
+out-of-tree debugging infrastructure is too broken to live.
+
+                      Linus
