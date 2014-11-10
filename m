@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaKJQED (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:04:03 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:37729 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278AbaKJQD7 (ORCPT
+	id S1753351AbaKJQEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:04:36 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:35589 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888AbaKJQEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:03:59 -0500
-Date: Mon, 10 Nov 2014 16:03:51 +0000
+	Mon, 10 Nov 2014 11:04:34 -0500
+Date: Mon, 10 Nov 2014 16:04:26 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Johan Hovold <johan@kernel.org>,
-        Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH v11 0/3] add support for Diolan DLN-2
-Message-ID: <20141110160351.GJ24004@x1>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, arnd@arndb.de,
+        johan@kernel.org, daniel.baluta@intel.com, laurentiu.palcu@intel.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [GIT PULL] Immutable branch between MFD, GPIO and I2C
+Message-ID: <20141110160426.GK24004@x1>
 References: <1415281685-14866-1-git-send-email-octavian.purdila@intel.com>
- <20141110151019.GC24004@x1>
- <CAE1zotLmLMLm=3HMmL55TXWf4frCryWCLGnhEUw8f9H+GpY4tA@mail.gmail.com>
+ <20141110151226.GD24004@x1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE1zotLmLMLm=3HMmL55TXWf4frCryWCLGnhEUw8f9H+GpY4tA@mail.gmail.com>
+In-Reply-To: <20141110151226.GD24004@x1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014, Octavian Purdila wrote:
+Please don't pull this -- it is missing a patch.
 
-> On Mon, Nov 10, 2014 at 5:10 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > Linus, Wolfram,
-> >
-> > Enjoy!
-> >
-> > The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-> >
-> >   Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-> >
-> > are available in the git repository at:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-i2c-v3.19
+Will fix.
+
+> [Subject change -- in case you miss it]
 > 
-> Hi Lee,
+> Linus, Wolfram,
 > 
-> Not sure if this matter, but this tree seems to miss the
-> mfd_add_hotplug_devices patches from Johan, which are needed by the
-> patches below.
-
-Yes, that will definitely matter.
-
-> > for you to fetch changes up to e7d146b11a8a33b6033220b0f4fc4de2ab29218a:
-> >
-> >   gpio: add support for the Diolan DLN-2 USB GPIO driver (2014-11-10 15:05:49 +0000)
-> >
-> > ----------------------------------------------------------------
-> > Immutable branch between MFD, GPIO and I2C
-> >
-> > ----------------------------------------------------------------
-> > Daniel Baluta (1):
-> >       gpio: add support for the Diolan DLN-2 USB GPIO driver
-> >
-> > Laurentiu Palcu (1):
-> >       i2c: add support for Diolan DLN-2 USB-I2C adapter
-> >
-> > Octavian Purdila (1):
-> >       mfd: Add support for Diolan DLN-2 devices
-> >
-> >  drivers/gpio/Kconfig          |  12 +
-> >  drivers/gpio/Makefile         |   1 +
-> >  drivers/gpio/gpio-dln2.c      | 553 ++++++++++++++++++++++++++++++
-> >  drivers/i2c/busses/Kconfig    |  10 +
-> >  drivers/i2c/busses/Makefile   |   1 +
-> >  drivers/i2c/busses/i2c-dln2.c | 267 +++++++++++++++
-> >  drivers/mfd/Kconfig           |  10 +
-> >  drivers/mfd/Makefile          |   1 +
-> >  drivers/mfd/dln2.c            | 763 ++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/dln2.h      | 103 ++++++
-> >  10 files changed, 1721 insertions(+)
-> >  create mode 100644 drivers/gpio/gpio-dln2.c
-> >  create mode 100644 drivers/i2c/busses/i2c-dln2.c
-> >  create mode 100644 drivers/mfd/dln2.c
-> >  create mode 100644 include/linux/mfd/dln2.h
-> >
+> Enjoy!
+> 
+> The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+> 
+>   Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-gpio-i2c-v3.19
+> 
+> for you to fetch changes up to e7d146b11a8a33b6033220b0f4fc4de2ab29218a:
+> 
+>   gpio: add support for the Diolan DLN-2 USB GPIO driver (2014-11-10 15:05:49 +0000)
+> 
+> ----------------------------------------------------------------
+> Immutable branch between MFD, GPIO and I2C
+> 
+> ----------------------------------------------------------------
+> Daniel Baluta (1):
+>       gpio: add support for the Diolan DLN-2 USB GPIO driver
+> 
+> Laurentiu Palcu (1):
+>       i2c: add support for Diolan DLN-2 USB-I2C adapter
+> 
+> Octavian Purdila (1):
+>       mfd: Add support for Diolan DLN-2 devices
+> 
+>  drivers/gpio/Kconfig          |  12 +
+>  drivers/gpio/Makefile         |   1 +
+>  drivers/gpio/gpio-dln2.c      | 553 ++++++++++++++++++++++++++++++
+>  drivers/i2c/busses/Kconfig    |  10 +
+>  drivers/i2c/busses/Makefile   |   1 +
+>  drivers/i2c/busses/i2c-dln2.c | 267 +++++++++++++++
+>  drivers/mfd/Kconfig           |  10 +
+>  drivers/mfd/Makefile          |   1 +
+>  drivers/mfd/dln2.c            | 763 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/dln2.h      | 103 ++++++
+>  10 files changed, 1721 insertions(+)
+>  create mode 100644 drivers/gpio/gpio-dln2.c
+>  create mode 100644 drivers/i2c/busses/i2c-dln2.c
+>  create mode 100644 drivers/mfd/dln2.c
+>  create mode 100644 include/linux/mfd/dln2.h
+> 
 
 -- 
 Lee Jones
