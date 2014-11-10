@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaKJKNi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 05:13:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57273 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaKJKNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 05:13:37 -0500
-Date: Mon, 10 Nov 2014 11:13:27 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kan Liang <kan.liang@intel.com>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        paulus@samba.org, acme@kernel.org, jolsa@redhat.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH V8 00/14] perf, x86: Haswell LBR call stack support
- (kernel)
-Message-ID: <20141110101327.GG3337@twins.programming.kicks-ass.net>
-References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
+	id S1752558AbaKJKOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 05:14:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751741AbaKJKOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 05:14:20 -0500
+Date: Mon, 10 Nov 2014 12:14:10 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Miller <davem@redhat.com>, herbert@gondor.apana.org.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, bcrl@kvack.org
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141110101410.GA19964@redhat.com>
+References: <20141105210745.GT7996@ZenIV.linux.org.uk>
+ <20141105.165719.835728206041332333.davem@davemloft.net>
+ <20141106032533.GU7996@ZenIV.linux.org.uk>
+ <20141107.164859.951682597018909290.davem@redhat.com>
+ <20141107221114.GB7996@ZenIV.linux.org.uk>
+ <20141107234253.GE7996@ZenIV.linux.org.uk>
+ <20141109211908.GF7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20141109211908.GF7996@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 09:54:17AM -0500, Kan Liang wrote:
-> Yan, Zheng (13):
->   perf, x86: Reduce lbr_sel_map size
->   perf, core: introduce pmu context switch callback
->   perf, x86: use context switch callback to flush LBR stack
->   perf, x86: Basic Haswell LBR call stack support
->   perf, core: pmu specific data for perf task context
->   perf, core: always switch pmu specific data during context switch
->   perf, x86: allocate space for storing LBR stack
->   perf, x86: track number of events that use LBR callstack
->   perf, x86: Save/resotre LBR stack during context switch
->   perf, core: simplify need branch stack check
->   perf, x86: re-organize code that implicitly enables LBR/PEBS
->   perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack  
->       mode
->   perf, x86: Discard zero length call entries in LBR call stack
+On Sun, Nov 09, 2014 at 09:19:08PM +0000, Al Viro wrote:
+> [Michael Cc'd]
 > 
-> Peter Zijlstra (Intel) (1):
->   perf, x86: expose LBR callstack to user space tool
+> On Fri, Nov 07, 2014 at 11:42:53PM +0000, Al Viro wrote:
+> 
+> > I'll finish RTFS drivers/vhost and if it turns out to be OK I'll post the
+> > series moving those checks to the moment of copying iovec from userland,
+> > so that kernel-side we could always rely on ->msg_iov elements having been
+> > verified.
+> 
+> Two questions:
+> 1) does sparc64 access_ok() need to differ for 32bit and 64bit tasks?
+> AFAICS, x86 and ppc just check that address is OK for 64bit process -
+> if a 32bit process passes the kernel an address that would be valid
+> for 64bit process, but not for 32bit one, we just get a pagefault in
+> __copy_from_user() and friends.  No kernel objects are going to have
+> a virtual address in that range, so access_ok() doesn't bother preventing
+> such access attempts there...
+> 
+> 2) shouldn't vhost_dev_cleanup() stop the worker thread before doing anything
+> else?
+>  AFAICS, we do parts of vhost_dev teardown while the thread is
+> still running; granted, we keep dev->mm pinned down until after it stops
+> (or we would be _really_ screwed), but is it safe to do all those fput()s, etc.
+> while it's still running?  Michael?
 
-So are these the exact same patches I already had, or did you change
-anything else? Its not immediately clear, lemme try and figure out.
+Before invoking vhost_dev_cleanup,
+the caller for vhost-net (vhost_net_release) sets private data to NULL
+(using vhost_net_stop_vq) which guarantees thread will do nothing at all.
+vhost scsi does it in vhost_scsi_clear_endpoint.
+
+
+-- 
+MST
