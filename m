@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaKJGxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 01:53:10 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46686 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaKJGxI (ORCPT
+	id S1751436AbaKJG6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 01:58:23 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57130 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaKJG6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 01:53:08 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on NO_LIBELF=1
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
-	<20141107152931.GN18464@kernel.org>
-Date: Mon, 10 Nov 2014 15:53:06 +0900
-In-Reply-To: <20141107152931.GN18464@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Fri, 7 Nov 2014 12:29:31 -0300")
-Message-ID: <87egtbv965.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 10 Nov 2014 01:58:22 -0500
+Date: Mon, 10 Nov 2014 06:58:17 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.apana.org.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bcrl@kvack.org, mst@redhat.com
+Subject: Re: [PATCH 1/4] inet: Add skb_copy_datagram_iter
+Message-ID: <20141110065817.GG7996@ZenIV.linux.org.uk>
+References: <20141107221114.GB7996@ZenIV.linux.org.uk>
+ <20141107234253.GE7996@ZenIV.linux.org.uk>
+ <20141109211908.GF7996@ZenIV.linux.org.uk>
+ <20141110.002020.1062493586889118565.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110.002020.1062493586889118565.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Nov 2014 12:29:31 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Nov 07, 2014 at 02:20:04PM +0900, Namhyung Kim escreveu:
->> When libelf is not used, perf cannot not show symbol names since it
->> doesn't access the ELF symbol table.  But kernel is different as it
->> can fallback to kallsyms.
->> 
->> It worked w/o libelf, but recent change to use vmlinux for kernel
->> symbols break it.
->> 
->> With this change, it now can show kernel symbols again:
->
-> Ok, but since you added that minimal ELF symtab loading, isn't better to
-> try that first, i.e. if we find a vmlinux file with a build-id and with
-> symbols in it...
->
-> If that isn't the case, i.e. no vmlinux was found, then we fallback to
-> kallsyms, to check if that is available.
->
-> I.e. with your new minimalistic ELF symtab loader if we have a suitable
-> vmlinux but no kallsyms, we end up resolving no symbols even having that
-> nice vmlinux :-)
+On Mon, Nov 10, 2014 at 12:20:20AM -0500, David Miller wrote:
+> From: Al Viro <viro@ZenIV.linux.org.uk>
+> Date: Sun, 9 Nov 2014 21:19:08 +0000
+> 
+> > 1) does sparc64 access_ok() need to differ for 32bit and 64bit tasks?
+> 
+> sparc64 will just fault no matter what kind of task it is.
+> 
+> It is impossible for a user task to generate a reference to
+> a kernel virtual address, as kernel and user accesses each
+> go via a separate address space identifier.
 
-Yeah, maybe.  But it'd add a substantial complexity also and I tried to
-make it simple and small only to show usual userspace symbols.
-
-I think that about a half of the complexity of the dso__load_sym() in
-symbol-elf.c came from the kernel (and module) support.  And expecting
-kallsyms on the system is not a high barrier IMHO.  So I decided to just
-fall back to kallsyms for kernel dsos.  Mayby we can add the kernel
-support incrementally later.
-
-Thanks,
-Namhyung
+Sure, but why do we have access_ok() there at all?  I.e. why not just have
+it constant 1?
