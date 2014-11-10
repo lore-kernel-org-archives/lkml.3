@@ -1,220 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaKJMt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:49:57 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:53713 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576AbaKJMty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:49:54 -0500
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: paulz@synopsys.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <4156e80038fee67d44119844a94628ec>
-X-DNS-TYPE: 1
-Message-ID: <5460B45A.3090503@rock-chips.com>
-Date: Mon, 10 Nov 2014 20:49:30 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: Tao Huang <huangtao@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyW?= <dkl@rock-chips.com>,
-        addy ke <addy.ke@rock-chips.com>, han jiang <hj@rock-chips.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Douglas Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rockchip@lists.infradead.org, Jianqun Xu <xjq@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
-        Sonny Rao <sonnyrao@chromium.org>, Paul Zimmerman <paulz@synopsys.com>
-Subject: Re: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
-References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com> <CAODwPW_Udap8oYGhKSLWhpiLLhsOUKNsMbpxC7CLEz-Cg53JQw@mail.gmail.com>
-In-Reply-To: <CAODwPW_Udap8oYGhKSLWhpiLLhsOUKNsMbpxC7CLEz-Cg53JQw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752887AbaKJMuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:50:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2901 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752818AbaKJMuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 07:50:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,352,1413270000"; 
+   d="scan'208";a="619935695"
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v6 00/10] TPM 2.0 support
+Date: Mon, 10 Nov 2014 14:49:44 +0200
+Message-Id: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julius,
+This patch set enables TPM2 protocol and provides drivers for FIFO and
+CRB interfaces.
 
-On 11/07/2014 06:11 AM, Julius Werner wrote:
-> On Wed, Nov 5, 2014 at 5:30 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
->> Hcd controller needs bus_suspend/resume, dwc2 controller make
->> root hub generate suspend/resume signal with hprt0 register
->> when work in host mode.
->> After the root hub enter suspend, we can make controller enter
->> low power state with PCGCTL register.
-> You say you do this, but I don't actually see you doing it (for the
-> not-connected case)?
-Agree to add PCGCTL operation for the not-connected case.
->
->> We also update the lx_state for hsotg state.
->>
->> This patch has tested on rk3288 with suspend/resume.
->>
->> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->> ---
->>
->> Changes in v2:
->> - update commit message
->> - make dwc2 suspend/resume sourcecode work
->>
->>   drivers/usb/dwc2/hcd.c | 78 +++++++++++++++++++++++++++++++++++++++++++-------
->>   1 file changed, 67 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
->> index 0a0e6f0..01a415b 100644
->> --- a/drivers/usb/dwc2/hcd.c
->> +++ b/drivers/usb/dwc2/hcd.c
->> @@ -1471,6 +1471,30 @@ static void dwc2_port_suspend(struct dwc2_hsotg *hsotg, u16 windex)
->>          }
->>   }
->>
->> +static void dwc2_port_resume(struct dwc2_hsotg *hsotg)
->> +{
->> +       u32 hprt0;
->> +
->> +       /* After clear the Stop PHY clock bit, we should wait for a moment
->> +        * for PLL work stable with clock output.
->> +        */
->> +       writel(0, hsotg->regs + PCGCTL);
->> +       usleep_range(2000, 4000);
->> +
->> +       hprt0 = dwc2_read_hprt0(hsotg);
->> +       hprt0 |= HPRT0_RES;
->> +       writel(hprt0, hsotg->regs + HPRT0);
->> +       hprt0 &= ~HPRT0_SUSP;
->> +       /* according to USB2.0 Spec 7.1.7.7, the host must send the resume
->> +        * signal for at least 20ms
->> +        */
->> +       usleep_range(20000, 25000);
->> +
->> +       hprt0 &= ~HPRT0_RES;
->> +       writel(hprt0, hsotg->regs + HPRT0);
->> +       hsotg->lx_state = DWC2_L0;
->> +}
->> +
->>   /* Handles hub class-specific requests */
->>   static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
->>                                  u16 wvalue, u16 windex, char *buf, u16 wlength)
->> @@ -1516,17 +1540,7 @@ static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
->>                  case USB_PORT_FEAT_SUSPEND:
->>                          dev_dbg(hsotg->dev,
->>                                  "ClearPortFeature USB_PORT_FEAT_SUSPEND\n");
->> -                       writel(0, hsotg->regs + PCGCTL);
->> -                       usleep_range(20000, 40000);
->> -
->> -                       hprt0 = dwc2_read_hprt0(hsotg);
->> -                       hprt0 |= HPRT0_RES;
->> -                       writel(hprt0, hsotg->regs + HPRT0);
->> -                       hprt0 &= ~HPRT0_SUSP;
->> -                       usleep_range(100000, 150000);
->> -
->> -                       hprt0 &= ~HPRT0_RES;
->> -                       writel(hprt0, hsotg->regs + HPRT0);
-> I'm curious why this didn't change lx_state back to DWC2_L0 before...
-> Paul, do you know?
->
->> +                       dwc2_port_resume(hsotg);
->>                          break;
->>
->>                  case USB_PORT_FEAT_POWER:
->> @@ -2299,6 +2313,44 @@ static void _dwc2_hcd_stop(struct usb_hcd *hcd)
->>          usleep_range(1000, 3000);
->>   }
->>
->> +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
->> +{
->> +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
->> +       u32 hprt0;
->> +
->> +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
->> +               (hsotg->op_state == OTG_STATE_A_HOST)))
->> +               return 0;
->> +
->> +       if (hsotg->lx_state != DWC2_L0)
-> What if the port is in L1 state? I don't think the driver supports LPM
-> right now, but the DWC2_L1 enum is defined so it may one day in the
-> future. Let's maybe at least add a TODO.
-Added
->
->> +               return 0;
-> In your original ChromiumOS version of this patch, you also set
-> PCGCTL_STOPPCLK here if the port was not connected. Is there a reason
-> that changed (does it not actually save power or something)?
->
->> +
->> +       hprt0 = dwc2_read_hprt0(hsotg);
->> +       if (hprt0 & HPRT0_CONNSTS)
->> +               dwc2_port_suspend(hsotg, 1);
-> The contract for bus_suspend() is that it will suspend all ports not
-> yet suspended, keep track of those ports and then only resume those in
-> bus_resume() (compare, for example, how XHCI keeps track of that with
-> xhci_bus_state.bus_suspended in xhci_bus_suspend/resume()). So you
-> need something here to remember whether this function suspended the
-> port or whether it had already been suspended, and then only resume
-> the port in bus_resume() in the former case.
-In fact, the dwc2 controller only support one port, so the hprt0
-is the only one port we need to care.
-> Note that
-> dwc2_port_suspend() changes lx_state to DWC_L2 (at least in the
-> version I'm looking at right now), so you can't just rely on that
-> unless you explicitly set it back to something else here.
->
->> +
->> +       return 0;
->> +}
->> +
->> +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
->> +{
->> +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
->> +       u32 hprt0;
->> +
->> +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
->> +               (hsotg->op_state == OTG_STATE_A_HOST)))
->> +               return 0;
->> +
->> +       if (hsotg->lx_state != DWC2_L2)
->> +               return 0;
->> +
->> +       hprt0 = dwc2_read_hprt0(hsotg);
->> +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
->> +               dwc2_port_resume(hsotg);
->> +
->> +       return 0;
->> +}
->> +
->>   /* Returns the current frame number */
->>   static int _dwc2_hcd_get_frame_number(struct usb_hcd *hcd)
->>   {
->> @@ -2669,6 +2721,10 @@ static struct hc_driver dwc2_hc_driver = {
->>          .hub_status_data = _dwc2_hcd_hub_status_data,
->>          .hub_control = _dwc2_hcd_hub_control,
->>          .clear_tt_buffer_complete = _dwc2_hcd_clear_tt_buffer_complete,
->> +#ifdef CONFIG_PM
->> +       .bus_suspend = _dwc2_hcd_suspend,
->> +       .bus_resume = _dwc2_hcd_resume,
->> +#endif
->>   };
->>
->>   /*
->> --
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
->
->
->
+Major changes since v1:
+
+- Improved struct tpm_chip life-cycle by taking advantage of devres
+  API.
+- Refined sysfs attributes as simple key-values thereby not repeating
+  mistakes in TPM1 sysfs attributes.
+- Documented functions in tpm-chip.c and tpm2-cmd.c.
+- Documented sysfs attributes.
+
+Major changes since v2:
+
+- Lots of fixes in calling order in device drivers (thanks to Jason
+  Gunthorpe for pointing these out!).
+- Attach sysfs attributes to the misc device because it represents
+  TPM device to the user space.
+
+Major changes since v3:
+
+- Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
+  best approach for them.
+- Fixed all the style issues found with checkpatch.pl.
+
+Major changes since v4:
+
+- missing EXPORT_SYMBOL_GPL()
+- own class for TPM devices used for TPM 2.0 devices and onwards.
+
+Major changes since v5:
+
+- Non-racy initialization for sysfs attributes using struct device's
+  groups field.
+- The class 'tpm' is used now for all TPM devices. For the first device
+  node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
+  backwards compatability.
+
+Jarkko Sakkinen (9):
+  tpm: merge duplicate transmit_cmd() functions
+  tpm: two-phase chip management functions
+  tpm: fix multiple race conditions in tpm_ppi.c
+  tpm: rename chip->dev to chip->pdev
+  tpm: device class for tpm
+  tpm: fix race condition with sysfs attributes
+  tpm: TPM 2.0 baseline support
+  tpm: TPM 2.0 CRB Interface
+  tpm: TPM 2.0 sysfs attributes
+
+Will Arthur (1):
+  tpm: TPM 2.0 FIFO Interface
+
+ Documentation/ABI/stable/sysfs-class-tpm2 |  57 +++
+ drivers/char/tpm/Kconfig                  |   9 +
+ drivers/char/tpm/Makefile                 |   3 +-
+ drivers/char/tpm/tpm-chip.c               | 193 ++++++++++
+ drivers/char/tpm/tpm-dev.c                |  72 ++--
+ drivers/char/tpm/tpm-interface.c          | 264 +++++---------
+ drivers/char/tpm/tpm-sysfs.c              |  46 +--
+ drivers/char/tpm/tpm.h                    | 132 ++++++-
+ drivers/char/tpm/tpm2-cmd.c               | 566 ++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm2-sysfs.c             | 152 ++++++++
+ drivers/char/tpm/tpm_atmel.c              |  25 +-
+ drivers/char/tpm/tpm_crb.c                | 327 +++++++++++++++++
+ drivers/char/tpm/tpm_i2c_atmel.c          |  49 +--
+ drivers/char/tpm/tpm_i2c_infineon.c       |  43 +--
+ drivers/char/tpm/tpm_i2c_nuvoton.c        |  68 ++--
+ drivers/char/tpm/tpm_i2c_stm_st33.c       |  44 +--
+ drivers/char/tpm/tpm_ibmvtpm.c            |  17 +-
+ drivers/char/tpm/tpm_infineon.c           |  51 +--
+ drivers/char/tpm/tpm_nsc.c                |  34 +-
+ drivers/char/tpm/tpm_ppi.c                | 136 ++++---
+ drivers/char/tpm/tpm_tis.c                | 180 ++++++----
+ drivers/char/tpm/xen-tpmfront.c           |  14 +-
+ 22 files changed, 1900 insertions(+), 582 deletions(-)
+ create mode 100644 Documentation/ABI/stable/sysfs-class-tpm2
+ create mode 100644 drivers/char/tpm/tpm-chip.c
+ create mode 100644 drivers/char/tpm/tpm2-cmd.c
+ create mode 100644 drivers/char/tpm/tpm2-sysfs.c
+ create mode 100644 drivers/char/tpm/tpm_crb.c
+
+-- 
+2.1.0
 
