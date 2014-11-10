@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaKJNNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:13:22 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:47625 "EHLO mail.kapsi.fi"
+	id S1752761AbaKJNNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:13:20 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:45508 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204AbaKJNNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751928AbaKJNNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Nov 2014 08:13:16 -0500
 From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org, wni@nvidia.com,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v4 REPOST 0/5] Thermal reset support in PMC
-Date: Mon, 10 Nov 2014 15:12:12 +0200
-Message-Id: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi>
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v4 REPOST 3/5] ARM: tegra124: Add I2C controller ids to device tree
+Date: Mon, 10 Nov 2014 15:12:15 +0200
+Message-Id: <1415625137-4791-4-git-send-email-mikko.perttunen@kapsi.fi>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi>
+References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi>
 X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
 X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
 X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
@@ -22,31 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Mikko Perttunen <mperttunen@nvidia.com>
 
-this series adds support for hardware-triggered thermal reset to the PMC
-driver. Namely, it adds device tree properties for specifying the I2C
-command to be sent when thermtrip is triggered.
+I2C controller ids are required when programming hardware blocks
+that send messages to devices connected to an I2C bus, such as
+when the PMC sends a poweroff message to the PMIC. Add ids
+to all I2C controllers in Tegra124.
 
-The soctherm driver has now been acked and will be taken into 3.19, so we
-can move forward with this. Note that there are no compile time dependencies
-between the two series; it's just that this series is no-op without the
-soctherm driver being present.
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+Reviewed-by: Wei Ni <wni@nvidia.com>
+Tested-by: Wei Ni <wni@nvidia.com>
+---
+ arch/arm/boot/dts/tegra124.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Mikko Perttunen (5):
-  of: Add descriptions of thermtrip properties to Tegra PMC bindings
-  of: Add nvidia,controller-id property to Tegra I2C bindings
-  ARM: tegra124: Add I2C controller ids to device tree
-  ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
-  ARM: tegra: Add thermal reset (thermtrip) support to PMC
-
- .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      |  24 ++
- .../devicetree/bindings/i2c/nvidia,tegra20-i2c.txt |   5 +
- arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   9 +-
- arch/arm/boot/dts/tegra124.dtsi                    |   6 +
- drivers/soc/tegra/pmc.c                            | 379 ++++++++++++++-------
- 5 files changed, 290 insertions(+), 133 deletions(-)
-
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index 41f8b27..0f09e93 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -361,6 +361,7 @@
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 21>, <&apbdma 21>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <0>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -376,6 +377,7 @@
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 22>, <&apbdma 22>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <1>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -391,6 +393,7 @@
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 23>, <&apbdma 23>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <2>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -406,6 +409,7 @@
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 26>, <&apbdma 26>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <3>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -421,6 +425,7 @@
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 24>, <&apbdma 24>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <4>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -436,6 +441,7 @@
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 30>, <&apbdma 30>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <5>;
+ 		status = "disabled";
+ 	};
+ 
 -- 
 2.1.3
 
