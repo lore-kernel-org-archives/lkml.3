@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaKJB5d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Nov 2014 20:57:33 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:38844 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaKJBnS (ORCPT
+	id S1752349AbaKJB7v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Nov 2014 20:59:51 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:35089 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751712AbaKJB7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Nov 2014 20:43:18 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>
-Subject: [PATCH v6 02/48] memory: emif: Use API function to determine power-off capability
-Date: Sun,  9 Nov 2014 17:42:19 -0800
-Message-Id: <1415583785-6980-3-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
-References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54601836.00EB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 9 Nov 2014 20:59:49 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <wsa@the-dreams.de>, <ludovic.desroches@atmel.com>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nicolas.ferre@atmel.com>, <khilman@kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <wenyou.yang@atmel.com>
+Subject: [PATCH v4] i2c/at91: adopt pinctrl support
+Date: Mon, 10 Nov 2014 09:55:52 +0800
+Message-ID: <1415584552-11390-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use have_kernel_power_off() to determine if the kernel is able
-to power off the system.
+Amend the at91 i2c pin controller to optionally take a pin control
+handle and set the state of the pins to:
+- "default" on boot and resume.
+- "sleep" on suspend().
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This should make it possible to optimize energy usage for the pins
+both for the suspend/resume cycle
+
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
-v6:
-- No change.
-v5:
-- Rebase to v3.18-rc3
-v4:
-- No change
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-v2:
-- poweroff -> power_off
+Hi Wolfram,
 
- drivers/memory/emif.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks a lot.
 
-diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 04644e7..317d49f 100644
---- a/drivers/memory/emif.c
-+++ b/drivers/memory/emif.c
-@@ -1053,10 +1053,10 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
- 		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
+The change of this version is to remove
+	pinctrl_pm_select_default_state(&pdev->dev) from the _probe function.
+
+Best Regards,
+Wenyou Yang
+
+ drivers/i2c/busses/i2c-at91.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
+index 7c335f4..77fb647 100644
+--- a/drivers/i2c/busses/i2c-at91.c
++++ b/drivers/i2c/busses/i2c-at91.c
+@@ -32,6 +32,7 @@
+ #include <linux/slab.h>
+ #include <linux/platform_data/dma-atmel.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pinctrl/consumer.h>
  
- 		/* If we have Power OFF ability, use it, else try restarting */
--		if (pm_power_off) {
-+		if (have_kernel_power_off()) {
- 			kernel_power_off();
- 		} else {
--			WARN(1, "FIXME: NO pm_power_off!!! trying restart\n");
-+			WARN(1, "FIXME: NO kernel power-off capability!!! trying restart\n");
- 			kernel_restart("SDRAM Over-temp Emergency restart");
- 		}
- 		return IRQ_HANDLED;
+ #define DEFAULT_TWI_CLK_HZ		100000		/* max 400 Kbits/s */
+ #define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
+@@ -851,6 +852,8 @@ static int at91_twi_runtime_suspend(struct device *dev)
+ 
+ 	clk_disable_unprepare(twi_dev->clk);
+ 
++	pinctrl_pm_select_sleep_state(dev);
++
+ 	return 0;
+ }
+ 
+@@ -858,6 +861,8 @@ static int at91_twi_runtime_resume(struct device *dev)
+ {
+ 	struct at91_twi_dev *twi_dev = dev_get_drvdata(dev);
+ 
++	pinctrl_pm_select_default_state(dev);
++
+ 	return clk_prepare_enable(twi_dev->clk);
+ }
+ 
 -- 
-1.9.1
+1.7.9.5
 
