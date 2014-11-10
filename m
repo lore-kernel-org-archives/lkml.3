@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaKJQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 11:08:56 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:61454 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaKJQIy (ORCPT
+	id S1753238AbaKJQKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 11:10:06 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19388 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaKJQKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 11:08:54 -0500
-Date: Mon, 10 Nov 2014 17:08:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] microcode fixes for tip/x86/urgent
-Message-ID: <20141110160848.GA24585@gmail.com>
-References: <20141110153137.GD4359@pd.tnic>
+	Mon, 10 Nov 2014 11:10:03 -0500
+Message-ID: <5460E339.5020308@oracle.com>
+Date: Mon, 10 Nov 2014 11:09:29 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141110153137.GD4359@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH v4] sched/numa: fix unsafe get_task_struct() in task_numa_assign()
+References: <1413962231.19914.130.camel@tkhai> <545D928B.2070508@oracle.com> <20141110160320.GA10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141110160320.GA10501@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/10/2014 11:03 AM, Peter Zijlstra wrote:
+> On Fri, Nov 07, 2014 at 10:48:27PM -0500, Sasha Levin wrote:
+>> [  829.539183] BUG: spinlock recursion on CPU#10, trinity-c594/11067
+>> [  829.539203]  lock: 0xffff880631dd6b80, .magic: dead4ead, .owner: trinity-c594/11067, .owner_cpu: 13
+> 
+> Ooh, look at that. CPU#10 vs .owner_cpu: 13 on the _same_ task.
+> 
+> One of those again :/
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Hum. I missed that one.
 
-> Hi guys,
-> 
-> please queue those two fixes for early microcode loading on 32-bit for
-> x86/urgent.
-> 
-> Thanks.
-> 
-> ---
-> The following changes since commit e6023367d779060fddc9a52d1f474085b2b36298:
-> 
->   x86, kaslr: Prevent .bss from overlaping initrd (2014-11-01 22:20:50 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode_fixes_for_3.18
-> 
-> for you to fetch changes up to c0a717f23dccdb6e3b03471bc846fdc636f2b353:
-> 
->   x86, microcode, AMD: Fix ucode patch stashing on 32-bit (2014-11-10 13:50:55 +0100)
-> 
-> ----------------------------------------------------------------
-> Two fixes for early microcode loader on 32-bit:
-> 
-> * access the dis_ucode_ldr chicken bit properly
-> * fix patch stashing on AMD on 32-bit
-> 
-> ----------------------------------------------------------------
-> Borislav Petkov (2):
->       x86, microcode: Fix accessing dis_ucode_ldr on 32-bit
->       x86, microcode, AMD: Fix ucode patch stashing on 32-bit
-> 
->  arch/x86/kernel/cpu/microcode/amd_early.c  | 24 ++++++++++++++----------
->  arch/x86/kernel/cpu/microcode/core_early.c |  2 +-
->  2 files changed, 15 insertions(+), 11 deletions(-)
+Hold on, but the magic here is fine and the owner pointer is fine, why would just the owner cpu
+be wrong?
 
-Pulled, thanks Boris!
 
-	Ingo
+Thanks,
+Sasha
+
