@@ -1,53 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaKJRBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 12:01:32 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:50332 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaKJRBa (ORCPT
+	id S1753480AbaKJRC3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 12:02:29 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:44922 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752244AbaKJRC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 12:01:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] asm-generic/io.h overhaul
-Date: Mon, 10 Nov 2014 18:01:27 +0100
-Message-ID: <7499625.xm054LhcvJ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141110162520.GA3926@ulmo.nvidia.com>
-References: <20141110162520.GA3926@ulmo.nvidia.com>
+	Mon, 10 Nov 2014 12:02:27 -0500
+Date: Mon, 10 Nov 2014 18:02:22 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
+        linux-arm-kernel@lists.infradead.org, linux-api@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v5 10/10] [media] v4l: Forbid usage of V4L2_MBUS_FMT
+ definitions inside the kernel
+Message-ID: <20141110180222.39508a63@bbrezillon>
+In-Reply-To: <54609CDF.8030303@xs4all.nl>
+References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1415461632-31236-1-git-send-email-boris.brezillon@free-electrons.com>
+	<54609CDF.8030303@xs4all.nl>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:6ktZjnv365jXhUY48cIiHvqUEH/HOMbo8DlsUhavS0h
- db1OD7hKQDhN/CpPlITBHFbbUD7CBqOlxtf+PHy6FjsU7tK9aN
- 3/G5yGuSJ68rMF9/lXtrB12fhjn50q2O4TEzV1zCmldobwhqym
- 92bWhiTVpfZLJMqM7yfiY80lpXnT95yPDfksqJ0l6g4g+D5PS8
- 0oYUet6MexGlGTv+vs6JOKLqyMQvJCPTE34TkkxaL0Y7hEX+A8
- 0p7Eqbn3mj583Ja9wIR6T03hrweqwNnqHccF8EnguuTnpn3tZ0
- 1i2osgz4mFXfiPhL9EmV2LSM9l4CCO0TgQHbOahHUpgFF5JaSv
- UdbvrIs4GwkVw24ekFB8=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 November 2014 17:25:23 Thierry Reding wrote:
-> Hi Arnd,
-> 
-> The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-> 
->   Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-> 
-> are available in the git repository at:
-> 
->   https://github.com/thierryreding/linux.git asm-generic-io
-> 
-> for you to fetch changes up to 09a5723983e383e7d627fe3191366761722695bc:
-> 
->   arm64: Use include/asm-generic/io.h (2014-11-10 15:59:23 +0100)
+On Mon, 10 Nov 2014 12:09:19 +0100
+Hans Verkuil <hverkuil@xs4all.nl> wrote:
 
-I've pulled this into my asm-generic branch again now, let's see if
-anything breaks.
+> On 11/08/2014 04:47 PM, Boris Brezillon wrote:
+> > Place v4l2_mbus_pixelcode in a #ifndef __KERNEL__ section so that kernel
+> > users don't have access to these definitions.
+> > 
+> > We have to keep this definition for user-space users even though they're
+> > encouraged to move to the new media_bus_format enum.
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+> > ---
+> >  include/uapi/linux/v4l2-mediabus.h | 45 ++++++++++++++++++++++++--------------
+> >  1 file changed, 28 insertions(+), 17 deletions(-)
+> > 
+> > diff --git a/include/uapi/linux/v4l2-mediabus.h b/include/uapi/linux/v4l2-mediabus.h
+> > index d712df8..5c9410d 100644
+> > --- a/include/uapi/linux/v4l2-mediabus.h
+> > +++ b/include/uapi/linux/v4l2-mediabus.h
+> > @@ -15,6 +15,33 @@
+> >  #include <linux/types.h>
+> >  #include <linux/videodev2.h>
+> >  
+> > +/**
+> > + * struct v4l2_mbus_framefmt - frame format on the media bus
+> > + * @width:	frame width
+> > + * @height:	frame height
+> > + * @code:	data format code (from enum v4l2_mbus_pixelcode)
+> > + * @field:	used interlacing type (from enum v4l2_field)
+> > + * @colorspace:	colorspace of the data (from enum v4l2_colorspace)
+> > + */
+> > +struct v4l2_mbus_framefmt {
+> > +	__u32			width;
+> > +	__u32			height;
+> > +	__u32			code;
+> > +	__u32			field;
+> > +	__u32			colorspace;
+> > +	__u32			reserved[7];
+> > +};
+> > +
+> > +#ifndef __KERNEL__
+> > +/*
+> > + * enum v4l2_mbus_pixelcode and its definitions are now deprecated, and
+> > + * MEDIA_BUS_FMT_ definitions (defined in media-bus-format.h) should be
+> > + * used instead.
+> > + *
+> > + * New defines should only be added to media-bus-format.h. The
+> > + * v4l2_mbus_pixelcode enum is frozen.
+> > + */
+> > +
+> >  #define V4L2_MBUS_FROM_MEDIA_BUS_FMT(name)	\
+> >  	MEDIA_BUS_FMT_ ## name = V4L2_MBUS_FMT_ ## name
+> 
+> Shouldn't this be the other way around?
+> 
+>   	V4L2_MBUS_FMT_ ## name = MEDIA_BUS_FMT_ ## name
 
-	Arnd
+Argh! Absolutely, I'll fix that.
+
+> 
+> Regards,
+> 
+> 	Hans
+> 
+> >  
+> > @@ -102,22 +129,6 @@ enum v4l2_mbus_pixelcode {
+> >  
+> >  	V4L2_MBUS_FROM_MEDIA_BUS_FMT(AHSV8888_1X32),
+> >  };
+> > -
+> > -/**
+> > - * struct v4l2_mbus_framefmt - frame format on the media bus
+> > - * @width:	frame width
+> > - * @height:	frame height
+> > - * @code:	data format code (from enum v4l2_mbus_pixelcode)
+> > - * @field:	used interlacing type (from enum v4l2_field)
+> > - * @colorspace:	colorspace of the data (from enum v4l2_colorspace)
+> > - */
+> > -struct v4l2_mbus_framefmt {
+> > -	__u32			width;
+> > -	__u32			height;
+> > -	__u32			code;
+> > -	__u32			field;
+> > -	__u32			colorspace;
+> > -	__u32			reserved[7];
+> > -};
+> > +#endif /* __KERNEL__ */
+> >  
+> >  #endif
+> > 
+> 
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
