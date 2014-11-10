@@ -1,180 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaKJUQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 15:16:54 -0500
-Received: from coldplug.net ([109.75.184.172]:42450 "EHLO
-	external.coldplug.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaKJUQw (ORCPT
+	id S1751877AbaKJUSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 15:18:40 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60478 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaKJUSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 15:16:52 -0500
-Message-ID: <54611D3F.2010903@coldplug.net>
-Date: Mon, 10 Nov 2014 21:17:03 +0100
-From: lautriv <lautriv@coldplug.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 10 Nov 2014 15:18:38 -0500
+Message-ID: <54611D86.4040306@de.ibm.com>
+Date: Mon, 10 Nov 2014 21:18:14 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Alexey Charkov <alchark@gmail.com>
-CC: Fabio Estevam <festevam@gmail.com>, Tony Prisk <linux@prisktech.co.nz>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: wmt-sdmmc: fix unmatched release_mem_region
-References: <1415567571-6144-1-git-send-email-alchark@gmail.com>	<CAOMZO5C+O4h=f=vtLTdBZktnfVWzfeLjOQG-oecxh_c9u-QMqA@mail.gmail.com>	<545FE821.5060107@coldplug.net> <CABjd4YxyUJi6RaGWicFeoJ7C27qhUFsAbq-nJTreACrt-voeYA@mail.gmail.com>
-In-Reply-To: <CABjd4YxyUJi6RaGWicFeoJ7C27qhUFsAbq-nJTreACrt-voeYA@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------080106070506070707090806"
+To: torvalds@linux-foundation.org
+CC: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
+References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+In-Reply-To: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+X-Forwarded-Message-Id: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111020-0029-0000-0000-0000019B2D1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080106070506070707090806
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Linus,
 
-On 11/10/2014 06:15 AM, Alexey Charkov wrote:
-> 2014-11-10 1:18 GMT+03:00 lautriv <lautriv@coldplug.net>:
->> On 11/09/2014 10:55 PM, Fabio Estevam wrote:
->>> On Sun, Nov 9, 2014 at 7:12 PM, Alexey Charkov <alchark@gmail.com> wrote:
->>>
->>>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>>> +       if (!res) {
->>>> +               ret = -ENODEV;
->>>> +               goto fail1;
->>> You could save this NULL check...
->>>
->>>> +       }
->>>>           mmc = mmc_alloc_host(sizeof(struct wmt_mci_priv), &pdev->dev);
->>>>           if (!mmc) {
->>>>                   dev_err(&pdev->dev, "Failed to allocate mmc_host\n");
->>>> @@ -813,7 +819,7 @@ static int wmt_mci_probe(struct platform_device
->>>> *pdev)
->>>>           if (of_get_property(np, "cd-inverted", NULL))
->>>>                   priv->cd_inverted = 1;
->>>>
->>>> -       priv->sdmmc_base = of_iomap(np, 0);
->>> If you move ' res = platform_get_resource' right here as
->>> devm_ioremap_resource() already does the NULL check.
->>>
->>>> +       priv->sdmmc_base = devm_ioremap_resource(&pdev->dev, res);
->>>>           if (!priv->sdmmc_base) {
->>>>                   dev_err(&pdev->dev, "Failed to map IO space\n");
->>>>                   ret = -ENOMEM;
->> This was the original intention but it would fall between the failX jumps, i
->> discussed that with Alexey and we decided to change it with the cleanup to
->> hold this patch small.
-> I think Fabio means something slightly different than what we
-> discussed. We haven't realized that the first thing
-> devm_ioremap_resource does is exactly that (!res) check, so we can
-> skip ours altogether.
->
-> Looking at the function code a bit closer, we should also make the
-> check look like "if (IS_ERR(priv->sdmmc_base)", kill the dev_err call
-> (as it's also done internally), and then just do "ret =
-> PTR_ERR(priv->sdmmc_base)" and jump to the label.
->
-> Thanks a lot,
-> Alexey
->
-Sorry for the delay, 8880's are used to crash a lot since
-we have not enought information ;)
-Attached a changed patch which will hopefully meet all needs.
+Last week I sent belows patch to Paolo for kvm/next.
+Heiko Carstens pointed out that the kernel often does not 
+work around compiler bugs, instead we blacklist the 
+compiler, make a buildbug on or similar when we cant be 
+sure to catch all broken cases, e.g. Heiko mentioned 
+the the x86 specific test cases for stack protector.
+
+Now: I can reproduces belows miscompile on gcc46 and gcc 47
+gcc 45 seems ok, gcc 48 is fixed.  This makes blacklisting
+a bit hard, especially since it is not limited to s390, but
+covers all architectures.
+In essence ACCESS_ONCE will not work reliably on aggregate 
+types with gcc 4.6 and gcc 4.7.
+In Linux we seem to use ACCESS_ONCE mostly on scalar types,
+below code is an example were we dont - and break.
+
+Linus, what is your take on workarounds of compiler bugs?
+The barrier solution below will fix that particular case, but
+are there others? Maybe we can come with a clever trick of
+creating a build-bug for ACCESS_ONCE on non-scalar types?
+A testcase is not trivial, since we have to rely on other
+optimization steps to actually do the wrong thing and the 
+gcc testcase test will dump the internal tree and check
+that - something that does not seem to be ok for the kernel.
+
+Christian
 
 
---------------080106070506070707090806
-Content-Type: text/x-patch;
- name="0001-mmc-vt8500-change-resource-mapping-to-devm_.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-mmc-vt8500-change-resource-mapping-to-devm_.patch"
+-------- Forwarded Message --------
+Subject: [GIT PULL 1/4] KVM: s390: Fix ipte locking
+Date: Fri,  7 Nov 2014 12:45:13 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>, Alexander Graf <agraf@suse.de>, Cornelia Huck <cornelia.huck@de.ibm.com>, Jens Freimann <jfrei@linux.vnet.ibm.com>, linux-s390 <linux-s390@vger.kernel.org>, Christian Borntraeger <borntraeger@de.ibm.com>, stable@vger.kernel.org
 
->From 7c8ebb55fde8786cd16d95659ff73675bedc287c Mon Sep 17 00:00:00 2001
-From: Helmut Stengele <lautriv@coldplug.net>
-Date: Mon, 10 Nov 2014 11:26:51 +0100
-Subject: [PATCH] mmc: vt8500: change resource-mapping to devm_*
+ipte_unlock_siif uses cmpxchg to replace the in-memory data of the ipte
+lock together with ACCESS_ONCE for the intial read.
 
-Current code calls release_mem_region upon module unload
-without requesting the region first. This patch fixes it
-by moving to a devres-based ioremap implementation, which
-handles requesting and releasing memory region internally.
+union ipte_control {
+        unsigned long val;
+        struct {
+                unsigned long k  : 1;
+                unsigned long kh : 31;
+                unsigned long kg : 32;
+        };
+};
+[...]
+static void ipte_unlock_siif(struct kvm_vcpu *vcpu)
+{
+        union ipte_control old, new, *ic;
 
-This also makes the error/unload paths a bit simpler.
+        ic = &vcpu->kvm->arch.sca->ipte_control;
+        do {
+                new = old = ACCESS_ONCE(*ic);
+                new.kh--;
+                if (!new.kh)
+                        new.k = 0;
+        } while (cmpxchg(&ic->val, old.val, new.val) != old.val);
+        if (!new.kh)
+                wake_up(&vcpu->kvm->arch.ipte_wq);
+}
 
-Signed-off-by: Helmut Stengele <lautriv@coldplug.net>
+The new value, is loaded twice from memory with gcc 4.7.2 of
+fedora 18, despite the ACCESS_ONCE:
+
+--->
+
+l       %r4,0(%r3)      <--- load first 32 bit of lock (k and kh) in r4
+alfi    %r4,2147483647  <--- add -1 to r4
+llgtr   %r4,%r4         <--- zero out the sign bit of r4
+lg      %r1,0(%r3)      <--- load all 64 bit of lock into new
+lgr     %r2,%r1         <--- load the same into old
+risbg   %r1,%r4,1,31,32 <--- shift and insert r4 into the bits 1-31 of
+new
+llihf   %r4,2147483647
+ngrk    %r4,%r1,%r4
+jne     aa0 <ipte_unlock+0xf8>
+nihh    %r1,32767
+lgr     %r4,%r2
+csg     %r4,%r1,0(%r3)
+cgr     %r2,%r4
+jne     a70 <ipte_unlock+0xc8>
+
+If the memory value changes between the first load (l) and the second
+load (lg) we are broken. If that happens VCPU threads will hang
+(unkillable) in handle_ipte_interlock.
+
+Andreas Krebbel analyzed this and tracked it down to a compiler bug in
+that version:
+"while it is not that obvious the C99 standard basically forbids
+duplicating the memory access also in that case. For an argumentation of
+a similiar case please see:
+https://gcc.gnu.org/bugzilla/show_bug.cgi?id=22278#c43
+
+For the implementation-defined cases regarding volatile there are some
+GCC-specific clarifications which can be found here:
+https://gcc.gnu.org/onlinedocs/gcc/Volatiles.html#Volatiles
+
+I've tracked down the problem with a reduced testcase. The problem was
+that during a tree level optimization (SRA - scalar replacement of
+aggregates) the volatile marker is lost. And an RTL level optimizer (CSE
+- common subexpression elimination) then propagated the memory read into
+  its second use introducing another access to the memory location. So
+indeed Christian's suspicion that the union access has something to do
+with it is correct (since it triggered the SRA optimization).
+
+This issue has been reported and fixed in the GCC 4.8 development cycle:
+https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145"
+
+This patch replaces the ACCESS_ONCE scheme with a barrier() based scheme
+that should work for all supported compilers.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: stable@vger.kernel.org # v3.16+
 ---
- drivers/mmc/host/wmt-sdmmc.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ arch/s390/kvm/gaccess.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
-index 54181b4..f874d36 100644
---- a/drivers/mmc/host/wmt-sdmmc.c
-+++ b/drivers/mmc/host/wmt-sdmmc.c
-@@ -759,6 +759,7 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 	const struct wmt_mci_caps *wmt_caps;
- 	int ret;
- 	int regular_irq, dma_irq;
-+	struct resource *res;
- 
- 	if (!of_id || !of_id->data) {
- 		dev_err(&pdev->dev, "Controller capabilities data missing\n");
-@@ -813,10 +814,11 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 	if (of_get_property(np, "cd-inverted", NULL))
- 		priv->cd_inverted = 1;
- 
--	priv->sdmmc_base = of_iomap(np, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	priv->sdmmc_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (!priv->sdmmc_base) {
- 		dev_err(&pdev->dev, "Failed to map IO space\n");
--		ret = -ENOMEM;
-+		ret = PTR_ERR(priv->sdmmc_base);
- 		goto fail2;
- 	}
- 
-@@ -826,7 +828,7 @@ static int wmt_mci_probe(struct platform_device *pdev)
- 	ret = request_irq(regular_irq, wmt_mci_regular_isr, 0, "sdmmc", priv);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Register regular IRQ fail\n");
--		goto fail3;
-+		goto fail2;
- 	}
- 
- 	ret = request_irq(dma_irq, wmt_mci_dma_isr, 0, "sdmmc", priv);
-@@ -869,8 +871,6 @@ fail5:
- 	free_irq(dma_irq, priv);
- fail4:
- 	free_irq(regular_irq, priv);
--fail3:
--	iounmap(priv->sdmmc_base);
- fail2:
- 	mmc_free_host(mmc);
- fail1:
-@@ -881,7 +881,6 @@ static int wmt_mci_remove(struct platform_device *pdev)
- {
- 	struct mmc_host *mmc;
- 	struct wmt_mci_priv *priv;
--	struct resource *res;
- 	u32 reg_tmp;
- 
- 	mmc = platform_get_drvdata(pdev);
-@@ -904,14 +903,9 @@ static int wmt_mci_remove(struct platform_device *pdev)
- 	free_irq(priv->irq_regular, priv);
- 	free_irq(priv->irq_dma, priv);
- 
--	iounmap(priv->sdmmc_base);
--
- 	clk_disable_unprepare(priv->clk_sdmmc);
- 	clk_put(priv->clk_sdmmc);
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(res->start, resource_size(res));
--
- 	mmc_free_host(mmc);
- 
- 	dev_info(&pdev->dev, "WMT MCI device removed\n");
+diff --git a/arch/s390/kvm/gaccess.c b/arch/s390/kvm/gaccess.c
+index 0f961a1..6dc0ad9 100644
+--- a/arch/s390/kvm/gaccess.c
++++ b/arch/s390/kvm/gaccess.c
+@@ -229,10 +229,12 @@ static void ipte_lock_simple(struct kvm_vcpu *vcpu)
+ 		goto out;
+ 	ic = &vcpu->kvm->arch.sca->ipte_control;
+ 	do {
+-		old = ACCESS_ONCE(*ic);
++		old = *ic;
++		barrier();
+ 		while (old.k) {
+ 			cond_resched();
+-			old = ACCESS_ONCE(*ic);
++			old = *ic;
++			barrier();
+ 		}
+ 		new = old;
+ 		new.k = 1;
+@@ -251,7 +253,9 @@ static void ipte_unlock_simple(struct kvm_vcpu *vcpu)
+ 		goto out;
+ 	ic = &vcpu->kvm->arch.sca->ipte_control;
+ 	do {
+-		new = old = ACCESS_ONCE(*ic);
++		old = *ic;
++		barrier();
++		new = old;
+ 		new.k = 0;
+ 	} while (cmpxchg(&ic->val, old.val, new.val) != old.val);
+ 	wake_up(&vcpu->kvm->arch.ipte_wq);
+@@ -265,10 +269,12 @@ static void ipte_lock_siif(struct kvm_vcpu *vcpu)
+
+ 	ic = &vcpu->kvm->arch.sca->ipte_control;
+ 	do {
+-		old = ACCESS_ONCE(*ic);
++		old = *ic;
++		barrier();
+ 		while (old.kg) {
+ 			cond_resched();
+-			old = ACCESS_ONCE(*ic);
++			old = *ic;
++			barrier();
+ 		}
+ 		new = old;
+ 		new.k = 1;
+@@ -282,7 +288,9 @@ static void ipte_unlock_siif(struct kvm_vcpu *vcpu)
+
+ 	ic = &vcpu->kvm->arch.sca->ipte_control;
+ 	do {
+-		new = old = ACCESS_ONCE(*ic);
++		old = *ic;
++		barrier();
++		new = old;
+ 		new.kh--;
+ 		if (!new.kh)
+ 			new.k = 0;
 -- 
-1.7.10.4
+1.9.3
 
 
---------------080106070506070707090806--
+
