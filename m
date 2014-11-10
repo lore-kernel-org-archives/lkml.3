@@ -1,83 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaKJLke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:40:34 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:34176 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933AbaKJLkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:40:33 -0500
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-To: viresh.kumar@linaro.org
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
-        pdeschrijver@nvidia.com, rjw@rjwysocki.net, mturquette@linaro.org,
-        pwalmsley@nvidia.com, vinceh@nvidia.com, pgaikwad@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        tuomas.tynkkynen@iki.fi, Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v5 12/16] cpufreq: tegra: Rename tegra-cpufreq to tegra20-cpufreq
-Date: Mon, 10 Nov 2014 13:40:19 +0200
-Message-Id: <1415619619-2765-1-git-send-email-mikko.perttunen@kapsi.fi>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <CAKohpo=Kdh2vuvSoQBLdWfZJn3xDezpNBjqM389u45_BdizPXQ@mail.gmail.com>
-References: <CAKohpo=Kdh2vuvSoQBLdWfZJn3xDezpNBjqM389u45_BdizPXQ@mail.gmail.com>
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S1752611AbaKJLm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:42:29 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:62640 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752553AbaKJLm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 06:42:28 -0500
+Message-ID: <1415619745.21229.3.camel@x220>
+Subject: Re: [PATCH] checkkconfigsymbols.py: improve detection of defects
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Valentin Rothberg <valentinrothberg@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        stefan.hengelein@fau.de
+Date: Mon, 10 Nov 2014 12:42:25 +0100
+In-Reply-To: <1415476595-21587-1-git-send-email-valentinrothberg@gmail.com>
+References: <1415476595-21587-1-git-send-email-valentinrothberg@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Nov 2014 11:42:25.0670 (UTC) FILETIME=[66056260:01CFFCDB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+On Sat, 2014-11-08 at 20:56 +0100, Valentin Rothberg wrote:
+> This patch improves the detection of defects by updating the
+> regular expression to find Kconfig identifiers in the source
+> code, and fixes some cases of false positives. The following
+> changes are made:
+> - improve regex to find Kconfig identifiers in the source
+> - exclude .log files from analysis
+> - improve filtering of false positives (e.g, CONFIG_XXX)
+> - change output format from (feature:\tlist) to (feature\tlist)
+> 
+> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
+> ---
+> Changelog:
+> This patch bases on version 6 (https://lkml.org/lkml/2014/9/27/93)
+> of a patch which has been picked up by Greg in his misc-char tree
+> in the char-misc-next branch.
 
-The Tegra124 will use a different driver for frequency scaling, so
-rename the old driver (which handles only Tegra20) appropriately.
+It is apparently that v6 which is included in linux-next as of today.
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
----
-Sorry, I was not aware of those options.
+>  Version 6 replaces the old shell
+> script with a new implementation in python.
 
- drivers/cpufreq/Kconfig.arm                            | 6 +++---
- drivers/cpufreq/Makefile                               | 2 +-
- drivers/cpufreq/{tegra-cpufreq.c => tegra20-cpufreq.c} | 0
- 3 files changed, 4 insertions(+), 4 deletions(-)
- rename drivers/cpufreq/{tegra-cpufreq.c => tegra20-cpufreq.c} (100%)
+Am I right in thinking this patch basically updates this script to the
+v8 of your patch, that we discussed in
+https://lkml.org/lkml/2014/9/29/506 ?
 
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 83a75dc..22419f4 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -241,9 +241,9 @@ config ARM_SPEAR_CPUFREQ
- 	help
- 	  This adds the CPUFreq driver support for SPEAr SOCs.
- 
--config ARM_TEGRA_CPUFREQ
--	bool "TEGRA CPUFreq support"
-+config ARM_TEGRA20_CPUFREQ
-+	bool "Tegra20 CPUFreq support"
- 	depends on ARCH_TEGRA
- 	default y
- 	help
--	  This adds the CPUFreq driver support for TEGRA SOCs.
-+	  This adds the CPUFreq driver support for Tegra20 SOCs.
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 40c53dc..0d3ec1c 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -75,7 +75,7 @@ obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
- obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
- obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
- obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
--obj-$(CONFIG_ARM_TEGRA_CPUFREQ)		+= tegra-cpufreq.o
-+obj-$(CONFIG_ARM_TEGRA20_CPUFREQ)	+= tegra20-cpufreq.o
- obj-$(CONFIG_ARM_VEXPRESS_SPC_CPUFREQ)	+= vexpress-spc-cpufreq.o
- 
- ##################################################################################
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
-similarity index 100%
-rename from drivers/cpufreq/tegra-cpufreq.c
-rename to drivers/cpufreq/tegra20-cpufreq.c
--- 
-2.1.3
+>  scripts/checkkconfigsymbols.py | 57 ++++++++++++++++++++----------------------
+>  1 file changed, 27 insertions(+), 30 deletions(-)
+> 
+> diff --git a/scripts/checkkconfigsymbols.py b/scripts/checkkconfigsymbols.py
+> index f944089..e9cc689 100644
+> --- a/scripts/checkkconfigsymbols.py
+> +++ b/scripts/checkkconfigsymbols.py
+> @@ -1,36 +1,31 @@
+>  #!/usr/bin/env python
+>  
+> -"""Find Kconfig identifieres that are referenced but not defined."""
+> +"""Find Kconfig identifiers that are referenced but not defined."""
+>  
+> -# Copyright (C) 2014 Valentin Rothberg <valentinrothberg@gmail.com>
+> -# Copyright (C) 2014 Stefan Hengelein <stefan.hengelein@fau.de>
+> +# (c) 2014 Valentin Rothberg <valentinrothberg@gmail.com>
+> +# (c) 2014 Stefan Hengelein <stefan.hengelein@fau.de>
+>  #
+> -# This program is free software; you can redistribute it and/or modify it
+> -# under the terms and conditions of the GNU General Public License,
+> -# version 2, as published by the Free Software Foundation.
+> -#
+> -# This program is distributed in the hope it will be useful, but WITHOUT
+> -# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> -# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+> -# more details.
+> +# Licensed under the terms of the GNU GPL License version 2
+>  
+> 
+>  import os
+>  import re
+>  from subprocess import Popen, PIPE, STDOUT
+>  
+> -# REGEX EXPRESSIONS
+> +
+> +# regex expressions
+>  OPERATORS = r"&|\(|\)|\||\!"
+> -FEATURE = r"\w*[A-Z]{1}\w*"
+> -CONFIG_DEF = r"^\s*(?:menu){,1}config\s+(" + FEATURE + r")\s*"
+> +FEATURE = r"(?:\w*[A-Z0-9]\w*){2,}"
+> +DEF = r"^\s*(?:menu){,1}config\s+(" + FEATURE + r")\s*"
+>  EXPR = r"(?:" + OPERATORS + r"|\s|" + FEATURE + r")+"
+>  STMT = r"^\s*(?:if|select|depends\s+on)\s+" + EXPR
+> +SOURCE_FEATURE = r"(?:\W|\b)+[D]{,1}CONFIG_(" + FEATURE + r")"
+>  
+> -# REGEX OBJECTS
+> +# regex objects
+>  REGEX_FILE_KCONFIG = re.compile(r".*Kconfig[\.\w+\-]*$")
+>  REGEX_FEATURE = re.compile(r"(" + FEATURE + r")")
+> -REGEX_SOURCE_FEATURE = re.compile(r"(?:D|\W|\b)+CONFIG_(" + FEATURE + r")")
+> -REGEX_KCONFIG_DEF = re.compile(CONFIG_DEF)
+> +REGEX_SOURCE_FEATURE = re.compile(SOURCE_FEATURE)
+> +REGEX_KCONFIG_DEF = re.compile(DEF)
+>  REGEX_KCONFIG_EXPR = re.compile(EXPR)
+>  REGEX_KCONFIG_STMT = re.compile(STMT)
+>  REGEX_KCONFIG_HELP = re.compile(r"^\s+(help|---help---)\s*$")
+> @@ -42,7 +37,7 @@ def main():
+>      source_files = []
+>      kconfig_files = []
+>      defined_features = set()
+> -    referenced_features = dict()
+> +    referenced_features = dict()  # {feature: [files]}
+>  
+>      # use 'git ls-files' to get the worklist
+>      pop = Popen("git ls-files", stdout=PIPE, stderr=STDOUT, shell=True)
+> @@ -52,12 +47,12 @@ def main():
+>  
+>      for gitfile in stdout.rsplit("\n"):
+>          if ".git" in gitfile or "ChangeLog" in gitfile or \
+> -                os.path.isdir(gitfile):
+> +                ".log" in gitfile or os.path.isdir(gitfile):
+>              continue
+>          if REGEX_FILE_KCONFIG.match(gitfile):
+>              kconfig_files.append(gitfile)
+>          else:
+> -            # All non-Kconfig files are checked for consistency
+> +            # all non-Kconfig files are checked for consistency
+>              source_files.append(gitfile)
+>  
+>      for sfile in source_files:
+> @@ -68,15 +63,17 @@ def main():
+>  
+>      print "Undefined symbol used\tFile list"
+>      for feature in sorted(referenced_features):
+> +        # filter some false positives
+> +        if feature == "FOO" or feature == "BAR" or \
+> +                feature == "FOO_BAR" or feature == "XXX":
+> +            continue
+>          if feature not in defined_features:
+>              if feature.endswith("_MODULE"):
+> -                # Avoid false positives for kernel modules
+> +                # avoid false positives for kernel modules
+>                  if feature[:-len("_MODULE")] in defined_features:
+>                      continue
+> -            if "FOO" in feature or "BAR" in feature:
+> -                continue
+>              files = referenced_features.get(feature)
+> -            print "%s:\t%s" % (feature, ", ".join(files))
+> +            print "%s\t%s" % (feature, ", ".join(files))
+>  
+> 
+>  def parse_source_file(sfile, referenced_features):
+> @@ -92,9 +89,9 @@ def parse_source_file(sfile, referenced_features):
+>          for feature in features:
+>              if not REGEX_FILTER_FEATURES.search(feature):
+>                  continue
+> -            paths = referenced_features.get(feature, set())
+> -            paths.add(sfile)
+> -            referenced_features[feature] = paths
+> +            sfiles = referenced_features.get(feature, set())
+> +            sfiles.add(sfile)
+> +            referenced_features[feature] = sfiles
+>  
+> 
+>  def get_features_in_line(line):
+> @@ -113,7 +110,7 @@ def parse_kconfig_file(kfile, defined_features, referenced_features):
+>      for i in range(len(lines)):
+>          line = lines[i]
+>          line = line.strip('\n')
+> -        line = line.split("#")[0]  # Ignore Kconfig comments
+> +        line = line.split("#")[0]  # ignore comments
+>  
+>          if REGEX_KCONFIG_DEF.match(line):
+>              feature_def = REGEX_KCONFIG_DEF.findall(line)
+> @@ -122,11 +119,11 @@ def parse_kconfig_file(kfile, defined_features, referenced_features):
+>          elif REGEX_KCONFIG_HELP.match(line):
+>              skip = True
+>          elif skip:
+> -            # Ignore content of help messages
+> +            # ignore content of help messages
+>              pass
+>          elif REGEX_KCONFIG_STMT.match(line):
+>              features = get_features_in_line(line)
+> -            # Multi-line statements
+> +            # multi-line statements
+>              while line.endswith("\\"):
+>                  i += 1
+>                  line = lines[i]
+
+
+Paul Bolle
 
