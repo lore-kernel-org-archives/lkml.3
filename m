@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaKJIkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 03:40:10 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:62600 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169AbaKJIkE (ORCPT
+	id S1751933AbaKJIqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 03:46:06 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37067 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930AbaKJIqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 03:40:04 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/4] ASoC: simple-card: add multi-CODECs in DT
-Date: Mon, 10 Nov 2014 09:39:57 +0100
-Message-ID: <3271244.uSgBKXChSS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <d49d348da24fbd96e7be51ba2839ee8bc821ddec.1415605717.git.moinejf@free.fr>
-References: <cover.1415605716.git.moinejf@free.fr> <d49d348da24fbd96e7be51ba2839ee8bc821ddec.1415605717.git.moinejf@free.fr>
+	Mon, 10 Nov 2014 03:46:03 -0500
+Date: Mon, 10 Nov 2014 09:46:00 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v5 18/48] mfd: twl4030-power: Register with kernel
+ power-off handler
+Message-ID: <20141110084600.GA2582@amd>
+References: <1415292213-28652-1-git-send-email-linux@roeck-us.net>
+ <1415292213-28652-19-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:T50wLCCyBZDTzNR77sA83FF4M+BZNeTgEkDfXUYFf8u
- q+WSVPrCF5zjaM2GytDg3+IDz0bP3yDYmcq5/Qi+iqndU+msb0
- Lh2sgb6iU3FaYzon6NkjiYKg8FGwavrdgeXVX1dL0KFGHJE+id
- kYG8wYISeyCDinWkEJ7auqVgb0jM2rdJ2BbSAT2H2bgval8Ptp
- IAyXaDITO+qtJWySTCkdv2S0FCjeUNlHFpY79VPQ7ouRepiL8B
- qlETkcXLv0U+BEBHRgyZ4obO0tHpoz001I4laA+5c2jQr5p18u
- XlUFdaGKU3ZkZISfc8BKoQUZJtrAziYTJI+SXx8zRe961W2qFM
- /3d4eFTDEORilLULCMww=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415292213-28652-19-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 09 November 2014 12:22:21 Jean-Francois Moine wrote:
-> -- sound-dai                            : phandle and port of CPU/CODEC
-> +either
-> +  - sound-dai                          : phandle and port of CPU/CODEC
-> +or
-> +  - sound-dais                         : list of phandle and port of CODECs
+Hi!
 
-Is it really necessary to change the property name here? I woudl think
-that you can make it all work more consistently with just the existing
-'sound-dai' property, just extend it to allow multiple codecs
+> @@ -611,7 +611,7 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
+>   * After a successful execution, TWL shuts down the power to the SoC
+>   * and all peripherals connected to it.
+>   */
+> -void twl4030_power_off(void)
+> +static void twl4030_power_off(struct power_off_handler_block *this)
+>  {
+>  	int err;
+>  
+> @@ -621,6 +621,11 @@ void twl4030_power_off(void)
+>  		pr_err("TWL4030 Unable to power off\n");
+>  }
+>  
+> +static struct power_off_handler_block twl4030_power_off_hb = {
+> +	.handler = twl4030_power_off,
+> +	.priority = POWER_OFF_PRIORITY_LOW,
+> +};
+> +
+>  static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+>  					struct device_node *node)
+>  {
+> @@ -839,7 +844,9 @@ static int twl4030_power_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	/* Board has to be wired properly to use this feature */
+> -	if (twl4030_power_use_poweroff(pdata, node) && !pm_power_off) {
+> +	if (twl4030_power_use_poweroff(pdata, node)) {
+> +		int ret;
+> +
+>  		/* Default for SEQ_OFFSYNC is set, lets ensure this */
+>  		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &val,
+>  				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
+> @@ -856,7 +863,11 @@ static int twl4030_power_probe(struct platform_device *pdev)
+>  			}
+>  		}
+>  
+> -		pm_power_off = twl4030_power_off;
+> +		ret = devm_register_power_off_handler(&pdev->dev,
+> +						      &twl4030_power_off_hb);
+> +		if (ret)
+> +			dev_warn(&pdev->dev,
+> +				 "Failed to register power-off handler\n");
+>  	}
+>  
 
-	Arnd
+Could we get rid of the "struct power_off_handler_block" and guarantee
+that register_power_off never fails (or print message from the
+register_power_off...)? That way, your patch would be an cleanup.
+
+You could then add priorities if they turn out to be really
+neccessary, later...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
