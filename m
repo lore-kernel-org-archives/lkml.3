@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaKJVrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 16:47:46 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59608 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858AbaKJVrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 16:47:45 -0500
-Date: Mon, 10 Nov 2014 22:47:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Chen Yucong <slaoub@gmail.com>, "ak@linux.intel.com" <ak@linux.intel.com>,
-        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] x86, mce: support memory error recovery for both
- UCNA and Deferred error in machine_check_poll
-Message-ID: <20141110214739.GB4366@pd.tnic>
-References: <1415410821-15063-1-git-send-email-slaoub@gmail.com>
- <1415410821-15063-3-git-send-email-slaoub@gmail.com>
- <20141110190617.GJ4359@pd.tnic>
- <20141110213728.GN4359@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F329281E9@ORSMSX114.amr.corp.intel.com>
+	id S1752650AbaKJVtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 16:49:14 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:41404 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaKJVtM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 16:49:12 -0500
+Date: Mon, 10 Nov 2014 22:46:58 +0100
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH v2 1/2] i2c: add support for Amlogic Meson I2C controller
+Message-ID: <20141110214658.GA15156@gmail.com>
+References: <1412540232-26168-1-git-send-email-b.galvani@gmail.com>
+ <1412540232-26168-2-git-send-email-b.galvani@gmail.com>
+ <20141110144440.GB10422@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F329281E9@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141110144440.GB10422@katana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 09:44:26PM +0000, Luck, Tony wrote:
-> > In fact, you could redo this patch in the meantime without the AMD vendor
-> > check so that Tony can pick them up soon. I'll add the correct AMD bits
-> > later.
+On Mon, Nov 10, 2014 at 03:44:41PM +0100, Wolfram Sang wrote:
+> On Sun, Oct 05, 2014 at 10:17:11PM +0200, Beniamino Galvani wrote:
+> > This is a driver for the I2C controller found in Amlogic Meson SoCs.
+> > 
+> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 > 
-> You just want this hunk deleted ...
+> Thanks. Looking very good already!
 > 
-> +	if (c->x86_vendor == X86_VENDOR_AMD) {
-> +		/*
-> +		 * AMD BKDGs - Machine Check Error Codes
-> +		 *
-> +		 * Bit 8 of ErrCode[15:0] of MCi_STATUS is used for indicating
-> +		 * a memory-specific error. Note that this field encodes info-
-> +		 * rmation about memory-hierarchy level involved in the error.
-> +		 */
-> +		return (m->status & 0xff00) == BIT(8);
-> +	} else
+> > +static void meson_i2c_prepare_xfer(struct meson_i2c *i2c, bool write)
 > 
-> I can do that without a repost.  Or I can leave a reminder ...
+> Instead of the bool, maybe you could query i2c->state in the function?
+> You decide, I am not forcing you to do this.
+
+Seems reasonable, will do.
+
 > 
-> +	if (c->x86_vendor == X86_VENDOR_AMD) {
-> +		/*
-> +		 * coming soon
-> +		 */
-> +		return false;
-> +	} else
+> > +static u32 meson_i2c_func(struct i2c_adapter *adap)
+> > +{
+> > +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+> > +}
+> 
+> Have you tested 0-byte transfers, too (i2cdetect -q)? What was your test
+> scenario in general?
 
-Ok, that's fine too. I'll try to have a fix for this very soon so that
-we can be just in time ready to go for 3.19.
+I did a test with i2cdetect and quick write commands appear to
+work.
 
-With that you can slap
+When I wrote the driver I tested it to communicate with the only I2C
+device available on the board, a Ricoh RN5T618 PMIC.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Now I have access to a hardware with a PCF8564 RTC and just realized
+that long reads don't work properly, so I'm going to submit a new
+version of the patchset in the next days.
 
-to them.
-
-Thanks Tony.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Beniamino
