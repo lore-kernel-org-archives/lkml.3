@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaKJTKH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 14:10:07 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:61736 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaKJTKF convert rfc822-to-8bit (ORCPT
+	id S1751567AbaKJTTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 14:19:21 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:57183 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaKJTTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 14:10:05 -0500
-Date: Mon, 10 Nov 2014 20:12:54 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] ASoC: Remove 'const' from the device_node
- pointers
-Message-ID: <20141110201254.65674552@armhf>
-In-Reply-To: <20141110190332.GG3815@sirena.org.uk>
-References: <cover.1415562021.git.moinejf@free.fr>
-	<d5d74f6993e9f2392008a27a2938c58d47dc8062.1415562021.git.moinejf@free.fr>
-	<20141110190332.GG3815@sirena.org.uk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Nov 2014 14:19:19 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>
+Cc: Avi Kivity <avi.kivity@gmail.com>, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86, kvm, vmx: Don't set LOAD_IA32_EFER when host and guest match
+Date: Mon, 10 Nov 2014 11:19:15 -0800
+Message-Id: <8c96514e921897d40c79d4892fcbadee46aff8e9.1415646977.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014 19:03:32 +0000
-Mark Brown <broonie@kernel.org> wrote:
+There's nothing to switch if the host and guest values are the same.
+I am unable to find evidence that this makes any difference
+whatsoever.
 
-> On Sun, Nov 09, 2014 at 08:33:45PM +0100, Jean-Francois Moine wrote:
-> > From Russell King:
-> > of_node_put() modifies the struct device_node contents.  Therefore,
-> > of_node_put() definitely not treating the data pointed to as read-only,
-> > and therefore it is completely inappropriate for it to be marked "const".
-> 
-> Did Russell write this patch (in which case it's missing a signoff and
-> his e-mail address above) or are you trying to say "Russell King
-> said..."?
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/kvm/vmx.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Sorry, that was "Russell said ...".
-Do you want I resubmit the patch?
-
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index e72b9660e51c..c430b01b012b 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1670,7 +1670,9 @@ static bool update_transition_efer(struct vcpu_vmx *vmx, int efer_offset)
+ 		guest_efer = vmx->vcpu.arch.efer;
+ 		if (!(guest_efer & EFER_LMA))
+ 			guest_efer &= ~EFER_LME;
+-		add_atomic_switch_msr(vmx, MSR_EFER, guest_efer, host_efer);
++		if (guest_efer != host_efer)
++			add_atomic_switch_msr(vmx, MSR_EFER,
++					      guest_efer, host_efer);
+ 		return false;
+ 	}
+ 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+1.9.3
+
