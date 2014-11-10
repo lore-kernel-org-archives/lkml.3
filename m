@@ -1,119 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaKJLGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 06:06:36 -0500
-Received: from lb1-smtp-cloud6.xs4all.net ([194.109.24.24]:32981 "EHLO
-	lb1-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751926AbaKJLGe (ORCPT
+	id S1752566AbaKJLHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 06:07:51 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:40185 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaKJLHu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 06:06:34 -0500
-Message-ID: <54609C32.9040104@xs4all.nl>
-Date: Mon, 10 Nov 2014 12:06:26 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 10 Nov 2014 06:07:50 -0500
+Message-ID: <54609C82.9020103@arm.com>
+Date: Mon, 10 Nov 2014 11:07:46 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
-        linux-media@vger.kernel.org
-CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [RFCv2 0/8] [media] si4713 DT binding
-References: <1413904027-16767-1-git-send-email-sre@kernel.org> <545CBFE6.3070201@xs4all.nl>
-In-Reply-To: <545CBFE6.3070201@xs4all.nl>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: AMR: sun7i: CPU hotplug support?
+References: <545FC215.7010802@web.de> <20141109231744.GC2989@lukather> <5460554A.1060701@web.de> <5460766B.8070000@web.de> <546082A8.60401@arm.com> <5460870C.9010109@web.de> <54608ADC.4050500@arm.com> <54609479.8010203@web.de>
+In-Reply-To: <54609479.8010203@web.de>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 10 Nov 2014 11:07:47.0111 (UTC) FILETIME=[8F1A7370:01CFFCD6]
+X-MC-Unique: 114111011074703901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I've tested the whole 8-part patch series with my si4713 USB dev board, and it
-is working fine.
+On 10/11/14 10:33, Jan Kiszka wrote:
+> On 2014-11-10 10:52, Marc Zyngier wrote:
+>> On 10/11/14 09:36, Jan Kiszka wrote:
+>>> On 2014-11-10 10:17, Marc Zyngier wrote:
+>>>> On 10/11/14 08:25, Jan Kiszka wrote:
+>>>>> On 2014-11-10 07:03, Jan Kiszka wrote:
+>>>>>> On 2014-11-10 00:17, Maxime Ripard wrote:
+>>>>>>> Hi Jan,
+>>>>>>> 
+>>>>>>> On Sun, Nov 09, 2014 at 08:35:49PM +0100, Jan Kiszka 
+>>>>>>> wrote:
+>>>>>>>> did anyone already happen to look into enabling CPU 
+>>>>>>>> hotplug for the Allwinner A20 in upstream? I'm
+>>>>>>>> currently running the sunxi-next branch on Banana Pi,
+>>>>>>>> and echo 0 > .../cpu1/online just hangs the system.
+>>>>>>>> The old 3.4 LeMaker kernel works fine in this regard.
+>>>>>>>> I can try to look into details and port things over,
+>>>>>>>> just want to avoid duplicate efforts.
+>>>>>>> 
+>>>>>>> Having hotplug support would indeed be very welcome.
+>>>>>>> 
+>>>>>>> However, it should be done in u-boot, through PSCI, and
+>>>>>>> not in the kernel itself.
+>>>>>>> 
+>>>>>>> As far as I'm aware, no one worked actively on it,
+>>>>>>> beside some WIP commit from Marc a while ago: 
+>>>>>>> https://git.kernel.org/cgit/linux/kernel/git/maz/u-boot.git/commit/?h=wip/psci&id=45379c0f9cf812f0f62722f4015ec907fa5dc144
+>>>>>>
+>>>>>>
+>>>>>>>
+>>>>
+>>>>>>>
+>>
+>>>>>>> 
+OK - I guess I will need a little guidance in then: Is there a good
+>>>>>> reference board to study and to derive from? And maybe
+>>>>>> also: What is missing or not working in that u-boot
+>>>>>> branch? If I get this interface right, I just takes some
+>>>>>> device tree bits to enable this for the kernel afterward,
+>>>>>> correct?
+>>>>> 
+>>>>> Started to play with that patch in naive ways: CPU0 locks
+>>>>> up when offlining CPU1 - unless I disable the FIQ signal
+>>>>> from CPU1. Then it "works", both offlining and onlining
+>>>>> again. However, I suspect that this only parks CPU1 in wfi
+>>>>> and does not do anything interesting to it.
+>>>> 
+>>>> Here's how this is supposed to work: - CPU1 sends a FIQ to
+>>>> CPU0, bringing it into secure mode. - CPU0 then kills CPU1 by
+>>>> doing the magic incantations on the power controller
+>>>> 
+>>>> What is missing here is all the cache cleaning before
+>>>> signalling CPU0. If you add that, things should look a lot
+>>>> better (patches welcome).
+>> 
+>>> Unsure about this, or maybe this was too simplistic: I added
+>>> calls to u-boot's flush_dcache_all and invalidate_icache_all
+>>> (right after disabling the cache, just like the vendor kernel
+>>> does), but CPU0 still locks up. I suspect there is still a bug
+>>> in the FIQ handling. There is also a suspicious single "@"
+>>> printed on the console. I'll play with the FIQ handler a bit.
+>> 
+>> The '@' is just my own debug stuff, and might be causing issues
+>> too.
+>> 
+>> Now, you have to realise that by the time you call into this
+>> code, u-boot itself is long gone. Only the tiny bit of code
+>> dealing with PSCI still lives in a bank of static, secure memory.
+>> So calling into u-boot for anything is doomed. You need to
+>> actually put the code inside the PSCI backend.
+> 
+> OK - seems like quite a bit of code needs to be pulled over...
+> 
+> Meanwhile I'm still starring at psci_fiq_enter: ... movw	r8,
+> #(GICC_BASE & 0xffff) movt	r8, #(GICC_BASE >> 16) ldr	r9, [r8,
+> #GICC_IAR] movw	r10, #0x3ff movt	r10, #0 cmp	r9, r10 bne	out1 movw
+> r10, #0x3fe cmp	r9, r10 bne	out1 ...
+> 
+> How can GICC_IAR be 0x3ff and 0x3fe at the same time? These tests
+> seems bogus. What was the actual intention here?
 
-I've accepted patches 1-4. The others need to be reposted since patch 5 had a
-change request.
+Yup, that looks like a massive brain fart. These two 'bne' should
+really be 'beq's... You want to get out if you either read that there
+is no interrupt (0x3ff) or an interrupt for non-secure (0x3fe).
 
-Regards,
+	M.
+- -- 
+Jazz is not dead. It just smells funny...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
-	Hans
-
-On 11/07/2014 01:49 PM, Hans Verkuil wrote:
-> On 10/21/14 17:06, Sebastian Reichel wrote:
->> Hi,
->>
->> This is the RFCv2 patchset adding DT support to the si4713
->> radio transmitter i2c driver. The changes can be summarized
->> as follows:
->>
->>  * Move regulator information back into the driver. The
->>    regulators needed are documented in the chip and have
->>    nothing to do with boarddata. Instead devm_regulator_get_optional
->>    is used and errors are handled quite loosely now. Maybe the USB
->>    driver should provide dummy regulators.
->>  * GPIO handling is updated to gpiod consumer interface, resulting
->>    in a driver cleanup and easy DT handling
->>  * The driver is updated to use managed resources wherever possible
->>
->> So much about the nice stuff. But there is also
->>
->>  * Instantiation of the platform device from the i2c (sub-)device. Since DT
->>    is not supposed to contain linuxisms the device is a simple i2c node
->>    resulting in the i2c probe function being called. Thus registering the main
->>    v4l device must happen from there.
->>
->> Tested:
->>  * Compilation on torvalds/linux.git:master (based on 52d589a)
->>  * Booting in DT mode
->>  * Some simply driver queries using v4l2-ctl
->>
->> Not tested:
->>  * The USB driver, since I do not own the USB dongle
-> 
-> I will test this on Monday for the USB device. It looks good, but I need
-> to verify that it doesn't break the USB driver.
-> 
-> Regards,
-> 
-> 	Hans
-> 
->>  * The legacy platform code (only DT boot has been tested).
->>    (The legacy platform code is supposed to removed in the near future anyways)
->>
->> Changes since RFCv1 (requested by Hans Verkuil):
->>  - splitted the patchset into more patches
->>  - replaced dev_info with dev_dbg for missing regulators
->>  - check for ENOSYS value from devm_gpiod_get (disabled GPIOLIB)
->>
->> -- Sebastian
->>
->> Sebastian Reichel (8):
->>   [media] si4713: switch to devm regulator API
->>   [media] si4713: switch reset gpio to devm_gpiod API
->>   [media] si4713: use managed memory allocation
->>   [media] si4713: use managed irq request
->>   [media] si4713: add device tree support
->>   [media] si4713: add DT binding documentation
->>   ARM: OMAP2: RX-51: update si4713 platform data
->>   [media] si4713: cleanup platform data
->>
->>  Documentation/devicetree/bindings/media/si4713.txt |  30 ++++
->>  arch/arm/mach-omap2/board-rx51-peripherals.c       |  69 ++++-----
->>  drivers/media/radio/si4713/radio-platform-si4713.c |  28 +---
->>  drivers/media/radio/si4713/si4713.c                | 167 +++++++++++++--------
->>  drivers/media/radio/si4713/si4713.h                |  15 +-
->>  include/media/radio-si4713.h                       |  30 ----
->>  include/media/si4713.h                             |   4 +-
->>  7 files changed, 186 insertions(+), 157 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/media/si4713.txt
->>  delete mode 100644 include/media/radio-si4713.h
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+iQIcBAEBAgAGBQJUYJx9AAoJECPQ0LrRPXpD/0kP/jwdNF2Ahtj05biOkCOTmp3V
+PUPNbffo8366UZeOLMjt7Wplde+//swOiLOq0uERS5IYj+QCMOA4F9hWOSO527zn
+v1j6374hAW1F8p8waGRxOGEffUgZGhXPmOxQAIsr7iqsIrvUVbE6KcNS5ofs+29R
+lWEaNW08L09CxcDA7szZzhVcMfu3oUxjzVFnnh6uhHG5DMxhCWt3IgEj2cLUR+VC
+ER/VAS9r0/4Bl5sZ7VO+GeToolgswIlIGgjkqifwrKFYH8XSyIxN8LDrNLAR1F4Q
+RQYfo3I7UGZcOPzz+BJcOsROohx2wtDeW6VxnRsE5WkE/udx++C7Ty9IquFrvPxA
+1u8pzTrra27ZdxbrV2vS8YVo8bQktTdz8IjITuvWVX/cutXBdqIeP75EXYQQXeCg
+TuO26Huce4McEtn7bOEQac6SxLpTitGM+EAdrlhV9Dg7bCp1mKfzlIM4t6KuowEU
+53mniGtDoLlnyUy+N4X6KyUmvqqyRNyC+c3ZWmP5xoB3VcQ1IJKuSEHSS9bJxIKb
+J2FNQN7v+C9P0d/1bItVqlpz6PiLcdWFFrfvDCxOe0uqkacwzhdlMMzrYYuMgAIi
+e0u8fqYunECZliT5OMaRhqBwSsniZmw2bBf6ZaUqlKgXc5MsxjncNakOKMQkQjip
+FwtcX/9StOztp43Laj7o
+=LZJR
+-----END PGP SIGNATURE-----
 
