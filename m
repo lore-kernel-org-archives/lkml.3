@@ -1,662 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaKJMtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 07:49:31 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:65025 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaKJMt3 (ORCPT
+	id S1752872AbaKJMt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 07:49:57 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:53713 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576AbaKJMty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 07:49:29 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-f5-5460b45699f5
-Message-id: <5460B456.8070604@samsung.com>
-Date: Mon, 10 Nov 2014 21:49:26 +0900
-From: Beomho Seo <beomho.seo@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, cw00.choi@samsung.com,
-        geunsik.lim@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jone@linaro.org>
-Subject: Re: [PATCH v2 1/5] mfd: rt5033: Add Richtek RT5033 driver core.
-References: <1415603987-32475-1-git-send-email-beomho.seo@samsung.com>
- <1415603987-32475-2-git-send-email-beomho.seo@samsung.com>
- <20141110123901.GY21424@x1>
-In-reply-to: <20141110123901.GY21424@x1>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsWyRsSkSDdsS0KIwfVdChbXvzxntZh/5Byr
-	xZ8JrWwWk+5PYLF4v+cMo8X9r0cZLS7vmsNm8bn3CKPF6W5WixmTX7I5cHncubaHzWPeyUCP
-	vi2rGD0+b5ILYInisklJzcksSy3St0vgyrg4cRJjwb3pjBVdB3MaGJdXdzFyckgImEj8nnWD
-	EcIWk7hwbz1bFyMXh5DAUkaJhmtNTDBFT+78YIVITGeU+HC7nQnCec0ocXfWd3aQKl4BLYnN
-	t/+xgtgsAqoSfyb/ZwGx2QQ0Jd5PuQJmiwpESFxZM4cRol5Q4sfke0BxDg4RARWJc2/MQcLM
-	Ao1MEpNuaYPYwgIeEl8nr2WE2LWQUaJp3RE2kASngIbE3IX3wXqZBdQlpkzJheiVl9i85i0z
-	xNG32CXWfxOCOEdA4tvkQ2DlEgKyEpsOQJVIShxccYNlAqPYLCQHzUIYOgvJ0AWMzKsYRVML
-	kguKk9KLTPSKE3OLS/PS9ZLzczcxAmPw9L9nE3Yw3jtgfYhRgINRiYfX4W18iBBrYllxZe4h
-	RlOgIyYyS4km5wMjPa8k3tDYzMjC1MTU2Mjc0kxJnPe11M9gIYH0xJLU7NTUgtSi+KLSnNTi
-	Q4xMHJxSDYwsZa++ey8olPkjW/L9V8L/S+KLZyyWMzpetW+ypfLbDy3F1xQfRbBHNym2LT/z
-	94Sy1O1Vz6e/67T5v9ruk/RckzvH1yYuE+f+PK23/7cMz6PWSL/0E+Ed96PPPq3VLZeS2by9
-	TadLJvqeyd47qolv7s7bOMPU/otoRtbr6zulvTzZpFgfh61XYinOSDTUYi4qTgQAs2M1BLwC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jQd2wLQkhBmuWi1hc//Kc1WL+kXOs
-	Fn8mtLJZTLo/gcXi/Z4zjBb3vx5ltLi8aw6bxefeI4wWp7tZLWZMfsnmwOVx59oeNo95JwM9
-	+rasYvT4vEkugCWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJ
-	xSdA1y0zB+geJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGxYmTGAvu
-	TWes6DqY08C4vLqLkZNDQsBE4smdH6wQtpjEhXvr2boYuTiEBKYzSny43c4E4bxmlLg76zs7
-	SBWvgJbE5tv/wDpYBFQl/kz+zwJiswloSryfcgXMFhWIkLiyZg4jRL2gxI/J94DiHBwiAioS
-	596Yg4SZBRqZJCbd0gaxhQU8JL5OXssIsWsho0TTuiNsIAlOAQ2JuQvvg/UyC6hLTJmSC9Er
-	L7F5zVvmCYwCs5BsmIVQNQtJ1QJG5lWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwTH+TGoH
-	48oGi0OMAhyMSjy8Dm/jQ4RYE8uKK3MPMUpwMCuJ8M5alhAixJuSWFmVWpQfX1Sak1p8iNEU
-	6P+JzFKiyfnA9JNXEm9obGJmZGlkbmhhZGyuJM57oNU6UEggPbEkNTs1tSC1CKaPiYNTqoEx
-	tz1F4Dfz8ue72atnVS3Rvjuj83f0gVX5C+ubGTb2J5bL8eW5L/7529LJ7VjTnIlzUs6++C9Y
-	0LSU/d9dw+X9Z12FVx9mlQs8MV3m/6RaOdboqcX1gvuZH3I5irs2NBw5V1zxqf/pxlyPS492
-	W/S9Tj4c8HppFe+XkpfPZnJ4bNrgfMaF93WOEktxRqKhFnNRcSIALbf3/QcDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 10 Nov 2014 07:49:54 -0500
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: paulz@synopsys.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <4156e80038fee67d44119844a94628ec>
+X-DNS-TYPE: 1
+Message-ID: <5460B45A.3090503@rock-chips.com>
+Date: Mon, 10 Nov 2014 20:49:30 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Julius Werner <jwerner@chromium.org>
+CC: Tao Huang <huangtao@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyW?= <dkl@rock-chips.com>,
+        addy ke <addy.ke@rock-chips.com>, han jiang <hj@rock-chips.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Douglas Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rockchip@lists.infradead.org, Jianqun Xu <xjq@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>, romain.perier@gmail.com,
+        Sonny Rao <sonnyrao@chromium.org>, Paul Zimmerman <paulz@synopsys.com>
+Subject: Re: [PATCH v2] usb: dwc2: add bus suspend/resume for dwc2
+References: <1415237402-24665-1-git-send-email-kever.yang@rock-chips.com> <CAODwPW_Udap8oYGhKSLWhpiLLhsOUKNsMbpxC7CLEz-Cg53JQw@mail.gmail.com>
+In-Reply-To: <CAODwPW_Udap8oYGhKSLWhpiLLhsOUKNsMbpxC7CLEz-Cg53JQw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for your review.
+Hi Julius,
 
-On 11/10/2014 09:39 PM, Lee Jones wrote:
-> On Mon, 10 Nov 2014, Beomho Seo wrote:
-> 
->> This patch adds a new driver for Richtek RT5033 driver.
->> RT5033 is a Multifunction device which includes battery charger, fuel gauge,
->> flash LED current source, LDO and synchronous Buck converter. It is interfaced
->> to host controller using I2C interface.
+On 11/07/2014 06:11 AM, Julius Werner wrote:
+> On Wed, Nov 5, 2014 at 5:30 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+>> Hcd controller needs bus_suspend/resume, dwc2 controller make
+>> root hub generate suspend/resume signal with hprt0 register
+>> when work in host mode.
+>> After the root hub enter suspend, we can make controller enter
+>> low power state with PCGCTL register.
+> You say you do this, but I don't actually see you doing it (for the
+> not-connected case)?
+Agree to add PCGCTL operation for the not-connected case.
+>
+>> We also update the lx_state for hsotg state.
 >>
->> Cc: Samuel Ortiz <sameo@linux.intel.com>
->> Cc: Lee Jones <lee.jone@linaro.org>
->> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
->> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> This patch has tested on rk3288 with suspend/resume.
+>>
+>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 >> ---
->> Changes in v2
->> - Remove volatile_reg callback. Because this driver not in use regmap cache.
->> - Revmoe unnecessary subnode of_compatible.
->> - Add define for set_high impedance mode of charger.
->> ---
 >>
->>  drivers/mfd/Kconfig                |   11 ++
->>  drivers/mfd/Makefile               |    1 +
->>  drivers/mfd/rt5033.c               |  142 ++++++++++++++++++++
->>  include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
->>  include/linux/mfd/rt5033.h         |   64 +++++++++
->>  5 files changed, 478 insertions(+)
->>  create mode 100644 drivers/mfd/rt5033.c
->>  create mode 100644 include/linux/mfd/rt5033-private.h
->>  create mode 100644 include/linux/mfd/rt5033.h
+>> Changes in v2:
+>> - update commit message
+>> - make dwc2 suspend/resume sourcecode work
 >>
->> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
->> index cbdb109..6800068 100644
->> --- a/drivers/mfd/Kconfig
->> +++ b/drivers/mfd/Kconfig
->> @@ -607,6 +607,17 @@ config MFD_RTSX_PCI
->>  	  types of memory cards, such as Memory Stick, Memory Stick Pro,
->>  	  Secure Digital and MultiMediaCard.
->>  
->> +config MFD_RT5033
->> +	bool "Richtek RT5033 Power Management IC"
->> +	depends on I2C=y
->> +	select MFD_CORE
->> +	select REGMAP_I2C
->> +	help
->> +	  This support for Richtek RT5033 Power Management IC. This includes
-> 
-> s/This /This driver provides/
-> 
-> s/for /for the
-> 
-> s/. This/, which
-> 
-
-Ok, I will revise above sentence.
-
->> +	  the I2C driver and the Core APIs. This driver provides common support
->> +	  for accessing the device. The device supports multiple sub-devices
->> +	  like charger, fuel gauge, flash LED, current source, LDO and Buck.
->> +
->>  config MFD_RTSX_USB
->>  	tristate "Realtek USB card reader"
->>  	depends on USB
->> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
->> index 8e679d6..94e0f1c 100644
->> --- a/drivers/mfd/Makefile
->> +++ b/drivers/mfd/Makefile
->> @@ -175,6 +175,7 @@ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
->>  obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
->>  obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
->>  obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
->> +obj-$(CONFIG_MFD_RT5033)	+= rt5033.o
->>  
->>  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
->>  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
->> diff --git a/drivers/mfd/rt5033.c b/drivers/mfd/rt5033.c
->> new file mode 100644
->> index 0000000..8f5aee0
->> --- /dev/null
->> +++ b/drivers/mfd/rt5033.c
->> @@ -0,0 +1,142 @@
->> +/*
->> + * MFD core driver for the Richtek RT5033.
->> + *
->> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
->> + * Beomho Seo <beomho.seo@samsung.com>
-> 
-> Babysitter, butcher, pool cleaner or author?
-> 
-
-OK, I will add "author".
-
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published bythe Free Software Foundation.
->> + */
->> +
->> +#include <linux/err.h>
->> +#include <linux/module.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/of_device.h>
->> +#include <linux/mfd/core.h>
->> +#include <linux/mfd/rt5033.h>
->> +#include <linux/mfd/rt5033-private.h>
->> +
->> +static const struct regmap_irq rt5033_irqs[] = {
->> +	{ .mask = RT5033_PMIC_IRQ_BUCKOCP, },
->> +	{ .mask = RT5033_PMIC_IRQ_BUCKLV, },
->> +	{ .mask = RT5033_PMIC_IRQ_SAFELDOLV, },
->> +	{ .mask = RT5033_PMIC_IRQ_LDOLV, },
->> +	{ .mask = RT5033_PMIC_IRQ_OT, },
->> +	{ .mask = RT5033_PMIC_IRQ_VDDA_UV, },
->> +};
->> +
->> +static const struct regmap_irq_chip rt5033_irq_chip = {
->> +	.name		= "rt5033",
->> +	.status_base	= RT5033_REG_PMIC_IRQ_STAT,
->> +	.mask_base	= RT5033_REG_PMIC_IRQ_CTRL,
->> +	.mask_invert	= true,
->> +	.num_regs	= 1,
->> +	.irqs		= rt5033_irqs,
->> +	.num_irqs	= ARRAY_SIZE(rt5033_irqs),
->> +};
->> +
->> +static const struct mfd_cell rt5033_devs[] = {
->> +	{
->> +		.name = "rt5033-regulator",
->> +	}, {
->> +		.name = "rt5033-charger",
->> +		.of_compatible = "richtek,rt5033-charger",
->> +	}, {
->> +		.name = "rt5033-battery",
->> +		.of_compatible = "richtek,rt5033-battery",
->> +	},
->> +};
->> +
->> +static const struct of_device_id rt5033_dt_match[] = {
->> +	{ .compatible = "richtek,rt5033", },
->> +	{ }
->> +};
->> +
->> +static const struct regmap_config rt5033_regmap_config = {
->> +	.reg_bits	= 8,
->> +	.val_bits	= 8,
->> +	.max_register	= RT5033_REG_END,
->> +};
->> +
->> +static int rt5033_i2c_probe(struct i2c_client *i2c,
->> +				const struct i2c_device_id *id)
+>>   drivers/usb/dwc2/hcd.c | 78 +++++++++++++++++++++++++++++++++++++++++++-------
+>>   1 file changed, 67 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
+>> index 0a0e6f0..01a415b 100644
+>> --- a/drivers/usb/dwc2/hcd.c
+>> +++ b/drivers/usb/dwc2/hcd.c
+>> @@ -1471,6 +1471,30 @@ static void dwc2_port_suspend(struct dwc2_hsotg *hsotg, u16 windex)
+>>          }
+>>   }
+>>
+>> +static void dwc2_port_resume(struct dwc2_hsotg *hsotg)
 >> +{
->> +	struct rt5033_dev *rt5033;
->> +	unsigned int data;
->> +	int ret = 0;
-> 
-> No need to pre-initialise.
-> 
->> +	rt5033 = devm_kzalloc(&i2c->dev, sizeof(*rt5033), GFP_KERNEL);
->> +	if (!rt5033)
->> +		return -ENOMEM;
+>> +       u32 hprt0;
 >> +
->> +	i2c_set_clientdata(i2c, rt5033);
->> +	rt5033->dev = &i2c->dev;
->> +	rt5033->i2c = i2c;
->> +	rt5033->irq = i2c->irq;
-> 
-> If you're saving 'i2c', do you really need to save the other two.  You
-> can just derive them from the former.
-> 
->> +	rt5033->wakeup = 1;
-> 
-> This is a bool; true or false.
-> 
->> +	rt5033->regmap = devm_regmap_init_i2c(i2c, &rt5033_regmap_config);
->> +	if (IS_ERR(rt5033->regmap)) {
->> +		dev_err(&i2c->dev, "Failed to allocate register map.\n");
->> +		return PTR_ERR(rt5033->regmap);
->> +	}
+>> +       /* After clear the Stop PHY clock bit, we should wait for a moment
+>> +        * for PLL work stable with clock output.
+>> +        */
+>> +       writel(0, hsotg->regs + PCGCTL);
+>> +       usleep_range(2000, 4000);
 >> +
->> +	ret = regmap_read(rt5033->regmap, RT5033_REG_DEVICE_ID, &data);
->> +	if (ret < 0) {
->> +		dev_err(&i2c->dev, "Device not found\n");
->> +		return -ENODEV;
->> +	}
->> +	dev_info(&i2c->dev, "Device found Device ID: %04x\n", data);
+>> +       hprt0 = dwc2_read_hprt0(hsotg);
+>> +       hprt0 |= HPRT0_RES;
+>> +       writel(hprt0, hsotg->regs + HPRT0);
+>> +       hprt0 &= ~HPRT0_SUSP;
+>> +       /* according to USB2.0 Spec 7.1.7.7, the host must send the resume
+>> +        * signal for at least 20ms
+>> +        */
+>> +       usleep_range(20000, 25000);
 >> +
->> +	ret = regmap_add_irq_chip(rt5033->regmap, rt5033->irq,
->> +			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
->> +			0, &rt5033_irq_chip, &rt5033->irq_data);
->> +	if (ret < 0) {
-> 
-> regmap_add_irq_chip() doesn't return >0, so check can simply be
-> 
-> if (ret) ...
-> 
->> +		dev_err(&i2c->dev, "Failed to request IRQ %d: %d\n",
->> +							rt5033->irq, ret);
->> +		return ret;
->> +	}
->> +
->> +	ret = mfd_add_devices(rt5033->dev, -1, rt5033_devs,
->> +			ARRAY_SIZE(rt5033_devs), NULL, 0,
->> +			regmap_irq_get_domain(rt5033->irq_data));
->> +	if (ret < 0) {
-> 
-> Again, mfd_add_devices() can't return >0, so just check for 'ret'.
-> 
->> +		dev_err(&i2c->dev, "Failed to add rt5033 mfd device.\n");
-> 
-> "Failed to add RT5033 child devices"
-> 
->> +		return ret;
->> +	}
->> +
->> +	device_init_wakeup(rt5033->dev, rt5033->wakeup);
->> +
->> +	return 0;
+>> +       hprt0 &= ~HPRT0_RES;
+>> +       writel(hprt0, hsotg->regs + HPRT0);
+>> +       hsotg->lx_state = DWC2_L0;
 >> +}
 >> +
->> +static int rt5033_i2c_remove(struct i2c_client *i2c)
+>>   /* Handles hub class-specific requests */
+>>   static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
+>>                                  u16 wvalue, u16 windex, char *buf, u16 wlength)
+>> @@ -1516,17 +1540,7 @@ static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
+>>                  case USB_PORT_FEAT_SUSPEND:
+>>                          dev_dbg(hsotg->dev,
+>>                                  "ClearPortFeature USB_PORT_FEAT_SUSPEND\n");
+>> -                       writel(0, hsotg->regs + PCGCTL);
+>> -                       usleep_range(20000, 40000);
+>> -
+>> -                       hprt0 = dwc2_read_hprt0(hsotg);
+>> -                       hprt0 |= HPRT0_RES;
+>> -                       writel(hprt0, hsotg->regs + HPRT0);
+>> -                       hprt0 &= ~HPRT0_SUSP;
+>> -                       usleep_range(100000, 150000);
+>> -
+>> -                       hprt0 &= ~HPRT0_RES;
+>> -                       writel(hprt0, hsotg->regs + HPRT0);
+> I'm curious why this didn't change lx_state back to DWC2_L0 before...
+> Paul, do you know?
+>
+>> +                       dwc2_port_resume(hsotg);
+>>                          break;
+>>
+>>                  case USB_PORT_FEAT_POWER:
+>> @@ -2299,6 +2313,44 @@ static void _dwc2_hcd_stop(struct usb_hcd *hcd)
+>>          usleep_range(1000, 3000);
+>>   }
+>>
+>> +static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
 >> +{
->> +	struct rt5033_dev *rt5033 = i2c_get_clientdata(i2c);
+>> +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
+>> +       u32 hprt0;
 >> +
->> +	mfd_remove_devices(rt5033->dev);
+>> +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
+>> +               (hsotg->op_state == OTG_STATE_A_HOST)))
+>> +               return 0;
 >> +
->> +	return 0;
+>> +       if (hsotg->lx_state != DWC2_L0)
+> What if the port is in L1 state? I don't think the driver supports LPM
+> right now, but the DWC2_L1 enum is defined so it may one day in the
+> future. Let's maybe at least add a TODO.
+Added
+>
+>> +               return 0;
+> In your original ChromiumOS version of this patch, you also set
+> PCGCTL_STOPPCLK here if the port was not connected. Is there a reason
+> that changed (does it not actually save power or something)?
+>
+>> +
+>> +       hprt0 = dwc2_read_hprt0(hsotg);
+>> +       if (hprt0 & HPRT0_CONNSTS)
+>> +               dwc2_port_suspend(hsotg, 1);
+> The contract for bus_suspend() is that it will suspend all ports not
+> yet suspended, keep track of those ports and then only resume those in
+> bus_resume() (compare, for example, how XHCI keeps track of that with
+> xhci_bus_state.bus_suspended in xhci_bus_suspend/resume()). So you
+> need something here to remember whether this function suspended the
+> port or whether it had already been suspended, and then only resume
+> the port in bus_resume() in the former case.
+In fact, the dwc2 controller only support one port, so the hprt0
+is the only one port we need to care.
+> Note that
+> dwc2_port_suspend() changes lx_state to DWC_L2 (at least in the
+> version I'm looking at right now), so you can't just rely on that
+> unless you explicitly set it back to something else here.
+>
+>> +
+>> +       return 0;
 >> +}
 >> +
->> +static const struct i2c_device_id rt5033_i2c_id[] = {
->> +	{ "rt5033", },
->> +	{ }
->> +};
->> +MODULE_DEVICE_TABLE(i2c, rt5033_i2c_id);
+>> +static int _dwc2_hcd_resume(struct usb_hcd *hcd)
+>> +{
+>> +       struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
+>> +       u32 hprt0;
 >> +
->> +static struct i2c_driver rt5033_driver = {
->> +	.driver = {
->> +		.name = "rt5033",
->> +		.of_match_table = rt5033_dt_match,
-> 
-> Should this driver depend on OF?  If not, you need to use
-> of_match_ptr() here.
-> 
->> +	},
->> +	.probe = rt5033_i2c_probe,
->> +	.remove = rt5033_i2c_remove,
->> +	.id_table = rt5033_i2c_id,
->> +};
->> +module_i2c_driver(rt5033_driver);
+>> +       if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
+>> +               (hsotg->op_state == OTG_STATE_A_HOST)))
+>> +               return 0;
 >> +
->> +MODULE_DESCRIPTION("Richtek RT5033 multi-function core driver");
->> +MODULE_AUTHOR("Beomho Seo <beomho.seo@samsung.com>");
->> +MODULE_LICENSE("GPL");
->> diff --git a/include/linux/mfd/rt5033-private.h b/include/linux/mfd/rt5033-private.h
->> new file mode 100644
->> index 0000000..9eff0e5
->> --- /dev/null
->> +++ b/include/linux/mfd/rt5033-private.h
->> @@ -0,0 +1,260 @@
->> +/*
->> + * MFD core driver for Richtek RT5033
->> + *
->> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
->> + * Beomho Seo <beomho.seo@samsung.com>
-> 
->  * Author: ...
-> 
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published bythe Free Software Foundation.
->> + */
+>> +       if (hsotg->lx_state != DWC2_L2)
+>> +               return 0;
 >> +
->> +#ifndef __RT5033_PRIVATE_H__
->> +#define __RT5033_PRIVATE_H__
+>> +       hprt0 = dwc2_read_hprt0(hsotg);
+>> +       if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
+>> +               dwc2_port_resume(hsotg);
 >> +
->> +enum rt5033_reg {
->> +	RT5033_REG_CHG_STAT		= 0x00,
->> +	RT5033_REG_CHG_CTRL1		= 0x01,
->> +	RT5033_REG_CHG_CTRL2		= 0x02,
->> +	RT5033_REG_DEVICE_ID		= 0x03,
->> +	RT5033_REG_CHG_CTRL3		= 0x04,
->> +	RT5033_REG_CHG_CTRL4		= 0x05,
->> +	RT5033_REG_CHG_CTRL5		= 0x06,
->> +	RT5033_REG_RT_CTRL0		= 0x07,
->> +	RT5033_REG_CHG_RESET		= 0x08,
->> +	/* Reserved 0x09~0x18 */
->> +	RT5033_REG_RT_CTRL1		= 0x19,
->> +	/* Reserved 0x1A~0x20 */
->> +	RT5033_REG_FLED_FUNCTION1	= 0x21,
->> +	RT5033_REG_FLED_FUNCTION2	= 0x22,
->> +	RT5033_REG_FLED_STROBE_CTRL1	= 0x23,
->> +	RT5033_REG_FLED_STROBE_CTRL2	= 0x24,
->> +	RT5033_REG_FLED_CTRL1		= 0x25,
->> +	RT5033_REG_FLED_CTRL2		= 0x26,
->> +	RT5033_REG_FLED_CTRL3		= 0x27,
->> +	RT5033_REG_FLED_CTRL4		= 0x28,
->> +	RT5033_REG_FLED_CTRL5		= 0x29,
->> +	/* Reserved 0x2A~0x40 */
->> +	RT5033_REG_CTRL			= 0x41,
->> +	RT5033_REG_BUCK_CTRL		= 0x42,
->> +	RT5033_REG_LDO_CTRL		= 0x43,
->> +	/* Reserved 0x44~0x46 */
->> +	RT5033_REG_MANUAL_RESET_CTRL	= 0x47,
->> +	/* Reserved 0x48~0x5F */
->> +	RT5033_REG_CHG_IRQ1		= 0x60,
->> +	RT5033_REG_CHG_IRQ2		= 0x61,
->> +	RT5033_REG_CHG_IRQ3		= 0x62,
->> +	RT5033_REG_CHG_IRQ1_CTRL	= 0x63,
->> +	RT5033_REG_CHG_IRQ2_CTRL	= 0x64,
->> +	RT5033_REG_CHG_IRQ3_CTRL	= 0x65,
->> +	RT5033_REG_LED_IRQ_STAT		= 0x66,
->> +	RT5033_REG_LED_IRQ_CTRL		= 0x67,
->> +	RT5033_REG_PMIC_IRQ_STAT	= 0x68,
->> +	RT5033_REG_PMIC_IRQ_CTRL	= 0x69,
->> +	RT5033_REG_SHDN_CTRL		= 0x6A,
->> +	RT5033_REG_OFF_EVENT		= 0x6B,
+>> +       return 0;
+>> +}
 >> +
->> +	RT5033_REG_END,
->> +};
->> +
->> +/* RT5033 Charger state register */
->> +#define RT5033_CHG_STAT_MASK		0x20
->> +#define RT5033_CHG_STAT_DISCHARGING	0x00
->> +#define RT5033_CHG_STAT_FULL		0x10
->> +#define RT5033_CHG_STAT_CHARGING	0x20
->> +#define RT5033_CHG_STAT_NOT_CHARGING	0x30
->> +#define RT5033_CHG_STAT_TYPE_MASK	0x60
->> +#define RT5033_CHG_STAT_TYPE_PRE	0x20
->> +#define RT5033_CHG_STAT_TYPE_FAST	0x60
->> +
->> +/* RT5033 CHGCTRL1 register */
->> +#define RT5033_CHGCTRL1_IAICR_MASK	0xe0
->> +#define RT5033_CHGCTRL1_MODE_MASK	0x01
->> +
->> +/* RT5033 CHGCTRL2 register */
->> +#define RT5033_CHGCTRL2_CV_MASK		0xfc
->> +
->> +/* RT5033 CHGCTRL3 register */
->> +#define RT5033_CHGCTRL3_CFO_EN_MASK	0x40
->> +#define RT5033_CHGCTRL3_TIMER_MASK	0x38
->> +#define RT5033_CHGCTRL3_TIMER_EN_MASK	0x01
->> +
->> +/* RT5033 CHGCTRL4 register */
->> +#define RT5033_CHGCTRL4_EOC_MASK	0x07
->> +#define RT5033_CHGCTRL4_IPREC_MASK	0x18
->> +
->> +/* RT5033 CHGCTRL5 register */
->> +#define RT5033_CHGCTRL5_VPREC_MASK	0x0f
->> +#define RT5033_CHGCTRL5_ICHG_MASK	0xf0
->> +#define RT5033_CHGCTRL5_ICHG_SHIFT	0x04
->> +#define RT5033_CHG_MAX_CURRENT		0x0d
->> +
->> +/* RT5033 RT CTRL1 register */
->> +#define RT5033_RT_CTRL1_UUG_MASK	0x02
->> +#define RT5033_RT_HZ_MASK		0x01
->> +
->> +/* RT5033 control register */
->> +#define RT5033_CTRL_FCCM_BUCK_MASK		0x00
->> +#define RT5033_CTRL_BUCKOMS_MASK		0x01
->> +#define RT5033_CTRL_LDOOMS_MASK			0x02
->> +#define RT5033_CTRL_SLDOOMS_MASK		0x03
->> +#define RT5033_CTRL_EN_BUCK_MASK		0x04
->> +#define RT5033_CTRL_EN_LDO_MASK			0x05
->> +#define RT5033_CTRL_EN_SAFE_LDO_MASK		0x06
->> +#define RT5033_CTRL_LDO_SLEEP_MASK		0x07
->> +
->> +/* RT5033 BUCK control register */
->> +#define RT5033_BUCK_CTRL_MASK			0x1f
->> +
->> +/* RT5033 LDO control register */
->> +#define RT5033_LDO_CTRL_MASK			0x1f
->> +
->> +/* RT5033 charger property - model, manufacturer */
->> +
->> +#define RT5033_CHARGER_MODEL	"RT5033WSC Charger"
->> +#define RT5033_MANUFACTURER	"Richtek Technology Corporation"
->> +
->> +/*
->> + * RT5033 charger fast-charge current lmits (as in CHGCTRL1 register),
->> + * AICR mode limits the input current for example,
->> + * the AIRC 100 mode limits the input current to 100 mA.
->> + */
->> +#define RT5033_AICR_100_MODE			0x20
->> +#define RT5033_AICR_500_MODE			0x40
->> +#define RT5033_AICR_700_MODE			0x60
->> +#define RT5033_AICR_900_MODE			0x80
->> +#define RT5033_AICR_1500_MODE			0xc0
->> +#define RT5033_AICR_2000_MODE			0xe0
->> +#define RT5033_AICR_MODE_MASK			0xe0
->> +
->> +/* RT5033 use internal timer need to set time */
->> +#define RT5033_FAST_CHARGE_TIMER4		0x00
->> +#define RT5033_FAST_CHARGE_TIMER6		0x01
->> +#define RT5033_FAST_CHARGE_TIMER8		0x02
->> +#define RT5033_FAST_CHARGE_TIMER9		0x03
->> +#define RT5033_FAST_CHARGE_TIMER12		0x04
->> +#define RT5033_FAST_CHARGE_TIMER14		0x05
->> +#define RT5033_FAST_CHARGE_TIMER16		0x06
->> +
->> +#define RT5033_INT_TIMER_ENABLE			0x01
->> +
->> +/* RT5033 charger termination enable mask */
->> +#define RT5033_TE_ENABLE_MASK			0x08
->> +
->> +/*
->> + * RT5033 charger opa mode. RT50300 have two opa mode charger mode
->> + * and boost mode for OTG
->> + */
->> +
->> +#define RT5033_CHARGER_MODE			0x00
->> +#define RT5033_BOOST_MODE			0x01
->> +
->> +/* RT5033 charger termination enable */
->> +#define RT5033_TE_ENABLE			0x08
->> +
->> +/* RT5033 charger CFO enable */
->> +#define RT5033_CFO_ENABLE			0x40
->> +
->> +/* RT5033 charger constant charge voltage (as in CHGCTRL2 register), uV */
->> +#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MIN	3650000U
->> +#define RT5033_CHARGER_CONST_VOLTAGE_STEP_NUM   25000U
->> +#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MAX	4400000U
->> +
->> +/* RT5033 charger pre-charge current limits (as in CHGCTRL4 register), uA */
->> +#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MIN	350000U
->> +#define RT5033_CHARGER_PRE_CURRENT_STEP_NUM	100000U
->> +#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MAX	650000U
->> +
->> +/* RT5033 charger fast-charge current (as in CHGCTRL5 register), uA */
->> +#define RT5033_CHARGER_FAST_CURRENT_MIN		700000U
->> +#define RT5033_CHARGER_FAST_CURRENT_STEP_NUM	100000U
->> +#define RT5033_CHARGER_FAST_CURRENT_MAX		2000000U
->> +
->> +/*
->> + * RT5033 charger const-charge end of charger current (
->> + * as in CHGCTRL4 register), uA
->> + */
->> +#define RT5033_CHARGER_EOC_MIN			150000U
->> +#define RT5033_CHARGER_EOC_REF			300000U
->> +#define RT5033_CHARGER_EOC_STEP_NUM1		50000U
->> +#define RT5033_CHARGER_EOC_STEP_NUM2		100000U
->> +#define RT5033_CHARGER_EOC_MAX			600000U
->> +
->> +/*
->> + * RT5033 charger pre-charge threshold volt limits
->> + * (as in CHGCTRL5 register), uV
->> + */
->> +
->> +#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MIN	2300000U
->> +#define RT5033_CHARGER_PRE_THRESHOLD_STEP_NUM	100000U
->> +#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MAX	3800000U
->> +
->> +/*
->> + * RT5033 charger enable UUG, If UUG enable MOS auto control by H/W charger
->> + * circuit.
->> + */
->> +#define RT5033_CHARGER_UUG_ENABLE		0x02
->> +
->> +/* RT5033 charger High impedance mode */
->> +#define RT5033_CHARGER_HZ_DISABLE		0x00
->> +#define RT5033_CHARGER_HZ_ENABLE		0x01
->> +
->> +/* RT5033 regulator BUCK output voltage uV */
->> +#define RT5033_REGULATOR_BUCK_VOLTAGE_MIN		1000000U
->> +#define RT5033_REGULATOR_BUCK_VOLTAGE_MAX		3000000U
->> +#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP		100000U
->> +#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP_NUM		32
->> +
->> +/* RT5033 regulator LDO output voltage uV */
->> +#define RT5033_REGULATOR_LDO_VOLTAGE_MIN		1200000U
->> +#define RT5033_REGULATOR_LDO_VOLTAGE_MAX		3000000U
->> +#define RT5033_REGULATOR_LDO_VOLTAGE_STEP		100000U
->> +#define RT5033_REGULATOR_LDO_VOLTAGE_STEP_NUM		32
->> +
->> +/* RT5033 regulator SAFE LDO output voltage uV */
->> +#define RT5033_REGULATOR_SAFE_LDO_VOLTAGE		4900000U
->> +
->> +enum rt5033_fuel_reg {
->> +	RT5033_FUEL_REG_OCV_H		= 0x00,
->> +	RT5033_FUEL_REG_OCV_L		= 0x01,
->> +	RT5033_FUEL_REG_VBAT_H		= 0x02,
->> +	RT5033_FUEL_REG_VBAT_L		= 0x03,
->> +	RT5033_FUEL_REG_SOC_H		= 0x04,
->> +	RT5033_FUEL_REG_SOC_L		= 0x05,
->> +	RT5033_FUEL_REG_CTRL_H		= 0x06,
->> +	RT5033_FUEL_REG_CTRL_L		= 0x07,
->> +	RT5033_FUEL_REG_CRATE		= 0x08,
->> +	RT5033_FUEL_REG_DEVICE_ID	= 0x09,
->> +	RT5033_FUEL_REG_AVG_VOLT_H	= 0x0A,
->> +	RT5033_FUEL_REG_AVG_VOLT_L	= 0x0B,
->> +	RT5033_FUEL_REG_CONFIG_H	= 0x0C,
->> +	RT5033_FUEL_REG_CONFIG_L	= 0x0D,
->> +	/* Reserved 0x0E~0x0F */
->> +	RT5033_FUEL_REG_IRQ_CTRL	= 0x10,
->> +	RT5033_FUEL_REG_IRQ_FLAG	= 0x11,
->> +	RT5033_FUEL_VMIN		= 0x12,
->> +	RT5033_FUEL_SMIN		= 0x13,
->> +	/* Reserved 0x14~0x1F */
->> +	RT5033_FUEL_VGCOMP1		= 0x20,
->> +	RT5033_FUEL_VGCOMP2		= 0x21,
->> +	RT5033_FUEL_VGCOMP3		= 0x22,
->> +	RT5033_FUEL_VGCOMP4		= 0x23,
->> +	/* Reserved 0x24~0xFD */
->> +	RT5033_FUEL_MFA_H		= 0xFE,
->> +	RT5033_FUEL_MFA_L		= 0xFF,
->> +
->> +	RT5033_FUEL_REG_END,
->> +};
->> +
->> +/* RT5033 fuel gauge battery present property */
->> +#define RT5033_FUEL_BAT_PRESENT		0x02
->> +
->> +/* RT5033 PMIC interrupts */
->> +#define RT5033_PMIC_IRQ_BUCKOCP		2
->> +#define RT5033_PMIC_IRQ_BUCKLV		3
->> +#define RT5033_PMIC_IRQ_SAFELDOLV	4
->> +#define RT5033_PMIC_IRQ_LDOLV		5
->> +#define RT5033_PMIC_IRQ_OT		6
->> +#define RT5033_PMIC_IRQ_VDDA_UV		7
->> +
->> +#endif /* __RT5033_PRIVATE_H__ */
->> diff --git a/include/linux/mfd/rt5033.h b/include/linux/mfd/rt5033.h
->> new file mode 100644
->> index 0000000..5fb8ab1
->> --- /dev/null
->> +++ b/include/linux/mfd/rt5033.h
->> @@ -0,0 +1,64 @@
->> +/*
->> + * MFD core driver for the RT5033
->> + *
->> + * Copyright (C) 2014 Samsung Electronics
->> + * Beomho Seo <beomho.seo@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published bythe Free Software Foundation.
->> + */
->> +
->> +#ifndef __RT5033_H__
->> +#define __RT5033_H__
->> +
->> +#include <linux/regulator/consumer.h>
->> +#include <linux/i2c.h>
->> +#include <linux/regmap.h>
->> +#include <linux/power_supply.h>
->> +
->> +/* RT5033 regulator IDs */
->> +enum rt5033_regulators {
->> +	RT5033_BUCK = 0,
->> +	RT5033_LDO,
->> +	RT5033_SAFE_LDO,
->> +
->> +	RT5033_REGULATOR_NUM,
->> +};
->> +
->> +struct rt5033_dev {
->> +	struct device *dev;
->> +	struct i2c_client *i2c;
->> +
->> +	struct regmap *regmap;
->> +	struct regmap_irq_chip_data *irq_data;
->> +	int irq;
->> +	bool wakeup;
->> +};
->> +
->> +struct rt5033_battery {
->> +	struct i2c_client	*client;
->> +	struct rt5033_dev	*rt5033;
->> +	struct regmap		*regmap;
->> +	struct power_supply	psy;
->> +};
->> +
->> +/* RT5033 charger platform data */
->> +struct rt5033_charger_data {
->> +	unsigned int pre_uamp;
->> +	unsigned int pre_uvolt;
->> +	unsigned int const_uvolt;
->> +	unsigned int eoc_uamp;
->> +	unsigned int fast_uamp;
->> +};
->> +
->> +struct rt5033_charger {
->> +	struct device		*dev;
->> +	struct rt5033_dev	*rt5033;
->> +	struct power_supply	psy;
->> +
->> +	struct rt5033_charger_data	*data;
->> +};
->> +
->> +
-> 
-> Too many '\n's here.
-> 
-
-OK, I will revise everything you have pointed out.
-Again, Thank you for your advices.
-I'll fix them and send v3 patch soon.
-
->> +#endif /* __RT5033_H__ */
-> 
-
-Best regards,
-Beomho Seo
+>>   /* Returns the current frame number */
+>>   static int _dwc2_hcd_get_frame_number(struct usb_hcd *hcd)
+>>   {
+>> @@ -2669,6 +2721,10 @@ static struct hc_driver dwc2_hc_driver = {
+>>          .hub_status_data = _dwc2_hcd_hub_status_data,
+>>          .hub_control = _dwc2_hcd_hub_control,
+>>          .clear_tt_buffer_complete = _dwc2_hcd_clear_tt_buffer_complete,
+>> +#ifdef CONFIG_PM
+>> +       .bus_suspend = _dwc2_hcd_suspend,
+>> +       .bus_resume = _dwc2_hcd_resume,
+>> +#endif
+>>   };
+>>
+>>   /*
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> _______________________________________________
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
+>
+>
+>
 
