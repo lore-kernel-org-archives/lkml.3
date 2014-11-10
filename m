@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaKJNxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 08:53:49 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:43796 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992AbaKJNxs (ORCPT
+	id S1752891AbaKJNyK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 08:54:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:19748 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751916AbaKJNyI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 08:53:48 -0500
-Date: Mon, 10 Nov 2014 13:53:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc6393xb: prepare/unprepare clocks
-Message-ID: <20141110135328.GB24004@x1>
-References: <1415263958-16644-1-git-send-email-dbaryshkov@gmail.com>
- <20141106090424.GB26543@x1>
+	Mon, 10 Nov 2014 08:54:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,353,1413270000"; 
+   d="scan'208";a="605302997"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "jolsa@redhat.com" <jolsa@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V8 00/14] perf, x86: Haswell LBR call stack support
+ (kernel)
+Thread-Topic: [PATCH V8 00/14] perf, x86: Haswell LBR call stack support
+ (kernel)
+Thread-Index: AQHP+dOAakN2aUkU0E2SrfkfmVvbBpxZJCyAgADA3+A=
+Date: Mon, 10 Nov 2014 13:54:03 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F0770165E272@SHSMSX103.ccr.corp.intel.com>
+References: <1415285671-16894-1-git-send-email-kan.liang@intel.com>
+ <20141110101327.GG3337@twins.programming.kicks-ass.net>
+In-Reply-To: <20141110101327.GG3337@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141106090424.GB26543@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Nov 2014, Lee Jones wrote:
 
-> On Thu, 06 Nov 2014, Dmitry Eremin-Solenikov wrote:
+
 > 
-> > Change clk_enable/disable() calls to clk_prepare_enable() and
-> > clk_disable_unrepapre().
-> > 
-> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> > ---
-> >  drivers/mfd/tc6393xb.c | 10 +++++-----
-> >  1 file changed, 5 insertions(+), 5 deletions(-)
+> On Thu, Nov 06, 2014 at 09:54:17AM -0500, Kan Liang wrote:
+> > Yan, Zheng (13):
+> >   perf, x86: Reduce lbr_sel_map size
+> >   perf, core: introduce pmu context switch callback
+> >   perf, x86: use context switch callback to flush LBR stack
+> >   perf, x86: Basic Haswell LBR call stack support
+> >   perf, core: pmu specific data for perf task context
+> >   perf, core: always switch pmu specific data during context switch
+> >   perf, x86: allocate space for storing LBR stack
+> >   perf, x86: track number of events that use LBR callstack
+> >   perf, x86: Save/resotre LBR stack during context switch
+> >   perf, core: simplify need branch stack check
+> >   perf, x86: re-organize code that implicitly enables LBR/PEBS
+> >   perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack
+> >       mode
+> >   perf, x86: Discard zero length call entries in LBR call stack
+> >
+> > Peter Zijlstra (Intel) (1):
+> >   perf, x86: expose LBR callstack to user space tool
 > 
-> Applied, thanks.
+> So are these the exact same patches I already had, or did you change
+> anything else? Its not immediately clear, lemme try and figure out.
 
-OOI, what kernel version was this patch based on?
+Yes, Zheng's patches are exact same patches as you already had. I only
+remove 11, 13,16, 17 from previous patch set and add your new patch (no
+change). The significant changes are in user tool part, I sent them out as
+a separate patch set.
 
-> > diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-> > index 48579e5..abcb4eb 100644
-> > --- a/drivers/mfd/tc6393xb.c
-> > +++ b/drivers/mfd/tc6393xb.c
-> > @@ -665,7 +665,7 @@ static int tc6393xb_probe(struct platform_device *dev)
-> >  		goto err_ioremap;
-> >  	}
-> >  
-> > -	ret = clk_enable(tc6393xb->clk);
-> > +	ret = clk_prepare_enable(tc6393xb->clk);
-> >  	if (ret)
-> >  		goto err_clk_enable;
-> >  
-> > @@ -728,7 +728,7 @@ err_gpio_add:
-> >  		temp = gpiochip_remove(&tc6393xb->gpio);
-> >  	tcpd->disable(dev);
-> >  err_enable:
-> > -	clk_disable(tc6393xb->clk);
-> > +	clk_disable_unprepare(tc6393xb->clk);
-> >  err_clk_enable:
-> >  	iounmap(tc6393xb->scr);
-> >  err_ioremap:
-> > @@ -764,7 +764,7 @@ static int tc6393xb_remove(struct platform_device *dev)
-> >  	}
-> >  
-> >  	ret = tcpd->disable(dev);
-> > -	clk_disable(tc6393xb->clk);
-> > +	clk_disable_unprepare(tc6393xb->clk);
-> >  	iounmap(tc6393xb->scr);
-> >  	release_resource(&tc6393xb->rscr);
-> >  	clk_put(tc6393xb->clk);
-> > @@ -792,7 +792,7 @@ static int tc6393xb_suspend(struct platform_device *dev, pm_message_t state)
-> >  			ioread8(tc6393xb->scr + SCR_GPI_BCR(i));
-> >  	}
-> >  	ret = tcpd->suspend(dev);
-> > -	clk_disable(tc6393xb->clk);
-> > +	clk_disable_unprepare(tc6393xb->clk);
-> >  
-> >  	return ret;
-> >  }
-> > @@ -804,7 +804,7 @@ static int tc6393xb_resume(struct platform_device *dev)
-> >  	int ret;
-> >  	int i;
-> >  
-> > -	clk_enable(tc6393xb->clk);
-> > +	clk_prepare_enable(tc6393xb->clk);
-> >  
-> >  	ret = tcpd->resume(dev);
-> >  	if (ret)
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Kan
