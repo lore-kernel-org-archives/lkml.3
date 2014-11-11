@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaKKOu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:50:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5611 "EHLO mga11.intel.com"
+	id S1751370AbaKKOvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:51:08 -0500
+Received: from mga14.intel.com ([192.55.52.115]:63225 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842AbaKKOuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:50:54 -0500
+	id S1752039AbaKKOvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:51:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
-   d="scan'208";a="630166381"
+   d="scan'208";a="620586686"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v7 08/14] perf: Support overwrite mode for AUX area
-Date: Tue, 11 Nov 2014 16:48:22 +0200
-Message-Id: <1415717308-209223-9-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v7 04/14] perf: Add a capability for AUX_NO_SG pmus to do software double buffering
+Date: Tue, 11 Nov 2014 16:48:18 +0200
+Message-Id: <1415717308-209223-5-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -30,144 +30,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for overwrite mode in the AUX area, which means "keep
-collecting data till you're stopped", turning AUX area into a circular
-buffer, where new data overwrites old data. It does not depend on data
-buffer's overwrite mode, so that it doesn't lose sideband data that is
-instrumental for processing AUX data.
+For pmus that don't support scatter-gather for AUX data in hardware, it
+might still make sense to implement software double buffering to avoid
+losing data while the user is reading data out. For this purpose, add
+a pmu capability that guarantees multiple high-order chunks for AUX buffer,
+so that the pmu driver can do switchover tricks.
 
-Overwrite mode is enabled at mapping AUX area read only. Even though
-aux_tail in the buffer's user page might be user writable, it will be
-ignored in this mode.
-
-A PERF_RECORD_AUX with PERF_AUX_FLAG_OVERWRITE set is written to the perf
-data stream every time an event writes new data to the AUX area. The pmu
-driver might not be able to infer the exact beginning of the new data in
-each snapshot, some drivers will only provide the tail, which is
-aux_offset + aux_size in the AUX record. Consumer has to be able to tell
-the new data from the old one, for example, by means of time stamps if
-such are provided in the trace.
-
-Consumer is also responsible for disabling any events that might write
-to the AUX area (thus potentially racing with the consumer) before
-collecting the data.
+To make use of this feature, add PERF_PMU_CAP_AUX_SW_DOUBLEBUF to your
+pmu's capability mask. This will make the ring buffer AUX allocation code
+ensure that the biggest high order allocation for the aux buffer pages is
+no bigger than half of the total requested buffer size, thus making sure
+that the buffer has at least two high order allocations.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/uapi/linux/perf_event.h |  1 +
- kernel/events/internal.h        |  1 +
- kernel/events/ring_buffer.c     | 48 ++++++++++++++++++++++++++++-------------
- 3 files changed, 35 insertions(+), 15 deletions(-)
+ include/linux/perf_event.h  |  1 +
+ kernel/events/ring_buffer.c | 15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 272258380e..f36aac2ac5 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -768,6 +768,7 @@ enum perf_callchain_context {
-  * PERF_RECORD_AUX::flags bits
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 71df948b4d..e7a15f5c3f 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -172,6 +172,7 @@ struct perf_event;
   */
- #define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
-+#define PERF_AUX_FLAG_OVERWRITE		0x02	/* snapshot from overwrite mode */
+ #define PERF_PMU_CAP_NO_INTERRUPT		0x01
+ #define PERF_PMU_CAP_AUX_NO_SG			0x02
++#define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
  
- #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
- #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index b701ebc325..ffd51d9f59 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -40,6 +40,7 @@ struct ring_buffer {
- 	local_t				aux_nest;
- 	unsigned long			aux_pgoff;
- 	int				aux_nr_pages;
-+	int				aux_overwrite;
- 	atomic_t			aux_mmap_count;
- 	unsigned long			aux_mmap_locked;
- 	void				(*free_aux)(void *);
+ /**
+  * struct pmu - generic performance monitoring unit
 diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index e452776b62..6f8bc8e962 100644
+index ae49a9bd11..1b4b593a32 100644
 --- a/kernel/events/ring_buffer.c
 +++ b/kernel/events/ring_buffer.c
-@@ -282,26 +282,33 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
- 		goto err_put;
+@@ -286,9 +286,22 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 	if (!has_aux(event))
+ 		return -ENOTSUPP;
  
- 	aux_head = local_read(&rb->aux_head);
--	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
+-	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
++	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG) {
+ 		max_order = get_order(nr_pages * PAGE_SIZE);
  
- 	handle->rb = rb;
- 	handle->event = event;
- 	handle->head = aux_head;
--	if (aux_head - aux_tail < perf_aux_size(rb))
--		handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
--	else
--		handle->size = 0;
-+	handle->size = 0;
- 
- 	/*
--	 * handle->size computation depends on aux_tail load; this forms a
--	 * control dependency barrier separating aux_tail load from aux data
--	 * store that will be enabled on successful return
-+	 * In overwrite mode, AUX data stores do not depend on aux_tail,
-+	 * therefore (A) control dependency barrier does not exist. The
-+	 * (B) <-> (C) ordering is still observed by the pmu driver.
- 	 */
--	if (!handle->size) { /* A, matches D */
--		event->pending_disable = 1;
--		perf_output_wakeup(handle);
--		local_set(&rb->aux_nest, 0);
--		goto err_put;
-+	if (!rb->aux_overwrite) {
-+		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
-+		if (aux_head - aux_tail < perf_aux_size(rb))
-+			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
-+
 +		/*
-+		 * handle->size computation depends on aux_tail load; this forms a
-+		 * control dependency barrier separating aux_tail load from aux data
-+		 * store that will be enabled on successful return
++		 * PMU requests more than one contiguous chunks of memory
++		 * for SW double buffering
 +		 */
-+		if (!handle->size) { /* A, matches D */
-+			event->pending_disable = 1;
-+			perf_output_wakeup(handle);
-+			local_set(&rb->aux_nest, 0);
-+			goto err_put;
++		if ((event->pmu->capabilities & PERF_PMU_CAP_AUX_SW_DOUBLEBUF) &&
++		    !overwrite) {
++			if (!max_order)
++				return -EINVAL;
++
++			max_order--;
 +		}
- 	}
- 
- 	return handle->rb->aux_priv;
-@@ -326,13 +333,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
- 			 bool truncated)
- {
- 	struct ring_buffer *rb = handle->rb;
--	unsigned long aux_head = local_read(&rb->aux_head);
-+	unsigned long aux_head;
- 	u64 flags = 0;
- 
- 	if (truncated)
- 		flags |= PERF_AUX_FLAG_TRUNCATED;
- 
--	local_add(size, &rb->aux_head);
-+	/* in overwrite mode, driver provides aux_head via handle */
-+	if (rb->aux_overwrite) {
-+		flags |= PERF_AUX_FLAG_OVERWRITE;
-+
-+		aux_head = handle->head;
-+		local_set(&rb->aux_head, aux_head);
-+	} else {
-+		aux_head = local_read(&rb->aux_head);
-+		local_add(size, &rb->aux_head);
 +	}
- 
- 	if (size || flags) {
- 		/*
-@@ -476,6 +492,8 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 	 */
- 	atomic_set(&rb->aux_refcount, 1);
- 
-+	rb->aux_overwrite = overwrite;
 +
- out:
- 	if (!ret)
- 		rb->aux_pgoff = pgoff;
+ 	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
+ 	if (!rb->aux_pages)
+ 		return -ENOMEM;
 -- 
 2.1.1
 
