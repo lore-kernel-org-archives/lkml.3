@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaKKINj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:13:39 -0500
-Received: from mga03.intel.com ([134.134.136.65]:17312 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949AbaKKINh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:13:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,359,1413270000"; 
-   d="scan'208";a="634922216"
-Date: Tue, 11 Nov 2014 10:13:31 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v6 04/10] tpm: rename chip->dev to chip->pdev
-Message-ID: <20141111081331.GA7088@intel.com>
-References: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1415623794-6090-5-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141110174511.GA5296@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141110174511.GA5296@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752592AbaKKIPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:15:21 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50642 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbaKKIPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:15:19 -0500
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [PATCH v3 00/21] backports: add kernel integration support
+Date: Tue, 11 Nov 2014 00:14:51 -0800
+Message-Id: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 10:45:11AM -0700, Jason Gunthorpe wrote:
-> On Mon, Nov 10, 2014 at 02:49:48PM +0200, Jarkko Sakkinen wrote:
-> > Rename chip->dev to chip->pdev to make it explicit that this not the
-> > character device but actually represents the platform device.
-> 
-> I don't really have time to take a detailed look at this for a few
-> weeks, but I like this entire patch set.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Excellent, thank you.
+This third series should hopefully address all pending feedback.
+I've split out patches even more, but more importantly have
+made the parser simpler by both integrating the logic required
+to understand a backport by identifying the backport by type
+and strategy, sharing that, and then providing ignore lists on
+the parsers.
 
-> > -		if (try_module_get(pos->dev->driver->owner)) {
-> > +		if (try_module_get(pos->pdev->driver->owner)) {
-> >  			chip = pos;
-> >  			break;
-> 
-> Yes, this needs to be pdev
-> 
-> >  	if (test_and_set_bit(0, &chip->is_open)) {
-> > -		dev_dbg(chip->dev, "Another process owns this TPM\n");
-> > +		dev_dbg(chip->pdev, "Another process owns this TPM\n");
-> >  		return -EBUSY;
-> 
-> This should be moved to the class dev, ie it should ultimately say
-> dev_dbg(&chip->dev,..
+The more complex change was dealing with the recursive _walk() in such
+a way that we can have a modified src_line regexp depending on the type
+of backport we are using. The parser will use a regexp that requires a
+full path for the sources, it will also allow for using a variable for
+the backport project directory if such is defined, and also provide a
+verification helper which ensures backported will be used rather than
+the older kernel code.
 
-Peter, I'll try to minimize the delta between the patch set revisions
-so that this could be pulled in the near future (maybe having odds
-to make into 3.19) and do only fixes to those issues that are blockers.
+Luis R. Rodriguez (21):
+  backports: move legacy and SmPL patch application into helper
+  backports: ifdef around module_init() module_exit() for modules
+  backports: move packaging kconfig hacks to its own file
+  backports: grant parsers access to kconfig config and menuconfig
+  backports: keep track of original backported source symbols early on
+  backports: allow for different backport prefix and simple integration
+    support
+  backports: add prefix for integration on dependencies
+  backports: replace BACKPORT_PWD with BACKPORT_DIR
+  backports: fold outdir as a backport identity target
+  backports: avoid git tree reinitialization
+  backports: modify kconfig parser to use bpid and target_dir
+  backports: make kconfig src_line backport / ConfigTree specific
+  backports: use BACKPORT_DIR prefix on kconfig sources
+  backports: update dependencies map file
+  backports: split Kconfig into Kconfig.package and Kconfig.sources
+  backports: move version file generation to run earlier
+  backports: define C code backport version info using CPTCFG_
+  backports: add backport version parsing for kernel integration
+  backports: prefix c-file / h-file auto backport with BPAUTO
+  backports: remove extra BACKPORT_ prefix from kernel versioning
+  backports: add full kernel integration support
 
-Would you mind if I fixed dev logging stuff after the patch set has
-been pulled? 
+ backport/Kconfig                                   |  47 --
+ backport/Kconfig.integrate                         |  36 ++
+ backport/Kconfig.package                           |  24 +
+ backport/Kconfig.package.hacks                     |   8 +
+ backport/Kconfig.sources                           |  23 +
+ backport/Makefile                                  |   8 +-
+ backport/Makefile.build                            |   4 +-
+ backport/Makefile.kernel                           |  19 +-
+ backport/Makefile.real                             |   2 +-
+ backport/backport-include/asm/dma-mapping.h        |   4 +-
+ backport/backport-include/backport/backport.h      |   5 +
+ backport/backport-include/backport/leds-disabled.h |   2 +-
+ backport/backport-include/linux/module.h           |   8 +-
+ backport/compat/Kconfig                            |  84 +--
+ backport/compat/Makefile                           |  42 +-
+ backport/compat/backports.h                        |   4 +-
+ backport/compat/main.c                             |  40 +-
+ backport/scripts/uninstall.sh                      |   4 +-
+ dependencies                                       |  31 +-
+ devel/doc/kconfig-operation                        |  13 +-
+ gentree.py                                         | 599 ++++++++++++++-------
+ .../0001-enable-backports-built-in.patch           |  40 ++
+ lib/bpversion.py                                   |  48 ++
+ lib/kconfig.py                                     | 196 ++++++-
+ patches/backport-adjustments/devcoredump.patch     |   4 +-
+ .../media/0002-no_dmabuf/v4l2.patch                |   6 +-
+ 26 files changed, 910 insertions(+), 391 deletions(-)
+ delete mode 100644 backport/Kconfig
+ create mode 100644 backport/Kconfig.integrate
+ create mode 100644 backport/Kconfig.package
+ create mode 100644 backport/Kconfig.package.hacks
+ create mode 100644 backport/Kconfig.sources
+ create mode 100644 integration-patches/0001-enable-backports/0001-enable-backports-built-in.patch
+ create mode 100644 lib/bpversion.py
 
-Writing this down anyway to my backlog.
+-- 
+2.1.1
 
-> Similar comments all over the place.
-> 
-> Jason
-
-/Jarkko
