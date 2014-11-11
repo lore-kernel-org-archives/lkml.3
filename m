@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467AbaKKLwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:52:37 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:38676 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527AbaKKLwe convert rfc822-to-8bit (ORCPT
+	id S932136AbaKKLxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:53:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57435 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904AbaKKLKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:52:34 -0500
-Date: Tue, 11 Nov 2014 11:52:27 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: generic: Add set_msi_parent callback
-Message-ID: <20141111115227.GF12037@e106497-lin.cambridge.arm.com>
-References: <1415647480-3320-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1415647480-3320-3-git-send-email-suravee.suthikulpanit@amd.com>
- <20141111112424.GB16265@arm.com>
-MIME-Version: 1.0
-In-Reply-To: <20141111112424.GB16265@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 11 Nov 2014 11:52:28.0687 (UTC) FILETIME=[F7DC39F0:01CFFDA5]
-X-MC-Unique: 114111111523021701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Tue, 11 Nov 2014 06:10:06 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Valdis Kletnieks <valdis.kletnieks@vt.edu>,
+        Tony Luck <tony.luck@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 067/170] pstore: Fix duplicate {console,ftrace}-efi entries
+Date: Tue, 11 Nov 2014 11:07:06 +0000
+Message-Id: <1415704129-12709-68-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 11:24:24AM +0000, Will Deacon wrote:
-> Hi Suravee,
-> 
-> On Mon, Nov 10, 2014 at 07:24:40PM +0000, suravee.suthikulpanit@amd.com wrote:
-> > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> > 
-> > This patch implement set_msi_parent callback for PCI generic host controller.
-> > 
-> > Cc: Bjorn Helgass <bhelgaas@google.com>
-> > Cc: Liviu Dudau <liviu.dudau@arm.com>
-> > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> > Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> > ---
-> >  drivers/pci/host/pci-host-generic.c | 14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
-> > index 036ab1b..f9bb97a 100644
-> > --- a/drivers/pci/host/pci-host-generic.c
-> > +++ b/drivers/pci/host/pci-host-generic.c
-> > @@ -42,6 +42,7 @@ struct gen_pci {
-> >  	struct pci_host_bridge			host;
-> >  	struct gen_pci_cfg_windows		cfg;
-> >  	struct list_head			resources;
-> > +	struct msi_chip				*mchip;
-> >  };
-> >  
-> >  #ifdef CONFIG_ARM
-> > @@ -128,9 +129,19 @@ static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
-> >  	return PCIBIOS_SUCCESSFUL;
-> >  }
-> >  
-> > +static int gen_pci_set_msi_parent(struct pci_bus *bus)
-> > +{
-> > +	struct gen_pci *pci = bus_to_gen_pci(bus);
-> > +
-> > +	bus->msi = pci->mchip;
-> > +
-> > +	return PCIBIOS_SUCCESSFUL;
-> > +}
-> 
-> I don't think this makes much sense a host controller callback. Why can't
-> bus->msi be set in generic code?
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-Because of the current way in which a bus gets created and them immediately used for
-scanning devices if you use pci_scan_root_bus(). Alternative is to use pci_create_root_bus()
-and increase your code size with the body of pci_scan_root_bus().
+------------------
 
-Solution is to have pci_host_bridge holding the msi_chip pointer and that gets created
-before root bus, with pci_scan_root_bus() now having all the info needed to do successful
-setup of scanned devices.
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
 
-Best regards,
-Liviu
+commit d4bf205da618bbd0b038e404d646f14e76915718 upstream.
 
-> 
-> >  static struct pci_ops gen_pci_ops = {
-> >  	.read	= gen_pci_config_read,
-> >  	.write	= gen_pci_config_write,
-> > +	.set_msi_parent = gen_pci_set_msi_parent,
-> >  };
-> >  
-> >  static const struct of_device_id gen_pci_of_match[] = {
-> > @@ -313,6 +324,9 @@ static int gen_pci_probe(struct platform_device *pdev)
-> >  		return err;
-> >  	}
-> >  
-> > +	pci->mchip = of_pci_find_msi_chip_by_node(of_parse_phandle(np,
-> > +						  "msi-parent", 0));
-> 
-> This bit should be in the generic of_pci.c code and not duplicated for
-> each host controller.
-> 
-> Will
-> 
+The pstore filesystem still creates duplicate filename/inode pairs for
+some pstore types.  Add the id to the filename to prevent that.
 
+Before patch:
+
+[/sys/fs/pstore] ls -li
+total 0
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+1250 -r--r--r--. 1 root root 67 Sep 29 17:09 console-efi
+
+After:
+
+[/sys/fs/pstore] ls -li
+total 0
+1232 -r--r--r--. 1 root root 148 Sep 29 17:09 console-efi-141202499100000
+1231 -r--r--r--. 1 root root  67 Sep 29 17:09 console-efi-141202499200000
+1230 -r--r--r--. 1 root root 148 Sep 29 17:44 console-efi-141202705400000
+1229 -r--r--r--. 1 root root  67 Sep 29 17:44 console-efi-141202705500000
+1228 -r--r--r--. 1 root root  67 Sep 29 20:42 console-efi-141203772600000
+1227 -r--r--r--. 1 root root 148 Sep 29 23:42 console-efi-141204854900000
+1226 -r--r--r--. 1 root root  67 Sep 29 23:42 console-efi-141204855000000
+1225 -r--r--r--. 1 root root 148 Sep 29 23:59 console-efi-141204954200000
+1224 -r--r--r--. 1 root root  67 Sep 29 23:59 console-efi-141204954400000
+
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/pstore/inode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 192297b0090d..fafb7a02a5d6 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -320,10 +320,10 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 						compressed ? ".enc.z" : "");
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s", psname);
++		sprintf(name, "console-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s", psname);
++		sprintf(name, "ftrace-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+ 		sprintf(name, "mce-%s-%lld", psname, id);
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+2.1.0
 
