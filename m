@@ -1,104 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaKKOY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:24:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50824 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaKKOY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:24:26 -0500
-Message-ID: <1415715820.2815.9.camel@pengutronix.de>
-Subject: Re: [PATCH v7 5/7] drm: bridge/dw-hdmi: add support for multi byte
- register width access
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Cc: Andy Yan <andy.yan@rock-chips.com>, airlied@linux.ie, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Josh Boyer <jwboyer@redhat.com>,
-        Sean Paul <seanpaul@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        djkurtz@google.com, ykk@rock-chips.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        jay.xu@rock-chips.com
-Date: Tue, 11 Nov 2014 15:23:40 +0100
-In-Reply-To: <54621B23.1020602@imgtec.com>
-References: <1415710229-11935-1-git-send-email-andy.yan@rock-chips.com>
-	 <1415710432-12167-1-git-send-email-andy.yan@rock-chips.com>
-	 <54621B23.1020602@imgtec.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752971AbaKKOYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:24:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55261 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249AbaKKOTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:19:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
+   d="scan'208";a="630151808"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 10/25] perf tools: Add a user event for Instruction Tracing errors
+Date: Tue, 11 Nov 2014 16:16:48 +0200
+Message-Id: <1415715423-15563-11-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415715423-15563-1-git-send-email-adrian.hunter@intel.com>
+References: <1415715423-15563-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 11.11.2014, 14:20 +0000 schrieb Zubair Lutfullah
-Kakakhel:
-> Hi Andy,
-> 
-> This patch adds the reg-io-width binding.
-> 
-> Hence the binding patch should come before it.
-> 
-> 
-> On 11/11/14 12:53, Andy Yan wrote:
-> > On rockchip rk3288, only word(32-bit) accesses are
-> > permitted for hdmi registers.  Byte width accesses (writeb,
-> > readb) generate an imprecise external abort.
-> > 
-> > Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-> > 
-> > ---
-> > 
-> >  }
-> >  
-> >  static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
-> > @@ -1499,6 +1527,23 @@ static int dw_hdmi_bind(struct device *dev, struct device *master, void *data)
-> >  	struct device_node *ddc_node;
-> >  	struct resource *iores;
-> >  	int ret, irq;
-> > +	u32 val = 1;
-> > +
-> > +	of_property_read_u32(np, "reg-io-width", &val);
-> > +
-> > +	switch (val) {
-> > +	case 4:
-> > +		hdmi->write = dw_hdmi_writel;
-> > +		hdmi->read = dw_hdmi_readl;
-> > +		break;
-> > +	case 1:
-> > +		hdmi->write = dw_hdmi_writeb;
-> > +		hdmi->read = dw_hdmi_readb;
-> > +		break;
-> > +	default:
-> > +		dev_err(dev, "reg-io-width must be 1 or 4\n");
-> > +		return -EINVAL;
-> > +	}
-> 
-> The binding patch says this is an optional property.
-> But here if undefined it returns -EINVAL.
-> 
-> I would keep it optional and default it to byte access.
+Errors encountered when decoding an Instruction
+Trace need to be reported to the user. However
+the "user" might be a script or another tool,
+so provide a new user event to capture those
+errors.
 
-That's exactly what the patch does. val is initialized to 1, which is
-not changed if the property could not be found in the DT. The default
-case will only be taken if the property is present in DT but has any
-other value than 1 or 4, which is an error.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/event.c   |  1 +
+ tools/perf/util/event.h   | 16 ++++++++++++++++
+ tools/perf/util/session.c | 25 +++++++++++++++++++++++++
+ tools/perf/util/tool.h    |  3 ++-
+ 4 files changed, 44 insertions(+), 1 deletion(-)
 
-Regards,
-Lucas
-
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index efe6475..573fed2 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -31,6 +31,7 @@ static const char *perf_event__names[] = {
+ 	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
+ 	[PERF_RECORD_ITRACE_INFO]		= "ITRACE_INFO",
+ 	[PERF_RECORD_ITRACE]			= "ITRACE",
++	[PERF_RECORD_ITRACE_ERROR]		= "ITRACE_ERROR",
+ };
+ 
+ const char *perf_event__name(unsigned int id)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 21d341e..2a9b99f 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -216,6 +216,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_ID_INDEX			= 69,
+ 	PERF_RECORD_ITRACE_INFO			= 70,
+ 	PERF_RECORD_ITRACE			= 71,
++	PERF_RECORD_ITRACE_ERROR		= 72,
+ 	PERF_RECORD_HEADER_MAX
+ };
+ 
+@@ -299,6 +300,20 @@ struct itrace_event {
+ 	u32 reserved__; /* For alignment */
+ };
+ 
++#define MAX_ITRACE_ERROR_MSG 64
++
++struct itrace_error_event {
++	struct perf_event_header header;
++	u32 type;
++	u32 code;
++	u32 cpu;
++	u32 pid;
++	u32 tid;
++	u32 reserved__; /* For alignment */
++	u64 ip;
++	char msg[MAX_ITRACE_ERROR_MSG];
++};
++
+ union perf_event {
+ 	struct perf_event_header	header;
+ 	struct mmap_event		mmap;
+@@ -316,6 +331,7 @@ union perf_event {
+ 	struct id_index_event		id_index;
+ 	struct itrace_info_event	itrace_info;
+ 	struct itrace_event		itrace;
++	struct itrace_error_event	itrace_error;
+ };
+ 
+ void perf_event__print_totals(void);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index c1639c7..89ca176 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -271,6 +271,15 @@ static s64 process_event_itrace_stub(struct perf_tool *tool __maybe_unused,
+ 	return event->itrace.size;
+ }
+ 
++static
++int process_event_itrace_error_stub(struct perf_tool *tool __maybe_unused,
++				    union perf_event *event __maybe_unused,
++				    struct perf_session *session __maybe_unused)
++{
++	dump_printf(": unhandled!\n");
++	return 0;
++}
++
+ void perf_tool__fill_defaults(struct perf_tool *tool)
+ {
+ 	if (tool->sample == NULL)
+@@ -311,6 +320,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+ 		tool->itrace_info = process_event_itrace_info_stub;
+ 	if (tool->itrace == NULL)
+ 		tool->itrace = process_event_itrace_stub;
++	if (tool->itrace_error == NULL)
++		tool->itrace_error = process_event_itrace_error_stub;
+ }
+  
+ static void swap_sample_id_all(union perf_event *event, void *data)
+@@ -514,6 +525,17 @@ static void perf_event__itrace_swap(union perf_event *event,
+ 	event->itrace.cpu       = bswap_32(event->itrace.cpu);
+ }
+ 
++static void perf_event__itrace_error_swap(union perf_event *event,
++					  bool sample_id_all __maybe_unused)
++{
++	event->itrace_error.type = bswap_32(event->itrace_error.type);
++	event->itrace_error.code = bswap_32(event->itrace_error.code);
++	event->itrace_error.cpu  = bswap_32(event->itrace_error.cpu);
++	event->itrace_error.pid  = bswap_32(event->itrace_error.pid);
++	event->itrace_error.tid  = bswap_32(event->itrace_error.tid);
++	event->itrace_error.ip   = bswap_64(event->itrace_error.ip);
++}
++
+ typedef void (*perf_event__swap_op)(union perf_event *event,
+ 				    bool sample_id_all);
+ 
+@@ -535,6 +557,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
+ 	[PERF_RECORD_ITRACE_INFO]	  = perf_event__itrace_info_swap,
+ 	[PERF_RECORD_ITRACE]		  = perf_event__itrace_swap,
++	[PERF_RECORD_ITRACE_ERROR]	  = perf_event__itrace_error_swap,
+ 	[PERF_RECORD_HEADER_MAX]	  = NULL,
+ };
+ 
+@@ -971,6 +994,8 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 		/* setup for reading amidst mmap */
+ 		lseek(fd, file_offset + event->header.size, SEEK_SET);
+ 		return tool->itrace(tool, event, session);
++	case PERF_RECORD_ITRACE_ERROR:
++		return tool->itrace_error(tool, event, session);
+ 	default:
+ 		return -EINVAL;
+ 	}
+diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+index b734c1a..b5c55de 100644
+--- a/tools/perf/util/tool.h
++++ b/tools/perf/util/tool.h
+@@ -46,7 +46,8 @@ struct perf_tool {
+ 	event_op2	finished_round,
+ 			build_id,
+ 			id_index,
+-			itrace_info;
++			itrace_info,
++			itrace_error;
+ 	event_op3	itrace;
+ 	bool		ordered_events;
+ 	bool		ordering_requires_timestamps;
 -- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+1.9.1
 
