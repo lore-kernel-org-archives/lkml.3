@@ -1,73 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaKKOx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:53:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45116 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaKKOxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:53:22 -0500
-Date: Tue, 11 Nov 2014 08:53:44 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with the
- usb-gadget-fixes tree
-Message-ID: <20141111145344.GD25615@saruman>
-Reply-To: <balbi@ti.com>
-References: <20141111162322.7be1fade@canb.auug.org.au>
+	id S1752265AbaKKOxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:53:33 -0500
+Received: from regular1.263xmail.com ([211.150.99.130]:52301 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaKKOx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:53:28 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: l.stach@pengutronix.de
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <6e09401bf04e072f862317b3752edfd4>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <546222DE.4020803@rock-chips.com>
+Date: Tue, 11 Nov 2014 22:53:18 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zS7rBR6csb6tI2e1"
-Content-Disposition: inline
-In-Reply-To: <20141111162322.7be1fade@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, airlied@linux.ie,
+        heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+CC: devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Josh Boyer <jwboyer@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Inki Dae <inki.dae@samsung.com>, linux-rockchip@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Sean Paul <seanpaul@chromium.org>,
+        djkurtz@google.com, Philipp Zabel <p.zabel@pengutronix.de>,
+        ykk@rock-chips.com, Grant Likely <grant.likely@linaro.org>,
+        Dave Airlie <airlied@redhat.com>, Shawn Guo <shawn.guo@linaro.org>,
+        jay.xu@rock-chips.com, Lucas Stach <l.stach@pengutronix.de>
+Subject: Re: [PATCH v7 7/7] dt-bindings: add document for dw-hdmi
+References: <1415710229-11935-1-git-send-email-andy.yan@rock-chips.com> <1415710486-12263-1-git-send-email-andy.yan@rock-chips.com> <54621FCB.1050208@imgtec.com>
+In-Reply-To: <54621FCB.1050208@imgtec.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---zS7rBR6csb6tI2e1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 11, 2014 at 04:23:22PM +1100, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> drivers/usb/dwc3/ep0.c between commit 520fe7633692 ("usb: dwc3: ep0:
-> fix for dead code") from the usb-gadget-fixes tree and commit
-> ccb072de5702 ("usb: dwc3: ep0: trace ep0 TRBs too") from the usb-gadget
-> tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On 2014年11月11日 22:40, Zubair Lutfullah Kakakhel wrote:
+> Hi Andy,
+>
+> Some minor comments inline.
+>
+> On 11/11/14 12:54, Andy Yan wrote:
+>> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+>> ---
+>>
+>> Changes in v7: None
+>> Changes in v6: None
+>> Changes in v5: None
+>> Changes in v4: None
+>> Changes in v3: None
+>> Changes in v2: None
+>>
+>>   .../devicetree/bindings/drm/bridge/dw-hdmi.txt     | 38 ++++++++++++++++++++++
+>>   1 file changed, 38 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
+>> new file mode 100644
+>> index 0000000..aa7ed17
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
+>> @@ -0,0 +1,38 @@
+>> +DesignWare HDMI bridge bindings
+>> +
+>> +Required properities:
+> 	
+> 	    ^properties
+>
+>> +- compatibel: platform specific such as "fsl,imx6q-hdmi","fsl,imx6dl-hdmi"
+>       ^compatible
+   thanks , these will be fixed next.
+>> +	      "rockchip,rk3288-dw-hdmi"
+> This will need to come in a separate series which adds rk3288 hdmi support..
+  we will add rk3288 hdmi platform code soon
+>
+>> +- reg: physical base address of the controller and length
+>> +- ddc-i2c-bus: the ddc i2c bus
+>> +- interrupts: The interrupt number to the cpu
+>> +
+>> +Optional properties
+>> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
+>> +
+>> +Example:
+>> +	hdmi: hdmi@0120000 {
+>> +		compatible = "fsl,imx6q-hdmi";
+>> +		reg = <0x00120000 0x9000>;
+>> +		interrupts = <0 115 0x04>;
+>> +		gpr = <&gpr>;
+>> +		clocks = <&clks 123>, <&clks 124>;
+>> +		clock-names = "iahb", "isfr";
+>> +		ddc-i2c-bus = <&i2c2>;
+>> +
+>> +		port@0 {
+>> +			reg = <0>;
+>> +
+>> +			hdmi_mux_0: endpoint {
+>> +				remote-endpoint = <&ipu1_di0_hdmi>;
+>> +			};
+>> +		};
+>> +
+>> +		port@1 {
+>> +			reg = <1>;
+>> +
+>> +			hdmi_mux_1: endpoint {
+>> +				remote-endpoint = <&ipu1_di1_hdmi>;
+>> +			};
+>> +		};
+>> +	};
+>>
+> Thanks
+> ZubairLK
+>
+> _______________________________________________
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
+>
+>
+>
 
-resolution looks good to me. Thank you
 
---=20
-balbi
-
---zS7rBR6csb6tI2e1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUYiL4AAoJEIaOsuA1yqREPs4QAIhTlCU9MdbiPPB6KEFoKHS9
-5+gg2uvD3rtQHdPZEs0huwANaFdy6YEVr6qEI125aKJBriJ9GgfTJM95wdAECHxL
-mCrfpLNnugl93JvgA9c8vDCHu9kOJ3xUoxIzGEKjeERdgYszGfhDSIf/IBoTp255
-QSzj07axhH9lF5Tut/sFxrn/UfwV8P244uCgUmEorlpFOHACuehZ5cdrZtCXvdOx
-CO4pdR0gLWkGTxF/7NQv/05ZKxvH2TTsgrOM3xyw3fcTFvxrSx4oNx6nVoHLBg9z
-qVVVw03bgRiaf/xdOSRsv1n4qvvZoYyKh+v52Twd+2yIiW8mqi4EETWogYjNHaKq
-FSbPt43rcP4oMm+Xp+tX71BNFmXux9Bf/kD2kIcMBgt3/EtnNV7do8WCIFq02GS2
-kx+4EqXZ82cRBOLEWXtVqXu4G1vxbTWNIShgV8O8F8FAiFIxj3qkVuDYp3eIjq3w
-ogqqVoFWrQ6Dl30aTZE1q1eHh1ZxScR7xaeGjZpGd8/78lz6sX0JUJGPw8IAsN4U
-l2EgNKMuU/DCBDhBVVdlDdxyv6JwUhrCDs1L38th+Rwn6yFnDX15Fx8ZPJ3uJRDR
-ZJjOGjknld43ZidBiv9mlmNoSUEbsqdJpETw+6RPW2mhR3wR2kSEDUrUFvVutcuQ
-j3KUvDxuVjprEx5yLD7r
-=iO5M
------END PGP SIGNATURE-----
-
---zS7rBR6csb6tI2e1--
