@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746AbaKKLZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:25:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57742 "EHLO
+	id S1753342AbaKKLLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291AbaKKLLE (ORCPT
+	with ESMTP id S1754287AbaKKLK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:04 -0500
+	Tue, 11 Nov 2014 06:10:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Pham <jackp@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 128/170] usb: dwc3: gadget: Properly initialize LINK TRB
-Date: Tue, 11 Nov 2014 11:08:07 +0000
-Message-Id: <1415704129-12709-129-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 122/170] usb: musb: dsps: start OTG timer on resume again
+Date: Tue, 11 Nov 2014 11:08:01 +0000
+Message-Id: <1415704129-12709-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
+commit 53185b3a441a6cc9bb3f57e924342d249138dcd6 upstream.
 
-On ISOC endpoints the last trb_pool entry used as a
-LINK TRB is not getting zeroed out correctly due to
-memset being called incorrectly and in the wrong place.
-If pool allocated from DMA was not zero-initialized
-to begin with this will result in the size and ctrl
-values being random garbage. Call memset correctly after
-assignment of the trb_link pointer.
+Commit 468bcc2a2ca ("usb: musb: dsps: kill OTG timer on suspend") stopped
+the timer in suspend path but forgot the re-enable it in the resume
+path. This patch fixes the behaviour.
 
-Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
+Fixes 468bcc2a2ca "usb: musb: dsps: kill OTG timer on suspend"
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/dwc3/gadget.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/musb/musb_dsps.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 0a046870bdfb..9a565f0e3532 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -615,12 +615,11 @@ static int __dwc3_gadget_ep_enable(struct dwc3_ep *dep,
- 		if (!usb_endpoint_xfer_isoc(desc))
- 			return 0;
+diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+index 6983e805147b..302968bf592e 100644
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -806,7 +806,9 @@ static int dsps_resume(struct device *dev)
+ 	dsps_writel(mbase, wrp->mode, glue->context.mode);
+ 	dsps_writel(mbase, wrp->tx_mode, glue->context.tx_mode);
+ 	dsps_writel(mbase, wrp->rx_mode, glue->context.rx_mode);
+-	setup_timer(&glue->timer, otg_timer, (unsigned long) musb);
++	if (musb->xceiv->state == OTG_STATE_B_IDLE &&
++	    musb->port_mode == MUSB_PORT_MODE_DUAL_ROLE)
++		mod_timer(&glue->timer, jiffies + wrp->poll_seconds * HZ);
  
--		memset(&trb_link, 0, sizeof(trb_link));
--
- 		/* Link TRB for ISOC. The HWO bit is never reset */
- 		trb_st_hw = &dep->trb_pool[0];
- 
- 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
-+		memset(trb_link, 0, sizeof(*trb_link));
- 
- 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
- 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+ 	return 0;
+ }
 -- 
 2.1.0
 
