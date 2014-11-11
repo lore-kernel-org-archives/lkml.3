@@ -1,136 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaKKJ7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:59:45 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:61065 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbaKKJ7n (ORCPT
+	id S1753064AbaKKKBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 05:01:43 -0500
+Received: from sophos.rhd.org ([50.200.100.45]:60270 "EHLO sophos.rhd.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059AbaKKKBl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:59:43 -0500
-From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-To: <Larry.Finger@lwfinger.net>, <Jes.Sorensen@redhat.com>
-CC: <gregkh@linuxfoundation.org>, <linux-wireless@vger.kernel.org>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH] staging:rtl8723au: core: fix checkpatch error: that open brace { should be on the previous line
-Date: Tue, 11 Nov 2014 15:28:57 +0530
-Message-ID: <1415699937-20318-1-git-send-email-sanjeev_sharma@mentor.com>
-X-Mailer: git-send-email 1.7.11.7
+	Tue, 11 Nov 2014 05:01:41 -0500
+X-Greylist: delayed 1084 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Nov 2014 05:01:41 EST
+From: Daniel Cressman <Daniel.Cressman@RHD.ORG>
+To: "Daniel.Cressmann@RHD.ORG" <Daniel.Cressmann@RHD.ORG>
+Date: Tue, 11 Nov 2014 04:29:50 -0500
+Subject: =?iso-8859-1?Q?Gesch=E4ftsvorschlag?=
+Thread-Topic: =?iso-8859-1?Q?Gesch=E4ftsvorschlag?=
+Thread-Index: AQHP/ZIKpvWjq7FpSkeR9Q+lQe580Q==
+Message-ID: <F4B0CFC90D8B184893F205F423C2018D8A7DBC38CA@exch.RHD.ORG>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the rtw_cmd.c file that fixes following
-Error.
+Geschäftsvorschlag
 
-ERROR: that open brace { should be on the previous line
+Gruß, mein Name ist Herr Andrew WANG Shuhui. Ich bin aus Hong Kong.
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
- drivers/staging/rtl8723au/core/rtw_cmd.c | 79 +++++++++++++++-----------------
- 1 file changed, 38 insertions(+), 41 deletions(-)
+Ich habe einen Geschäftsvorschlag für Sie.
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-index cd2e915..e9d6ac2 100644
---- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-@@ -1017,46 +1017,44 @@ static void lps_ctrl_wk_hdl(struct rtw_adapter *padapter, u8 lps_ctrl_type)
- 	    check_fwstate(pmlmepriv, WIFI_ADHOC_STATE))
- 		return;
- 
--	switch (lps_ctrl_type)
--	{
--		case LPS_CTRL_SCAN:
--			rtl8723a_BT_wifiscan_notify(padapter, true);
--			if (!rtl8723a_BT_using_antenna_1(padapter)) {
--				if (check_fwstate(pmlmepriv, _FW_LINKED))
--					LPS_Leave23a(padapter);
--			}
--			break;
--		case LPS_CTRL_JOINBSS:
--			LPS_Leave23a(padapter);
--			break;
--		case LPS_CTRL_CONNECT:
--			mstatus = 1;/* connect */
--			/*  Reset LPS Setting */
--			padapter->pwrctrlpriv.LpsIdleCount = 0;
--			rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
--			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
--			break;
--		case LPS_CTRL_DISCONNECT:
--			mstatus = 0;/* disconnect */
--			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
--			if (!rtl8723a_BT_using_antenna_1(padapter))
--				LPS_Leave23a(padapter);
--			rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
--			break;
--		case LPS_CTRL_SPECIAL_PACKET:
--			pwrpriv->DelayLPSLastTimeStamp = jiffies;
--			rtl8723a_BT_specialpacket_notify(padapter);
--			if (!rtl8723a_BT_using_antenna_1(padapter))
-+	switch (lps_ctrl_type) {
-+	case LPS_CTRL_SCAN:
-+		rtl8723a_BT_wifiscan_notify(padapter, true);
-+		if (!rtl8723a_BT_using_antenna_1(padapter)) {
-+			if (check_fwstate(pmlmepriv, _FW_LINKED))
- 				LPS_Leave23a(padapter);
--			break;
--		case LPS_CTRL_LEAVE:
--			rtl8723a_BT_lps_leave(padapter);
--			if (!rtl8723a_BT_using_antenna_1(padapter))
--				LPS_Leave23a(padapter);
--			break;
--
--		default:
--			break;
-+		}
-+		break;
-+	case LPS_CTRL_JOINBSS:
-+		LPS_Leave23a(padapter);
-+		break;
-+	case LPS_CTRL_CONNECT:
-+		mstatus = 1;/* connect */
-+		/*  Reset LPS Setting */
-+		padapter->pwrctrlpriv.LpsIdleCount = 0;
-+		rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
-+		rtl8723a_BT_mediastatus_notify(padapter, mstatus);
-+		break;
-+	case LPS_CTRL_DISCONNECT:
-+		mstatus = 0;/* disconnect */
-+		rtl8723a_BT_mediastatus_notify(padapter, mstatus);
-+		if (!rtl8723a_BT_using_antenna_1(padapter))
-+			LPS_Leave23a(padapter);
-+		rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
-+		break;
-+	case LPS_CTRL_SPECIAL_PACKET:
-+		pwrpriv->DelayLPSLastTimeStamp = jiffies;
-+		rtl8723a_BT_specialpacket_notify(padapter);
-+		if (!rtl8723a_BT_using_antenna_1(padapter))
-+			LPS_Leave23a(padapter);
-+		break;
-+	case LPS_CTRL_LEAVE:
-+		rtl8723a_BT_lps_leave(padapter);
-+		if (!rtl8723a_BT_using_antenna_1(padapter))
-+			LPS_Leave23a(padapter);
-+		break;
-+	default:
-+		break;
- 	}
- }
- 
-@@ -1305,8 +1303,7 @@ int rtw_drvextra_cmd_hdl23a(struct rtw_adapter *padapter, const u8 *pbuf)
- 
- 	pdrvextra_cmd = (struct drvextra_cmd_parm *)pbuf;
- 
--	switch (pdrvextra_cmd->ec_id)
--	{
-+	switch (pdrvextra_cmd->ec_id) {
- 	case DYNAMIC_CHK_WK_CID:
- 		dynamic_chk_wk_hdl(padapter, pdrvextra_cmd->pbuf,
- 				   pdrvextra_cmd->type_size);
--- 
-1.7.11.7
+Wenn Sie interessiert sind, bitte schreiben Sie mir zurück über meine private
+
+E-Mail-Adresse: Andrewchg@bigpond.com. Und ich gebe Ihnen weitere Informationen. Sprechen Sie Englisch? Vielen Dank.
+
 
