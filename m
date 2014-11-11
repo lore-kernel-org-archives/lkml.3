@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaKKKwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 05:52:35 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	id S1752681AbaKKKzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 05:55:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36322 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349AbaKKKwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 05:52:33 -0500
-Message-ID: <5461EA6B.9020305@nod.at>
-Date: Tue, 11 Nov 2014 11:52:27 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751571AbaKKKzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 05:55:54 -0500
+Message-ID: <5461EB37.4010603@suse.com>
+Date: Tue, 11 Nov 2014 11:55:51 +0100
+From: =?windows-1252?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, luto@amacapital.net
-CC: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        viro@zeniv.linux.org.uk, richard.weinberger@gmail.com, hpa@zytor.com,
-        mingo@kernel.org, keescook@chromium.org
-Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct task_struct
-References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>	<alpine.DEB.2.11.1410291908290.5308@nanos>	<CALCETrWtBCFXzwCAh8fpeFv-EvPxYW20oRmFk1iCYwUvpft=Rw@mail.gmail.com> <20141110.211319.1983610686941713044.davem@davemloft.net>
-In-Reply-To: <20141110.211319.1983610686941713044.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: Re: [Xen-devel] [PATCH V3 1/8] xen: Make functions static
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-2-git-send-email-jgross@suse.com> <5461E310.4070803@citrix.com> <5461E698.9060904@suse.com> <5461EA02.3020400@citrix.com>
+In-Reply-To: <5461EA02.3020400@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.11.2014 um 03:13 schrieb David Miller:
-> From: Andy Lutomirski <luto@amacapital.net>
-> Date: Mon, 10 Nov 2014 14:03:23 -0800
-> 
->> On Wed, Oct 29, 2014 at 11:12 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->>> On Wed, 29 Oct 2014, Andy Lutomirski wrote:
->>>
->>>> If an attacker can cause a controlled kernel stack overflow,
->>>> overwriting the restart block is a very juicy exploit target.
->>>> Moving the restart block to struct task_struct prevents this
->>>> exploit.
+On 11/11/2014 11:50 AM, David Vrabel wrote:
+> On 11/11/14 10:36, Juergen Gross wrote:
+>> On 11/11/2014 11:21 AM, David Vrabel wrote:
+>>> On 11/11/14 05:43, Juergen Gross wrote:
+>>>> Some functions in arch/x86/xen/p2m.c are used locally only. Make them
+>>>> static. Rearrange the functions in p2m.c to avoid forward declarations.
 >>>>
->>>> Note that there are other fields in thread_info that are also easy
->>>> targets, at least on some architectures.
->>>>
->>>> It's also a decent simplification, since the restart code is more or
->>>> less identical on all architectures.
+>>>> While at it correct some style issues (long lines, use pr_warn()).
 >>>
->>> I think that's the most important change. Moving common stuff into
->>> common code. The side effect of slightly reducing the attack surface
->>> is nice, but as Al pointed out not really the big win here.
+>>> Please don't add extra stuff like this.  In general if you feel yourself
+>>> wring "while at it..." or "also..." then you need another patch.
 >>
->> Having gotten exactly zero feedback from any arch maintainer outside
->> of x86, am I supposed to pester people further?
-> 
-> No objections wrt. sparc and if things break I'll help fix it.
+>> I applied the changes only to functions I was moving, as checkpatch was
+>> complaining. Documentation says this should be avoided only when moving
+>> functions between files.
+>
+> If the documentation says that then it is wrong.  Fix the style issues
+> in one patch and then move the functions in another.
 
-Same for UML.
-Acked-by: Richard Weinberger <richard@nod.at>
+Okay.
 
-Thanks,
-//richard
+Juergen
+
