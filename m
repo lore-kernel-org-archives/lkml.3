@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaKKLuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:50:06 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:41600 "EHLO relay.sw.ru"
+	id S932104AbaKKLuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:50:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10478 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751626AbaKKLuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:50:00 -0500
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] mm: check memory reclaim bugs caused fs reentrance
-Date: Tue, 11 Nov 2014 15:49:50 +0400
-Message-Id: <1415706590-24159-1-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.9.3
+	id S932074AbaKKLuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:50:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="414773251"
+Date: Tue, 11 Nov 2014 13:50:28 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
+        maxime.ripard@free-electrons.com, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, skuribay@pobox.com, Romain.Baeriswyl@abilis.com,
+        wenkai.du@intel.com, chiau.ee.chew@intel.com,
+        christian.ruppert@abilis.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V2] i2c-designware: Add Intel Baytrail PMIC I2C bus
+ support
+Message-ID: <20141111115028.GH1454@lahna.fi.intel.com>
+References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
+ <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If filesystem holds transaction open 'current->journal_info' it should not
-performs memory allocations with __GFP_FS flag enabled otherwise this result in fs
-reentarance which lead to:
-1) reentrance to itself : deadlock or internal assertion failure due to incorrect journal credits
-1) entrance to another fs: assertion faulure or silient corruption due to incorrect journal
+On Tue, Sep 23, 2014 at 11:40:26AM -0700, David E. Box wrote:
+> +void baytrail_evaluate_sem(struct dw_i2c_dev *dev)
+> +{
+> +	acpi_status status;
+> +	unsigned long long shared_host = 0;
+> +	acpi_handle handle;
+> +
+> +	if (!dev || !dev->dev) {
+> +		pr_err("%s:%d: device is NULL\n", __func__, __LINE__);
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- include/linux/kernel.h |    7 +++++++
- mm/dmapool.c           |    1 +
- mm/mempool.c           |    1 +
- mm/page_alloc.c        |    1 +
- mm/slab.c              |    1 +
- mm/slub.c              |    1 +
- 6 files changed, 12 insertions(+), 0 deletions(-)
+Not sure if it is useful to print things like above.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 3d770f5..69923d4 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -232,6 +232,13 @@ void might_fault(void);
- static inline void might_fault(void) { }
- #endif
- 
-+#ifdef CONFIG_PROVE_LOCKING
-+#define might_enter_fs_if(cond) \
-+	 WARN_ON_ONCE((cond) && current->journal_info)
-+#else
-+static inline void might_enter_fs_if(bool cond) { }
-+#endif
-+
- extern struct atomic_notifier_head panic_notifier_list;
- extern long (*panic_blink)(int state);
- __printf(1, 2)
-diff --git a/mm/dmapool.c b/mm/dmapool.c
-index fd5fe43..c543eb8 100644
---- a/mm/dmapool.c
-+++ b/mm/dmapool.c
-@@ -324,6 +324,7 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
- 	void *retval;
- 
- 	might_sleep_if(mem_flags & __GFP_WAIT);
-+	might_enter_fs_if(mem_flags & __GFP_FS);
- 
- 	spin_lock_irqsave(&pool->lock, flags);
- 	list_for_each_entry(page, &pool->page_list, page_list) {
-diff --git a/mm/mempool.c b/mm/mempool.c
-index e209c98..b5bb86f 100644
---- a/mm/mempool.c
-+++ b/mm/mempool.c
-@@ -204,6 +204,7 @@ void * mempool_alloc(mempool_t *pool, gfp_t gfp_mask)
- 
- 	VM_WARN_ON_ONCE(gfp_mask & __GFP_ZERO);
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
-+	might_enter_fs_if(gfp_mask & __GFP_FS);
- 
- 	gfp_mask |= __GFP_NOMEMALLOC;	/* don't allocate emergency reserves */
- 	gfp_mask |= __GFP_NORETRY;	/* don't loop in __alloc_pages */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9cd36b8..284a699 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2805,6 +2805,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	lockdep_trace_alloc(gfp_mask);
- 
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
-+	might_enter_fs_if(gfp_mask & __GFP_FS);
- 
- 	if (should_fail_alloc_page(gfp_mask, order))
- 		return NULL;
-diff --git a/mm/slab.c b/mm/slab.c
-index eb2b2ea..43b0d2f 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2844,6 +2844,7 @@ static inline void cache_alloc_debugcheck_before(struct kmem_cache *cachep,
- 						gfp_t flags)
- {
- 	might_sleep_if(flags & __GFP_WAIT);
-+	might_enter_fs_if(flags & __GFP_FS);
- #if DEBUG
- 	kmem_flagcheck(cachep, flags);
- #endif
-diff --git a/mm/slub.c b/mm/slub.c
-index ae7b9f1..474fc53 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1238,6 +1238,7 @@ static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
- 	flags &= gfp_allowed_mask;
- 	lockdep_trace_alloc(flags);
- 	might_sleep_if(flags & __GFP_WAIT);
-+	might_enter_fs_if(flags & __GFP_FS);
- 
- 	return should_failslab(s->object_size, flags, s->flags);
- }
--- 
-1.7.1
+> +		return;
+> +	}
+> +
+> +	handle = ACPI_HANDLE(dev->dev);
+> +	if (!handle)
+> +		return;
+> +
+> +	status = acpi_evaluate_integer(handle, "_SEM", NULL, &shared_host);
 
+Maybe it is better to check first if the operation succeeded before
+touching shared_host?
+
+	if (ACPI_SUCCESS(status) && shared_host) {
+	}
+
+Otherwise ACPI parts look good to me.
+
+> +
+> +	if (shared_host) {
+> +		dev_info(dev->dev, "I2C bus managed by PUNIT\n");
+> +		dev->has_hw_lock = true;
+> +		dev->pm_runtime_disabled = true;
+> +	}
+> +}
+> +EXPORT_SYMBOL(baytrail_evaluate_sem);
