@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaKKLrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:47:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57513 "EHLO
+	id S932073AbaKKLra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:47:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57508 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaKKLKT (ORCPT
+	with ESMTP id S1754014AbaKKLKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:19 -0500
+	Tue, 11 Nov 2014 06:10:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tom Herbert <therbert@google.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Or Gerlitz <ogerlitz@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 082/170] gre: Use inner mac length when computing tunnel length
-Date: Tue, 11 Nov 2014 11:07:21 +0000
-Message-Id: <1415704129-12709-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 081/170] net/mlx4_en: Don't attempt to TX offload the outer UDP checksum for VXLAN
+Date: Tue, 11 Nov 2014 11:07:20 +0000
+Message-Id: <1415704129-12709-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Herbert <therbert@google.com>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-commit 14051f0452a2c26a3f4791e6ad6a435e8f1945ff upstream.
+commit a4f2dacbf2a5045e34b98a35d9a3857800f25a7b upstream.
 
-Currently, skb_inner_network_header is used but this does not account
-for Ethernet header for ETH_P_TEB. Use skb_inner_mac_header which
-handles TEB and also should work with IP encapsulation in which case
-inner mac and inner network headers are the same.
+For VXLAN/NVGRE encapsulation, the current HW doesn't support offloading
+both the outer UDP TX checksum and the inner TCP/UDP TX checksum.
 
-Tested: Ran TCP_STREAM over GRE, worked as expected.
+The driver doesn't advertize SKB_GSO_UDP_TUNNEL_CSUM, however we are wrongly
+telling the HW to offload the outer UDP checksum for encapsulated packets,
+fix that.
 
-Signed-off-by: Tom Herbert <therbert@google.com>
-Acked-by: Alexander Duyck <alexander.h.duyck@redhat.com>
+Fixes: 837052d0ccc5 ('net/mlx4_en: Add netdev support for TCP/IP
+		     offloads of vxlan tunneling')
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/gre_offload.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/en_tx.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/gre_offload.c b/net/ipv4/gre_offload.c
-index f0bdd47bbbcb..32041ecbeafb 100644
---- a/net/ipv4/gre_offload.c
-+++ b/net/ipv4/gre_offload.c
-@@ -51,7 +51,7 @@ static struct sk_buff *gre_gso_segment(struct sk_buff *skb,
- 
- 	greh = (struct gre_base_hdr *)skb_transport_header(skb);
- 
--	ghl = skb_inner_network_header(skb) - skb_transport_header(skb);
-+	ghl = skb_inner_mac_header(skb) - skb_transport_header(skb);
- 	if (unlikely(ghl < sizeof(*greh)))
- 		goto out;
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_tx.c b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
+index 5045bab59633..0610c85d4371 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
+@@ -803,8 +803,11 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	tx_desc->ctrl.fence_size = (real_size / 16) & 0x3f;
+ 	tx_desc->ctrl.srcrb_flags = priv->ctrl_flags;
+ 	if (likely(skb->ip_summed == CHECKSUM_PARTIAL)) {
+-		tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |
+-							 MLX4_WQE_CTRL_TCP_UDP_CSUM);
++		if (!skb->encapsulation)
++			tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |
++								 MLX4_WQE_CTRL_TCP_UDP_CSUM);
++		else
++			tx_desc->ctrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM);
+ 		ring->tx_csum++;
+ 	}
  
 -- 
 2.1.0
