@@ -1,258 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaKKNtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:49:42 -0500
-Received: from mga14.intel.com ([192.55.52.115]:64319 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863AbaKKNpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:45:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
-   d="scan'208";a="620558154"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v7 01/10] tpm: merge duplicate transmit_cmd() functions
-Date: Tue, 11 Nov 2014 15:45:04 +0200
-Message-Id: <1415713513-16524-2-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1751571AbaKKNxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:53:31 -0500
+Received: from mail-by2on0085.outbound.protection.outlook.com ([207.46.100.85]:45984
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750730AbaKKNx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 08:53:29 -0500
+Message-ID: <546214F7.1040007@opensource.altera.com>
+Date: Tue, 11 Nov 2014 07:53:59 -0600
+From: Thor Thayer <tthayer@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] spi: spidev: Don't mangle max_speed_hz in underlying
+ spi device
+References: <1415442589-29434-1-git-send-email-broonie@kernel.org>
+In-Reply-To: <1415442589-29434-1-git-send-email-broonie@kernel.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CY1PR0601CA0002.namprd06.prod.outlook.com (25.160.162.12)
+ To BL2PR03MB114.namprd03.prod.outlook.com (10.255.230.14)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB114;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(7)(6);SRVR:BL2PR03MB114;
+X-Forefront-PRVS: 0392679D18
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(24454002)(377454003)(479174003)(189002)(51704005)(199003)(87976001)(19580395003)(19580405001)(80316001)(107046002)(47776003)(64706001)(65956001)(20776003)(65806001)(83506001)(92726001)(106356001)(105586002)(86362001)(66066001)(92566001)(95666004)(99136001)(101416001)(102836001)(46102003)(33656002)(42186005)(87266999)(54356999)(76176999)(65816999)(50986999)(97736003)(31966008)(40100003)(77156002)(77096003)(122386002)(62966003)(59896002)(21056001)(110136001)(23746002)(99396003)(120916001)(50466002)(4396001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB114;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB114;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merged transmit_cmd() functions in tpm-interface.c and tpm-sysfs.c.
-Added "tpm_" prefix for consistency sake. Changed cmd parameter as
-opaque. This enables to use separate command structures for TPM1
-and TPM2 commands in future. Loose coupling works fine here.
+Hi Mark,
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
----
- drivers/char/tpm/tpm-interface.c | 49 +++++++++++++++++++++-------------------
- drivers/char/tpm/tpm-sysfs.c     | 23 ++-----------------
- drivers/char/tpm/tpm.h           |  3 ++-
- 3 files changed, 30 insertions(+), 45 deletions(-)
+On 11/08/2014 04:29 AM, Mark Brown wrote:
+> Currently spidev allows callers to set the default speed by overriding the
+> max_speed_hz in the underlying device. This achieves the immediate goal but
+> is not what devices expect and can easily lead to userspace trying to set
+> unsupported speeds and succeeding, apart from anything else drivers can't
+> set a limit on the speed using max_speed_hz as they'd expect and any other
+> devices on the bus will be affected.
+>
+> Instead store the default speed in the spidev struct and fill this in on
+> each transfer.
+>
+> Signed-off-by: Mark Brown<broonie@kernel.org>
+> ---
+>
+> I've not tested this at all yet.
+>
+>   drivers/spi/spidev.c | 12 ++++++++++--
+>   1 file changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+> index e50039f..42239fd 100644
+> --- a/drivers/spi/spidev.c
+> +++ b/drivers/spi/spidev.c
+> @@ -87,6 +87,7 @@ struct spidev_data {
+>   	unsigned		users;
+>   	u8			*tx_buffer;
+>   	u8			*rx_buffer;
+> +	u32			speed_hz;
+>   };
+>   
+>   static LIST_HEAD(device_list);
+> @@ -274,6 +275,8 @@ static int spidev_message(struct spidev_data *spidev,
+>   		k_tmp->bits_per_word = u_tmp->bits_per_word;
+>   		k_tmp->delay_usecs = u_tmp->delay_usecs;
+>   		k_tmp->speed_hz = u_tmp->speed_hz;
+> +		if (!k_tmp->speed_hz)
+> +			k_tmp->speed_hz = spidev->speed_hz;
+>   #ifdef VERBOSE
+>   		dev_dbg(&spidev->spi->dev,
+>   			"  xfer len %zd %s%s%s%dbits %u usec %uHz\n",
+> @@ -377,7 +380,7 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>   		retval = __put_user(spi->bits_per_word, (__u8 __user *)arg);
+>   		break;
+>   	case SPI_IOC_RD_MAX_SPEED_HZ:
+> -		retval = __put_user(spi->max_speed_hz, (__u32 __user *)arg);
+> +		retval = __put_user(spidev->speed_hz, (__u32 __user *)arg);
+>   		break;
+>   
+>   	/* write requests */
+> @@ -442,9 +445,10 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>   			spi->max_speed_hz = tmp;
+>   			retval = spi_setup(spi);
+>   			if (retval < 0)
+> -				spi->max_speed_hz = save;
+> +				spidev->speed_hz = tmp;
+>   			else
+>   				dev_dbg(&spi->dev, "%d Hz (max)\n", tmp);
+> +			spi->max_speed_hz = save;
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 6af1700..0150b7c 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -398,9 +398,10 @@ out:
- #define TPM_DIGEST_SIZE 20
- #define TPM_RET_CODE_IDX 6
- 
--static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
--			    int len, const char *desc)
-+ssize_t tpm_transmit_cmd(struct tpm_chip *chip, void *cmd,
-+			 int len, const char *desc)
- {
-+	struct tpm_output_header *header;
- 	int err;
- 
- 	len = tpm_transmit(chip, (u8 *) cmd, len);
-@@ -409,7 +410,9 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- 	else if (len < TPM_HEADER_SIZE)
- 		return -EFAULT;
- 
--	err = be32_to_cpu(cmd->header.out.return_code);
-+	header = (struct tpm_output_header *) cmd;
-+
-+	err = be32_to_cpu(header->return_code);
- 	if (err != 0 && desc)
- 		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
- 
-@@ -448,7 +451,7 @@ ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
- 		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 		tpm_cmd.params.getcap_in.subcap = subcap_id;
- 	}
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, desc);
-+	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, desc);
- 	if (!rc)
- 		*cap = tpm_cmd.params.getcap_out.cap;
- 	return rc;
-@@ -464,8 +467,8 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
- 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
- 
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
--			"attempting to determine the timeouts");
-+	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
-+			      "attempting to determine the timeouts");
- }
- EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
- 
-@@ -484,8 +487,8 @@ static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
- 	struct tpm_cmd_t start_cmd;
- 	start_cmd.header.in = tpm_startup_header;
- 	start_cmd.params.startup_in.startup_type = startup_type;
--	return transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
--			    "attempting to start the TPM");
-+	return tpm_transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
-+				"attempting to start the TPM");
- }
- 
- int tpm_get_timeouts(struct tpm_chip *chip)
-@@ -500,7 +503,7 @@ int tpm_get_timeouts(struct tpm_chip *chip)
- 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
- 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
-+	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
- 
- 	if (rc == TPM_ERR_INVALID_POSTINIT) {
- 		/* The TPM is not started, we are the first to talk to it.
-@@ -513,7 +516,7 @@ int tpm_get_timeouts(struct tpm_chip *chip)
- 		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
- 		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
--		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
-+		rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
- 				  NULL);
- 	}
- 	if (rc) {
-@@ -575,8 +578,8 @@ duration:
- 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_DURATION;
- 
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
--			"attempting to determine the durations");
-+	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
-+			      "attempting to determine the durations");
- 	if (rc)
- 		return rc;
- 
-@@ -631,8 +634,8 @@ static int tpm_continue_selftest(struct tpm_chip *chip)
- 	struct tpm_cmd_t cmd;
- 
- 	cmd.header.in = continue_selftest_header;
--	rc = transmit_cmd(chip, &cmd, CONTINUE_SELFTEST_RESULT_SIZE,
--			  "continue selftest");
-+	rc = tpm_transmit_cmd(chip, &cmd, CONTINUE_SELFTEST_RESULT_SIZE,
-+			      "continue selftest");
- 	return rc;
- }
- 
-@@ -672,8 +675,8 @@ int tpm_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf)
- 
- 	cmd.header.in = pcrread_header;
- 	cmd.params.pcrread_in.pcr_idx = cpu_to_be32(pcr_idx);
--	rc = transmit_cmd(chip, &cmd, READ_PCR_RESULT_SIZE,
--			  "attempting to read a pcr value");
-+	rc = tpm_transmit_cmd(chip, &cmd, READ_PCR_RESULT_SIZE,
-+			      "attempting to read a pcr value");
- 
- 	if (rc == 0)
- 		memcpy(res_buf, cmd.params.pcrread_out.pcr_result,
-@@ -737,8 +740,8 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
- 	cmd.header.in = pcrextend_header;
- 	cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(pcr_idx);
- 	memcpy(cmd.params.pcrextend_in.hash, hash, TPM_DIGEST_SIZE);
--	rc = transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
--			  "attempting extend a PCR value");
-+	rc = tpm_transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
-+			      "attempting extend a PCR value");
- 
- 	tpm_chip_put(chip);
- 	return rc;
-@@ -817,7 +820,7 @@ int tpm_send(u32 chip_num, void *cmd, size_t buflen)
- 	if (chip == NULL)
- 		return -ENODEV;
- 
--	rc = transmit_cmd(chip, cmd, buflen, "attempting tpm_cmd");
-+	rc = tpm_transmit_cmd(chip, cmd, buflen, "attempting tpm_cmd");
- 
- 	tpm_chip_put(chip);
- 	return rc;
-@@ -938,14 +941,14 @@ int tpm_pm_suspend(struct device *dev)
- 		cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(tpm_suspend_pcr);
- 		memcpy(cmd.params.pcrextend_in.hash, dummy_hash,
- 		       TPM_DIGEST_SIZE);
--		rc = transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
--				  "extending dummy pcr before suspend");
-+		rc = tpm_transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
-+				      "extending dummy pcr before suspend");
- 	}
- 
- 	/* now do the actual savestate */
- 	for (try = 0; try < TPM_RETRY; try++) {
- 		cmd.header.in = savestate_header;
--		rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
-+		rc = tpm_transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
- 
- 		/*
- 		 * If the TPM indicates that it is too busy to respond to
-@@ -1022,7 +1025,7 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 		tpm_cmd.header.in = tpm_getrandom_header;
- 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
- 
--		err = transmit_cmd(chip, &tpm_cmd,
-+		err = tpm_transmit_cmd(chip, &tpm_cmd,
- 				   TPM_GETRANDOM_RESULT_SIZE + num_bytes,
- 				   "attempting get random");
- 		if (err)
-diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index 01730a2..8ecb052 100644
---- a/drivers/char/tpm/tpm-sysfs.c
-+++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -20,25 +20,6 @@
- #include <linux/device.h>
- #include "tpm.h"
- 
--/* XXX for now this helper is duplicated in tpm-interface.c */
--static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
--			    int len, const char *desc)
--{
--	int err;
--
--	len = tpm_transmit(chip, (u8 *) cmd, len);
--	if (len <  0)
--		return len;
--	else if (len < TPM_HEADER_SIZE)
--		return -EFAULT;
--
--	err = be32_to_cpu(cmd->header.out.return_code);
--	if (err != 0 && desc)
--		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
--
--	return err;
--}
--
- #define READ_PUBEK_RESULT_SIZE 314
- #define TPM_ORD_READPUBEK cpu_to_be32(124)
- static struct tpm_input_header tpm_readpubek_header = {
-@@ -58,8 +39,8 @@ static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
- 	tpm_cmd.header.in = tpm_readpubek_header;
--	err = transmit_cmd(chip, &tpm_cmd, READ_PUBEK_RESULT_SIZE,
--			   "attempting to read the PUBEK");
-+	err = tpm_transmit_cmd(chip, &tpm_cmd, READ_PUBEK_RESULT_SIZE,
-+			       "attempting to read the PUBEK");
- 	if (err)
- 		goto out;
- 
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index e4d0888..e638eb0 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -314,9 +314,10 @@ struct tpm_cmd_t {
- } __packed;
- 
- ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
--
- ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 		     size_t bufsiz);
-+ssize_t tpm_transmit_cmd(struct tpm_chip *chip, void *cmd, int len,
-+			 const char *desc);
- extern int tpm_get_timeouts(struct tpm_chip *);
- extern void tpm_gen_interrupt(struct tpm_chip *);
- extern int tpm_do_selftest(struct tpm_chip *);
--- 
-2.1.0
+I think the test should be if (retval >= 0) otherwise the value is only 
+updated on an error. With this change, I was able to successfully change 
+the SPI speed without affecting the max speed. This was tested using 
+spidev_test.c on a Altera Cyclone V which includes the DesignWare SPI IP 
+(spi-dw.c).
 
+>   		}
+>   		break;
+>   
+> @@ -570,6 +574,8 @@ static int spidev_release(struct inode *inode, struct file *filp)
+>   		kfree(spidev->rx_buffer);
+>   		spidev->rx_buffer = NULL;
+>   
+> +		spidev->speed_hz = spidev->spi->max_speed_hz;
+> +
+>   		/* ... after we unbound from the underlying device? */
+>   		spin_lock_irq(&spidev->spi_lock);
+>   		dofree = (spidev->spi == NULL);
+> @@ -650,6 +656,8 @@ static int spidev_probe(struct spi_device *spi)
+>   	}
+>   	mutex_unlock(&device_list_lock);
+>   
+> +	spidev->speed_hz = spi->max_speed_hz;
+> +
+>   	if (status == 0)
+>   		spi_set_drvdata(spi, spidev);
+>   	else
+
+The echo command calls spidev_write() directly. Although the speed can't 
+be specified in the echo command, it did prompt me to look at that path.
+
+In that case I think we'd need to add the .speed_hz element in 
+spidev_sync_write() and spidev_sync_read().
+struct spi_transfer    t = {
+             .rx_buf        = spidev->rx_buffer,
+             .len        = len,
+             .speed_hz    = spidev->speed_hz,
+         };
