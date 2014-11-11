@@ -1,87 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaKKM20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:28:26 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7785 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164AbaKKM2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:28:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
-   d="scan'208";a="620525664"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
- configuration changes
-Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLv//ljeA//9iliA=
-Date: Tue, 11 Nov 2014 12:28:15 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F00226FEEA@SHSMSX104.ccr.corp.intel.com>
-References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
- <5461EC99.1000101@redhat.com>
-In-Reply-To: <5461EC99.1000101@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753552AbaKKM3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:29:10 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56053 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaKKM3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:29:07 -0500
+Date: Tue, 11 Nov 2014 12:29:01 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        alvise rigo <a.rigo@virtualopensystems.com>
+Subject: Re: [PATCH] pci: generic host: make it more generic
+Message-ID: <20141111122901.GA4419@red-moon>
+References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sABCSXOY004610
 
+On Tue, Nov 11, 2014 at 10:33:59AM +0000, Ming Lei wrote:
+> This patch converts the generic host controller driver
+> into a more generic one, and basically don't need
+> platform's pcibios support, and use DT based generic
+> APIs to parse resource and remap IO port.
+> 
+> This patch has been tested on both ARMv7 and ARMv8
+> VM, and in theroy it should support other ARCHs too.
 
+In theory, yes.
 
-> -----Original Message-----
-> From: Paolo Bonzini [mailto:pbonzini@redhat.com]
-> Sent: Tuesday, November 11, 2014 7:02 PM
-> To: Wu, Feng; Alex Williamson
-> Cc: gleb@kernel.org; dwmw2@infradead.org; joro@8bytes.org;
-> tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
-> configuration changes
+> With this patch, virtio PCI block, network and scsi devices
+> can work well on ARMv7 and ARMv8 VM.
 > 
+> QEMU needs below patches for runing the test:
 > 
+> - Rob Herring's "Add generic PCI host device" patches
+> 	http://lists.gnu.org/archive/html/qemu-devel/2014-06/msg03482.html
+> 	http://lists.gnu.org/archive/html/qemu-devel/2014-06/msg03483.html
+> - Alvise Rigo's "Add Generic PCI host device update"
+> 	http://marc.info/?l=qemu-devel&m=140506329920172&w=2
 > 
-> On 11/11/2014 10:20, Wu, Feng wrote:
-> > > Since legacy KVM device assignment is effectively deprecated, have you
-> > > considered how we might do this with VFIO?  Thanks,
-> >
-> > I haven't thought about how to enable this in VFIO so far. I think I can continue
-> to
-> > implement that if needed after this patch set is finished. What do you think of
-> this?
+> For ARMv8, cpu model of "host" and "cortex-a57" is missed
+> in Alvise Rigo's patchset, otherwise ARM64 VM can't boot.
 > 
-> Hi Feng,
+> All these QEMU patches can be found in below tree:
 > 
-> we are not applying new features to legacy KVM device assignment, since
-> it is unsafe (it does not honor ACS).
+> 	http://kernel.ubuntu.com/git?p=ming/qemu.git;a=shortlog;h=refs/heads/arm64-pci-test
 > 
-> I and Alex can help you with designing a way to interface VFIO with KVM
-> posted interrupts.  Give us a few days to study these patches more, or
-> feel free to request comments if you have ideas about it yourself.
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/pci/host/Kconfig            |    2 +-
+>  drivers/pci/host/pci-host-generic.c |  196 +++++++++++------------------------
+>  2 files changed, 63 insertions(+), 135 deletions(-)
 > 
-> Paolo
+> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+> index 3dc25fa..885034d 100644
+> --- a/drivers/pci/host/Kconfig
+> +++ b/drivers/pci/host/Kconfig
+> @@ -50,7 +50,7 @@ config PCI_RCAR_GEN2_PCIE
+>  
+>  config PCI_HOST_GENERIC
+>  	bool "Generic PCI host controller"
+> -	depends on ARM && OF
+> +	depends on OF
+>  	help
+>  	  Say Y here if you want to support a simple generic PCI host
+>  	  controller, such as the one emulated by kvmtool.
+> diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
+> index 3d2076f..00d0ca3 100644
+> --- a/drivers/pci/host/pci-host-generic.c
+> +++ b/drivers/pci/host/pci-host-generic.c
+> @@ -44,12 +44,14 @@ struct gen_pci {
+>  	struct list_head			resources;
+>  };
+>  
+> +/* fake sysdata for cheating ARCH's pcibios code */
+> +static char	gen_sysdata[256];
 
-Okay, then I will put some efforts on getting familiar with VFIO mechanism. If
-You have any questions about these patches, we can discuss it together.
+I take this as a joke and it does not make me laugh.
+
+>  static void __iomem *gen_pci_map_cfg_bus_cam(struct pci_bus *bus,
+>  					     unsigned int devfn,
+>  					     int where)
+>  {
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	struct gen_pci *pci = sys->private_data;
+> +	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
+>  	resource_size_t idx = bus->number - pci->cfg.bus_range.start;
+>  
+>  	return pci->cfg.win[idx] + ((devfn << 8) | where);
+> @@ -64,8 +66,7 @@ static void __iomem *gen_pci_map_cfg_bus_ecam(struct pci_bus *bus,
+>  					      unsigned int devfn,
+>  					      int where)
+>  {
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	struct gen_pci *pci = sys->private_data;
+> +	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
+>  	resource_size_t idx = bus->number - pci->cfg.bus_range.start;
+>  
+>  	return pci->cfg.win[idx] + ((devfn << 12) | where);
+> @@ -80,8 +81,7 @@ static int gen_pci_config_read(struct pci_bus *bus, unsigned int devfn,
+>  				int where, int size, u32 *val)
+>  {
+>  	void __iomem *addr;
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	struct gen_pci *pci = sys->private_data;
+> +	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
+>  
+>  	addr = pci->cfg.ops->map_bus(bus, devfn, where);
+>  
+> @@ -103,8 +103,7 @@ static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
+>  				 int where, int size, u32 val)
+>  {
+>  	void __iomem *addr;
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	struct gen_pci *pci = sys->private_data;
+> +	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
+>  
+>  	addr = pci->cfg.ops->map_bus(bus, devfn, where);
+>  
+> @@ -138,45 +137,6 @@ static const struct of_device_id gen_pci_of_match[] = {
+>  };
+>  MODULE_DEVICE_TABLE(of, gen_pci_of_match);
+>  
+> -static int gen_pci_calc_io_offset(struct device *dev,
+> -				  struct of_pci_range *range,
+> -				  struct resource *res,
+> -				  resource_size_t *offset)
+> -{
+> -	static atomic_t wins = ATOMIC_INIT(0);
+> -	int err, idx, max_win;
+> -	unsigned int window;
+> -
+> -	if (!PAGE_ALIGNED(range->cpu_addr))
+> -		return -EINVAL;
+> -
+> -	max_win = (IO_SPACE_LIMIT + 1) / SZ_64K;
+> -	idx = atomic_inc_return(&wins);
+> -	if (idx > max_win)
+> -		return -ENOSPC;
+> -
+> -	window = (idx - 1) * SZ_64K;
+> -	err = pci_ioremap_io(window, range->cpu_addr);
+> -	if (err)
+> -		return err;
+> -
+> -	of_pci_range_to_resource(range, dev->of_node, res);
+> -	res->start = window;
+> -	res->end = res->start + range->size - 1;
+> -	*offset = window - range->pci_addr;
+> -	return 0;
+> -}
+> -
+> -static int gen_pci_calc_mem_offset(struct device *dev,
+> -				   struct of_pci_range *range,
+> -				   struct resource *res,
+> -				   resource_size_t *offset)
+> -{
+> -	of_pci_range_to_resource(range, dev->of_node, res);
+> -	*offset = range->cpu_addr - range->pci_addr;
+> -	return 0;
+> -}
+> -
+>  static void gen_pci_release_of_pci_ranges(struct gen_pci *pci)
+>  {
+>  	struct pci_host_bridge_window *win;
+> @@ -187,72 +147,6 @@ static void gen_pci_release_of_pci_ranges(struct gen_pci *pci)
+>  	pci_free_resource_list(&pci->resources);
+>  }
+>  
+> -static int gen_pci_parse_request_of_pci_ranges(struct gen_pci *pci)
+> -{
+> -	struct of_pci_range range;
+> -	struct of_pci_range_parser parser;
+> -	int err, res_valid = 0;
+> -	struct device *dev = pci->host.dev.parent;
+> -	struct device_node *np = dev->of_node;
+> -
+> -	if (of_pci_range_parser_init(&parser, np)) {
+> -		dev_err(dev, "missing \"ranges\" property\n");
+> -		return -EINVAL;
+> -	}
+> -
+> -	for_each_of_pci_range(&parser, &range) {
+> -		struct resource *parent, *res;
+> -		resource_size_t offset;
+> -		u32 restype = range.flags & IORESOURCE_TYPE_BITS;
+> -
+> -		res = devm_kmalloc(dev, sizeof(*res), GFP_KERNEL);
+> -		if (!res) {
+> -			err = -ENOMEM;
+> -			goto out_release_res;
+> -		}
+> -
+> -		switch (restype) {
+> -		case IORESOURCE_IO:
+> -			parent = &ioport_resource;
+> -			err = gen_pci_calc_io_offset(dev, &range, res, &offset);
+> -			break;
+> -		case IORESOURCE_MEM:
+> -			parent = &iomem_resource;
+> -			err = gen_pci_calc_mem_offset(dev, &range, res, &offset);
+> -			res_valid |= !(res->flags & IORESOURCE_PREFETCH || err);
+> -			break;
+> -		default:
+> -			err = -EINVAL;
+> -			continue;
+> -		}
+> -
+> -		if (err) {
+> -			dev_warn(dev,
+> -				 "error %d: failed to add resource [type 0x%x, %lld bytes]\n",
+> -				 err, restype, range.size);
+> -			continue;
+> -		}
+> -
+> -		err = request_resource(parent, res);
+> -		if (err)
+> -			goto out_release_res;
+> -
+> -		pci_add_resource_offset(&pci->resources, res, offset);
+> -	}
+> -
+> -	if (!res_valid) {
+> -		dev_err(dev, "non-prefetchable memory resource required\n");
+> -		err = -EINVAL;
+> -		goto out_release_res;
+> -	}
+> -
+> -	return 0;
+> -
+> -out_release_res:
+> -	gen_pci_release_of_pci_ranges(pci);
+> -	return err;
+> -}
+> -
+>  static int gen_pci_parse_map_cfg_windows(struct gen_pci *pci)
+>  {
+>  	int err;
+> @@ -305,16 +199,33 @@ static int gen_pci_parse_map_cfg_windows(struct gen_pci *pci)
+>  			return -ENOMEM;
+>  	}
+>  
+> -	/* Register bus resource */
+> -	pci_add_resource(&pci->resources, bus_range);
+>  	return 0;
+>  }
+>  
+> -static int gen_pci_setup(int nr, struct pci_sys_data *sys)
+> +static int gen_pci_map_ranges(struct list_head *res,
+> +		resource_size_t io_base)
+>  {
+> -	struct gen_pci *pci = sys->private_data;
+> -	list_splice_init(&pci->resources, &sys->resources);
+> -	return 1;
+> +	struct pci_host_bridge_window *window;
+> +	int ret;
+> +
+> +	list_for_each_entry(window, res, list) {
+> +		struct resource *res = window->res;
+> +		u64 restype = resource_type(res);
+> +
+> +		switch (restype) {
+> +		case IORESOURCE_IO:
+> +			ret = pci_remap_iospace(res, io_base);
+> +			if (ret < 0)
+> +				return ret;
+> +			break;
+> +		case IORESOURCE_MEM:
+> +		case IORESOURCE_BUS:
+> +			break;
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +	}
+> +	return 0;
+>  }
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296535.html
+
+Patch above is already queued and applies most of the changes you have posted
+above.
+
+>  static int gen_pci_probe(struct platform_device *pdev)
+> @@ -325,14 +236,11 @@ static int gen_pci_probe(struct platform_device *pdev)
+>  	const int *prop;
+>  	struct device *dev = &pdev->dev;
+>  	struct device_node *np = dev->of_node;
+> +	resource_size_t iobase = 0;
+>  	struct gen_pci *pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
+> -	struct hw_pci hw = {
+> -		.nr_controllers	= 1,
+> -		.private_data	= (void **)&pci,
+> -		.setup		= gen_pci_setup,
+> -		.map_irq	= of_irq_parse_and_map_pci,
+> -		.ops		= &gen_pci_ops,
+> -	};
+> +	struct pci_bus *bus;
+> +	struct pci_dev *pci_dev = NULL;
+> +	bool probe_only = false;
+>  
+>  	if (!pci)
+>  		return -ENOMEM;
+> @@ -346,9 +254,9 @@ static int gen_pci_probe(struct platform_device *pdev)
+>  	prop = of_get_property(of_chosen, "linux,pci-probe-only", NULL);
+>  	if (prop) {
+>  		if (*prop)
+> -			pci_add_flags(PCI_PROBE_ONLY);
+> +			probe_only = true;
+>  		else
+> -			pci_clear_flags(PCI_PROBE_ONLY);
+> +			probe_only = false;
+>  	}
+
+How can this possibly work ? If firmware assigns resources, they
+should not be enabled, and this is done in pcibios code by checking
+the PCI_PROBE_ONLY flag (pcibios_enable_device()).
+Now you are removing the flag, how can pcibios_enable_device() work on
+platforms that are PROBE_ONLY ? I do not see any additional patch, so I
+am confused.
+
+>  
+>  	of_id = of_match_node(gen_pci_of_match, np);
+> @@ -357,20 +265,40 @@ static int gen_pci_probe(struct platform_device *pdev)
+>  	INIT_LIST_HEAD(&pci->host.windows);
+>  	INIT_LIST_HEAD(&pci->resources);
+>  
+> -	/* Parse our PCI ranges and request their resources */
+> -	err = gen_pci_parse_request_of_pci_ranges(pci);
+> +	err = of_pci_get_host_bridge_resources(np, 0, 0xff,
+> +			&pci->resources, &iobase);
+>  	if (err)
+>  		return err;
+>  
+>  	/* Parse and map our Configuration Space windows */
+>  	err = gen_pci_parse_map_cfg_windows(pci);
+> -	if (err) {
+> -		gen_pci_release_of_pci_ranges(pci);
+> -		return err;
+> +	if (err)
+> +		goto fail;
+> +
+> +	err = gen_pci_map_ranges(&pci->resources, iobase);
+> +	if (err)
+> +		goto fail;
+> +
+> +	err = -ENOMEM;
+> +	platform_set_drvdata(pdev, pci);
+> +	bus = pci_scan_root_bus(dev, 0, &gen_pci_ops, gen_sysdata,
+> +				&pci->resources);
+> +	if (!bus)
+> +		goto fail;
+> +
+> +	for_each_pci_dev(pci_dev)
+> +		pci_dev->irq = of_irq_parse_and_map_pci(pci_dev, 0, 0);
+> +
+> +	if (!probe_only) {
+> +		pci_bus_size_bridges(bus);
+> +		pci_bus_assign_resources(bus);
+> +		pci_bus_add_devices(bus);
+>  	}
+
+Do you realize that pci_scan_root_bus() already calls pci_bus_add_devices() ?
+On top of that:
+
++	if (!probe_only) {
++		pci_bus_size_bridges(bus);
++		pci_bus_assign_resources(bus);
++		pci_bus_add_devices(bus);
+
+Should be called in pci_scan_root_bus() before pci_bus_add_devices(), if
+things are working for you at the moment it is out of sheer chance (and
+unfortunately that's the case for other host controllers IMO).
+
+I am working on adding the code above to pci_scan_root_bus() implementation
+this is a generic issue that we need to solve, there are already patches
+on the list to remove the dependency on pci_sys_data (I mean properly)
+and move the code to generic pci_scan_root_bus() implementation.
+
+Overall, we are already working to achieve what this patch is trying to
+achieve, I will keep you posted.
 
 Thanks,
-Feng
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Lorenzo
