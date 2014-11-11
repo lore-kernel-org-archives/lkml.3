@@ -1,260 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaKKRqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:46:21 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:48241 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaKKRqQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:46:16 -0500
-From: mathieu.poirier@linaro.org
-To: gregkh@linuxfoundation.org
-Cc: robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mathieu.poirier@linaro.org
-Subject: [PATCH] coresight: bindings for coresight drivers
-Date: Tue, 11 Nov 2014 10:46:00 -0700
-Message-Id: <1415727960-29524-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1752276AbaKKRq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:46:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752221AbaKKRqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 12:46:25 -0500
+Date: Tue, 11 Nov 2014 11:45:55 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Vojtech Pavlik <vojtech@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        live-patching@vger.kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Kernel Live Patching
+Message-ID: <20141111174555.GA28099@treble.redhat.com>
+References: <20141106202423.GB2266@suse.cz>
+ <20141107074745.GC22703@infradead.org>
+ <20141107131153.GD4071@treble.redhat.com>
+ <20141107140458.GA21774@suse.cz>
+ <20141107154500.GF4071@treble.redhat.com>
+ <20141107212735.GA21409@suse.cz>
+ <20141108034553.GA11663@treble.redhat.com>
+ <20141108080754.GA28969@suse.cz>
+ <20141110170903.GA11119@treble.hsd1.ky.comcast.net>
+ <20141111090505.GA20424@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141111090505.GA20424@suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Tue, Nov 11, 2014 at 10:05:05AM +0100, Vojtech Pavlik wrote:
+> On Mon, Nov 10, 2014 at 11:09:03AM -0600, Josh Poimboeuf wrote:
+> > > But there are a few (probably much less than 10%) cases like the locking
+> > > one I used above, where SWITCH_THREAD just isn't going to cut it and for
+> > > those I would need SWITCH_KERNEL or get very creative with refactoring
+> > > the patch to do things differently.
+> > 
+> > I'm not opposed to having both if necessary.  But I think the code would
+> > be _much_ simpler if we could agree on a single consistency model that
+> > can be used in all cases.  Plus there wouldn't be such a strong
+> > requirement to get incremental patching to work safely (which will add
+> > more complexity).
+> > 
+> > I actually agree with you that LEAVE_PATCHED_SET + SWITCH_THREAD is
+> > pretty nice.
+> 
+> Cool! Do you see it as the next step consistency model we would focus on
+> implementing in livepatch after the null model is complete and upstream?
 
-Please consider this as a supplement to the coresight patchset.  It should have
-been sent with the rest of the patches but I missed the original ack from Rob
-Herring.
+Yeah, I'm thinking so.  None of the consistency models are perfect, but
+I think this is a nice hybrid of the kGraft and kpatch models.  It
+allows us to apply the greatest percentage of patches with the highest
+success rate, while keeping the code complexity at a reasonable level.
 
-Thanks,
-Mathieu
-
->From 69cae46640b8cdc836bf7b86211d5f2adf3d0270 Mon Sep 17 00:00:00 2001
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-Date: Thu, 7 Aug 2014 12:34:06 -0600
-Subject: [PATCH] coresight: bindings for coresight drivers
-
-Coresight IP blocks allow for the support of HW assisted tracing
-on ARM SoCs.  Bindings for the currently available blocks are
-presented herein.
-
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- .../devicetree/bindings/arm/coresight.txt          | 204 +++++++++++++++++++++
- 1 file changed, 204 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
-new file mode 100644
-index 0000000..d790f49
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/coresight.txt
-@@ -0,0 +1,204 @@
-+* CoreSight Components:
-+
-+CoreSight components are compliant with the ARM CoreSight architecture
-+specification and can be connected in various topologies to suit a particular
-+SoCs tracing needs. These trace components can generally be classified as
-+sinks, links and sources. Trace data produced by one or more sources flows
-+through the intermediate links connecting the source to the currently selected
-+sink. Each CoreSight component device should use these properties to describe
-+its hardware characteristcs.
-+
-+* Required properties for all components *except* non-configurable replicators:
-+
-+	* compatible: These have to be supplemented with "arm,primecell" as
-+	  drivers are using the AMBA bus interface.  Possible values include:
-+		- "arm,coresight-etb10", "arm,primecell";
-+		- "arm,coresight-tpiu", "arm,primecell";
-+		- "arm,coresight-tmc", "arm,primecell";
-+		- "arm,coresight-funnel", "arm,primecell";
-+		- "arm,coresight-etm3x", "arm,primecell";
-+
-+	* reg: physical base address and length of the register
-+	  set(s) of the component.
-+
-+	* clocks: the clock associated to this component.
-+
-+	* clock-names: the name of the clock as referenced by the code.
-+	  Since we are using the AMBA framework, the name should be
-+	  "apb_pclk".
-+
-+	* port or ports: The representation of the component's port
-+	  layout using the generic DT graph presentation found in
-+	  "bindings/graph.txt".
-+
-+* Required properties for devices that don't show up on the AMBA bus, such as
-+  non-configurable replicators:
-+
-+	* compatible: Currently supported value is (note the absence of the
-+	  AMBA markee):
-+		- "arm,coresight-replicator"
-+
-+	* id: a unique number that will identify this replicator.
-+
-+	* port or ports: same as above.
-+
-+* Optional properties for ETM/PTMs:
-+
-+	* arm,cp14: must be present if the system accesses ETM/PTM management
-+	  registers via co-processor 14.
-+
-+	* cpu: the cpu phandle this ETM/PTM is affined to. When omitted the
-+	  source is considered to belong to CPU0.
-+
-+* Optional property for TMC:
-+
-+	* arm,buffer-size: size of contiguous buffer space for TMC ETR
-+	 (embedded trace router)
-+
-+
-+Example:
-+
-+1. Sinks
-+	etb@20010000 {
-+		compatible = "arm,coresight-etb10", "arm,primecell";
-+		reg = <0 0x20010000 0 0x1000>;
-+
-+		coresight-default-sink;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etb_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port0>;
-+			};
-+		};
-+	};
-+
-+	tpiu@20030000 {
-+		compatible = "arm,coresight-tpiu", "arm,primecell";
-+		reg = <0 0x20030000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			tpiu_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port1>;
-+			};
-+		};
-+	};
-+
-+2. Links
-+	replicator {
-+		/* non-configurable replicators don't show up on the
-+		 * AMBA bus.  As such no need to add "arm,primecell".
-+		 */
-+		compatible = "arm,coresight-replicator";
-+		/* this will show up in debugfs as "0.replicator" */
-+		id = <0>;
-+
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* replicator output ports */
-+			port@0 {
-+				reg = <0>;
-+				replicator_out_port0: endpoint {
-+					remote-endpoint = <&etb_in_port>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				replicator_out_port1: endpoint {
-+					remote-endpoint = <&tpiu_in_port>;
-+				};
-+			};
-+
-+			/* replicator input port */
-+			port@2 {
-+				reg = <0>;
-+				replicator_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&funnel_out_port0>;
-+				};
-+			};
-+		};
-+	};
-+
-+	funnel@20040000 {
-+		compatible = "arm,coresight-funnel", "arm,primecell";
-+		reg = <0 0x20040000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* funnel output port */
-+			port@0 {
-+				reg = <0>;
-+				funnel_out_port0: endpoint {
-+					remote-endpoint =
-+							<&replicator_in_port0>;
-+				};
-+			};
-+
-+			/* funnel input ports */
-+			port@1 {
-+				reg = <0>;
-+				funnel_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm0_out_port>;
-+				};
-+			};
-+
-+			port@2 {
-+				reg = <1>;
-+				funnel_in_port1: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm1_out_port>;
-+				};
-+			};
-+
-+			port@3 {
-+				reg = <2>;
-+				funnel_in_port2: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm0_out_port>;
-+				};
-+			};
-+
-+		};
-+	};
-+
-+3. Sources
-+	ptm@2201c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201c000 0 0x1000>;
-+
-+		cpu = <&cpu0>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port0>;
-+			};
-+		};
-+	};
-+
-+	ptm@2201d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201d000 0 0x1000>;
-+
-+		cpu = <&cpu1>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port1>;
-+			};
-+		};
-+	};
 -- 
-1.9.1
-
+Josh
