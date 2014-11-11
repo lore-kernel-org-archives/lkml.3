@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaKKCLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 21:11:03 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24860 "EHLO mga01.intel.com"
+	id S1752015AbaKKCLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 21:11:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:64727 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474AbaKKCKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751316AbaKKCKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Nov 2014 21:10:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="414590913"
+   d="scan'208";a="414590910"
 From: Stephanie Wallick <stephanie.s.wallick@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, "Sean O. Stalley" <sean.stalley@intel.com>
-Subject: [V2 PATCH 04/10] added media agnostic (MA) USB packet handling
-Date: Mon, 10 Nov 2014 18:09:35 -0800
-Message-Id: <1415671781-11351-4-git-send-email-stephanie.s.wallick@intel.com>
+Subject: [V2 PATCH 03/10] added media agnostic (MA) data structures and handling
+Date: Mon, 10 Nov 2014 18:09:34 -0800
+Message-Id: <1415671781-11351-3-git-send-email-stephanie.s.wallick@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415671781-11351-1-git-send-email-stephanie.s.wallick@intel.com>
 References: <MA USB drivers>
@@ -24,30 +24,641 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where we handle MA USB packets. The structure and types of MA USB
-packets are defined in the MA USB specification. When an MA USB driver
-receives a USB packet, it translates it into a MA USB packet (or packets
-if urb exceeds maximum USB packet size). When an MA USB packet is received,
-the data from that packet is given to the waiting USB packet and the USB
-packet is released.
+This is where we create, store and handle endpoint and device structures
+that are specific to the MA USB drivers. Each MA USB structure maps 1:1
+with it's corresponding USB structure (e.g. there is one MA USB endpoint
+per USB endpoint).
 
 Signed-off-by: Sean O. Stalley <sean.stalley@intel.com>
 Signed-off-by: Stephanie Wallick <stephanie.s.wallick@intel.com>
 ---
- drivers/staging/mausb/drivers/mausb_pkt.c | 1038 +++++++++++++++++++++++++++++
- drivers/staging/mausb/drivers/mausb_pkt.h |  914 +++++++++++++++++++++++++
- 2 files changed, 1952 insertions(+)
- create mode 100644 drivers/staging/mausb/drivers/mausb_pkt.c
- create mode 100644 drivers/staging/mausb/drivers/mausb_pkt.h
+ drivers/staging/mausb/drivers/mausb_const.h    | 109 ++++
+ drivers/staging/mausb/drivers/mausb_mem-host.c | 402 ++++++++++++
+ drivers/staging/mausb/drivers/mausb_mem-host.h |  74 +++
+ drivers/staging/mausb/drivers/mausb_mem.c      | 842 +++++++++++++++++++++++++
+ drivers/staging/mausb/drivers/mausb_mem.h      | 509 +++++++++++++++
+ drivers/staging/mausb/drivers/mausb_state.h    | 184 ++++++
+ 6 files changed, 2120 insertions(+)
+ create mode 100755 drivers/staging/mausb/drivers/mausb_const.h
+ create mode 100644 drivers/staging/mausb/drivers/mausb_mem-host.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_mem-host.h
+ create mode 100644 drivers/staging/mausb/drivers/mausb_mem.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_mem.h
+ create mode 100644 drivers/staging/mausb/drivers/mausb_state.h
 
-diff --git a/drivers/staging/mausb/drivers/mausb_pkt.c b/drivers/staging/mausb/drivers/mausb_pkt.c
-new file mode 100644
-index 0000000..c78cfc2
+diff --git a/drivers/staging/mausb/drivers/mausb_const.h b/drivers/staging/mausb/drivers/mausb_const.h
+new file mode 100755
+index 0000000..1089f81
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_pkt.c
-@@ -0,0 +1,1038 @@
-+/* name:	mausb_pkt.c
-+ * description: MA USB packet helper functions
++++ b/drivers/staging/mausb/drivers/mausb_const.h
+@@ -0,0 +1,109 @@
++/* Name:	mausb_const.h
++ * Description: This header describes the Media Agnostic USB constants
++ *              that must be known by the both the host and device side drivers.
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#ifndef __MAUSB_CONST_H
++#define __MAUSB_CONST_H
++
++/* MA USB protocol constants per Table 68 of the MA USB Spec */
++#define MAUSB_DATA_CHANNEL_DELAY	400	/* temp value */
++#define MAUSB_MGMT_CHANNEL_DELAY	((100 * HZ)/1000 + 1)
++#define MAUSB_MGMT_RESPONSE_DELAY	((5 * HZ)/1000 + 1) /* 5 msec */
++#define MAUSB_MGMT_RT_DELAY \
++	((MAUSB_MGMT_RESPONSE_DELAY + (2 * MAUSB_MGMT_CHANNEL_DELAY)))
++#define MAUSB_TRANSFER_RESPONSE_TIME	10	/* 10 msec */
++#define MAUSB_TRANSFER_TIMEOUT \
++	(MAUSB_TRANSFER_RESPONSE_TIME + (2 * MAUSB_DATA_CHANNEL_DELAY))
++#define MAUSB_TRANSFER_KEEP_ALIVE \
++	(MAUSB_TRANSFER_RESPONSE_TIME + MAUSB_DATA_CHANNEL_DELAY)
++#define MAUSB_DEFAULT_KEEP_ALIVE	 0
++#define MAUSB_MAX_TRANSFER_LIFETIME	 1000	/* 1 sec */
++#define MAUSB_TRANSFER_REPEAT_TIME	 10	/* 10 msec */
++
++#define MAUSB_MAX_REQ_ID		 ((1 << 8) - 1)
++#define MAUSB_MAX_SEQ_NUM		 ((1 << 24) - 1)
++#define MAUSB_MAX_DIALOG_TOKEN		 ((1 << 10) - 1)
++#define MAUSB_MIN_CONTROL_BUF_SIZE	 4104	/* Bytes */
++
++
++/* MA USB protocol variables per Table 69 of the MA USB Spec */
++#define MAUSB_BULK_TRANSFER_RETRIES	 10	/* min value is 5 */
++#define MAUSB_CONTROL_TRANSFER_RETRIES	 10	/* min value is 5 */
++#define MAUSB_INTERRUPT_TRANSFER_RETRIES 10	/* min value is 3 */
++#define MAUSB_MGMT_TRANSFER_RETRIES	 4      /* min value is 4 */
++#define MAUSB_TRANSFER_SETUP_RETRIES	 4	/* min value is 4 */
++
++
++/* MA USB constants not explicitly defined in MA USB Spec */
++#define MAUSB_HALF_REQ_ID		 ((MAUSB_MAX_REQ_ID + 1) >> 2)
++#define MAUSB_HALF_SEQ_NUM		 ((MAUSB_MAX_SEQ_NUM + 1) >> 2)
++#define MAUSB_MAX_OUTSTANDING_SEQ_NUM	 (1 << 23)
++
++/* Largest packet size (in bytes) that the medium can handle */
++#define MAUSB_MAX_PACKET_SIZE	300
++
++/* Used to parse get_status control requests */
++#define EP_REQ (USB_TYPE_STANDARD | USB_RECIP_ENDPOINT)
++#define EP_IN_REQ (USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_ENDPOINT)
++#define DEV_IN_REQ (USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE)
++#define INTF_IN_REQ (USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_INTERFACE)
++
++/* Used for generating the mass_id for the device */
++#define MASS_ID_MIN	1
++#define MASS_ID_MAX	254
++
++
++#endif
+diff --git a/drivers/staging/mausb/drivers/mausb_mem-host.c b/drivers/staging/mausb/drivers/mausb_mem-host.c
+new file mode 100644
+index 0000000..7ba0ec5
+--- /dev/null
++++ b/drivers/staging/mausb/drivers/mausb_mem-host.c
+@@ -0,0 +1,402 @@
++/* Name:	mausb_mem-host.c
++ * Description: Contains hostside-specific memory functions, as well as
++ *              wrappers for functions in mausb_mem.c.
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++
++#include <linux/kthread.h>
++
++#include "mausb_hcd.h"
++#include "mausb_mem-host.h"
++#include "mausb_mem.h"
++#include "mausb_tx.h"
++#include "mausb_mgmt.h"
++
++/**
++ * Returns a pointer to the media agnostic data for a given endpoint.
++ */
++struct mausb_host_ep *usb_to_ma_endpoint(struct usb_host_endpoint *ep)
++{
++	return (struct mausb_host_ep *) ep->hcpriv;
++}
++
++/**
++ * Returns the number of urbs currently in the MA USB HCD. Will return 0 if the
++ * MA USB HCD is empty or a negative errno if an error occurs.
++ */
++int mausb_hcd_urb_count(struct mausb_hcd *mhcd)
++{
++	int			count = 0;
++	struct mausb_host_ep	*ma_ep;
++	struct mausb_dev	*mausb_dev;
++	struct mausb_urb	*maurb;
++	unsigned long		irq_flags;
++
++	/* for every device */
++	spin_lock_irqsave(&mhcd->hcd_lock, irq_flags);
++	list_for_each_entry(mausb_dev, &mhcd->ma_dev.dev_list, dev_list) {
++		spin_unlock_irqrestore(&mhcd->hcd_lock, irq_flags);
++
++		/* for every endpoint */
++		spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++		list_for_each_entry(ma_ep, &mausb_dev->ep_list, ep_list) {
++			spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++
++			/* for every urb */
++			spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++			list_for_each_entry(maurb, &ma_ep->urb_list, urb_list) {
++				++count;
++			}
++
++			spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++			spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++		}
++
++		spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++		spin_lock_irqsave(&mhcd->hcd_lock, irq_flags);
++	}
++
++	spin_unlock_irqrestore(&mhcd->hcd_lock, irq_flags);
++
++	return count;
++}
++
++/**
++ * This function removes a device data from the hcd. All endpoints belonging
++ * to this device are also removed from the hcd and released (including EP0).
++ */
++void mausb_free_dev(struct usb_hcd *hcd, struct usb_device *dev)
++{
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct ma_dev		*ma_dev = &mhcd->ma_dev;
++	struct mausb_dev	*mausb_dev = mausb_find_dev_host(ma_dev, dev);
++	struct mausb_host_ep	*ep0 = list_first_entry(&mausb_dev->ep_list,
++					struct mausb_host_ep, ep_list);
++
++	if (NULL == mausb_dev) {
++		mausb_err(mhcd, "%s: USB device #%i not found\n",
++			__func__, dev->devnum);
++		return;
++	}
++
++	ep0->ep_handle_state = MAUSB_EP_HANDLE_INACTIVE;
++
++	/* inactivate EP0 handle */
++	mausb_tx_dev_mgmt_req_ep(EPInactivateReq, &mhcd->ma_dev.mgmt,
++		mausb_dev, true, ep0);
++
++	/* delete remaining EP Handles */
++	mausb_tx_dev_mgmt_req(EPHandleDeleteReq, &mhcd->ma_dev.mgmt,
++		mausb_dev, MAUSB_HOST);
++
++	mausb_tx_dev_mgmt_req(USBDevDisconnectReq, &ma_dev->mgmt,
++		mausb_dev, MAUSB_HOST);
++
++	mausb_internal_free_dev(ma_dev, mausb_dev);
++
++	return;
++}
++
++/*
++ * Adds an endpoint to the specified device.
++ *
++ * This function allocates private endpoint data and adds the given endpoint
++ * to the given device. In the mausb_hcd, devices hold their endpoints in a
++ * linked list.
++ */
++int mausb_add_endpoint(struct usb_hcd *hcd, struct usb_device *dev,
++		struct usb_host_endpoint *ep)
++{
++	int			status;
++	char			*ep_type;
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct ma_dev		*ma_dev = &mhcd->ma_dev;
++	struct mausb_dev	*mausb_dev;
++	struct mausb_ms_drv	*ms_driver = ma_dev->ms_driver;
++	struct mausb_host_ep	*ma_ep;
++
++	/* don't need to do anything for root hub */
++	if ((NULL == dev->parent) && (&dev->ep0 != ep))
++		return 0;
++
++	mausb_dev = mausb_find_dev_host(ma_dev, dev);
++	if (NULL == mausb_dev) {
++		mausb_err(mhcd, "unable to add endpoint: USB device #%i not"
++			" found\n", dev->devnum);
++		return -ENODEV;
++	}
++
++	status = mausb_internal_add_ep(mausb_dev, ep, NULL, &ma_ep,
++		&host_transfer_timeout, GFP_KERNEL);
++
++	if (status < 0) {
++		mausb_err(mhcd, "could not add endpoint: error %i\n", status);
++		return status;
++	}
++
++	/* need ms driver before adding endpoint */
++	if (NULL == ms_driver)
++		return -ENODEV;
++
++	/* for debug messages */
++	switch (usb_endpoint_type(&ep->desc)) {
++	case USB_ENDPOINT_XFER_CONTROL:
++		ep_type = "control";
++		break;
++	case USB_ENDPOINT_XFER_BULK:
++		ep_type = "bulk";
++		break;
++	case USB_ENDPOINT_XFER_INT:
++		ep_type = "interrupt";
++		break;
++	case USB_ENDPOINT_XFER_ISOC:
++		ep_type = "isochronous";
++		break;
++	default:
++		ep_type = "unknown";
++	}
++
++	/* set up control endpoint data channel */
++	if (usb_endpoint_type(&ep->desc) == USB_ENDPOINT_XFER_CONTROL) {
++		status = mausb_add_data_channel(ms_driver, ma_ep,
++			&complete_control_transferRequest);
++	}
++	/* set up bulk IN endpoint data channel */
++	else if (usb_endpoint_type(&ep->desc) == USB_ENDPOINT_XFER_BULK
++		&& usb_endpoint_dir_in(&ep->desc)) {
++		status = mausb_add_data_channel(ms_driver, ma_ep,
++			&complete_IN_transferRequest);
++	}
++	/* set up bulk OUT endpoint data channel */
++	else if (usb_endpoint_type(&ep->desc) == USB_ENDPOINT_XFER_BULK
++		&& usb_endpoint_dir_out(&ep->desc)) {
++		status = mausb_add_data_channel(ms_driver, ma_ep,
++			&complete_OUT_transferRequest);
++	}
++	/* set up an interrupt IN endpoint data channel */
++	else if (usb_endpoint_type(&ep->desc) == USB_ENDPOINT_XFER_INT
++		&& usb_endpoint_dir_in(&ep->desc)) {
++		status = mausb_add_data_channel(ms_driver, ma_ep,
++			&complete_IN_transferRequest);
++	}
++	/* set up an interrupt OUT endpoint data channel */
++	else if (usb_endpoint_type(&ep->desc) == USB_ENDPOINT_XFER_INT
++		&& usb_endpoint_dir_out(&ep->desc)) {
++		status = mausb_add_data_channel(ms_driver, ma_ep,
++			&complete_OUT_transferRequest);
++	} else {
++		mausb_err(mhcd,
++			"%s: attempted to add channel for ep %i of unsupported"
++			" type\n", __func__, usb_endpoint_num(&ep->desc));
++		return -EOPNOTSUPP;
++	}
++
++	if (status < 0) {
++		mausb_err(mhcd, "cannot add %s channel for ep %i: error %i\n",
++			ep_type, usb_endpoint_num(&ep->desc), status);
++		/* cleanup endpoint */
++		mausb_internal_drop_ep(ma_ep);
++	} else {
++		mausb_dbg(mhcd, "%s: added %s channel for ep %i\n", __func__,
++			ep_type, usb_endpoint_num(&ep->desc));
++	}
++
++	return status;
++}
++
++/*
++ * Removes an endpoint from the specified device.
++ *
++ * This function removes the given endpoint from the given device and releases
++ * private endpoint data. In the mausb_hcd, devices hold their endpoints in
++ * a linked list.
++ *
++ * TODO: determine & implement proper behavior when endpoint is not
++ *       associated with given device (or is associated with a different
++ *       device)
++ */
++int mausb_drop_endpoint(struct usb_hcd *hcd, struct usb_device *dev,
++		struct usb_host_endpoint *ep)
++{
++	int			ret = 0;
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct mausb_host_ep	*ma_ep = usb_to_ma_endpoint(ep);
++	struct mausb_dev	*ma_dev;
++	struct mausb_urb	*ma_urb, *next_urb;
++	unsigned long		irq_flags;
++
++	if (NULL == ma_ep) {
++		mausb_err(mhcd, "%s: cannot find data for endpoint at %p\n",
++			__func__, ep);
++		return -ENODEV;
++	}
++
++	ma_dev = ma_ep->mausb_dev;
++
++	mausb_dbg(mhcd, "dropping endpoint at %p to USB device #%i\n", ep,
++		dev->devnum);
++
++	ret = mausb_tx_dev_mgmt_req_ep(CancelTransferReq, &mhcd->ma_dev.mgmt,
++		ma_dev, true, ma_ep);
++
++	ma_ep->ep_handle_state = MAUSB_EP_HANDLE_INACTIVE;
++
++	ret = mausb_tx_dev_mgmt_req_ep(EPInactivateReq, &mhcd->ma_dev.mgmt,
++		ma_dev, true, ma_ep);
++
++	spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++	list_for_each_entry_safe(ma_urb, next_urb, &ma_ep->urb_list, urb_list) {
++
++		mausb_unlink_giveback_urb(ma_urb, -ECONNRESET);
++	}
++
++	if (!list_empty(&ma_ep->urb_list)) {
++		mausb_err(mhcd, "%s: could not drop all urbs for ma_ep at %p\n",
++			__func__, ma_ep->ep);
++	}
++
++	spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++
++	return 0;
++}
++
++/**
++ * This function allocates a new device and adds it onto the MA device's linked
++ * list of usb devices. It also allocates endpoint data for the control
++ * endpoint (EP0).
++ *
++ * Returns 1 on success or 0 on failure.
++ */
++int mausb_alloc_dev(struct usb_hcd *hcd, struct usb_device *dev)
++{
++	int			status = 0;
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct ma_dev		*ma_dev = &mhcd->ma_dev;
++	struct mausb_dev	*mausb_dev;
++
++	mausb_dev = mausb_internal_alloc_dev(ma_dev, dev, NULL);
++	if (NULL == mausb_dev)
++		return 0;
++
++	/* add EP0 */
++	mausb_dbg(mhcd, "%s: adding EP0 . . .\n", __func__);
++	status = mausb_add_endpoint(hcd, dev, &dev->ep0);
++
++	/*
++	 * Don't add send the EP Request yet, usbcore hasn't set
++	 * the ep0 descriptor. Wait until a datapacket is sent.
++	 */
++
++	if (status >= 0)
++		return 1;
++
++	/* TODO: drop endpoint here if failure */
++	mausb_free_dev(hcd, dev);
++	mausb_err(mhcd, "%s: could not add EP0 %i\n", __func__, status);
++	return 0;
++}
++
++/**
++ * USB core calls the HCD's check_bandwidth function immediately after adding
++ * or deleting endpoints.
++ */
++int mausb_check_bandwidth(struct usb_hcd *hcd, struct usb_device *dev)
++{
++	int			status;
++	struct mausb_hcd	*mhcd = usb_hcd_to_mausb_hcd(hcd);
++	struct ma_dev		*ma_dev = &mhcd->ma_dev;
++	struct mausb_dev	*mausb_dev = mausb_find_dev_host(ma_dev, dev);
++
++	/* don't do anything if roothub */
++	if (NULL == dev->parent)
++		return 0;
++
++	if (NULL == mausb_dev) {
++		mausb_err(mhcd, "%s: could not find data for USB device #%i\n",
++			__func__, dev->devnum);
++		return -ENODEV;
++	}
++
++	/* delete the old endpoints (if applicable) */
++	status = mausb_tx_dev_mgmt_req(EPHandleDeleteReq, &ma_dev->mgmt,
++					mausb_dev, MAUSB_HOST);
++
++	/* TODO: error checking (suppose the EPHandleDelete fails...) */
++
++	/* add the new endpoints (if applicable) */
++	status = mausb_tx_dev_mgmt_req(EPHandleReq, &ma_dev->mgmt, mausb_dev,
++		MAUSB_HOST);
++
++	if (-ENODEV == status) /* no endpoints were applicable */
++		status = 0;
++
++	return status;
++}
++
++/**
++ * This function will be called if mausb_add_endpoint(), mausb_drop_ep(),
++ * or mausb_check_bandwidth returns with an error. It is supposed to revert
++ * a device to a previously good schedule. We assume any schedule will work,
++ * so we should, in theory, never have to revert to a previous schedule.
++ */
++void mausb_reset_bandwidth(struct usb_hcd *hcd, struct usb_device *dev)
++{
++	mausb_dbg(usb_hcd_to_mausb_hcd(hcd),
++		"resetting bandwidth for USB edvice #%i\n", dev->devnum);
++	return;
++}
++
+diff --git a/drivers/staging/mausb/drivers/mausb_mem-host.h b/drivers/staging/mausb/drivers/mausb_mem-host.h
+new file mode 100644
+index 0000000..9df6c1f
+--- /dev/null
++++ b/drivers/staging/mausb/drivers/mausb_mem-host.h
+@@ -0,0 +1,74 @@
++/* Name:	mausb_mem-host.h
++ * Description: header for mausb_mem-host.c
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#ifndef __MAUSB_MEM_HOST_H
++#define __MAUSB_MEM_HOST_H
++
++/* endpoint/device helper functions */
++struct mausb_host_ep *usb_to_ma_endpoint(struct usb_host_endpoint *ep);
++int mausb_hcd_urb_count(struct mausb_hcd *mhcd);
++
++/* USB core interfaces */
++int mausb_alloc_dev(struct usb_hcd *hcd, struct usb_device *dev);
++void mausb_free_dev(struct usb_hcd *hcd, struct usb_device *dev);
++int mausb_add_endpoint(struct usb_hcd *hcd, struct usb_device *dev,
++		struct usb_host_endpoint *ep);
++int mausb_drop_endpoint(struct usb_hcd *hcd, struct usb_device *dev,
++		struct usb_host_endpoint *ep);
++int mausb_check_bandwidth(struct usb_hcd *hcd, struct usb_device *dev);
++void mausb_reset_bandwidth(struct usb_hcd *hcd, struct usb_device *dev);
++
++#endif
+diff --git a/drivers/staging/mausb/drivers/mausb_mem.c b/drivers/staging/mausb/drivers/mausb_mem.c
+new file mode 100644
+index 0000000..e378e2d
+--- /dev/null
++++ b/drivers/staging/mausb/drivers/mausb_mem.c
+@@ -0,0 +1,842 @@
++/* Name:	mausb_mem.c
++ * Description: Handles all of the dynamic data structures for the host
++ *              controller, including any data that needs to exist
++ *              on a per-device, per-endpoint, or per-transfer basis.
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -103,995 +714,798 @@ index 0000000..c78cfc2
 + */
 +
 +#include <linux/slab.h>
-+#include <linux/usb/ch9.h>
 +#include <linux/usb.h>
++#include <linux/kthread.h>
 +
 +#include "mausb_mem.h"
++#include "mausb_mgmt.h"
++#include "mausb_tx.h"
 +#include "mausb_pkt.h"
 +#include "mausb_const.h"
++#include "mausb_hcd.h"
 +
-+/**
-+ * Translates numerical packet type into corresponding string (for printing).
-+ */
-+const char *mausb_type_to_string(enum mausb_pkt_type type)
++struct mausb_host_ep *mausb_state_to_ep(struct mausb_ep_state *state)
 +{
-+	switch (type) {
-+	case CapReq:
-+		return "CapReq";
-+	case CapResp:
-+		return "CapResp";
-+	case USBDevHandleReq:
-+		return "USBDevHandleReq";
-+	case USBDevHandleResp:
-+		return "USBDevHandleResp";
-+	case EPHandleReq:
-+		return "EPHandleReq";
-+	case EPHandleResp:
-+		return "EPHandleResp";
-+	case EPActivateReq:
-+		return "EPActivateReq";
-+	case EPActivateResp:
-+		return "EPActivateResp";
-+	case EPInactivateReq:
-+		return "EPInactivateReq";
-+	case EPInactivateResp:
-+		return "EPInactivateResp";
-+	case EPResetReq:
-+		return "EPResetReq";
-+	case EPResetResp:
-+		return "EPResetResp";
-+	case EPClearTransferReq:
-+		return "EPClearTransferReq";
-+	case EPClearTransferResp:
-+		return "EPClearTransferResp";
-+	case EPHandleDeleteReq:
-+		return "EPHandleDeleteReq";
-+	case EPHandleDeleteResp:
-+		return "EPHandleDeleteResp";
-+	case DevResetReq:
-+		return "DevResetReq";
-+	case DevResetResp:
-+		return "DevResetResp";
-+	case ModifyEP0Req:
-+		return "ModifyEP0Req";
-+	case ModifyEP0Resp:
-+		return "ModifyEP0Resp";
-+	case SetUSBDevAddrReq:
-+		return "SetUSBDevAddrReq";
-+	case SetUSBDevAddrResp:
-+		return "SetUSBDevAddrResp";
-+	case UpdateDevReq:
-+		return "UpdateDevReq";
-+	case UpdateDevResp:
-+		return "UpdateDevResp";
-+	case USBDevDisconnectReq:
-+		return "USBDevDisconnectReq";
-+	case USBDevDisconnectResp:
-+		return "USBDevDisconnectResp";
-+	case USBSuspendReq:
-+		return "USBSuspendReq";
-+	case USBSuspendResp:
-+		return "USBSuspendResp";
-+	case USBResumeReq:
-+		return "USBResumeReq";
-+	case USBResumeResp:
-+		return "USBResumeResp";
-+	case RemoteWakeReq:
-+		return "RemoteWakeReq";
-+	case RemoteWakeResp:
-+		return "RemoteWakeResp";
-+	case PingReq:
-+		return "PingReq";
-+	case PingResp:
-+		return "PingResp";
-+	case DevDisconnectReq:
-+		return "DevDisconnectReq";
-+	case DevDisconnectResp:
-+		return "DevDisconnectResp";
-+	case DevInitDisconnectReq:
-+		return "DevInitDisconnectReq";
-+	case DevInitDisconnectResp:
-+		return "DevInitDisconnectResp";
-+	case SyncReq:
-+		return "SyncReq";
-+	case SyncResp:
-+		return "SyncResp";
-+	case CancelTransferReq:
-+		return "CancelTransferReq";
-+	case CancelTransferResp:
-+		return "CancelTransferResp";
-+	case EPOpenStreamReq:
-+		return "EPOpenStreamReq";
-+	case EPOpenStreamResp:
-+		return "EPOpenStreamResp";
-+	case EPCloseStreamReq:
-+		return "EPCloseStreamReq";
-+	case EPCloseStreamResp:
-+		return "EPCloseStreamResp";
-+	case USBDevResetReq:
-+		return "USBDevResetReq";
-+	case USBDevResetResp:
-+		return "USBDevResetResp";
-+	case DevNotificationReq:
-+		return "DevNotificationReq";
-+	case DevNotificationResp:
-+		return "DevNotificationResp";
-+	case EPSetKeepAliveReq:
-+		return "EPSetKeepAliveReq";
-+	case EPSetKeepAliveResp:
-+		return "EPSetKeepAliveResp";
-+	case GetPortBWReq:
-+		return "GetPortBWReq";
-+	case GetPortBWResp:
-+		return "GetPortBWResp";
-+	case SleepReq:
-+		return "SleepReq";
-+	case SleepResp:
-+		return "SleepResp";
-+	case WakeReq:
-+		return "WakeReq";
-+	case WakeResp:
-+		return "WakeResp";
-+	case VendorSpecificReq:
-+		return "VendorSpecificReq";
-+	case VendorSpecificResp:
-+		return "VendorSpecificResp";
-+	case TransferSetupReq:
-+		return "TransferSetupReq";
-+	case TransferSetupResp:
-+		return "TransferSetupResp";
-+	case TransferTearDownConf:
-+		return "TransferTearDownConf";
-+	case TransferReq:
-+		return "TransferReq";
-+	case TransferResp:
-+		return "TransferResp";
-+	case TransferAck:
-+		return "TransferAck";
-+	case IsochTransferReq:
-+		return "IsochTransferReq";
-+	case IsochTransferResp:
-+		return "IsochTransferResp";
-+	}
-+
-+	return "unknown";
++	return container_of(state, struct mausb_host_ep, state);
 +}
-+EXPORT_SYMBOL(mausb_type_to_string);
++EXPORT_SYMBOL(mausb_state_to_ep);
 +
-+/**
-+ * Translates a negative errno to a MAUSB status. Returns a packet status value.
-+ */
-+enum mausb_pkt_status mausb_errno_to_ma_status(int errno)
++struct mausb_hcd *mausb_host_ep_to_mahcd(struct mausb_host_ep *ep)
 +{
-+	switch (errno) {
-+	case 0: /* no error */
-+		return SUCCESS;
-+	case -EINPROGRESS:
-+		return TRANSFER_PENDING;
-+	case -ESTRPIPE:
-+		return TRANSFER_EP_STALL;
-+	/* TODO: map all relevant ma status' */
-+	default:
-+		return UNSUCCESSFUL;
-+	} /* end switch */
-+
++	return ep->mausb_dev->ma_dev->mhcd;
 +}
-+EXPORT_SYMBOL(mausb_errno_to_ma_status);
++EXPORT_SYMBOL(mausb_host_ep_to_mahcd);
 +
-+/**
-+ * Translates an URB status to a MAUSB status
-+ */
-+int mausb_to_urb_status(enum mausb_pkt_status pkt_status)
++struct mausb_udc *mausb_host_ep_to_maudc(struct mausb_host_ep *ep)
 +{
-+	switch (pkt_status) {
-+	case SUCCESS: /* no error */
-+		return 0;
-+	case TRANSFER_PENDING:
-+		return -EINPROGRESS;
-+	case TRANSFER_EP_STALL:
-+		return -ESTRPIPE;
-+	/* TODO: map all relevant urb statuses */
-+	default:
-+		return -EIO; /* generic I/O error */
-+	} /* end switch */
-+
++	return ep->mausb_dev->ma_dev->maudc;
 +}
-+EXPORT_SYMBOL(mausb_to_urb_status);
++EXPORT_SYMBOL(mausb_host_ep_to_maudc);
 +
-+/**
-+ * Determines if the packet is a response packet. Returns true if the packet is
-+ * a response packet. Returns false otherwise.
-+ */
-+bool mausb_pkt_resp(struct mausb_pkt *pkt)
++struct ma_dev *context_to_ma_dev(void *context)
 +{
-+	return pkt->common->pkt_type & MAUSB_PKT_RESP_FLAG;
++	return (struct ma_dev *) context;
 +}
 +
-+/**
-+ * Determines if a given packet is a management packet.
-+ */
-+static bool mausb_pkt_is_mgmt(struct mausb_pkt_common *common)
-+{
-+	if ((common->pkt_type & MAUSB_PKT_TYPE_MASK) == MAUSB_PKT_TYPE_MGMT)
-+		return true;
-+	else
-+		return false;
-+}
-+
-+
-+/**
-+ * Returns the sum of the sequnce number & the value added. Handles sequence
-+ * number wraparound.
-+ */
-+u32 mausb_seq_num_add(u32 seq_num, int val)
-+{
-+	return (seq_num + val) % (MAUSB_MAX_SEQ_NUM + 1);
-+}
-+EXPORT_SYMBOL(mausb_seq_num_add);
-+
-+/**
-+ * Increments a sequence number value by one.
-+ */
-+void mausb_increment_seq_num(u32 *seq_num)
-+{
-+	*seq_num = mausb_seq_num_add(*seq_num, 1);
-+}
-+
-+/**
-+ * Compares two sequence numbers. Returns true if a is less than b.
-+ * Handles sequence number wraparound.
-+ */
-+bool mausb_seq_num_lt(u32 a, u32 b)
-+{
-+
-+	if (a > MAUSB_MAX_SEQ_NUM || b > MAUSB_MAX_SEQ_NUM) {
-+		mapkt_warn("%s: input out of range\n", __func__);
-+		return false;
-+	}
-+
-+	if (b < MAUSB_HALF_SEQ_NUM) { /* b is in the lower half */
-+
-+		if ((b > a) || ((b + MAUSB_HALF_SEQ_NUM) < a))
-+			return true;
-+		else
-+			return false;
-+
-+	} else { /* b is in the upper half */
-+
-+		if ((b > a) && (b - MAUSB_HALF_SEQ_NUM) < a)
-+			return true;
-+		else
-+			return false;
-+	}
-+
-+	/* we should never get here */
-+	BUG();
-+	return false;
-+}
-+EXPORT_SYMBOL(mausb_seq_num_lt);
-+
-+/**
-+ * Sequence number less than or equal to.
-+ */
-+bool mausb_seq_num_lt_eq(u32 a, u32 b)
-+{
-+	return mausb_seq_num_lt(b, a) ? false : true;
-+}
-+
-+/**
-+ * Sequence number greater than or equal to.
-+ */
-+bool mausb_seq_num_gt_eq(u32 a, u32 b)
-+{
-+	return mausb_seq_num_lt(a, b) ? false : true;
-+}
-+
-+/**
-+ * Sequence number greater than.
-+ */
-+bool mausb_seq_num_gt(u32 a, u32 b)
-+{
-+	return mausb_seq_num_lt(b, a);
-+}
-+EXPORT_SYMBOL(mausb_seq_num_gt);
-+
-+/**
-+ * Returns the sum of the request id and the value added. Handles request id
-+ * wraparound.
-+ */
-+u8 mausb_req_id_add(u8 req_id, int val)
-+{
-+	return (req_id + val) % (MAUSB_MAX_REQ_ID + 1);
-+}
-+EXPORT_SYMBOL(mausb_req_id_add);
-+
-+/**
-+ * Compares 2 request IDs. Returns true if a is less than b. Handles request id
-+ * wraparound.
-+ */
-+bool mausb_req_id_lt(u8 a, u8 b)
-+{
-+
-+	if (a > MAUSB_MAX_REQ_ID || b > MAUSB_MAX_REQ_ID) {
-+		mapkt_warn("%s: input out of range\n", __func__);
-+		return false;
-+	}
-+
-+	if (b < MAUSB_HALF_REQ_ID) { /* b is in the lower half */
-+
-+		if ((b > a) || ((b + MAUSB_HALF_REQ_ID) < a))
-+			return true;
-+		else
-+			return false;
-+
-+	} else { /* b is in the upper half */
-+
-+		if ((b > a) && (b - MAUSB_HALF_REQ_ID) < a)
-+			return true;
-+		else
-+			return false;
-+	}
-+
-+	/* we should never get here */
-+	BUG();
-+	return false;
-+}
-+EXPORT_SYMBOL(mausb_req_id_lt);
-+
-+bool mausb_req_id_gt(u8 a, u8 b)
-+{
-+	return mausb_req_id_lt(b, a);
-+}
-+
-+bool mausb_req_id_gt_eq(u8 a, u8 b)
-+{
-+	return mausb_req_id_lt(a, b) ? false : true;
-+}
-+EXPORT_SYMBOL(mausb_req_id_gt_eq);
-+
-+/**
-+ * Finds an endpoint descriptor inside of an endpoint handle request
-+ */
-+struct usb_endpoint_descriptor *mausb_ep_handle_req_get_ep_des(
-+	struct mausb_EPHandleReq_flds *req, int i)
-+{
-+
-+	if (i >= le32_to_cpu(req->num_ep_des)) {
-+		mapkt_warn("%s: endpoint descriptor not in packet\n", __func__);
-+		return NULL;
-+	}
-+
-+	if (MAUSB_EP_REQ_SIZE == le32_to_cpu(req->size_ep_des)) {
-+		return (struct usb_endpoint_descriptor *)
-+					&req->ep_des[i].ep_des;
-+
-+	} else if (MAUSB_SS_EP_REQ_SIZE == le32_to_cpu(req->size_ep_des)) {
-+		return (struct usb_endpoint_descriptor *)
-+					 &req->ss_ep_des[i].ep_des;
-+
-+	} else {
-+		mapkt_err("%s: unsupported size_ep_des value (%u)\n",
-+			  __func__, le32_to_cpu(req->size_ep_des));
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(mausb_ep_handle_req_get_ep_des);
-+
-+static struct mausb_pkt_common *mausb_header_from_ms_pkt(struct ms_pkt *pkt)
-+{
-+	struct mausb_pkt_common *header;
-+
-+	if (pkt->kvec[0].iov_len < sizeof(*header)) {
-+		mapkt_err("%s: first entry too small for header\n", __func__);
-+		header = NULL;
-+	} else
-+		header = pkt->kvec[0].iov_base;
-+
-+	return header;
-+}
-+
-+/**
-+ * Accepts an MA USB packet for the MA device and forwards it to the correct
-+ * handler based on packet type and endpoint/device handle.
-+ */
-+int mausb_pkt_dmux(struct ms_pkt *pkt, void *context)
-+{
-+	int				ret = -EINVAL;
-+	struct mausb_pkt_common		*header = mausb_header_from_ms_pkt(pkt);
-+	struct ma_dev			*ma_dev = context_to_ma_dev(context);
-+	struct mausb_host_ep		*ma_ep = NULL;
-+	struct mausb_pkt_transfer	*transfer = NULL;
-+
-+	if (mausb_pkt_is_mgmt(header)) {
-+		transfer = &ma_dev->mgmt.tx_pair.to_ma;
-+
-+	} else {
-+		/* otherwise, find the endpoint it belongs to */
-+		ma_ep = mausb_find_ep_from_handle(header->ep_handle,
-+			ma_dev);
-+
-+		if (NULL != ma_ep)
-+			transfer = &ma_ep->tx_pair.to_ma;
-+	}
-+
-+	if (NULL != transfer)
-+		ret = transfer->transfer_packet(pkt, transfer->context);
-+
-+	return ret;
-+}
-+
-+/**
-+ * Packet destructor for packets generated by the MA driver. For packets that we
-+ * have created, we want to free the header but not the data buffers (since the
-+ * buffers belong to the URB).
-+ */
-+static void mausb_pkt_destructor(struct ms_pkt *ms_pkt)
-+{
-+	struct mausb_pkt *ma_pkt = ms_pkt_to_mausb_pkt(ms_pkt);
-+
-+	kfree(ma_pkt->common);
-+
-+	return;
-+}
-+
-+/**
-+ * Allocates space for given packet type.
-+ */
-+struct mausb_pkt *mausb_alloc_pkt(enum mausb_pkt_type pkt_type, int *status,
-+		gfp_t memflags)
-+{
-+	int			size;
-+	int			ret = 0;
-+	struct mausb_pkt	*pkt;
-+
-+	/* determine header length */
-+	switch (pkt_type & MAUSB_PKT_TYPE_MASK) {
-+
-+	case MAUSB_PKT_TYPE_MGMT:
-+		size = sizeof(struct mausb_mgmt_pkt);
-+		break;
-+	case MAUSB_PKT_TYPE_CTRL:
-+		size = sizeof(struct mausb_ctrl_pkt);
-+		break;
-+	case MAUSB_PKT_TYPE_DATA:
-+		size = sizeof(struct mausb_iso_dph);
-+		break;
-+	default:
-+		mapkt_err("%s: could not determine packet type\n", __func__);
-+		if (NULL != status)
-+			*status = -EINVAL;
-+		return NULL;
-+	}
-+
-+	pkt = kzalloc(sizeof(struct mausb_pkt), memflags);
-+	if (NULL == pkt) {
-+		ret = -ENOMEM;
-+		pkt = NULL;
-+	} else {
-+		pkt->common = kzalloc(size, memflags);
-+		if (NULL == pkt->common) {
-+			mapkt_err("could not allocate memory for MA USB"
-+				" packet header of length %i\n", size);
-+			kfree(pkt);
-+			ret = -ENOMEM;
-+			pkt = NULL;
-+		}
-+
-+		pkt->ms_pkt_destructor = &mausb_pkt_destructor;
-+		pkt->orig_pkt = &pkt->pkt;
-+	}
-+
-+	if (NULL != status)
-+		*status = ret;
-+
-+	return pkt;
-+}
-+
-+/**
-+ * Deletes the given data packet
-+ */
-+void mausb_free_pkt(struct mausb_pkt *pkt)
-+{
-+	/* kill the buffers (when necessary) */
-+	pkt->ms_pkt_destructor(pkt->orig_pkt);
-+	kfree(pkt);
-+}
-+EXPORT_SYMBOL(mausb_free_pkt);
-+
-+/**
-+ * Returns the length of the header or a negative errno.
-+ */
-+int mausb_pkt_header_length(struct mausb_pkt_common *header)
-+{
-+	int length;
-+
-+	switch (header->pkt_type & MAUSB_PKT_TYPE_MASK) {
-+
-+	case MAUSB_PKT_TYPE_MGMT:
-+	case MAUSB_PKT_TYPE_CTRL:
-+		length = le16_to_cpu(header->length);
-+		break;
-+	case MAUSB_PKT_TYPE_DATA:
-+		length = sizeof(struct mausb_dph);
-+		break;
-+	default:
-+		mapkt_err("%s:invalid packet type\n", __func__);
-+		length = -EINVAL;
-+		break;
-+	}
-+
-+	return length;
-+}
-+EXPORT_SYMBOL(mausb_pkt_header_length);
-+
-+/**
-+ * Returns a pointer to a buffer of specified length that is
-+ * found offset a given number of bytes into the ms_pkt.
++/*
++ * Finds the media-agnostic data for a given device.
 + *
-+ * If a contigious buffer can be found, this function returns
-+ * the virtual address of this buffer. otherwise, it returns null
++ * @ma_dev:	The MA USB device the USB device is located behind.
++ * @dev:	The USB device to find.
++ * @handle:	The MA USB device handle of USB device to find.
++ * @gadget:	The USB gadget device to find.
++ *
++ * Returns a pointer to the media agnostic data for a USB device given one or
++ * more parameters. Returns NULL if the device cannot be found.
 + */
-+static void *mausb_get_buf_from_ms_pkt(struct ms_pkt *pkt,
-+		int offset, int buf_length)
++struct mausb_dev *mausb_find_dev(struct ma_dev *ma_dev,
++		struct usb_device *dev, unsigned long *handle,
++		struct usb_gadget *gadget)
 +{
-+	int		i;
-+	int		page_offset = offset;
-+	char		*ret = NULL;
-+	struct kvec	*current_kvec;
++	struct mausb_dev *mausb_dev;
++	unsigned long irq_flags;
 +
-+	for (i = 0; i < pkt->nents; ++i) {
-+		current_kvec = &pkt->kvec[i];
++	spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++	list_for_each_entry(mausb_dev, &ma_dev->dev_list, dev_list) {
 +
-+		/* if the buffer is in this kvec entry */
-+		if (page_offset < current_kvec->iov_len) {
-+
-+			/* and the whole buffer is in current_kvec */
-+			if (page_offset + buf_length <= current_kvec->iov_len) {
-+				ret = (char *) current_kvec->iov_base;
-+				ret += page_offset;
-+			}
-+
-+			return ret;
++		/* if found */
++		if ((NULL != dev && mausb_dev->dev == dev) ||
++			(NULL != gadget && mausb_dev->gadget == gadget) ||
++			(NULL != handle && mausb_dev->dev_handle == *handle)) {
++			spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++			return mausb_dev;
 +		}
-+
-+		page_offset -= current_kvec->iov_len;
 +	}
++	spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
 +
-+	if (0 != page_offset) {
-+		mapkt_err("%s: offset of %i Bytes is greater than packet"
-+			" length\n", __func__, page_offset);
-+	}
++	/* device not found */
 +	return NULL;
 +}
 +
-+bool mausb_pkt_has_setup_data(struct mausb_dph *header)
++struct mausb_dev *mausb_find_dev_host(struct ma_dev *ma_dev,
++		struct usb_device *dev)
 +{
-+	/*
-+	 * Only control transfer requests with sequence number 0 should have
-+	 * setup data - nothing else should ever carry setup data.
-+	 */
-+	if (header->common.pkt_type == TransferReq) {
-+		if ((header->eps_tflags & MAUSB_PKT_TFLAG_TYPE_MASK)
-+			== MAUSB_PKT_TFLAG_TYPE_CTRL
-+			&& le32_to_cpu(header->seq_num) == 0)
-+			return true;
-+	}
-+
-+	return false;
++	return mausb_find_dev(ma_dev, dev, NULL, NULL);
 +}
-+EXPORT_SYMBOL(mausb_pkt_has_setup_data);
++EXPORT_SYMBOL(mausb_find_dev_host);
 +
 +/**
-+ * Gets an mausb_pkt structure from a given ms_pkt structure.
++ * Returns true if usb_endpoint descriptors are the same.
++ */
++static bool mausb_ep_desc_eq(const struct usb_endpoint_descriptor *desc1,
++		const struct usb_endpoint_descriptor *desc2)
++{
++	return ((desc1->bLength == desc2->bLength)
++		&& (desc1->bDescriptorType  == desc2->bDescriptorType)
++		&& (desc1->bEndpointAddress == desc2->bEndpointAddress)
++		&& (desc1->bmAttributes     == desc2->bmAttributes)
++		&& (desc1->wMaxPacketSize   == desc2->wMaxPacketSize));
++}
++
++/**
++ * Finds the media agnostic data for an endpoint given one or more parameters.
 + *
-+ * can only be used if this driver created the packet i.e. if you just received
-+ * an ms_pkt from another machine, it will not be part of a mausb_pkt.
++ * @ep:			USB host endpoint to find MA USB endpoint for.
++ * @dev_ep:		USB device endpoint to find MA USB endpoint for.
++ * @handle:		Endpoint handle of MA USB endpoint.
++ * @mausb_dev:		The MA USB device the endpoint belongs to.
++ * @ep_desc:		endpoint descriptor for USB endpoint.
++ * @address:		MA USB endpoint address.
++ *
++ * Returns a pointer to the media agnostic data for the endpoint or NULL if
++ * the device cannot be found.
 + */
-+struct mausb_pkt *ms_pkt_to_mausb_pkt(struct ms_pkt *ms_pkt)
++static struct mausb_host_ep *mausb_find_ep(struct usb_host_endpoint *ep,
++		struct usb_ep *dev_ep, struct mausb_ep_handle *handle,
++		struct mausb_dev *mausb_dev,
++		const struct usb_endpoint_descriptor *ep_desc,
++		u8 address)
 +{
-+	return container_of(ms_pkt, struct mausb_pkt, pkt);
++	struct mausb_host_ep *ma_ep;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	list_for_each_entry(ma_ep, &mausb_dev->ep_list, ep_list) {
++
++		/* if found */
++		if ((NULL != dev_ep && ma_ep->dev_ep == dev_ep) ||
++			(NULL != ep && ma_ep->ep == ep) ||
++			(NULL != handle
++			 && ma_ep->ep_handle_state != MAUSB_EP_HANDLE_UNASSIGNED
++			 && ma_ep->ep_handle.handle == handle->handle) ||
++			(NULL != ep_desc && NULL != ma_ep->ep
++			 && mausb_ep_desc_eq(ep_desc, &ma_ep->ep->desc)) ||
++			(NULL != ep_desc && NULL != ma_ep->dev_ep &&
++			 NULL != ma_ep->dev_ep->desc
++			 && mausb_ep_desc_eq(ep_desc, ma_ep->dev_ep->desc)) ||
++			(address != 0 && NULL != ma_ep->dev_ep &&
++			 address == ma_ep->dev_ep->address)) {
++
++			spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++			return ma_ep;
++		}
++	}
++
++	spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++
++	/* endpoint not found */
++	return NULL;
++}
++
++struct mausb_host_ep *mausb_find_ep_dev(struct usb_ep *dev_ep,
++			struct mausb_dev *mausb_dev)
++{
++	return mausb_find_ep(NULL, dev_ep, NULL, mausb_dev, NULL, 0);
++}
++EXPORT_SYMBOL(mausb_find_ep_dev);
++
++struct mausb_host_ep *mausb_find_ep_host(struct usb_host_endpoint *ep,
++	struct mausb_dev *mausb_dev)
++{
++	return mausb_find_ep(ep, NULL, NULL, mausb_dev, NULL, 0);
++}
++EXPORT_SYMBOL(mausb_find_ep_host);
++
++struct mausb_host_ep *mausb_find_ep_by_desc(
++	const struct usb_endpoint_descriptor *ep_desc,
++	struct mausb_dev *mausb_dev)
++
++{
++	return mausb_find_ep(NULL, NULL, NULL, mausb_dev, ep_desc, 0);
++}
++EXPORT_SYMBOL(mausb_find_ep_by_desc);
++
++struct mausb_host_ep *mausb_find_ep_by_handle(struct mausb_ep_handle *handle,
++	struct mausb_dev *mausb_dev)
++{
++	return mausb_find_ep(NULL, NULL, handle, mausb_dev, NULL, 0);
++}
++EXPORT_SYMBOL(mausb_find_ep_by_handle);
++
++struct mausb_host_ep *mausb_find_ep_by_address(u8 address,
++	struct mausb_dev *mausb_dev)
++
++{
++	return mausb_find_ep(NULL, NULL, NULL, mausb_dev, NULL, address);
++}
++EXPORT_SYMBOL(mausb_find_ep_by_address);
++
++struct mausb_host_ep *mausb_find_ep_from_handle(struct mausb_ep_handle handle,
++	struct ma_dev *ma_dev)
++{
++	struct mausb_host_ep *ma_ep;
++	struct mausb_dev *mausb_dev;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++	list_for_each_entry(mausb_dev, &ma_dev->dev_list, dev_list) {
++		spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++
++		ma_ep = mausb_find_ep_by_handle(&handle, mausb_dev);
++		if (ma_ep != NULL)
++			return ma_ep;
++
++		spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++	}
++	spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++
++	return NULL;
 +}
 +
 +/**
-+ * Creates a mausb_pkt structure from a given ms_pkt structure. Used for parsing
-+ * incoming packets.
++ * Wrapper function to be used by devices when they want to generate an
++ * ma packet.
 + */
-+struct mausb_pkt *mausb_pkt_from_ms_pkt(struct ms_pkt *ms_pkt,
-+	void (*ms_pkt_destructor)(struct ms_pkt *ms_pkt), gfp_t mem_flags)
++struct mausb_pkt *mausb_pkt_from_ms_pkt_ma_dev(struct ms_pkt *ms_pkt,
++	struct ma_dev *ma_dev, gfp_t mem_flags)
 +{
-+	struct mausb_pkt	*pkt;
-+	int			current_offset;
-+	int			packet_length;
-+
-+	pkt = kzalloc(sizeof(struct mausb_pkt), mem_flags);
-+	if (NULL == pkt)
-+		return NULL;
-+
-+	pkt->pkt = *ms_pkt;
-+	pkt->orig_pkt = ms_pkt;
-+	pkt->ms_pkt_destructor = ms_pkt_destructor;
-+
-+	/* the first portion is always the header */
-+	pkt->common = mausb_header_from_ms_pkt(ms_pkt);
-+	current_offset = mausb_pkt_header_length(pkt->common);
-+	packet_length = pkt->common->length;
-+
-+	/* checks to see if header is contigious */
-+	if (NULL == mausb_get_buf_from_ms_pkt(ms_pkt, 0, current_offset)) {
-+
-+		mapkt_err("%s: packet header bigger than entry (header is %i"
-+			" bytes)\n", __func__, current_offset);
-+		kfree(pkt);
-+		return NULL;
-+	}
-+
-+	/*
-+	 * NOTE: Currently control and management packets must be contigious.
-+	 *       data packet headers must also be contigious.
-+	 *       (ie: the data must all be in 1 ms_pkt entry).
-+	 *
-+	 * TODO: handle when a control/management is in more than 1
-+	 *       kvec entry
-+	 */
-+
-+	if (MAUSB_PKT_TYPE_DATA ==
-+		(pkt->common->pkt_type & MAUSB_PKT_TYPE_MASK)) {
-+
-+		if (mausb_pkt_has_setup_data(pkt->data)) {
-+			pkt->setup = mausb_get_buf_from_ms_pkt(ms_pkt,
-+				current_offset, sizeof(*pkt->setup));
-+
-+			if (NULL == pkt->setup) {
-+				mapkt_err("%s: could not get setup data\n",
-+					__func__);
-+			} else {
-+				current_offset += sizeof(*pkt->setup);
-+			}
-+		}
-+
-+		if (packet_length > current_offset) {
-+			pkt->buffer = mausb_get_buf_from_ms_pkt(ms_pkt,
-+				current_offset, packet_length - current_offset);
-+
-+			/*
-+			 * if the remaining data was contigious, treat it as a
-+			 * buffer
-+			 */
-+			if (NULL != pkt->buffer) {
-+				pkt->buffer_length =
-+					packet_length - current_offset;
-+				current_offset += pkt->buffer_length;
-+			}
-+
-+		} else if (packet_length < current_offset) {
-+			mapkt_dbg("%s: packet_length:%i, current_offset:%i\n",
-+				__func__, packet_length, current_offset);
-+		}
-+	}
-+
-+	/* checks to see if there is data after packet */
-+	if (NULL != mausb_get_buf_from_ms_pkt(ms_pkt, current_offset, 0))
-+		mapkt_warn("%s: Warning: data exists after packet\n", __func__);
-+
-+	return pkt;
-+
++	return mausb_pkt_from_ms_pkt(ms_pkt,
++			ma_dev->ms_driver->ops->pkt_destructor, mem_flags);
 +}
-+EXPORT_SYMBOL(mausb_pkt_from_ms_pkt);
++EXPORT_SYMBOL(mausb_pkt_from_ms_pkt_ma_dev);
 +
 +/**
-+ * Fills the ms_pkt of a given mausb_pkt based on fields in the mausb_pkt struct.
++ * Wrapper to be used by endpoints when they want to generate an ma packet.
 + */
-+int mausb_pkt_fill_ms_pkt(struct mausb_pkt *pkt, gfp_t mem_flags)
++struct mausb_pkt *mausb_pkt_from_ms_pkt_ep(struct ms_pkt *ms_pkt,
++	struct mausb_host_ep *ep, gfp_t mem_flags)
 +{
-+	struct ms_pkt		*ms_pkt = &pkt->pkt;
-+	unsigned int		ent_length;
++	return mausb_pkt_from_ms_pkt_ma_dev(ms_pkt, ep->mausb_dev->ma_dev,
++		mem_flags);
++}
++EXPORT_SYMBOL(mausb_pkt_from_ms_pkt_ep);
 +
-+	ms_pkt->nents = 0;
++const struct usb_endpoint_descriptor *mausb_get_ep_des(
++		struct mausb_host_ep *ma_ep)
++{
++	if ((NULL != ma_ep->ep && NULL != ma_ep->dev_ep) ||
++	    (NULL == ma_ep->ep && NULL == ma_ep->dev_ep)) {
 +
-+	if (NULL != pkt->common) {
-+		/* add the header */
-+		ent_length = mausb_pkt_header_length(pkt->common);
-+		if (0 >= ent_length) {
-+			return -EINVAL;
-+		}
++		mamem_err("%s: ERROR: ep = 0x%p, dev_ep = 0x%p "
++			"(only one should be set)\n", __func__,
++			ma_ep->ep, ma_ep->dev_ep);
 +
-+	} else { /* We should ALWAYS have a header, and we dont... */
-+		mapkt_err("%s: header not found\n", __func__);
-+		return -EINVAL;
++		return NULL;
 +	}
 +
-+	ms_pkt->kvec[ms_pkt->nents].iov_base = pkt->common;
-+	ms_pkt->kvec[ms_pkt->nents].iov_len = ent_length;
-+	ms_pkt->nents += 1;
++	if (NULL != ma_ep->ep)
++		return &ma_ep->ep->desc;
 +
-+	/* If this packet should have data, send it */
-+	if (pkt->common->pkt_type == TransferReq ||
-+		pkt->common->pkt_type == TransferResp){
++	if (NULL != ma_ep->dev_ep)
++		return ma_ep->dev_ep->desc;
 +
-+		/* add the setup field */
-+		if (mausb_pkt_has_setup_data(pkt->data)) {
-+			ms_pkt->kvec[ms_pkt->nents].iov_base = pkt->setup;
-+			ms_pkt->kvec[ms_pkt->nents].iov_len =
-+						sizeof(*pkt->setup);
-+			ms_pkt->nents += 1;
++	/* We should never get here */
++	BUG();
++	return NULL;
++}
++EXPORT_SYMBOL(mausb_get_ep_des);
 +
-+		} else if (NULL != pkt->setup) {
-+			mapkt_warn("%s: Warning: packet has Setup field, but "
-+				"flags in header are not set\n", __func__);
-+		}
++/**
++ * Fills an MA USB packet header for the given maurb
++ */
++static int fill_mausb_dph(struct mausb_dph *ma_pkt, struct mausb_urb *maurb,
++		  bool in, bool host)
++{
++	const struct usb_endpoint_descriptor *ep_des;
++	unsigned long irq_flags;
 +
-+		if (NULL != pkt->buffer && pkt->nents > 0) {
-+			mapkt_err("%s: packet has scatterlist and databuffer\n"
-+				, __func__);
-+			return -EINVAL;
-+		}
++	/* set the version number */
++	ma_pkt->common.ver_flags =  MAUSB_VERSION_1_0 & MAUSB_VERSION_MASK;
 +
-+		/* add the data buffer */
-+		if (NULL != pkt->buffer) {
-+			ms_pkt->kvec[ms_pkt->nents].iov_base = pkt->buffer;
-+			ms_pkt->kvec[ms_pkt->nents].iov_len =
-+				pkt->buffer_length;
-+			ms_pkt->nents += 1;
-+		}
++	/* set the host flag if from the host */
++	ma_pkt->common.ver_flags |= host ? MAUSB_PKT_FLAG_HOST : 0;
++
++	/* set the device handle field */
++	spin_lock_irqsave(&maurb->ep->ep_lock, irq_flags);
++	ma_pkt->common.ep_handle = maurb->ep->ep_handle;
++	spin_unlock_irqrestore(&maurb->ep->ep_lock, irq_flags);
++
++	ma_pkt->common.pkt_status = SUCCESS;
++
++	ep_des = mausb_get_ep_des(maurb->ep);
++
++	/* set transfer type in tflags field */
++	switch (usb_endpoint_type(ep_des)) {
++	case USB_ENDPOINT_XFER_CONTROL:
++		ma_pkt->eps_tflags |= MAUSB_PKT_TFLAG_TYPE_CTRL;
++		break;
++	case USB_ENDPOINT_XFER_ISOC:
++		ma_pkt->eps_tflags |= MAUSB_PKT_TFLAG_TYPE_ISOC;
++		break;
++	case USB_ENDPOINT_XFER_BULK:
++		ma_pkt->eps_tflags |= MAUSB_PKT_TFLAG_TYPE_BULK;
++		break;
++	case USB_ENDPOINT_XFER_INT:
++		ma_pkt->eps_tflags |= MAUSB_PKT_TFLAG_TYPE_INT;
++		break;
++	default:
++		mamem_err("%s: invalid transfer type\n", __func__);
 +	}
-+
-+	mapkt_dbg("%s: pkt filled with %i entries\n", __func__, ms_pkt->nents);
 +
 +	return 0;
 +}
 +
 +/**
-+ * Calculates the total length of data contained in an ms_pkt (in bytes).
-+ * Returns the length of the kvec, or 0 on an error.
++ * Create a datapacket from a given URB.
 + */
-+static int mausb_ms_data_length(struct ms_pkt *pkt)
++struct mausb_pkt *mausb_create_dp(int *status, struct mausb_urb *maurb,
++	bool in, bool host, gfp_t memflags)
 +{
-+	int		i;
-+	int		total_length;
-+	struct kvec	*current_kvec;
++	struct mausb_pkt	*pkt;
++	int			ret = 0;
 +
-+	for (i = 0; i < pkt->nents; ++i) {
-+		current_kvec = &pkt->kvec[i];
-+		if (NULL == current_kvec)
-+			return -EINVAL;
++	pkt = mausb_alloc_pkt(MAUSB_PKT_TYPE_DATA, status, memflags);
++	if (NULL == pkt) {
++		mamem_err("%s:failed to allocate memory for mausb packet\n",
++			__func__);
++
++		if (NULL != status)
++			*status = -ENOMEM;
++
++		return NULL;
++	}
++
++	ret = fill_mausb_dph(pkt->data, maurb, in, host);
++	INIT_LIST_HEAD(&pkt->pkt_list);
++	if (NULL != status)
++		*status = ret;
++
++	return pkt;
++}
++EXPORT_SYMBOL(mausb_create_dp);
++
++struct mausb_urb *mausb_alloc_maurb(struct mausb_host_ep *ma_ep, gfp_t memflags)
++{
++	struct mausb_urb     *maurb;
++
++	maurb = kzalloc(sizeof(struct mausb_urb), memflags);
++	if (!maurb)
++		return NULL;
++
++	INIT_LIST_HEAD(&maurb->urb_list);
++	maurb->ep = ma_ep;
++	maurb->dev = ma_ep->mausb_dev;
++
++	return maurb;
++}
++EXPORT_SYMBOL(mausb_alloc_maurb);
++
++/**
++ * Deletes the given maurb and removes all pointers to it from memory.
++ */
++int mausb_internal_drop_maurb(struct mausb_urb *maurb, struct mausb_hcd *mhcd)
++{
++	struct mausb_host_ep *ep = maurb->ep;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&ep->ep_lock, irq_flags);
++
++	list_del(&maurb->urb_list);
++	if (maurb == ep->active_transfer)
++		ep->active_transfer = NULL;
++
++	spin_unlock_irqrestore(&ep->ep_lock, irq_flags);
++
++	spin_lock_irqsave(&mhcd->urb_list_lock, irq_flags);
++	list_del(&maurb->ma_hcd_urb_list);
++	spin_unlock_irqrestore(&mhcd->urb_list_lock, irq_flags);
++
++	/*
++	 * Nobody else should know this maurb exists, so it should be
++	 * safe to free
++	 */
++	kfree(maurb);
++
++	return 0;
++}
++EXPORT_SYMBOL(mausb_internal_drop_maurb);
++
++/**
++ * Sets endpoint state to default.
++ *
++ * @state:	State of endpoint to be configured.
++ * @buf_size:	The maximum number of Bytes the device-side buffer
++ *              can receive from the host.
++ *
++ * Called whenever an MA USB endpoint is configured and needs to be set
++ * or reset to its initial state.
++ */
++void init_ep_state(struct mausb_ep_state *state, u32 buf_size)
++{
++	state->request_id = 0;
++	state->active_request_id = 0;
++	state->seq_number = 0;
++	state->tx_pending = 0;
++	state->earliest_request_id = 0;
++	state->earliest_unacked = 0;
++	state->occupancy = 0;
++	state->rx_buf_size = buf_size;
++	state->keep_alive_timer = MAUSB_TRANSFER_KEEP_ALIVE;
++	state->retry_counter = MAUSB_BULK_TRANSFER_RETRIES;
++	/* TODO: number of retries depends on transfer type, include
++	 * other transfer types (control and interrupt) */
++}
++
++struct mausb_gadget_ep *usb_ep_to_mausb_gadget_ep(struct usb_ep *ep)
++{
++	return container_of(ep, struct mausb_gadget_ep, dev_ep);
++}
++EXPORT_SYMBOL(usb_ep_to_mausb_gadget_ep);
++
++/**
++ * Links a Device-side endpoint to an MA USB endpoint
++ */
++void mausb_link_ma_ep_to_usb_ep(struct mausb_host_ep *ma_ep,
++		struct usb_ep *dev_ep)
++{
++	struct mausb_gadget_ep *gadget_ep = usb_ep_to_mausb_gadget_ep(dev_ep);
++
++	ma_ep->dev_ep = dev_ep;
++	ma_ep->halted = 0;
++	ma_ep->wedged = 0;
++
++	ma_ep->usb_req_list = &gadget_ep->usb_req_list;
++}
++EXPORT_SYMBOL(mausb_link_ma_ep_to_usb_ep);
++
++/*
++ * Adds an endpoint to the specified device.
++ *
++ * @ma_dev:		The usb device to add the endpoint to.
++ * @ep/dev_ep:		The usb struct for the endpoint being added.
++ *			Note: give only one of the endpoint pointers and
++ *                      set the other to NULL.
++ * @mausb_ep:		The mausb_ep struct created by this function.
++ * @transfer_timeout:	The transfer timeout function. A thread will be
++ *                      spawned with this function for handling timeouts.
++ *
++ * Adds the given endpoint to the given device. The difference between this
++ * function and mausb_add_endpoint (which can be called from the usb core)
++ * is that this uses the private ma-structs. Calling this function is
++ * cheaper, and therefore preferred when possible, since mausb_add_endpoint
++ * will have to find the internal structures.
++ */
++int mausb_internal_add_ep(struct mausb_dev *ma_dev,
++		struct usb_host_endpoint *ep, struct usb_ep *dev_ep,
++		struct mausb_host_ep **mausb_ep,
++		int (*transfer_timeout)(void *data), gfp_t memflags)
++{
++	struct mausb_host_ep *ma_ep;
++	unsigned long irq_flags;
++
++	ma_ep = kzalloc(sizeof(struct mausb_host_ep), memflags);
++	if (!ma_ep)
++		return -ENOMEM;
++
++	/* host operations */
++	if (ep != NULL) {
++		ep->hcpriv = ma_ep;
++		ma_ep->ep = ep;
++
++	/* device operations */
++	} else if (dev_ep != NULL)
++		mausb_link_ma_ep_to_usb_ep(ma_ep, dev_ep);
++
++	ma_ep->mausb_dev = ma_dev;
++
++	/* set initial EP State */
++	init_ep_state(&ma_ep->state, DEVICE_RX_BUF_SIZE);
++
++	/*
++	 * only used by full speed devices to determine if the max packet
++	 * size has changed for EP0
++	 */
++	ma_ep->max_pkt = 8;
++
++	/* initialize mausb_ep_handle */
++	ma_ep->ep_handle_state = MAUSB_EP_HANDLE_UNASSIGNED;
++
++	INIT_LIST_HEAD(&ma_ep->urb_list);
++	INIT_LIST_HEAD(&ma_ep->ep_list);
++	INIT_LIST_HEAD(&ma_ep->req_list);
++	INIT_LIST_HEAD(&ma_ep->resp_list);
++
++	spin_lock_init(&ma_ep->ep_lock);
++	ma_ep->tx_timed_out = false;
++
++	/* initialize endpoint work queue */
++	init_waitqueue_head(&ma_ep->host_ep_wq);
++
++	/* initialize endpoint timer */
++	setup_timer(&ma_ep->timer, wake_timeout_thread, (unsigned long) ma_ep);
++
++	/* add the endpoint to the device */
++	spin_lock_irqsave(&ma_dev->dev_lock, irq_flags);
++	list_add_tail(&ma_ep->ep_list, &ma_dev->ep_list);
++	spin_unlock_irqrestore(&ma_dev->dev_lock, irq_flags);
++
++	/* give a pointer to the ma_ep back to the caller */
++	if (NULL != mausb_ep)
++		*mausb_ep = ma_ep;
++
++	return 0;
++}
++EXPORT_SYMBOL(mausb_internal_add_ep);
++
++/**
++ * Drops the given endpoint from the given device. The difference between this
++ * function and mausb_drop_endpoint (which can be called from the usb core)
++ * is that this uses the private ma-structs. Calling this function is
++ * cheaper, and therefore preferred when possible, since mausb_drop_endpoint
++ * will have to find the internal endpoint structure.
++ */
++int mausb_internal_drop_ep(struct mausb_host_ep *ma_ep)
++{
++	struct mausb_dev *ma_dev;
++	struct mausb_request  *ma_request, *next_request;
++	struct mausb_pkt *ma_pkt, *next_pkt;
++	unsigned long     irq_flags;
++	unsigned long     irq_flags2;
++
++	if (NULL == ma_ep)
++		return -EINVAL;
++
++	/* drop all pending transfers */
++	spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++	ma_dev = ma_ep->mausb_dev;
++
++	/* stop transfer timeout thread */
++	if (NULL != ma_ep->timeout_task)
++		kthread_stop(ma_ep->timeout_task);
++
++	/* drop all pending usb_requests (if there are any) */
++	if (NULL != ma_ep->usb_req_list) {
++		list_for_each_entry_safe(ma_request, next_request,
++					ma_ep->usb_req_list, usb_req_list) {
++			list_del(&ma_request->usb_req_list);
++			ma_request->req.status = -ESHUTDOWN;
++			ma_request->req.complete(ma_ep->dev_ep,
++							&ma_request->req);
++		}
++	}
++
++	/* flush out all of the stored request/response packets */
++	list_for_each_entry_safe(ma_pkt, next_pkt, &ma_ep->req_list, pkt_list) {
++		list_del(&ma_pkt->pkt_list);
++		mausb_free_pkt(ma_pkt);
++	}
++	list_for_each_entry_safe(ma_pkt, next_pkt,
++					&ma_ep->resp_list, pkt_list) {
++		list_del(&ma_pkt->pkt_list);
++		mausb_free_pkt(ma_pkt);
++	}
++
++	/* remove the endpoint from the list */
++	spin_lock_irqsave(&ma_dev->dev_lock, irq_flags2);
++	list_del(&ma_ep->ep_list);
++	spin_unlock_irqrestore(&ma_dev->dev_lock, irq_flags2);
++
++	spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++
++	kfree(ma_ep);
++
++	return 0;
++}
++EXPORT_SYMBOL(mausb_internal_drop_ep);
++
++/**
++ * Updates the state of an endpoint based on the mausb_ep_des.
++ */
++int mausb_update_ep(struct mausb_host_ep *ma_ep,
++			struct mausb_ep_des *ma_ep_des)
++{
++	unsigned long     irq_flags;
++
++	spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++
++	if (!ma_ep_des->valid) { /* Valid bit: 0 means valid */
++		ma_ep->ep_handle.handle = ma_ep_des->ep_handle.handle;
++		ma_ep->ep_handle_state = MAUSB_EP_HANDLE_ACTIVE;
++	}
++
++	if (ma_ep_des->dir == 0) {
++		ma_ep->state.rx_buf_size = ma_ep_des->buffer_size;
++
++
++		if (ma_ep_des->l_man)
++			ma_ep->lman_support = true;
 +		else
-+			total_length += current_kvec->iov_len;
++			ma_ep->lman_support = false;
 +	}
 +
-+	return total_length;
++	/*TODO: parse and use the remainder of the values in the packet */
++
++	spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++
++	return 0;
 +}
 +
 +/**
-+ * Calculates the length of the datafield in a given datapacket.
++ * Allocates private per-usb-device data.
++ *
++ * @ma_dev:	The MA USB device to which the USB device belongs
++ * @usb_dev:	The host-side USB device struct to add.
++ * @gadget:	The device-side USB device struct to add.
++ *
++ * This function allocates a new device and adds it onto the MA USB device's
++ * linked list of usb devices. It also allocates endpoint data for the control
++ * endpoint (EP0).
 + */
-+static int mausb_pkt_datafield_length(struct mausb_pkt *pkt)
++struct mausb_dev *mausb_internal_alloc_dev(struct ma_dev *ma_dev,
++		struct usb_device *dev, struct usb_gadget *gadget)
 +{
-+	int length = 0;
++	unsigned long     irq_flags;
++	struct mausb_dev *mausb_dev;
 +
-+	if (NULL != pkt->buffer)
-+		length += pkt->buffer_length;
-+	if (0 != pkt->nents)
-+		length += mausb_ms_data_length(&pkt->pkt);
++	mausb_dev = kzalloc(sizeof(struct mausb_dev), GFP_KERNEL);
 +
-+	return length;
++	if (!mausb_dev)
++		return NULL;
++
++	if (NULL != dev)
++		mausb_dev->dev = dev;
++	if (NULL != gadget)
++		mausb_dev->gadget = gadget;
++	mausb_dev->ma_dev = ma_dev;
++	INIT_LIST_HEAD(&mausb_dev->ep_list);
++	INIT_LIST_HEAD(&mausb_dev->dev_list);
++	spin_lock_init(&mausb_dev->dev_lock);
++
++	spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++
++	/*
++	 * If this is the first device to be allocated, then it should be the
++	 * most upstream.
++	 */
++	if (NULL == ma_dev->top_dev)
++		ma_dev->top_dev = mausb_dev;
++
++	list_add_tail(&mausb_dev->dev_list, &ma_dev->dev_list);
++	spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++
++	return mausb_dev;
 +}
++EXPORT_SYMBOL(mausb_internal_alloc_dev);
 +
 +/**
-+ * Parses the packet fields to determine how long the packet is. Returns the
-+ * packet length on sucess, or a negative errno on error.
++ * Frees private per-device data.
++ *
++ * @ma_dev:	The MA USB device that the USB device beingfreed belongs to.
++ * @mausb_dev:	The MA USB data associated with the USB device being freed.
++ *
++ * This function removes a USB device from the MA USB hcd's linked list
++ * and releases the device's media agnostic data structure. All endpoints
++ * belonging to this device are also removed from the MA USB hcd and released
++ * (including EP0).
 + */
-+int mausb_pkt_length(struct mausb_pkt *pkt)
++int mausb_internal_free_dev(struct ma_dev *ma_dev, struct mausb_dev *mausb_dev)
 +{
-+	int length;
++	int			ret = 0;
++	unsigned long		irq_flags, irq_flags2;
++	struct mausb_host_ep	*ma_ep, *next;
 +
-+	/* all packets have this field */
-+	switch (pkt->common->pkt_type & MAUSB_PKT_TYPE_MASK) {
++	/* remove all the endpoints from the device */
++	spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	list_for_each_entry_safe(ma_ep, next, &mausb_dev->ep_list, ep_list) {
++		spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++		ret = mausb_internal_drop_ep(ma_ep);
 +
-+	/* Management packets */
-+	case MAUSB_PKT_TYPE_MGMT:
-+		length = sizeof(*pkt->common);
-+		length += MAUSB_MGMT_TOKEN_PAD_LEN;
-+
-+		/* subtypes without additional data */
-+		switch (pkt->common->pkt_type) {
-+		case DevResetReq:
-+		case DevResetResp:
-+		case UpdateDevResp:
-+		case DevDisconnectReq:
-+		case DevDisconnectResp:
-+		case USBDevDisconnectReq:
-+		case USBDevDisconnectResp:
-+		case SleepReq:
-+		case SleepResp:
-+		case WakeReq:
-+		case WakeResp:
-+		case RemoteWakeReq:
-+		case RemoteWakeResp:
-+		case PingReq:
-+		case PingResp:
-+		case DevInitDisconnectReq:
-+		case DevInitDisconnectResp:
-+		case SyncResp:
-+			break;
-+
-+		/* subtypes with constant length additional data */
-+		case CapReq:
-+			length += sizeof(pkt->mgmt->cap_req);
-+			break;
-+		case CapResp:
-+			length += sizeof(pkt->mgmt->cap_resp);
-+			/* also include length of any descriptors */
-+			length += pkt->mgmt->cap_resp.desc_length;
-+			break;
-+		case USBDevHandleReq:
-+			length += sizeof(pkt->mgmt->usb_dev_handle_req);
-+			break;
-+		case USBDevHandleResp:
-+			length += sizeof(pkt->mgmt->usb_dev_handle_resp);
-+			break;
-+		case ModifyEP0Req:
-+			length += sizeof(pkt->mgmt->modify_ep0_req);
-+			break;
-+		case ModifyEP0Resp:
-+			length += sizeof(pkt->mgmt->modify_ep0_resp);
-+			break;
-+		case SetUSBDevAddrReq:
-+			length += sizeof(pkt->mgmt->set_dev_addr_req);
-+			break;
-+		case SetUSBDevAddrResp:
-+			length += sizeof(pkt->mgmt->set_dev_addr_resp);
-+			break;
-+		case UpdateDevReq:
-+			length += sizeof(pkt->mgmt->update_dev_req);
-+			break;
-+		case SyncReq:
-+			length += sizeof(pkt->mgmt->synch_req);
-+			break;
-+		case EPCloseStreamReq:
-+			length += sizeof(pkt->mgmt->ep_close_stream_req);
-+			break;
-+		case CancelTransferReq:
-+			length += sizeof(pkt->mgmt->cancel_transfer_req);
-+			break;
-+		case CancelTransferResp:
-+			length += sizeof(pkt->mgmt->cancel_transfer_resp);
-+			break;
-+		case EPOpenStreamReq:
-+			length += sizeof(pkt->mgmt->ep_open_stream_req);
-+			break;
-+		/* subtypes with variable length additional data */
-+		case EPHandleReq:
-+			length += sizeof(__u32);
-+			length += pkt->mgmt->ep_handle_req.num_ep_des *
-+				pkt->mgmt->ep_handle_req.size_ep_des;
-+			break;
-+		case EPHandleResp:
-+			length += sizeof(__u32);
-+			length += pkt->mgmt->ep_handle_resp.num_ep_des *
-+				sizeof(struct mausb_ep_des);
-+			break;
-+		case EPActivateReq:
-+		case EPActivateResp:
-+		case EPInactivateReq:
-+		case EPInactivateResp:
-+		case EPResetReq:
-+		case EPResetResp:
-+		case EPClearTransferReq:
-+		case EPClearTransferResp:
-+		case EPHandleDeleteReq: /* FALLTHROUGH */
-+		case EPHandleDeleteResp:
-+			length += sizeof(__u32);
-+			length += pkt->mgmt->ep_handle_delete.num_ep
-+				* sizeof(struct mausb_ep_handle);
-+			break;
-+		case EPCloseStreamResp:
-+		case USBDevResetReq:
-+		case USBDevResetResp:
-+		case EPOpenStreamResp:
-+		case VendorSpecificReq:
-+		case VendorSpecificResp:
-+			mapkt_err("%s: cannot determine length of %s packet -"
-+				" packet type not yet handled\n", __func__,
-+				mausb_type_to_string(pkt->common->pkt_type));
-+			BUG();
-+			break;
-+		default:
-+			mapkt_err("%s: invalid management packet type %x\n",
-+				__func__, pkt->common->pkt_type);
-+			BUG();
-+			break;
-+		}
-+
-+		break;
-+
-+	/* Control Packets */
-+	case MAUSB_PKT_TYPE_CTRL:
-+		length = sizeof(struct mausb_ctrl_pkt);
-+		switch (pkt->common->pkt_type) {
-+		case TransferSetupReq:
-+			length += sizeof(struct mausb_TransferSetupReq_flds);
-+			break;
-+		case TransferSetupResp:
-+			break;
-+		case TransferTearDownConf:
-+			break;
-+		default:
-+			mapkt_err("%s: invalid control packet type %x\n",
-+				__func__, pkt->common->pkt_type);
-+			BUG();
-+			break;
-+		}
-+		break;
-+
-+	/* Data Packets */
-+	case MAUSB_PKT_TYPE_DATA:
-+
-+		length = sizeof(struct mausb_dph);
-+
-+		switch (pkt->common->pkt_type) {
-+		case TransferReq:
-+		case TransferResp: /* FALLTHROUGH */
-+			if (mausb_pkt_has_setup_data(pkt->data))
-+				length += sizeof(*pkt->setup);
-+
-+			length += mausb_pkt_datafield_length(pkt);
-+			break;
-+		case TransferAck:
-+			break;
-+		case IsochTransferReq:
-+		case IsochTransferResp: /* FALLTHROUGH */
-+			length = sizeof(struct mausb_iso_dph);
-+			length += mausb_pkt_datafield_length(pkt);
-+
-+			break;
-+		default:
-+			mapkt_err("%s: invalid data packet type %x\n", __func__,
-+				pkt->common->pkt_type);
-+			BUG();
-+			break;
-+		}
-+		break;
-+
-+	default:
-+		mapkt_err("%s: invalid packet type %x\n", __func__,
-+			pkt->common->pkt_type);
-+		BUG();
-+		break;
++		spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
 +	}
 +
-+	return length;
++	if (!list_empty(&mausb_dev->ep_list)) {
++		spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++		return ret;
++	}
++
++	/* remove the mausb device from the ma device */
++	spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags2);
++	list_del(&mausb_dev->dev_list);
++
++	/* if the top device is being removed */
++	if (ma_dev->top_dev == mausb_dev)
++		ma_dev->top_dev = NULL;
++
++	spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags2);
++
++	spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++
++	kfree(mausb_dev);
++
++	return ret;
++
 +}
-+EXPORT_SYMBOL(mausb_pkt_length);
++EXPORT_SYMBOL(mausb_internal_free_dev);
 +
 +/**
-+ * Finds and returns the memory location offset a number of bytes from a
-+ * CapResp packet. Used to find or place device capability descriptors in
-+ * a CapResp packet.
++ * Resets all the data in a ma_dev struct. This includes freeing all the MA
++ * data for the usb devices and endpoints connected to this device.
 + */
-+struct mausb_dev_cap_desc *cap_desc_ptr_increment(struct mausb_mgmt_pkt *resp,
-+						  int offset)
++int mausb_internal_reset_ma_dev(struct ma_dev *ma_dev, __u8 ma_dev_addr,
++	__u8 mass_id, struct mausb_hcd *mhcd, struct mausb_udc *maudc)
 +{
-+	struct mausb_dev_cap_desc *desc;
-+	char  *temp;
++	int			ret = -EINVAL;
++	struct mausb_dev	*mausb_dev, *mausb_next;
++	int (*req_switch)(struct mausb_mgmt_pkt *req,
++			  struct mausb_mgmt_pkt *resp,
++			  struct mausb_mgmt *mgmt)
++		= ma_dev->mgmt.req_switch;
++	int (*device_connect)(int) = ma_dev->ma_drv.device_connect;
++	unsigned long irq_flags;
 +
-+	temp = (char *) resp;
-+	temp += offset;
++	if (NULL != mhcd)
++		ma_dev->mhcd = mhcd;
 +
-+	desc  =  (struct mausb_dev_cap_desc *) (temp);
++	if (NULL != maudc)
++		ma_dev->maudc = maudc;
 +
-+	return desc;
++	spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++	list_for_each_entry_safe(mausb_dev, mausb_next, &ma_dev->dev_list,
++				dev_list) {
++		spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++
++		ret = mausb_internal_free_dev(ma_dev, mausb_dev);
++
++		spin_lock_irqsave(&ma_dev->ma_dev_lock, irq_flags);
++	}
++
++	if (!list_empty(&ma_dev->dev_list)) {
++		/* could not clear all the devices */
++		ret = -EAGAIN;
++	}
++
++	spin_unlock_irqrestore(&ma_dev->ma_dev_lock, irq_flags);
++
++	/* TODO: make sure this doesn't break any locking rules */
++	mausb_init_ma_device(ma_dev, ma_dev_addr, mass_id, mhcd,
++			     maudc, req_switch, device_connect);
++
++	return ret;
 +}
-+EXPORT_SYMBOL(cap_desc_ptr_increment);
 +
-diff --git a/drivers/staging/mausb/drivers/mausb_pkt.h b/drivers/staging/mausb/drivers/mausb_pkt.h
++/**
++ * Initializes the media agnostic management structure.
++ */
++int mausb_init_mgmt(struct mausb_mgmt *mgmt, spinlock_t *ma_dev_lock,
++		int (*req_switch)(struct mausb_mgmt_pkt *req,
++		struct mausb_mgmt_pkt *resp, struct mausb_mgmt *mgmt))
++{
++	INIT_LIST_HEAD(&mgmt->req_list);
++	mgmt->token = 0;
++	mgmt->tx_pair.to_ms.context = NULL;
++	mgmt->tx_pair.to_ms.transfer_packet = NULL;
++	mgmt->tx_pair.to_ma.context = NULL;
++	mgmt->tx_pair.to_ma.transfer_packet = NULL;
++	mgmt->hub_dev_handle = 0;
++	mgmt->ma_dev_lock = ma_dev_lock;
++	mgmt->req_switch = req_switch;
++
++	return 0;
++}
++
++static void mausb_init_pkt_dmux(struct mausb_pkt_transfer *pkt_dmux,
++		void *context)
++{
++	pkt_dmux->transfer_packet = &mausb_pkt_dmux;
++	pkt_dmux->context = context;
++}
++
++/*
++ * Initializes the data structure for an MA USB device.
++ */
++int mausb_init_ma_device(struct ma_dev *ma_dev, __u8 ma_dev_addr, __u8 mass_id,
++		struct mausb_hcd *mhcd, struct mausb_udc *maudc,
++		int (*req_switch)(struct mausb_mgmt_pkt *req,
++		struct mausb_mgmt_pkt *resp, struct mausb_mgmt *mgmt),
++		int (*device_connect)(int))
++{
++	INIT_LIST_HEAD(&ma_dev->dev_list);
++	ma_dev->top_dev = NULL;
++	ma_dev->ma_dev_addr = ma_dev_addr;
++	ma_dev->mass_id = mass_id;
++	if (mhcd != NULL)
++		ma_dev->mhcd = mhcd;
++	if (maudc != NULL)
++		ma_dev->maudc = maudc;
++	spin_lock_init(&ma_dev->ma_dev_lock);
++	ma_dev->ma_drv.device_connect = device_connect;
++	mausb_init_pkt_dmux(&ma_dev->ma_drv.pkt_dmux, ma_dev);
++
++	mausb_init_mgmt(&ma_dev->mgmt, &ma_dev->ma_dev_lock, req_switch);
++
++	return 0;
++}
++EXPORT_SYMBOL(mausb_init_ma_device);
++
+diff --git a/drivers/staging/mausb/drivers/mausb_mem.h b/drivers/staging/mausb/drivers/mausb_mem.h
 new file mode 100644
-index 0000000..fe959c7
+index 0000000..870591f
 --- /dev/null
-+++ b/drivers/staging/mausb/drivers/mausb_pkt.h
-@@ -0,0 +1,914 @@
-+/* name:	mausb_pkt.h
-+ * description:	library of MA USB packet structures
++++ b/drivers/staging/mausb/drivers/mausb_mem.h
+@@ -0,0 +1,509 @@
++/* Name:	mausb_mem.h
++ * Description: Header for mausb_mem.c. Needed do make calls to
++ *              functions defined in mausb_mem.c.
 + *
 + * This file is provided under a dual BSD/GPLv2 license.  When using or
 + * redistributing this file, you may do so under either license.
@@ -1146,862 +1560,646 @@ index 0000000..fe959c7
 + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+#ifndef __MAUSB_PKT_H__
-+#define __MAUSB_PKT_H__
++#ifndef __MAUSB_MEM_H
++#define __MAUSB_MEM_H
 +
-+#include <linux/usb/ch9.h>
++#include "mausb_state.h"
++#include "mausb_pkt.h"
 +#include "mausb_msapi.h"
 +
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/usb/gadget.h>
++#include <linux/timer.h>
++
 +#ifdef DEBUG
-+#define mapkt_dbg(format, arg...) \
++#define mamem_dbg(format, arg...) \
 +	printk(KERN_DEBUG format, ##arg)
 +#else
-+#define mapkt_dbg(format, arg...)
++#define mamem_dbg(format, arg...)
 +#endif
 +
-+#define mapkt_warn(format, arg...) \
++#define mamem_warn(format, arg...) \
 +	printk(KERN_WARNING format, ##arg)
 +
-+#define mapkt_err(format, arg...) \
++#define mamem_err(format, arg...) \
 +	printk(KERN_ERR format, ##arg)
 +
-+/* protocol Version, per section 6.2.1.1 */
-+#define MAUSB_VERSION_1_0     0x0
-+#define MAUSB_VERSION_MASK    0x0F
-+
-+/* packet Flags, per section 6.2.1.2 */
-+#define MAUSB_PKT_FLAG_MASK       0xF0
-+#define MAUSB_PKT_FLAG_HOST       (1 << 4)
-+#define MAUSB_PKT_FLAG_RETRY      (1 << 5)
-+#define MAUSB_PKT_FLAG_TIMESTAMP  (1 << 6)
-+
-+/* packet Types, per section 6.2.1.3 */
-+#define MAUSB_PKT_TYPE_MASK       0xC0
-+#define MAUSB_PKT_TYPE_MGMT       (0 << 6)
-+#define MAUSB_PKT_TYPE_CTRL       (1 << 6)
-+#define MAUSB_PKT_TYPE_DATA       (2 << 6)
-+
-+/* packet Subtypes, section 6.2.1.3 */
-+#define MAUSB_SUBTYPE_MASK        0x3F
-+
-+enum mausb_pkt_type {
-+	/* Management packets */
-+	CapReq = 0x00 | MAUSB_PKT_TYPE_MGMT,
-+	CapResp               , /* 1 */
-+	USBDevHandleReq       , /* 2 */
-+	USBDevHandleResp      , /* 3 */
-+
-+	EPHandleReq           , /* 4 */
-+	EPHandleResp          , /* 5 */
-+	EPActivateReq         , /* 6 */
-+	EPActivateResp        , /* 7 */
-+	EPInactivateReq       , /* 8 */
-+	EPInactivateResp      , /* 9 */
-+	EPResetReq            , /* 10 */
-+	EPResetResp           , /* 11 */
-+	EPClearTransferReq    , /* 12 */
-+	EPClearTransferResp   , /* 13 */
-+	EPHandleDeleteReq     , /* 14 */
-+	EPHandleDeleteResp    , /* 15 */
-+
-+	DevResetReq           , /* 16 */
-+	DevResetResp          , /* 17 */
-+	ModifyEP0Req          , /* 18 */
-+	ModifyEP0Resp         , /* 19 */
-+	SetUSBDevAddrReq      , /* 20 */
-+	SetUSBDevAddrResp     , /* 21 */
-+	UpdateDevReq          , /* 22 */
-+	UpdateDevResp         , /* 23 */
-+	USBDevDisconnectReq   , /* 24 */
-+	USBDevDisconnectResp  , /* 25 */
-+
-+	USBSuspendReq         , /* 26 */
-+	USBSuspendResp        , /* 27 */
-+	USBResumeReq          , /* 28 */
-+	USBResumeResp         , /* 29 */
-+	RemoteWakeReq         , /* 30 */
-+	RemoteWakeResp        , /* 31 */
-+	PingReq               , /* 32 */
-+	PingResp              , /* 33 */
-+	DevDisconnectReq      , /* 34 */
-+	DevDisconnectResp     , /* 35 */
-+	DevInitDisconnectReq  , /* 36 */
-+	DevInitDisconnectResp , /* 37 */
-+	SyncReq               , /* 38 */
-+	SyncResp              , /* 39 */
-+	CancelTransferReq     , /* 40 */
-+	CancelTransferResp    , /* 41 */
-+	EPOpenStreamReq       , /* 42 */
-+	EPOpenStreamResp      , /* 43 */
-+	EPCloseStreamReq      , /* 44 */
-+	EPCloseStreamResp     , /* 45 */
-+	USBDevResetReq        , /* 46 */
-+	USBDevResetResp       , /* 47 */
-+
-+	DevNotificationReq    , /* 48 */
-+	DevNotificationResp   , /* 49 */
-+	EPSetKeepAliveReq     , /* 50 */
-+	EPSetKeepAliveResp    , /* 51 */
-+	GetPortBWReq          , /* 52 */
-+	GetPortBWResp         , /* 53 */
-+	SleepReq              , /* 54 */
-+	SleepResp             , /* 55 */
-+	WakeReq               , /* 56 */
-+	WakeResp              , /* 57 */
-+
-+	/* Vendor-Specific Management Packets */
-+	VendorSpecificReq = 0x3E | MAUSB_PKT_TYPE_MGMT,
-+	VendorSpecificResp    ,
-+
-+	/* Control Packets */
-+	TransferSetupReq = 0x00 | MAUSB_PKT_TYPE_CTRL,
-+	TransferSetupResp     ,
-+	TransferTearDownConf  ,
-+
-+	/* Data Packets */
-+	TransferReq = 0x00 | MAUSB_PKT_TYPE_DATA,
-+	TransferResp = 0x01 | MAUSB_PKT_TYPE_DATA,
-+	TransferAck           ,
-+	IsochTransferReq      ,
-+	IsochTransferResp
-+};
-+
-+/* Endpoint Handle Fields, per section 6.2.1.5 */
-+struct __packed mausb_ep_handle {
-+	union {
-+		struct {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+			__le16 dir:1;      /**< Direction Field    */
-+			__le16 ep_num:4;   /**< Endpoint Number    */
-+			__le16 dev_addr:7; /**< USB Device Address */
-+			__le16 bus_num:4;  /**< Bus Number         */
-+#else
-+			__le16 bus_num:4;  /**< Bus Number         */
-+			__le16 dev_addr:7; /**< USB Device Address */
-+			__le16 ep_num:4;   /**< Endpoint Number    */
-+			__le16 dir:1;      /**< Direction Field    */
-+#endif
-+		};
-+		__u16 handle;
-+	};
-+};
-+
-+#define MAUSB_VIRTUAL_BUS_NUM 15
-+
-+/* The least significant bit of the packet is only set to 1 in */
-+/* response packets. */
-+#define MAUSB_PKT_RESP_FLAG       0x01
-+
-+/** Status Code Values, per section 6.2.1.8, Table 6 */
-+enum mausb_pkt_status {
-+	SUCCESS = 0,
-+	UNSUCCESSFUL = 128,
-+	INVALID_MA_USB_SESSION_STATE,
-+	INVALID_DEVICE_HANDLE,
-+	INVALID_EP_HANDLE,
-+	INVALID_EP_HANDLE_STATE,
-+	INVALID_REQUEST,
-+	MISSING_SEQUENCE_NUMBER,
-+	TRANSFER_PENDING,
-+	TRANSFER_EP_STALL,
-+	TRANSFER_SIZE_ERROR,
-+	TRANSFER_DATA_BUFFER_ERROR,
-+	TRANSFER_BABBLE_DETECTED,
-+	TRANSFER_TRANSACTION_ERROR,
-+	TRANSFER_SHORT_TRANSFER,
-+	TRANSFER_CANCELLED,
-+	INSUFFICENT_RESOURCES,
-+	NOT_SUFFICENT_BANDWIDTH,
-+	INTERNAL_ERROR,
-+	DATA_OVERRUN,
-+	DEVICE_NOT_ACCESSED,
-+	BUFFER_OVERRUN,
-+	BUSY,
-+	DROPPED_PACKET,
-+	ISOC_TIME_EXPIRED,
-+	ISOCH_TIME_INVALID,
-+	NO_USB_PING_RESPONSE,
-+	NOT_SUPPORTED,
-+	REQUEST_DENIED
-+};
-+
-+/* Status codes NO_ERROR and SUCCESS are interchangeable. */
-+#define NO_ERROR SUCCESS
-+
-+/* MA USB packet header size, per 6.2.1 */
-+#define MAUSB_PKT_HEADER_SIZE	12
-+
-+/** common header fields, per section 6.2.1 */
-+struct __packed mausb_pkt_common {
-+	/* DWORD 0 */
-+	__u8                  ver_flags;   /**< MA USB version & Flags */
-+	enum mausb_pkt_type   pkt_type:8;  /**< type and subtype */
-+	__le16                 length;     /**< length (in bytes) */
-+	/* DWORD 1 */
-+	union {
-+		struct mausb_ep_handle ep_handle; /**< Endpoint Handle */
-+		__le16                  dev_handle;/**< Device Handle */
-+	};
-+	__u8                  ma_dev_addr;/**< MA USB Device Address */
-+	__u8                  mass_id;    /**< MA USB Service Set (MSS) id*/
-+	/* DWORD 2 */
-+	enum mausb_pkt_status pkt_status:8; /**< packet status code */
-+};
-+
-+/** MA USB Global Time, per section 6.6.1 */
-+struct __packed mausb_time {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	/** value of delta field in ITP, defined in USB 3.1 spec. */
-+	__le32 delta:13;
-+	/** nominal bus interval, Indicates USB microframe number */
-+	__le32 nom_bus_itvl:19;
-+#else
-+	__le32 nom_bus_itvl:19;
-+	__le32 delta:13;
-+#endif
-+};
-+
-+#define MAUSB_PKT_WSE_NO_DOCK  0
-+#define MAUSB_PKT_WSE_DOCK_2_0 1
-+#define MAUSB_PKT_WSE_DOCK_3_0 2
++/* forward declarations */
++struct mausb_urb;
++struct mausb_pkt;
++struct mausb_host_ep;
 +
 +/**
-+ * MAUSB Device Functionality Support Speed
++ * mausb_mgmt - MAUSB management datastrucure
 + *
-+ * mausb_dev_bfs_speed are used for the bFunctionalitySupport field.
-+ * Note that they are different values than usb_device_speed.
-+ */
-+enum mausb_dev_bfs_speed {
-+	MAUSB_LOW_SPEED = 0,
-+	MAUSB_FULL_SPEED,
-+	MAUSB_HIGH_SPEED,
-+	MAUSB_SUPER_SPEED,
-+	MAUSB_SUPER_SPEED_PLUS,
-+	MAUSB_INVALID_SPEED
-+};
-+
-+/* MA USB Capability Request fields, per 6.3.2, table 7 */
-+struct __packed mausb_CapReq_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 max_mgmt_reqs:12; /**< max # of outstanding mgmt reqs to host */
-+	__le32 rsvd:20; /**< reserved */
-+#else
-+	__le32 rsvd:20; /**< reserved */
-+	__le32 max_mgmt_reqs:12; /**< max # of outstanding mgmt reqs to host */
-+#endif
-+};
-+
-+#define MAUSB_DEV_TYPE_INTEGRATED 0
-+#define MAUSB_DEV_TYPE_HS_HUB 1
-+#define MAUSB_DEV_TYPE_SS_HUB 2
-+
-+/** MA USB Capability Response fields, per 6.3.3, table 12 */
-+struct __packed mausb_CapResp_flds {
-+	__le16 num_ep;       	/**< number of endpoints */
-+	__u8  num_dev;      	/**< number of devices */
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__u8  num_stream:5; /**< 2^this value = max streams supported */
-+	__u8  dev_type:3;   /**< 0 = not a hub, 1 = 2.0 hub, 2 = 3.1 hub */
-+#else
-+	__u8  dev_type:3;   /**< 0 = not a hub, 1 = 2.0 hub, 2 = 3.1 hub */
-+	__u8  num_stream:5; /**< 2^this value = max streams supported */
-+#endif
-+
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 desc_count:8;    /**< descriptors count */
-+	__le32 desc_length:24;  /**< total length of descriptors */
-+#else
-+	__le32 desc_length:24;  /**< total length of descriptors */
-+	__le32 desc_count:8;    /**< descriptors count */
-+#endif
-+
-+	__le16 max_tx_reqs;     /**< max # of outstanding transfer reqs */
-+
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le16 max_mgmt_reqs:12;/**< max # of outstanding management reqs */
-+	__le16 rsvd:4;          /**< reserved */
-+#else
-+	__le16 rsvd:4;          /**< reserved */
-+	__le16 max_mgmt_reqs:12;/**< max # of outstanding management reqs */
-+#endif
-+};
-+
-+/** MA USB Device Capability Type Values, per 6.3.3, table 14 */
-+enum mausb_dev_cap_type {
-+	MAUSB_DEV_CAP_SPEED = 0,
-+	MAUSB_DEV_CAP_POUT,
-+	MAUSB_DEV_CAP_ISO,
-+	MAUSB_DEV_CAP_SYNC,
-+	MAUSB_DEV_CAP_CONT_ID,
-+	MAUSB_DEV_CAP_LINK_SLEEP
-+};
-+
-+/** Speed Capability Speed Enumeration, per 6.3.3.1 */
-+enum mausb_dev_cap_speed_speed {
-+	MAUSB_DEV_CAP_SPEED_LOW = 0,
-+	MAUSB_DEV_CAP_SPEED_FULL,
-+	MAUSB_DEV_CAP_SPEED_HIGH,
-+	MAUSB_DEV_CAP_SPEED_SUPER,
-+	MAUSB_DEV_CAP_SPEED_SS_PLUS
-+};
-+
-+/** Speed Capability Descriptor, per 6.3.3.1 */
-+struct __packed mausb_dev_cap_speed {
-+	/* DWORD n+0 */
-+	__u8 rsvd_0:4;                          /**< Reserved */
-+	enum mausb_dev_cap_speed_speed speed:4; /**< USB Device Speed */
-+	__u8 rsvd_1:4;                          /**< Reserved */
-+	__u8 lse:2;                             /**< Lane Speed Exponent */
-+	__u8 st:2;                              /**< Sublink Type */
-+
-+	/* DWORD n+1 */
-+	__u8  rsvd_2:2;			/**< Reserved */
-+	__u8  lane_count:4;		/**< Lane Count */
-+	__u8  link_protocol:2;		/**< Link Protocol */
-+	__le16 lsm;			/**< Lane Speed Mantissa */
-+};
-+
-+#define MAUSB_DEV_CAP_SPEED_LENGTH 7
-+
-+/** P-Managed OUT Capabilities Descriptor, per 6.3.3.2 */
-+struct __packed mausb_dev_cap_pout {
-+	__u8 elastic_buf_cap:1;		/**< Elastic Buffer Capability */
-+	__u8 drop_notif:1;		/**< Drop Notification */
-+	__u8 rsvd:6;			/**< Reserved */
-+
-+};
-+
-+#define MAUSB_DEV_CAP_POUT_LENGTH 3
-+
-+/** Isochronous Capabilities Descriptor, per 6.3.3.3 */
-+struct __packed mausb_dev_cap_iso {
-+	__u8 iso_alignment:1;	/**< Isochronous Payload Alignment */
-+	__u8 rsvd:7;		/**< Reserved */
-+};
-+
-+#define MAUSB_DEV_CAP_ISO_LENGTH 3
-+
-+/** Synchronization Capabilities Descriptor, per 6.3.3.4 */
-+struct __packed mausb_dev_cap_sync {
-+	__u8 media_time_avail:1;	/**< Media Time Available */
-+	__u8 timestamp_req:1;		/**< Timestamp Request */
-+	__u8 rsvd:6;			/**< Reserved */
-+};
-+
-+#define MAUSB_DEV_CAP_SYNCH_LENGTH 3
-+
-+/** Container ID Capability Descriptor, per 6.3.3.5 */
-+struct __packed mausb_dev_cap_cont_id {
-+	long long int cont_id_upper;	/**< 64 msb of Container ID */
-+	long long int cont_id_lower;	/**< 64 lsb of Container ID */
-+};
-+
-+#define MAUSB_DEV_CAP_CONT_ID_LENGTH 18
-+
-+/** Link Sleeo Capability Descriptor, per 6.3.3.6 */
-+struct __packed mausb_dev_cap_link_sleep {
-+	__u8 link_sleep_cap:1;		/**< Link Sleep Capable */
-+	__u8 rsvd:7;			/**< Reserved */
-+};
-+
-+#define MAUSB_DEV_CAP_LINK_SLEEP_LENGTH 3
-+
-+/** MA Device Capability Descriptor  */
-+struct __packed mausb_dev_cap_desc {
-+	/* common descriptor fields */
-+	__u8 length;				/**< Descriptor length */
-+	enum mausb_dev_cap_type cap_type:8;     /**< Capability type */
-+
-+	/* Descriptor-specific format */
-+	union {
-+		struct mausb_dev_cap_speed      speed;
-+		struct mausb_dev_cap_pout       pout;
-+		struct mausb_dev_cap_iso        iso;
-+		struct mausb_dev_cap_sync       sync;
-+		struct mausb_dev_cap_cont_id    cont_id;
-+		struct mausb_dev_cap_link_sleep link_sleep;
-+	};
-+};
-+
-+/** USB Device Handle Request fields, per 6.3.4, table 8 */
-+struct __packed mausb_USBDevHandleReq_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 usb_rt_str:20;     /**< USB Route String, per USB3.0 Spec */
-+	__le32 speed:4;           /**< USB Device Speed */
-+	__le32 rsvd_0:8;          /**< reserved */
-+	__le16 dock_hub;          /**< dock hub device handle */
-+	__le16 rsvd_1;            /**< reserved */
-+	__le16 parent_hub;        /**< parent hub handle (if LS or HS) */
-+	__u8  parent_hub_port:4;  /**< parent hub port   (if LS or HS) */
-+	__u8  mtt:1;              /**< multiple transaction translators */
-+	__le16 rsvd_2:15;         /**< reserved */
-+	__u8  lse:2;		  /**< lane speed exponent */
-+	__u8  st:2;		  /**< sublink type */
-+	__u8  rsvd_3:2;		  /**< reserved */
-+	__u8  lane_count:2;	  /**< lane count */
-+	__u8  link_protocol:2;	  /**< link protocol */
-+	__le16 lsm;		  /**< lane speed mantissa */
-+
-+#else
-+	__le16 lsm;		  /**< lane speed mantissa */
-+	__u8  link_protocol:2;	  /**< link protocol */
-+	__u8  lane_count:2;	  /**< lane count */
-+	__u8  rsvd_3:2;		  /**< reserved */
-+	__u8  st:2;		  /**< sublink type */
-+	__u8  lse:2;		  /**< lane speed exponent */
-+	__le16 rsvd_2:15;         /**< reserved */
-+	__u8  mtt:1;              /**< multiple transaction translators */
-+	__u8  parent_hub_port:4;  /**< parent hub port   (if LS or HS) */
-+	__le16 parent_hub;        /**< parent hub handle (if LS or HS) */
-+	__le16 rsvd_1;            /**< reserved */
-+	__le16 dock_hub;          /**< dock hub device handle */
-+	__le32 rsvd_0:8;          /**< reserved */
-+	__le32 speed:4;           /**< USB Device Speed */
-+	__le32 usb_rt_str:20;     /**< USB Route String, per USB3.0 Spec */
-+#endif
-+};
-+
-+/* maximum number of EPs in a packet array */
-+#define MAUSB_PKT_MAX_NUM_EP 31
-+
-+/* EPHandleReq constants, per section 6.3.6 */
-+#define MAUSB_EP_REQ_SIZE 8
-+#define MAUSB_EP_REQ_PADDING (MAUSB_EP_REQ_SIZE - USB_DT_ENDPOINT_SIZE)
-+#define MAUSB_SS_EP_REQ_SIZE 16
-+#define MAUSB_SS_EP_REQ_PADDING (MAUSB_SS_EP_REQ_SIZE - \
-+		(USB_DT_ENDPOINT_SIZE + USB_DT_SS_EP_COMP_SIZE))
-+
-+/** packed USB endpoint descriptor */
-+struct __packed mausb_ep_req {
-+	unsigned char ep_des[USB_DT_ENDPOINT_SIZE];
-+	unsigned char padding[MAUSB_EP_REQ_PADDING];
-+};
-+
-+/** packed SuperSpeed USB endpoint descriptor */
-+struct __packed mausb_ss_ep_req {
-+	unsigned char ep_des[USB_DT_ENDPOINT_SIZE];
-+	unsigned char ss_ep_comp_des[USB_DT_SS_EP_COMP_SIZE];
-+	unsigned char padding[MAUSB_SS_EP_REQ_PADDING];
-+};
-+
-+/** Endpoint Handle Request fields, per 6.3.6, Tables 10 & 11 */
-+struct __packed mausb_EPHandleReq_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 num_ep_des:5;  /**< number of EP descriptors in the packet */
-+	__le32 size_ep_des:6; /**< size of EP descriptors (in bytes) */
-+	__le32 rsvd:21;        /**< reserved */
-+#else
-+	__le32 rsvd:21;
-+	__le32 size_ep_des:6;
-+	__le32 num_ep_des:5;
-+#endif
-+	/** array of endpoint descriptors (Standard or SuperSpeed) */
-+	union {
-+		struct mausb_ep_req ep_des[MAUSB_PKT_MAX_NUM_EP]
-+			__aligned(4);
-+		struct mausb_ss_ep_req ss_ep_des[MAUSB_PKT_MAX_NUM_EP]
-+			__aligned(4);
-+		/* TODO: structure for USB 3.1 devices with ISO endpoints */
-+	};
-+};
-+
-+
-+/** WEP Descriptor format, per 6.3.7, table 13 */
-+struct __packed mausb_ep_des {
-+	struct mausb_ep_handle ep_handle; /**< requested endpoint handle */
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le16 dir:1;        /**< direction */
-+	__le16 iso:1;        /**< isochronous */
-+	__le16 l_man:1;      /**< L-managed transfers */
-+	__le16 valid:1;      /**< valid handle bit */
-+	__le16 rsvd_0:12;    /**< reserved */
-+#else
-+	__le16 rsvd_0:12;    /**< reserved */
-+	__le16 valid:1;      /**< valid handle bit */
-+	__le16 l_man:1;      /**< L-managed transfers */
-+	__le16 iso:1;        /**< isochronous */
-+	__le16 dir:1;        /**< direction */
-+#endif
-+	__le16 ccu;          /**< credit consumption unit */
-+	__le16 rsvd_1;       /**< reserved */
-+	__le32 buffer_size;  /**< buffer size (in bytes) */
-+	__le16 iso_prog_dly; /**< max iso programming delay (in uSec) */
-+	__le16 iso_resp_dly; /**< max iso response delay (in uSec) */
-+};
-+
-+/** Endpoint Handle Response fields, per 6.3.7, Tables 12 & 13 */
-+struct __packed mausb_EPHandleResp_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 num_ep_des:5; /**< number of EP descriptors in this packet */
-+	__le32 rsvd:27;      /**< reserved */
-+#else
-+	__le32 rsvd:27;      /**< reserved */
-+	__le32 num_ep_des:5; /**< number of EP descriptors in this packet */
-+#endif
-+	struct mausb_ep_des ep_des[MAUSB_PKT_MAX_NUM_EP];
-+};
-+
-+/** Endpoint Handle Delete fields, per 6.3.16 & 6.3.17, Tables 37 & 38 */
-+/*
-+ * Note: both the request and response packets are in the same format.
-+ * The the request contains all the handles to delete, and the
-+ * response indicates how many were deleted.
-+ */
-+struct __packed mausb_EPHandleDelete_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 num_ep:5; /**< number of EP descriptors */
-+	__le32 rsvd:27;  /**< reserved */
-+#else
-+	__le32 rsvd:27;  /**< reserved */
-+	__le32 num_ep:5; /**< number of EP descriptors */
-+#endif
-+	struct mausb_ep_handle ep_handle[MAUSB_PKT_MAX_NUM_EP];
-+};
-+
-+/** Modify EP0 Request and Response fields, per 6.3.20-21, table 39 & 40 */
-+struct __packed mausb_ModifyEP0_flds {
-+	/** Endpoint 0 handle for the device */
-+	struct mausb_ep_handle ep_handle;
-+	union {
-+		__le16 max_pkt_size; /**< Maximum packet size for EP0 */
-+		__le16 rsvd; 	     /**< reserved */
-+	};
-+};
-+
-+/** Set USB Device Address Request fields, per 6.3.22, table 41 */
-+struct __packed mausb_SetDevAddrReq_flds {
-+	__le16  resp_timeout; /**< time the device has to respond (in ms) */
-+	__le16  rsvd;
-+};
-+
-+/** Set USB Device Address Response fields, per 6.3.23, table 42 */
-+struct __packed mausb_SetDevAddrResp_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32  dev_addr:7; /**< USB Device Address from request */
-+	__le32  rsvd:25;
-+#else
-+	__le32  rsvd:25;
-+	__le32  dev_addr:7; /**< USB Device Address from request */
-+#endif
-+};
-+
-+/** Update Device Request fields, per 6.3.24, Table 28 */
-+struct __packed mausb_UpdateDevReq_flds {
-+	__le16 max_exit_lat; /**< Max Exit Latency */
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__u8  hub:1;        /**< Hub flag, set to 1 if hub */
-+	__u8  num_ports:4;  /**< hub only, number of downward-facing ports */
-+	__u8  mtt:1;        /**< HS hub only, Multiple Transaction Translator */
-+	__u8  ttt:2;        /**< HS hub only, Transaction Think Time */
-+	/**< 0 = at most 8  FS bit times */
-+	/**< 1 = at most 16 FS bit times */
-+	/**< 2 = at most 24 FS bit times */
-+	/**< 3 = at most 32 FS bit times */
-+#else
-+	__u8  ttt:2;
-+	__u8  mtt:1;
-+	__u8  num_ports:4;
-+	__u8  hub:1;
-+#endif
-+};
-+
-+/** MAUSB Synchronization Request fields, per 6.3.40, Table 30 */
-+struct __packed mausb_SynchReq_flds {
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le16             td_valid:1; /**< Transmission Delay field valid */
-+	__le16             rsvd:15;    /**< reserved */
-+#else
-+	__le16             rsvd:15;    /**< reserved */
-+	__le16             td_valid:1; /**< Transmission Delay field valid */
-+#endif
-+	struct mausb_time timestamp;   /**< MA USB Timestamp, per 6.5.1.11 */
-+	__le32             tx_dly;     /**< Transmission delay, per 6.5.1.12 */
-+};
-+
-+/** Cancel Transfer Request fields, per 6.3.42, Table 31 */
-+struct __packed mausb_CancelTransferReq_flds {
-+	struct mausb_ep_handle ep_handle;	/**< Target Endpoint Handle */
-+	__le16                  stream_id;	/**< Target stream ID */
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32                  req_id:8;	/**< Target request ID */
-+	__le32                  rsvd:24;	/**< reserved */
-+#else
-+	__u32                  rsvd:24;    /**< reserved */
-+	__u32                  req_id:8;    /**< Target request ID */
-+#endif
-+};
-+
-+/** Cancel Transfer Response fields, per 6.3.43, Table 32 */
-+struct __packed mausb_CancelTransferResp_flds {
-+	struct mausb_ep_handle ep_handle;
-+	__u16 stream_id;
-+	/** Cancellation status                         */
-+	/** 0 = Cancel Error                            */
-+	/** 1 = Cancel Sucess before any data was moved */
-+	/** 2 = Cancel Sucess after some data was moved */
-+	/** 3 = Transfer not found                      */
-+
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 req_id:8;
-+	__le32 cancel_status:2;
-+	__le32 rsvd_0:22;
-+#else
-+	__le32 rsvd_0:22;
-+	__le32 cancel_status:2;
-+	__le32 req_id:8;
-+#endif
-+	/** Delivered Sequence Number */
-+	/** For OUT Transfers only. Only valid if cancel_status = 2 */
-+	/** Indicates last sequence number delivered to the device. */
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 deliv_seq_num:24;
-+	__le32 rsvd_1:8;
-+#else
-+	__le32 deliv_seq_num:24;
-+	__le32 rsvd_1:8;
-+#endif
-+	/** Delivered Byte Offset. Only valid if cancel_status = 2 */
-+	__le32 deliv_byte_offset;
-+};
-+
-+/** Enpoint Open Stream Request fields, per 6.3.44, Table 33 */
-+struct __packed mausb_EPOpenStreamReq_flds {
-+	struct mausb_ep_handle ep_handle; /**< Target bulk endpoint */
-+	__le32  num_streams:17; /**< number of streams to be opened */
-+	__le32  rsvd:7;
-+};
-+
-+/** Enpoint Inactivate Request fields, per 6.3.10, Table 30 */
-+struct __packed mausb_EPInactivateReq_flds {
-+	__u8  num_ep_handles:5; /** number of ep handles included packet */
-+	__u8  suspend_flg:1; /** indicates if issued due to suspension of */
-+			     /** included endpoints */
-+			     /** 0 = endpoints not suspended */
-+			     /** 1 = endpoints suspended */
-+	__u32  rsvd:26;
-+
-+	/** list of EP handles MA USB host is requesting to inactivate */
-+	struct mausb_ep_handle ep_handle[MAUSB_PKT_MAX_NUM_EP];
-+};
-+
-+/** Enpoint Inactivate Response fields, per 6.3.11, Table 33 */
-+struct __packed mausb_EPInactivateResp_flds {
-+	__u8  num_ep_with_error:5; /** number of EP handles with */
-+				   /** unsuccessful inactivation */
-+				   /** should only be non-zero if */
-+				   /** packet status is not SUCCESS */
-+	__u32  rsvd:27;
-+
-+	/** list of EP handles whose inactivation failed */
-+	struct mausb_ep_handle ep_handle[MAUSB_PKT_MAX_NUM_EP];
-+};
-+
-+#define MAUSB_MGMT_MAX_TOKEN ((1 << 10) - 1)
-+#define MAUSB_MGMT_TOKEN_PAD_LEN 3 /* token + pad to DWORD */
-+
-+/** Management Packet fields, per 6.3.1 */
-+struct __packed mausb_mgmt_pkt {
-+	struct mausb_pkt_common common;
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le16                  token:10;
-+	__le16                  padding:6; /* for DWORD alignment */
-+#else
-+	__le16                  padding:6; /* for DWORD alignment */
-+	__le16                  token:10;
-+#endif
-+	__u8                    padding_2;
-+	union {
-+		struct mausb_CapReq_flds             cap_req;
-+		struct mausb_CapResp_flds            cap_resp;
-+		struct mausb_USBDevHandleReq_flds    usb_dev_handle_req;
-+		__le16                                usb_dev_handle_resp;
-+		struct mausb_EPHandleReq_flds        ep_handle_req;
-+		struct mausb_EPHandleResp_flds       ep_handle_resp;
-+		struct mausb_EPHandleDelete_flds     ep_handle_delete;
-+		struct mausb_ModifyEP0_flds          modify_ep0_req;
-+		struct mausb_ModifyEP0_flds          modify_ep0_resp;
-+		struct mausb_SetDevAddrReq_flds      set_dev_addr_req;
-+		struct mausb_SetDevAddrResp_flds     set_dev_addr_resp;
-+		struct mausb_UpdateDevReq_flds       update_dev_req;
-+		struct mausb_SynchReq_flds           synch_req;
-+		__le16                                ep_close_stream_req;
-+		struct mausb_CancelTransferReq_flds  cancel_transfer_req;
-+		struct mausb_CancelTransferResp_flds cancel_transfer_resp;
-+		struct mausb_EPOpenStreamReq_flds    ep_open_stream_req;
-+		struct mausb_EPInactivateReq_flds    ep_inactivate_req;
-+		struct mausb_EPInactivateResp_flds   ep_inactivate_resp;
-+
-+		/* TODO: add remaining management packet data */
-+
-+	};
-+};
-+
-+/** Transfer Setup Request fields, per 6.4.1, Table 38 */
-+struct __packed mausb_TransferSetupReq_flds {
-+	/** Identifies link type     */
-+	/** 0     = Reserved         */
-+	/** 1     = IEEE 802.11 link */
-+	/** 2-255 = Reserved         */
-+	__u8 link_type;
-+	/** Connection ID data is dependant on Link Type */
-+	union {
-+		/** for 802.11 links (link_type == 1) */
-+		struct __packed {
-+			__u8 tid:4;  /**< Traffic Identifier */
-+			__u8 rsvd:4;
-+		} connection_id;
-+	};
-+};
-+
-+/** Control Packet fields, per 6.4 */
-+struct __packed mausb_ctrl_pkt {
-+	struct mausb_pkt_common common;
-+	struct mausb_TransferSetupReq_flds transfer_setup_req;
-+	__u8 padding; /* for header DWORD alignment */
-+};
-+
-+#define MAUSB_PKT_EPS_UNASSIGNED 0
-+#define MAUSB_PKT_EPS_ACTIVE     1
-+#define MAUSB_PKT_EPS_INACTIVE   2
-+#define MAUSB_PKT_EPS_HALTED     3
-+
-+#define MAUSB_PKT_TFLAG_ARQ  (1 << 2)
-+#define MAUSB_PKT_TFLAG_NEG  (1 << 3)
-+#define MAUSB_PKT_TFLAG_EOT  (1 << 4)
-+#define MAUSB_PKT_TFLAG_TYPE_CTRL (0 << 5)
-+#define MAUSB_PKT_TFLAG_TYPE_ISOC (1 << 5)
-+#define MAUSB_PKT_TFLAG_TYPE_BULK (2 << 5)
-+#define MAUSB_PKT_TFLAG_TYPE_INT  (3 << 5)
-+#define MAUSB_PKT_TFLAG_TYPE_MASK 0x60
-+
-+#define MAUSB_PKT_SEQ_NUM_MASK 0x00FFFFFF
-+
-+/** Fields common to all datapackets, per 6.5 */
-+struct __packed mausb_dph {
-+	struct mausb_pkt_common common;
-+	__u8   eps_tflags;	/**< EPS & T-Flags */
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le16 num_seg:12;
-+	__le16 iflags:4;
-+#else
-+	__le16 iflags:4;
-+	__le16 num_seg:12;
-+#endif
-+#ifdef __LITTLE_ENDIAN_BITFIELD
-+	__le32 seq_num:24;	/**< Sequence Number */
-+	__le32  req_id:8;	/**< request ID */
-+#else
-+	__le32  req_id:8;	/**< request ID */
-+	__le32 seq_num:24;      /**< Sequence Number */
-+#endif
-+	union {
-+		__le32 remaining_size_credit;
-+		__le32 present_time;
-+	};
-+};
-+
-+/** Fields exclusive to isochronous data packets, per 6.5 */
-+struct __packed mausb_iso_dph {
-+	struct mausb_dph data;
-+	__le32 wse_ts;          /**< WSE Timestamp */
-+	__le32 tx_dly;          /**< Transmission Delay */
-+};
-+
-+
-+/* unless the urb contains scattergather buffers, a packet will
-+ * need at most 3 entries:
-+ *	- 1 for the header
-+ *	- 1 for the setup data
-+ *	- 1 for the data buffer
++ * Contains all the data necessary to handle management packets.
 + *
++ * @req_list:		List of all currently pending management requests for
++ *			this device.
++ * @token:		The value of the token field in the most recently sent
++ *			management request.
++ * @tx_pair:		Indicates where management packets should be sent.
++ *
++ * The following variables are to store common management packet fields:
++ *
++ * @hub_dev_handle:	Device Handle of the MAUSB Dock hub. used for
++ *                  	USBDevHandleReq packets.
++ * @ma_dev_lock:	The spinlock which protects the management data in this
++ *			struct.
++ * @req_switch:		The host or devices request switch. It accepts an
++ * 			incoming request, makes the necessary calls, and
++ *			returns a partially completed response (it fills the
++ *			response type, status & any data fields specific to
++ *			that response). the remainder of the fields are
++ *			completed by mausb_rx_mgmt_req.
 + */
-+#define MAUSB_MS_PKT_ORIG_NENTS 4
++struct mausb_mgmt {
++	struct list_head		req_list;
++	__u16				token:10;
++	struct mausb_transfer_pair	tx_pair;
++	__u16				hub_dev_handle;
++	spinlock_t			*ma_dev_lock;
++	int (*req_switch)(struct mausb_mgmt_pkt *req,
++			struct mausb_mgmt_pkt *resp, struct mausb_mgmt *mgmt);
++};
 +
 +/**
-+ * mausb_pkt structure
++ * mausb_mgmt_req_list - MAUSB management request list entry
 + *
-+ * Can be used to parse any type of MAUSB packet, regardless of contents.
-+ * If the packet type is known, this structure shouldn't be used. Instead,
-+ * a type-specific structure (ie: mausb_XXXX_pkt) should be used.
++ * An entry in the mausb_mgmt request linked list.
 + *
-+ * @setup:		setup data (control packets only)
-+ * @buffer:		data buffer
-+ * @buffer_length:	length of data buffer
-+ * @pkt_list:		connects packet to other packets in a linked list
-+ * @kvec_list:		kvec list
-+ * @nents:		number of kvecs
-+ * @pkt:		A compilation of all the buffers needed to be sent
-+ *			across the medium. Used to pass packet to medium.
-+ * @orig_pkt:		Original ms_pkt for this packet. Used for destructor.
-+ *	 		If this packet originated from the MA driver, it will
-+ *			point to the ms_pkt of this ma_pkt. If it came in from
-+ *			the MS driver, it will point at the ms_pkt it sent
-+ *			us. This is used by the ms_pkt_destructor, so we can
-+ *			make sure we are pointing to the right ms_pkt.
++ * @req_list:	Pointers to other entries in the list.
++ * @mgmt_req:	The request management packet.
++ * @mgmt_resp:	The response management packet, set to NULL until a response
++ *		is received.
++ * @resp_rcvd:	An event triggered when the response is received.
 + */
-+struct mausb_pkt {
++struct mausb_mgmt_req_list {
++	struct list_head	req_list;
++
++	struct mausb_pkt	*mgmt_req;
++	struct mausb_pkt	*mgmt_resp;
++
++	struct completion	resp_rcvd;
++};
++
++/**
++ * Media Agnostic Session State
++ *
++ * Defines the current state of the session between the host & device.
++ * Per MAUSB spec, sections 7.1 & 8.1.1.
++ */
++enum mausb_session_state {
++	MAUSB_SESSION_DOWN,
++	MAUSB_SESSION_CONNECTING,
++	MAUSB_SESSION_ACITVE,
++	MAUSB_SESSION_INACTIVE
++};
++
++/**
++ * stores information returned in a CapResp packet
++ */
++struct ma_capability {
++	__u16		num_ep;
++	__u8		num_dev;
++	__u8		num_stream:5;
++	__u8		dev_type:3;
++	__u16		max_tx_reqs;
++	__u16		max_mgmt_reqs:12;
++};
++
++/**
++ * MA device data
++ *
++ * This structure is used to hold MA device-specific data
++ * (i.e. one instance of this structure exists per MA device).
++ *
++ * @mgmt:		Contains the data needed to keep track of the device's
++ *			management packets.
++ * @dev_list:		Stores a list of the devices connected to this HCD.
++ *			This includes any internal mausb data that exists on
++ *			a per-device, per-endpoint, or per-transfer basis.
++ * @top_dev:		The most upstream mausb device. Used to determine
++ *			where to send MA USB device management packets (such as
++ *			MAUSBDevSleepReq and MAUSBDevWakeReq).
++ * @session_state:	Defines the current state of the session between the
++ *			host and device. Per MAUSB spec, sections 7.1 & 8.1.1.
++ * @ma_dev_addr: 	MA Device Address. Assigned by the host via a
++ *               	MAUSBDevResetReq.
++ * @mass_id:		Media-Agnostic Service Set Identifier. Assigned by the
++ *			host via a MAUSBDevResetReq.
++ * @ma_dev_lock:	Spinlock for this device. This lock should be held
++ *			before accessing any data in this structure.
++ * @ma_drv:		Media agnostic driver interfaces.
++ * @ms_drv:		Media specific driver interfaces.
++ * @ma_cap:		Stores MA device info from CapResp packet fields.
++ * @speed:		Stores MA device info from speed capability descriptor.
++ * @pout:		Stores MA device info from P-managed OUT capability
++ *			descriptor.
++ * @iso:		Stores MA device info from isochronous capabilities
++ *			descriptor.
++ * @synch:		Stores MA device info from synchronization capabilities
++ *			descriptor.
++ * @cont_id:		Stores MA device info from container ID capability
++ *			descriptor.
++ * @link_sleep:		Stores MA device info from link sleep capability
++ *			descriptor.
++ */
++struct ma_dev {
++	struct mausb_mgmt		mgmt;
++	struct list_head		dev_list;
++	struct mausb_dev		*top_dev;
++	enum mausb_session_state	session_state;
++	__u8				ma_dev_addr:7;
++	__u8				mass_id;
++	spinlock_t			ma_dev_lock;
++
 +	union {
-+		struct mausb_pkt_common *common;
-+		struct mausb_mgmt_pkt   *mgmt;
-+		struct mausb_ctrl_pkt   *ctrl;
-+		struct mausb_dph        *data;
-+		struct mausb_iso_dph    *iso_data;
++		struct mausb_hcd *mhcd;
++		struct mausb_udc *maudc;
 +	};
 +
-+	struct usb_ctrlrequest *setup;
-+	void *buffer;
-+	u32 buffer_length;
-+	struct list_head pkt_list;
-+	struct kvec *kvec_list;
-+	int nents;
-+	struct ms_pkt pkt;
-+	struct ms_pkt *orig_pkt;
-+	void (*ms_pkt_destructor)(struct ms_pkt *pkt);
++	struct mausb_ma_drv		ma_drv;
++	struct mausb_ms_drv		*ms_driver;
++
++	struct ma_capability		ma_cap;
++	struct mausb_dev_cap_speed	*speed;
++	struct mausb_dev_cap_pout	*pout;
++	struct mausb_dev_cap_iso	*iso;
++	struct mausb_dev_cap_sync	*sync;
++	struct mausb_dev_cap_cont_id	*cont_id;
++	struct mausb_dev_cap_link_sleep *link_sleep;
 +};
 +
-+enum mausb_pkt_buf_copy_dir {
-+	MAUSB_PKT_BUF_COPY_TO_KVEC = 0,
-+	MAUSB_PKT_BUF_COPY_FROM_KVEC
++/**
++ * MA USB device data
++ *
++ * This structure is used to hold device-pecific data
++ * (i.e. one instance of this structure exists per usb device).
++ *
++ * @dev:		A pointer to the kernel's usb device structure. Can be
++ *			used to uniquely identify a device.
++ * @gadget:		A pointer to the kernel's usb gadget structure.
++ * @ma_dev:		Pointer to parent ma_dev structure.
++ * @ep_list:		A linked list of all the endpoints for this device.
++ *              	MAUSBDevHandleResp packet.
++ * @dev_handle:		MA USB device handle for this device
++ * @dev_address:	The usb device address. set by the ma_dev.
++ *               	NOTE: this is not the same as the address given by
++ *			the kernel.
++ * @dev_list:		A linked list of all the devices in the HCD.
++ * @dev_lock:		Spinlock for this device. This lock should be held
++ * 			before accessing any data in this structure.
++ */
++struct mausb_dev {
++	union {
++		struct usb_device *dev;	   /* Host only */
++		struct usb_gadget *gadget; /* Device only */
++	};
++	struct ma_dev     *ma_dev;
++	struct list_head   ep_list;
++	__u16              dev_handle;
++	__u8               dev_address;
++	struct list_head   dev_list;
++	spinlock_t         dev_lock;
 +};
 +
-+void mausb_pkt_buf_copy_kvec(struct mausb_pkt *pkt, int buf_length, int offset,
-+			  struct kvec *kv, int nents,
-+			   enum mausb_pkt_buf_copy_dir dir);
++/**
++ * MAUSB Endpoint Handle State Variables
++ *
++ * Defines the states for an MA USB Endpoint Handle.
++ *
++ * Per MAUSB spec, seciton 7.2
++ *
++ * Note: MAUSB_EP_HANDLE_DELETED is used to flag an endpoint for deletion
++ *       it is not per spec; endpoints in this state should not be used and
++ *       will be deleted in the next EPHandleDeleteReq.
++ */
++enum mausb_ep_handle_state {
++	MAUSB_EP_HANDLE_UNASSIGNED = 0,
++	MAUSB_EP_HANDLE_ACTIVE,
++	MAUSB_EP_HANDLE_INACTIVE,
++	MAUSB_EP_HANDLE_HALTED,
++	MAUSB_EP_HANDLE_DELETED
++};
 +
-+/* function declarations */
-+const char *mausb_type_to_string(enum mausb_pkt_type type);
-+int mausb_pkt_fill_ms_pkt(struct mausb_pkt *pkt, gfp_t mem_flags);
-+int mausb_pkt_header_length(struct mausb_pkt_common *header);
-+enum mausb_pkt_status mausb_errno_to_ma_status(int errno);
-+int mausb_to_urb_status(enum mausb_pkt_status pkt_status);
-+struct usb_endpoint_descriptor *mausb_ep_handle_req_get_ep_des(
-+		struct mausb_EPHandleReq_flds *req, int i);
-+int mausb_pkt_length(struct mausb_pkt *pkt);
-+struct mausb_pkt *mausb_alloc_pkt(enum mausb_pkt_type pkt_type, int *status,
++/**
++ * MA USB host-side endpoint data
++ *
++ * This structure is used to hold endpoint-specific data
++ * (i.e. one instance of this structure exists per endpoint).
++ *
++ * The following data is protected by the devices's dev_lock:
++ *
++ * @ep: 	Used only by the host side. A pointer to the kernel's host-side
++ *      	endpoint structure. Can be used to uniquely identify an
++ *		endpoint. Note: the HCD probably shouldn't read or write
++ *		anything from the usb_host_endpoint structure, since it belongs
++ *		to the kernel.
++ * @dev_ep:	Used only by the device side. A pointer to the kernel's
++ *          	device-side endpoint structure.
++ * @ep_list:	A linked list of all the endpoints connected to the same
++ *           	device.
++ *
++ * The following data is protected by the endpoint's ep_lock:
++ *
++ * @state:		The MA USB state variables for this endpoint. Per
++ *			MA USB Spec, sections 5.4.1 and 5.5.2.
++ * @active_transfer:	Urb that maps to the transfer in progress.
++ * @ep_handle:		The endpoint handle to be used by packets for this
++ *			endpoint per MA USB Spec, section 6.2.1.5.
++ * @ep_handle_state:	Defines the states an Endpoint Handle can be in.
++ *                   	Per MA USB Spec, section 7.2.
++ * @buffer:		Buffer that holds data going to/from a host during
++ *			transfer.
++ * @actual_length:	Length of buffer.
++ * @lman_support:	For control or non-iso OUT endpoints. Indicates if
++ *                	link-managed tranfers are supported. Not valid until
++ *                	an EPHandleResp is received for this endpoint.
++ * @control_dir:	Control endpoints only; used to determine the direction
++ *               	of the current transfer.
++ * @ccu:		The credit conumption unit, in bytes. Per MA USB Spec,
++ *			table 27.
++ * @mausb_dev:		The device the endpoint belongs to.
++ * @urb_list:		A linked list of all URBs pending for this endpoint.
++ *            		URBs map one-to-one with MAUSB Transfers, so each entry
++ *            		also represents an MA USB Transfer.
++ * @usb_req_list:	Only used on the device side. A linked list of all
++ *                	usb_requests submitted to this endpoint.
++ * @req_list:		Head of list of created transferRequests and
++ *	      		transferAck packets.
++ * @resp_list:		Head of list of received transferResponses packets.
++ * @ep_lock:		Spinlock for this endpoint. This lock should be held
++ *			before accessing any data in this structure.
++ * @timer:		Endpoint timer structure, used to monitor transfer
++ *			timeouts.
++ * @timeout_task:	Thread used to perform packet resends after transfer
++ *			timeout.
++ * @host_ep_wq:		Work queue for timeout thread to wait on while sleeping.
++ * @tx_timed_out:	Used to flag when a timeout event has occured during
++ *			a transfer.
++ * @tx_pair:		Transfer pair for this endpoint.
++ * @gadget:		USB gadget associated with this endpoint.
++ * @busy:		True if this endpoint is busy, otherwise false.
++ * @halted:		1 if endpoint is halted, otherwise 0.
++ * @wedged:		1 if endpoint is wedged, otherwise 0.
++ * @stream_en:		1 if streams are enabled for this endpoint, otherwise 0.
++ * @max_pkt:		Max packet size for this endpoint.
++ */
++struct mausb_host_ep {
++
++	struct usb_host_endpoint	*ep; 	 /* Host only */
++	struct usb_ep			*dev_ep; /* Device only */
++	struct list_head		ep_list;
++	struct mausb_ep_state		state;
++	struct mausb_urb		*active_transfer;
++	struct mausb_ep_handle		ep_handle;
++	enum mausb_ep_handle_state	ep_handle_state;
++	void				*buffer;
++	u32				actual_length;
++	bool				lman_support;
++	bool				control_dir;
++	u16				ccu;
++	struct mausb_dev		*mausb_dev;
++	struct list_head		urb_list;
++	struct list_head		*usb_req_list;
++	struct list_head		req_list;
++	struct list_head		resp_list;
++	spinlock_t			ep_lock;
++	struct timer_list		timer;
++	struct task_struct		*timeout_task;
++	wait_queue_head_t		host_ep_wq;
++	bool				tx_timed_out;
++	struct mausb_transfer_pair	tx_pair;
++	struct usb_gadget		*gadget; /* Device only */
++	bool				busy;
++	unsigned			halted:1;
++	unsigned			wedged:1;
++	unsigned			stream_en:1;
++	u16                             max_pkt;
++};
++
++/**
++ * endpoint request structure - describes one I/O request
++ *
++ * @usb_ep:	A device-side endpoint structure.
++ * @queue:	The list of all requests currently enqueued to this endpoint.
++ */
++struct mausb_gadget_ep {
++	struct usb_ep dev_ep;
++	struct list_head usb_req_list;
++};
++
++/**
++ * MA USB urb structure
++ *
++ * Stores MAUSB-specific urb data. In our implementation, one urb from usb
++ * core maps to exactly one MA USB transfer. When an urb is submitted, it
++ * queues a new transfer. When a transfer is complete (or fails), the urb
++ * is given back to the core.
++ *
++ * All data listed in this structure is protected by the ep_lock.
++ * If you want to use any of this data, you need to be in posession
++ * of this lock.
++ *
++ * @urb:		Used only on the host side. The urb submitted to the
++ *			HCD by usbcore.
++ * @usb_request_list:	Used only on the device side. A pointer to the list of
++ *                    	msusb_requests for this endpoint.
++ * @urb_list:		Connects this mausb_urb with other mausb_urbs
++ *			queued to the same endpoint.
++ * @ma_hcd_urb_list:	Connects this urb to urbs queued to the same ma hcd.
++ * @state:		Current state of the transfer as defined in the
++ *			MA USB Spec.
++ * @ep:			The endpoint that the transfer belongs to.
++ * @dev:		The device that the transfer belongs to.
++ * @transfer_size:	Total number of bytes for transfer associated with urb.
++ */
++struct mausb_urb {
++	struct urb			*urb;		   /* Host Only */
++	struct list_head		*usb_request_list; /* Device Only */
++	struct list_head		urb_list;
++	struct list_head		ma_hcd_urb_list;
++	struct mausb_transfer_state	state;
++	struct mausb_host_ep		*ep;
++	struct mausb_dev		*dev;
++	unsigned int			transfer_size;
++};
++
++/**
++ * endpoint request structure - describes one I/O request
++ *
++ * @req:		The usb_request struct. Enqueuing a usb_request is
++ *			what triggers the creation of this struct.
++ * @usb_req_list:	List of all requests enqueued at this endpoint.
++ */
++struct mausb_request {
++	struct usb_request req;
++	struct list_head   usb_req_list;
++};
++
++/* endpoint/device helper functions */
++struct mausb_host_ep *usb_to_ma_endpoint(struct usb_host_endpoint *ep);
++int mausb_hcd_urb_count(struct mausb_hcd *mhcd);
++
++#define MAUSB_ADD  true
++#define MAUSB_DEL  false
++#define MAUSB_DEV  false
++#define MAUSB_HOST true
++#define MAUSB_OUT  false
++#define MAUSB_IN   true
++struct mausb_pkt *mausb_create_dp(int *status, struct mausb_urb *maurb,
++		bool in, bool host, gfp_t memflags);
++
++/* endpoint/device memory management functions */
++struct mausb_host_ep *mausb_state_to_ep(struct mausb_ep_state *state);
++struct ma_dev *context_to_ma_dev(void *context);
++struct mausb_hcd *mausb_host_ep_to_mahcd(struct mausb_host_ep *ep);
++struct mausb_udc *mausb_host_ep_to_maudc(struct mausb_host_ep *ep);
++struct mausb_dev *usb_dev_to_mausb_dev(struct usb_device *udev);
++struct mausb_host_ep *mausb_find_ep_dev(struct usb_ep *dev_ep,
++		struct mausb_dev *mausb_dev);
++struct mausb_host_ep *mausb_find_ep_host(struct usb_host_endpoint *ep,
++		struct mausb_dev *mausb_dev);
++struct mausb_host_ep *mausb_find_ep_by_handle(struct mausb_ep_handle *handle,
++		struct mausb_dev *mausb_dev);
++struct mausb_host_ep *mausb_find_ep_from_handle(struct mausb_ep_handle handle,
++		struct ma_dev *ma_dev);
++struct mausb_pkt *mausb_pkt_from_ms_pkt_ma_dev(struct ms_pkt *ms_pkt,
++		struct ma_dev *ma_dev, gfp_t mem_flags);
++struct mausb_pkt *mausb_pkt_from_ms_pkt_ep(struct ms_pkt *ms_pkt,
++		struct mausb_host_ep *ep, gfp_t mem_flags);
++struct mausb_dev *mausb_find_dev(struct ma_dev *ma_dev, struct usb_device *dev,
++		unsigned long *handle, struct usb_gadget *gadget);
++struct mausb_dev *mausb_find_dev_host(struct ma_dev *ma_dev,
++		struct usb_device *dev);
++struct mausb_host_ep *mausb_find_ep_by_desc(
++		const struct usb_endpoint_descriptor *ep_desc,
++		struct mausb_dev *mausb_dev);
++struct mausb_host_ep *mausb_find_ep_by_address(u8 address,
++		struct mausb_dev *mausb_dev);
++struct mausb_urb *mausb_alloc_maurb(struct mausb_host_ep *ma_ep,
 +		gfp_t memflags);
-+int mausb_generate_ms_pkt(struct mausb_pkt *pkt);
-+bool mausb_pkt_has_setup_data(struct mausb_dph *header);
-+struct mausb_pkt *ms_pkt_to_mausb_pkt(struct ms_pkt *ms_pkt);
-+struct mausb_pkt *mausb_pkt_from_ms_pkt(struct ms_pkt *ms_pkt,
-+		void (*ms_pkt_destructor)(struct ms_pkt *ms_pkt),
-+		gfp_t mem_flags);
-+int mausb_pkt_dmux(struct ms_pkt *ms_pkt, void *context);
-+void mausb_free_pkt(struct mausb_pkt *pkt);
-+bool mausb_pkt_resp(struct mausb_pkt *pkt);
-+struct mausb_dev_cap_desc *cap_desc_ptr_increment(struct mausb_mgmt_pkt *resp,
-+		int offset);
++int mausb_internal_drop_maurb(struct mausb_urb *maurb, struct mausb_hcd *mhcd);
++void init_ep_state(struct mausb_ep_state *state, u32 buf_size);
++int mausb_activate_endpoints(struct mausb_dev *mausb_dev);
++void mausb_link_ma_ep_to_usb_ep(struct mausb_host_ep *ma_ep,
++		struct usb_ep *dev_ep);
++struct mausb_gadget_ep *usb_ep_to_mausb_gadget_ep(struct usb_ep *ep);
++int mausb_internal_add_ep(struct mausb_dev *ma_dev,
++		struct usb_host_endpoint *ep, struct usb_ep *dev_ep,
++		struct mausb_host_ep **mausb_ep,
++		int (*transfer_timeout)(void *data), gfp_t memflags);
++int mausb_internal_drop_ep(struct mausb_host_ep *ma_ep);
++int mausb_update_ep(struct mausb_host_ep *ma_ep,
++		struct mausb_ep_des *ma_ep_des);
++struct mausb_dev *mausb_internal_alloc_dev(struct ma_dev *ma_dev,
++		struct usb_device *dev, struct usb_gadget *gadget);
++int mausb_internal_free_dev(struct ma_dev *ma_dev,
++		struct mausb_dev *mausb_dev);
++int mausb_internal_reset_ma_dev(struct ma_dev *ma_dev, __u8 ma_dev_addr,
++		__u8 mass_id, struct mausb_hcd *mhcd, struct mausb_udc *maudc);
++int mausb_init_ma_device(struct ma_dev *ma_dev, __u8 ma_dev_addr, __u8 mass_id,
++		struct mausb_hcd *mhcd, struct mausb_udc *maudc,
++		int (*req_switch)(struct mausb_mgmt_pkt *req,
++		struct mausb_mgmt_pkt *resp, struct mausb_mgmt *mgmt),
++		int (*device_connect)(int));
++int mausb_init_mgmt(struct mausb_mgmt *mgmt, spinlock_t *ma_dev_lock,
++		int (*req_switch)(struct mausb_mgmt_pkt *req,
++		struct mausb_mgmt_pkt *resp, struct mausb_mgmt *mgmt));
++const struct usb_endpoint_descriptor *mausb_get_ep_des(
++		struct mausb_host_ep *ma_ep);
 +
-+/* Helper functions for sequence number and request id wraparound */
-+u32 mausb_seq_num_add(u32 seq_num, int val);
-+void mausb_increment_seq_num(u32 *seq_num);
-+bool mausb_seq_num_lt(u32 a, u32 b);
-+bool mausb_seq_num_lt_eq(u32 a, u32 b);
-+bool mausb_seq_num_gt_eq(u32 a, u32 b);
-+bool mausb_seq_num_gt(u32 a, u32 b);
-+u8 mausb_req_id_add(u8 req_id, int val);
-+bool mausb_req_id_lt(u8 a, u8 b);
-+bool mausb_req_id_gt(u8 a, u8 b);
-+bool mausb_req_id_gt_eq(u8 a, u8 b);
++#endif
+diff --git a/drivers/staging/mausb/drivers/mausb_state.h b/drivers/staging/mausb/drivers/mausb_state.h
+new file mode 100644
+index 0000000..01f0171
+--- /dev/null
++++ b/drivers/staging/mausb/drivers/mausb_state.h
+@@ -0,0 +1,184 @@
++/* Name:	mausb_state.h
++ * Description: Contains all of the state variables for hosts and devices as
++ *              defined by the MAUSB spec.
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#ifndef __MAUSB_STATE_H
++#define __MAUSB_STATE_H
++
++/**
++ * MAUSB endpoint state variables, per MA USB Spec sections 5.4.1 & 5.5.2.
++ *
++ * Note: this struct contains the fields necessary to store the state on both
++ * the host and device side.
++ *
++ * @seq_number:		For a sender, this field contains the sequence number
++ *			that should be placed in the next outgoing packet.
++ *              	For a receiver, this field contains the sequence number
++ *              	expected in the next incoming packet.
++ * @keep_alive_timer:	Timeout counter. Set to aMausbTransferKeepAlive
++ *                    	upon a new transfer initialization. To be decremented
++ *                    	every aMAUSBTransferTimeTick interval. If the timer
++ *                    	reaches 0, A retry is triggered.
++ * @retry_counter: 	Indicates how many more times the
++ *                 	transfer will be attempted. Decremented upon a timeout
++ *                 	(see keep_alive_timer for details). If this counter
++ *                 	reaches 0, the transfer fails due to a timeout.
++ * @request_id: 	Request ID number. for IN transfers,  all
++ *			transfer_request packets currently being sent or
++ *			received should have this request ID number. for OUT
++ *			transfers, All transfer_request and transfer_ack
++ *			packets currently being sent or received should have
++ *			this request ID number.
++ * @active_request_id: 	Active Request ID number. used by IN transfers only.
++ *                     	All transfer_ack packets being sent/received should
++ *                     	contain this number.
++ * @earliest_unacked: 	Stores the sequence number of the most recent packet
++ *                    	that has been sent out but has not been acknowledged
++ *                    	by the receiver.
++ * @rx_buf_size: 	Receiver Buffer Size. Used for OUT transfers only.
++ *			Indicates the available buffer space for packets in the
++ *			device (in bytes).
++ *			Note: this value is signed for the host and
++ *			unsigned for the receiver. A negative number
++ *			indicates a buffer overflow.
++ *			Note: defined in spec as a 25-bit signed int
++ *			for a host and a 32-bit unsigned for a device.
++ * @occupancy: 		Size (in bytes) of the payload accepted into the receive
++ *             		buffer. Used only on the device side for OUT transfers.
++ * @earliest_request_id:Request ID of earliest transferReq whose state
++ *			needs to be tracked (host IN).
++ * @transfer_retries:	Reload value for retry_counter. Should be set to
++ *		      	a ControlTransferRetries, aBulkTransferRetries,
++ *		      	or aInterruptTransferRetries depending on transfer
++ *		      	type.
++ * @delayed:		Set to true if the interval between two sucessive
++ *			transferResp packets exceeds aTransferRepeatTime.
++ * @tx_pending: 	Set to 1 when a transfer is in progress, otherwise it
++ *			should be zero. A new transfer cannot be started until
++ *			this flag is cleared.
++ */
++struct mausb_ep_state {                      /* HOST     | DEVICE       */
++
++	unsigned int seq_number:24;          /* IN | OUT | IN | OUT     */
++	int 	     keep_alive_timer;       /* IN | OUT | IN | OUT     */
++	unsigned int retry_counter;          /* IN | OUT | IN | OUT     */
++	__u8         request_id;             /* IN | OUT | IN | OUT     */
++	__u8         active_request_id;      /* IN | OUT | IN |         */
++	unsigned int earliest_unacked:24;    /*    | OUT | IN | OUT     */
++	__u32        rx_buf_size;            /*    | OUT |    | OUT     */
++	unsigned int occupancy;              /*    |     |    | OUT     */
++	u8	     earliest_request_id;    /* IN | OUT | IN | OUT     */
++	unsigned int transfer_retries;       /* IN | OUT | IN | OUT     */
++	bool	     delayed;                /*    |     | IN |         */
++
++	/* TODO: add response_timer (device IN and OUT/host OUT) */
++
++	unsigned int tx_pending:1;       /* beyond spec */
++};
++
++/**
++ * MA USB transfer state variables, per section 5.4.1 & 5.5.2.
++ *
++ * In our implementation, URBs and MAUSB transfers map one-to-one,
++ * so the transfer state and the urb state are one in the same.
++ *
++ * @rem_size:		The remaining transfer size (in bytes). This value is
++ *			set at the beginning of a transfer and is decremented
++ *			as data is received.
++ * @payload_size:	Payload size for out transfer (in bytes). For MA USB
++ *			host, it indicates the overall transfered OUT payload
++ *			size for the current urb. For MA USB device, It
++ *			indicates the received OUT payload size for the
++ *			current MA USB OUT request.
++ * @transfer_error:	A boolean which is only set to TRUE when a
++ *			non-recoverable error is detected in the transfer.
++ * @transfer_complete: 	A boolean which is only set to TRUE when a transfer
++ *                     	is evaluated to be complete. (ie. the final ACK has
++ *                     	has been sent/received).
++ * @eot_detected: 	A boolean which is only set to TRUE when a transfer
++ *                	is complete (ie: all the data has been transferred).
++ *                	Note: eot_detected & transfer_complete differ in when
++ *                	they are set. eot_detected is sent after the last data
++ *                	packet received, transfer_complete is set after the
++ *			final ACK.
++ * @last_transfer_sn: 	Last Transfer Sequence Number. Stores the sequence
++ *                    	number of the final packet of this transfer.
++ * @transfer_acked:	Set to true when a transferReq or transferAck packet is
++ *                  	released to the data channel acknowledging the last
++ *		    	transferResp belonging to a transfer.
++ * @k:			A  transfer-dependent multiplicative factor used to
++ *			reload keep_alive_timer when a transfer has a status
++ *			of TRANSFER_PENDING.
++ * @ack_transfer_sn:	The value of the sequence number in the last
++ *                   	transferReq packet that belongs to the transfer and
++ *                   	has the ARQ field set to 1.
++ */
++struct mausb_transfer_state {             /* HOST     | DEVICE       */
++
++	__u32        rem_size;            /* IN | OUT | IN | OUT     */
++	__u32        payload_size;        /* IN | OUT | IN | OUT     */
++	bool         transfer_error;      /* IN | OUT | IN | OUT     */
++	bool         transfer_complete;   /* IN | OUT | IN | OUT     */
++	bool         eot_detected;        /* IN |     | IN | OUT     */
++	unsigned int last_transfer_sn:24; /* IN |     | IN |         */
++	bool         transfer_acked;      /* IN | OUT |    |         */
++	unsigned int k;                   /* IN |     |    |         */
++	unsigned int ack_transfer_sn:24;  /*    | OUT |    |         */
++
++	/*TODO: add transfer_completion_timer (host IN) */
++};
 +
 +#endif
 -- 
