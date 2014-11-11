@@ -1,157 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545AbaKKDII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 22:08:08 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:48838 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaKKDIC (ORCPT
+	id S1751501AbaKKDQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 22:16:08 -0500
+Received: from mail-yk0-f179.google.com ([209.85.160.179]:47795 "EHLO
+	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaKKDQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 22:08:02 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-72-54617d8fcaab
-Message-id: <54617D8F.8060506@samsung.com>
-Date: Tue, 11 Nov 2014 12:07:59 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Avi Shchislowski <avi.shchislowski@sandisk.com>, ulf.hansson@linaro.org
-Cc: "'Chris Ball'" <chris@printf.net>, linux-mmc@vger.kernel.org,
-        Alex.Lemberg@sandisk.com, gwendal@google.com,
-        open list <linux-kernel@vger.kernel.org>, CPGS <cpgs@samsung.com>
-Subject: Re: [PATCH 1/3] mmc: Support FFU for eMMC v5.0
-References: <n@samsung.com>
- <1415639632-878-1-git-send-email-avi.shchislowski@sandisk.com>
-In-reply-to: <1415639632-878-1-git-send-email-avi.shchislowski@sandisk.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsWyRsSkUHdCbWKIwR8li5sPfrBZ7Ny7jsli
-	wuXtjBYvD2la3N05gdHi8q45bBZH/vczWhxfG+7A4bFgU6nHnWt72DxuvFrI5NG3ZRWjx7Q1
-	55k8Pm+SC2CL4rJJSc3JLEst0rdL4Mr4cWQHU8F3qYr2C69YGxgXiHYxcnJICJhIzO9dyQph
-	i0lcuLeerYuRi0NIYCmjxLrV65hgihonPmGCSExnlGi/eY8ZwnnNKHF2wVU2kCpeAS2JM9Pf
-	gtksAqoSO/euZAGx2QR0JLZ/Ow42SVQgTOJQ2zwmiHpBiR+T74HViAh4Sxw59ZMdZCizwGZG
-	iT3tH4A2cHAIC5hLXH5nA1IjJBAjMf3MH7B6TqD6ORPbGUFsZqD5+1unsUHY8hKb17xlhrj6
-	GrvEg6sSEPcISHybfIgFZKSEgKzEpgNQJZISB1fcYJnAKDYLyUWzkEydhWTqAkbmVYyiqQXJ
-	BcVJ6UWmesWJucWleel6yfm5mxiBMXj637OJOxjvH7A+xCjAwajEw6vhnxgixJpYVlyZe4jR
-	FOiKicxSosn5wEjPK4k3NDYzsjA1MTU2Mrc0UxLn1ZH+GSwkkJ5YkpqdmlqQWhRfVJqTWnyI
-	kYmDU6qBkWmRyk/vcB+77JxbndPdchmXufzU3v5CNTdF7TbPC0Pr4wdOf9TXeBq/qNvpyCKR
-	ldwH17c6RTt1mkzI31tmn3WWadeepW3//unoi8lnl3AcjU5gfXjyYrvjl5WVUy+tfKR9YErw
-	ZVaTtlrzaT/Cd7dWTco6xfB6w1ZDadn+mWqbil1ZbswrU2Ipzkg01GIuKk4EAG71FZW8AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jQd3+2sQQg40nTCxuPvjBZrFz7zom
-	iwmXtzNavDykaXF35wRGi8u75rBZHPnfz2hxfG24A4fHgk2lHneu7WHzuPFqIZNH35ZVjB7T
-	1pxn8vi8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnF
-	J0DXLTMH6BwlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8aPIzuYCr5L
-	VbRfeMXawLhAtIuRk0NCwESiceITJghbTOLCvfVsXYxcHEIC0xkl2m/eY4ZwXjNKnF1wlQ2k
-	ildAS+LM9LdgNouAqsTOvStZQGw2AR2J7d+Og00SFQiTONQ2jwmiXlDix+R7YDUiAt4SR079
-	ZAcZyiywmVFiT/sHoA0cHMIC5hKX39mA1AgJxEhMP/MHrJ4TqH7OxHZGEJsZaP7+1mlsELa8
-	xOY1b5knMArMQrJiFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjvJnUjsY
-	VzZYHGIU4GBU4uHV9E8MEWJNLCuuzD3EKMHBrCTCW58AFOJNSaysSi3Kjy8qzUktPsRoCgyB
-	icxSosn5wASUVxJvaGxiZmRpZG5oYWRsriTOe6DVOlBIID2xJDU7NbUgtQimj4mDU6qB0bxm
-	YZfOpopn4jNEzzvyxvRP+loeZJTfuLlxyras6Psy4QErnW2as5b1pNraxbNfcJvyqYB5Vuwr
-	HYc3q4K0ebu4dBpmsZk9+1Rltcg1njv8ipvBt7w7Jw//rfkoOtt215W1v32e+9THXuJ67fho
-	ToX+esd87Uk3bgvd9t6Xfkvf4XHIEfvrSizFGYmGWsxFxYkAGLgaKAgDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 10 Nov 2014 22:16:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141111024531.GA2503@gmail.com>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+	<1415644096-3513-4-git-send-email-j.glisse@gmail.com>
+	<CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+	<20141110205814.GA4186@gmail.com>
+	<CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
+	<20141110225036.GB4186@gmail.com>
+	<CA+55aFyfgj5ntoXEJeTZyGdOZ9_A_TK0fwt1px_FUhemXGgr0Q@mail.gmail.com>
+	<20141111024531.GA2503@gmail.com>
+Date: Mon, 10 Nov 2014 19:16:04 -0800
+X-Google-Sender-Auth: 9IMDo7-isx2mWkIK8VanycbM7Hs
+Message-ID: <CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page table
+ (gpt) v2.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Nov 10, 2014 at 6:45 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>
+> I was being lazy and wanted to avoid a u64 cast in most operation using
+> those value but yes you right a byte (6bit) is more than enough for all
+> those values.
 
-how did you make the patch?
-This patch didn't apply at Ulf's repository.
+WHAT?
 
+NONE OF WHAT YOU SAY MAKES ANY SENSE.
 
-On 11/11/2014 02:13 AM, Avi Shchislowski wrote:
-> 
-> Add eMMC5.0 ffu ext_csd fields
-> 
-> Signed-off-by: Avi Shchislowski <avi.shchislowski@sandisk.com>
-> Signed-off-by: Alex Lemberg <alex.lemberg@sandisk.com>
-> 
-> 
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 1eda8dd..3b86ed3 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -603,6 +603,15 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->  		card->ext_csd.data_sector_size = 512;
->  	}
->  
-> +	/* eMMC v5 or later */
-> +	if (card->ext_csd.rev >= 7) {
-> +		card->ext_csd.ffu_capable =
-> +			((ext_csd[EXT_CSD_SUPPORTED_MODE] & 0x1) == 0x1) &&
-> +			((ext_csd[EXT_CSD_FW_CONFIG] & 0x1) == 0x0);
+There's no reason for a "u64 cast". The value of "1 << pd_shift" is
+going to be an "int" regardless of what type pd_shift is. The type of
+a shift expression is the type of the left-hand side (with the C
+promotion rules forcing it to at least "int"), the right-hand
+expression type has absolutely no relevance.
 
-if (ext_csd[EXT_CSD_SUPPORTED_MODE] & 0x1) &&  !(ext_csd[EXT_CSD_FW_CONFIG] & 0x1))
-		card->ext_csd.ffu_capable = true;
+So the fact is, those "shift" variables are of an insane size, and
+your stated reason for that insane size makes no sense either.
 
-> +		card->ext_csd.ffu_mode_op = ext_csd[EXT_CSD_FFU_FEATURES];
-> +	} else {
-> +		card->ext_csd.ffu_capable = false;
+It makes *zero* sense to ever have the shift count be a uint64_t. Not
+with a cast, not *without* a cast. Seriously.
 
-Can be set to false by default before checking whether card is eMMC v5.0 or not.
+> I should add that :
+> (1 << pd_shift) is the number of directory entry inside a page (512 for
+> 64bit entry with 4k page or 1024 for 32bit with 4k page).
 
-card->ext_csd.ffu_capable = false;
+So that is actually the *only* shift-value that makes any sense having
+at all, since if you were to have a helper routine to look up the
+upper levels, nobody should ever even care about what their
+sizes/shifts are.
 
-if (card->ext_csd.rev >= 7) {
-	...
-}
+But pd_shift at no point makes sense as uint64_t. Really. None of them
+do. None of them *can* make sense. Not from a value range standpoint,
+not from a C typesystem standpoint, not from *any* standpoint.
 
-Best Regards,
-Jaehoon Chung
+> pde_shift correspond to PAGE_SHIFT for directory entry
+>
+> address >> pgd_shift gives the index inside the global page directory
+> ie top level directory. This is done because on 64bit arch running a
+> 32bit app we want to only have 3 level while 64bit app would require
+> 4levels.
 
-> +	}
->  out:
->  	return err;
->  }
-> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> index d424b9d..dd01efe 100644
-> --- a/include/linux/mmc/card.h
-> +++ b/include/linux/mmc/card.h
-> @@ -81,6 +81,8 @@ struct mmc_ext_csd {
->  	bool			hpi_en;			/* HPI enablebit */
->  	bool			hpi;			/* HPI support bit */
->  	unsigned int		hpi_cmd;		/* cmd used as HPI */
-> +	bool			ffu_capable;		/* FFU support */
-> +	bool			ffu_mode_op;		/* FFU mode operation */
->  	bool			bkops;		/* background support bit */
->  	bool			bkops_en;	/* background enable bit */
->  	unsigned int            data_sector_size;       /* 512 bytes or 4KB */
-> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> index 64ec963..787787b 100644
-> --- a/include/linux/mmc/mmc.h
-> +++ b/include/linux/mmc/mmc.h
-> @@ -272,6 +272,9 @@ struct _mmc_csd {
->   * EXT_CSD fields
->   */
->  
-> +#define EXT_CSD_FFU_STATUS		26	/* R */
-> +#define EXT_CSD_MODE_OPERATION_CODES	29	/* W */
-> +#define EXT_CSD_MODE_CONFIG		30	/* R/W */
->  #define EXT_CSD_FLUSH_CACHE		32      /* W */
->  #define EXT_CSD_CACHE_CTRL		33      /* R/W */
->  #define EXT_CSD_POWER_OFF_NOTIFICATION	34	/* R/W */
-> @@ -290,6 +293,7 @@ struct _mmc_csd {
->  #define EXT_CSD_SANITIZE_START		165     /* W */
->  #define EXT_CSD_WR_REL_PARAM		166	/* RO */
->  #define EXT_CSD_RPMB_MULT		168	/* RO */
-> +#define EXT_CSD_FW_CONFIG		169	/* R/W */
->  #define EXT_CSD_BOOT_WP			173	/* R/W */
->  #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
->  #define EXT_CSD_PART_CONFIG		179	/* R/W */
-> @@ -326,6 +330,11 @@ struct _mmc_csd {
->  #define EXT_CSD_GENERIC_CMD6_TIME	248	/* RO */
->  #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
->  #define EXT_CSD_PWR_CL_DDR_200_360	253	/* RO */
-> +#define EXT_CSD_NUM_OF_FW_SEC_PROG	302	/* RO, 4 bytes */
-> +#define EXT_CSD_FFU_ARG			487	/* RO, 4 bytes */
-> +#define EXT_CSD_OPERATION_CODE_TIMEOUT	491	/* RO */
-> +#define EXT_CSD_FFU_FEATURES		492	/* RO */
-> +#define EXT_CSD_SUPPORTED_MODE		493	/* RO */
->  #define EXT_CSD_TAG_UNIT_SIZE		498	/* RO */
->  #define EXT_CSD_DATA_TAG_SUPPORT	499	/* RO */
->  #define EXT_CSD_MAX_PACKED_WRITES	500	/* RO */
-> 
+But you've gone to some trouble to make it clear that the page tables
+could be some other format, and have a helper indirect routine for
+doing that - if that helper routine would just have done all the
+levels, none of this would be necessary at all. As it is, it adds ugly
+complexity, and the shifting and masking looks objectively insane.
 
+> It is intended to accomodate either 3 or 4 level page table depending on
+> runtime. The whole mask, shift value and back link is to allow easy
+> iteration from one address by being able to jump back to upper level
+> from the lowest level.
+
+.. but why don't you just generate the masks from the shifts? It's trivial.
+
+> The locked array is use to keep track of which entry in a directory
+> have been considered in current thread in previous loop. So it accounts
+> for worst case 32bit entry with VM page size ie 1024 entry per page
+> when page is 4k. Only needing 1bit per entry this means it require
+> 1024bits worst case.
+
+So why the hell do you allocate 4k bits then? Because that's what you do:
+
+   unsigned long           locked[(1 << (PAGE_SHIFT - 3)) / sizeof(long)]
+
+that's 512 bytes. PAGE_SIZE bits. Count it.
+
+Admittedly, it's a particularly confusing and bad way of specifying
+that, but that's what it is. The "-3" is apparently because of "bits
+in bytes", and the "/ sizeof(long)" is because of the base type being
+"unsigned long" rather than a byte, but it all boils down to a very
+complicated and unnecessarily obtuse way of writing "4096 bits".
+
+If you wanted PAGE_SIZE bits (which you apparently don't even want),
+the *SANE* way would be to just write it like
+
+  unsigned long locked[PAGE_SIZE / BITS_PER_LONG];
+
+or something like that, which is actually *understandable*. But that's
+not what the code does. It mixes that unholy mess of PAGE_SHIFT with
+arithmetic and shifting and division, instead of just using *one*
+clear operation.
+
+Ugh.
+
+> pde_from_pdp() only build a page directory entry (an entry pointing to
+> a sub-directory level) from a page it does not need any address. It is
+> not used from traversal, think of it as mk_pte() but for directory entry.
+
+Yes, I see that. And I also see that it doesn't get the level number,
+so you can't do different things for different levels.
+
+Like real page tables often do.
+
+And because it's only done one entry at a time, the code has to handle
+all these levels, even though it's not even *interested* in handling
+the levels. It would be much nicer to have the helper functions walk
+all but the last level, and not have to have that complexity at all.
+*And* it would make the code more generic to boot, since it wouldn't
+depend on the quite possibly broken assumption that all levels are the
+same.
+
+Just look at x86-32 3-level paging. The top-most level is very
+decidedly magical and doesn't look anything like the two other ones.
+There are other examples.
+
+> wlock stands for walk lock, it is a temporary structure using by both
+> the lock and unlock code path to keep track of range locking. The lock
+> struct is public api and must be use with helper to walk the page table,
+> it stores the uniq sequence number that allow the walker to know which
+> directory are safe to walk and which must be ignore.
+
+But that "locked[]" array still  makes no sense. It's apparently the
+wrong size, since you claim the max is just 1k bits. It's mis-named.
+It's just all confusing.
+
+> Does my explanation above help clarify both the code and the design behind
+> it.
+
+Nope. It just makes me despair more.
+
+                     Linus
