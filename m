@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaKKXXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 18:23:14 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:40165 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507AbaKKXXM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 18:23:12 -0500
-Message-ID: <54629A5B.9050209@gmail.com>
-Date: Wed, 12 Nov 2014 00:23:07 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/5] ARM: berlin: Add AHCI and SATA PHY nodes to BG2
-References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1414664488-5911-1-git-send-email-sebastian.hesselbarth@gmail.com> <1414664488-5911-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1414664488-5911-5-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1752651AbaKKXYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 18:24:07 -0500
+Received: from mout.gmx.com ([74.208.4.200]:60461 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752484AbaKKXYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 18:24:05 -0500
+MIME-Version: 1.0
+Message-ID: <trinity-32e38a2d-a98c-448c-a900-56be365b0543-1415748244503@3capp-mailcom-lxa08>
+From: "Brad Townshend" <bradtownshend83a@email.com>
+To: linux-kernel@vger.kernel.org
+Subject: Blues song about systemd
+Content-Type: text/plain; charset=UTF-8
+Date: Wed, 12 Nov 2014 00:24:04 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:q69an788XUUHSoi/nrVRsWUE4YS5vbyiYlvPIjemfa6
+ m9yQE8w0fNNtv/9MoNO21o14jbcsMvgAAgeJxLiP6r+f3bgq7i
+ 3OU+NcjHQAYH56vnIsSmmOxgR9yS//1c0QgimN/khtM5E70pu9
+ 4ehgib53nVN52dpV0uzugmKFmgj+zLi2KGxQXIPHolBdiPcxDn
+ Px9APXD7mdGQvwQ67/g9DXsXvUzDD/6AoymTu63HeDBsa0sonF
+ 8PMS9ETjXfSX7oD6biBVerCTm00KYfHWC2B/tbGWV9l7CRZtEb
+ cIP7kK1hGtWNo159O45HkC8F0Em
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.10.2014 11:21, Sebastian Hesselbarth wrote:
-> Add DT nodes for the AHCI controller and SATA PHY found on Marvell
-> Berlin2 SoCs.
->
-> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+A friend of mine and I, we sat down one afternoon,
+and there was something bothering us. I for one
+couldn't get it out of my head. It was a feeling,
+and it wasn't good.
 
-Applied both DT patches to berlin/dt.
+It was the feeling of getting dicked down
+by SystemD.
 
-Sebastian
+We put this feeling, the feeling we've never
+felt before as proud white males in the greatest country
+God every felt to allow to exist on this planet,
+previously with nary a care in the world,
+we put this new feeling to song.
 
-> ---
->   arch/arm/boot/dts/berlin2.dtsi | 39 +++++++++++++++++++++++++++++++++++++++
->   1 file changed, 39 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-> index 9d7c810ebd0b..f39090491eb2 100644
-> --- a/arch/arm/boot/dts/berlin2.dtsi
-> +++ b/arch/arm/boot/dts/berlin2.dtsi
-> @@ -246,6 +246,45 @@
->   			};
->   		};
->
-> +		ahci: sata@e90000 {
-> +			compatible = "marvell,berlin2-ahci", "generic-ahci";
-> +			reg = <0xe90000 0x1000>;
-> +			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-> +			clocks = <&chip CLKID_SATA>;
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +
-> +			sata0: sata-port@0 {
-> +				reg = <0>;
-> +				phys = <&sata_phy 0>;
-> +				status = "disabled";
-> +			};
-> +
-> +			sata1: sata-port@1 {
-> +				reg = <1>;
-> +				phys = <&sata_phy 1>;
-> +				status = "disabled";
-> +			};
-> +		};
-> +
-> +		sata_phy: phy@e900a0 {
-> +			compatible = "marvell,berlin2-sata-phy";
-> +			reg = <0xe900a0 0x200>;
-> +			clocks = <&chip CLKID_SATA>;
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +			#phy-cells = <1>;
-> +			status = "disabled";
-> +
-> +			sata-phy@0 {
-> +				reg = <0>;
-> +			};
-> +
-> +			sata-phy@1 {
-> +				reg = <1>;
-> +			};
-> +		};
-> +
->   		chip: chip-control@ea0000 {
->   			compatible = "marvell,berlin2-chip-ctrl";
->   			#clock-cells = <1>;
->
+That feeling was subjugation.
 
+SystemD Blues:
+http://youtu.be/y0aTqsl-vfU
