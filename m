@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaKKLYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:24:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57767 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347AbaKKLLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:08 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Torsten Fleischer <to-fleischer@t-online.de>,
-        Peter Chen <peter.chen@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 132/170] usb: chipidea: Fix oops when removing the ci_hdrc module
-Date: Tue, 11 Nov 2014 11:08:11 +0000
-Message-Id: <1415704129-12709-133-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1751560AbaKKLZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:25:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37685 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799AbaKKLY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:24:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="630077637"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+In-Reply-To: <20141104155734.GL12706@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com> <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com> <20141022143241.GT12706@worktop.programming.kicks-ass.net> <8738a4crgg.fsf@ashishki-desk.ger.corp.intel.com> <20141104155734.GL12706@worktop.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 11 Nov 2014 13:24:43 +0200
+Message-ID: <87wq72asjo.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-------------------
+> On Fri, Oct 31, 2014 at 03:13:35PM +0200, Alexander Shishkin wrote:
+>> >> +	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
+>> >> +		for (i = 0; i < PT_CPUID_LEAVES; i++)
+>> >> +			cpuid_count(20, i,
+>> >> +				    &pt_pmu.caps[CR_EAX + i * 4],
+>> >> +				    &pt_pmu.caps[CR_EBX + i * 4],
+>> >> +				    &pt_pmu.caps[CR_ECX + i * 4],
+>> >> +				    &pt_pmu.caps[CR_EDX + i * 4]);
+>> >> +	} else
+>> >> +		return -ENODEV;
+>> >
+>> > I would really rather you use bitfield unions for cpuid stuff, have a
+>> > look at union cpuid10_e[abd]x as used in
+>> > perf_event_intel.c:intel_pmu_init().
+>> 
+>> It looks like it would only work for the first cpuid leaf, but we'll
+>> need more than that. And the array makes it easier to allocate
+>> attributes for sysfs en masse.
+>> 
+>> I guess it doesn't really matter if we use unions unless these bits need
+>> to be exported to other parts of the kernel? But *that* is hardly a good
+>> idea. What do you think?
+>
+> Ah yes, the generation. C is lacking there isn't it :/
+>
+> Now I'm not sure we want to export all the bits you're using though.
+> Like the topa_multiple_entires, that appears an implementation detail
+> userspace should not really care about either way.
 
-From: Torsten Fleischer <to-fleischer@t-online.de>
+Actually, userspace can make assumptions about lost data from this
+bit. But there are others, such as encoded address length. In future
+there will also be several "caps" with allowed values for certain bit
+fields in RTIT_CTL, such as timing packet frequencies.
 
-commit 9680b60ed79edaf52f84b65cbb20859bbb26cb68 upstream.
-
-The call of 'kfree(ci->hw_bank.regmap)' in ci_hdrc_remove() sometimes causes
-a kernel oops when removing the ci_hdrc module.
-
-Since there is no separate memory allocated for the ci->hw_bank.regmap array,
-there is no need to free it.
-
-Signed-off-by: Torsten Fleischer <to-fleischer@t-online.de>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/chipidea/core.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 619d13e29995..4ecb6501a7ea 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -732,7 +732,6 @@ static int ci_hdrc_remove(struct platform_device *pdev)
- 	ci_role_destroy(ci);
- 	ci_hdrc_enter_lpm(ci, true);
- 	usb_phy_shutdown(ci->transceiver);
--	kfree(ci->hw_bank.regmap);
- 
- 	return 0;
- }
--- 
-2.1.0
-
+Regards,
+--
+Alex
