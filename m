@@ -1,65 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaKKRpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:45:11 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62586 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571AbaKKRip (ORCPT
+	id S1752179AbaKKRqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:46:21 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:48241 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaKKRqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:38:45 -0500
-From: Johan Hovold <johan@kernel.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 05/22] net: phy: micrel: fix config_intr error handling
-Date: Tue, 11 Nov 2014 18:37:23 +0100
-Message-Id: <1415727460-20417-6-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1415727460-20417-1-git-send-email-johan@kernel.org>
-References: <1415727460-20417-1-git-send-email-johan@kernel.org>
+	Tue, 11 Nov 2014 12:46:16 -0500
+From: mathieu.poirier@linaro.org
+To: gregkh@linuxfoundation.org
+Cc: robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH] coresight: bindings for coresight drivers
+Date: Tue, 11 Nov 2014 10:46:00 -0700
+Message-Id: <1415727960-29524-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure never to update the control register with random data (an
-error code) by checking the return value after reading it.
+Greg,
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Please consider this as a supplement to the coresight patchset.  It should have
+been sent with the rest of the patches but I missed the original ack from Rob
+Herring.
+
+Thanks,
+Mathieu
+
+>From 69cae46640b8cdc836bf7b86211d5f2adf3d0270 Mon Sep 17 00:00:00 2001
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+Date: Thu, 7 Aug 2014 12:34:06 -0600
+Subject: [PATCH] coresight: bindings for coresight drivers
+
+Coresight IP blocks allow for the support of HW assisted tracing
+on ARM SoCs.  Bindings for the currently available blocks are
+presented herein.
+
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/net/phy/micrel.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ .../devicetree/bindings/arm/coresight.txt          | 204 +++++++++++++++++++++
+ 1 file changed, 204 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
 
-diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-index bcc6c0ea75fa..62ca9613a514 100644
---- a/drivers/net/phy/micrel.c
-+++ b/drivers/net/phy/micrel.c
-@@ -122,6 +122,8 @@ static int kszphy_config_intr(struct phy_device *phydev)
- 
- 	/* set the interrupt pin active low */
- 	temp = phy_read(phydev, MII_KSZPHY_CTRL);
-+	if (temp < 0)
-+		return temp;
- 	temp &= ~KSZPHY_CTRL_INT_ACTIVE_HIGH;
- 	phy_write(phydev, MII_KSZPHY_CTRL, temp);
- 	rc = kszphy_set_interrupt(phydev);
-@@ -134,6 +136,8 @@ static int ksz9021_config_intr(struct phy_device *phydev)
- 
- 	/* set the interrupt pin active low */
- 	temp = phy_read(phydev, MII_KSZPHY_CTRL);
-+	if (temp < 0)
-+		return temp;
- 	temp &= ~KSZ9021_CTRL_INT_ACTIVE_HIGH;
- 	phy_write(phydev, MII_KSZPHY_CTRL, temp);
- 	rc = kszphy_set_interrupt(phydev);
-@@ -146,6 +150,8 @@ static int ks8737_config_intr(struct phy_device *phydev)
- 
- 	/* set the interrupt pin active low */
- 	temp = phy_read(phydev, MII_KSZPHY_CTRL);
-+	if (temp < 0)
-+		return temp;
- 	temp &= ~KS8737_CTRL_INT_ACTIVE_HIGH;
- 	phy_write(phydev, MII_KSZPHY_CTRL, temp);
- 	rc = kszphy_set_interrupt(phydev);
+diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
+new file mode 100644
+index 0000000..d790f49
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/coresight.txt
+@@ -0,0 +1,204 @@
++* CoreSight Components:
++
++CoreSight components are compliant with the ARM CoreSight architecture
++specification and can be connected in various topologies to suit a particular
++SoCs tracing needs. These trace components can generally be classified as
++sinks, links and sources. Trace data produced by one or more sources flows
++through the intermediate links connecting the source to the currently selected
++sink. Each CoreSight component device should use these properties to describe
++its hardware characteristcs.
++
++* Required properties for all components *except* non-configurable replicators:
++
++	* compatible: These have to be supplemented with "arm,primecell" as
++	  drivers are using the AMBA bus interface.  Possible values include:
++		- "arm,coresight-etb10", "arm,primecell";
++		- "arm,coresight-tpiu", "arm,primecell";
++		- "arm,coresight-tmc", "arm,primecell";
++		- "arm,coresight-funnel", "arm,primecell";
++		- "arm,coresight-etm3x", "arm,primecell";
++
++	* reg: physical base address and length of the register
++	  set(s) of the component.
++
++	* clocks: the clock associated to this component.
++
++	* clock-names: the name of the clock as referenced by the code.
++	  Since we are using the AMBA framework, the name should be
++	  "apb_pclk".
++
++	* port or ports: The representation of the component's port
++	  layout using the generic DT graph presentation found in
++	  "bindings/graph.txt".
++
++* Required properties for devices that don't show up on the AMBA bus, such as
++  non-configurable replicators:
++
++	* compatible: Currently supported value is (note the absence of the
++	  AMBA markee):
++		- "arm,coresight-replicator"
++
++	* id: a unique number that will identify this replicator.
++
++	* port or ports: same as above.
++
++* Optional properties for ETM/PTMs:
++
++	* arm,cp14: must be present if the system accesses ETM/PTM management
++	  registers via co-processor 14.
++
++	* cpu: the cpu phandle this ETM/PTM is affined to. When omitted the
++	  source is considered to belong to CPU0.
++
++* Optional property for TMC:
++
++	* arm,buffer-size: size of contiguous buffer space for TMC ETR
++	 (embedded trace router)
++
++
++Example:
++
++1. Sinks
++	etb@20010000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0x20010000 0 0x1000>;
++
++		coresight-default-sink;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etb_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port0>;
++			};
++		};
++	};
++
++	tpiu@20030000 {
++		compatible = "arm,coresight-tpiu", "arm,primecell";
++		reg = <0 0x20030000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			tpiu_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port1>;
++			};
++		};
++	};
++
++2. Links
++	replicator {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++		/* this will show up in debugfs as "0.replicator" */
++		id = <0>;
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator_out_port0: endpoint {
++					remote-endpoint = <&etb_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator_out_port1: endpoint {
++					remote-endpoint = <&tpiu_in_port>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel_out_port0>;
++				};
++			};
++		};
++	};
++
++	funnel@20040000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0x20040000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel_out_port0: endpoint {
++					remote-endpoint =
++							<&replicator_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm0_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm1_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm0_out_port>;
++				};
++			};
++
++		};
++	};
++
++3. Sources
++	ptm@2201c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201c000 0 0x1000>;
++
++		cpu = <&cpu0>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port0>;
++			};
++		};
++	};
++
++	ptm@2201d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201d000 0 0x1000>;
++
++		cpu = <&cpu1>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port1>;
++			};
++		};
++	};
 -- 
-2.0.4
+1.9.1
 
