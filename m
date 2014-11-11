@@ -1,61 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaKKIew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:34:52 -0500
-Received: from smtprelay0057.hostedemail.com ([216.40.44.57]:39808 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751544AbaKKIeu (ORCPT
+	id S1752970AbaKKIgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:36:32 -0500
+Received: from relay.parallels.com ([195.214.232.42]:42557 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaKKIga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:34:50 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2892:2917:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:4250:4321:5007:6119:6261:7875:7903:8603:8825:9036:10004:10400:10848:11232:11473:11658:11914:12517:12519:12740:13069:13095:13132:13231:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: screw17_814494471f652
-X-Filterd-Recvd-Size: 2117
-Message-ID: <1415694886.16070.3.camel@perches.com>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-From: Joe Perches <joe@perches.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com,
-        linux-mtd@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Nov 2014 00:34:46 -0800
-In-Reply-To: <5461C7C6.6060604@codeaurora.org>
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
-	 <5460F7D8.2030100@nod.at> <1415642273.8868.8.camel@perches.com>
-	 <5461C7C6.6060604@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Nov 2014 03:36:30 -0500
+Message-ID: <1415694982.15631.4.camel@tkhai>
+Subject: Re: [RFC][PATCH] sched: Protect call to ss->fork() with
+ css_set_rwsem
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>
+Date: Tue, 11 Nov 2014 11:36:22 +0300
+In-Reply-To: <20141110233901.7e7a0934@gandalf.local.home>
+References: <20141110233901.7e7a0934@gandalf.local.home>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 10:24 +0200, Tanya Brokhman wrote:
-> On 11/10/2014 7:57 PM, Joe Perches wrote:
-> > On Mon, 2014-11-10 at 18:37 +0100, Richard Weinberger wrote:
-> >> Am 03.11.2014 um 14:58 schrieb Tanya Brokhman:
-> >>> If there is more then one UBI device mounted, there is no way to
-> >>> distinguish between messages from different UBI devices.
-> >>> Add device number to all ubi layer message types.
-> >
-> > Adding "error" and "warning" to the message logs is
-> > duplicative to the KERN_<LEVEL> logging information.
-> >
-> >>> Changes from V5:
-> >>> 	- Added ptr verification @ ubi_err/ubi_msg/ubi_warn
-> >>> 	Removed extra printing of ubi number
-> >>> 	Removed new messages.
-> >
-> > Did you all ever look at what I posted?
+Hi, Steven,
+
+В Пн, 10/11/2014 в 23:39 -0500, Steven Rostedt пишет:
+> My tests tripped over the following RCU lockdep splat:
 > 
-> I did. Its not my place to re-post your change in my patch. I personally 
-> prefer it the way I've done it but it's just a matter of opinion and 
-> personal preference.
+> ===============================
+> [ INFO: suspicious RCU usage. ]^M
+> 3.18.0-rc4-test+ #3 Not tainted
+> -------------------------------
+> /work/autotest/nobackup/linux-test.git/kernel/sched/core.c:7449 suspicious rcu_dereference_check() usage!
+> 
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 0
+> 2 locks held by swapper/0/0:
+>  #0:  (&p->pi_lock){......}, at: [<ffffffff8105c470>] task_rq_lock+0x33/0x9b
+>  #1:  (&rq->lock){-.-...}, at: [<ffffffff8105c48a>] task_rq_lock+0x4d/0x9b
+> 
+> stack backtrace:
+> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc4-test+ #3
+> Hardware name: MSI MS-7823/CSM-H87M-G43 (MS-7823), BIOS V1.6 02/22/2014
+>  0000000000000001 ffffffff82203cd8 ffffffff81a2bb53 0000000000000de1
+>  ffffffff822164a0 ffffffff82203d08 ffffffff81075ada ffff880215118000
+>  ffff88021ea13a00 0000000000000000 0000000000000000 ffffffff82203d58
+> Call Trace:
+>  [<ffffffff81a2bb53>] dump_stack+0x46/0x58
+>  [<ffffffff81075ada>] lockdep_rcu_suspicious+0x107/0x110
+>  [<ffffffff81064a0e>] sched_move_task+0xdd/0x153
+>  [<ffffffff81064aab>] cpu_cgroup_fork+0xe/0x10
+>  [<ffffffff810b3e8b>] cgroup_post_fork+0x83/0xa5
+>  [<ffffffff8103d69d>] copy_process+0x169b/0x1870
+>  [<ffffffff81a1f440>] ? rest_init+0x134/0x134
+>  [<ffffffff81078117>] ? trace_hardirqs_on_caller+0x160/0x197
+>  [<ffffffff812f84be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  [<ffffffff8103d995>] do_fork+0x7c/0x23b
+>  [<ffffffff81a34c63>] ? mutex_unlock+0xe/0x10
+>  [<ffffffff810d259c>] ? ftrace_process_locs+0x482/0x4cd
+>  [<ffffffff8105bda9>] ? cpumask_next+0x19/0x1b
+>  [<ffffffff8103db7a>] kernel_thread+0x26/0x28
+>  [<ffffffff81a1f332>] rest_init+0x26/0x134
+>  [<ffffffff823e77eb>] ? ftrace_init+0xad/0x140
+>  [<ffffffff823c8eab>] start_kernel+0x42c/0x439
+>  [<ffffffff823c8887>] ? set_init_arg+0x55/0x55
+>  [<ffffffff823c8491>] x86_64_start_reservations+0x2a/0x2c
+>  [<ffffffff823c8585>] x86_64_start_kernel+0xf2/0xf9
+> 
+> I did a bisect and came across this commit:
+> 
+> Commit eeb61e53ea19 "sched: Fix race between task_group and
+> sched_task_group".
+> 
+> It added a callback of the fork() method which calls sched_move_task().
+> But this function does a task_css_check() which expects to have one of
+> these locks held: cgroup_mutex, css_set_rwsem, or siglock (for this
+> case), or at least have the task exiting.
 
-Don't forget object code size.
+I've fixed this, the fix is in tip tree:
 
+https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=sched/urgent&id=f7b8a47da17c9ee4998f2ca2018fcc424e953c0e
+
+
+> By moving the taking of the css_set_rwsem semaphore out to include the
+> call to ss->fork(), it quiets this warning.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+> 
+> I'm not sure this is the correct fix, but it "works for me".
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 136eceadeed1..a08ad94d62cf 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -5150,17 +5150,16 @@ void cgroup_post_fork(struct task_struct *child)
+>  	 * in the init_css_set before cg_links is enabled and there's no
+>  	 * operation which transfers all tasks out of init_css_set.
+>  	 */
+> +	down_write(&css_set_rwsem);
+>  	if (use_task_css_set_links) {
+>  		struct css_set *cset;
+>  
+> -		down_write(&css_set_rwsem);
+>  		cset = task_css_set(current);
+>  		if (list_empty(&child->cg_list)) {
+>  			rcu_assign_pointer(child->cgroups, cset);
+>  			list_add(&child->cg_list, &cset->tasks);
+>  			get_css_set(cset);
+>  		}
+> -		up_write(&css_set_rwsem);
+>  	}
+>  
+>  	/*
+> @@ -5173,6 +5172,7 @@ void cgroup_post_fork(struct task_struct *child)
+>  			if (ss->fork)
+>  				ss->fork(child);
+>  	}
+> +	up_write(&css_set_rwsem);
+>  }
+>  
+
+>  /**
+
+Kirill
 
