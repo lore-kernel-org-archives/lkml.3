@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaKKGhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 01:37:51 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9941 "EHLO
+	id S1752056AbaKKGiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 01:38:21 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9959 "EHLO
 	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaKKGht (ORCPT
+	with ESMTP id S1751851AbaKKGiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 01:37:49 -0500
+	Tue, 11 Nov 2014 01:38:20 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 10 Nov 2014 22:38:09 -0800
-Message-ID: <5461AEB7.70507@nvidia.com>
-Date: Tue, 11 Nov 2014 15:37:43 +0900
+	by hqnvupgp07.nvidia.com on Mon, 10 Nov 2014 22:38:40 -0800
+Message-ID: <5461AADB.2060207@nvidia.com>
+Date: Tue, 11 Nov 2014 15:21:15 +0900
 From: Alexandre Courbot <acourbot@nvidia.com>
 Organization: NVIDIA
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
@@ -20,10 +20,10 @@ To: Mikko Perttunen <mikko.perttunen@kapsi.fi>, <swarren@wwwdotorg.org>,
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-tegra@vger.kernel.org>, <wni@nvidia.com>,
         Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH v4 REPOST 1/5] of: Add descriptions of thermtrip properties
- to Tegra PMC bindings
-References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi> <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi>
-In-Reply-To: <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi>
+Subject: Re: [PATCH v4 REPOST 5/5] ARM: tegra: Add thermal reset (thermtrip)
+ support to PMC
+References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi> <1415625137-4791-6-git-send-email-mikko.perttunen@kapsi.fi>
+In-Reply-To: <1415625137-4791-6-git-send-email-mikko.perttunen@kapsi.fi>
 X-NVConfidentiality: public
 X-Originating-IP: [10.19.57.128]
 X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
@@ -35,59 +35,149 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 11/10/2014 10:12 PM, Mikko Perttunen wrote:
-> From: Mikko Perttunen <mperttunen@nvidia.com>
+> @@ -606,6 +623,234 @@ void tegra_pmc_enter_suspend_mode(enum tegra_suspend_mode mode)
+>   }
+>   #endif
 >
-> Hardware-triggered thermal reset requires configuring the I2C
-> reset procedure. This configuration is read from the device tree,
-> so document the relevant properties in the binding documentation.
->
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> Reviewed-by: Wei Ni <wni@nvidia.com>
-> Tested-by: Wei Ni <wni@nvidia.com>
-> ---
->   .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 24 ++++++++++++++++++++++
->   1 file changed, 24 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-> index 68ac65f..dc13fb0 100644
-> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-> @@ -47,6 +47,21 @@ Required properties when nvidia,suspend-mode=<0>:
->     sleep mode, the warm boot code will restore some PLLs, clocks and then
->     bring up CPU0 for resuming the system.
->
-> +Hardware-triggered thermal reset:
-> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode exists,
-> +hardware-triggered thermal reset will be enabled.
+> +static const char * const tegra20_powergates[] = {
+> +	[TEGRA_POWERGATE_CPU] = "cpu",
+> +	[TEGRA_POWERGATE_3D] = "3d",
+> +	[TEGRA_POWERGATE_VENC] = "venc",
+> +	[TEGRA_POWERGATE_VDEC] = "vdec",
+> +	[TEGRA_POWERGATE_PCIE] = "pcie",
+> +	[TEGRA_POWERGATE_L2] = "l2",
+> +	[TEGRA_POWERGATE_MPE] = "mpe",
+> +};
 > +
-> +Required properties for hardware-triggered thermal reset (inside 'i2c-thermtrip'):
-> +- nvidia,i2c-bus : Phandle to I2C bus containing the PMU
-> +- nvidia,bus-addr : Bus address of the PMU on the I2C bus
-> +- nvidia,reg-addr : I2C register address to write poweroff command to
-> +- nvidia,reg-data : Poweroff command to write to PMU
+> +static const struct tegra_pmc_soc tegra20_pmc_soc = {
+> +	.num_powergates = ARRAY_SIZE(tegra20_powergates),
+> +	.powergates = tegra20_powergates,
+> +	.num_cpu_powergates = 0,
+> +	.cpu_powergates = NULL,
+> +};
+> +
+> +static const char * const tegra30_powergates[] = {
+> +	[TEGRA_POWERGATE_CPU] = "cpu0",
+> +	[TEGRA_POWERGATE_3D] = "3d0",
+> +	[TEGRA_POWERGATE_VENC] = "venc",
+> +	[TEGRA_POWERGATE_VDEC] = "vdec",
+> +	[TEGRA_POWERGATE_PCIE] = "pcie",
+> +	[TEGRA_POWERGATE_L2] = "l2",
+> +	[TEGRA_POWERGATE_MPE] = "mpe",
+> +	[TEGRA_POWERGATE_HEG] = "heg",
+> +	[TEGRA_POWERGATE_SATA] = "sata",
+> +	[TEGRA_POWERGATE_CPU1] = "cpu1",
+> +	[TEGRA_POWERGATE_CPU2] = "cpu2",
+> +	[TEGRA_POWERGATE_CPU3] = "cpu3",
+> +	[TEGRA_POWERGATE_CELP] = "celp",
+> +	[TEGRA_POWERGATE_3D1] = "3d1",
+> +};
+> +
+> +static const u8 tegra30_cpu_powergates[] = {
+> +	TEGRA_POWERGATE_CPU,
+> +	TEGRA_POWERGATE_CPU1,
+> +	TEGRA_POWERGATE_CPU2,
+> +	TEGRA_POWERGATE_CPU3,
+> +};
+> +
+> +static const struct tegra_pmc_soc tegra30_pmc_soc = {
+> +	.num_powergates = ARRAY_SIZE(tegra30_powergates),
+> +	.powergates = tegra30_powergates,
+> +	.num_cpu_powergates = ARRAY_SIZE(tegra30_cpu_powergates),
+> +	.cpu_powergates = tegra30_cpu_powergates,
+> +	.has_tsense_reset = true,
+> +};
+> +
+> +static const char * const tegra114_powergates[] = {
+> +	[TEGRA_POWERGATE_CPU] = "crail",
+> +	[TEGRA_POWERGATE_3D] = "3d",
+> +	[TEGRA_POWERGATE_VENC] = "venc",
+> +	[TEGRA_POWERGATE_VDEC] = "vdec",
+> +	[TEGRA_POWERGATE_MPE] = "mpe",
+> +	[TEGRA_POWERGATE_HEG] = "heg",
+> +	[TEGRA_POWERGATE_CPU1] = "cpu1",
+> +	[TEGRA_POWERGATE_CPU2] = "cpu2",
+> +	[TEGRA_POWERGATE_CPU3] = "cpu3",
+> +	[TEGRA_POWERGATE_CELP] = "celp",
+> +	[TEGRA_POWERGATE_CPU0] = "cpu0",
+> +	[TEGRA_POWERGATE_C0NC] = "c0nc",
+> +	[TEGRA_POWERGATE_C1NC] = "c1nc",
+> +	[TEGRA_POWERGATE_DIS] = "dis",
+> +	[TEGRA_POWERGATE_DISB] = "disb",
+> +	[TEGRA_POWERGATE_XUSBA] = "xusba",
+> +	[TEGRA_POWERGATE_XUSBB] = "xusbb",
+> +	[TEGRA_POWERGATE_XUSBC] = "xusbc",
+> +};
+> +
+> +static const u8 tegra114_cpu_powergates[] = {
+> +	TEGRA_POWERGATE_CPU0,
+> +	TEGRA_POWERGATE_CPU1,
+> +	TEGRA_POWERGATE_CPU2,
+> +	TEGRA_POWERGATE_CPU3,
+> +};
+> +
+> +static const struct tegra_pmc_soc tegra114_pmc_soc = {
+> +	.num_powergates = ARRAY_SIZE(tegra114_powergates),
+> +	.powergates = tegra114_powergates,
+> +	.num_cpu_powergates = ARRAY_SIZE(tegra114_cpu_powergates),
+> +	.cpu_powergates = tegra114_cpu_powergates,
+> +	.has_tsense_reset = true,
+> +};
+> +
+> +static const char * const tegra124_powergates[] = {
+> +	[TEGRA_POWERGATE_CPU] = "crail",
+> +	[TEGRA_POWERGATE_3D] = "3d",
+> +	[TEGRA_POWERGATE_VENC] = "venc",
+> +	[TEGRA_POWERGATE_PCIE] = "pcie",
+> +	[TEGRA_POWERGATE_VDEC] = "vdec",
+> +	[TEGRA_POWERGATE_L2] = "l2",
+> +	[TEGRA_POWERGATE_MPE] = "mpe",
+> +	[TEGRA_POWERGATE_HEG] = "heg",
+> +	[TEGRA_POWERGATE_SATA] = "sata",
+> +	[TEGRA_POWERGATE_CPU1] = "cpu1",
+> +	[TEGRA_POWERGATE_CPU2] = "cpu2",
+> +	[TEGRA_POWERGATE_CPU3] = "cpu3",
+> +	[TEGRA_POWERGATE_CELP] = "celp",
+> +	[TEGRA_POWERGATE_CPU0] = "cpu0",
+> +	[TEGRA_POWERGATE_C0NC] = "c0nc",
+> +	[TEGRA_POWERGATE_C1NC] = "c1nc",
+> +	[TEGRA_POWERGATE_SOR] = "sor",
+> +	[TEGRA_POWERGATE_DIS] = "dis",
+> +	[TEGRA_POWERGATE_DISB] = "disb",
+> +	[TEGRA_POWERGATE_XUSBA] = "xusba",
+> +	[TEGRA_POWERGATE_XUSBB] = "xusbb",
+> +	[TEGRA_POWERGATE_XUSBC] = "xusbc",
+> +	[TEGRA_POWERGATE_VIC] = "vic",
+> +	[TEGRA_POWERGATE_IRAM] = "iram",
+> +};
+> +
+> +static const u8 tegra124_cpu_powergates[] = {
+> +	TEGRA_POWERGATE_CPU0,
+> +	TEGRA_POWERGATE_CPU1,
+> +	TEGRA_POWERGATE_CPU2,
+> +	TEGRA_POWERGATE_CPU3,
+> +};
+> +
+> +static const struct tegra_pmc_soc tegra124_pmc_soc = {
+> +	.num_powergates = ARRAY_SIZE(tegra124_powergates),
+> +	.powergates = tegra124_powergates,
+> +	.num_cpu_powergates = ARRAY_SIZE(tegra124_cpu_powergates),
+> +	.cpu_powergates = tegra124_cpu_powergates,
+> +	.has_tsense_reset = true,
+> +};
+> +
+> +static const struct of_device_id tegra_pmc_match[] = {
+> +	{ .compatible = "nvidia,tegra124-pmc", .data = &tegra124_pmc_soc },
+> +	{ .compatible = "nvidia,tegra114-pmc", .data = &tegra114_pmc_soc },
+> +	{ .compatible = "nvidia,tegra30-pmc", .data = &tegra30_pmc_soc },
+> +	{ .compatible = "nvidia,tegra20-pmc", .data = &tegra20_pmc_soc },
+> +	{ }
+> +};
 
-This binding is taking two different routes to provide values to the driver:
+Is there a need for moving this huge block of declarations? AFAICT you 
+are only using tegra_pmc_match in your function, maybe you can just do a 
+forward declaration so does not get longer and more complex than it 
+needs to be?
 
-1) It uses a phandle for i2c-bus (which must then be provided by another 
-binding implemented in the two following patches)
-
-2) It uses direct values for bus-addr, reg-addr and reg-data.
-
-Do we need to use both approaches? bus-addr could just as well be 
-obtained through a phandle to the i2c device and reading its reg 
-property. From this phandle you could also go back up to the bus, making 
-the i2c-bus property unnecessary. reg-addr and reg-data cannot be 
-specified that way, obviously.
-
-Actually I think I'd prefer to see i2c-bus become an integer property 
-instead of a phandle, because at the end of the day it is a value field 
-of a particular register and the reference is only used to retrieve that 
-value. It is not like we are actually going to call functions on the bus 
-instance or change its state. And for the single purpose of retrieving 
-that value, this binding requires the addition of a new property on the 
-bus node that will probably never be used for something else.
-
-We can also imagine that some design may not have a PMIC device in the 
-DT but still want to use the thermal reset feature. In this case, it is 
-again preferable to use direct values.
+This detail aside, patch looks ok to me.
 
