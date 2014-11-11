@@ -1,71 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaKKOMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:12:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:32959 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086AbaKKOMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:12:49 -0500
-Date: Tue, 11 Nov 2014 11:02:00 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on
- NO_LIBELF=1
-Message-ID: <20141111140200.GV18464@kernel.org>
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
- <20141107082723.GB23531@worktop.programming.kicks-ass.net>
- <1415372259.1648.51.camel@leonhard>
- <20141107173718.GD29390@twins.programming.kicks-ass.net>
- <87mw7zva3c.fsf@sejong.aot.lge.com>
- <20141110121105.GL3337@twins.programming.kicks-ass.net>
- <CAM9d7cgCzkh3_26=g0+6yUr-xBbk7_F8QP2e1sEkYw9o5OTmjw@mail.gmail.com>
- <20141111102745.GJ10501@worktop.programming.kicks-ass.net>
- <20141111130326.GT18464@kernel.org>
+	id S1751420AbaKKOMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:12:50 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46779 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087AbaKKOMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:12:48 -0500
+Date: Tue, 11 Nov 2014 22:12:30 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: kernel@pengutronix.de, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: dts: vf-colibri: add USB regulators
+Message-ID: <20141111141228.GB2704@dragon>
+References: <1415106430-6271-1-git-send-email-stefan@agner.ch>
+ <1415106430-6271-4-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141111130326.GT18464@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415106430-6271-4-git-send-email-stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 11, 2014 at 10:03:26AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Nov 11, 2014 at 11:27:45AM +0100, Peter Zijlstra escreveu:
-> > On Tue, Nov 11, 2014 at 01:24:38PM +0900, Namhyung Kim wrote:
-> > > > What I was saying, why not have a util/symbol.c change that disregards
-> > > > all DSOs with 0 symbols in.
+On Tue, Nov 04, 2014 at 02:07:10PM +0100, Stefan Agner wrote:
+> Add structure of USB supply logic. Especially, the USB hosts power
+> enable regulator is needed to control VBUS supply.
 > 
-> > > The util/symbol.c doesn't need this because it can handle vmlinux
-> > > reliably.  So after reading symbol table, it'll use the dso if it
-> > > actually contains symbols or fallback to next dso if it has 0 symbols.
-> > > IOW it already disregards all dsos with 0 symbols in.
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+>  arch/arm/boot/dts/vf-colibri-eval-v3.dtsi | 45 ++++++++++++++++++++++++++++++-
+>  arch/arm/boot/dts/vf-colibri.dtsi         | 12 +++++++++
+>  2 files changed, 56 insertions(+), 1 deletion(-)
 > 
-> > Well, it could not could it.. it readily proceeded with 0 symbols in my
-> > case. It did _not_ fallback to kallsyms.
+> diff --git a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
+> index 80e8fbc..eb4ca50 100644
+> --- a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
+> +++ b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
+> @@ -11,6 +11,41 @@
+>  	chosen {
+>  		bootargs = "console=ttyLP0,115200";
+>  	};
+> +
+> +	regulators {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		sys_5v0_reg: regulator@1 {
+> +			compatible = "regulator-fixed";
+> +			reg = <1>;
+
+The numbering generally starts from 0 instead of 1.
+
+> +			regulator-name = "5v0";
+> +			regulator-min-microvolt = <5000000>;
+> +			regulator-max-microvolt = <5000000>;
+> +			regulator-always-on;
+> +		};
+> +
+> +		usbc_vbus_reg: regulator@2 {
+> +			compatible = "regulator-fixed";
+> +			reg = <2>;
+> +			regulator-name = "usbc_vbus";
+> +			regulator-min-microvolt = <5000000>;
+> +			regulator-max-microvolt = <5000000>;
+> +			vin-supply = <&sys_5v0_reg>;
+> +		};
+> +
+> +		/* USBH_PEN */
+> +		usbh_vbus_reg: regulator@3 {
+> +			compatible = "regulator-fixed";
+> +			reg = <3>;
+> +			regulator-name = "usbh_vbus";
+> +			regulator-min-microvolt = <5000000>;
+> +			regulator-max-microvolt = <5000000>;
+> +			gpio = <&gpio3 19 GPIO_ACTIVE_LOW>;
+> +			vin-supply = <&sys_5v0_reg>;
+> +		};
+> +	};
+>  };
+>  
+>  &bl {
+> @@ -51,4 +86,12 @@
+>  
+>  &uart2 {
+>  	status = "okay";
+> -};
+> \ No newline at end of file
+> +};
+> +
+> +&usbdev0 {
+> +	vbus-supply = <&usbc_vbus_reg>;
+> +};
+> +
+> +&usbh1 {
+> +	vbus-supply = <&usbh_vbus_reg>;
+> +};
+> diff --git a/arch/arm/boot/dts/vf-colibri.dtsi b/arch/arm/boot/dts/vf-colibri.dtsi
+> index 2371760..79ccfe2 100644
+> --- a/arch/arm/boot/dts/vf-colibri.dtsi
+> +++ b/arch/arm/boot/dts/vf-colibri.dtsi
+> @@ -163,5 +163,17 @@
+>  				VF610_PAD_PTD3__UART2_CTS		0x21a1
+>  			>;
+>  		};
+> +
+> +		pinctrl_usbh1_ext: gpio_usb_vbus {
+> +			fsl,pins = <
+> +				VF610_PAD_PTD4__GPIO_83			0x22ed
+
+We used to know the GPIO usage by looking for the phandle reference to
+the node.  But it doesn't work for VF610 case now.
+
+I guess this is for usbh_vbus_reg usage?  It would be nice to have a
+comment telling the usage of the GPIO.
+
+> +			>;
+> +		};
+> +
+> +		pinctrl_usbdev0_ext: gpio_usb_cdet {
+> +			fsl,pins = <
+> +				VF610_PAD_PTC29__GPIO_102		0x22ed
+
+How is this one used?
+
+Shawn
+
+> +			>;
+> +		};
+>  	};
+>  };
+> -- 
+> 2.1.3
 > 
-> Right, testing a fix for the problem I described on my last message.
-
-Can you try the patch below?
-
-- Arnaldo
-
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index c9541fea9514..b55f96d49503 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -341,7 +341,7 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
- 
- 	if (filename__read_build_id(ss->name, build_id, BUILD_ID_SIZE) > 0) {
- 		dso__set_build_id(dso, build_id);
--		return 1;
-+		return 0;
- 	}
- 	return 0;
- }
