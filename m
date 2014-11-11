@@ -1,61 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaKKF2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 00:28:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47414 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498AbaKKF2j (ORCPT
+	id S1752032AbaKKF1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 00:27:10 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40846 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316AbaKKF1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 00:28:39 -0500
-Date: Tue, 11 Nov 2014 14:27:20 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Jingchang Lu <jingchang.lu@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [RESENDv5] serial: of-serial: fix up PM ops on
- no_console_suspend and port type
-Message-ID: <20141111052720.GC24727@kroah.com>
-References: <1414401857-21121-1-git-send-email-jingchang.lu@freescale.com>
- <CAGVrzcamoYbdPijWtrU=ge+UE+g9zBHAG84PJB7G3EyA09jBWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGVrzcamoYbdPijWtrU=ge+UE+g9zBHAG84PJB7G3EyA09jBWg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 11 Nov 2014 00:27:06 -0500
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
+        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
+        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
+        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
+        mpe@ellerman.id.au, sam.bobroff@au1.ibm.com
+Subject: [PATCH V4 2/8] powerpc, process: Add functions flush_tm_state, flush_tmregs_to_thread
+Date: Tue, 11 Nov 2014 10:56:31 +0530
+Message-Id: <1415683597-22819-3-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111105-0025-0000-0000-00000079DD73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 08:30:36PM -0800, Florian Fainelli wrote:
-> 2014-10-27 2:24 GMT-07:00 Jingchang Lu <jingchang.lu@freescale.com>:
-> > This patch fixes commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
-> > "serial: of-serial: add PM suspend/resume support", which disables
-> > the uart clock on suspend, but also causes a hardware hang on register
-> > access if no_console_suspend command line option is used.
-> >
-> > Also, not every of_serial device is an 8250 port, so the serial8250
-> > suspend/resume functions should only be applied to a real 8250 port.
-> 
-> Greg, can you pick this one and submit it for your next 3.18-rc
-> submission? This fixes a regression when using "no_console_suspend"
-> introduced by:
-> 
-> 2dea53bf57783f243c892e99c10c6921e956aa7e ("serial: of-serial: add PM
-> suspend/resume support") which has been merged during 3.18-rc1
+This patch creates a new function called flush_tm_state to flush
+the existing transactional memory state from the thread. It also
+creates a function called flush_tmregs_to_thread which will then
+be used on subsequent patches in this series.
 
-Why can't I just revert that patch instead?  This is really late in the
--rc cycle to be doing large fixes like this.
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/switch_to.h |  8 ++++++
+ arch/powerpc/kernel/process.c        | 49 +++++++++++++++++++++++++++++-------
+ 2 files changed, 48 insertions(+), 9 deletions(-)
 
-And this patch is already queued up for 3.19-rc1, so this is a mess...
+diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
+index 58abeda..23752a9 100644
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -82,6 +82,14 @@ static inline void flush_spe_to_thread(struct task_struct *t)
+ }
+ #endif
+ 
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++extern void flush_tmregs_to_thread(struct task_struct *);
++#else
++static inline void flush_tmregs_to_thread(struct task_struct *t)
++{
++}
++#endif
++
+ static inline void clear_task_ebb(struct task_struct *t)
+ {
+ #ifdef CONFIG_PPC_BOOK3S_64
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index aa1df89..c36477b 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -745,6 +745,45 @@ void restore_tm_state(struct pt_regs *regs)
+ #define __switch_to_tm(prev)
+ #endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
+ 
++/*
++ * flush_tm_state
++ *
++ * Flush TM state out so we can copy it.  __switch_to_tm() does this
++ * flush but it removes the checkpointed state from the current CPU and
++ * transitions the CPU out of TM mode.  Hence we need to call
++ * tm_recheckpoint_new_task() (on the same task) to restore the
++ * checkpointed state back and the TM mode.
++ */
++static void flush_tm_state(struct task_struct *src)
++{
++	__switch_to_tm(src);
++	tm_recheckpoint_new_task(src);
++}
++
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++void flush_tmregs_to_thread(struct task_struct *tsk)
++{
++	/*
++	 * If task is not current, it should have been flushed
++	 * already to it's thread_struct during __switch_to().
++	 */
++	if (tsk != current)
++		return;
++
++	preempt_disable();
++	if (tsk->thread.regs) {
++		/*
++		 * If we are still current, the TM state need to
++		 * be flushed to thread_struct as it will be still
++		 * present in the current cpu.
++		 */
++		if (MSR_TM_ACTIVE(tsk->thread.regs->msr))
++			flush_tm_state(tsk);
++	}
++	preempt_enable();
++}
++#endif
++
+ struct task_struct *__switch_to(struct task_struct *prev,
+ 	struct task_struct *new)
+ {
+@@ -1079,15 +1118,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
+ 	flush_altivec_to_thread(src);
+ 	flush_vsx_to_thread(src);
+ 	flush_spe_to_thread(src);
+-	/*
+-	 * Flush TM state out so we can copy it.  __switch_to_tm() does this
+-	 * flush but it removes the checkpointed state from the current CPU and
+-	 * transitions the CPU out of TM mode.  Hence we need to call
+-	 * tm_recheckpoint_new_task() (on the same task) to restore the
+-	 * checkpointed state back and the TM mode.
+-	 */
+-	__switch_to_tm(src);
+-	tm_recheckpoint_new_task(src);
++	flush_tm_state(src);
+ 
+ 	*dst = *src;
+ 
+-- 
+1.9.3
 
-Any objection to me just reverting
-2dea53bf57783f243c892e99c10c6921e956aa7e, and then this one in my
-tty-next branch as well, and then someone resending the original patch
-in a format that actually works?
-
-thanks,
-
-greg k-h
