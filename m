@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaKKVMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:12:37 -0500
-Received: from mail2.kmu-office.ch ([178.209.48.109]:49156 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaKKVMg (ORCPT
+	id S1752017AbaKKVOA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:14:00 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34615 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaKKVN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:12:36 -0500
+	Tue, 11 Nov 2014 16:13:59 -0500
+Message-ID: <54627C1F.9050200@wwwdotorg.org>
+Date: Tue, 11 Nov 2014 14:14:07 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Olof Johansson <olof@lixom.net>, thierry.reding@gmail.com,
+        gnurou@gmail.com
+CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linux-foundation.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
+References: <1415738970-7963-1-git-send-email-olof@lixom.net>
+In-Reply-To: <1415738970-7963-1-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 11 Nov 2014 22:13:44 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Sanchayan Maity <maitysanchayan@gmail.com>
-Cc: rtc-linux@googlegroups.com, shawn.guo@linaro.org, linux@arm.linux.org.uk,
-        kernel@pengutronix.de, b35083@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [[PATCHv2] 1/3] ARM: imx: clk-vf610: Add clock for SNVS
-In-Reply-To: <bbe86ff8ff7461451be5c53242842e966bfd3966.1415364391.git.maitysanchayan@gmail.com>
-References: <cover.1415364391.git.maitysanchayan@gmail.com>
- <bbe86ff8ff7461451be5c53242842e966bfd3966.1415364391.git.maitysanchayan@gmail.com>
-Message-ID: <9a79e6b3c1c62037cef31baa432fd874@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Tue Nov 11 22:12:33 2014
-X-DSPAM-Confidence: 1.0000
-X-DSPAM-Probability: 0.0023
-X-DSPAM-Signature: 54627bc112812836511337
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-11-07 14:04, Sanchayan Maity wrote:
-> This patch adds support for clock gating of
-> the SNVS peripheral.
-> 
-> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+On 11/11/2014 01:49 PM, Olof Johansson wrote:
+> There are general changes pending to make the /aliases/serial* entries
+> number the serial ports on the system. On tegra, so far the ports have been
+> just numbered dynamically as they are configured so that makes them change.
+>
+> To avoid this, add specific aliases per board to keep the old numbers. This
+> allows us to change the numbering by default on future SoCs while keeping the
+> numbering on existing boards.
+
+This change seems mostly OK to me. FWIW though, I had suggested this 
+approach when the UART aliases were first added, and Laxman disagreed 
+with it. See commit b6551bb933f9 "ARM: tegra: dts: add aliases and DMA 
+requestor for serial controller", and its discussion: 
+https://lkml.org/lkml/2012/12/25/4. I've CC'd Laxman in case he still 
+objects.
+
+> Signed-off-by: Olof Johansson <olof@lixom.net>
 > ---
->  arch/arm/mach-imx/clk-vf610.c           |    1 +
->  include/dt-bindings/clock/vf610-clock.h |    3 ++-
->  2 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-imx/clk-vf610.c b/arch/arm/mach-imx/clk-vf610.c
-> index 5937dde..bbf4785 100644
-> --- a/arch/arm/mach-imx/clk-vf610.c
-> +++ b/arch/arm/mach-imx/clk-vf610.c
-> @@ -379,6 +379,7 @@ static void __init vf610_clocks_init(struct
-> device_node *ccm_node)
->  	clk[VF610_CLK_DMAMUX1] = imx_clk_gate2("dmamux1", "platform_bus",
-> CCM_CCGR0, CCM_CCGRx_CGn(5));
->  	clk[VF610_CLK_DMAMUX2] = imx_clk_gate2("dmamux2", "platform_bus",
-> CCM_CCGR6, CCM_CCGRx_CGn(1));
->  	clk[VF610_CLK_DMAMUX3] = imx_clk_gate2("dmamux3", "platform_bus",
-> CCM_CCGR6, CCM_CCGRx_CGn(2));
-> +	clk[VF610_CLK_SNVS] = imx_clk_gate2("snvs-rtc", "ipg_bus",
-> CCM_CCGR6, CCM_CCGRx_CGn(7));
+>
+> Stephen/Thierry/Alex, as noticed this week we really should try to get
+> this in before the 3.19 merge window so that the global aliases change
+> can happen there without regression.
 
-Just noticed that imx_clk_gate2 always sets both gates. This means, the
-RTC will be gated when going into low power modes. We might need to use
-a different gating when we want to use the RTC as wakeup source. But
-this would be part of the suspend/resume patchset...
-
->  
->  	imx_check_clocks(clk, ARRAY_SIZE(clk));
->  
-> diff --git a/include/dt-bindings/clock/vf610-clock.h
-> b/include/dt-bindings/clock/vf610-clock.h
-> index 801c0ac..979d24a 100644
-> --- a/include/dt-bindings/clock/vf610-clock.h
-> +++ b/include/dt-bindings/clock/vf610-clock.h
-> @@ -192,6 +192,7 @@
->  #define VF610_PLL5_BYPASS		179
->  #define VF610_PLL6_BYPASS		180
->  #define VF610_PLL7_BYPASS		181
-> -#define VF610_CLK_END			182
-> +#define VF610_CLK_SNVS			182
-> +#define VF610_CLK_END			183
->  
->  #endif /* __DT_BINDINGS_CLOCK_VF610_H */
-
-Acked-By: Stefan Agner <stefan@agner.ch>
-
---
-Stefan
-
+How did we resolve the issue that patch causes with old DTs; namely that 
+it causes a change in behaviour for those old DTs? On IRC, I'd wondered 
+whether we should set a flag so the kernel ignored aliases for boards 
+containing currently upstreamed Tegra SoCs so that issue wouldn't occur. 
+If we did that, we wouldn't need this patch.
