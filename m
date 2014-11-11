@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaKKLLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:11:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57780 "EHLO
+	id S1752521AbaKKLXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:23:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57789 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaKKLLK (ORCPT
+	with ESMTP id S1754363AbaKKLLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:10 -0500
+	Tue, 11 Nov 2014 06:11:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Imre Deak <imre.deak@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 135/170] PM / Sleep: fix async suspend_late/freeze_late error handling
-Date: Tue, 11 Nov 2014 11:08:14 +0000
-Message-Id: <1415704129-12709-136-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 137/170] Revert "block: all blk-mq requests are tagged"
+Date: Tue, 11 Nov 2014 11:08:16 +0000
+Message-Id: <1415704129-12709-138-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 246ef766743618a7cab059d6c4993270075b173e upstream.
+commit e999dbc254044e8d2a5818d92d205f65bae28f37 upstream.
 
-If an asynchronous suspend_late or freeze_late callback fails
-during the SUSPEND, FREEZE or QUIESCE phases, we don't propagate the
-corresponding error correctly, in effect ignoring the error and
-continuing the suspend-to-ram/hibernation. During suspend-to-ram this
-could leave some devices without a valid saved context, leading to a
-failure to reinitialize them during resume. During hibernation this
-could leave some devices active interfeering with the creation /
-restoration of the hibernation image. Also this could leave the
-corresponding devices without a valid saved context and failure to
-reinitialize them during resume.
+This reverts commit fb3ccb5da71273e7f0d50b50bc879e50cedd60e7.
 
-Fixes: de377b397272 (PM / sleep: Asynchronous threads for suspend_late)
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+SCSI-2/SPI actually needs the tagged/untagged flag in the request to
+work properly.  Revert this patch and add a follow on to set it in
+the right place.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/base/power/main.c | 2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/blkdev.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index bf412961a934..1f6da3ad6db0 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -1262,6 +1262,8 @@ static int dpm_suspend_late(pm_message_t state)
- 	}
- 	mutex_unlock(&dpm_list_mtx);
- 	async_synchronize_full();
-+	if (!error)
-+		error = async_error;
- 	if (error) {
- 		suspend_stats.failed_suspend_late++;
- 		dpm_save_failed_step(SUSPEND_SUSPEND_LATE);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 8699bcf5f099..279390ee523a 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1140,8 +1140,7 @@ static inline bool blk_needs_flush_plug(struct task_struct *tsk)
+ /*
+  * tag stuff
+  */
+-#define blk_rq_tagged(rq) \
+-	((rq)->mq_ctx || ((rq)->cmd_flags & REQ_QUEUED))
++#define blk_rq_tagged(rq)		((rq)->cmd_flags & REQ_QUEUED)
+ extern int blk_queue_start_tag(struct request_queue *, struct request *);
+ extern struct request *blk_queue_find_tag(struct request_queue *, int);
+ extern void blk_queue_end_tag(struct request_queue *, struct request *);
 -- 
 2.1.0
 
