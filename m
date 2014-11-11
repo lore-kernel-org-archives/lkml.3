@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaKKM3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:29:39 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:44980 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaKKM3h (ORCPT
+	id S1753249AbaKKMby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:31:54 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:62640 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbaKKMbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:29:37 -0500
+	Tue, 11 Nov 2014 07:31:52 -0500
+Date: Tue, 11 Nov 2014 12:31:46 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] mfd: twl4030-power: Fix poweroff with PM configuration
+ enabled
+Message-ID: <20141111123146.GB24004@x1>
+References: <20141102180756.GH31454@atomide.com>
+ <20141110124019.GZ21424@x1>
+ <20141110175343.GB4047@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <21124316.ibhe1N9UZS@avalon>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
-	<1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
-	<21124316.ibhe1N9UZS@avalon>
-Date: Tue, 11 Nov 2014 13:29:36 +0100
-Message-ID: <CACRpkdZH9b_KB9Mz8r5vj=KGqr0bJeKMRgODUbNeBDVNr=tsCg@mail.gmail.com>
-Subject: Re: [PATCH 2/7] pinctrl: pinconf-generic: Infer map type from DT property
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141110175343.GB4047@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 5, 2014 at 2:56 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Monday 03 November 2014 11:05:26 Soren Brinkmann wrote:
->> With the new 'groups' property, the DT parser can infer the map type
->> from the fact whether 'pins' or 'groups' is used to specify the pin
->> group to work on.
->> To maintain backwards compatibitliy with current usage of the DT
->> binding, this is only done when an invalid map type is passed to the
->> parsing function.
->
-> The Renesas PFC implements similar bindings with using the vendor-specific
-> properties "renesas,pins" and "renesas,groups" (bindings and implementation
-> available at Documentation/devicetree/bindings/pinctrl/renesas,pfc-pinctrl.txt
-> and drivers/pinctrl/sh-pfc/pinctrl.c respectively).
->
-> The Renesas implementation is a bit more generic in that it allows both pins
-> and groups to be specified in a single subnode. Do you think that feature
-> would make sense for pinconf-generic as well ?
+On Mon, 10 Nov 2014, Russell King - ARM Linux wrote:
 
-I think for generic pin controllers either nodes with:
+> On Mon, Nov 10, 2014 at 12:40:19PM +0000, Lee Jones wrote:
+> > On Sun, 02 Nov 2014, Tony Lindgren wrote:
+> > 
+> > > Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+> > > configuration") enabled configuring the PM features for twl4030.
+> > > 
+> > > This caused poweroff command to fail on devices that have the
+> > > BCI charger on twl4030 wired, or have power wired for VBUS.
+> > > Instead of powering off, the device reboots. This is because
+> > > voltage is detected on charger or VBUS with the default bits
+> > > enabled for the power transition registers.
+> > > 
+> > > To fix the issue, let's just clear VBUS and CHG bits as we want
+> > > poweroff command to keep the system powered off.
+> > > 
+> > > Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
+> > > Cc: stable@vger.kernel.org # v3.16+
+> > > Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> > > Signed-off-by: Tony Lindgren <tony@atomide.com>
+> > 
+> > Applied to -fixes.
+> > 
+> > Not sure whether that was an Ack from Russell or not?
+> 
+> A Tested-by would've been more appropriate than an ack.
 
-{
-    function = "foo";
-    pins = "A0", "A1", "A2";
-}
+Applied.
 
-or
-
-{
-    function = "foo";
-    groups = "bar", "baz";
-}
-
-In parsing this it's easy to just look for "function" then see if
-we're mapping to groups or pins.
-
-It'd be nice if we could then centralize parsing of functions/pins/groups
-and add the non-renesas-prefixed configs as alternatives to genericized
-the bindings, while keeping backward compatibility.
-
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
