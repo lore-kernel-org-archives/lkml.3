@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaKKMLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:11:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57158 "EHLO
+	id S932216AbaKKML5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:11:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57143 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499AbaKKLJQ (ORCPT
+	with ESMTP id S1753494AbaKKLJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:16 -0500
+	Tue, 11 Nov 2014 06:09:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        users@rt2x00.serialmonkey.com, linux-wireless@vger.kernel.org,
-        Xose Vazquez Perez <xose.vazquez@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 008/170] wireless: rt2x00: add new rt2800usb devices
-Date: Tue, 11 Nov 2014 11:06:07 +0000
-Message-Id: <1415704129-12709-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 013/170] jbd2: free bh when descriptor block checksum fails
+Date: Tue, 11 Nov 2014 11:06:12 +0000
+Message-Id: <1415704129-12709-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -32,56 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 6a06e554daef86c4e8d290284927b081fedb249e upstream.
+commit 064d83892e9ba547f7d4eae22cbca066d95210ce upstream.
 
-0x0b05 0x17e8 RT5372 USB 2.0  bgn 2x2 ASUS USB-N14
-0x0411 0x0253 RT5572 USB 2.0 abgn 2x2 BUFFALO WLP-U2-300D
-0x0df6 0x0078 RT???? Sitecom N300
+Free the buffer head if the journal descriptor block fails checksum
+verification.
 
-Cc: Ivo van Doorn <IvDoorn@gmail.com>
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: users@rt2x00.serialmonkey.com
-Cc: linux-wireless@vger.kernel.org
-Signed-off-by: Xose Vazquez Perez <xose.vazquez@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+This is the jbd2 port of the e2fsprogs patch "e2fsck: free bh on csum
+verify error in do_one_pass".
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/jbd2/recovery.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 832006b5aab1..573897b8e878 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -1284,6 +1284,8 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	/* Arcadyan */
- 	{ USB_DEVICE(0x043e, 0x7a12) },
- 	{ USB_DEVICE(0x043e, 0x7a32) },
-+	/* ASUS */
-+	{ USB_DEVICE(0x0b05, 0x17e8) },
- 	/* Azurewave */
- 	{ USB_DEVICE(0x13d3, 0x3329) },
- 	{ USB_DEVICE(0x13d3, 0x3365) },
-@@ -1320,6 +1322,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x057c, 0x8501) },
- 	/* Buffalo */
- 	{ USB_DEVICE(0x0411, 0x0241) },
-+	{ USB_DEVICE(0x0411, 0x0253) },
- 	/* D-Link */
- 	{ USB_DEVICE(0x2001, 0x3c1a) },
- 	{ USB_DEVICE(0x2001, 0x3c21) },
-@@ -1410,6 +1413,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x0df6, 0x0053) },
- 	{ USB_DEVICE(0x0df6, 0x0069) },
- 	{ USB_DEVICE(0x0df6, 0x006f) },
-+	{ USB_DEVICE(0x0df6, 0x0078) },
- 	/* SMC */
- 	{ USB_DEVICE(0x083a, 0xa512) },
- 	{ USB_DEVICE(0x083a, 0xc522) },
+diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
+index 9b329b55ffe3..bcbef08a4d8f 100644
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -525,6 +525,7 @@ static int do_one_pass(journal_t *journal,
+ 			    !jbd2_descr_block_csum_verify(journal,
+ 							  bh->b_data)) {
+ 				err = -EIO;
++				brelse(bh);
+ 				goto failed;
+ 			}
+ 
 -- 
 2.1.0
 
