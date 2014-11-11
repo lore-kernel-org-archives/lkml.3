@@ -1,251 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaKKET3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 23:19:29 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:55399 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaKKET0 (ORCPT
+	id S1751861AbaKKEWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 23:22:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47016 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaKKEWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 23:19:26 -0500
-Date: Mon, 10 Nov 2014 23:19:24 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
-        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
-        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Paul Blinzer <Paul.Blinzer@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>,
-        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
-Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page
- table (gpt) v2.
-Message-ID: <20141111041923.GB2503@gmail.com>
-References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
- <1415644096-3513-4-git-send-email-j.glisse@gmail.com>
- <CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
- <20141110205814.GA4186@gmail.com>
- <CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
- <20141110225036.GB4186@gmail.com>
- <CA+55aFyfgj5ntoXEJeTZyGdOZ9_A_TK0fwt1px_FUhemXGgr0Q@mail.gmail.com>
- <20141111024531.GA2503@gmail.com>
- <CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
+	Mon, 10 Nov 2014 23:22:18 -0500
+Date: Tue, 11 Nov 2014 13:21:00 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stephanie Wallick <stephanie.s.wallick@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, "Sean O. Stalley" <sean.stalley@intel.com>
+Subject: Re: [V2 PATCH 05/10] added media specific (MS) TCP drivers
+Message-ID: <20141111042100.GB22068@kroah.com>
+References: <1415671781-11351-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415671781-11351-5-git-send-email-stephanie.s.wallick@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
+In-Reply-To: <1415671781-11351-5-git-send-email-stephanie.s.wallick@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 07:16:04PM -0800, Linus Torvalds wrote:
-> On Mon, Nov 10, 2014 at 6:45 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> >
-> > I was being lazy and wanted to avoid a u64 cast in most operation using
-> > those value but yes you right a byte (6bit) is more than enough for all
-> > those values.
-> 
-> WHAT?
-> 
-> NONE OF WHAT YOU SAY MAKES ANY SENSE.
-> 
-> There's no reason for a "u64 cast". The value of "1 << pd_shift" is
-> going to be an "int" regardless of what type pd_shift is. The type of
-> a shift expression is the type of the left-hand side (with the C
-> promotion rules forcing it to at least "int"), the right-hand
-> expression type has absolutely no relevance.
-> 
-> So the fact is, those "shift" variables are of an insane size, and
-> your stated reason for that insane size makes no sense either.
-> 
-> It makes *zero* sense to ever have the shift count be a uint64_t. Not
-> with a cast, not *without* a cast. Seriously.
+On Mon, Nov 10, 2014 at 06:09:36PM -0800, Stephanie Wallick wrote:
+> +static int ma_open;
 
-Sorry i thougt the right-hand side also matter in type of shift, my bad.
-Anyway like said easy to change to byte, it's just me being convinced of
-some weird rules with shift and right-hand side.
+Why do you need this variable?
 
-> 
-> > I should add that :
-> > (1 << pd_shift) is the number of directory entry inside a page (512 for
-> > 64bit entry with 4k page or 1024 for 32bit with 4k page).
-> 
-> So that is actually the *only* shift-value that makes any sense having
-> at all, since if you were to have a helper routine to look up the
-> upper levels, nobody should ever even care about what their
-> sizes/shifts are.
-> 
-> But pd_shift at no point makes sense as uint64_t. Really. None of them
-> do. None of them *can* make sense. Not from a value range standpoint,
-> not from a C typesystem standpoint, not from *any* standpoint.
-> 
+> +/**
+> + * This function is used to open the device file in order to read/write
+> + * from/to it.
+> + *
+> + * @inode:	Struct with various information that is passed in when this
+> + *		function is called. We don't need to use it for our purposes.
+> + * @file:	The file to be opened.
+> + */
+> +static int mausb_open(struct inode *inode, struct file *file)
+> +{
+> +	if (ma_open)
+> +		return -EBUSY;
+> +	ma_open++;
 
-Duely noted.
+Racy :(
 
-> > pde_shift correspond to PAGE_SHIFT for directory entry
-> >
-> > address >> pgd_shift gives the index inside the global page directory
-> > ie top level directory. This is done because on 64bit arch running a
-> > 32bit app we want to only have 3 level while 64bit app would require
-> > 4levels.
-> 
-> But you've gone to some trouble to make it clear that the page tables
-> could be some other format, and have a helper indirect routine for
-> doing that - if that helper routine would just have done all the
-> levels, none of this would be necessary at all. As it is, it adds ugly
-> complexity, and the shifting and masking looks objectively insane.
-> 
-> > It is intended to accomodate either 3 or 4 level page table depending on
-> > runtime. The whole mask, shift value and back link is to allow easy
-> > iteration from one address by being able to jump back to upper level
-> > from the lowest level.
-> 
-> .. but why don't you just generate the masks from the shifts? It's trivial.
+> +	try_module_get(THIS_MODULE);
 
-I use pde_mask because upper bit might not be part of the pfn again hw
-specific page table and mask of pfn of an entry is hw specific. Or are
-you talking about the address mask ? If so address mask is already derive
-from shift value.
+Even more racy, _NEVER_ make this type of call, it's _ALWAYS_ wrong.
 
-> 
-> > The locked array is use to keep track of which entry in a directory
-> > have been considered in current thread in previous loop. So it accounts
-> > for worst case 32bit entry with VM page size ie 1024 entry per page
-> > when page is 4k. Only needing 1bit per entry this means it require
-> > 1024bits worst case.
-> 
-> So why the hell do you allocate 4k bits then? Because that's what you do:
-> 
->    unsigned long           locked[(1 << (PAGE_SHIFT - 3)) / sizeof(long)]
-> 
-> that's 512 bytes. PAGE_SIZE bits. Count it.
-> 
-> Admittedly, it's a particularly confusing and bad way of specifying
-> that, but that's what it is. The "-3" is apparently because of "bits
-> in bytes", and the "/ sizeof(long)" is because of the base type being
-> "unsigned long" rather than a byte, but it all boils down to a very
-> complicated and unnecessarily obtuse way of writing "4096 bits".
-> 
-> If you wanted PAGE_SIZE bits (which you apparently don't even want),
-> the *SANE* way would be to just write it like
-> 
->   unsigned long locked[PAGE_SIZE / BITS_PER_LONG];
-> 
-> or something like that, which is actually *understandable*. But that's
-> not what the code does. It mixes that unholy mess of PAGE_SHIFT with
-> arithmetic and shifting and division, instead of just using *one*
-> clear operation.
-> 
-> Ugh.
+And totally not even needed at all, if you set up your file structure
+properly.
 
-Yeah i got the math wrong at one point probably along the time i converted
-from non macro to macro. Should have been :
-(PAGE_SIZE / 4) / BITS_PER_LONG
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * This function is used to close the device file.
+> + *
+> + * @inode:	Struct with various information that is passed in when this
+> + *		function is called. We don't need to use it for our purposes.
+> + * @file:	The file to be closed.
+> + */
+> +static int mausb_release(struct inode *inode, struct file *file)
+> +{
+> +	ma_open--;
 
-> 
-> > pde_from_pdp() only build a page directory entry (an entry pointing to
-> > a sub-directory level) from a page it does not need any address. It is
-> > not used from traversal, think of it as mk_pte() but for directory entry.
-> 
-> Yes, I see that. And I also see that it doesn't get the level number,
-> so you can't do different things for different levels.
-> 
-> Like real page tables often do.
-> 
-> And because it's only done one entry at a time, the code has to handle
-> all these levels, even though it's not even *interested* in handling
-> the levels. It would be much nicer to have the helper functions walk
-> all but the last level, and not have to have that complexity at all.
-> *And* it would make the code more generic to boot, since it wouldn't
-> depend on the quite possibly broken assumption that all levels are the
-> same.
-> 
-> Just look at x86-32 3-level paging. The top-most level is very
-> decidedly magical and doesn't look anything like the two other ones.
-> There are other examples.
+Again, racy, and pointless, why are you doing this?
 
-In that respect hw i had in mind is more sane then x86 and all level
-behave the same. The reason i did not do the walking as a callback is
-because i thought it would be cleaner in respect to the whole sequence
-number thing i explained below.
+> +	module_put(THIS_MODULE);
 
-> 
-> > wlock stands for walk lock, it is a temporary structure using by both
-> > the lock and unlock code path to keep track of range locking. The lock
-> > struct is public api and must be use with helper to walk the page table,
-> > it stores the uniq sequence number that allow the walker to know which
-> > directory are safe to walk and which must be ignore.
-> 
-> But that "locked[]" array still  makes no sense. It's apparently the
-> wrong size, since you claim the max is just 1k bits. It's mis-named.
-> It's just all confusing.
+And again, broken and racy :(
 
-Yes wrong size, for the name it's hard, as technicaly its a flag that
-say if the first loop over a directory locked or not the entry. By locked
-here i mean did the first loop took a reference on the sub-directory page
-the entry points to. So maybe a better name is refed[] instead of locked[].
+> +	return 0;
+> +}
+> +
+> +
+> +/**
+> + * This function is used to execute ioctl commands, determined by ioctl_func.
+> + *
+> + * @file:	  The device file. We don't use it directly, but it's passed in.
+> + * @ioctl_func:	  This value determines which ioctl function will be used.
+> + * @ioctl_buffer: This buffer is used to transfer data to/from the device.
+> + */
+> +long mausb_ioctl(struct file *file, unsigned int ioctl_func,
+> +		unsigned long ioctl_buffer)
+> +{
+> +	char message[BUFFER];
+> +	int ret, value;
+> +	unsigned long int long_value;
+> +	char __user *msg = (char *)ioctl_buffer;
+> +	char *response;
+> +
+> +	switch (ioctl_func) {
+> +	case IOCTL_GET_VRSN:
+> +		ret = copy_to_user(msg, DRIVER_VERSION, strlen(DRIVER_VERSION));
+> +		break;
 
-> 
-> > Does my explanation above help clarify both the code and the design behind
-> > it.
-> 
-> Nope. It just makes me despair more.
-
-The design goal were :
- (1) concurrent reader
- (2) concurrent faulter
- (3) reader/faulter can sleep
- (4) prefer reader over faulter (hence faulter might have to pay higher price)
- (5) free page directory once no longer needed
-
-(5) require that any concurrent reader/faulter protect directory from being
-free while they have active reader/faulter. While (1), (2) and (3) dictate
-that there should be no locking while range is under use.
-
-This is why i turned to the sequence number, each directory when created is
-associated with a sequence number. Each reader use the current oldest sequence
-number as reference thus all directory with sequence number newer than the
-oldest are ignored. Each faulter increment the current sequence number and
-use it as sequence number of each new directory they allocate.
-
-Sequence number are then use to know which directory a reader or faulter need
-to take a refcount against to block it from being free. Similarly once code
-is done with a range it must drop refcount and again the sequence number is
-use to determine which directory can safely be unref. So that new directory
-are not unref by old reader that never took a ref on it.
-
-Of course if i get rid of requirement (5) the code is lot simpler but i think
-even for CPU page table we will want to have page directory reclaim at one
-point.
+This should be a sysfs file.  Why even care about the version?
 
 
-Also its important to understand that (3) means real sleep (for as long as
-GPU update can take).
+> +	case IOCTL_GET_NAME:
+> +		ret = copy_to_user(msg, MAUSB_NAME, strlen(MAUSB_NAME));
+> +		break;
+
+Why?
+
+> +	case IOCTL_GADGET_C:
+> +		ret = gadget_connection(1);
+> +		if (ret >= 0)
+> +			response = MAUSB_GADGET_C_SUCCESS;
+> +		else
+> +			response = MAUSB_GADGET_C_FAIL;
+> +
+> +		ret = copy_to_user(msg, response, strlen(response));
+> +		break;
+
+Can't this be a sysfs file?
+
+> +	case IOCTL_GADGET_D:
+> +		ret = gadget_connection(0);
+> +		if (ret >= 0)
+> +			response = MAUSB_GADGET_D_SUCCESS;
+> +		else
+> +			response = MAUSB_GADGET_D_FAIL;
+> +
+> +		ret = copy_to_user(msg, response, strlen(response));
+> +		break;
+
+Same here.
 
 
-Finaly reader are more than just reading entry, they can remove entry or
-modify existing entry such that after a reader some directory might end
-up on the list of reclaimable directory page.
+> +	case IOCTL_SET_PORT:
+> +		ret = strncpy_from_user(message, msg, BUFFER);
+> +		if (ret < 0)
+> +			break;
+> +		ret = kstrtoint(msg, 0, &value);
+> +		if (ret != 0)
+> +			break;
+> +
+> +		ret = set_port_no(value);
+> +		sprintf(message, "PORT NUMBER:%d, Returned %i\n", value,
+> +			ret);
 
-> 
->                      Linus
+That looks like a debug message.
+
+> +		ret = copy_to_user(msg, message, strlen(message));
+> +		break;
+
+That really looks like a sysfs file.
+
+
+> +	case IOCTL_SET_IP:
+> +		ret = strncpy_from_user(message, msg, BUFFER);
+> +		if (ret < 0)
+> +			break;
+> +		ret = kstrtoul(message, 0, &long_value);
+> +		if (ret != 0)
+> +			break;
+> +
+> +		ret = set_ip_addr(long_value);
+> +		sprintf(message, "IP ADDRESS:%lx, returned %i\n",
+> +			long_value, ret);
+
+That looks like a debug message :(
+
+> +		ret = copy_to_user(msg, message, strlen(message));
+> +		break;
+
+again sysfs file?
+
+
+> +	case IOCTL_SET_MAC:
+> +		{
+> +			u8 mac[6];
+> +			int i;
+> +			ret = copy_from_user(mac, msg, 6);
+> +			if (ret) {
+> +				pr_err("copy_from_user failed\n");
+> +				break;
+> +			}
+> +			for (i = 0; i < ETH_ALEN; i++)
+> +				pr_info("mac[%d]=0x%x\n", i, mac[i]);
+> +			ret = set_mac_addr(mac);
+> +			if (ret)
+> +				pr_err("unable to set MAC addr\n");
+> +
+> +			break;
+> +		}
+
+And again, sysfs file.
+
+What about any other ioctl?  You forgot to return an invalid number.
+
+> +	}
+> +
+> +	/* failure */
+> +	if (ret < 0)
+> +		return ret;
+
+You could have just returned a stack value here :(
+
+
+> +
+> +	/* success */
+> +	return 0;
+
+No need for the comments, this is a pretty common kernel idiom,
+especially when all 6 lines get reduced to a single 'return ret;' line :)
+
+
+> +}
+> +
+> +/**
+> + * This struct creates links with our implementations of various entry point
+> + * functions.
+> + */
+> +const struct file_operations fops = {
+> +	.open = mausb_open,
+> +	.release = mausb_release,
+> +	.unlocked_ioctl = mausb_ioctl
+> +};
+
+Any reason you didn't set the file_operations module owner here?  (hint,
+do that and you will never need the crazy try_module_get() crazy
+above...)
+
+> +
+> +/**
+> + * Registers a character device using our device file. This function is called
+> + * in the mausb_hcd_init function.
+> + */
+> +int reg_chrdev()
+
+()???
+
+
+> +{
+> +	int ret;
+> +
+> +#ifdef MAUSB_PRINT_IOCTL_MAGIC
+
+please no.
+
+
+> +
+> +	printk(KERN_DEBUG "Printing IOCTL magic numbers:\n");
+> +	printk(KERN_DEBUG "IOCTL_SET_MSG        = %u\n", IOCTL_SET_MSG);
+> +	printk(KERN_DEBUG "IOCTL_GET_MSG        = %u\n", IOCTL_GET_MSG);
+> +	printk(KERN_DEBUG "IOCTL_GET_VRSN       = %u\n", IOCTL_GET_VRSN);
+> +	printk(KERN_DEBUG "IOCTL_GET_NAME       = %u\n", IOCTL_GET_NAME);
+> +	printk(KERN_DEBUG "IOCTL_GADGET_C       = %u\n", IOCTL_GADGET_C);
+> +	printk(KERN_DEBUG "IOCTL_GADGET_D       = %u\n", IOCTL_GADGET_D);
+> +	printk(KERN_DEBUG "IOCTL_MED_DELAY      = %u\n", IOCTL_MED_DELAY);
+> +	printk(KERN_DEBUG "IOCTL_SET_IP         = %u\n", IOCTL_SET_IP);
+> +	printk(KERN_DEBUG "IOCTL_SET_PORT       = %u\n", IOCTL_SET_PORT);
+> +	printk(KERN_DEBUG "IOCTL_SET_IP_DECIMAL = %u\n", IOCTL_SET_IP_DECIMAL);
+> +	printk(KERN_DEBUG "IOCTL_SET_MAC        = %u\n", IOCTL_SET_MAC);
+> +
+> +#endif
+> +
+> +	ret = register_chrdev(MAJOR_NUM, MAUSB_NAME, &fops);
+> +
+> +	if (ret < 0)
+> +		printk(KERN_ALERT "Registering mausb failed with %d\n", ret);
+> +	else
+> +		printk(KERN_INFO "%s registeration complete. Major device"
+> +			" number %d.\n", MAUSB_NAME, MAJOR_NUM);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * Unregisters the character device when the hcd is unregistered. As hinted,
+> + * this function is called in the mausb_hcd_exit function.
+> + */
+> +void unreg_chrdev()
+
+That's a _very_ bold global function name you just chose for this, and
+the previous function :(
+
+
+> +{
+> +	unregister_chrdev(MAJOR_NUM, MAUSB_NAME);
+> +}
+> diff --git a/drivers/staging/mausb/drivers/mausb_ioctl.h b/drivers/staging/mausb/drivers/mausb_ioctl.h
+> new file mode 100644
+> index 0000000..4126ade
+> --- /dev/null
+> +++ b/drivers/staging/mausb/drivers/mausb_ioctl.h
+> @@ -0,0 +1,101 @@
+> +/* Name:         mausb_ioctl.h
+> + * Description:  header file for MA USB ioctl functions
+> + *
+> + * This file is provided under a dual BSD/GPLv2 license.  When using or
+> + * redistributing this file, you may do so under either license.
+> + *
+> + * GPL LICENSE SUMMARY
+> + *
+> + * Copyright(c) 2014 Intel Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of version 2 of the GNU General Public License as published
+> + * by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * Contact Information:
+> + * Sean Stalley, sean.stalley@intel.com
+> + * Stephanie Wallick, stephanie.s.wallick@intel.com
+> + * 2111 NE 25th Avenue
+> + * Hillsboro, Oregon 97124
+> + *
+> + * BSD LICENSE
+> + *
+> + * Copyright(c) 2014 Intel Corporation.
+> + *
+> + * Redistribution and use in source and binary forms, with or without
+> + * modification, are permitted provided that the following conditions
+> + * are met:
+> + *
+> +    * Redistributions of source code must retain the above copyright
+> +      notice, this list of conditions and the following disclaimer.
+> +    * Redistributions in binary form must reproduce the above copyright
+> +      notice, this list of conditions and the following disclaimer in
+> +      the documentation and/or other materials provided with the
+> +      distribution.
+> +    * Neither the name of Intel Corporation nor the names of its
+> +      contributors may be used to endorse or promote products derived
+> +      from this software without specific prior written permission.
+> +
+> + * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+> + * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+> + * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+> + * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+> + * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+> + * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+> + * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+> + * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+> + * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+> + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+> + */
+> +
+> +#ifndef MAUSB_IOCTL_H
+> +#define MAUSB_IOCTL_H
+> +
+> +#define BUFFER 80
+
+Why 80?  Why not 8000?  Why any number at all?
+
+> +#define DRIVER_VERSION "Alpha 0.0.25"
+
+Why is this even needed?
+
+> +#define MAJOR_NUM 100
+
+You can't just steal another driver's major number, that's not allowed
+at all, and again, something I can never even accept into the staging
+tree.
+
+Why need a reserved major at all?
+
+> +/* These define the ioctl functions that can be used. */
+> +#define IOCTL_GET_VRSN _IOR(MAJOR_NUM, 0, char *)
+> +#define IOCTL_GET_NAME _IOR(MAJOR_NUM, 1, char *)
+> +#define IOCTL_GADGET_C _IOR(MAJOR_NUM, 2, char *)
+> +#define IOCTL_GADGET_D _IOR(MAJOR_NUM, 3, char *)
+> +#define IOCTL_SET_IP   _IOR(MAJOR_NUM, 4, char *)
+> +#define IOCTL_SET_PORT _IOR(MAJOR_NUM, 5, char *)
+> +#define IOCTL_SET_MAC  _IOR(MAJOR_NUM, 6, char *)
+
+These are not all _IOR() ioctls, look at the code implementing them!
+
+> +/* This is the location where the device file will be created. It is used to
+> + * read/write to in order to communicate to and from the device. */
+> +#define DEVICE_FILE_NAME "/dev/mausb"
+
+Never used, don't put that in a kernel file.
+
+
+> +
+> +/* MAC address length */
+> +#define ETH_ALEN 6
+> +
+> +/* Responses to IOCTL calls */
+> +#define MAUSB_GADGET_C_SUCCESS	"gadget connect process complete"
+> +#define MAUSB_GADGET_C_FAIL	"gadget connect process failed"
+> +#define MAUSB_GADGET_D_SUCCESS	"gadget disconnect process complete"
+> +#define MAUSB_GADGET_D_FAIL	"gadget disconnect process failed"
+
+ioctls returning text strings?  Next thing you will want i18n versions
+of them...
+
+> +int mausb_transfer_packet(struct ms_pkt *pkt,
+> +	struct mausb_pkt_transfer *transfer)
+> +{
+> +	return transfer->transfer_packet(pkt, transfer->context);
+> +}
+> +EXPORT_SYMBOL(mausb_transfer_packet);
+
+EXPORT_SYMBOL_GPL() for USB stuff please.
+
+I'm not reviewing further, sorry.
+
+thanks,
+
+greg k-h
