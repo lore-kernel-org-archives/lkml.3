@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaKKB4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 20:56:09 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:53932 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaKKB4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 20:56:07 -0500
-Message-ID: <54616CB3.5000405@gmail.com>
-Date: Mon, 10 Nov 2014 17:56:03 -0800
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751501AbaKKCEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 21:04:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43203 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993AbaKKCEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 21:04:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,357,1413270000"; 
+   d="scan'208";a="605663168"
+Message-ID: <54616E55.80204@intel.com>
+Date: Tue, 11 Nov 2014 10:03:01 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Kevin Hilman <khilman@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com> <5461150B.2010907@codeaurora.org>
-In-Reply-To: <5461150B.2010907@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lee Jones <lee.jones@linaro.org>
+CC: linux-acpi@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
+ XPower
+References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
+In-Reply-To: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 11:42 AM, Stephen Boyd wrote:
-> On 11/10/2014 10:54 AM, Kevin Hilman wrote:
->> On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>> We rely on probe order of this driver to determine the line number for
->>> the uart port. This makes it impossible to know the line number
->>> when these devices are populated via DT. Use the DT alias
->>> mechanism to assign the line based on the aliases node.
->>>
->>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> FYI... this patch hit linux-next and caused multiple boot failures on
->> qcom platforms[1] as of next-20141110.  I'm assuming this is because
->> the corresponding DTS changes have not hit linux-next yet.
->>
->> Kevin
->>
->> [1] http://status.armcloud.us/boot/?qcom
+On 10/31/2014 02:08 PM, Aaron Lu wrote:
+> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
+> ACPI operation regions defined for the Power Management Integrated Circuit
+> device, one is for power resource handling and one is for thermal: sensor
+> temperature reporting, trip point setting, etc. There are different PMIC
+> chips used on those platforms and though each has the same two operation
+> regions and functionality, their implementation is different so every PMIC
+> will need a driver. But since their functionality is similar, some common
+> code is abstracted into the intel_soc_pmic_opregion.c.
 > 
-> Hmm the intention was to make it optional so that dts changes aren't
-> necessary unless you want deterministic numbering. I screwed that up
-> badly :/ Thanks for finding this.
+> The last version is posted here:
+> https://lkml.org/lkml/2014/9/8/801
 > 
-> Greg, can you also apply this patch or squash it into the bad one?
+> Changes since then:
+> 1 Move to drivers/acpi as discussed on the above thread;
+> 2 Added support for XPower AXP288 PMIC operation region support;
+> 3 Since operation region handler can not be removed(at the moment at least),
+>   use bool for the two operation region driver configs instead of tristate;
+>   Another reason to do this is that, with Mika's MFD ACPI support patch, all
+>   those MFD cell devices created will have the same modalias as their parent's
+>   so it doesn't make much sense to compile these drivers into modules.
 > 
-> ----8<-----
-> 
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> Subject: [PATCH] tty: serial: msm_serial: Don't required DT aliases
-> 
-> If there isn't a DT alias then of_alias_get_id() will return
-> -ENODEV. This will cause the msm_serial driver to fail probe,
-> when we want to keep the previous behavior where we generated a
-> dynamic line number at probe time. Restore this behavior by
-> generating a dynamic id if the line number is still negative
-> after checking for an alias or (in the non-DT case) looking at the
-> .id field of the platform device.
-> 
-> Reported-by: Kevin Hilman <khilman@kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/tty/serial/msm_serial.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-> index 09364dd8cf3a..d1bc6b6cbc70 100644
-> --- a/drivers/tty/serial/msm_serial.c
-> +++ b/drivers/tty/serial/msm_serial.c
-> @@ -1046,14 +1046,14 @@ static int msm_serial_probe(struct platform_device *pdev)
->  	const struct of_device_id *id;
->  	int irq, line;
->  
-> -	if (pdev->id == -1)
-> -		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
-> -
->  	if (pdev->dev.of_node)
->  		line = of_alias_get_id(pdev->dev.of_node, "serial");
->  	else
->  		line = pdev->id;
->  
-> +	if (line < 0)
-> +		line = atomic_inc_return(&msm_uart_next_id) - 1;
-> +
->  	if (unlikely(line < 0 || line >= UART_NR))
+> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
+> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
+> driver XPower AXP288 and iio driver axp288_adc is located.
 
-Then this original check for "line < 0" can also be removed.
+Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
+would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
 
+Rafael,
+Can I get your ACK for the three patches?
 
->  		return -ENXIO;
->  
+Lee,
+Can you please take the series if Rafael gives it ack?
+
+Thanks,
+Aaron
+
+> 
+> Aaron Lu (3):
+>   ACPI / pmic_opregion: support PMIC operation region for CrystalCove
+>   ACPI / pmic_opregion: support PMIC operation region for XPower AXP288
+>   ACPI / pmic_opregion: AXP288: support virtual GPIO in ACPI table
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
