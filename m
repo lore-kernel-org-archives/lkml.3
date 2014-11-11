@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaKKIQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:16:41 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:51039 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137AbaKKIQh (ORCPT
+	id S1753134AbaKKIQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:16:36 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:61947 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107AbaKKIQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:16:37 -0500
+	Tue, 11 Nov 2014 03:16:33 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v3 17/21] backports: define C code backport version info using CPTCFG_
-Date: Tue, 11 Nov 2014 00:15:08 -0800
-Message-Id: <1415693712-23743-18-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v3 16/21] backports: move version file generation to run earlier
+Date: Tue, 11 Nov 2014 00:15:07 -0800
+Message-Id: <1415693712-23743-17-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,133 +23,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-In order to help unify the naming scheme for shared
-backports versioning information rely on the CPTCFG_
-prefix, when integration support gets added that will
-translate to the respective CONFIG_BACKPORT_ prefix.
-Kconfig opt env entries don't get propagated out, so
-we need to define these ourselves. This leaves all
-other names in place for packaging and just focuses
-on sharing on the C / header code.
+The version file contains:
+
+  * BACKPORTS_VERSION
+  * BACKPORTED_KERNEL_VERSION
+  * BACKPORTED_KERNEL_NAME
+
+This file is used by the Makefile to export variable
+definitions used to identify the backport. For kernel
+integration we'll be using a generated Kconfig file
+instead and since these are needed when processing
+kconfig logic this will need to be defined earlier.
+
+Just move the generation of the version file for packaging
+up early to match where we will generate the Kconfig with
+the backports versioning identification.
+
+This change has no real functional change other than the
+move of some code running earlier.
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- backport/Makefile.kernel                 |  6 +++---
- backport/backport-include/linux/module.h |  6 +++---
- backport/compat/main.c                   | 32 ++++++++++++++++----------------
- 3 files changed, 22 insertions(+), 22 deletions(-)
+ gentree.py | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/backport/Makefile.kernel b/backport/Makefile.kernel
-index dcb2ba7..a63184b 100644
---- a/backport/Makefile.kernel
-+++ b/backport/Makefile.kernel
-@@ -10,9 +10,9 @@ NOSTDINC_FLAGS := \
- 	-I$(M)/include/uapi \
- 	-include $(M)/backport-include/backport/backport.h \
- 	$(call backport-cc-disable-warning, unused-but-set-variable) \
--	-DBACKPORTS_VERSION=\"$(BACKPORTS_VERSION)\" \
--	-DBACKPORTED_KERNEL_VERSION=\"$(BACKPORTED_KERNEL_VERSION)\" \
--	-DBACKPORTED_KERNEL_NAME=\"$(BACKPORTED_KERNEL_NAME)\" \
-+	-DCPTCFG_VERSION=\"$(BACKPORTS_VERSION)\" \
-+	-DCPTCFG_KERNEL_VERSION=\"$(BACKPORTED_KERNEL_VERSION)\" \
-+	-DCPTCFG_KERNEL_NAME=\"$(BACKPORTED_KERNEL_NAME)\" \
- 	$(BACKPORTS_GIT_TRACKER_DEF) \
- 	$(CFLAGS)
+diff --git a/gentree.py b/gentree.py
+index 71e52e4..afa4967 100755
+--- a/gentree.py
++++ b/gentree.py
+@@ -843,6 +843,24 @@ def process(kerneldir, copy_list_file, git_revision=None,
+     git_debug_snapshot(args, 'Add driver sources')
  
-diff --git a/backport/backport-include/linux/module.h b/backport/backport-include/linux/module.h
-index e8f28b1..8870abb 100644
---- a/backport/backport-include/linux/module.h
-+++ b/backport/backport-include/linux/module.h
-@@ -20,9 +20,9 @@ extern void backport_dependency_symbol(void);
- #define BACKPORT_MOD_VERSIONS MODULE_VERSION(BACKPORTS_GIT_TRACKED);
- #else
- #define BACKPORT_MOD_VERSIONS						\
--	MODULE_VERSION("backported from " BACKPORTED_KERNEL_NAME	\
--		       " (" BACKPORTED_KERNEL_VERSION ")"		\
--		       " using backports " BACKPORTS_VERSION);
-+	MODULE_VERSION("backported from " CPTCFG_KERNEL_NAME	\
-+		       " (" CPTCFG_KERNEL_VERSION ")"		\
-+		       " using backports " CPTCFG_VERSION);
- #endif
+     disable_list = add_automatic_backports(args)
++    if git_tracked_version:
++        backports_version = "(see git)"
++        kernel_version = "(see git)"
++    else:
++        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
++        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
++                                      tree=args.kerneldir,
++                                      extra_args=['--long'])
++
++    if not bpid.integrate:
++        f = open(os.path.join(bpid.target_dir, 'versions'), 'w')
++        f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
++        f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
++        f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
++        if git_tracked_version:
++            f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
++        f.close()
++        git_debug_snapshot(args, "add versions files")
  
- #ifdef MODULE
-diff --git a/backport/compat/main.c b/backport/compat/main.c
-index d3f8944..04ebbfd 100644
---- a/backport/compat/main.c
-+++ b/backport/compat/main.c
-@@ -8,40 +8,40 @@ MODULE_AUTHOR("Luis R. Rodriguez");
- MODULE_DESCRIPTION("Kernel backport module");
- MODULE_LICENSE("GPL");
+     if disable_list:
+         # No need to verify_sources() as compat's Kconfig has no 'source' call
+@@ -872,24 +890,6 @@ def process(kerneldir, copy_list_file, git_revision=None,
+     configtree.modify_selects()
+     git_debug_snapshot(args, "convert select to depends on")
  
--#ifndef BACKPORTED_KERNEL_NAME
--#error "You need a BACKPORTED_KERNEL_NAME"
-+#ifndef CPTCFG_KERNEL_NAME
-+#error "You need a CPTCFG_KERNEL_NAME"
- #endif
+-    # write the versioning file
+-    if git_tracked_version:
+-        backports_version = "(see git)"
+-        kernel_version = "(see git)"
+-    else:
+-        backports_version = git.describe(tree=source_dir, extra_args=['--long'])
+-        kernel_version = git.describe(rev=args.git_revision or 'HEAD',
+-                                      tree=args.kerneldir,
+-                                      extra_args=['--long'])
+-    f = open(os.path.join(bpid.target_dir, 'versions'), 'w')
+-    f.write('BACKPORTS_VERSION="%s"\n' % backports_version)
+-    f.write('BACKPORTED_KERNEL_VERSION="%s"\n' % kernel_version)
+-    f.write('BACKPORTED_KERNEL_NAME="%s"\n' % args.base_name)
+-    if git_tracked_version:
+-        f.write('BACKPORTS_GIT_TRACKED="backport tracker ID: $(shell git rev-parse HEAD 2>/dev/null || echo \'not built in git tree\')"\n')
+-    f.close()
+-    git_debug_snapshot(args, "add versions files")
+-
+     symbols = configtree.symbols()
  
--#ifndef BACKPORTED_KERNEL_VERSION
--#error "You need a BACKPORTED_KERNEL_VERSION"
-+#ifndef CPTCFG_KERNEL_VERSION
-+#error "You need a CPTCFG_KERNEL_VERSION"
- #endif
- 
--#ifndef BACKPORTS_VERSION
--#error "You need a BACKPORTS_VERSION"
-+#ifndef CPTCFG_VERSION
-+#error "You need a CPTCFG_VERSION"
- #endif
- 
--static char *backported_kernel_name = BACKPORTED_KERNEL_NAME;
-+static char *backported_kernel_name = CPTCFG_KERNEL_NAME;
- 
- module_param(backported_kernel_name, charp, 0400);
- MODULE_PARM_DESC(backported_kernel_name,
--		 "The kernel tree name that was used for this backport (" BACKPORTED_KERNEL_NAME ")");
-+		 "The kernel tree name that was used for this backport (" CPTCFG_KERNEL_NAME ")");
- 
--#ifdef BACKPORTS_GIT_TRACKED 
-+#ifdef BACKPORTS_GIT_TRACKED
- static char *backports_tracker_id = BACKPORTS_GIT_TRACKED;
- module_param(backports_tracker_id, charp, 0400);
- MODULE_PARM_DESC(backports_tracker_id,
- 		 "The version of the tree containing this backport (" BACKPORTS_GIT_TRACKED ")");
- #else
--static char *backported_kernel_version = BACKPORTED_KERNEL_VERSION;
--static char *backports_version = BACKPORTS_VERSION;
-+static char *backported_kernel_version = CPTCFG_KERNEL_VERSION;
-+static char *backports_version = CPTCFG_VERSION;
- 
- module_param(backported_kernel_version, charp, 0400);
- MODULE_PARM_DESC(backported_kernel_version,
--		 "The kernel version that was used for this backport (" BACKPORTED_KERNEL_VERSION ")");
-+		 "The kernel version that was used for this backport (" CPTCFG_KERNEL_VERSION ")");
- 
- module_param(backports_version, charp, 0400);
- MODULE_PARM_DESC(backports_version,
--		 "The git version of the backports tree used to generate this backport (" BACKPORTS_VERSION ")");
-+		 "The git version of the backports tree used to generate this backport (" CPTCFG_VERSION ")");
- 
- #endif
- 
-@@ -63,15 +63,15 @@ static int __init backport_init(void)
- 		return ret;
- 	}
- 
--	printk(KERN_INFO "Loading modules backported from " BACKPORTED_KERNEL_NAME
-+	printk(KERN_INFO "Loading modules backported from " CPTCFG_KERNEL_NAME
- #ifndef BACKPORTS_GIT_TRACKED
--		" version " BACKPORTED_KERNEL_VERSION
-+		" version " CPTCFG_KERNEL_VERSION
- #endif
- 		"\n");
- #ifdef BACKPORTS_GIT_TRACKED
- 	printk(KERN_INFO BACKPORTS_GIT_TRACKED "\n");
- #else
--	printk(KERN_INFO "Backport generated by backports.git " BACKPORTS_VERSION "\n");
-+	printk(KERN_INFO "Backport generated by backports.git " CPTCFG_VERSION "\n");
- #endif
- 
-         return 0;
+     # write local symbol list -- needed during packaging build
 -- 
 2.1.1
 
