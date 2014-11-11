@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbaKKLJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:09:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57311 "EHLO
+	id S1753751AbaKKLJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:09:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57294 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744AbaKKLJn (ORCPT
+	with ESMTP id S1753701AbaKKLJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:43 -0500
+	Tue, 11 Nov 2014 06:09:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 045/170] intel_pstate: Fix BYT frequency reporting
-Date: Tue, 11 Nov 2014 11:06:44 +0000
-Message-Id: <1415704129-12709-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 038/170] MIPS: loongson2_cpufreq: Fix CPU clock rate setting mismerge
+Date: Tue, 11 Nov 2014 11:06:37 +0000
+Message-Id: <1415704129-12709-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,148 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit b27580b05e6f5253228debc60b8ff4a786ff573a upstream.
+commit aa08ed55442ac6f9810c055e1474be34e785e556 upstream.
 
-BYT has a different conversion from P state to frequency than the core
-processors.  This causes the min/max and current frequency to be
-misreported on some BYT SKUs. Tested on BYT N2820, Ivybridge and
-Haswell processors.
+During 3.16 merge window, parts of the commit 8e8acb32960f
+(MIPS/loongson2_cpufreq: Fix CPU clock rate setting) seem to have
+been deleted probably due to a mismerge, and as a result cpufreq
+is broken again on Loongson2 boards in 3.16 and newer kernels.
+Fix by repeating the fix.
 
-Link: https://bugzilla.yoctoproject.org/show_bug.cgi?id=6663
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org
+Patchwork: https://patchwork.linux-mips.org/patch/7835/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 42 ++++++++++++++++++++++++++++++++++++------
- 1 file changed, 36 insertions(+), 6 deletions(-)
+ arch/mips/loongson/lemote-2f/clock.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 7e408bde89be..72c90a1ebb5f 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -65,6 +65,7 @@ struct pstate_data {
- 	int	current_pstate;
- 	int	min_pstate;
- 	int	max_pstate;
-+	int	scaling;
- 	int	turbo_pstate;
- };
+diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
+index 1eed38e28b1e..ebfb9cd71ca1 100644
+--- a/arch/mips/loongson/lemote-2f/clock.c
++++ b/arch/mips/loongson/lemote-2f/clock.c
+@@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
  
-@@ -114,6 +115,7 @@ struct pstate_funcs {
- 	int (*get_max)(void);
- 	int (*get_min)(void);
- 	int (*get_turbo)(void);
-+	int (*get_scaling)(void);
- 	void (*set)(struct cpudata*, int pstate);
- 	void (*get_vid)(struct cpudata *);
- };
-@@ -432,6 +434,22 @@ static void byt_set_pstate(struct cpudata *cpudata, int pstate)
- 	wrmsrl(MSR_IA32_PERF_CTL, val);
- }
- 
-+#define BYT_BCLK_FREQS 5
-+static int byt_freq_table[BYT_BCLK_FREQS] = { 833, 1000, 1333, 1167, 800};
-+
-+static int byt_get_scaling(void)
-+{
-+	u64 value;
-+	int i;
-+
-+	rdmsrl(MSR_FSB_FREQ, value);
-+	i = value & 0x3;
-+
-+	BUG_ON(i > BYT_BCLK_FREQS);
-+
-+	return byt_freq_table[i] * 100;
-+}
-+
- static void byt_get_vid(struct cpudata *cpudata)
+ int clk_set_rate(struct clk *clk, unsigned long rate)
  {
- 	u64 value;
-@@ -476,6 +494,11 @@ static int core_get_turbo_pstate(void)
- 	return ret;
- }
++	unsigned int rate_khz = rate / 1000;
+ 	struct cpufreq_frequency_table *pos;
+ 	int ret = 0;
+ 	int regval;
+@@ -107,9 +108,9 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+ 		propagate_rate(clk);
  
-+static inline int core_get_scaling(void)
-+{
-+	return 100000;
-+}
-+
- static void core_set_pstate(struct cpudata *cpudata, int pstate)
- {
- 	u64 val;
-@@ -500,6 +523,7 @@ static struct cpu_defaults core_params = {
- 		.get_max = core_get_max_pstate,
- 		.get_min = core_get_min_pstate,
- 		.get_turbo = core_get_turbo_pstate,
-+		.get_scaling = core_get_scaling,
- 		.set = core_set_pstate,
- 	},
- };
-@@ -518,6 +542,7 @@ static struct cpu_defaults byt_params = {
- 		.get_min = byt_get_min_pstate,
- 		.get_turbo = byt_get_turbo_pstate,
- 		.set = byt_set_pstate,
-+		.get_scaling = byt_get_scaling,
- 		.get_vid = byt_get_vid,
- 	},
- };
-@@ -554,7 +579,7 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
- 	if (pstate == cpu->pstate.current_pstate)
- 		return;
+ 	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
+-		if (rate == pos->frequency)
++		if (rate_khz == pos->frequency)
+ 			break;
+-	if (rate != pos->frequency)
++	if (rate_khz != pos->frequency)
+ 		return -ENOTSUPP;
  
--	trace_cpu_frequency(pstate * 100000, cpu->cpu);
-+	trace_cpu_frequency(pstate * cpu->pstate.scaling, cpu->cpu);
- 
- 	cpu->pstate.current_pstate = pstate;
- 
-@@ -581,6 +606,7 @@ static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
- 	cpu->pstate.min_pstate = pstate_funcs.get_min();
- 	cpu->pstate.max_pstate = pstate_funcs.get_max();
- 	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
-+	cpu->pstate.scaling = pstate_funcs.get_scaling();
- 
- 	if (pstate_funcs.get_vid)
- 		pstate_funcs.get_vid(cpu);
-@@ -600,7 +626,9 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu)
- 		core_pct += 1;
- 
- 	sample->freq = fp_toint(
--		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
-+		mul_fp(int_tofp(
-+			cpu->pstate.max_pstate * cpu->pstate.scaling / 100),
-+			core_pct));
- 
- 	sample->core_pct_busy = (int32_t)core_pct;
- }
-@@ -832,12 +860,13 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
- 
--	policy->min = cpu->pstate.min_pstate * 100000;
--	policy->max = cpu->pstate.turbo_pstate * 100000;
-+	policy->min = cpu->pstate.min_pstate * cpu->pstate.scaling;
-+	policy->max = cpu->pstate.turbo_pstate * cpu->pstate.scaling;
- 
- 	/* cpuinfo and default policy values */
--	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * 100000;
--	policy->cpuinfo.max_freq = cpu->pstate.turbo_pstate * 100000;
-+	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * cpu->pstate.scaling;
-+	policy->cpuinfo.max_freq =
-+		cpu->pstate.turbo_pstate * cpu->pstate.scaling;
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
- 	cpumask_set_cpu(policy->cpu, policy->cpus);
- 
-@@ -895,6 +924,7 @@ static void copy_cpu_funcs(struct pstate_funcs *funcs)
- 	pstate_funcs.get_max   = funcs->get_max;
- 	pstate_funcs.get_min   = funcs->get_min;
- 	pstate_funcs.get_turbo = funcs->get_turbo;
-+	pstate_funcs.get_scaling = funcs->get_scaling;
- 	pstate_funcs.set       = funcs->set;
- 	pstate_funcs.get_vid   = funcs->get_vid;
- }
+ 	clk->rate = rate;
 -- 
 2.1.0
 
