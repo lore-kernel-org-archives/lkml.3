@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaKKMta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:49:30 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:55330 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaKKMt3 (ORCPT
+	id S1751933AbaKKMtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:49:46 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:57624 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaKKMto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:49:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141111122636.GF29789@localhost>
-References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com>
-	<1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
-	<20141111122636.GF29789@localhost>
-Date: Tue, 11 Nov 2014 14:49:26 +0200
-Message-ID: <CAE1zotKi+kpv6a9xM=-qkpo3K9R5xKjrf2RZgDV7advXFS92FA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c: dln2: simplify return flow for dln2_i2c_enable
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Julia Lawall <julia.lawall@lip6.fr>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Nov 2014 07:49:44 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <286562607aa5948d6e9c767e8d672ec8>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com
+Subject: [PATCH v7 0/7] dw-hdmi: convert imx hdmi to bridge/dw-hdmi
+Date: Tue, 11 Nov 2014 20:48:44 +0800
+Message-Id: <1415710124-11887-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 2:26 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Tue, Nov 11, 2014 at 02:20:57PM +0200, Octavian Purdila wrote:
->> This fixes the following kbuild test robot warning:
->>
->> >> drivers/i2c/busses/i2c-dln2.c:70:1-4: WARNING: end returns can be simplified if negative or 0 value
->>
->> Reported-by: kbuild test robot <fengguang.wu@intel.com>
->> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
->>
->> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
->> ---
->>  drivers/i2c/busses/i2c-dln2.c | 7 +------
->>  1 file changed, 1 insertion(+), 6 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-dln2.c b/drivers/i2c/busses/i2c-dln2.c
->> index 010a5fa..b3fb86a 100644
->> --- a/drivers/i2c/busses/i2c-dln2.c
->> +++ b/drivers/i2c/busses/i2c-dln2.c
->> @@ -54,7 +54,6 @@ struct dln2_i2c {
->>
->>  static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
->>  {
->> -     int ret;
->>       u16 cmd;
->>       struct {
->>               u8 port;
->> @@ -67,11 +66,7 @@ static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
->>       else
->>               cmd = DLN2_I2C_DISABLE;
->>
->> -     ret = dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
->> -     if (ret < 0)
->> -             return ret;
->> -
->> -     return 0;
->> +     return dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
->
-> This looks like a bogus warning. It's not generally equivalent (ret > 0)
-> and is not mandated by any style guide lines.
->
 
-In this particular it should be equivalent (with the previous fix) and
-it saves 5 lines, so I think its worth it.
+We found freescale imx5 and rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
+use the interface compatible Designware HDMI IP, but they also have some
+lightly differences, such as phy pll configuration, register width(imx hdmi
+register is one byte, but rk3288 is 4 bytes width and can only access by word),
+4K support(imx6 doesn't support 4k, but rk3288 does).
+
+To reuse the imx-hdmi driver, we do this patch set:
+(1): fix some CodingStyle warning to make checkpatch happy
+(2): split out imx-soc code from imx-hdmi to dw_hdmi-imx.c
+(3): move imx-hdmi to bridge/dw-hdmi, and convert it to a drm_bridge driver
+And we will add rockchip platform specific code dw_hdmi-rockchip.c later,
+which is depend on drm-rockchip.
+
+Changes in v7:
+- remove unused variables from structure dw_hdmi
+- remove a wrong modification
+- add copyrights for dw_hdmi-imx.c
+
+Changes in v6:
+- rearrange the patch order
+- move some modification to  patch#6
+- refactor register access without reg_shift
+- move some modification from patch#5
+
+Changes in v5:
+- refactor reg-io-width
+
+Changes in v4:
+- fix checkpatch CHECK
+- defer probe ddc i2c adapter
+
+Changes in v3:
+- split multi register access to one indepent patch
+
+Changes in v2:
+- use git format -M to generate these patch
+
+Andy Yan (6):
+  staging: imx-drm: imx-hdmi: make checkpatch happy
+  staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
+  staging: imx-drm: imx-hdmi: split imx soc specific code from imx-hdmi
+  staging: imx-drm: imx-hdmi: move imx-hdmi to bridge/dw-hdmi
+  drm: bridge/dw-hdmi: add support for multi byte register width access
+  dt-bindings: add document for dw-hdmi
+
+Yakir Yang (1):
+  drm: bridge/dw-hdmi: convert dw-hdmi to drm_bridge mode
+
+ .../devicetree/bindings/drm/bridge/dw-hdmi.txt     |  38 ++
+ drivers/gpu/drm/bridge/Kconfig                     |   5 +
+ drivers/gpu/drm/bridge/Makefile                    |   1 +
+ .../imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c}        | 723 +++++++++------------
+ .../imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h}        |   5 +-
+ drivers/staging/imx-drm/Kconfig                    |   1 +
+ drivers/staging/imx-drm/Makefile                   |   2 +-
+ drivers/staging/imx-drm/dw_hdmi-imx.c              | 266 ++++++++
+ include/drm/bridge/dw_hdmi.h                       |  52 ++
+ 9 files changed, 670 insertions(+), 423 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw-hdmi.txt
+ rename drivers/{staging/imx-drm/imx-hdmi.c => gpu/drm/bridge/dw_hdmi.c} (71%)
+ rename drivers/{staging/imx-drm/imx-hdmi.h => gpu/drm/bridge/dw_hdmi.h} (99%)
+ create mode 100644 drivers/staging/imx-drm/dw_hdmi-imx.c
+ create mode 100644 include/drm/bridge/dw_hdmi.h
+
+-- 
+1.9.1
+
+
