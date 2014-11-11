@@ -1,69 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985AbaKKUoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:44:09 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23363 "EHLO mga02.intel.com"
+	id S1751666AbaKKUqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:46:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58977 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751430AbaKKUoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:44:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
-   d="scan'208";a="635280383"
-Message-ID: <54627512.7060806@intel.com>
-Date: Tue, 11 Nov 2014 12:44:02 -0800
-From: Dave Hansen <dave.hansen@intel.com>
+	id S1751202AbaKKUqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 15:46:51 -0500
+Message-ID: <54627563.5000400@redhat.com>
+Date: Tue, 11 Nov 2014 12:45:23 -0800
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241451280.5308@nanos> <545BED0B.8000001@intel.com> <alpine.DEB.2.11.1411111213450.3935@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411111213450.3935@nanos>
-Content-Type: text/plain; charset=windows-1252
+To: Linus Torvalds <torvalds@linux-foundation.org>, alexander.duyck@gmail.com
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] arch: Introduce read_acquire()
+References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home> <CA+55aFwo9f3tWaRqN1Xam9UkWv1B5F4YnRP1Qx3T78E4o=8YJQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwo9f3tWaRqN1Xam9UkWv1B5F4YnRP1Qx3T78E4o=8YJQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 10:27 AM, Thomas Gleixner wrote:
-> On Thu, 6 Nov 2014, Dave Hansen wrote:
->> Instead of all of these games with dropping and reacquiring mmap_sem and
->> adding other locks, or deferring the work, why don't we just do a
->> get_user_pages()?  Something along the lines of:
+
+On 11/11/2014 11:40 AM, Linus Torvalds wrote:
+> On Tue, Nov 11, 2014 at 10:57 AM,  <alexander.duyck@gmail.com> wrote:
 >>
->> while (1) {
->> 	ret = cmpxchg(addr)
->> 	if (!ret)
->> 		break;
->> 	if (ret == -EFAULT)
->> 		get_user_pages(addr);
->> }
 >>
->> Does anybody see a problem with that?
-> 
-> You want to do that under mmap_sem write held, right? Not a problem per
-> se, except that you block normal faults for a possibly long time when
-> the page(s) need to be swapped in.
+>> On reviewing the documentation and code for smp_load_acquire() it occurred
+>> to me that implementing something similar for CPU <-> device interaction
+>> would be worth while.  This commit provides just the load/read side of this
+>> in the form of read_acquire().
+>
+> So I don't hate the concept, but. there's a couple of reasons to think
+> this is broken.
+>
+> One is just the name. Why do we have "smp_load_acquire()", but then
+> call the non-smp version "read_acquire()"? That makes very little
+> sense to me. Why did "load" become "read"?
 
-Yeah, it might hold mmap_sem for write while doing this in the unmap
-path.  But, that's only if the bounds directory entry has been swapped
-out.  There's only 1 pointer of bounds directory entries there for every
-1MB of data, so it _should_ be relatively rare.  It would mean that
-nobody's been accessing a 512MB swath of data controlled by the same
-page of the bounds directory.
+The idea behind read vs load in the name was because smp_load_acquire is 
+using a full smp_mb() whereas this just falls back to rmb() for the 
+cases it is dealing with.  My main conern is that a full memory barrier 
+would be more expensive so I didn't want to give the idea that this is 
+as completed as smp_load_acquire().  The read_acquire() call is not 
+strictly enforcing any limitations on writes/stores, although there are 
+a few cases where the barriers used do leak that functionality over as a 
+side-effect.
 
-If it gets to be an issue, we can always add some code to fault it in
-before mmap_sem is acquired.
+> The other is more of a technical issue. Namely the fact that being
+> *device* ordered is completely and totally different from being *CPU*
+> ordered.
+>
+> All sane modern architectures do memory ordering as part of the cache
+> coherency protocol. But part of that is that it actually requires all
+> the CPU's to follow said cache coherency protocol.
+>
+> And bus-master devices don't necessarily follow the same ordering
+> rules. Yes, any sane DMA will be cache-coherent, although sadly the
+> insane kind still exists. But even when DMA is cache _coherent_, that
+> does not necessarily mean that that coherency follows the *ordering*
+> guarantees.
+>
+> Now, in practice, I think that DMA tends to be more strictly ordered
+> than  CPU memory ordering is, and the above all "just works". But I'd
+> really want a lot of ack's from architecture maintainers. Particularly
+> PowerPC and ARM64. I'm not 100% sure that "smp_load_acquire()" will
+> necessarily order the read wrt DMA traffic. PPC in particular has some
+> really odd IO ordering rules, but I *think* all the problems come up
+> with just MMIO, not with DMA.
+>
+> But we do have a very real difference between "smp_rmb()" (inter-cpu
+> cache coherency read barrier) and "rmb()" (full memory barrier that
+> synchronizes with IO).
+>
+> And your patch is very confused about this. In *some* places you use
+> "rmb()", and in other places you just use "smp_load_acquire()". Have
+> you done extensive verification to check that this is actually ok?
+> Because the performance difference you quote very much seems to be
+> about your x86 testing now akipping the IO-synchronizing "rmb()", and
+> depending on DMA being ordered even without it.
 
-FWIW, I believe we have a fairly long road ahead of us to optimize MPX
-in practice.  I have a list of things I want to go investigate, but I
-have not looked in to it in detail at all.
+I am far from an expert on some of these synchronization primitives so I 
+probably did make some blunders.  I meant to send this as an RFC, but as 
+is I plan to submit a v2 to just fix the spelling errors in the patch 
+description anyway.
 
-> But yes, this might solve most of the issues at hand. Did not think
-> about GUP at all :(
+The architectures where I thought I might be able to take advantage of 
+the smp_load_acquire functionality are arm, x86, ia64, sparc, and s390. 
+  The rest are essentially still just an rmb() call following the 
+volatile read.
 
-Whew.  Fixing it was getting nasty and complicated. :)
+> And I'm pretty sure that's actually fine on x86. The real
+> IO-synchronizing rmb() (which translates into a lfence) is only needed
+> for when you have uncached accesses (ie mmio) on x86. So I don't think
+> your code is wrong, I just want to verify that everybody understands
+> the issues. I'm not even sure DMA can ever really have weaker memory
+> ordering (I really don't see how you'd be able to do a read barrier
+> without DMA stores being ordered natively), so maybe I worry too much,
+> but the ppc people in particular should look at this, because the ppc
+> memory ordering rules and serialization are some completely odd ad-hoc
+> black magic....
 
+Like I said before the PowerPC version is likely the lowest risk.  It is 
+just a standard rmb() call after the read.
+
+I'm pretty sure x86 is safe as well since the issue that triggered the 
+introduction of the rmb() into the Intel network drivers was on a 
+PowerPC as I recall and the code had been running on x86 for quite some 
+time without issue when it was reported.
+
+> But anything with non-cache-coherent DMA is obviously very suspect too.
+>
+>                         Linus
+
+Well for not I am only focused on what should be cache-coherent DMA 
+which usually applies to things like descriptor rings where interaction 
+is expected to be bi-directional without the need for a map or unmap.
+
+Thanks,
+
+Alex
