@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120AbaKKLwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:52:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57436 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907AbaKKLKG (ORCPT
+	id S1754467AbaKKLwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:52:37 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:38676 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527AbaKKLwe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:06 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 069/170] ipv4: fix nexthop attlen check in fib_nh_match
-Date: Tue, 11 Nov 2014 11:07:08 +0000
-Message-Id: <1415704129-12709-70-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 11 Nov 2014 06:52:34 -0500
+Date: Tue, 11 Nov 2014 11:52:27 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: generic: Add set_msi_parent callback
+Message-ID: <20141111115227.GF12037@e106497-lin.cambridge.arm.com>
+References: <1415647480-3320-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1415647480-3320-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <20141111112424.GB16265@arm.com>
+MIME-Version: 1.0
+In-Reply-To: <20141111112424.GB16265@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 11 Nov 2014 11:52:28.0687 (UTC) FILETIME=[F7DC39F0:01CFFDA5]
+X-MC-Unique: 114111111523021701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Nov 11, 2014 at 11:24:24AM +0000, Will Deacon wrote:
+> Hi Suravee,
+> 
+> On Mon, Nov 10, 2014 at 07:24:40PM +0000, suravee.suthikulpanit@amd.com wrote:
+> > From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > 
+> > This patch implement set_msi_parent callback for PCI generic host controller.
+> > 
+> > Cc: Bjorn Helgass <bhelgaas@google.com>
+> > Cc: Liviu Dudau <liviu.dudau@arm.com>
+> > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> > ---
+> >  drivers/pci/host/pci-host-generic.c | 14 ++++++++++++++
+> >  1 file changed, 14 insertions(+)
+> > 
+> > diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
+> > index 036ab1b..f9bb97a 100644
+> > --- a/drivers/pci/host/pci-host-generic.c
+> > +++ b/drivers/pci/host/pci-host-generic.c
+> > @@ -42,6 +42,7 @@ struct gen_pci {
+> >  	struct pci_host_bridge			host;
+> >  	struct gen_pci_cfg_windows		cfg;
+> >  	struct list_head			resources;
+> > +	struct msi_chip				*mchip;
+> >  };
+> >  
+> >  #ifdef CONFIG_ARM
+> > @@ -128,9 +129,19 @@ static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
+> >  	return PCIBIOS_SUCCESSFUL;
+> >  }
+> >  
+> > +static int gen_pci_set_msi_parent(struct pci_bus *bus)
+> > +{
+> > +	struct gen_pci *pci = bus_to_gen_pci(bus);
+> > +
+> > +	bus->msi = pci->mchip;
+> > +
+> > +	return PCIBIOS_SUCCESSFUL;
+> > +}
+> 
+> I don't think this makes much sense a host controller callback. Why can't
+> bus->msi be set in generic code?
 
-------------------
+Because of the current way in which a bus gets created and them immediately used for
+scanning devices if you use pci_scan_root_bus(). Alternative is to use pci_create_root_bus()
+and increase your code size with the body of pci_scan_root_bus().
 
-From: Jiri Pirko <jiri@resnulli.us>
+Solution is to have pci_host_bridge holding the msi_chip pointer and that gets created
+before root bus, with pci_scan_root_bus() now having all the info needed to do successful
+setup of scanned devices.
 
-commit f76936d07c4eeb36d8dbb64ebd30ab46ff85d9f7 upstream.
+Best regards,
+Liviu
 
-fib_nh_match does not match nexthops correctly. Example:
+> 
+> >  static struct pci_ops gen_pci_ops = {
+> >  	.read	= gen_pci_config_read,
+> >  	.write	= gen_pci_config_write,
+> > +	.set_msi_parent = gen_pci_set_msi_parent,
+> >  };
+> >  
+> >  static const struct of_device_id gen_pci_of_match[] = {
+> > @@ -313,6 +324,9 @@ static int gen_pci_probe(struct platform_device *pdev)
+> >  		return err;
+> >  	}
+> >  
+> > +	pci->mchip = of_pci_find_msi_chip_by_node(of_parse_phandle(np,
+> > +						  "msi-parent", 0));
+> 
+> This bit should be in the generic of_pci.c code and not duplicated for
+> each host controller.
+> 
+> Will
+> 
 
-ip route add 172.16.10/24 nexthop via 192.168.122.12 dev eth0 \
-                          nexthop via 192.168.122.13 dev eth0
-ip route del 172.16.10/24 nexthop via 192.168.122.14 dev eth0 \
-                          nexthop via 192.168.122.15 dev eth0
-
-Del command is successful and route is removed. After this patch
-applied, the route is correctly matched and result is:
-RTNETLINK answers: No such process
-
-Please consider this for stable trees as well.
-
-Fixes: 4e902c57417c4 ("[IPv4]: FIB configuration using struct fib_config")
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv4/fib_semantics.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
-index b10cd43a4722..4a74ea85518f 100644
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -535,7 +535,7 @@ int fib_nh_match(struct fib_config *cfg, struct fib_info *fi)
- 			return 1;
- 
- 		attrlen = rtnh_attrlen(rtnh);
--		if (attrlen < 0) {
-+		if (attrlen > 0) {
- 			struct nlattr *nla, *attrs = rtnh_attrs(rtnh);
- 
- 			nla = nla_find(attrs, attrlen, RTA_GATEWAY);
 -- 
-2.1.0
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
