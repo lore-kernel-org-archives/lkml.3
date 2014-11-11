@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaKKLLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:11:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57881 "EHLO
+	id S1754580AbaKKLLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57955 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbaKKLL3 (ORCPT
+	with ESMTP id S1753040AbaKKLLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:29 -0500
+	Tue, 11 Nov 2014 06:11:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dexuan Cui <decui@microsoft.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-mm@kvack.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, dave.hansen@intel.com, riel@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 149/170] x86, pageattr: Prevent overflow in slow_virt_to_phys() for X86_PAE
-Date: Tue, 11 Nov 2014 11:08:28 +0000
-Message-Id: <1415704129-12709-150-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 168/170] x86_64, entry: Fix out of bounds read on sysenter
+Date: Tue, 11 Nov 2014 11:08:47 +0000
+Message-Id: <1415704129-12709-169-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -31,51 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dexuan Cui <decui@microsoft.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit d1cd1210834649ce1ca6bafe5ac25d2f40331343 upstream.
+commit 653bc77af60911ead1f423e588f54fc2547c4957 upstream.
 
-pte_pfn() returns a PFN of long (32 bits in 32-PAE), so "long <<
-PAGE_SHIFT" will overflow for PFNs above 4GB.
+Rusty noticed a Really Bad Bug (tm) in my NT fix.  The entry code
+reads out of bounds, causing the NT fix to be unreliable.  But, and
+this is much, much worse, if your stack is somehow just below the
+top of the direct map (or a hole), you read out of bounds and crash.
 
-Due to this issue, some Linux 32-PAE distros, running as guests on Hyper-V,
-with 5GB memory assigned, can't load the netvsc driver successfully and
-hence the synthetic network device can't work (we can use the kernel parameter
-mem=3000M to work around the issue).
+Excerpt from the crash:
 
-Cast pte_pfn() to phys_addr_t before shifting.
+[    1.129513] RSP: 0018:ffff88001da4bf88  EFLAGS: 00010296
 
-Fixes: "commit d76565344512: x86, mm: Create slow_virt_to_phys()"
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: gregkh@linuxfoundation.org
-Cc: linux-mm@kvack.org
-Cc: olaf@aepfle.de
-Cc: apw@canonical.com
-Cc: jasowang@redhat.com
-Cc: dave.hansen@intel.com
-Cc: riel@redhat.com
-Link: http://lkml.kernel.org/r/1414580017-27444-1-git-send-email-decui@microsoft.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+  2b:*    f7 84 24 90 00 00 00     testl  $0x4000,0x90(%rsp)
+
+That read is deterministically above the top of the stack.  I
+thought I even single-stepped through this code when I wrote it to
+check the offset, but I clearly screwed it up.
+
+Fixes: 8c7aa698baca ("x86_64, entry: Filter RFLAGS.NT on entry from userspace")
+Reported-by: Rusty Russell <rusty@ozlabs.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/mm/pageattr.c | 2 +-
+ arch/x86/ia32/ia32entry.S | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index ae242a7c11c7..36de293caf25 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -409,7 +409,7 @@ phys_addr_t slow_virt_to_phys(void *__virt_addr)
- 	psize = page_level_size(level);
- 	pmask = page_level_mask(level);
- 	offset = virt_addr & ~pmask;
--	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
-+	phys_addr = (phys_addr_t)pte_pfn(*pte) << PAGE_SHIFT;
- 	return (phys_addr | offset);
- }
- EXPORT_SYMBOL_GPL(slow_virt_to_phys);
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 711de084ab57..92a2e9333620 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -157,7 +157,7 @@ ENTRY(ia32_sysenter_target)
+ 	 * ourselves.  To save a few cycles, we can check whether
+ 	 * NT was set instead of doing an unconditional popfq.
+ 	 */
+-	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
++	testl $X86_EFLAGS_NT,EFLAGS-ARGOFFSET(%rsp)
+ 	jnz sysenter_fix_flags
+ sysenter_flags_fixed:
+ 
 -- 
 2.1.0
 
