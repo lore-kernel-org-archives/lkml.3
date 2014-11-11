@@ -1,72 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300AbaKKWCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 17:02:24 -0500
-Received: from mga14.intel.com ([192.55.52.115]:37597 "EHLO mga14.intel.com"
+	id S1752088AbaKKWMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 17:12:37 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:44398 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731AbaKKWCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 17:02:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
-   d="scan'208";a="620803692"
-Subject: [PATCH 2/2] x86: require exact match for "noxsave" command line option
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
-        fenghua.yu@intel.com, x86@kernel.org
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 11 Nov 2014 14:01:33 -0800
-References: <20141111220131.D86EE670@viggo.jf.intel.com>
-In-Reply-To: <20141111220131.D86EE670@viggo.jf.intel.com>
-Message-Id: <20141111220133.FE053984@viggo.jf.intel.com>
+	id S1751736AbaKKWMf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 17:12:35 -0500
+Date: Tue, 11 Nov 2014 20:12:26 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Sebastian Reichel <sre@kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        linux-media@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [RFCv2 1/8] [media] si4713: switch to devm regulator API
+Message-ID: <20141111201226.5d824871@recife.lan>
+In-Reply-To: <54624E83.1060404@xs4all.nl>
+References: <1413904027-16767-1-git-send-email-sre@kernel.org>
+	<1413904027-16767-2-git-send-email-sre@kernel.org>
+	<20141111090710.7a60a846@recife.lan>
+	<54624E83.1060404@xs4all.nl>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, 11 Nov 2014 18:59:31 +0100
+Hans Verkuil <hverkuil@xs4all.nl> escreveu:
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> Hi Mauro,
+> 
+> On 11/11/2014 12:07 PM, Mauro Carvalho Chehab wrote:
+> > Em Tue, 21 Oct 2014 17:07:00 +0200
+> > Sebastian Reichel <sre@kernel.org> escreveu:
+> > 
+> >> This switches back to the normal regulator API (but use
+> >> managed variant) in preparation for device tree support.
+> > 
+> > This patch broke compilation. Please be sure that none of the patches in
+> > the series would break it, as otherwise git bisect would be broken.
+> 
+> Weird, as reported by Sebastian, it works for me.
 
-We have some very similarly named command-line options:
+Weird. Not sure what happened here.
 
-arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
+> 
+> However, after applying this patch I get these new warnings:
+> 
+>   CC      drivers/media/radio/si4713/radio-usb-si4713.o
+> drivers/media/radio/si4713/si4713.c: In function ‘si4713_probe’:
+> drivers/media/radio/si4713/si4713.c:1617:1: warning: label ‘free_gpio’ defined but not used [-Wunused-label]
+>  free_gpio:
+>  ^
+> drivers/media/radio/si4713/si4713.c:1451:12: warning: unused variable ‘i’ [-Wunused-variable]
+>   int rval, i;
+>             ^
+> 
+> So it's probably not a good idea to merge this patch anyway until this is fixed.
 
-__setup() is designed to match options that take arguments, like
-"foo=bar" where you would have:
+Agreed. Also, v3 of this series apparently came after the pull request.
 
-	__setup("foo", x86_foo_func...);
+Regards,
+Mauro
 
-The problem is that "noxsave" actually _matches_ "noxsaves" in
-the same way that "foo" matches "foo=bar".  If you boot an old
-kernel that does not know about "noxsaves" with "noxsaves" on the
-command line, it will interpret the argument as "noxsave", which
-is not what you want at all.
 
-This makes the "noxsave" handler only return success when it finds
-an *exact* match.
-
-We should try and get this patch in to as many old kernels as
-possible.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: x86@kernel.org
-
----
-
- b/arch/x86/kernel/cpu/common.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff -puN arch/x86/kernel/cpu/common.c~mpx-xsave-setup-exact arch/x86/kernel/cpu/common.c
---- a/arch/x86/kernel/cpu/common.c~mpx-xsave-setup-exact	2014-11-11 14:00:19.061376676 -0800
-+++ b/arch/x86/kernel/cpu/common.c	2014-11-11 14:00:19.063376767 -0800
-@@ -146,6 +146,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
- 
- static int __init x86_xsave_setup(char *s)
- {
-+	if (strlen(s))
-+		return 0;
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVES);
-_
+> Sebastian, can you fix these warnings and repost?
+> 
+> Thanks!
+> 
+> 	Hans
+> 
+> > 
+> > Thanks,
+> > Mauro
+> > 
+> > drivers/media/radio/si4713/si4713.c: In function 'si4713_powerup':
+> > drivers/media/radio/si4713/si4713.c:369:10: error: 'struct si4713_device' has no member named 'supplies'
+> >  
+> >           ^
+> > drivers/media/radio/si4713/si4713.c:370:35: error: 'struct si4713_device' has no member named 'supplies'
+> >   if (sdev->vdd) {
+> >                                    ^
+> > drivers/media/radio/si4713/si4713.c:370:51: error: 'struct si4713_device' has no member named 'supply_data'
+> >   if (sdev->vdd) {
+> >                                                    ^
+> > drivers/media/radio/si4713/si4713.c:402:10: error: 'struct si4713_device' has no member named 'supplies'
+> >    v4l2_dbg(1, debug, &sdev->sd, "Device in power up mode\n");
+> >           ^
+> > drivers/media/radio/si4713/si4713.c:403:36: error: 'struct si4713_device' has no member named 'supplies'
+> >    sdev->power_state = POWER_ON;
+> >                                     ^
+> > drivers/media/radio/si4713/si4713.c:403:52: error: 'struct si4713_device' has no member named 'supply_data'
+> >    sdev->power_state = POWER_ON;
+> >                                                     ^
+> > drivers/media/radio/si4713/si4713.c: In function 'si4713_powerdown':
+> > drivers/media/radio/si4713/si4713.c:435:11: error: 'struct si4713_device' has no member named 'supplies'
+> >   int err;
+> >            ^
+> > drivers/media/radio/si4713/si4713.c:436:37: error: 'struct si4713_device' has no member named 'supplies'
+> >   u8 resp[SI4713_PWDN_NRESP];
+> >                                      ^
+> > drivers/media/radio/si4713/si4713.c:437:16: error: 'struct si4713_device' has no member named 'supply_data'
+> >  
+> >                 ^
+> > drivers/media/radio/si4713/si4713.c: In function 'si4713_probe':
+> > drivers/media/radio/si4713/si4713.c:1444:7: error: 'struct si4713_device' has no member named 'supplies'
+> >  /* si4713_probe - probe for the device */
+> >        ^
+> > drivers/media/radio/si4713/si4713.c:1447:22: error: 'struct si4713_device' has no member named 'supplies'
+> >  {
+> >                       ^
+> > drivers/media/radio/si4713/si4713.c:1448:7: error: 'struct si4713_device' has no member named 'supply_data'
+> >   struct si4713_device *sdev;
+> >        ^
+> > drivers/media/radio/si4713/si4713.c:1450:46: error: 'struct si4713_device' has no member named 'supplies'
+> >   struct v4l2_ctrl_handler *hdl;
+> >                                               ^
+> > drivers/media/radio/si4713/si4713.c:1451:11: error: 'struct si4713_device' has no member named 'supply_data'
+> >   int rval, i;
+> >            ^
+> > drivers/media/radio/si4713/si4713.c:1583:26: error: 'struct si4713_device' has no member named 'supplies'
+> >  
+> >                           ^
+> > drivers/media/radio/si4713/si4713.c:1583:42: error: 'struct si4713_device' has no member named 'supply_data'
+> >  
+> >                                           ^
+> > drivers/media/radio/si4713/si4713.c: In function 'si4713_remove':
+> > drivers/media/radio/si4713/si4713.c:1607:26: error: 'struct si4713_device' has no member named 'supplies'
+> >    goto free_irq;
+> >                           ^
+> > drivers/media/radio/si4713/si4713.c:1607:42: error: 'struct si4713_device' has no member named 'supply_data'
+> >    goto free_irq;
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> 
