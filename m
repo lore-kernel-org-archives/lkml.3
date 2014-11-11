@@ -1,373 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaKKNqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:46:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:56242 "EHLO mga11.intel.com"
+	id S1752271AbaKKNq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:46:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61143 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344AbaKKNql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:46:41 -0500
+	id S1752238AbaKKNqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 08:46:54 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="414815271"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: [PATCH v7 10/10] tpm: TPM 2.0 sysfs attributes
-Date: Tue, 11 Nov 2014 15:45:13 +0200
-Message-Id: <1415713513-16524-11-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
+   d="scan'208";a="620558273"
+From: Raymond Tan <raymond.tan@intel.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Alvin Chen <alvin.chen@intel.com>,
+        Raymond Tan <raymond.tan@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>
+Subject: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000 I2C-GPIO MFD Driver
+Date: Tue, 11 Nov 2014 21:42:29 +0800
+Message-Id: <1415713349-16065-2-git-send-email-raymond.tan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1415713349-16065-1-git-send-email-raymond.tan@intel.com>
+References: <1415713349-16065-1-git-send-email-raymond.tan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Manadatory sysfs attributes for TPM 2.0 devices so that it is easy
-to check whether storage hierarchies are enabled and use PPI
-interface.
+In Quark X1000, there's a single PCI device that provides both
+an I2C controller and a GPIO controller. This MFD driver will
+split the 2 devices for their respective drivers.
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+This patch is based on Josef Ahmad's initial work for Quark enabling.
+
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Weike Chen <alvin.chen@intel.com>
+Signed-off-by: Raymond Tan <raymond.tan@intel.com>
 ---
- Documentation/ABI/stable/sysfs-class-tpm2 |  57 +++++++++++
- drivers/char/tpm/Makefile                 |   2 +-
- drivers/char/tpm/tpm-chip.c               |  21 +++--
- drivers/char/tpm/tpm.h                    |  19 ++++
- drivers/char/tpm/tpm2-sysfs.c             | 152 ++++++++++++++++++++++++++++++
- 5 files changed, 241 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/ABI/stable/sysfs-class-tpm2
- create mode 100644 drivers/char/tpm/tpm2-sysfs.c
+ drivers/mfd/Kconfig                |   11 ++
+ drivers/mfd/Makefile               |    1 +
+ drivers/mfd/intel_quark_i2c_gpio.c |  298 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 310 insertions(+)
+ create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
 
-diff --git a/Documentation/ABI/stable/sysfs-class-tpm2 b/Documentation/ABI/stable/sysfs-class-tpm2
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index b7c74a7..d01d042 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -219,6 +219,17 @@ config HTC_I2CPLD
+ 	  This device provides input and output GPIOs through an I2C
+ 	  interface to one or more sub-chips.
+ 
++config MFD_INTEL_QUARK_I2C_GPIO
++	tristate "Intel Quark MFD I2C GPIO"
++	depends on PCI && X86
++	depends on COMMON_CLK
++	select MFD_CORE
++	help
++	  This MFD provides support for I2C and GPIO that exist only
++	  in a single PCI device. It splits the 2 IO devices to
++	  their respective IO driver.
++	  The GPIO exports a total amount of 8 interrupt-capable GPIOs.
++
+ config LPC_ICH
+ 	tristate "Intel ICH LPC"
+ 	depends on PCI
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 8a28dc9..d42652d 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -133,6 +133,7 @@ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
+ obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+ obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+ obj-$(CONFIG_MFD_KEMPLD)	+= kempld-core.o
++obj-$(CONFIG_MFD_INTEL_QUARK_I2C_GPIO)	+= intel_quark_i2c_gpio.o
+ obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+ obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
+ obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
+diff --git a/drivers/mfd/intel_quark_i2c_gpio.c b/drivers/mfd/intel_quark_i2c_gpio.c
 new file mode 100644
-index 0000000..301ab2e
+index 0000000..eed95da
 --- /dev/null
-+++ b/Documentation/ABI/stable/sysfs-class-tpm2
-@@ -0,0 +1,57 @@
-+What:		/sys/class/misc/tpmX/device/
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The device/ directory under a specific TPM instance exposes
-+		the properties of that TPM chip.
-+
-+What:		/sys/class/misc/tpmX/device/family
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The protocol family in the major.minor format.
-+
-+What:		/sys/class/misc/tpmX/device/sh_enabled
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "sh_enabled" property prints a '1' if the Storage Hierarchy
-+		is enabled, i.e. if PM_PT_STARTUP_CLEAR.shEnable is set.
-+
-+What:		/sys/class/misc/tpmX/device/sh_owned
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "sh_owned" property prints a '1' if the ownership of the
-+		Storage Hierarchy has been taken, i.e. if
-+		TPM_PT_PERMANENT.ownerAuthSet is set.
-+
-+What:		/sys/class/misc/tpmX/device/eh_enabled
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "eh_enabled" property prints a '1' if the Endorsement
-+		Hierarchy is enabled, i.e if PM_PT_STARTUP_CLEAR.ehEnable is
-+		set.
-+
-+What:		/sys/class/misc/tpmX/device/eh_owned
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "eh_owned" property prints a '1' if the ownership of the
-+		Endrosoment Hierarchy has been taken, i.e if
-+		TPM_PT_PERMANENT.endorsementAuthSet is set.
-+
-+What:		/sys/class/misc/tpmX/device/manufacturer
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The "manufacturer" property prints the vendor ID of the TPM
-+		manufacturer.
-+
-+What:		/sys/class/misc/tpmX/device/firmware
-+Date:		October 2014
-+KernelVersion:	3.19
-+Contact:	tpmdd-devel@lists.sf.net
-+Description:	The property prints the vendor-specific value indicating the
-+		version of the firmware.
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index e6d26dd..15e3b4c 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the kernel tpm device drivers.
- #
- obj-$(CONFIG_TCG_TPM) += tpm.o
--tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o
-+tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o tpm2-sysfs.o
- tpm-$(CONFIG_ACPI) += tpm_ppi.o
- 
- ifdef CONFIG_ACPI
-diff --git a/drivers/char/tpm/tpm-chip.c b/drivers/char/tpm/tpm-chip.c
-index 4d25b24..accd408 100644
---- a/drivers/char/tpm/tpm-chip.c
-+++ b/drivers/char/tpm/tpm-chip.c
-@@ -30,6 +30,7 @@
- #include "tpm_eventlog.h"
- 
- ATTRIBUTE_GROUPS(tpm_dev);
-+ATTRIBUTE_GROUPS(tpm2_dev);
- 
- static DECLARE_BITMAP(dev_mask, TPM_NUM_DEVICES);
- static LIST_HEAD(tpm_chip_list);
-@@ -138,7 +139,10 @@ struct tpm_chip *tpmm_chip_alloc(struct device *dev,
- 	else
- 		chip->dev.devt = MKDEV(MAJOR(tpm_devt), chip->dev_num);
- 
--	chip->dev.groups = tpm_dev_groups;
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		chip->dev.groups = tpm2_dev_groups;
-+	else
-+		chip->dev.groups = tpm_dev_groups;
- 
- 	dev_set_name(&chip->dev, chip->devname);
- 
-@@ -213,14 +217,12 @@ int tpm_chip_register(struct tpm_chip *chip)
- 	if (rc)
- 		return rc;
- 
--	/* Populate sysfs for TPM1 devices. */
--	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
--		rc = tpm_add_ppi(chip);
--		if (rc)
--			goto out_err;
-+	rc = tpm_add_ppi(chip);
-+	if (rc)
-+		goto out_err;
- 
-+	if (!(chip->flags & TPM_CHIP_FLAG_TPM2))
- 		chip->bios_dir = tpm_bios_log_setup(chip->devname);
--	}
- 
- 	/* Make the chip available. */
- 	spin_lock(&driver_lock);
-@@ -251,8 +253,9 @@ void tpm_chip_unregister(struct tpm_chip *chip)
- 	spin_unlock(&driver_lock);
- 	synchronize_rcu();
- 
--	/* Clean up sysfs for TPM1 devices. */
--	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-+		tpm_remove_ppi(chip);
-+	} else {
- 		if (chip->bios_dir)
- 			tpm_bios_log_teardown(chip->bios_dir);
- 		tpm_remove_ppi(chip);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 8a434d2..1548182 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -108,6 +108,24 @@ enum tpm2_capabilities {
- 	TPM2_CAP_TPM_PROPERTIES = 6,
- };
- 
-+enum tpm2_tpm_properties {
-+	TPM2_PT_MANUFACTURER		= 0x00000105,
-+	TPM2_PT_FIRMWARE_VERSION_1	= 0x0000010C,
-+	TPM2_PT_FIRMWARE_VERSION_2	= 0x0000010D,
-+	TPM2_PT_PERMANENT		= 0x00000200,
-+	TPM2_PT_STARTUP_CLEAR		= 0x00000201,
-+};
-+
-+enum tpm2_pt_startup_clear {
-+	TPM2_PT_SC_SH_ENABLE	= BIT(1),
-+	TPM2_PT_SC_EH_ENABLE	= BIT(2),
-+};
-+
-+enum tpm2_pt_permanent {
-+	TPM2_PT_PM_OWNER_AUTH_SET	= BIT(0),
-+	TPM2_PT_PM_ENDORSEMENT_AUTH_SET	= BIT(1),
-+};
-+
- enum tpm2_startup_types {
- 	TPM2_SU_CLEAR	= 0x0000,
- 	TPM2_SU_STATE	= 0x0001,
-@@ -382,6 +400,7 @@ extern struct class *tpm_class;
- extern dev_t tpm_devt;
- extern const struct file_operations tpm_fops;
- extern struct attribute *tpm_dev_attrs[];
-+extern struct attribute *tpm2_dev_attrs[];
- 
- ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
- ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
-diff --git a/drivers/char/tpm/tpm2-sysfs.c b/drivers/char/tpm/tpm2-sysfs.c
-new file mode 100644
-index 0000000..9e5e2e3
---- /dev/null
-+++ b/drivers/char/tpm/tpm2-sysfs.c
-@@ -0,0 +1,152 @@
++++ b/drivers/mfd/intel_quark_i2c_gpio.c
+@@ -0,0 +1,298 @@
 +/*
-+ * Copyright (C) 2014 Intel Corporation
++ * Intel Quark MFD PCI driver for I2C & GPIO
 + *
-+ * Authors:
-+ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
++ * Copyright(c) 2014 Intel Corporation.
 + *
-+ * TPM2 sysfs attributes
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
 + *
++ * Intel Quark PCI device for I2C and GPIO controller sharing the same
++ * PCI function. This PCI driver will split the 2 devices into their
++ * respective drivers.
 + */
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include "tpm.h"
 +
-+static ssize_t sh_enabled_show(struct device *dev, struct device_attribute *attr,
-+		     char *buf)
-+{
-+	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
-+	u32 value;
-+	ssize_t rc;
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/mfd/core.h>
++#include <linux/clkdev.h>
++#include <linux/clk-provider.h>
++#include <linux/dmi.h>
++#include <linux/platform_data/gpio-dwapb.h>
++#include <linux/platform_data/i2c-designware.h>
 +
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_STARTUP_CLEAR, &value,
-+			     "could not retrieve STARTUP_CLEAR property");
-+	if (rc)
-+		return 0;
++/* PCI BAR for register base address */
++#define MFD_I2C_BAR		0
++#define MFD_GPIO_BAR		1
 +
-+	rc = sprintf(buf, "%d\n", (value & TPM2_PT_SC_SH_ENABLE) > 0);
-+	return rc;
-+}
-+static DEVICE_ATTR_RO(sh_enabled);
++/* The base GPIO number under GPIOLIB framework */
++#define INTEL_QUARK_MFD_GPIO_BASE	8
 +
-+static ssize_t sh_owned_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
-+	u32 value;
-+	ssize_t rc;
++/* The default number of South-Cluster GPIO on Quark. */
++#define INTEL_QUARK_MFD_NGPIO		8
 +
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_PERMANENT, &value,
-+			     "could not retrieve PERMANENT property");
-+	if (rc)
-+		return 0;
++/* The DesignWare GPIO ports on Quark. */
++#define INTEL_QUARK_GPIO_NPORTS	1
 +
-+	rc = sprintf(buf, "%d\n", (value & TPM2_PT_PM_OWNER_AUTH_SET) > 0);
-+	return rc;
-+}
-+static DEVICE_ATTR_RO(sh_owned);
++#define INTEL_QUARK_IORES_MEM	0
++#define INTEL_QUARK_IORES_IRQ	1
 +
-+static ssize_t eh_enabled_show(struct device *dev, struct device_attribute *attr,
-+		     char *buf)
-+{
-+	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
-+	u32 value;
-+	ssize_t rc;
++#define INTEL_QUARK_I2C_CONTROLLER_CLK "i2c_designware.0"
 +
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_STARTUP_CLEAR, &value,
-+			     "could not retrieve STARTUP_CLEAR property");
-+	if (rc)
-+		return 0;
++/* The Quark I2C controller source clock */
++#define INTEL_QUARK_I2C_CLK_HZ	33000000
 +
-+	rc = sprintf(buf, "%d\n", (value & TPM2_PT_SC_EH_ENABLE) > 0);
-+	return rc;
-+}
-+static DEVICE_ATTR_RO(eh_enabled);
++#define INTEL_QUARK_I2C_NCLK	1
 +
-+static ssize_t eh_owned_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
-+	u32 value;
-+	ssize_t rc;
++struct clk *intel_quark_i2c_clk;
++struct clk_lookup *intel_quark_i2c_clk_lookups;
 +
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_PERMANENT, &value,
-+			     "could not retrieve PERMANENT property");
-+	if (rc)
-+		return 0;
-+
-+	rc = sprintf(buf, "%d\n", (value & TPM2_PT_PM_ENDORSEMENT_AUTH_SET) > 0);
-+	return rc;
-+}
-+static DEVICE_ATTR_RO(eh_owned);
-+
-+static ssize_t manufacturer_show(struct device *dev,
-+				 struct device_attribute *attr,
-+				 char *buf)
-+{
-+	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
-+	u32 manufacturer;
-+	ssize_t rc;
-+	char *str = buf;
-+
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_MANUFACTURER, (u32 *) &manufacturer,
-+			     "could not retrieve MANUFACTURER property");
-+	if (rc)
-+		return 0;
-+
-+	str += sprintf(str, "0x%08x\n", be32_to_cpu(manufacturer));
-+
-+	return str - buf;
-+}
-+static DEVICE_ATTR_RO(manufacturer);
-+
-+static ssize_t firmware_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
-+{
-+	struct tpm_chip *chip = container_of(dev, struct tpm_chip, dev);
-+	u32 firmware1;
-+	u32 firmware2;
-+	ssize_t rc;
-+	char *str = buf;
-+
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_FIRMWARE_VERSION_1, (u32 *) &firmware1,
-+			     "could not retrieve FIRMWARE_VERSION_1 property");
-+	if (rc)
-+		return 0;
-+
-+	rc = tpm2_get_tpm_pt(chip, TPM2_PT_FIRMWARE_VERSION_2, (u32 *) &firmware2,
-+			     "could not retrieve FIRMWARE_VERSION_2 property");
-+	if (rc)
-+		return 0;
-+
-+	str += sprintf(str, "0x%08x.0x%08x\n", firmware1, firmware2);
-+
-+	return str - buf;
-+}
-+static DEVICE_ATTR_RO(firmware);
-+
-+static ssize_t family_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	char *str = buf;
-+
-+	str += sprintf(str, "2.0\n");
-+
-+	return str - buf;
-+}
-+static DEVICE_ATTR_RO(family);
-+
-+struct attribute *tpm2_dev_attrs[] = {
-+	&dev_attr_sh_enabled.attr,
-+	&dev_attr_sh_owned.attr,
-+	&dev_attr_eh_enabled.attr,
-+	&dev_attr_eh_owned.attr,
-+	&dev_attr_manufacturer.attr,
-+	&dev_attr_firmware.attr,
-+	&dev_attr_family.attr,
-+	NULL,
++struct i2c_mode_info {
++	const char *name;
++	unsigned int i2c_scl_freq;
 +};
++
++static const struct i2c_mode_info platform_i2c_mode_info[] = {
++	{
++		.name = "Galileo",
++		.i2c_scl_freq = 100000,
++	},
++	{
++		.name = "GalileoGen2",
++		.i2c_scl_freq = 400000,
++	},
++};
++
++static struct resource intel_quark_i2c_res[] = {
++	[INTEL_QUARK_IORES_MEM] = {
++		.flags = IORESOURCE_MEM,
++	},
++	[INTEL_QUARK_IORES_IRQ] = {
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource intel_quark_gpio_res[] = {
++	[INTEL_QUARK_IORES_MEM] = {
++		.flags = IORESOURCE_MEM,
++	},
++};
++
++static struct mfd_cell intel_quark_mfd_cells[] = {
++	{
++		.id = MFD_I2C_BAR,
++		.name = "i2c_designware",
++		.num_resources = ARRAY_SIZE(intel_quark_i2c_res),
++		.resources = intel_quark_i2c_res,
++		.ignore_resource_conflicts = true,
++	},
++	{
++		.id = MFD_GPIO_BAR,
++		.name = "gpio-dwapb",
++		.num_resources = ARRAY_SIZE(intel_quark_gpio_res),
++		.resources = intel_quark_gpio_res,
++		.ignore_resource_conflicts = true,
++	},
++};
++
++static const struct pci_device_id intel_quark_mfd_ids[] = {
++	{ PCI_VDEVICE(INTEL, 0x0934), },
++	{ 0,}
++};
++MODULE_DEVICE_TABLE(pci, intel_quark_mfd_ids);
++
++static struct dwapb_platform_data *
++intel_quark_prepare_pdata(struct pci_dev *pdev)
++{
++	struct dwapb_platform_data *pdata;
++	struct device *dev = &pdev->dev;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	/* For intel quark x1000, it has only one port: portA */
++	pdata->nports = INTEL_QUARK_GPIO_NPORTS;
++	pdata->properties = devm_kcalloc(dev, pdata->nports,
++					 sizeof(*pdata->properties),
++					 GFP_KERNEL);
++	if (!pdata->properties)
++		return ERR_PTR(-ENOMEM);
++
++	/* Set the properties for portA */
++	pdata->properties->node	= NULL;
++	pdata->properties->name	= "intel-quark-x1000-gpio-portA";
++	pdata->properties->idx	= 0;
++	pdata->properties->ngpio	= INTEL_QUARK_MFD_NGPIO;
++	pdata->properties->gpio_base	= INTEL_QUARK_MFD_GPIO_BASE;
++	pdata->properties->irq	= pdev->irq;
++	pdata->properties->irq_shared	= true;
++
++	return pdata;
++}
++
++static struct dw_i2c_platform_data *
++intel_quark_get_i2c_mode(struct pci_dev *pdev)
++{
++	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
++	struct dw_i2c_platform_data *pdata;
++	struct device *dev = &pdev->dev;
++	unsigned int i;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	/* Fast mode by default */
++	pdata->i2c_scl_freq = 400000;
++
++	for (i = 0; i < ARRAY_SIZE(platform_i2c_mode_info); i++)
++		if (!strcmp(board_name, platform_i2c_mode_info[i].name))
++			pdata->i2c_scl_freq
++				= platform_i2c_mode_info[i].i2c_scl_freq;
++
++	return pdata;
++}
++
++static int intel_quark_register_i2c_clk(struct pci_dev *pdev)
++{
++	intel_quark_i2c_clk_lookups = devm_kcalloc(
++		&pdev->dev, INTEL_QUARK_I2C_NCLK,
++		sizeof(*intel_quark_i2c_clk_lookups), GFP_KERNEL);
++
++	if (!intel_quark_i2c_clk_lookups)
++		return -ENOMEM;
++
++	intel_quark_i2c_clk_lookups[0].dev_id = INTEL_QUARK_I2C_CONTROLLER_CLK;
++
++	intel_quark_i2c_clk = clk_register_fixed_rate(
++		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
++		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
++
++	return clk_register_clkdevs(intel_quark_i2c_clk,
++		intel_quark_i2c_clk_lookups, INTEL_QUARK_I2C_NCLK);
++}
++
++static void intel_quark_unregister_i2c_clk(void)
++{
++	if (!intel_quark_i2c_clk || !intel_quark_i2c_clk_lookups)
++		return;
++
++	clkdev_drop(intel_quark_i2c_clk_lookups);
++	clk_unregister(intel_quark_i2c_clk);
++}
++
++static int intel_quark_i2c_setup(struct pci_dev *pdev, struct mfd_cell *cell)
++{
++	struct dw_i2c_platform_data *pdata;
++	struct resource *res = (struct resource *)cell->resources;
++	int retval;
++
++	res[INTEL_QUARK_IORES_MEM].start =
++		pci_resource_start(pdev, MFD_I2C_BAR);
++	res[INTEL_QUARK_IORES_MEM].end =
++		pci_resource_end(pdev, MFD_I2C_BAR);
++
++	res[INTEL_QUARK_IORES_IRQ].start = pdev->irq;
++	res[INTEL_QUARK_IORES_IRQ].end = pdev->irq;
++
++	retval = intel_quark_register_i2c_clk(pdev);
++	if (retval) {
++		dev_err(&pdev->dev, "Fixed clk register failed: %d\n", retval);
++		return retval;
++	}
++
++	pdata = intel_quark_get_i2c_mode(pdev);
++	if (IS_ERR(pdata))
++		return PTR_ERR(pdata);
++
++	cell->platform_data = pdata;
++	cell->pdata_size = sizeof(*pdata);
++
++	return 0;
++}
++
++static int intel_quark_gpio_setup(struct pci_dev *pdev, struct mfd_cell *cell)
++{
++	struct dwapb_platform_data *pdata;
++	struct resource *res = (struct resource *)cell->resources;
++
++	res[INTEL_QUARK_IORES_MEM].start =
++		pci_resource_start(pdev, MFD_GPIO_BAR);
++	res[INTEL_QUARK_IORES_MEM].end =
++		pci_resource_end(pdev, MFD_GPIO_BAR);
++
++	pdata = intel_quark_prepare_pdata(pdev);
++	if (IS_ERR(pdata))
++		return PTR_ERR(pdata);
++
++	cell->platform_data = pdata;
++	cell->pdata_size = sizeof(*pdata);
++
++	return 0;
++}
++
++struct intel_quark_mfd_dev {
++	int (*setup)(struct pci_dev *pdev, struct mfd_cell *cell);
++	struct mfd_cell *cell;
++};
++
++static struct intel_quark_mfd_dev intel_quark_mfd_devs[] = {
++	{
++		.cell = &intel_quark_mfd_cells[MFD_I2C_BAR],
++		.setup = intel_quark_i2c_setup,
++	},
++	{
++		.cell = &intel_quark_mfd_cells[MFD_GPIO_BAR],
++		.setup = intel_quark_gpio_setup,
++	},
++	{
++		/* terminator */
++	},
++};
++
++static int intel_quark_mfd_probe(struct pci_dev *pdev,
++				 const struct pci_device_id *id)
++{
++	struct intel_quark_mfd_dev *mfd_dev;
++	int retval;
++
++	retval = pcim_enable_device(pdev);
++	if (retval)
++		return retval;
++
++	for (mfd_dev = intel_quark_mfd_devs; mfd_dev->cell; mfd_dev++)
++		if (mfd_dev->setup) {
++			retval = mfd_dev->setup(pdev, mfd_dev->cell);
++			if (retval)
++				return retval;
++		}
++
++	return mfd_add_devices(&pdev->dev, 0, intel_quark_mfd_cells,
++		ARRAY_SIZE(intel_quark_mfd_cells), NULL, 0, NULL);
++}
++
++static void intel_quark_mfd_remove(struct pci_dev *pdev)
++{
++	intel_quark_unregister_i2c_clk();
++	mfd_remove_devices(&pdev->dev);
++}
++
++static struct pci_driver intel_quark_mfd_driver = {
++	.name		= "intel_quark_mfd_i2c_gpio",
++	.id_table	= intel_quark_mfd_ids,
++	.probe		= intel_quark_mfd_probe,
++	.remove		= intel_quark_mfd_remove,
++};
++
++module_pci_driver(intel_quark_mfd_driver);
++
++MODULE_AUTHOR("Raymond Tan <raymond.tan@intel.com>");
++MODULE_DESCRIPTION("Intel Quark MFD PCI driver for I2C & GPIO");
++MODULE_LICENSE("GPL v2");
 -- 
-2.1.0
+1.7.9.5
 
