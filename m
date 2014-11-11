@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaKKWRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 17:17:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52999 "EHLO mx2.suse.de"
+	id S1752331AbaKKWTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 17:19:47 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:48693
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752025AbaKKWRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 17:17:40 -0500
-Date: Tue, 11 Nov 2014 23:17:39 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-cc: Petr Mladek <pmladek@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: module notifier: was Re: [PATCH 2/2] kernel: add support for
- live patching
-In-Reply-To: <20141111194008.GA9066@cerebellum.variantweb.net>
-Message-ID: <alpine.LNX.2.00.1411112315180.4454@pobox.suse.cz>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com> <1415284748-14648-3-git-send-email-sjenning@redhat.com> <20141107171307.GC1136@dhcp128.suse.cz> <20141107180711.GC2057@cerebellum.variantweb.net> <20141107184011.GF1136@dhcp128.suse.cz>
- <20141111194008.GA9066@cerebellum.variantweb.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751899AbaKKWTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 17:19:45 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Add processing of MTU reduced by the host
+Date: Tue, 11 Nov 2014 15:27:52 -0800
+Message-Id: <1415748472-27463-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Seth Jennings wrote:
+If the host uses packet encapsulation feature, the MTU may be reduced by the
+host due to headroom reservation for encapsulation. This patch handles this
+new MTU value.
 
-> It will be in v2 (hopefully out in the next couple of days).
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/netvsc.c       |    3 ++-
+ drivers/net/hyperv/netvsc_drv.c   |    4 ++--
+ drivers/net/hyperv/rndis_filter.c |    9 +++++++++
+ 3 files changed, 13 insertions(+), 3 deletions(-)
 
-FWIW we are also working on a few patches on top of v1 to back some of the 
-proposals we've made during the first round of review, so maybe it might 
-make sense to wait with v2 a little bit more, so that it incorporates as 
-much v1 feedback as possible ... ?
-
-Thanks,
-
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 7d76c95..6b46311 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -440,7 +440,8 @@ static int negotiate_nvsp_ver(struct hv_device *device,
+ 	/* NVSPv2 only: Send NDIS config */
+ 	memset(init_packet, 0, sizeof(struct nvsp_message));
+ 	init_packet->hdr.msg_type = NVSP_MSG2_TYPE_SEND_NDIS_CONFIG;
+-	init_packet->msg.v2_msg.send_ndis_config.mtu = net_device->ndev->mtu;
++	init_packet->msg.v2_msg.send_ndis_config.mtu = net_device->ndev->mtu +
++						       ETH_HLEN;
+ 	init_packet->msg.v2_msg.send_ndis_config.capability.ieee8021q = 1;
+ 
+ 	ret = vmbus_sendpacket(device->channel, init_packet,
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 3295e4e..b689f96 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -699,9 +699,9 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
+ 		return -ENODEV;
+ 
+ 	if (nvdev->nvsp_version >= NVSP_PROTOCOL_VERSION_2)
+-		limit = NETVSC_MTU;
++		limit = NETVSC_MTU - ETH_HLEN;
+ 
+-	if (mtu < 68 || mtu > limit)
++	if (mtu < ETH_DATA_LEN || mtu > limit)
+ 		return -EINVAL;
+ 
+ 	nvdev->start_remove = true;
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index ccce6f2..7b2c5d1 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -998,6 +998,7 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 	int t;
+ 	struct ndis_recv_scale_cap rsscap;
+ 	u32 rsscap_size = sizeof(struct ndis_recv_scale_cap);
++	u32 mtu, size;
+ 
+ 	rndis_device = get_rndis_device();
+ 	if (!rndis_device)
+@@ -1029,6 +1030,14 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 		return ret;
+ 	}
+ 
++	/* Get the MTU from the host */
++	size = sizeof(u32);
++	ret = rndis_filter_query_device(rndis_device,
++					RNDIS_OID_GEN_MAXIMUM_FRAME_SIZE,
++					&mtu, &size);
++	if (ret == 0 && size == sizeof(u32))
++		net_device->ndev->mtu = mtu;
++
+ 	/* Get the mac address */
+ 	ret = rndis_filter_query_device_mac(rndis_device);
+ 	if (ret != 0) {
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.1
+
