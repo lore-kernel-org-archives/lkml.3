@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaKKTxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 14:53:31 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:58849 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690AbaKKTxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:53:30 -0500
-Date: Tue, 11 Nov 2014 14:53:10 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch] mm: vmscan: invoke slab shrinkers for each lruvec
-Message-ID: <20141111195310.GA27249@phnom.home.cmpxchg.org>
-References: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
- <20141110064640.GO23575@dastard>
- <20141110144405.GA6873@phnom.home.cmpxchg.org>
- <20141111063419.GS23575@dastard>
+	id S1752039AbaKKTyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:54:14 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54071 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751644AbaKKTyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 14:54:12 -0500
+X-Sasl-enc: TE+41/CZIiSdY7UmwYRAdADiVPwS/LGW2fV+jqONbz+1 1415735651
+Date: Tue, 11 Nov 2014 17:54:00 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: guard against misaligned
+ microcode data
+Message-ID: <20141111195400.GG2584@khazad-dum.debian.net>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-8-git-send-email-hmh@hmh.eng.br>
+ <20141107195905.GE5180@pd.tnic>
+ <20141107225425.GC18128@khazad-dum.debian.net>
+ <20141107234806.GG5180@pd.tnic>
+ <20141108215749.GC32023@khazad-dum.debian.net>
+ <20141111104700.GC31490@pd.tnic>
+ <20141111165731.GA2584@khazad-dum.debian.net>
+ <20141111171357.GK31490@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141111063419.GS23575@dastard>
+In-Reply-To: <20141111171357.GK31490@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 05:34:19PM +1100, Dave Chinner wrote:
-> On Mon, Nov 10, 2014 at 09:44:05AM -0500, Johannes Weiner wrote:
-> > On Mon, Nov 10, 2014 at 05:46:40PM +1100, Dave Chinner wrote:
-> > > On Thu, Nov 06, 2014 at 06:50:28PM -0500, Johannes Weiner wrote:
-> > > > The slab shrinkers currently rely on the reclaim code providing an
-> > > > ad-hoc concept of NUMA nodes that doesn't really exist: for all
-> > > > scanned zones and lruvecs, the nodes and available LRU pages are
-> > > > summed up, only to have the shrinkers then again walk that nodemask
-> > > > when scanning slab caches.  This duplication will only get worse and
-> > > > more expensive once the shrinkers become aware of cgroups.
-> > > 
-> > > As i said previously, it's not an "ad-hoc concept". It's exactly the
-> > > same NUMA abstraction that the VM presents to anyone who wants to
-> > > control memory allocation locality. i.e. node IDs and node masks.
+On Tue, 11 Nov 2014, Borislav Petkov wrote:
+> On Tue, Nov 11, 2014 at 02:57:31PM -0200, Henrique de Moraes Holschuh wrote:
+> > Meh, I don't know where I came up with the wrong information that kmalloc
+> > aligned to 16-bytes instead of 8 bytes.
 > > 
-> > That's what the page allocator takes as input, but it's translated to
-> > zones fairly quickly, and it definitely doesn't exist in the reclaim
-> > code anymore.  The way we reconstruct the node view on that level
-> > really is ad-hoc.  And that is a problem.  It's not just duplicative,
-> > it's also that reclaim really needs the ability to target types of
-> > zones in order to meet allocation constraints, and right now we just
-> > scatter-shoot slab objects and hope we free some desired zone memory.
-> > 
-> > I don't see any intrinsic value in symmetry here, especially since we
-> > can easily encapsulate how the lists are organized for the shrinkers.
-> > Vladimir is already pushing the interface in that direction: add
-> > object, remove object, walk objects according to this shrink_control.
+> > I do wonder why I didn't hit this while testing, though.  Maybe an artifact
+> > of slub, or just my luck that I never got a memory block that was not
+> > aligned to 16 bytes.
 > 
-> You probably don't see the value in symmetry because you look at it
-> from the inside. I lok at shrinkers from outside the VM, and so I
-> see them from a very different view point. That is, I do not want
-> the internal architecture of the VM dictating how I must do things.
-> The shrinkers are extremely flexible and used in quite varied
-> subsystems for very different purposes. The shrinker API and
-> behaviour needs to be independent of the VM so we don't lose that
-> flexibility....
->
-> > My suspicion is that invoking the shrinkers per-zone against the same
-> > old per-node lists incorrectly triples the slab pressure relative to
-> > the lru pressure.  Kswapd already does this, but I'm guessing it
-> > matters less under lower pressure, and once pressure mounts direct
-> > reclaim takes over, which my patch made more aggressive.
-> > 
-> > Organizing the slab objects on per-zone lists would solve this, and
-> > would also allow proper zone reclaim to meet allocation restraints.
-> 
-> Which is exactly the sort of increase in per-object cache + LRUs we
-> want to avoid. Nothing outside the VM has the concept of zones - all
-> our object caches are either global or per-node pools or LRUs. We
-> need to keep some semblence of global LRU in filesystem
-> caches because objects are heirarchical in importance. Hence the
-> more finely grained we chop up the LRUs the worse our working set
-> maintenance gets.
-> 
-> Indeed, we've moved away from VM based page caches for our complex
-> subsystems because the VM simply cannot express the reclaim
-> relationships necessary for efficient maintenance of the working
-> set. The working set has nothing to do with the locality of the
-> objects maintained by the cache - it's all about the relationships
-> between the objects.  Evicting objects based on memory locality does
-> not work, and that's why we do not use the VM based page caches.
-> 
-> This is precisely why I do not want the internal architecture of the
-> VM to dictate how we cache and reclaim objects - the VM just has no
-> concept of what the caches are used for and so therefore should not
-> be dictating structure of the cache or it's reclaim algorithms.
-> Shrinkers are simply a method of applying a measure of pressure to a
-> cache, they do not and should not define how caches are structured
-> or how they scale.
+> The ARCH_KMALLOC_MINALIGN is conditioned on ARCH_DMA_MINALIGN and a
+> bunch of other things. All I'm saying is, this needs a careful study
+> when, if at all, kmalloc will not give an 16-byte aligned buffer.
 
-But that measure of pressure is defined by local activity.  How can we
-reasonably derive a global measure of pressure from independent local
-situations?
+I tried to do that in order to answer my own question.  After a quick look,
+it looks like it ends up being an implementation detail of SLUB/SLAB/SLOB,
+and it depends on the size of the object being allocated (i.e. if it is
+bigger than KMALLOC_MAX_CACHE_SIZE).
 
-The scanned/eligible ratio can't be meaningful without a unit attached
-to it, and that unit is currently implementation defined.  Just try to
-figure out what it means for kswapd, direct reclaim, zone reclaim etc.
+I was always getting page-aligned memory blocks out of kmalloc() in my
+testing because of that.
 
-"One NUMA node" is a reasonable unit, and with NUMA-awareness in the
-shrinkers we can finally have a meaningful quantity of pressure that
-we can translate between the VM and auxiliary object caches.  My 2nd
-patch should at least make all reclaim paths agree on this unit and
-invoke the shrinkers with well-defined arguments.
+It won't be an ugly fix anyway, something like this (conceptual code):
 
-This is still not optimal for the VM and zone reclaim will age slab
-objects in an unrelated zone on the same node disproportionately, but
-we can probably live with that for the most part.  It's an acceptable
-trade-off when filesystems can group related objects on the same node.
+/* as required by Intel SDM blahblahblah */
+#define INTEL_MICROCODE_MINALIGN 16
+#define INTEL_UCODE_PTR(x) PTR_ALIGN(x, INTEL_MICROCODE_MINALIGN)
 
-Global object lists on the other hand are simply broken when we drive
-them by node-local pressure - which is the best the VM can do.  They
-can work by accident, but they'll do the wrong thing depending on the
-workload, and they'll be tuned to implementation details in the VM.
-You might as well drive them by a timer or some other random event.
+void *intel_ucode_kmalloc(size_t size)
+{
+	void *p = kmalloc(size, GFP_KERNEL);
+	if (likely(p == INTEL_UCODE_PTR(p))
+		return p;
 
-Using the shrinkers like that is not flexibility, it's just undefined
-behavior.  I wish we could stop this abuse.
+	kfree(p);
+	return kmalloc(size + INTEL_MICROCODE_MINALIGN - 1, GFP_KERNEL);
+}
 
-> > But for now, how about the following patch that invokes the shrinkers
-> > once per node, but uses the allocator's preferred zone as the pivot
-> > for nr_scanned / nr_eligible instead of summing up the node?  That
-> > doesn't increase the current number of slab invocations, actually
-> > reduces them for kswapd, but would put the shrinker calls at a more
-> > natural level for reclaim, and would also allow us to go ahead with
-> > the cgroup-aware slab shrinkers.
-> 
-> I'll try to test it tomorrow.
+For most users, that "p == INTEL_UCODE_PTR(p)" will always be true (SLUB
+alocator, and microcode size >= 4096).
 
-Thanks!
+This way, we don't go around wasting pages when the microcode size is large
+enough for the allocation to get kicked directly to the page allocator and
+it is also is a multiple of PAGE_SIZE (which it often is).
+
+I will need to add some defense against (size + 15) overflow in that custom
+kmalloc, or ensure that we refuse ridiculously large microcode early (say,
+larger than 4MiB).  Not a big deal, we probably already do this, and if we
+don't, it will be an worthwhile enhancement by itself.  The largest
+microcode I have been made aware of is ~64KiB.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
