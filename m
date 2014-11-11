@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaKKSuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 13:50:16 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:62393 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaKKSuO (ORCPT
+	id S1751928AbaKKSu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 13:50:26 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57671 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbaKKSuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 13:50:14 -0500
+	Tue, 11 Nov 2014 13:50:23 -0500
+Date: Tue, 11 Nov 2014 19:50:20 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, LeeJon@roeck-us.net
+Subject: Re: [PATCH v6 00/48] kernel: Add support for power-off handler call
+ chain
+Message-ID: <20141111185019.GA29452@amd>
+References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
+ <20141110083347.GA29543@amd>
+ <20141111182023.GA21970@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <20141111042324.GF28161@google.com>
-References: <1415325580-5974-1-git-send-email-yinghai@kernel.org>
-	<20141111042324.GF28161@google.com>
-Date: Tue, 11 Nov 2014 10:50:13 -0800
-X-Google-Sender-Auth: r6-9FEbW0x2I_1ZIVPa3U2SWW8g
-Message-ID: <CAE9FiQWxbPXLB-Dc9x9VLQgxKPih+ixBq+WKNcPAKuYE31DtcA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Apply _HPX link control for all supported pcie device
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111182023.GA21970@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 8:23 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> But I don't want to move pcie_cap_has_lnkctl() to pci.h and leave
-> pcie_cap_has_sltctl() and pcie_cap_has_rtctl() in access.c.  They're all
-> related, so I think they should stay together.
->
-> What if we left them in access.c, made them non-static, non-inline, and
-> just added prototypes to pci.h?  Or I guess we could add a prototype just
-> for pcie_cap_has_lnkctl(), since that's the only one we need so far.
+On Tue 2014-11-11 10:20:23, Guenter Roeck wrote:
+> On Mon, Nov 10, 2014 at 09:33:48AM +0100, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > Introduce a system power-off handler call chain to solve the described
+> > > problems.  This call chain is expected to be executed from the architecture
+> > > specific machine_power_off() function.  Drivers providing system power-off
+> > > functionality are expected to register with this call chain.  By using the
+> > > priority field in the notifier block, callers can control power-off
+> > > handler
+> > 
+> > Linus rather disliked the idea of notifier chains for this... And I
+> > don't see how it got addressed.
+> > 
+> Hi all,
+> 
+> After more thought, I concluded that it is technically impossible to support
+> multiple power-off handlers without some kind of list or call chain, no matter
+> how it is called. Given the opposition from Linus and the power maintainers
+> to the series, I decided to shelf it.
 
-Ok, will have another version that add only prototype for
-pcie_cap_has_lnkctl() to pci.h
+Well, you can still do preparations -- current code directly setting
+pm_power_off is ugly -- so that if you want to switch to call chain
+later, it will be easy.
 
-Thanks
+And if that does not happen, we still get the cleanup :-).
 
-Yinghai
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
