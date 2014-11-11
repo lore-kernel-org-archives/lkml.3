@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaKKLtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:49:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57469 "EHLO
+	id S1754458AbaKKLtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:49:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57470 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972AbaKKLKL (ORCPT
+	with ESMTP id S1753973AbaKKLKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:10:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vasily Averin <vvs@parallels.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Pravin B Shelar <pshelar@nicira.com>, Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 073/170] ipv4: dst_entry leak in ip_send_unicast_reply()
-Date: Tue, 11 Nov 2014 11:07:12 +0000
-Message-Id: <1415704129-12709-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 074/170] ipv4: fix a potential use after free in ip_tunnel_core.c
+Date: Tue, 11 Nov 2014 11:07:13 +0000
+Message-Id: <1415704129-12709-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,59 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasily Averin <vvs@parallels.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit 4062090e3e5caaf55bed4523a69f26c3265cc1d2 upstream.
+commit 1245dfc8cadb258386fcd27df38215a0eccb1f17 upstream.
 
-ip_setup_cork() called inside ip_append_data() steals dst entry from rt to cork
-and in case errors in __ip_append_data() nobody frees stolen dst entry
+pskb_may_pull() maybe change skb->data and make eth pointer oboslete,
+so set eth after pskb_may_pull()
 
-Fixes: 2e77d89b2fa8 ("net: avoid a pair of dst_hold()/dst_release() in ip_append_data()")
-Signed-off-by: Vasily Averin <vvs@parallels.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Fixes:3d7b46cd("ip_tunnel: push generic protocol handling to ip_tunnel module")
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Pravin B Shelar <pshelar@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ip_output.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ net/ipv4/ip_tunnel_core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 8d3b6b0e9857..a0ded0ba16ae 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1528,6 +1528,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	struct sk_buff *nskb;
- 	struct sock *sk;
- 	struct inet_sock *inet;
-+	int err;
+diff --git a/net/ipv4/ip_tunnel_core.c b/net/ipv4/ip_tunnel_core.c
+index f4c987bb7e94..88c386cf7d85 100644
+--- a/net/ipv4/ip_tunnel_core.c
++++ b/net/ipv4/ip_tunnel_core.c
+@@ -91,11 +91,12 @@ int iptunnel_pull_header(struct sk_buff *skb, int hdr_len, __be16 inner_proto)
+ 	skb_pull_rcsum(skb, hdr_len);
  
- 	if (ip_options_echo(&replyopts.opt.opt, skb))
- 		return;
-@@ -1567,8 +1568,13 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	sock_net_set(sk, net);
- 	__skb_queue_head_init(&sk->sk_write_queue);
- 	sk->sk_sndbuf = sysctl_wmem_default;
--	ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base, len, 0,
--		       &ipc, &rt, MSG_DONTWAIT);
-+	err = ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base,
-+			     len, 0, &ipc, &rt, MSG_DONTWAIT);
-+	if (unlikely(err)) {
-+		ip_flush_pending_frames(sk);
-+		goto out;
-+	}
-+
- 	nskb = skb_peek(&sk->sk_write_queue);
- 	if (nskb) {
- 		if (arg->csumoffset >= 0)
-@@ -1580,7 +1586,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
- 		ip_push_pending_frames(sk, &fl4);
- 	}
--
-+out:
- 	put_cpu_var(unicast_sock);
+ 	if (inner_proto == htons(ETH_P_TEB)) {
+-		struct ethhdr *eh = (struct ethhdr *)skb->data;
++		struct ethhdr *eh;
  
- 	ip_rt_put(rt);
+ 		if (unlikely(!pskb_may_pull(skb, ETH_HLEN)))
+ 			return -ENOMEM;
+ 
++		eh = (struct ethhdr *)skb->data;
+ 		if (likely(ntohs(eh->h_proto) >= ETH_P_802_3_MIN))
+ 			skb->protocol = eh->h_proto;
+ 		else
 -- 
 2.1.0
 
