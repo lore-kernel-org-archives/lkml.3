@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaKKLdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:33:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57688 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258AbaKKLKx (ORCPT
+	id S1753299AbaKKLdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:33:51 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36501 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaKKLdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:53 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Perry Hung <iperry@gmail.com>, Johan Hovold <johan@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 117/170] usb: serial: ftdi_sio: add "bricked" FTDI device PID
-Date: Tue, 11 Nov 2014 11:07:56 +0000
-Message-Id: <1415704129-12709-118-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 11 Nov 2014 06:33:49 -0500
+Date: Tue, 11 Nov 2014 12:33:47 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
+        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3] sched/deadline: support dl task migration during
+ cpu hotplug
+Message-ID: <20141111113347.GL10501@worktop.programming.kicks-ass.net>
+References: <1415241649-59561-1-git-send-email-wanpeng.li@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415241649-59561-1-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Nov 06, 2014 at 10:40:49AM +0800, Wanpeng Li wrote:
+> @@ -538,6 +539,46 @@ again:
+>  	update_rq_clock(rq);
+>  	dl_se->dl_throttled = 0;
+>  	dl_se->dl_yielded = 0;
+> +
+> +	/*
+> +	 * So if we find that the rq the task was on is no longer
+> +	 * available, we need to select a new rq.
+> +	 */
+> +	if (!rq->online) {
+> +		struct rq *later_rq = NULL;
+> +
+> +		raw_spin_unlock(&rq->lock);
+> +
+> +		later_rq = find_lock_later_rq(p, rq);
+> +
+> +		if (!later_rq) {
+> +			int cpu;
+> +
+> +			/*
+> +			 * If cannot preempt any rq, fallback to pick any
+> +			 * online cpu.
+> +			 */
+> +			for_each_cpu(cpu, &p->cpus_allowed)
+> +				if (cpu_online(cpu))
+> +					later_rq = cpu_rq(cpu);
 
-------------------
+			cpu = cpumask_any_and(cpu_active_mask, tsk_cpus_allowed(p));
+			if (cpu >= nr_cpu_ids)
+				/* fail */
 
-From: Perry Hung <iperry@gmail.com>
+			later_rq = cpu_rq(cpu);
 
-commit 7f2719f0003da1ad13124ef00f48d7514c79e30d upstream.
+> +			if (!later_rq) {
+> +				pr_warn("fail to find any online and task
+> +						will never come back to us\n");
+> +				goto out;
+> +			}
+> +		}
+> +
+> +		deactivate_task(rq, p, 0);
+> +		set_task_cpu(p, later_rq->cpu);
+> +		activate_task(later_rq, p, 0);
+> +
+> +		resched_curr(later_rq);
+> +
+> +		double_unlock_balance(rq, later_rq);
+> +
+> +		goto out;
+> +	}
+> +
+>  	if (task_on_rq_queued(p)) {
+>  		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>  		if (dl_task(rq->curr))
+> @@ -555,7 +596,7 @@ again:
+>  	}
+>  unlock:
+>  	raw_spin_unlock(&rq->lock);
+> -
+> +out:
+>  	return HRTIMER_NORESTART;
+>  }
+>  
+> @@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
+>  	 * We have to consider system topology and task affinity
+>  	 * first, then we can look for a suitable cpu.
+>  	 */
+> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+> +	if (likely(task_rq(task)->online)) {
+> +		cpumask_copy(later_mask, task_rq(task)->rd->span);
+> +		cpumask_and(later_mask, later_mask, cpu_active_mask);
+> +	} else
+> +		/* for offline cpus we have a singleton rd */
+> +		cpumask_copy(later_mask, cpu_active_mask);
+>  	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>  	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>  			task, later_mask);
 
-An official recent Windows driver from FTDI detects counterfeit devices
-and reprograms the internal EEPROM containing the USB PID to 0, effectively
-bricking the device.
+	cpumask_copy(later_mask, cpu_active_mask);
+	if (likely(task_rq(task)->online))
+		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
 
-Add support for this VID/PID pair to correctly bind the driver on these
-devices.
-
-See:
-http://hackaday.com/2014/10/22/watch-that-windows-update-ftdi-drivers-are-killing-fake-chips/
-
-Signed-off-by: Perry Hung <iperry@gmail.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/ftdi_sio.c     | 1 +
- drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
- 2 files changed, 7 insertions(+)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index dafc40d010b2..a523adad6380 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -145,6 +145,7 @@ static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
-  * /sys/bus/usb-serial/drivers/ftdi_sio/new_id and send a patch or report.
-  */
- static const struct usb_device_id id_table_combined[] = {
-+	{ USB_DEVICE(FTDI_VID, FTDI_BRICK_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ZEITCONTROL_TAGTRACE_MIFARE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CTI_MINI_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CTI_NANO_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index b68084c11432..6786b705ccf6 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -30,6 +30,12 @@
- 
- /*** third-party PIDs (using FTDI_VID) ***/
- 
-+/*
-+ * Certain versions of the official Windows FTDI driver reprogrammed
-+ * counterfeit FTDI devices to PID 0. Support these devices anyway.
-+ */
-+#define FTDI_BRICK_PID		0x0000
-+
- #define FTDI_LUMEL_PD12_PID	0x6002
- 
- /*
--- 
-2.1.0
+Is the same, right and less lines.
 
