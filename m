@@ -1,156 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaKKMDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:03:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57255 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650AbaKKLJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:32 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 033/170] random: add and use memzero_explicit() for clearing data
-Date: Tue, 11 Nov 2014 11:06:32 +0000
-Message-Id: <1415704129-12709-34-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1754693AbaKKMDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:03:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37922 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552AbaKKMDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:03:35 -0500
+Message-ID: <5461FB14.6090908@suse.com>
+Date: Tue, 11 Nov 2014 13:03:32 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Andrew Cooper <andrew.cooper3@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Subject: Re: [Xen-devel] [PATCH V3 2/8] xen: Delay remapping memory of pv-domain
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-3-git-send-email-jgross@suse.com> <5461F6C7.9070500@citrix.com>
+In-Reply-To: <5461F6C7.9070500@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+On 11/11/2014 12:45 PM, Andrew Cooper wrote:
+> On 11/11/14 05:43, Juergen Gross wrote:
+>> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+>> index fa75842..f67f8cf 100644
+>> --- a/arch/x86/xen/p2m.c
+>> +++ b/arch/x86/xen/p2m.c
+>> @@ -268,6 +271,22 @@ static void p2m_init(unsigned long *p2m)
+>>   		p2m[i] = INVALID_P2M_ENTRY;
+>>   }
+>>
+>> +static void * __ref alloc_p2m_page(void)
+>> +{
+>> +	if (unlikely(use_brk))
+>> +		return extend_brk(PAGE_SIZE, PAGE_SIZE);
+>> +
+>> +	if (unlikely(!slab_is_available()))
+>> +		return alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
+>> +
+>> +	return (void *)__get_free_page(GFP_KERNEL | __GFP_REPEAT);
+>> +}
+>> +
+>> +static void free_p2m_page(void *p)
+>> +{
+>> +	free_page((unsigned long)p);
+>> +}
+>> +
+>
+> What guarantees are there that free_p2m_page() is only called on p2m
+> pages allocated using __get_free_page() ?  I can see from this diff that
+> this is the case, but that doesn't help someone coming along in the future.
+>
+> At the very least, a comment is warranted about the apparent mismatch
+> between {alloc,free}_p2m_page().
 
-------------------
+Okay, I'll add a comment.
 
-From: Daniel Borkmann <dborkman@redhat.com>
+>
+>> @@ -420,6 +439,7 @@ unsigned long __init xen_revector_p2m_tree(void)
+>>   	unsigned long *mfn_list = NULL;
+>>   	unsigned long size;
+>>
+>> +	use_brk = 0;
+>>   	va_start = xen_start_info->mfn_list;
+>>   	/*We copy in increments of P2M_PER_PAGE * sizeof(unsigned long),
+>>   	 * so make sure it is rounded up to that */
+>> @@ -484,6 +504,7 @@ unsigned long __init xen_revector_p2m_tree(void)
+>>   #else
+>>   unsigned long __init xen_revector_p2m_tree(void)
+>>   {
+>> +	use_brk = 0;
+>>   	return 0;
+>>   }
+>>   #endif
+>
+> This appears to be a completely orphaned function.
+>
+> It has a split definition based on CONFIG_X86_64, but the sole caller is
+> xen_pagetable_p2m_copy() which is X86_64 only.
+>
+> How does use_brk get cleared for 32bit PV guests?
 
-commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
+Good catch. use_brk is removed in a later patch and I have to admit I
+didn't test each patch with 32 bit guests, just some of them (including
+the final one, of course).
 
-zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
-memset() calls which clear out sensitive data in extract_{buf,entropy,
-entropy_user}() in random driver are being optimized away by gcc.
+I'll change (and test) the patch accordingly.
 
-Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
-that can be used in such cases where a variable with sensitive data is
-being cleared out in the end. Other use cases might also be in crypto
-code. [ I have put this into lib/string.c though, as it's always built-in
-and doesn't need any dependencies then. ]
 
-Fixes kernel bugzilla: 82041
-
-Reported-by: zatimend@hotmail.co.uk
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[ kamal: backport to 3.13-stable: one more memzero_explicit in extract_buf() ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/char/random.c  | 10 +++++-----
- include/linux/string.h |  5 +++--
- lib/string.c           | 16 ++++++++++++++++
- 3 files changed, 24 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 71529e196b84..dde8da31dcae 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1076,8 +1076,8 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * pool while mixing, and hash one final time.
- 	 */
- 	sha_transform(hash.w, extract, workspace);
--	memset(extract, 0, sizeof(extract));
--	memset(workspace, 0, sizeof(workspace));
-+	memzero_explicit(extract, sizeof(extract));
-+	memzero_explicit(workspace, sizeof(workspace));
- 
- 	/*
- 	 * In case the hash function has some recognizable output
-@@ -1089,7 +1089,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	hash.w[2] ^= rol32(hash.w[2], 16);
- 
- 	memcpy(out, &hash, EXTRACT_SIZE);
--	memset(&hash, 0, sizeof(hash));
-+	memzero_explicit(&hash, sizeof(hash));
- }
- 
- /*
-@@ -1146,7 +1146,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-@@ -1188,7 +1188,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-diff --git a/include/linux/string.h b/include/linux/string.h
-index d36977e029af..3b42b3732da6 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -132,7 +132,7 @@ int bprintf(u32 *bin_buf, size_t size, const char *fmt, ...) __printf(3, 4);
- #endif
- 
- extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
--			const void *from, size_t available);
-+				       const void *from, size_t available);
- 
- /**
-  * strstarts - does @str start with @prefix?
-@@ -144,7 +144,8 @@ static inline bool strstarts(const char *str, const char *prefix)
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- 
--extern size_t memweight(const void *ptr, size_t bytes);
-+size_t memweight(const void *ptr, size_t bytes);
-+void memzero_explicit(void *s, size_t count);
- 
- /**
-  * kbasename - return the last part of a pathname.
-diff --git a/lib/string.c b/lib/string.c
-index 992bf30af759..3a3120452a1d 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -604,6 +604,22 @@ void *memset(void *s, int c, size_t count)
- EXPORT_SYMBOL(memset);
- #endif
- 
-+/**
-+ * memzero_explicit - Fill a region of memory (e.g. sensitive
-+ *		      keying data) with 0s.
-+ * @s: Pointer to the start of the area.
-+ * @count: The size of the area.
-+ *
-+ * memzero_explicit() doesn't need an arch-specific version as
-+ * it just invokes the one of memset() implicitly.
-+ */
-+void memzero_explicit(void *s, size_t count)
-+{
-+	memset(s, 0, count);
-+	OPTIMIZER_HIDE_VAR(s);
-+}
-+EXPORT_SYMBOL(memzero_explicit);
-+
- #ifndef __HAVE_ARCH_MEMCPY
- /**
-  * memcpy - Copy one area of memory to another
--- 
-2.1.0
+Juergen
 
