@@ -1,118 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282AbaKKPHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:07:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730AbaKKPHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:07:10 -0500
-Subject: [PATCH v2] PCI: Remove fixed parameter in pci_iov_resource_bar()
-From: Myron Stowe <myron.stowe@redhat.com>
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 11 Nov 2014 08:04:50 -0700
-Message-ID: <20141111150450.15401.41753.stgit@amt.stowe>
-User-Agent: StGit/0.17-dirty
+	id S1751421AbaKKPKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:10:37 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:64134 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaKKPKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 10:10:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141103232913.GA7454@kroah.com>
+References: <20141006194418.GA399@debian>
+	<1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com>
+	<54576545.8030300@ti.com>
+	<20141103232913.GA7454@kroah.com>
+Date: Tue, 11 Nov 2014 16:10:34 +0100
+Message-ID: <CAFqH_51SVdKkP4Hfzz-Nc3zSvMn=M3xxkZNbyQff_YWkqh0jDQ@mail.gmail.com>
+Subject: Re: [PATCHv2] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
+From: Enric Balletbo Serra <eballetbo@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Oussama Ghorbel <ghorbel@pivasoftware.com>,
+        Rabin Vincent <rabin@rab.in>, rogerq@ti.com,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Angelo Dureghello <angelo70@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pci_iov_resource_bar() always sets its 'pci_bar_type' parameter to
-'pci_bar_unknown'.  Drop the parameter and just use 'pci_bar_unknown'
-directly in the callers.
+Hi all,
 
-No functional change intended.
+2014-11-04 0:29 GMT+01:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Mon, Nov 03, 2014 at 04:51:41PM +0530, Kishon Vijay Abraham I wrote:
+>> Hi Greg,
+>>
+>> On Tuesday 07 October 2014 04:32 PM, Oussama Ghorbel wrote:
+>> > The USB OTG port does not work since v3.16 on omap platform.
+>> > This is a regression introduced by the commit
+>> > eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
+>> >  and remove).
+>> > This because the call to pm_runtime_enable() function is moved after the
+>> > call to devm_phy_create() function, which has side effect since later in
+>> > the subsequent calls of devm_phy_create() there is a check with
+>> > pm_runtime_enabled() to configure few things.
+>>
+>> This is the only fix for this -rc cycle in the PHY susbsystem. So can you take
+>> this directly? Or else I can prepare a pull request. Let me know.
+>>
+>> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+>
+> I don't have this in my archives anymore, please resend so that I can
+> apply it from an email.
+>
+> thanks,
+>
+> greg k-h
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-Cc: Chris Wright <chrisw@sous-sol.org>
-Cc: Yu Zhao <yuzhao@google.com>
----
- drivers/pci/iov.c |   11 +++--------
- drivers/pci/pci.c |    3 ++-
- drivers/pci/pci.h |    6 ++----
- 3 files changed, 7 insertions(+), 13 deletions(-)
+I'm trying to use the OTG port as HOST on OMAP3-based platform
+(IGEPv2), I saw that this patch is already applied in kernel
+3.18.0-rc4 so I expected it to work, but I've some problems. To
+explain the situation let me propose some test cases.
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 4d109c0..4b3a4ea 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -479,20 +479,16 @@ void pci_iov_release(struct pci_dev *dev)
-  * pci_iov_resource_bar - get position of the SR-IOV BAR
-  * @dev: the PCI device
-  * @resno: the resource number
-- * @type: the BAR type to be filled in
-  *
-  * Returns position of the BAR encapsulated in the SR-IOV capability.
-  */
--int pci_iov_resource_bar(struct pci_dev *dev, int resno,
--			 enum pci_bar_type *type)
-+int pci_iov_resource_bar(struct pci_dev *dev, int resno)
- {
- 	if (resno < PCI_IOV_RESOURCES || resno > PCI_IOV_RESOURCE_END)
- 		return 0;
- 
- 	BUG_ON(!dev->is_physfn);
- 
--	*type = pci_bar_unknown;
--
- 	return dev->sriov->pos + PCI_SRIOV_BAR +
- 		4 * (resno - PCI_IOV_RESOURCES);
- }
-@@ -510,13 +506,12 @@ int pci_iov_resource_bar(struct pci_dev *dev, int resno,
- resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
- {
- 	struct resource tmp;
--	enum pci_bar_type type;
--	int reg = pci_iov_resource_bar(dev, resno, &type);
-+	int reg = pci_iov_resource_bar(dev, resno);
- 
- 	if (!reg)
- 		return 0;
- 
--	 __pci_read_base(dev, type, &tmp, reg);
-+	 __pci_read_base(dev, pci_bar_unknown, &tmp, reg);
- 	return resource_alignment(&tmp);
- }
- 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 625a4ac..7bf2465 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -4180,7 +4180,8 @@ int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type)
- 		return dev->rom_base_reg;
- 	} else if (resno < PCI_BRIDGE_RESOURCES) {
- 		/* device specific resource */
--		reg = pci_iov_resource_bar(dev, resno, type);
-+		*type = pci_bar_unknown;
-+		reg = pci_iov_resource_bar(dev, resno);
- 		if (reg)
- 			return reg;
- 	}
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 0601890..a0905a0 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -251,8 +251,7 @@ static inline void pci_restore_ats_state(struct pci_dev *dev)
- #ifdef CONFIG_PCI_IOV
- int pci_iov_init(struct pci_dev *dev);
- void pci_iov_release(struct pci_dev *dev);
--int pci_iov_resource_bar(struct pci_dev *dev, int resno,
--			 enum pci_bar_type *type);
-+int pci_iov_resource_bar(struct pci_dev *dev, int resno);
- resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno);
- void pci_restore_iov_state(struct pci_dev *dev);
- int pci_iov_bus_range(struct pci_bus *bus);
-@@ -266,8 +265,7 @@ static inline void pci_iov_release(struct pci_dev *dev)
- 
- {
- }
--static inline int pci_iov_resource_bar(struct pci_dev *dev, int resno,
--				       enum pci_bar_type *type)
-+static inline int pci_iov_resource_bar(struct pci_dev *dev, int resno)
- {
- 	return 0;
- }
+The first tests I made were configuring the MUSB OTG as HOST only
+mode,In this mode test case A fails and test case B and C succeed.
 
+USB Mode Selection (HOST only mode)
+    Test case A) Boot the system :
+        mode : b_idle
+        vbus : Vbus off, timeout 1100 msec
+        1) Ground ID-pin
+            mode : a_idle
+            vbus : Vbus off, timeout 1100 msec
+        2) Plug pendrive
+            mode : a_idle
+            vbus : Vbus off, timeout 1100 msec
+        Failed: Pendrive is not detected.
+
+    Test case B) Boot with ID-pin grounded :
+        mode : a_idle
+        vbus : Vbus off, timeout 1100 msec
+        1) Plug pendrive
+            mode : a_host
+            vbus : Vbus off, timeout 1100 msec
+        Success: Pendrive is detected
+
+    Test case C) Boot with ID-pin grounded and pendrive
+        mode : a_host
+        vbus : Vbus off, timeout 1100 msec
+        Success: Pendrive is detected
+
+The second tests I made were configuring the MUSB OTG as Dual Role
+mode,In this mode all test cases failed.
+
+MUSB Mode Selection (Dual Role mode)
+    Test case A) Boot the system :
+        mode : b_idle
+        vbus : Vbus off, timeout 1100 msec
+        1) Ground ID-pin:
+            mode : a_idle
+            mode : Vbus off, timeout 1100 msec
+        2) Plug pendrive
+            mode : a_idle
+            vbus : Vbus off, timeout 1100 msec
+        Failed: Pendrive is not detected.
+
+    Test case B) Boot with ID-pin grounded :
+        mode : b_idle
+        vbus : Vbus off, timeout 1100 msec
+        1) Plug pendrive
+            mode : b_idle
+            vbus : Vbus off, timeout 1100 msec
+        Failed: Pendrive is not detected.
+
+    Test case C) Boot with ID-pin grounded and pendrive
+        mode : b_idle
+        vbus : Vbus off, timeout 1100 msec
+        Failed: Pendrive is not detected.
+
+I got the mode and vbus values from sysfs:
+
+    cat /sys/bus/platform/drivers/musb-hdrc/musb-hdrc.0.auto/mode
+    cat /sys/bus/platform/drivers/musb-hdrc/musb-hdrc.0.auto/vbus
+
+Did anybody test these test cases ?
+
+I'm a bit surprised with the vbus status because always reports Vbus
+off, although pendrive is working. I'm missing something ?
+
+Note that if you see at the mode transitions something looks wrong.
+For example, in Dual Role Mode test case B and C the mode is b_idle
+instead of a_idle.
+
+Thanks,
+   Enric
