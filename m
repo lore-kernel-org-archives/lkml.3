@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaKKIVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:21:35 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:56172 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751705AbaKKIVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:21:33 -0500
-Message-ID: <1415694109.22935.13.camel@mm-sol.com>
-Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Hartmut Knaack <knaack.h@gmx.de>
-Cc: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Date: Tue, 11 Nov 2014 10:21:49 +0200
-In-Reply-To: <54612A0D.7020308@gmx.de>
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>
-	 <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>
-	 <54612A0D.7020308@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.6-fta3 
-Mime-Version: 1.0
+	id S1753117AbaKKIYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:24:46 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46109 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794AbaKKIYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:24:44 -0500
+Message-ID: <5461C7C6.6060604@codeaurora.org>
+Date: Tue, 11 Nov 2014 10:24:38 +0200
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>, Richard Weinberger <richard@nod.at>
+CC: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
+References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>	 <5460F7D8.2030100@nod.at> <1415642273.8868.8.camel@perches.com>
+In-Reply-To: <1415642273.8868.8.camel@perches.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hartmut,
+On 11/10/2014 7:57 PM, Joe Perches wrote:
+> On Mon, 2014-11-10 at 18:37 +0100, Richard Weinberger wrote:
+>> Am 03.11.2014 um 14:58 schrieb Tanya Brokhman:
+>>> If there is more then one UBI device mounted, there is no way to
+>>> distinguish between messages from different UBI devices.
+>>> Add device number to all ubi layer message types.
+>
+> Adding "error" and "warning" to the message logs is
+> duplicative to the KERN_<LEVEL> logging information.
+>
+>>> Changes from V5:
+>>> 	- Added ptr verification @ ubi_err/ubi_msg/ubi_warn
+>>> 	Removed extra printing of ubi number
+>>> 	Removed new messages.
+>
+> Did you all ever look at what I posted?
 
-On Mon, 2014-11-10 at 22:11 +0100, Hartmut Knaack wrote:
-> Ivan T. Ivanov schrieb am 03.11.2014 16:24:
-> > From: Stanimir Varbanov <svarbanov@mm-sol.com>
-> > 
-> > The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> > 15 bits resolution and register space inside PMIC accessible across
-> > SPMI bus.
-> > 
-> > The vadc driver registers itself through IIO interface.
-> Reviewing again, I got the feeling that due to the complexity of adc reads (writing to register 
-> to start conversion, waiting a decent time for the conversion to complete, reading the result), 
-> it would be beneficial to use a mutex in vadc_read_raw or its depending functions.
+I did. Its not my place to re-post your change in my patch. I personally 
+prefer it the way I've done it but it's just a matter of opinion and 
+personal preference. Artem took this one in...
 
-Hm, yes, but there is such a nice info_exist_lock :-) in core functions,
-which in practice serve the same purpose.
+>
+> https://lkml.org/lkml/2014/10/14/280
+>
+> smaller code, consistent prefixing, consistent with
+> typical kernel style, etc.
+>
+>> While testing I noticed that the log output looks quite different.
+>>
+>> e.g.
+>> [   26.564111] UBI-0: ubi_attach_mtd_dev:default fastmap pool size: 256
+>> [   26.565438] UBI-0: ubi_attach_mtd_dev:default fastmap WL pool size: 128
+>
+> If __func__ is really desired, it's generally better to
+> put a space after the "%s:", __func__ so there's visual
+> separation between the prefixes and the content.
+>
+> I agree that emitting function names isn't particularly
+> useful.
 
-> Also, I would want to double-check that the CPU in this type of chips is little endian.
+I have to disagree here, but again - this is personal preference.
 
-Yes, it is.
+>
+> (and Richard, do please remember to trim your posts,
+>   you sent > 100KB of unnecessary quoted stuff)
+>
 
-> Besides that, a few minor issues inline.
 
-> > +static int vadc_probe(struct platform_device *pdev)
-> > +{
-> > +       struct device_node *node = pdev->dev.of_node;
-> > +       struct device *dev = &pdev->dev;
-> > +       struct iio_dev *indio_dev;
-> > +       struct vadc_priv *vadc;
-> > +       struct regmap *regmap;
-> > +       int ret, irq_eoc;
-> > +       u32 res;
-> Since vadc->base is u16, shouldn't res be u16 as well? Also think about naming it reg, as this is 
-> the property name in DT.
-
-Yes, but #address-cells for the node is 1, so I would like to keep it 32 bits.
-
-> > +
-> > +       regmap = dev_get_regmap(dev->parent, NULL);
-> > +       if (!regmap)
-> > +       return -ENODEV;
-> > +
-> > +       ret = of_property_read_u32(node, "reg", &res);
-> For u16, there would be of_property_read_u16().
-> > +       if (ret < 0)
-> > +       return -ENODEV;
-> Just return ret here?
-
-I am usually trying to follow these recommendations[1]. In practice driver
-core cares only for EPROBE_DEFER, ENODEV and ENXIO, while of_property_read_u32()
-can return ENODATA and EOVERFLOW, which did't not make sense for the core.
-
-Thank you,
-Ivan
-
-[1] http://www.gossamer-threads.com/lists/linux/kernel/1010603
+Thanks,
+Tanya Brokhman
+-- 
+Qualcomm Israel, on behalf of Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
