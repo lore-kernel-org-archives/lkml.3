@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaKKLLf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:11:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57879 "EHLO
+	id S1754560AbaKKLLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57881 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaKKLL2 (ORCPT
+	with ESMTP id S1753040AbaKKLL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:28 -0500
+	Tue, 11 Nov 2014 06:11:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yu Zhao <yuzhao@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, David Rientjes <rientjes@google.com>,
-        Bob Liu <lliubbo@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dexuan Cui <decui@microsoft.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, gregkh@linuxfoundation.org,
+        linux-mm@kvack.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, dave.hansen@intel.com, riel@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 152/170] mm: free compound page with correct order
-Date: Tue, 11 Nov 2014 11:08:31 +0000
-Message-Id: <1415704129-12709-153-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 149/170] x86, pageattr: Prevent overflow in slow_virt_to_phys() for X86_PAE
+Date: Tue, 11 Nov 2014 11:08:28 +0000
+Message-Id: <1415704129-12709-150-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -30,63 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yu Zhao <yuzhao@google.com>
+From: Dexuan Cui <decui@microsoft.com>
 
-commit 5ddacbe92b806cd5b4f8f154e8e46ac267fff55c upstream.
+commit d1cd1210834649ce1ca6bafe5ac25d2f40331343 upstream.
 
-Compound page should be freed by put_page() or free_pages() with correct
-order.  Not doing so will cause tail pages leaked.
+pte_pfn() returns a PFN of long (32 bits in 32-PAE), so "long <<
+PAGE_SHIFT" will overflow for PFNs above 4GB.
 
-The compound order can be obtained by compound_order() or use
-HPAGE_PMD_ORDER in our case.  Some people would argue the latter is
-faster but I prefer the former which is more general.
+Due to this issue, some Linux 32-PAE distros, running as guests on Hyper-V,
+with 5GB memory assigned, can't load the netvsc driver successfully and
+hence the synthetic network device can't work (we can use the kernel parameter
+mem=3000M to work around the issue).
 
-This bug was observed not just on our servers (the worst case we saw is
-11G leaked on a 48G machine) but also on our workstations running Ubuntu
-based distro.
+Cast pte_pfn() to phys_addr_t before shifting.
 
-  $ cat /proc/vmstat  | grep thp_zero_page_alloc
-  thp_zero_page_alloc 55
-  thp_zero_page_alloc_failed 0
-
-This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
-
-Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
-Signed-off-by: Yu Zhao <yuzhao@google.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: "commit d76565344512: x86, mm: Create slow_virt_to_phys()"
+Signed-off-by: Dexuan Cui <decui@microsoft.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: gregkh@linuxfoundation.org
+Cc: linux-mm@kvack.org
+Cc: olaf@aepfle.de
+Cc: apw@canonical.com
+Cc: jasowang@redhat.com
+Cc: dave.hansen@intel.com
+Cc: riel@redhat.com
+Link: http://lkml.kernel.org/r/1414580017-27444-1-git-send-email-decui@microsoft.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/huge_memory.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/pageattr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index c9ef81e08e4a..ee1ad7886999 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -200,7 +200,7 @@ retry:
- 	preempt_disable();
- 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
- 		preempt_enable();
--		__free_page(zero_page);
-+		__free_pages(zero_page, compound_order(zero_page));
- 		goto retry;
- 	}
- 
-@@ -232,7 +232,7 @@ static unsigned long shrink_huge_zero_page_scan(struct shrinker *shrink,
- 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
- 		struct page *zero_page = xchg(&huge_zero_page, NULL);
- 		BUG_ON(zero_page == NULL);
--		__free_page(zero_page);
-+		__free_pages(zero_page, compound_order(zero_page));
- 		return HPAGE_PMD_NR;
- 	}
- 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index ae242a7c11c7..36de293caf25 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -409,7 +409,7 @@ phys_addr_t slow_virt_to_phys(void *__virt_addr)
+ 	psize = page_level_size(level);
+ 	pmask = page_level_mask(level);
+ 	offset = virt_addr & ~pmask;
+-	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
++	phys_addr = (phys_addr_t)pte_pfn(*pte) << PAGE_SHIFT;
+ 	return (phys_addr | offset);
+ }
+ EXPORT_SYMBOL_GPL(slow_virt_to_phys);
 -- 
 2.1.0
 
