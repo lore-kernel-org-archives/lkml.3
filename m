@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaKKMrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:47:11 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:37451 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaKKMrJ (ORCPT
+	id S1751905AbaKKMta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:49:30 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:55330 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaKKMt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:47:09 -0500
+	Tue, 11 Nov 2014 07:49:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
-References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
-	<1415041531-15520-3-git-send-email-soren.brinkmann@xilinx.com>
-Date: Tue, 11 Nov 2014 13:47:08 +0100
-Message-ID: <CACRpkdbOLMT1vfFg=CAU_VHdjxPWn_Ybso=+8Asp=mXhmNBRSA@mail.gmail.com>
-Subject: Re: [PATCH 2/7] pinctrl: pinconf-generic: Infer map type from DT property
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
+In-Reply-To: <20141111122636.GF29789@localhost>
+References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com>
+	<1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
+	<20141111122636.GF29789@localhost>
+Date: Tue, 11 Nov 2014 14:49:26 +0200
+Message-ID: <CAE1zotKi+kpv6a9xM=-qkpo3K9R5xKjrf2RZgDV7advXFS92FA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c: dln2: simplify return flow for dln2_i2c_enable
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Julia Lawall <julia.lawall@lip6.fr>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 3, 2014 at 8:05 PM, Soren Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
+On Tue, Nov 11, 2014 at 2:26 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Tue, Nov 11, 2014 at 02:20:57PM +0200, Octavian Purdila wrote:
+>> This fixes the following kbuild test robot warning:
+>>
+>> >> drivers/i2c/busses/i2c-dln2.c:70:1-4: WARNING: end returns can be simplified if negative or 0 value
+>>
+>> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+>> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
+>>
+>> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+>> ---
+>>  drivers/i2c/busses/i2c-dln2.c | 7 +------
+>>  1 file changed, 1 insertion(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-dln2.c b/drivers/i2c/busses/i2c-dln2.c
+>> index 010a5fa..b3fb86a 100644
+>> --- a/drivers/i2c/busses/i2c-dln2.c
+>> +++ b/drivers/i2c/busses/i2c-dln2.c
+>> @@ -54,7 +54,6 @@ struct dln2_i2c {
+>>
+>>  static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
+>>  {
+>> -     int ret;
+>>       u16 cmd;
+>>       struct {
+>>               u8 port;
+>> @@ -67,11 +66,7 @@ static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
+>>       else
+>>               cmd = DLN2_I2C_DISABLE;
+>>
+>> -     ret = dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
+>> -     if (ret < 0)
+>> -             return ret;
+>> -
+>> -     return 0;
+>> +     return dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
+>
+> This looks like a bogus warning. It's not generally equivalent (ret > 0)
+> and is not mandated by any style guide lines.
+>
 
-> With the new 'groups' property, the DT parser can infer the map type
-> from the fact whether 'pins' or 'groups' is used to specify the pin
-> group to work on.
-> To maintain backwards compatibitliy with current usage of the DT
-> binding, this is only done when an invalid map type is passed to the
-> parsing function.
-
-So that is this:
-
-> +               if (type == PIN_MAP_TYPE_INVALID)
-> +                       type = PIN_MAP_TYPE_CONFIGS_GROUP;
-> +               dt_pin_specifier = "groups";
-
-This is just kludgy. There are only two kernel-internal users of this function,
-refactor the function signature and change the other callers over instead,
-patch the drivers.
-
-Take this opportunity to add some kerneldoc above the
-pinconf_generic_dt_subnode_to_map() and give the function a
-reasonable signature.
-
-BTW: this is just for config settings for groups right? Not for muxing
-I hope?
-
-Yours,
-Linus Walleij
+In this particular it should be equivalent (with the previous fix) and
+it saves 5 lines, so I think its worth it.
