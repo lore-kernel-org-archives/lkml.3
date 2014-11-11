@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaKKLfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:35:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57651 "EHLO
+	id S1753148AbaKKLf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:35:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57644 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229AbaKKLKq (ORCPT
+	with ESMTP id S1754215AbaKKLKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:10:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>, Johan Hovold <johan@kernel.org>,
+Cc: Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 109/170] USB: option: add Haier CE81B CDMA modem
-Date: Tue, 11 Nov 2014 11:07:48 +0000
-Message-Id: <1415704129-12709-110-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 107/170] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Date: Tue, 11 Nov 2014 11:07:46 +0000
+Message-Id: <1415704129-12709-108-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Frans Klaver <frans.klaver@xsens.com>
 
-commit 012eee1522318b5ccd64d277d50ac32f7e9974fe upstream.
+commit edd74ffab1f6909eee400c7de8ce621870aacac9 upstream.
 
-Port layout:
+Add new IDs for the Xsens Awinda Station and Awinda Dongle.
 
-0: QCDM/DIAG
-1: NMEA
-2: AT
-3: AT/PPP
+While at it, order the definitions by PID and add a logical separation
+between devices using Xsens' VID and those using FTDI's VID.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 9c8d92348302..e87219a0f2f7 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -362,6 +362,7 @@ static void option_instat_callback(struct urb *urb);
- 
- /* Haier products */
- #define HAIER_VENDOR_ID				0x201e
-+#define HAIER_PRODUCT_CE81B			0x10f8
- #define HAIER_PRODUCT_CE100			0x2009
- 
- /* Cinterion (formerly Siemens) products */
-@@ -1620,6 +1621,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HAIER_VENDOR_ID, HAIER_PRODUCT_CE81B, 0xff, 0xff, 0xff) },
- 	/* Pirelli  */
- 	{ USB_DEVICE_INTERFACE_CLASS(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_1, 0xff) },
- 	{ USB_DEVICE_INTERFACE_CLASS(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_2, 0xff) },
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 3614620e09e1..dafc40d010b2 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -674,6 +674,8 @@ static const struct usb_device_id id_table_combined[] = {
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 5937b2d242f2..b68084c11432 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -143,8 +143,12 @@
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
+ #define XSENS_VID		0x2639
+-#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_AWINDA_STATION_PID 0x0101
++#define XSENS_AWINDA_DONGLE_PID 0x0102
+ #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++
++/* Xsens devices using FTDI VID */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
 -- 
 2.1.0
 
