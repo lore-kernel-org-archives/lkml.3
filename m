@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860AbaKKMZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:25:37 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978AbaKKMZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:25:35 -0500
-Message-ID: <5462003C.9090509@nod.at>
-Date: Tue, 11 Nov 2014 13:25:32 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753892AbaKKM0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:26:36 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64981 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406AbaKKM0d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:26:33 -0500
+Date: Tue, 11 Nov 2014 12:26:24 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Vignesh R <vigneshr@ti.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        richardcochran@gmail.com, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Brad Griffis <bgriffis@ti.com>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v3 3/6] mfd: ti_am335x_tscadc: Remove unwanted
+ reg_se_cache save
+Message-ID: <20141111122623.GA24004@x1>
+References: <1415694844-11230-1-git-send-email-vigneshr@ti.com>
+ <1415694844-11230-4-git-send-email-vigneshr@ti.com>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>	 <5460F7D8.2030100@nod.at> <5461C5AD.5040705@nod.at> <1415707434.22887.158.camel@sauron.fi.intel.com>
-In-Reply-To: <1415707434.22887.158.camel@sauron.fi.intel.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1415694844-11230-4-git-send-email-vigneshr@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.11.2014 um 13:03 schrieb Artem Bityutskiy:
-> On Tue, 2014-11-11 at 09:15 +0100, Richard Weinberger wrote:
->>> Do we really want the function name in every log message?
->>> IMHO this is not wise except for pure debug logs.
->>
->> BTW: Why UBI-X? This looks odd. Either use UBIX or ubiX.
-> 
-> How about something like this (untested):
-> 
-> 
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> Date: Tue, 11 Nov 2014 13:56:34 +0200
-> Subject: [PATCH] UBI: clean-up printing helpers
-> 
-> Let's prefix UBI messages with 'ubiX' instead of 'UBI-X' - this is more
-> consistent with the way we name UBI devices.
-> 
-> Also, commit "32608703 UBI: Extend UBI layer debug/messaging capabilities"
-> added the function name print to 'ubi_msg()' - lets revert this change, since
-> these messages are supposed to be just informative messages, and not debugging
-> messages.
+On Tue, 11 Nov 2014, Vignesh R wrote:
 
-What is the benefit of having the function name still in ubi_warn() and ubi_err()?
-e.g.
-[   95.511825] ubi0 error: ubi_attach_mtd_dev: mtd0 is already attached to ubi0
-
-If the log message is so cryptic that you need to lookup it in the source to understand it,
-we better fix the message.
-
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> In one shot mode, sequencer automatically disables all enabled steps at
+> the end of each cycle. (both ADC steps and TSC steps) Hence these steps
+> need not be saved in reg_se_cache for clearing these steps at a later
+> stage.
+> Also, when ADC wakes up Sequencer should not be busy executing any of the
+> config steps except for the charge step. Previously charge step was 1 ADC
+> clock cycle and hence it was ignored.
+> 
+> Signed-off-by: Vignesh R <vigneshr@ti.com>
 > ---
->  drivers/mtd/ubi/ubi.h | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+
+You need to provide a changelog here when submitting new versions.
+
+>  drivers/mfd/ti_am335x_tscadc.c       | 7 +++++--
+>  include/linux/mfd/ti_am335x_tscadc.h | 1 +
+>  2 files changed, 6 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-> index f80ffab..7a92283 100644
-> --- a/drivers/mtd/ubi/ubi.h
-> +++ b/drivers/mtd/ubi/ubi.h
-> @@ -50,13 +50,13 @@
->  #define UBI_NAME_STR "ubi"
+> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+> index d877e777cce6..110038859a8d 100644
+> --- a/drivers/mfd/ti_am335x_tscadc.c
+> +++ b/drivers/mfd/ti_am335x_tscadc.c
+> @@ -86,8 +86,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+>  		spin_lock_irq(&tsadc->reg_lock);
+>  		finish_wait(&tsadc->reg_se_wait, &wait);
 >  
->  /* Normal UBI messages */
-> -#define ubi_msg(ubi, fmt, ...) pr_notice("UBI-%d: %s:" fmt "\n", \
-> -					 ubi->ubi_num, __func__, ##__VA_ARGS__)
-> +#define ubi_msg(ubi, fmt, ...) pr_notice("ubi%d: " fmt "\n", \
-> +					 ubi->ubi_num, ##__VA_ARGS__)
+> +		/*
+> +		 * Sequencer should either be idle or
+> +		 * busy applying the charge step.
+> +		 */
+>  		reg = tscadc_readl(tsadc, REG_ADCFSM);
+> -		WARN_ON(reg & SEQ_STATUS);
+> +		WARN_ON((reg & SEQ_STATUS) && !(reg & CHARGE_STEP));
+>  		tsadc->adc_waiting = false;
+>  	}
+>  	tsadc->adc_in_use = true;
+> @@ -96,7 +100,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+>  void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
+>  {
+>  	spin_lock_irq(&tsadc->reg_lock);
+> -	tsadc->reg_se_cache |= val;
 
-We could even use UBI_NAME_STR here. :-)
+You didn't answer my question about this?
 
-Thanks,
-//richard
+>  	am335x_tscadc_need_adc(tsadc);
+>  
+>  	tscadc_writel(tsadc, REG_SE, val);
+> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+> index c99be5dc0f5c..fcce182e4a35 100644
+> --- a/include/linux/mfd/ti_am335x_tscadc.h
+> +++ b/include/linux/mfd/ti_am335x_tscadc.h
+> @@ -128,6 +128,7 @@
+>  
+>  /* Sequencer Status */
+>  #define SEQ_STATUS BIT(5)
+> +#define CHARGE_STEP		0x11
+>  
+>  #define ADC_CLK			3000000
+>  #define TOTAL_STEPS		16
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
