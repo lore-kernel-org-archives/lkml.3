@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaKKKbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 05:31:38 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:45683 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaKKKbg convert rfc822-to-8bit (ORCPT
+	id S1753176AbaKKKdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 05:33:31 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:53408 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaKKKd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 05:31:36 -0500
+	Tue, 11 Nov 2014 05:33:29 -0500
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="50579821"
+From: "Gautam (Gautam Kumar) Shukla" <gautams@broadcom.com>
+To: Arend Van Spriel <arend@broadcom.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+CC: "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jithu Jance <jithu@broadcom.com>, Sreenath S <sreenats@broadcom.com>
+Subject: RE: [PATCH 1/1] linux-wireless: Added psk in struct
+ cfg80211_connect_params needed for offloading 4way handshake to driver
+Thread-Topic: [PATCH 1/1] linux-wireless: Added psk in struct
+ cfg80211_connect_params needed for offloading 4way handshake to driver
+Thread-Index: Ac/9dB5NQ/C7C5zZRjSxY4lVQnUv+gAYOkKAAADe7IAAD69CoA==
+Date: Tue, 11 Nov 2014 10:33:29 +0000
+Message-ID: <DF163EE1A432BF4BBE6B2088220663A6743C05@SJEXCHMB06.corp.ad.broadcom.com>
+References: <DF163EE1A432BF4BBE6B2088220663A67437BD@SJEXCHMB06.corp.ad.broadcom.com>
+ <1415698161.2163.0.camel@sipsolutions.net> <5461DCC9.5050702@broadcom.com>
+In-Reply-To: <5461DCC9.5050702@broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFu+fsgG86b8iYVeHNmGqtb2m_P6esF1QFrbsMhwTh+P7Aw@mail.gmail.com>
-References: <1414825380-15322-1-git-send-email-acourbot@nvidia.com>
-	<CACRpkdaaXxXCm9===0zaKW5QJsHFBznnERdFrcbtKLQhxygzhA@mail.gmail.com>
-	<CAAVeFu+fsgG86b8iYVeHNmGqtb2m_P6esF1QFrbsMhwTh+P7Aw@mail.gmail.com>
-Date: Tue, 11 Nov 2014 11:31:35 +0100
-Message-ID: <CACRpkdaA=F852HRhEYLYscCyTr5pYmNSAGw-dZU=oA4C6Qh2gA@mail.gmail.com>
-Subject: Re: [RFC] gpio: remove gpio_descs global array
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sABAXapc002594
 
-On Tue, Nov 4, 2014 at 10:10 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Mon, Nov 3, 2014 at 11:11 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Sat, Nov 1, 2014 at 8:03 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+Thanks a lot  Johannes and Arend , for your comments and review .
+It will really help me in my next patch submission .
+
+Just wanted to know when QCA patch will get in main line as it was  last updated on  23 aug 2012.
+
+
+Thanks and regards
+
+-----Original Message-----
+From: Arend van Spriel [mailto:arend@broadcom.com] 
+Sent: Tuesday, November 11, 2014 3:24 PM
+To: Johannes Berg; Gautam (Gautam Kumar) Shukla
+Cc: linville@tuxdriver.com; linux-wireless@vger.kernel.org; davem@davemloft.net; linux-api@vger.kernel.org; linux-kernel@vger.kernel.org; netdev@vger.kernel.org; Jithu Jance; Sreenath S
+Subject: Re: [PATCH 1/1] linux-wireless: Added psk in struct cfg80211_connect_params needed for offloading 4way handshake to driver
+
+On 11-11-14 10:29, Johannes Berg wrote:
+> On Tue, 2014-11-11 at 05:56 +0000, Gautam (Gautam Kumar) Shukla wrote:
+>> For offloading 4 way handshake to driver, currently we don't have any 
+>> member  of struct cfg80211_connect_params to pass PSK from supplicant 
+>> to driver. I have added psk for the same and added rest of the code 
+>> needed in nl80211.h and nl80211.c to parse and make it available to 
+>> driver.
+>> From supplicant, we already have psk member field in assoc_params to 
+>> use .
 >>
->>> The issue with this patch is its use of kzalloc() in gpiochip_add(), a
->>> function potentially called during early boot, before kzalloc() becomes
->>> usable. Hence its [RFC] status until we can find a solution for this or
->>> agree that this issue is actually never ran into (from which point can
->>> one use kzalloc()?)
->>
->> So which driver requires that the gpiochip be statically defined...
->> I heard about early call but not *that* early.
->
-> Let me know if you feel adventurous - in that case I will submit a
-> proper version of this patch to put in -next, and we'll see if people
-> complain... :)
+>> Tested on x86 linux.
+> 
+> Your commit message needs serious work.
+> 
+> Also, there's a competing approach from QCA that's far more suited.
 
-Ğ»ĞµÑ Ñ€ÑƒĞ±ÑÑ‚ â€” Ñ‰ĞµĞ¿ĞºĞ¸ Ğ»ĞµÑ‚ÑÑ‚ as the russians say.
+I probably was not paying attention to it, but would you have a reference to this.
 
-Let us have the patch.
+> In either case though, I'm going to ask which driver is going to use 
+> this and when it's going to land in mainline.
 
-Yours,
-Linus Walleij
+I had the same question ;-)
+
+> johannes
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-wireless" in the body of a message to majordomo@vger.kernel.org 
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
