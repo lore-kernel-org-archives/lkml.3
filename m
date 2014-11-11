@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaKKSfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 13:35:10 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:34091 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaKKSfI (ORCPT
+	id S1751653AbaKKSiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 13:38:09 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51470 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaKKSiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 13:35:08 -0500
+	Tue, 11 Nov 2014 13:38:07 -0500
+Date: Tue, 11 Nov 2014 10:37:52 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Neelesh Gupta <neelegup@linux.vnet.ibm.com>, jdelvare@suse.de,
+        benh@au1.ibm.com, linux-kernel@vger.kernel.org, michaele@au1.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v2] hwmon: (ibmpowernv) Use platform 'id_table' to probe
+ the device
+Message-ID: <20141111183752.GA23539@roeck-us.net>
+References: <20141105110848.6183.55611.stgit@localhost.localdomain>
+ <20141105142149.GA23212@roeck-us.net>
+ <1415574297.29291.3.camel@concordia>
 MIME-Version: 1.0
-In-Reply-To: <20141111182235.GL31490@pd.tnic>
-References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
- <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
- <20141111114248.GD31490@pd.tnic> <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
- <20141111161309.GG31490@pd.tnic> <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
- <20141111163059.GH31490@pd.tnic> <CALCETrX+u-LZV0GGudi8z-VtcY0y7BD8Yk_4BgTA5C5hekVAtQ@mail.gmail.com>
- <20141111182235.GL31490@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Nov 2014 10:34:46 -0800
-Message-ID: <CALCETrXEg61hds9g70_OB_9d=kjdsFr5+yRYH4zG2mhw7D0uHg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
- memory errors
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415574297.29291.3.camel@concordia>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.5462578E.0197,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 10:22 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Nov 11, 2014 at 09:15:18AM -0800, Andy Lutomirski wrote:
->> Oh -- does it need to sleep?
->
-> Oh yeah, iterates over all tasks and generally async access to VM stuff.
-> You can have a look if bored: mm/memory-failure.c
->
-> :-)
->
->> I find myself wondering whether a much cleaner solution might be to
->> sync regs and switch stacks before invoking do_machine_check rather
->> than afterwards.  Then do_machine_check would really be completely
->> non-atomic.  It would add a few lines of asm, though.
->
-> That's like wagging the dog.
+On Mon, Nov 10, 2014 at 10:04:57AM +1100, Michael Ellerman wrote:
+> On Wed, 2014-11-05 at 06:21 -0800, Guenter Roeck wrote:
+> > On Wed, Nov 05, 2014 at 04:45:14PM +0530, Neelesh Gupta wrote:
+> > > The current driver probe() function assumes the sensor device to be
+> > > alwary present and gets executed every time if the driver is loaded,
+> > > but the appropriate hardware could not be present.
+> > > 
+> > > So, move the platform device creation as part of platform init code
+> > > and use the 'id_table' to check if the device present or not.
+> > > 
+> > > Signed-off-by: Neelesh Gupta <neelegup@linux.vnet.ibm.com>
+> > 
+> > Looks good. We'll need an ack from one of the powerpc maintainers to proceed.
+> 
+> Looks OK to me.
+> 
+> Acked-by: Michael Ellerman <mpe@ellerman.id.au>
+> 
+Applied to -next.
 
-Wagging this particular dog might shake some loose fur off.  If we did
-this for all paranoid entries, then paranoid_userspace could just be
-deleted.  :)
-
->
-> I'd prefer much more to actually have a mechanism to do something to
-> tasks before scheduling them in.
-
-Like task_work_add?
-
---Andy
+Thanks,
+Guenter
