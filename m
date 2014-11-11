@@ -1,98 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbaKKE3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 23:29:17 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:35362 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaKKE3Q (ORCPT
+	id S1751852AbaKKEa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 23:30:27 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:6192 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaKKEaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 23:29:16 -0500
+	Mon, 10 Nov 2014 23:30:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 10 Nov 2014 20:29:15 -0800
+Message-ID: <546190BA.7050502@nvidia.com>
+Date: Tue, 11 Nov 2014 13:29:46 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
-References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
-	<1415644096-3513-4-git-send-email-j.glisse@gmail.com>
-	<CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
-	<20141110205814.GA4186@gmail.com>
-	<CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
-	<20141110225036.GB4186@gmail.com>
-	<CA+55aFyfgj5ntoXEJeTZyGdOZ9_A_TK0fwt1px_FUhemXGgr0Q@mail.gmail.com>
-	<20141111024531.GA2503@gmail.com>
-	<CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
-Date: Mon, 10 Nov 2014 20:29:15 -0800
-X-Google-Sender-Auth: W4j--_tKwcjxixd70N6uNNtrgeI
-Message-ID: <CA+55aFwxdT+G26O3mSmrMuq5f3Tf9cRVhOLxR7kpXZu49x8c5Q@mail.gmail.com>
-Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page table
- (gpt) v2.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
-        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
-        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Paul Blinzer <Paul.Blinzer@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>,
-        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, <linux-kernel@vger.kernel.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: [PATCH 0/3] Add support for Tegra Activity Monitor
+References: <1414594232-15684-1-git-send-email-tomeu.vizoso@collabora.com> <545C8BCC.3090908@nvidia.com> <545CBC87.7050404@collabora.com>
+In-Reply-To: <545CBC87.7050404@collabora.com>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: DRBGMAIL102.nvidia.com (10.18.16.21) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 7:16 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 11/07/2014 09:35 PM, Tomeu Vizoso wrote:
+> On 11/07/2014 10:07 AM, Alexandre Courbot wrote:
+>> On 10/29/2014 11:50 PM, Tomeu Vizoso wrote:
+>>> Hello,
+>>>
+>>> these patches implement support for setting the rate of the EMC clock based on
+>>> stats collected from the ACTMON, a piece of hw in the Tegra124 that counts
+>>> memory accesses (among others).
+>>>
+>>> It depends on the following in-flight patches:
+>>>
+>>> * MC driver: http://thread.gmane.org/gmane.linux.ports.tegra/19623
+>>> * EMC driver: http://thread.gmane.org/gmane.linux.ports.arm.kernel/365125
+>>> * CPUFreq driver: http://thread.gmane.org/gmane.linux.kernel/1812962
+>>>
+>>> I have pushed a branch here for testing:
+>>
+>> I am not too familiar with DVFS, but after going through this series it
+>> really seems to me that this could use devfreq. In its current form this
+>> driver mixes control and policy and lacks flexibility, preventing e.g.
+>> to switch to a performance or power-saving profile. Could you study the
+>> feasibility of using devfreq for this?
 >
-> There's no reason for a "u64 cast". The value of "1 << pd_shift" is
-> going to be an "int" regardless of what type pd_shift is. The type of
-> a shift expression is the type of the left-hand side (with the C
-> promotion rules forcing it to at least "int"), the right-hand
-> expression type has absolutely no relevance.
+> Yeah, I started writing a devfreq driver, but then I looked in more
+> detail to the downstream driver and realized that most of the
+> functionality that devfreq provides overlaps with the hw.
+>
+> The ACTMON can be configured to fire an interrupt when a set of
+> thresholds are crossed, similar to the simple-ondemand governor but a
+> bit more sophisticated.
 
-Btw, for that exact reason, code like this:
+I think (after a quick look at devfreq's source) that you can avoid 
+polling altogether if you set polling_ms to 0 in your 
+devfreq_dev_profile instance. Then it is up to you to call 
+update_devfreq() from your custom governor whenever it sees fit.
 
-+                  (uint64_t)(pdp->index +
-+                  (1UL << (gpt_pdp_shift(gpt, pdp) + gpt->pd_shift)) - 1UL));
+ACTMON support seems to overlap between being a governor (which reacts 
+to ACTMON interrupts and calls update_devfreq() when needed) and part of 
+a devfreq_dev_profile (get_dev_status() needs to use the actmon 
+counters). If we keep your current design where the driver simply 
+controls a clock, you could have the ACTMON driver obtain that clock, 
+register its governor, create a non-polling devfreq_dev_profile that 
+controls that clock, and just call devfreq_add_device() with both. Then 
+we will have the benefit of being able to use ACTMON as well as the 
+performance and powersave governors on EMC, and switch policies dynamically.
 
-is likely buggy if you actually care about the uint64_t part.
+Another benefit is that you will have a placeholder in the governor to 
+implement suspend/resume for the ACTMON IP, in case this becomes 
+necessary in the future.
 
-On 32-bit, 1ul will be 32-bit. And so will "(1ul << .. ) -1UL",
-regardless of the type of the right hand of the shift. So the fact
-that gpt->pd_shift and gpt_pdp_shift() are both u64, the actual end
-result is u32 (page->index is a 32-bit entity on 32-bit architectures,
-since pgoff_t is an "unsigned long" too). So you're doing the shifts
-in 32-bit, the addition in 32-bit, and then just casting the resulting
-32-bit thing to a 64-bit entity.  The high 32 bits are guaranteed to
-be zero, in other words.
+Do you think that would work? Apart from the polling which doesn't seem 
+to be an issue, have you seen any other redundancy between devfreq and 
+ACTMON?
 
-This just highlights how wrong it is to make those shifts be u64. That
-gpt_pdp_shift() helper similarly should at no point be returning u64.
-It doesn't help, it only hurts. It makes the structure bigger for no
-gain, and apparently it confuses people into thinking those shifts are
-done in 64 bit.
+> The only functionality of the governors that
+> isn't covered by the ACTMON hw is determining the new frequency after a
+> threshold has been crossed, but if we want to retain the flexibility of
+> the downstream solution, we would need to write a new governor anyway.
 
-When you do "a+b" or similar operations, the end result is the biggest
-type size of 'a' and 'b' respectively (with the normal promotion to at
-least 'int'). But that's not true of shifts, the type of the shift
-expression is the (integer-promoted) left-hand side. The right-hand
-side just gives the amount that value is shifted by, it doesn't affect
-the type of the result.
+Yes, and that's fine. Actually if the parameters of the ACTMON governor 
+could be fine-tuned via sysfs, that would just be perfect.
 
-                       Linus
+> I realize that it would be cool to reuse the code in devfreq, but being
+> able to let the hw sample the counters, calculating averages and
+> checking if a threshold has been crossed without the cpu having to
+> intervene gives this SoC quite an edge when compared to its competitors.
+
+AFAICT we can keep that edge while getting the benefit of using a common 
+framework. Also I expect quite some resistance against the merge of this 
+driver if it is not using devfreq. You probably can tell us better 
+whether it is fit or not, but can you examine my points above and let us 
+know what you think? After a quick look, it actually looks quite 
+exploitable for our use-case.
+
+Cheers,
+Alex.
+
