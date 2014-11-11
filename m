@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaKKLKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:10:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57415 "EHLO
+	id S932120AbaKKLwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:52:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57436 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaKKLKC (ORCPT
+	with ESMTP id S1753907AbaKKLKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:02 -0500
+	Tue, 11 Nov 2014 06:10:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Dueck <davidcdueck@googlemail.com>,
-        Anthony Harivel <anthony.harivel@emtrion.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 064/170] can: at91_can: add missing prepare and unprepare of the clock
-Date: Tue, 11 Nov 2014 11:07:03 +0000
-Message-Id: <1415704129-12709-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 069/170] ipv4: fix nexthop attlen check in fib_nh_match
+Date: Tue, 11 Nov 2014 11:07:08 +0000
+Message-Id: <1415704129-12709-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -29,57 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Dueck <davidcdueck@googlemail.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit e77980e50bc2850599d4d9c0192b67a9ffd6daac upstream.
+commit f76936d07c4eeb36d8dbb64ebd30ab46ff85d9f7 upstream.
 
-In order to make the driver work with the common clock framework, this patch
-converts the clk_enable()/clk_disable() to
-clk_prepare_enable()/clk_disable_unprepare(). While there, add the missing
-error handling.
+fib_nh_match does not match nexthops correctly. Example:
 
-Signed-off-by: David Dueck <davidcdueck@googlemail.com>
-Signed-off-by: Anthony Harivel <anthony.harivel@emtrion.de>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+ip route add 172.16.10/24 nexthop via 192.168.122.12 dev eth0 \
+                          nexthop via 192.168.122.13 dev eth0
+ip route del 172.16.10/24 nexthop via 192.168.122.14 dev eth0 \
+                          nexthop via 192.168.122.15 dev eth0
+
+Del command is successful and route is removed. After this patch
+applied, the route is correctly matched and result is:
+RTNETLINK answers: No such process
+
+Please consider this for stable trees as well.
+
+Fixes: 4e902c57417c4 ("[IPv4]: FIB configuration using struct fib_config")
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/at91_can.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv4/fib_semantics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
-index f07fa89b5fd5..05e1aa090add 100644
---- a/drivers/net/can/at91_can.c
-+++ b/drivers/net/can/at91_can.c
-@@ -1123,7 +1123,9 @@ static int at91_open(struct net_device *dev)
- 	struct at91_priv *priv = netdev_priv(dev);
- 	int err;
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index b10cd43a4722..4a74ea85518f 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -535,7 +535,7 @@ int fib_nh_match(struct fib_config *cfg, struct fib_info *fi)
+ 			return 1;
  
--	clk_enable(priv->clk);
-+	err = clk_prepare_enable(priv->clk);
-+	if (err)
-+		return err;
+ 		attrlen = rtnh_attrlen(rtnh);
+-		if (attrlen < 0) {
++		if (attrlen > 0) {
+ 			struct nlattr *nla, *attrs = rtnh_attrs(rtnh);
  
- 	/* check or determine and set bittime */
- 	err = open_candev(dev);
-@@ -1149,7 +1151,7 @@ static int at91_open(struct net_device *dev)
-  out_close:
- 	close_candev(dev);
-  out:
--	clk_disable(priv->clk);
-+	clk_disable_unprepare(priv->clk);
- 
- 	return err;
- }
-@@ -1166,7 +1168,7 @@ static int at91_close(struct net_device *dev)
- 	at91_chip_stop(dev, CAN_STATE_STOPPED);
- 
- 	free_irq(dev->irq, dev);
--	clk_disable(priv->clk);
-+	clk_disable_unprepare(priv->clk);
- 
- 	close_candev(dev);
- 
+ 			nla = nla_find(attrs, attrlen, RTA_GATEWAY);
 -- 
 2.1.0
 
