@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaKKLjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:39:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57615 "EHLO
+	id S1752992AbaKKLkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:40:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171AbaKKLKj (ORCPT
+	with ESMTP id S1754150AbaKKLKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:10:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Ben Hutchings <ben@decadent.org.uk>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
         Brian Norris <computersforpeace@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 103/170] mtd: m25p80,spi-nor: Fix module aliases for m25p80
-Date: Tue, 11 Nov 2014 11:07:42 +0000
-Message-Id: <1415704129-12709-104-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 102/170] mtd: spi-nor: make spi_nor_scan() take a chip type name, not spi_device_id
+Date: Tue, 11 Nov 2014 11:07:41 +0000
+Message-Id: <1415704129-12709-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,130 +34,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <ben@decadent.org.uk>
 
-commit a5b7616c55e188fe3d6ef686bef402d4703ecb62 upstream.
+commit 70f3ce0510afdad7cbaf27ab7ab961377205c782 upstream.
 
-m25p80's device ID table is now spi_nor_ids, defined in spi-nor.  The
-MODULE_DEVICE_TABLE() macro doesn't work with extern definitions, but
-its use was also removed at the same time.  Now if m25p80 is built as
-a module it doesn't get the necessary aliases to be loaded
-automatically.
+Drivers currently call spi_nor_match_id() and then spi_nor_scan().
+This adds a dependency on struct spi_device_id which we want to
+avoid.  Make spi_nor_scan() do it for them.
 
-A clean solution to this will involve defining the list of device
-IDs in spi-nor.h and removing struct spi_device_id from the spi-nor
-API, but this is quite a large change.
-
-As a quick fix suitable for stable, copy the device IDs back into
-m25p80.
-
-Fixes: 03e296f613af ("mtd: m25p80: use the SPI nor framework")
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mtd/devices/m25p80.c  | 52 ++++++++++++++++++++++++++++++++++++++++++-
- drivers/mtd/spi-nor/spi-nor.c |  3 +--
- include/linux/mtd/spi-nor.h   |  1 -
- 3 files changed, 52 insertions(+), 4 deletions(-)
+ drivers/mtd/devices/m25p80.c      |  4 +---
+ drivers/mtd/spi-nor/fsl-quadspi.c |  7 +------
+ drivers/mtd/spi-nor/spi-nor.c     | 13 +++++++++----
+ include/linux/mtd/spi-nor.h       | 20 +++-----------------
+ 4 files changed, 14 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index bd5e4c6edfd4..ed827cf894e4 100644
+index 822209d10689..bd5e4c6edfd4 100644
 --- a/drivers/mtd/devices/m25p80.c
 +++ b/drivers/mtd/devices/m25p80.c
-@@ -261,12 +261,62 @@ static int m25p_remove(struct spi_device *spi)
- }
+@@ -193,7 +193,6 @@ static int m25p_probe(struct spi_device *spi)
+ {
+ 	struct mtd_part_parser_data	ppdata;
+ 	struct flash_platform_data	*data;
+-	const struct spi_device_id *id = NULL;
+ 	struct m25p *flash;
+ 	struct spi_nor *nor;
+ 	enum read_mode mode = SPI_NOR_NORMAL;
+@@ -241,8 +240,7 @@ static int m25p_probe(struct spi_device *spi)
+ 	else
+ 		flash_name = spi->modalias;
  
+-	id = spi_nor_match_id(flash_name);
+-	ret = spi_nor_scan(nor, id, mode);
++	ret = spi_nor_scan(nor, flash_name, mode);
+ 	if (ret)
+ 		return ret;
  
-+/*
-+ * XXX This needs to be kept in sync with spi_nor_ids.  We can't share
-+ * it with spi-nor, because if this is built as a module then modpost
-+ * won't be able to read it and add appropriate aliases.
-+ */
-+static const struct spi_device_id m25p_ids[] = {
-+	{"at25fs010"},	{"at25fs040"},	{"at25df041a"},	{"at25df321a"},
-+	{"at25df641"},	{"at26f004"},	{"at26df081a"},	{"at26df161a"},
-+	{"at26df321"},	{"at45db081d"},
-+	{"en25f32"},	{"en25p32"},	{"en25q32b"},	{"en25p64"},
-+	{"en25q64"},	{"en25qh128"},	{"en25qh256"},
-+	{"f25l32pa"},
-+	{"mr25h256"},	{"mr25h10"},
-+	{"gd25q32"},	{"gd25q64"},
-+	{"160s33b"},	{"320s33b"},	{"640s33b"},
-+	{"mx25l2005a"},	{"mx25l4005a"},	{"mx25l8005"},	{"mx25l1606e"},
-+	{"mx25l3205d"},	{"mx25l3255e"},	{"mx25l6405d"},	{"mx25l12805d"},
-+	{"mx25l12855e"},{"mx25l25635e"},{"mx25l25655e"},{"mx66l51235l"},
-+	{"mx66l1g55g"},
-+	{"n25q064"},	{"n25q128a11"},	{"n25q128a13"},	{"n25q256a"},
-+	{"n25q512a"},	{"n25q512ax3"},	{"n25q00"},
-+	{"pm25lv512"},	{"pm25lv010"},	{"pm25lq032"},
-+	{"s25sl032p"},	{"s25sl064p"},	{"s25fl256s0"},	{"s25fl256s1"},
-+	{"s25fl512s"},	{"s70fl01gs"},	{"s25sl12800"},	{"s25sl12801"},
-+	{"s25fl129p0"},	{"s25fl129p1"},	{"s25sl004a"},	{"s25sl008a"},
-+	{"s25sl016a"},	{"s25sl032a"},	{"s25sl064a"},	{"s25fl008k"},
-+	{"s25fl016k"},	{"s25fl064k"},
-+	{"sst25vf040b"},{"sst25vf080b"},{"sst25vf016b"},{"sst25vf032b"},
-+	{"sst25vf064c"},{"sst25wf512"},	{"sst25wf010"},	{"sst25wf020"},
-+	{"sst25wf040"},
-+	{"m25p05"},	{"m25p10"},	{"m25p20"},	{"m25p40"},
-+	{"m25p80"},	{"m25p16"},	{"m25p32"},	{"m25p64"},
-+	{"m25p128"},	{"n25q032"},
-+	{"m25p05-nonjedec"},	{"m25p10-nonjedec"},	{"m25p20-nonjedec"},
-+	{"m25p40-nonjedec"},	{"m25p80-nonjedec"},	{"m25p16-nonjedec"},
-+	{"m25p32-nonjedec"},	{"m25p64-nonjedec"},	{"m25p128-nonjedec"},
-+	{"m45pe10"},	{"m45pe80"},	{"m45pe16"},
-+	{"m25pe20"},	{"m25pe80"},	{"m25pe16"},
-+	{"m25px16"},	{"m25px32"},	{"m25px32-s0"},	{"m25px32-s1"},
-+	{"m25px64"},
-+	{"w25x10"},	{"w25x20"},	{"w25x40"},	{"w25x80"},
-+	{"w25x16"},	{"w25x32"},	{"w25q32"},	{"w25q32dw"},
-+	{"w25x64"},	{"w25q64"},	{"w25q128"},	{"w25q80"},
-+	{"w25q80bl"},	{"w25q128"},	{"w25q256"},	{"cat25c11"},
-+	{"cat25c03"},	{"cat25c09"},	{"cat25c17"},	{"cat25128"},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(spi, m25p_ids);
-+
-+
- static struct spi_driver m25p80_driver = {
- 	.driver = {
- 		.name	= "m25p80",
- 		.owner	= THIS_MODULE,
- 	},
--	.id_table	= spi_nor_ids,
-+	.id_table	= m25p_ids,
- 	.probe	= m25p_probe,
- 	.remove	= m25p_remove,
+diff --git a/drivers/mtd/spi-nor/fsl-quadspi.c b/drivers/mtd/spi-nor/fsl-quadspi.c
+index 8d659a2888d5..d5269a26c839 100644
+--- a/drivers/mtd/spi-nor/fsl-quadspi.c
++++ b/drivers/mtd/spi-nor/fsl-quadspi.c
+@@ -881,7 +881,6 @@ static int fsl_qspi_probe(struct platform_device *pdev)
+ 
+ 	/* iterate the subnodes. */
+ 	for_each_available_child_of_node(dev->of_node, np) {
+-		const struct spi_device_id *id;
+ 		char modalias[40];
+ 
+ 		/* skip the holes */
+@@ -909,10 +908,6 @@ static int fsl_qspi_probe(struct platform_device *pdev)
+ 		if (of_modalias_node(np, modalias, sizeof(modalias)) < 0)
+ 			goto map_failed;
+ 
+-		id = spi_nor_match_id(modalias);
+-		if (!id)
+-			goto map_failed;
+-
+ 		ret = of_property_read_u32(np, "spi-max-frequency",
+ 				&q->clk_rate);
+ 		if (ret < 0)
+@@ -921,7 +916,7 @@ static int fsl_qspi_probe(struct platform_device *pdev)
+ 		/* set the chip address for READID */
+ 		fsl_qspi_set_base_addr(q, nor);
+ 
+-		ret = spi_nor_scan(nor, id, SPI_NOR_QUAD);
++		ret = spi_nor_scan(nor, modalias, SPI_NOR_QUAD);
+ 		if (ret)
+ 			goto map_failed;
  
 diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-index 1eb0f8653ac3..f40d8a6c94c9 100644
+index ce80fc4f5f26..1eb0f8653ac3 100644
 --- a/drivers/mtd/spi-nor/spi-nor.c
 +++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -429,7 +429,7 @@ struct flash_info {
-  * more nor chips.  This current list focusses on newer chips, which
-  * have been converging on command sets which including JEDEC ID.
-  */
--const struct spi_device_id spi_nor_ids[] = {
-+static const struct spi_device_id spi_nor_ids[] = {
- 	/* Atmel -- some are (confusingly) marketed as "DataFlash" */
- 	{ "at25fs010",  INFO(0x1f6601, 0, 32 * 1024,   4, SECT_4K) },
- 	{ "at25fs040",  INFO(0x1f6604, 0, 64 * 1024,   8, SECT_4K) },
-@@ -590,7 +590,6 @@ const struct spi_device_id spi_nor_ids[] = {
- 	{ "cat25128", CAT25_INFO(2048, 8, 64, 2, SPI_NOR_NO_ERASE | SPI_NOR_NO_FR) },
- 	{ },
- };
--EXPORT_SYMBOL_GPL(spi_nor_ids);
+@@ -28,6 +28,8 @@
  
- static const struct spi_device_id *spi_nor_read_id(struct spi_nor *nor)
+ #define JEDEC_MFR(_jedec_id)	((_jedec_id) >> 16)
+ 
++static const struct spi_device_id *spi_nor_match_id(const char *name);
++
+ /*
+  * Read the status register, returning its value in the location
+  * Return the status register value.
+@@ -867,9 +869,9 @@ static int spi_nor_check(struct spi_nor *nor)
+ 	return 0;
+ }
+ 
+-int spi_nor_scan(struct spi_nor *nor, const struct spi_device_id *id,
+-			enum read_mode mode)
++int spi_nor_scan(struct spi_nor *nor, const char *name, enum read_mode mode)
  {
++	const struct spi_device_id	*id = NULL;
+ 	struct flash_info		*info;
+ 	struct device *dev = nor->dev;
+ 	struct mtd_info *mtd = nor->mtd;
+@@ -881,6 +883,10 @@ int spi_nor_scan(struct spi_nor *nor, const struct spi_device_id *id,
+ 	if (ret)
+ 		return ret;
+ 
++	id = spi_nor_match_id(name);
++	if (!id)
++		return -ENOENT;
++
+ 	info = (void *)id->driver_data;
+ 
+ 	if (info->jedec_id) {
+@@ -1062,7 +1068,7 @@ int spi_nor_scan(struct spi_nor *nor, const struct spi_device_id *id,
+ }
+ EXPORT_SYMBOL_GPL(spi_nor_scan);
+ 
+-const struct spi_device_id *spi_nor_match_id(char *name)
++static const struct spi_device_id *spi_nor_match_id(const char *name)
+ {
+ 	const struct spi_device_id *id = spi_nor_ids;
+ 
+@@ -1073,7 +1079,6 @@ const struct spi_device_id *spi_nor_match_id(char *name)
+ 	}
+ 	return NULL;
+ }
+-EXPORT_SYMBOL_GPL(spi_nor_match_id);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Huang Shijie <shijie8@gmail.com>");
 diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h
-index db3cef6da452..667c5dc8736d 100644
+index 53241842a7ab..db3cef6da452 100644
 --- a/include/linux/mtd/spi-nor.h
 +++ b/include/linux/mtd/spi-nor.h
-@@ -195,6 +195,5 @@ struct spi_nor {
+@@ -183,32 +183,18 @@ struct spi_nor {
+ /**
+  * spi_nor_scan() - scan the SPI NOR
+  * @nor:	the spi_nor structure
+- * @id:		the spi_device_id provided by the driver
++ * @name:	the chip type name
+  * @mode:	the read mode supported by the driver
+  *
+  * The drivers can use this fuction to scan the SPI NOR.
+  * In the scanning, it will try to get all the necessary information to
+  * fill the mtd_info{} and the spi_nor{}.
+  *
+- * The board may assigns a spi_device_id with @id which be used to compared with
+- * the spi_device_id detected by the scanning.
++ * The chip type name can be provided through the @name parameter.
+  *
   * Return: 0 for success, others for failure.
   */
- int spi_nor_scan(struct spi_nor *nor, const char *name, enum read_mode mode);
--extern const struct spi_device_id spi_nor_ids[];
+-int spi_nor_scan(struct spi_nor *nor, const struct spi_device_id *id,
+-			enum read_mode mode);
++int spi_nor_scan(struct spi_nor *nor, const char *name, enum read_mode mode);
+ extern const struct spi_device_id spi_nor_ids[];
  
+-/**
+- * spi_nor_match_id() - find the spi_device_id by the name
+- * @name:	the name of the spi_device_id
+- *
+- * The drivers use this function to find the spi_device_id
+- * specified by the @name.
+- *
+- * Return: returns the right spi_device_id pointer on success,
+- *         and returns NULL on failure.
+- */
+-const struct spi_device_id *spi_nor_match_id(char *name);
+-
  #endif
 -- 
 2.1.0
