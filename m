@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751AbaKKLJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:09:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57294 "EHLO
+	id S1753980AbaKKLKL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:10:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57406 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701AbaKKLJj (ORCPT
+	with ESMTP id S1753882AbaKKLKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:39 -0500
+	Tue, 11 Nov 2014 06:10:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 038/170] MIPS: loongson2_cpufreq: Fix CPU clock rate setting mismerge
-Date: Tue, 11 Nov 2014 11:06:37 +0000
-Message-Id: <1415704129-12709-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 063/170] can: flexcan: put TX mailbox into TX_INACTIVE mode after tx-complete
+Date: Tue, 11 Nov 2014 11:07:02 +0000
+Message-Id: <1415704129-12709-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -29,51 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit aa08ed55442ac6f9810c055e1474be34e785e556 upstream.
+commit de5944883ebbedbf5adc8497659772f5da7b7d72 upstream.
 
-During 3.16 merge window, parts of the commit 8e8acb32960f
-(MIPS/loongson2_cpufreq: Fix CPU clock rate setting) seem to have
-been deleted probably due to a mismerge, and as a result cpufreq
-is broken again on Loongson2 boards in 3.16 and newer kernels.
-Fix by repeating the fix.
+After sending a RTR frame the TX mailbox becomes a RX_EMPTY mailbox. To avoid
+side effects when the RX-FIFO is full, this patch puts the TX mailbox into
+TX_INACTIVE mode in the transmission complete interrupt handler. This, of
+course, leaves a race window between the actual completion of the transmission
+and the handling of tx-complete interrupt. However this is the best we can do
+without busy polling the tx complete interrupt.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Patchwork: https://patchwork.linux-mips.org/patch/7835/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/loongson/lemote-2f/clock.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/can/flexcan.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
-index 1eed38e28b1e..ebfb9cd71ca1 100644
---- a/arch/mips/loongson/lemote-2f/clock.c
-+++ b/arch/mips/loongson/lemote-2f/clock.c
-@@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
- 
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
-+	unsigned int rate_khz = rate / 1000;
- 	struct cpufreq_frequency_table *pos;
- 	int ret = 0;
- 	int regval;
-@@ -107,9 +108,9 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 		propagate_rate(clk);
- 
- 	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
--		if (rate == pos->frequency)
-+		if (rate_khz == pos->frequency)
- 			break;
--	if (rate != pos->frequency)
-+	if (rate_khz != pos->frequency)
- 		return -ENOTSUPP;
- 
- 	clk->rate = rate;
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index 037b1ea41036..9fc6f2cc2ed2 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -758,6 +758,9 @@ static irqreturn_t flexcan_irq(int irq, void *dev_id)
+ 		stats->tx_bytes += can_get_echo_skb(dev, 0);
+ 		stats->tx_packets++;
+ 		can_led_event(dev, CAN_LED_EVENT_TX);
++		/* after sending a RTR frame mailbox is in RX mode */
++		flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
++			      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
+ 		flexcan_write((1 << FLEXCAN_TX_BUF_ID), &regs->iflag1);
+ 		netif_wake_queue(dev);
+ 	}
 -- 
 2.1.0
 
