@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaKKLUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:20:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57817 "EHLO
+	id S1753482AbaKKLV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:21:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355AbaKKLLR (ORCPT
+	with ESMTP id S1754403AbaKKLLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:17 -0500
+	Tue, 11 Nov 2014 06:11:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 143/170] drm/radeon: add bapm module parameter
-Date: Tue, 11 Nov 2014 11:08:22 +0000
-Message-Id: <1415704129-12709-144-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 139/170] ima: check xattr value length and type in the ima_inode_setxattr()
+Date: Tue, 11 Nov 2014 11:08:18 +0000
+Message-Id: <1415704129-12709-140-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,114 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-commit 6e909f74db2aa9c5b5606b81efcbe18f2749b008 upstream.
+commit a48fda9de94500a3152a56b723d0a64ae236547c upstream.
 
-Add a module paramter to enable bapm on APUs.  It's disabled
-by default on certain APUs due to stability issues.  This
-option makes it easier to test and to enable it on systems that
-are stable.
+ima_inode_setxattr() can be called with no value. Function does not
+check the length so that following command can be used to produce
+kernel oops: setfattr -n security.ima FOO. This patch fixes it.
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=81021
+Changes in v3:
+* for stable reverted "allow setting hash only in fix or log mode"
+  It will be a separate patch.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.16: adjusted context ]
+Changes in v2:
+* testing validity of xattr type
+* allow setting hash only in fix or log mode (Mimi)
+
+[  261.562522] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  261.564109] IP: [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109] PGD 3112f067 PUD 42965067 PMD 0
+[  261.564109] Oops: 0000 [#1] SMP
+[  261.564109] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
+[  261.564109] CPU: 0 PID: 3299 Comm: setxattr Not tainted 3.16.0-kds+ #2924
+[  261.564109] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  261.564109] task: ffff8800428c2430 ti: ffff880042be0000 task.ti: ffff880042be0000
+[  261.564109] RIP: 0010:[<ffffffff812af272>]  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109] RSP: 0018:ffff880042be3d50  EFLAGS: 00010246
+[  261.564109] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000015
+[  261.564109] RDX: 0000001500000000 RSI: 0000000000000000 RDI: ffff8800375cc600
+[  261.564109] RBP: ffff880042be3d68 R08: 0000000000000000 R09: 00000000004d6256
+[  261.564109] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002149ba00
+[  261.564109] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+[  261.564109] FS:  00007f6c1e219740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
+[  261.564109] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  261.564109] CR2: 0000000000000000 CR3: 000000003b35a000 CR4: 00000000000006f0
+[  261.564109] Stack:
+[  261.564109]  ffff88002149ba00 ffff880042be3df8 0000000000000000 ffff880042be3d98
+[  261.564109]  ffffffff812a101b ffff88002149ba00 ffff880042be3df8 0000000000000000
+[  261.564109]  0000000000000000 ffff880042be3de0 ffffffff8116d08a ffff880042be3dc8
+[  261.564109] Call Trace:
+[  261.564109]  [<ffffffff812a101b>] security_inode_setxattr+0x48/0x6a
+[  261.564109]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
+[  261.564109]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
+[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[  261.564109]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
+[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[  261.564109]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
+[  261.564109]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
+[  261.564109]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
+[  261.564109] Code: 48 89 f7 48 c7 c6 58 36 81 81 53 31 db e8 73 27 04 00 85 c0 75 28 bf 15 00 00 00 e8 8a a5 d9 ff 84 c0 75 05 83 cb ff eb 15 31 f6 <41> 80 7d 00 03 49 8b 7c 24 68 40 0f 94 c6 e8 e1 f9 ff ff 89 d8
+[  261.564109] RIP  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109]  RSP <ffff880042be3d50>
+[  261.564109] CR2: 0000000000000000
+[  261.599998] ---[ end trace 39a89a3fc267e652 ]---
+
+Reported-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/kv_dpm.c      |  5 ++++-
- drivers/gpu/drm/radeon/radeon.h      |  1 +
- drivers/gpu/drm/radeon/radeon_drv.c  |  4 ++++
- drivers/gpu/drm/radeon/trinity_dpm.c | 24 +++++++++++++++---------
- 4 files changed, 24 insertions(+), 10 deletions(-)
+ security/integrity/ima/ima_appraise.c | 2 ++
+ security/integrity/integrity.h        | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/kv_dpm.c b/drivers/gpu/drm/radeon/kv_dpm.c
-index f00e6a6c254a..67cb472d188c 100644
---- a/drivers/gpu/drm/radeon/kv_dpm.c
-+++ b/drivers/gpu/drm/radeon/kv_dpm.c
-@@ -2740,7 +2740,10 @@ int kv_dpm_init(struct radeon_device *rdev)
- 	pi->caps_sclk_ds = true;
- 	pi->enable_auto_thermal_throttling = true;
- 	pi->disable_nb_ps3_in_battery = false;
--	pi->bapm_enable = true;
-+	if (radeon_bapm == 0)
-+		pi->bapm_enable = false;
-+	else
-+		pi->bapm_enable = true;
- 	pi->voltage_drop_t = 0;
- 	pi->caps_sclk_throttle_low_notification = false;
- 	pi->caps_fps = false; /* true? */
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 2a085d65b659..a7861a4ba340 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -103,6 +103,7 @@ extern int radeon_hard_reset;
- extern int radeon_vm_size;
- extern int radeon_vm_block_size;
- extern int radeon_deep_color;
-+extern int radeon_bapm;
- 
- /*
-  * Copy from radeon_drv.h so we don't have to include both and have conflicting
-diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
-index a089abb76363..1c5c88c2209b 100644
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -176,6 +176,7 @@ int radeon_hard_reset = 0;
- int radeon_vm_size = 4;
- int radeon_vm_block_size = 9;
- int radeon_deep_color = 0;
-+int radeon_bapm = -1;
- 
- MODULE_PARM_DESC(no_wb, "Disable AGP writeback for scratch registers");
- module_param_named(no_wb, radeon_no_wb, int, 0444);
-@@ -252,6 +253,9 @@ module_param_named(vm_block_size, radeon_vm_block_size, int, 0444);
- MODULE_PARM_DESC(deep_color, "Deep Color support (1 = enable, 0 = disable (default))");
- module_param_named(deep_color, radeon_deep_color, int, 0444);
- 
-+MODULE_PARM_DESC(bapm, "BAPM support (1 = enable, 0 = disable, -1 = auto)");
-+module_param_named(bapm, radeon_bapm, int, 0444);
-+
- static struct pci_device_id pciidlist[] = {
- 	radeon_PCI_IDS
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index bd8cef5b67e4..85b147eddcf5 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -370,6 +370,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+ 	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
+ 				   xattr_value_len);
+ 	if (result == 1) {
++		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
++			return -EINVAL;
+ 		ima_reset_appraise_flags(dentry->d_inode,
+ 			 (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
+ 		result = 0;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 2f8715d77a5a..6a3d6aa14c09 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -57,6 +57,7 @@ enum evm_ima_xattr_type {
+ 	EVM_XATTR_HMAC,
+ 	EVM_IMA_XATTR_DIGSIG,
+ 	IMA_XATTR_DIGEST_NG,
++	IMA_XATTR_LAST
  };
-diff --git a/drivers/gpu/drm/radeon/trinity_dpm.c b/drivers/gpu/drm/radeon/trinity_dpm.c
-index 32e50be9c4ac..57f780053b3e 100644
---- a/drivers/gpu/drm/radeon/trinity_dpm.c
-+++ b/drivers/gpu/drm/radeon/trinity_dpm.c
-@@ -1874,16 +1874,22 @@ int trinity_dpm_init(struct radeon_device *rdev)
- 	for (i = 0; i < SUMO_MAX_HARDWARE_POWERLEVELS; i++)
- 		pi->at[i] = TRINITY_AT_DFLT;
  
--	/* There are stability issues reported on with
--	 * bapm enabled when switching between AC and battery
--	 * power.  At the same time, some MSI boards hang
--	 * if it's not enabled and dpm is enabled.  Just enable
--	 * it for MSI boards right now.
--	 */
--	if (rdev->pdev->subsystem_vendor == 0x1462)
--		pi->enable_bapm = true;
--	else
-+	if (radeon_bapm == -1) {
-+		/* There are stability issues reported on with
-+		 * bapm enabled when switching between AC and battery
-+		 * power.  At the same time, some MSI boards hang
-+		 * if it's not enabled and dpm is enabled.  Just enable
-+		 * it for MSI boards right now.
-+		 */
-+		if (rdev->pdev->subsystem_vendor == 0x1462)
-+			pi->enable_bapm = true;
-+		else
-+			pi->enable_bapm = false;
-+	} else if (radeon_bapm == 0) {
- 		pi->enable_bapm = false;
-+	} else {
-+		pi->enable_bapm = true;
-+	}
- 	pi->enable_nbps_policy = true;
- 	pi->enable_sclk_ds = true;
- 	pi->enable_gfx_power_gating = true;
+ struct evm_ima_xattr_data {
 -- 
 2.1.0
 
