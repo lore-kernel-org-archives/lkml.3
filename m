@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaKKLhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:37:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57636 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201AbaKKLKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754210AbaKKLKo (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 06:10:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57595 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138AbaKKLKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:10:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniele Palmas <dnlplm@gmail.com>, Johan Hovold <johan@kernel.org>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 108/170] usb: option: add support for Telit LE910
-Date: Tue, 11 Nov 2014 11:07:47 +0000
-Message-Id: <1415704129-12709-109-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 099/170] nfsd4: fix response size estimation for OP_SEQUENCE
+Date: Tue, 11 Nov 2014 11:07:38 +0000
+Message-Id: <1415704129-12709-100-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Palmas <dnlplm@gmail.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 2d0eb862dd477c3c4f32b201254ca0b40e6f465c upstream.
+commit d1d84c9626bb3a519863b3ffc40d347166f9fb83 upstream.
 
-Add VID/PID for Telit LE910 modem. Interfaces description is almost the
-same than LE920, except that the qmi interface is number 2 (instead than
-5).
+We added this new estimator function but forgot to hook it up.  The
+effect is that NFSv4.1 (and greater) won't do zero-copy reads.
 
-Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+The estimate was also wrong by 8 bytes.
+
+Fixes: ccae70a9ee41 "nfsd4: estimate sequence response size"
+Reported-by: Chuck Lever <chucklever@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/nfsd/nfs4proc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 54a8120897a6..9c8d92348302 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -269,6 +269,7 @@ static void option_instat_callback(struct urb *urb);
- #define TELIT_PRODUCT_DE910_DUAL		0x1010
- #define TELIT_PRODUCT_UE910_V2			0x1012
- #define TELIT_PRODUCT_LE920			0x1200
-+#define TELIT_PRODUCT_LE910			0x1201
+diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
+index 8f029db5d271..2cbe5d09166a 100644
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1555,7 +1555,8 @@ static inline u32 nfsd4_rename_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op
+ static inline u32 nfsd4_sequence_rsize(struct svc_rqst *rqstp,
+ 				       struct nfsd4_op *op)
+ {
+-	return NFS4_MAX_SESSIONID_LEN + 20;
++	return (op_encode_hdr_size
++		+ XDR_QUADLEN(NFS4_MAX_SESSIONID_LEN) + 5) * sizeof(__be32);
+ }
  
- /* ZTE PRODUCTS */
- #define ZTE_VENDOR_ID				0x19d2
-@@ -588,6 +589,11 @@ static const struct option_blacklist_info zte_1255_blacklist = {
- 	.reserved = BIT(3) | BIT(4),
- };
- 
-+static const struct option_blacklist_info telit_le910_blacklist = {
-+	.sendsetup = BIT(0),
-+	.reserved = BIT(1) | BIT(2),
-+};
-+
- static const struct option_blacklist_info telit_le920_blacklist = {
- 	.sendsetup = BIT(0),
- 	.reserved = BIT(1) | BIT(5),
-@@ -1137,6 +1143,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
-+	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE910),
-+		.driver_info = (kernel_ulong_t)&telit_le910_blacklist },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
- 		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+ static inline u32 nfsd4_setattr_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op)
+@@ -1859,6 +1860,7 @@ static struct nfsd4_operation nfsd4_ops[] = {
+ 		.op_func = (nfsd4op_func)nfsd4_sequence,
+ 		.op_flags = ALLOWED_WITHOUT_FH | ALLOWED_AS_FIRST_OP,
+ 		.op_name = "OP_SEQUENCE",
++		.op_rsize_bop = (nfsd4op_rsize)nfsd4_sequence_rsize,
+ 	},
+ 	[OP_DESTROY_CLIENTID] = {
+ 		.op_func = (nfsd4op_func)nfsd4_destroy_clientid,
 -- 
 2.1.0
 
