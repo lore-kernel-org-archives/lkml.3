@@ -1,36 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaKKRtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:49:39 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59626 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaKKRti (ORCPT
+	id S1752041AbaKKRuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:50:44 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:64596 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaKKRun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:49:38 -0500
-Date: Tue, 11 Nov 2014 12:49:36 -0500 (EST)
-Message-Id: <20141111.124936.272547351489598665.davem@davemloft.net>
-To: johan@kernel.org
-Cc: f.fainelli@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        bth@kamstrup.dk
-Subject: Re: [PATCH 00/22] net: phy: refactoring and Micrel features
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1415727460-20417-1-git-send-email-johan@kernel.org>
-References: <1415727460-20417-1-git-send-email-johan@kernel.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 09:49:38 -0800 (PST)
+	Tue, 11 Nov 2014 12:50:43 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, Mike Travis <travis@sgi.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH v3] kgdb: Timeout if secondary CPUs ignore the roundup
+Date: Tue, 11 Nov 2014 17:50:32 +0000
+Message-Id: <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408374110-19656-1-git-send-email-daniel.thompson@linaro.org>
+References: <1408374110-19656-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently if an active CPU fails to respond to a roundup request the
+CPU that requested the roundup will become stuck. This needlessly
+reduces the robustness of the debugger.
 
-22 patches is just too much, sorry.
+This patch introduces a timeout allowing the system state to be examined
+even when the system contains unresponsive processors. It also modifies
+kdb's cpu command to make it censor attempts to switch to unresponsive
+processors and to report their state as (D)ead.
 
-Please reduce this down to something closer to ~10 or so patches.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Mike Travis <travis@sgi.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: Ingo Molnar <mingo@kernel.org>
+---
 
-If necessary you can do two series, submit the first 10 and then
-when that's reviewed and accepted submit the second set.
+Notes:
+    I had to spin this one again due to an out-by-one in kdb_cpu() so
+    I've tackled a couple of other small issues at the same time.
+    
+    v3:
+    
+    * Fix an out-by-one error in kdb_cpu().
+    
+    * Replace NR_CPUS with CONFIG_NR_CPUS to tell checkpatch that we
+      really want a static limit (Jason Wessel).
+    
+    * Removed the "KGDB: " prefix from the pr_crit() in debug_core.c
+      (kgdb-next contains a patch which introduced pr_fmt() to this file
+      to the tag will now be applied automatically).
+    
+    v2:
+    
+    * Set CATASTROPHIC if the system contains unresponsive processors
+      (Jason Wessel)
+    
 
-Thanks.
+ kernel/debug/debug_core.c       | 9 +++++++--
+ kernel/debug/kdb/kdb_debugger.c | 4 ++++
+ kernel/debug/kdb/kdb_main.c     | 4 +++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b39b96..f21580b347cc 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
+ 	int cpu;
+ 	int trace_on = 0;
+ 	int online_cpus = num_online_cpus();
++	u64 time_left;
+
+ 	kgdb_info[ks->cpu].enter_kgdb++;
+ 	kgdb_info[ks->cpu].exception_state |= exception_state;
+@@ -595,9 +596,13 @@ return_normal:
+ 	/*
+ 	 * Wait for the other CPUs to be notified and be waiting for us:
+ 	 */
+-	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
+-				atomic_read(&slaves_in_kgdb)) != online_cpus)
++	time_left = loops_per_jiffy * HZ;
++	while (kgdb_do_roundup && --time_left &&
++	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
++		   online_cpus)
+ 		cpu_relax();
++	if (!time_left)
++		pr_crit("Timed out waiting for secondary CPUs.\n");
+
+ 	/*
+ 	 * At this point the primary processor is completely
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index 8859ca34dcfe..15e1a7af5dd0 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
+ 		ks->pass_exception = 1;
+ 		KDB_FLAG_SET(CATASTROPHIC);
+ 	}
++	/* set CATASTROPHIC if the system contains unresponsive processors */
++	for_each_online_cpu(i)
++		if (!kgdb_info[i].enter_kgdb)
++			KDB_FLAG_SET(CATASTROPHIC);
+ 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
+ 		KDB_STATE_CLEAR(SSBPT);
+ 		KDB_STATE_CLEAR(DOING_SS);
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 379650b984f8..0c1dc7fa2e58 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
+ 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
+ 		if (!cpu_online(i)) {
+ 			state = 'F';	/* cpu is offline */
++		} else if (!kgdb_info[i].enter_kgdb) {
++			state = 'D';	/* cpu is online but unresponsive */
+ 		} else {
+ 			state = ' ';	/* cpu is responding to kdb */
+ 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
+@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
+ 	/*
+ 	 * Validate cpunum
+ 	 */
+-	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
++	if ((cpunum >= CONFIG_NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
+ 		return KDB_BADCPUNUM;
+
+ 	dbg_switch_cpu = cpunum;
+--
+1.9.3
+
