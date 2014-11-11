@@ -1,155 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaKKLc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:32:29 -0500
-Received: from sauhun.de ([89.238.76.85]:34165 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaKKLcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:32:04 -0500
-Date: Tue, 11 Nov 2014 12:32:56 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
-        dianders@chromium.org, u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
-        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
-        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, christian.ruppert@abilis.com,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V2] i2c-designware: Add Intel Baytrail PMIC I2C bus
- support
-Message-ID: <20141111113255.GC3794@katana>
-References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
- <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LwW0XdcUbUexiWVK"
-Content-Disposition: inline
-In-Reply-To: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753200AbaKKLc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:32:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57694 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264AbaKKLKy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:10:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: George Cherian <george.cherian@ti.com>, Roger Quadros <rogerq@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 119/170] Revert "usb: dwc3: dwc3-omap: Disable/Enable only wrapper interrupts in prepare/complete"
+Date: Tue, 11 Nov 2014 11:07:58 +0000
+Message-Id: <1415704129-12709-120-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
---LwW0XdcUbUexiWVK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Tue, Sep 23, 2014 at 11:40:26AM -0700, David E. Box wrote:
-> This patch implements an I2C bus sharing mechanism between the host and p=
-latform
-> hardware on select Intel BayTrail SoC platforms using the X-Powers AXP288=
- PMIC.
->=20
-> On these platforms access to the PMIC must be shared with platform hardwa=
-re. The
-> hardware unit assumes full control of the I2C bus and the host must reque=
-st
-> access through a special semaphore. Hardware control of the bus also make=
-s it
-> necessary to disable runtime pm to avoid interfering with hardware transa=
-ctions.
+From: Roger Quadros <rogerq@ti.com>
 
-Can we foresee that other platforms will have similar mechanisms in the
-future?
+commit b01ff5cb2fc99d45e4edc97077b6e17186570a16 upstream.
 
-> +config I2C_BAYTRAIL_SEM
+This reverts commit 02dae36aa649a66c5c6181157ddd806e7b4913fc.
 
-I2C_DESIGNWARE_BAYTRAIL_SEM
+That commit is bogus in two ways:
 
-> +	tristate "Intel Baytrail I2C semaphore support"
-> +	depends on I2C_DESIGNWARE_PLATFORM
-> +	select I2C_DESIGNWARE_CORE
+1) There's no way dwc3-omap's ->suspend() can cause any effect
+	on xhci's ->suspend(). Linux device driver model guarantees
+	that a parent's ->suspend() will only be called after all
+	children are suspended. dwc3-omap is the parent of the
+	parent of xhci.
 
-This select is already covered by I2C_DESIGNWARE_PLATFORM.
+2) When implementing Deep Sleep states where context is lost,
+	USBOTGSS_IRQ0 register, well, looses context so we
+	_must_ rewrite it otherwise core IRQs will never be
+	reenabled and USB will appear to be dead.
 
-> +	select IOSF_MBI
-> +	help
-> +	  This driver enables host access to the PMIC I2C bus on select Intel
-> +	  BayTrail platforms using the X-Powers AXP288 PMIC. This driver is
-> +	  required for host access to the PMIC on these platforms. You should
-> +	  probably say Y if you have a BayTrail system, unless you know it uses
-> +	  a different PMIC. Otherwises critical PMIC functions, like charging,
-> +	  may not operate.
-> +
-> +	  This driver should be built as a m if I2C_DESIGNWARE_PLATFORM=3Dm,
-> +	  and as y if I2C_DESIGNWARE_PLATFORM=3Dy.
+Fixes: 02dae36 (usb: dwc3: dwc3-omap: Disable/Enable only
+	wrapper interrupts in prepare/complete)
+Cc: George Cherian <george.cherian@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/dwc3/dwc3-omap.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-That shouldn't be the user's task to ensure. Please enforce this in the
-makefile. Check Documentation/kbuid/makefiles.txt, Section 3.3.
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 3536ad7f1346..0aa49e0fb4e0 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -599,7 +599,7 @@ static int dwc3_omap_prepare(struct device *dev)
+ {
+ 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
+ 
+-	dwc3_omap_write_irqmisc_set(omap, 0x00);
++	dwc3_omap_disable_irqs(omap);
+ 
+ 	return 0;
+ }
+@@ -607,19 +607,8 @@ static int dwc3_omap_prepare(struct device *dev)
+ static void dwc3_omap_complete(struct device *dev)
+ {
+ 	struct dwc3_omap	*omap = dev_get_drvdata(dev);
+-	u32			reg;
+ 
+-	reg = (USBOTGSS_IRQMISC_OEVT |
+-			USBOTGSS_IRQMISC_DRVVBUS_RISE |
+-			USBOTGSS_IRQMISC_CHRGVBUS_RISE |
+-			USBOTGSS_IRQMISC_DISCHRGVBUS_RISE |
+-			USBOTGSS_IRQMISC_IDPULLUP_RISE |
+-			USBOTGSS_IRQMISC_DRVVBUS_FALL |
+-			USBOTGSS_IRQMISC_CHRGVBUS_FALL |
+-			USBOTGSS_IRQMISC_DISCHRGVBUS_FALL |
+-			USBOTGSS_IRQMISC_IDPULLUP_FALL);
+-
+-	dwc3_omap_write_irqmisc_set(omap, reg);
++	dwc3_omap_enable_irqs(omap);
+ }
+ 
+ static int dwc3_omap_suspend(struct device *dev)
+-- 
+2.1.0
 
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-baytrail-sem.c
-> @@ -0,0 +1,157 @@
-> +/*
-> + * Intel BayTrail PMIC I2C bus semaphore implementaion
-> + * Copyright (c) 2014, Intel Corporation.
-
-Mika, can you have a look at the ACPI part here?
-
-> diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busse=
-s/i2c-designware-core.h
-> index d66b6cb..13e0809 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.h
-> +++ b/drivers/i2c/busses/i2c-designware-core.h
-> @@ -65,6 +65,8 @@
->   * @ss_lcnt: standard speed LCNT value
->   * @fs_hcnt: fast speed HCNT value
->   * @fs_lcnt: fast speed LCNT value
-> + * has_hw_lock: true if bus access requires hardware lock
-> + * pm_runtime_disabled: true if pm runtime is disabled
-
-Look closely. There is a difference to the entries above.
-
-> @@ -123,3 +127,18 @@ extern void i2c_dw_disable(struct dw_i2c_dev *dev);
->  extern void i2c_dw_clear_int(struct dw_i2c_dev *dev);
->  extern void i2c_dw_disable_int(struct dw_i2c_dev *dev);
->  extern u32 i2c_dw_read_comp_param(struct dw_i2c_dev *dev);
-> +
-> +#if IS_ENABLED(CONFIG_I2C_BAYTRAIL_SEM)
-> +extern int baytrail_i2c_acquire(struct dw_i2c_dev *dev);
-> +extern void baytrail_i2c_release(struct dw_i2c_dev *dev);
-> +extern void baytrail_evaluate_sem(struct dw_i2c_dev *dev);
-> +#define i2c_dw_acquire_ownership(dev) baytrail_i2c_acquire(dev)
-> +#define i2c_dw_release_ownership(dev) baytrail_i2c_release(dev)
-> +#define i2c_dw_eval_lock(dev) baytrail_evaluate_sem(dev)
-i2c_dw_test_ownership_support()?
-
-That doesn't scale in case other platformts will need this. I could
-imagine a struct i2c_dw_ownership_ops() (or whatever name) which gets
-populated according to the matched device.
-
-Thanks,
-
-   Wolfram
-
-
---LwW0XdcUbUexiWVK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUYfPnAAoJEBQN5MwUoCm2rkUP/0vN0/lPlvhsGKjNzGO8Oi7V
-5Tpuq/xGsprduYildUePlA3sB7pzQqXxst+rVCbkaCTBSAEHHj4DpuWsFfRrWgex
-uDberogI9f0PXwDmXQd12f8ybhEjcM1Y7GKHxgy8AaTITUNija7MKQOZob2tGSP8
-nE4dS8aJ8g/FpIJRxsZ72v0kHQDrgrldblOU3lTih5S7q2X50pvNF5g2AvwtYIJB
-j+5EWY2F+Upo1pOE6J5j7kF9P8EaoPSBYq14KwRfMQdwe2VjZVhErBByP1RxV8yh
-EMYLPc4fJ/gkvvdfX3pnDheryLhN43X/8GbqU0O8HZrZ+cSubRrBhO0Xm7b2guQ0
-KDULcC0E/N7i0khss645QKXAMKKbkKafsS0E7DeKpF5sL0k5tsB858/V3j3L7+ut
-qYpgaeGNP+5MmASrp0V9/GB5vI1BYQJV8LBeAn4CCjkmqHAr34aSU+F39q5HHXRq
-kUNCkQzQ6vwQNjgAFwQ345vFmPhAfV+y9aSiKRYenjY+d/QHaJFdtuYcSEubmM9J
-8SlYP2mBld4rLBAqVgswSlUDuklDl5F0iDWyL+U3uJMYTXnP8bLiRujSOWPRl4QE
-DER2WTowFySSXAxgrieJ05KkGwTUr6nXjcJrJF8JSt0Fj8qn1HXNSw+bIWH5K+ps
-omdCq/Zqfp0L+ODxYamx
-=1VEs
------END PGP SIGNATURE-----
-
---LwW0XdcUbUexiWVK--
