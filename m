@@ -1,183 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaKKOwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:52:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5611 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021AbaKKOu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:50:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
-   d="scan'208";a="630166432"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        acme@infradead.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v7 09/14] perf: Add wakeup watermark control to AUX area
-Date: Tue, 11 Nov 2014 16:48:23 +0200
-Message-Id: <1415717308-209223-10-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1752207AbaKKOxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:53:19 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51664 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaKKOxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:53:16 -0500
+Message-ID: <546222C7.2030000@linux.vnet.ibm.com>
+Date: Tue, 11 Nov 2014 20:22:55 +0530
+From: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        mturquette@linaro.org, amit.kucheria@linaro.org,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
+        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
+        mingo@kernel.org, linaro-kernel@lists.linaro.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC 1/2] sched/fair: Add cumulative average of load_avg_contrib
+ to a task
+References: <1415598358-26505-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com> <1415598358-26505-2-git-send-email-shilpa.bhat@linux.vnet.ibm.com> <20141110134911.GG29390@twins.programming.kicks-ass.net>
+In-Reply-To: <20141110134911.GG29390@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111114-0033-0000-0000-0000007D05F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When AUX area gets a certain amount of new data, we want to wake up
-userspace to collect it. This adds a new control to specify how much
-data will cause a wakeup. This is then passed down to pmu drivers via
-output handle's "wakeup" field, so that the driver can find the nearest
-point where it can generate an interrupt.
+On 11/10/2014 07:19 PM, Peter Zijlstra wrote:
+> On Mon, Nov 10, 2014 at 11:15:57AM +0530, Shilpasri G Bhat wrote:
+>> +/**
+>> + * task_cumulative_load - return the cumulative load of
+>> + * the previous task if cpu is the current cpu OR the
+>> + * cumulative load of current task on the cpu. If cpu
+>> + * is idle then return 0.
+>> + *
+>> + * Invoked by the cpufreq governor to calculate the
+>> + * load when the CPU is woken from an idle state.
+>> + *
+>> + */
+>> +unsigned int task_cumulative_load(int cpu)
+>> +{
+>> +	struct rq *rq = cpu_rq(cpu);
+>> +	struct task_struct *p;
+>> +
+>> +	if (cpu == smp_processor_id()) {
+>> +		if (rq->prev == rq->idle)
+>> +			goto idle;
+>> +		p = rq->prev;
+>> +	} else {
+>> +		if (rq->curr == rq->idle)
+>> +			goto idle;
+>> +		p = rq->curr;
+>> +	}
+>> +	/*
+>> +	 * Removing the priority as we are interested in CPU
+>> +	 * utilization of the task
+>> +	 */
+>> +	return (100 * p->se.avg.cumulative_avg / p->se.load.weight);
+>> +idle:
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL(task_cumulative_load);
+> 
+> This doesn't make any sense, its wrong and also its broken.
+> 
+> This doesn't make any sense, because the load of a cpu is unrelated to
+> whatever task ran there last. You want to look at the task that is
+> waking now.
 
-We repurpose __reserved_2 in the event attribute for this, even though
-it was never checked to be zero before, aux_watermark will only matter
-for new AUX-aware code, so the old code should still be fine.
+Yes I agree that the task in consideration should be current task on
+cpu and not the last task. But the above code is handled by the
+cpufreq governor's kworker. So the task in context while executing
+'task_cumulative_load()' is kworker and we are not interested in
+kworker's load. The task's load which we want to account to is
+predecessor of kworker i.e, the task that woke up on the idle cpu.
 
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
----
- include/uapi/linux/perf_event.h |  7 +++++--
- kernel/events/core.c            |  3 ++-
- kernel/events/internal.h        |  4 +++-
- kernel/events/ring_buffer.c     | 22 +++++++++++++++++++---
- 4 files changed, 29 insertions(+), 7 deletions(-)
+> 
+> It is wrong because dividing out the load.weight doesn't quite work
+> right. Also there's patches that introduce unweighted stats like you
+> want, you could have used those.
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index f36aac2ac5..ffd52c0861 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -238,6 +238,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
- #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
- 					/* add: sample_stack_user */
-+					/* add: aux_watermark */
- 
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -332,8 +333,10 @@ struct perf_event_attr {
- 	 */
- 	__u32	sample_stack_user;
- 
--	/* Align to u64. */
--	__u32	__reserved_2;
-+	/*
-+	 * Wakeup watermark for AUX area
-+	 */
-+	__u32	aux_watermark;
- };
- 
- #define perf_flags(attr)	(*(&(attr)->read_format + 1))
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 48b8dc0d36..da2e44aedd 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4419,7 +4419,8 @@ accounting:
- 		perf_event_init_userpage(event);
- 		perf_event_update_userpage(event);
- 	} else {
--		ret = rb_alloc_aux(rb, event, vma->vm_pgoff, nr_pages, flags);
-+		ret = rb_alloc_aux(rb, event, vma->vm_pgoff, nr_pages,
-+				   event->attr.aux_watermark, flags);
- 		if (!ret)
- 			rb->aux_mmap_locked = extra;
- 	}
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ffd51d9f59..9f6ce9ba4a 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -27,6 +27,7 @@ struct ring_buffer {
- 	local_t				lost;		/* nr records lost   */
- 
- 	long				watermark;	/* wakeup watermark  */
-+	long				aux_watermark;
- 	/* poll crap */
- 	spinlock_t			event_lock;
- 	struct list_head		event_list;
-@@ -38,6 +39,7 @@ struct ring_buffer {
- 	/* AUX area */
- 	local_t				aux_head;
- 	local_t				aux_nest;
-+	local_t				aux_wakeup;
- 	unsigned long			aux_pgoff;
- 	int				aux_nr_pages;
- 	int				aux_overwrite;
-@@ -57,7 +59,7 @@ extern struct ring_buffer *
- rb_alloc(int nr_pages, long watermark, int cpu, int flags);
- extern void perf_event_wakeup(struct perf_event *event);
- extern int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
--			pgoff_t pgoff, int nr_pages, int flags);
-+			pgoff_t pgoff, int nr_pages, long watermark, int flags);
- extern void rb_free_aux(struct ring_buffer *rb);
- extern struct ring_buffer *ring_buffer_get(struct perf_event *event);
- extern void ring_buffer_put(struct ring_buffer *rb);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 6f8bc8e962..18334a6170 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -295,6 +295,7 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
- 	 */
- 	if (!rb->aux_overwrite) {
- 		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
-+		handle->wakeup = local_read(&rb->aux_wakeup) + rb->aux_watermark;
- 		if (aux_head - aux_tail < perf_aux_size(rb))
- 			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
- 
-@@ -358,9 +359,12 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
- 		perf_event_aux_event(handle->event, aux_head, size, flags);
- 	}
- 
--	rb->user_page->aux_head = local_read(&rb->aux_head);
-+	aux_head = rb->user_page->aux_head = local_read(&rb->aux_head);
- 
--	perf_output_wakeup(handle);
-+	if (aux_head - local_read(&rb->aux_wakeup) >= rb->aux_watermark) {
-+		perf_output_wakeup(handle);
-+		local_add(rb->aux_watermark, &rb->aux_wakeup);
-+	}
- 	handle->event = NULL;
- 
- 	local_set(&rb->aux_nest, 0);
-@@ -382,6 +386,14 @@ int perf_aux_output_skip(struct perf_output_handle *handle, unsigned long size)
- 
- 	local_add(size, &rb->aux_head);
- 
-+	aux_head = rb->user_page->aux_head = local_read(&rb->aux_head);
-+	if (aux_head - local_read(&rb->aux_wakeup) >= rb->aux_watermark) {
-+		perf_output_wakeup(handle);
-+		local_add(rb->aux_watermark, &rb->aux_wakeup);
-+		handle->wakeup = local_read(&rb->aux_wakeup) +
-+				 rb->aux_watermark;
-+	}
-+
- 	handle->head = aux_head;
- 	handle->size -= size;
- 
-@@ -432,7 +444,7 @@ static void rb_free_aux_page(struct ring_buffer *rb, int idx)
- }
- 
- int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
--		 pgoff_t pgoff, int nr_pages, int flags)
-+		 pgoff_t pgoff, int nr_pages, long watermark, int flags)
- {
- 	bool overwrite = !(flags & RING_BUFFER_WRITABLE);
- 	int node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
-@@ -493,6 +505,10 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 	atomic_set(&rb->aux_refcount, 1);
- 
- 	rb->aux_overwrite = overwrite;
-+	rb->aux_watermark = watermark;
-+
-+	if (!rb->aux_watermark && !rb->aux_overwrite)
-+		rb->aux_watermark = nr_pages << (PAGE_SHIFT - 1);
- 
- out:
- 	if (!ret)
--- 
-2.1.1
+Okay.
+> 
+> It it broken because who says rq->prev still exists?
+
+'task_cumulative_load()' is handled by the cpufreq governor's kworker.
+And the kworker is queued only if there is task running on cpu which
+guarantees the existence of rq->prev in a running state.
+
+> 
+>> @@ -2476,11 +2478,13 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
+>>  static inline void __update_task_entity_contrib(struct sched_entity *se)
+>>  {
+>>  	u32 contrib;
+>> -
+>>  	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
+>>  	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
+>>  	contrib /= (se->avg.runnable_avg_period + 1);
+>>  	se->avg.load_avg_contrib = scale_load(contrib);
+>> +	se->avg.cumulative_avg *= se->avg.cumulative_avg_count;
+>> +	se->avg.cumulative_avg += se->avg.load_avg_contrib;
+>> +	se->avg.cumulative_avg /= ++se->avg.cumulative_avg_count;
+>>  }
+> 
+> This is not a numerically stable algorithm. Look what happens when
+> cumulative_avg_count gets large. Also, whatever made you choose an
+> absolute decay filter like that?
+> 
+
+Yes I agree.
+
+The problem I am trying to solve using this metric is: if cpufreq
+governor's timer is handled very early when a task wakes up to run
+on an idle cpu then the value of 'load_avg_contrib' of that task is
+very less, when the governor's kworker is switched in. This happens
+because the task did not run for enough time such that it can update
+its 'load_avg_contrib' to show considerable amount of load.
+
+Cumulative load was our initial attempt at overcoming this. It is true
+that this is not the best solution. We wanted the community's suggestion
+on how to get around this issue. What do you propose?
+
+Thanks and Regards,
+Shilpa
 
