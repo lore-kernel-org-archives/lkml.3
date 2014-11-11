@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaKKL0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:26:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57731 "EHLO
+	id S1752084AbaKKL07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:26:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305AbaKKLLC (ORCPT
+	with ESMTP id S1754300AbaKKLLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:02 -0500
+	Tue, 11 Nov 2014 06:11:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 127/170] Revert "iwlwifi: mvm: treat EAPOLs like mgmt frames wrt rate"
-Date: Tue, 11 Nov 2014 11:08:06 +0000
-Message-Id: <1415704129-12709-128-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 126/170] iwlwifi: dvm: drop non VO frames when flushing
+Date: Tue, 11 Nov 2014 11:08:05 +0000
+Message-Id: <1415704129-12709-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -29,75 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 1ffde699aae127e7abdb98dbdedc2cc6a973a1a1 upstream.
+commit a0855054e59b0c5b2b00237fdb5147f7bcc18efb upstream.
 
-This reverts commit aa11bbf3df026d6b1c6b528bef634fd9de7c2619.
-This commit was causing connection issues and is not needed
-if IWL_MVM_RS_RSSI_BASED_INIT_RATE is set to false by default.
+When mac80211 wants to ensure that a frame is sent, it calls
+the flush() callback. Until now, iwldvm implemented this by
+waiting that all the frames are sent (ACKed or timeout).
+In case of weak signal, this can take a significant amount
+of time, delaying the next connection (in case of roaming).
+Many users have reported that the flush would take too long
+leading to the following error messages to be printed:
 
-Regardless of the issues mentioned above, this patch added the
-following WARNING:
+iwlwifi 0000:03:00.0: fail to flush all tx fifo queues Q 2
+iwlwifi 0000:03:00.0: Current SW read_ptr 161 write_ptr 201
+iwl data: 00000000: 00 00 00 00 00 00 00 00 fe ff 01 00 00 00 00 00
+[snip]
+iwlwifi 0000:03:00.0: FH TRBs(0) = 0x00000000
+[snip]
+iwlwifi 0000:03:00.0: Q 0 is active and mapped to fifo 3 ra_tid 0x0000 [9,9]
+[snip]
 
-WARNING: CPU: 0 PID: 3946 at drivers/net/wireless/iwlwifi/mvm/tx.c:190 iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]()
-Got an HT rate for a non data frame 0x8
-CPU: 0 PID: 3946 Comm: wpa_supplicant Tainted: G           O   3.17.0+ #6
-Hardware name: LENOVO 20ANCTO1WW/20ANCTO1WW, BIOS GLET71WW (2.25 ) 07/02/2014
- 0000000000000009 ffffffff814fa911 ffff8804288db8f8 ffffffff81064f52
- 0000000000001808 ffff8804288db948 ffff88040add8660 ffff8804291b5600
- 0000000000000000 ffffffff81064fb7 ffffffffa07b73d0 0000000000000020
-Call Trace:
- [<ffffffff814fa911>] ? dump_stack+0x41/0x51
- [<ffffffff81064f52>] ? warn_slowpath_common+0x72/0x90
- [<ffffffff81064fb7>] ? warn_slowpath_fmt+0x47/0x50
- [<ffffffffa07a39ea>] ? iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]
- [<ffffffffa07a3cf8>] ? iwl_mvm_tx_skb+0x48/0x3c0 [iwlmvm]
- [<ffffffffa079cb9b>] ? iwl_mvm_mac_tx+0x7b/0x180 [iwlmvm]
- [<ffffffffa0746ce9>] ? __ieee80211_tx+0x2b9/0x3c0 [mac80211]
- [<ffffffffa07492f3>] ? ieee80211_tx+0xb3/0x100 [mac80211]
- [<ffffffffa0749c49>] ? ieee80211_subif_start_xmit+0x459/0xca0 [mac80211]
- [<ffffffff814116e7>] ? dev_hard_start_xmit+0x337/0x5f0
- [<ffffffff81430d46>] ? sch_direct_xmit+0x96/0x1f0
- [<ffffffff81411ba3>] ? __dev_queue_xmit+0x203/0x4f0
- [<ffffffff8142f670>] ? ether_setup+0x70/0x70
- [<ffffffff814e96a1>] ? packet_sendmsg+0xf81/0x1110
- [<ffffffff8140625c>] ? skb_free_datagram+0xc/0x40
- [<ffffffff813f7538>] ? sock_sendmsg+0x88/0xc0
- [<ffffffff813f7274>] ? move_addr_to_kernel.part.20+0x14/0x60
- [<ffffffff811c47c2>] ? __inode_wait_for_writeback+0x62/0xb0
- [<ffffffff813f7a91>] ? SYSC_sendto+0xf1/0x180
- [<ffffffff813f88f9>] ? __sys_recvmsg+0x39/0x70
- [<ffffffff8150066d>] ? system_call_fastpath+0x1a/0x1f
----[ end trace cc19a150d311fc63 ]---
+Instead of waiting for these packets, simply drop them. This
+significantly improves the responsiveness of the network.
+Note that all the queues are flushed, but the VO one. This
+is not typically used by the applications and it likely
+contains management frames that are useful for connection
+or roaming.
 
-which was reported here: https://bugzilla.kernel.org/show_bug.cgi?id=85691
+This bug is tracked here:
+https://bugzilla.kernel.org/show_bug.cgi?id=56581
 
+But it is duplicated in distributions' trackers.
+A simple search in Ubuntu's database led to these bugs:
+
+https://bugs.launchpad.net/ubuntu/+source/linux-firmware/+bug/1270808
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1305406
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1356236
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1360597
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1361809
+
+Depends-on: 77be2c54c5bd ("mac80211: add vif to flush call")
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/mvm/tx.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/tx.c b/drivers/net/wireless/iwlwifi/mvm/tx.c
-index f2465f60122e..3846a6c41eb1 100644
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -169,14 +169,10 @@ static void iwl_mvm_set_tx_cmd_rate(struct iwl_mvm *mvm,
+diff --git a/drivers/net/wireless/iwlwifi/dvm/mac80211.c b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+index 29af7b51e370..8a5c78c9e586 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+@@ -1095,6 +1095,7 @@ static void iwlagn_mac_flush(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+ 			     u32 queues, bool drop)
+ {
+ 	struct iwl_priv *priv = IWL_MAC80211_GET_DVM(hw);
++	u32 scd_queues;
  
- 	/*
- 	 * for data packets, rate info comes from the table inside the fw. This
--	 * table is controlled by LINK_QUALITY commands. Exclude ctrl port
--	 * frames like EAPOLs which should be treated as mgmt frames. This
--	 * avoids them being sent initially in high rates which increases the
--	 * chances for completion of the 4-Way handshake.
-+	 * table is controlled by LINK_QUALITY commands
- 	 */
+ 	mutex_lock(&priv->mutex);
+ 	IWL_DEBUG_MAC80211(priv, "enter\n");
+@@ -1108,18 +1109,19 @@ static void iwlagn_mac_flush(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+ 		goto done;
+ 	}
  
--	if (ieee80211_is_data(fc) && sta &&
--	    !(info->control.flags & IEEE80211_TX_CTRL_PORT_CTRL_PROTO)) {
-+	if (ieee80211_is_data(fc) && sta) {
- 		tx_cmd->initial_rate_index = 0;
- 		tx_cmd->tx_flags |= cpu_to_le32(TX_CMD_FLG_STA_RATE);
- 		return;
+-	/*
+-	 * mac80211 will not push any more frames for transmit
+-	 * until the flush is completed
+-	 */
+-	if (drop) {
+-		IWL_DEBUG_MAC80211(priv, "send flush command\n");
+-		if (iwlagn_txfifo_flush(priv, 0)) {
+-			IWL_ERR(priv, "flush request fail\n");
+-			goto done;
+-		}
++	scd_queues = BIT(priv->cfg->base_params->num_of_queues) - 1;
++	scd_queues &= ~(BIT(IWL_IPAN_CMD_QUEUE_NUM) |
++			BIT(IWL_DEFAULT_CMD_QUEUE_NUM));
++
++	if (vif)
++		scd_queues &= ~BIT(vif->hw_queue[IEEE80211_AC_VO]);
++
++	IWL_DEBUG_TX_QUEUES(priv, "Flushing SCD queues: 0x%x\n", scd_queues);
++	if (iwlagn_txfifo_flush(priv, scd_queues)) {
++		IWL_ERR(priv, "flush request fail\n");
++		goto done;
+ 	}
+-	IWL_DEBUG_MAC80211(priv, "wait transmit/flush all frames\n");
++	IWL_DEBUG_TX_QUEUES(priv, "wait transmit/flush all frames\n");
+ 	iwl_trans_wait_tx_queue_empty(priv->trans, 0xffffffff);
+ done:
+ 	mutex_unlock(&priv->mutex);
 -- 
 2.1.0
 
