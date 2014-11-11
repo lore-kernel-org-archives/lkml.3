@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaKKDzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 22:55:43 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:45818 "EHLO
+	id S1751882AbaKKDzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 22:55:49 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:53397 "EHLO
 	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaKKDzk (ORCPT
+	with ESMTP id S1751787AbaKKDzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 22:55:40 -0500
+	Mon, 10 Nov 2014 22:55:47 -0500
 From: Howard Chen <ibanezchen@gmail.com>
 To: arm@kernel.org, Matthias Brugger <matthias.bgg@gmail.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -18,30 +18,45 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 1/3] ARM: mediatek: Add basic support for mt6592
-Date: Tue, 11 Nov 2014 11:55:09 +0800
-Message-Id: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
+Subject: [PATCH v5 2/3] ARM: mediatek: add dts for mt6592-evb
+Date: Tue, 11 Nov 2014 11:55:10 +0800
+Message-Id: <1415678111-29914-2-git-send-email-ibanezchen@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
+References: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* A dtsi for boards based on Mediatek MT6592 SoCs
-* Compatible string in arch/arm/mach-mediatek/mediatek.c
+The mt6592-evb is an evaluation board based on the MT6592 SoC.
 
 Signed-off-by: Howard Chen <ibanezchen@gmail.com>
 ---
- arch/arm/boot/dts/mt6592.dtsi     | 97 +++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mediatek/mediatek.c |  1 +
- 2 files changed, 98 insertions(+)
- create mode 100644 arch/arm/boot/dts/mt6592.dtsi
+ arch/arm/boot/dts/Makefile       |  3 ++-
+ arch/arm/boot/dts/mt6592-evb.dts | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/mt6592-evb.dts
 
-diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index ab63751..0ce0d9e 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -532,7 +532,8 @@ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+ 	dove-d2plug.dtb \
+ 	dove-d3plug.dtb \
+ 	dove-dove-db.dtb
+-dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb
++dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb \
++	mt6592-evb.dtb
+ 
+ endif
+ 
+diff --git a/arch/arm/boot/dts/mt6592-evb.dts b/arch/arm/boot/dts/mt6592-evb.dts
 new file mode 100644
-index 0000000..65aa81b
+index 0000000..d7294d9
 --- /dev/null
-+++ b/arch/arm/boot/dts/mt6592.dtsi
-@@ -0,0 +1,97 @@
++++ b/arch/arm/boot/dts/mt6592-evb.dts
+@@ -0,0 +1,29 @@
 +/*
 + * Copyright (c) 2014 MediaTek Inc.
 + * Author: Howard Chen <ibanezchen@gmail.com>
@@ -56,101 +71,21 @@ index 0000000..65aa81b
 + * GNU General Public License for more details.
 + */
 +
-+#include <dt-bindings/interrupt-controller/irq.h>
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include "skeleton.dtsi"
++/dts-v1/;
++#include "mt6592.dtsi"
 +
 +/ {
-+	compatible = "mediatek,mt6592";
-+	interrupt-parent = <&gic>;
++	model = "mt6592 evb";
++	compatible = "mediatek,mt6592-evb", "mediatek,mt6592";
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x0>;
-+		};
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x1>;
-+		};
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x2>;
-+		};
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x3>;
-+		};
-+		cpu@4 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x4>;
-+		};
-+		cpu@5 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x5>;
-+		};
-+		cpu@6 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x6>;
-+		};
-+		cpu@7 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x7>;
-+		};
++	chosen {
++		bootargs = "console=ttyS0,921600n8";
 +	};
 +
-+	system_clk: dummy13m {
-+		compatible = "fixed-clock";
-+		clock-frequency = <13000000>;
-+		#clock-cells = <0>;
++	memory {
++		reg = <0x80000000 0x08000000>;
 +	};
-+
-+	rtc_clk: dummy32k {
-+		compatible = "fixed-clock";
-+		clock-frequency = <32000>;
-+		#clock-cells = <0>;
-+	};
-+
-+	timer: timer@10008000 {
-+		compatible = "mediatek,mt6577-timer";
-+		reg = <0x10008000 0x80>;
-+		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&system_clk>, <&rtc_clk>;
-+		clock-names = "system-clk", "rtc-clk";
-+	};
-+
-+	gic: interrupt-controller@10211000 {
-+		compatible = "arm,cortex-a7-gic";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = <0x10211000 0x1000>,
-+		      <0x10212000 0x1000>;
-+	};
-+
 +};
-diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
-index f2acf07..88e4626 100644
---- a/arch/arm/mach-mediatek/mediatek.c
-+++ b/arch/arm/mach-mediatek/mediatek.c
-@@ -19,6 +19,7 @@
- 
- static const char * const mediatek_board_dt_compat[] = {
- 	"mediatek,mt6589",
-+	"mediatek,mt6592",
- 	NULL,
- };
- 
 -- 
 1.9.1
 
