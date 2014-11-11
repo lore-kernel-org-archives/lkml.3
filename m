@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaKKXOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 18:14:10 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64584 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752311AbaKKXOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 18:14:08 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Aaron Lu <aaron.lu@intel.com>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and XPower
-Date: Wed, 12 Nov 2014 00:35:01 +0100
-Message-ID: <3052882.EdcZmghHR3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141111111152.GX24004@x1>
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com> <54616E55.80204@intel.com> <20141111111152.GX24004@x1>
+	id S1752504AbaKKXQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 18:16:36 -0500
+Received: from mout.gmx.com ([74.208.4.200]:56422 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263AbaKKXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 18:16:35 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-ID: <trinity-9deba5f6-773b-4e0f-8a3f-b1df2e351d03-1415747793609@3capp-mailcom-lxa04>
+From: "Chateau DuBlanc" <chateaudublanc@post.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: <PulseAudio>
+Content-Type: text/plain; charset=UTF-8
+Date: Wed, 12 Nov 2014 00:16:34 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:qDZr9Yv6sqwmkQ+kI9LLAN0SAZKuv+2RmOQ0IP5t5es
+ uQ7xLur4OWDsGRiakTQxsG0NJvKQVAZnK8xEvFHr7R5XVgnOH7
+ Cdkl7NKphxXi7LtvQMSJJwAv08LWIZds7cUvB2zQW3Jl1tBM1q
+ 2I4FLKffahsnyL0Syfv5mZqvoFay3sDmSfvDiFM1CcCIeL2K6P
+ GP/43KrSHWn/SkBUHSh16DlrAGjlldrbenDAyljXXMCzsCNPXl
+ 3DQNqk5PGNseTTBZp2KaIc8p4UdPhgkZI9gHTlAag7J+dIrj2q
+ Oicwnkn4bDhj2rBTp4D87WlUMXR
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 11, 2014 11:11:52 AM Lee Jones wrote:
-> On Tue, 11 Nov 2014, Aaron Lu wrote:
+I appreciate you work over the years making pulseaudio not a piece of shit.
+Poettering is like a leaf blowing in the wind with an attention span measured in
+dog years.
+
+For my main systems I use pure alsa. Everything needed can and is done through it
+and it's config files (yes they're complex, but that's the workflow I prefer on
+systems I want to have tight control over). When I need to record alsa is where it is at.
+It is easy to use alsa config to combine multiple sound cards into one many channel
+virtual sound card and record (conncurrently multitrack) using that.
+
+(Though I prefer to use one of the real non-computer multitrack recording devices)
+
+Pulseaudio, well it's fine on fire-and-forget systems I just install to be non-productive
+desktops. It has pauvcontrol, an easy gui for when I don't want to be bothered.
+
+That's its value.
+Alsa if better for everything else.
+
+Anyway, thanks for fixing what broke linux audio forever. I'm sure that was a long hard
+and thankless job. Someone made a mess, was incompetent, and you said "finally he's gone
+not to fix this shit and make it work like it promised to".
+
+Thanks for that.
+(Note: as I said before, on important machines I don't run pulse audio or other always-on
+daemons: the kernel is a security nightmare as is, don't need more of the same type of
+complex code always running on security-neccesary systems.)
+
+> Sent: Tuesday, November 11, 2014 at 9:41 PM
+> From: "Luke Yelavich" <themuso@ubuntu.com>
+> To: ubuntu-devel-discuss@lists.ubuntu.com
+> Subject: Re: <PulseAudio>
+>
+> On Sun, Sep 28, 2014 at 03:05:57AM AEST, Nomen Nescio wrote:
+> > 2014-03-03 PulseAudio 5.0 has been released
+> > 
+> > http://www.freedesktop.org/wiki/Software/PulseAudio
 > 
-> > On 10/31/2014 02:08 PM, Aaron Lu wrote:
-> > > On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
-> > > ACPI operation regions defined for the Power Management Integrated Circuit
-> > > device, one is for power resource handling and one is for thermal: sensor
-> > > temperature reporting, trip point setting, etc. There are different PMIC
-> > > chips used on those platforms and though each has the same two operation
-> > > regions and functionality, their implementation is different so every PMIC
-> > > will need a driver. But since their functionality is similar, some common
-> > > code is abstracted into the intel_soc_pmic_opregion.c.
-> > > 
-> > > The last version is posted here:
-> > > https://lkml.org/lkml/2014/9/8/801
-> > > 
-> > > Changes since then:
-> > > 1 Move to drivers/acpi as discussed on the above thread;
-> > > 2 Added support for XPower AXP288 PMIC operation region support;
-> > > 3 Since operation region handler can not be removed(at the moment at least),
-> > >   use bool for the two operation region driver configs instead of tristate;
-> > >   Another reason to do this is that, with Mika's MFD ACPI support patch, all
-> > >   those MFD cell devices created will have the same modalias as their parent's
-> > >   so it doesn't make much sense to compile these drivers into modules.
-> > > 
-> > > Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
-> > > patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
-> > > driver XPower AXP288 and iio driver axp288_adc is located.
-> > 
-> > Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
-> > would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
-> > 
-> > Rafael,
-> > Can I get your ACK for the three patches?
-> > 
-> > Lee,
-> > Can you please take the series if Rafael gives it ack?
+> This is known, however we have some very tight integration with PulseAudio, both for the Desktop and the phone, and updating all the integrated components in lockstep takes time.
 > 
-> Yes, no problem.
-
-Well, since the code is going to reside mostly in drivers/acpi, I think I should
-be applying the patches and from your response it looks like you are fine with
-them.  Is that correct?
-
-Rafael
-
+> Chances are vivid will have PulseAudio 5.0 or even 6.0, but I cannot promise anything at this stage.
+> 
+> Luke
+> 
+> -- 
+> Ubuntu-devel-discuss mailing list
+> Ubuntu-devel-discuss@lists.ubuntu.com
+> Modify settings or unsubscribe at: https://lists.ubuntu.com/mailman/listinfo/ubuntu-devel-discuss
+> 
