@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaKKVwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:52:39 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:17753 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751462AbaKKVwh (ORCPT
+	id S1752214AbaKKVzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:55:50 -0500
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:65470 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaKKVzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:52:37 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj5hAJmEYlR5LbBUPGdsb2JhbABcgw6BLYI2hQexDwIDBpUvhWwCAgEBAoEZFwEBAQEBBgEBAQE4O4QDAQEEJxMcIxAIAw4KCSUPBSUDBxoTiEDPLQEBCAIBHxiGIopaB4RLAQSeJJpvKS+CSwEBAQ
-Date: Wed, 12 Nov 2014 08:52:07 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH] mm: check memory reclaim bugs caused fs reentrance
-Message-ID: <20141111215207.GW23575@dastard>
-References: <1415706590-24159-1-git-send-email-dmonakhov@openvz.org>
+	Tue, 11 Nov 2014 16:55:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415706590-24159-1-git-send-email-dmonakhov@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1411111336010.1356@lava-test-server>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+	<201409251211.57183.marex@denx.de>
+	<A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+	<201409261046.07132.marex@denx.de>
+	<A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
+	<54613259.4070903@opensource.altera.com>
+	<alpine.DEB.2.02.1411111336010.1356@lava-test-server>
+Date: Wed, 12 Nov 2014 03:25:48 +0530
+Message-ID: <CAD6G_RQFV9LfBzVbureBiCneW+PpLzSdUCyz9L6D+EhE4gT+WA@mail.gmail.com>
+Subject: Re: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+From: Jagan Teki <jagannadh.teki@gmail.com>
+To: Graham Moore <grmoore@opensource.altera.com>
+Cc: bpqw <bpqw@micron.com>, Marek Vasut <marex@denx.de>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 03:49:50PM +0400, Dmitry Monakhov wrote:
-> If filesystem holds transaction open 'current->journal_info' it should not
-> performs memory allocations with __GFP_FS flag enabled otherwise this result in fs
-> reentarance which lead to:
-> 1) reentrance to itself : deadlock or internal assertion failure due to incorrect journal credits
-> 1) entrance to another fs: assertion faulure or silient corruption due to incorrect journal
-> 
-> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> ---
->  include/linux/kernel.h |    7 +++++++
->  mm/dmapool.c           |    1 +
->  mm/mempool.c           |    1 +
->  mm/page_alloc.c        |    1 +
->  mm/slab.c              |    1 +
->  mm/slub.c              |    1 +
->  6 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 3d770f5..69923d4 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -232,6 +232,13 @@ void might_fault(void);
->  static inline void might_fault(void) { }
->  #endif
->  
-> +#ifdef CONFIG_PROVE_LOCKING
-> +#define might_enter_fs_if(cond) \
-> +	 WARN_ON_ONCE((cond) && current->journal_info)
+On 12 November 2014 01:11, Graham Moore <grmoore@opensource.altera.com> wrote:
+> On 11/05/2014 09:09 PM, bpqw wrote:
+>> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+>>
+>> For Micron SPI NOR flash,enabling or disabling quad I/O protocol is
+>> controlled
+>> by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
+>> When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O
+>> mode.
+>
+> Hi, I'm having trouble with this patch using a Cadence QSPI controller and
+> Micron n25q00 part.
+>
+> I can use quad commands in Extended SPI mode, but I can't make this EVCR Quad
+> mode work.
+>
+> The Cadence QSPI Controller has fields to configure the quad transfer, and can
+> support quad opcode, quad address, and quad data, or some combination.  There
+> is a chart in the docs which shows the combinations for various read commands.
+>
+> Problem is, I've tried all of the combinations and all I get is FF with this
+> EVCR patch.
+>
+> If I don't set the quad mode in the EVCR, then I can use quad read commands no
+> problem.
+>
+> Bottom line, with the Cadence QSPI controller, if I use quad commands in
+> Extended SPI mode, then all good.  If I use this EVCR quad mode, then all bad.
+>
+> Anybody else have a Cadence QSPI controller and using EVCR quad mode
+> successfully?
 
-XFS does not use current->journal_info, and so this won't ever
-trigger on XFS. XFS uses PF_FSTRANS to indicate a transaction is in
-progress.
+I have almost verified all the micros parts for operating quad mode
+and the quad enable bit is
+volatile by default and no need to set it on software.
 
-Besides, isn't this redundant functionality? Lockdep already catches
-these problems with it's reclaim context tracking and it's tracking
-is more extensive than this simple check like this.  lockdep
-regularly pointed out allocation/reclaim context problems in XFS
-until we fixed them....
+Why this code is meant for - does micron has changed this bit
+operation on newly added parts?
 
-Cheers,
-
-Dave.
+thanks!
 -- 
-Dave Chinner
-david@fromorbit.com
+Jagan.
