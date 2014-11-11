@@ -1,53 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaKKDvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 22:51:00 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:40319 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaKKDu7 (ORCPT
+	id S1751771AbaKKDzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 22:55:43 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:45818 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaKKDzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 22:50:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141110152645.GF20766@saruman>
-References: <1415095254-24683-1-git-send-email-kiran.kumar@linaro.org>
-	<20141110152645.GF20766@saruman>
-Date: Tue, 11 Nov 2014 09:20:58 +0530
-Message-ID: <CA+RfmHay7J5_ybchfRx5RaR1doQ6Y45fAMoDpwNdSwXYZCUrhA@mail.gmail.com>
-Subject: Re: [RFC v5] usb: phy: Hold wakeupsource when USB is enumerated in
- peripheral mode
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
+	Mon, 10 Nov 2014 22:55:40 -0500
+From: Howard Chen <ibanezchen@gmail.com>
+To: arm@kernel.org, Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Howard Chen <ibanezchen@gmail.com>, Olof Johansson <olof@lixom.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv71n?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>
-Content-Type: text/plain; charset=UTF-8
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v5 1/3] ARM: mediatek: Add basic support for mt6592
+Date: Tue, 11 Nov 2014 11:55:09 +0800
+Message-Id: <1415678111-29914-1-git-send-email-ibanezchen@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+* A dtsi for boards based on Mediatek MT6592 SoCs
+* Compatible string in arch/arm/mach-mediatek/mediatek.c
 
-On 10 November 2014 20:56, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Tue, Nov 04, 2014 at 03:30:54PM +0530, Kiran Kumar Raparthy wrote:
->> @@ -1469,6 +1484,7 @@ static int ab8500_usb_probe(struct platform_device *pdev)
->>
->>       abx500_usb_link_status_update(ab);
->>
->> +     usb_phy_wsource_init(&ab->phy);
->
-> instead of adding this to all drivers, you can just it to
-> usb_add_phy_dev() and conversely, to usb_remove_phy().
-Definitely,Thanks for your input.
-Regards,
-Kiran
->
-> --
-> balbi
+Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+---
+ arch/arm/boot/dts/mt6592.dtsi     | 97 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mediatek/mediatek.c |  1 +
+ 2 files changed, 98 insertions(+)
+ create mode 100644 arch/arm/boot/dts/mt6592.dtsi
+
+diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+new file mode 100644
+index 0000000..65aa81b
+--- /dev/null
++++ b/arch/arm/boot/dts/mt6592.dtsi
+@@ -0,0 +1,97 @@
++/*
++ * Copyright (c) 2014 MediaTek Inc.
++ * Author: Howard Chen <ibanezchen@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include "skeleton.dtsi"
++
++/ {
++	compatible = "mediatek,mt6592";
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x0>;
++		};
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x1>;
++		};
++		cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x2>;
++		};
++		cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x3>;
++		};
++		cpu@4 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x4>;
++		};
++		cpu@5 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x5>;
++		};
++		cpu@6 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x6>;
++		};
++		cpu@7 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x7>;
++		};
++	};
++
++	system_clk: dummy13m {
++		compatible = "fixed-clock";
++		clock-frequency = <13000000>;
++		#clock-cells = <0>;
++	};
++
++	rtc_clk: dummy32k {
++		compatible = "fixed-clock";
++		clock-frequency = <32000>;
++		#clock-cells = <0>;
++	};
++
++	timer: timer@10008000 {
++		compatible = "mediatek,mt6577-timer";
++		reg = <0x10008000 0x80>;
++		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&system_clk>, <&rtc_clk>;
++		clock-names = "system-clk", "rtc-clk";
++	};
++
++	gic: interrupt-controller@10211000 {
++		compatible = "arm,cortex-a7-gic";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = <0x10211000 0x1000>,
++		      <0x10212000 0x1000>;
++	};
++
++};
+diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+index f2acf07..88e4626 100644
+--- a/arch/arm/mach-mediatek/mediatek.c
++++ b/arch/arm/mach-mediatek/mediatek.c
+@@ -19,6 +19,7 @@
+ 
+ static const char * const mediatek_board_dt_compat[] = {
+ 	"mediatek,mt6589",
++	"mediatek,mt6592",
+ 	NULL,
+ };
+ 
+-- 
+1.9.1
+
