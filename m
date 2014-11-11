@@ -1,174 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaKKM65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:58:57 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:59321 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506AbaKKM5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:57:53 -0500
-From: Timofey Titovets <nefelim4ag@gmail.com>
-To: linux-mm@kvack.org
-Cc: nefelim4ag@gmail.com, marco.antonio.780@gmail.com,
-        linux-kernel@vger.kernel.org, tonyb@cybernetics.com,
-        killertofu@gmail.com
-Subject: [PATCH V3 1/4] KSM: Add auto flag new VMA as VM_MERGEABLE
-Date: Tue, 11 Nov 2014 15:57:33 +0300
-Message-Id: <1415710656-29296-2-git-send-email-nefelim4ag@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1415710656-29296-1-git-send-email-nefelim4ag@gmail.com>
-References: <1415710656-29296-1-git-send-email-nefelim4ag@gmail.com>
+	id S1752854AbaKKM7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:59:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22547 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752334AbaKKM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:59:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
+   d="scan'208";a="635030843"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Alexander Gordeev <agordeev@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch] PCI/MSI: Enhance core to support hierarchy irqdomain
+Date: Tue, 11 Nov 2014 21:02:18 +0800
+Message-Id: <1415710943-6001-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1415283644-2559-22-git-send-email-jiang.liu@linux.intel.com>
+References: <1415283644-2559-22-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement two functions:
-ksm_vm_flags_mod() - if existing flags supported by ksm - then mark like VM_MERGEABLE
-ksm_vma_add_new() - If vma marked as VM_MERGEABLE add it to ksm page queue
+Enhance PCI MSI core to support hierarchy irqdomain, so the common
+code could be shared among architectures.
 
-Signed-off-by: Timofey Titovets <nefelim4ag@gmail.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/ksm.h | 31 +++++++++++++++++++++++++++++++
- mm/mmap.c           | 17 +++++++++++++++++
- 2 files changed, 48 insertions(+)
+Hi Thomas,
+	This update fixes a possible conflict on other architectures
+when they try to use the new MSI hierarchy irqdomain, as pointed out by
+Suravee Suthikulanit. The main change is as below.
+Regards!
+Gerry
 
-diff --git a/include/linux/ksm.h b/include/linux/ksm.h
-index 3be6bb1..c3fff64 100644
---- a/include/linux/ksm.h
-+++ b/include/linux/ksm.h
-@@ -76,6 +76,29 @@ struct page *ksm_might_need_to_copy(struct page *page,
- int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc);
- void ksm_migrate_page(struct page *newpage, struct page *oldpage);
+ static void msi_domain_deactivate(struct irq_domain *domain,
+ 				  struct irq_data *irq_data)
+ {
+ 	struct msi_msg msg;
++	struct msi_desc *desc = irq_data->msi_desc;
  
+-	if (!irq_data->chip_data) {
++	if (desc->irq == irq_data->irq) {
+ 		memset(&msg, 0, sizeof(msg));
+ 		__write_msi_msg(irq_data->msi_desc, &msg);
+ 	}
+---
+ drivers/pci/Kconfig |    4 ++
+ drivers/pci/msi.c   |  133 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/msi.h |   14 ++++++
+ 3 files changed, 151 insertions(+)
+
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index b9db0f2ce11f..022e89745f86 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -16,6 +16,10 @@ config PCI_MSI
+ 
+ 	   If you don't know what to do here, say Y.
+ 
++config PCI_MSI_IRQ_DOMAIN
++	bool
++	depends on PCI_MSI && IRQ_DOMAIN_HIERARCHY
++
+ config PCI_DEBUG
+ 	bool "PCI Debugging"
+ 	depends on PCI && DEBUG_KERNEL
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index da181c59394b..365e969f5e8d 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -19,6 +19,7 @@
+ #include <linux/errno.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/irqdomain.h>
+ 
+ #include "pci.h"
+ 
+@@ -1098,3 +1099,135 @@ int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
+ 	return nvec;
+ }
+ EXPORT_SYMBOL(pci_enable_msix_range);
++
++#ifdef CONFIG_PCI_MSI_IRQ_DOMAIN
 +/*
-+ * Allow to mark new vma as VM_MERGEABLE
++ * Generate a unique ID number for each possible MSI source, the ID number
++ * is only used within the irqdomain.
 + */
-+#ifndef VM_SAO
-+#define VM_SAO 0
-+#endif
-+static inline void ksm_vm_flags_mod(unsigned long *vm_flags)
++static inline irq_hw_number_t
++msi_get_hwirq(struct pci_dev *dev, struct msi_desc *desc)
 +{
-+	if (*vm_flags & (VM_MERGEABLE | VM_SHARED  | VM_MAYSHARE   |
-+			 VM_PFNMAP    | VM_IO      | VM_DONTEXPAND |
-+			 VM_HUGETLB | VM_NONLINEAR | VM_MIXEDMAP   | VM_SAO) )
-+		return;
-+	*vm_flags |= VM_MERGEABLE;
++	return (irq_hw_number_t)desc->msi_attrib.entry_nr |
++		PCI_DEVID(dev->bus->number, dev->devfn) << 11 |
++		(pci_domain_nr(dev->bus) & 0xFFFFFFFF) << 27;
 +}
 +
-+static inline void ksm_vma_add_new(struct vm_area_struct *vma)
++static int msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
++			    unsigned int nr_irqs, void *arg)
 +{
-+	struct mm_struct *mm = vma->vm_mm;
-+	if (!test_bit(MMF_VM_MERGEABLE, &mm->flags)) {
-+		__ksm_enter(mm);
++	int i, ret;
++	irq_hw_number_t hwirq = arch_msi_irq_domain_get_hwirq(arg);
++
++	if (irq_find_mapping(domain, hwirq) > 0)
++		return -EEXIST;
++
++	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
++	if (ret < 0)
++		return ret;
++
++	for (i = 0; i < nr_irqs; i++) {
++		irq_domain_set_hwirq_and_chip(domain, virq + i, hwirq + i,
++					      domain->host_data, NULL);
++		__irq_set_handler(virq + i, handle_edge_irq, 0, "edge");
++	}
++
++	return ret;
++}
++
++static void msi_domain_free(struct irq_domain *domain, unsigned int virq,
++			    unsigned int nr_irqs)
++{
++	int i;
++
++	for (i = 0; i < nr_irqs; i++) {
++		struct msi_desc *desc = irq_get_msi_desc(virq);
++
++		if (desc)
++			desc->irq = 0;
++	}
++	irq_domain_free_irqs_top(domain, virq, nr_irqs);
++}
++
++static void msi_domain_activate(struct irq_domain *domain,
++				struct irq_data *irq_data)
++{
++	struct msi_msg msg;
++	struct msi_desc *desc = irq_data->msi_desc;
++
++	/*
++	 * MSI-X message is written per-IRQ.
++	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
++	 */
++	if (desc->irq == irq_data->irq) {
++		BUG_ON(irq_chip_compose_msi_msg(irq_data, &msg));
++		__write_msi_msg(irq_data->msi_desc, &msg);
 +	}
 +}
 +
- #else  /* !CONFIG_KSM */
- 
- static inline int ksm_fork(struct mm_struct *mm, struct mm_struct *oldmm)
-@@ -92,6 +115,14 @@ static inline int PageKsm(struct page *page)
- 	return 0;
- }
- 
-+static inline void ksm_vm_flags_mod(unsigned long *vm_flags_p)
++static void msi_domain_deactivate(struct irq_domain *domain,
++				  struct irq_data *irq_data)
 +{
++	struct msi_msg msg;
++	struct msi_desc *desc = irq_data->msi_desc;
++
++	if (desc->irq == irq_data->irq) {
++		memset(&msg, 0, sizeof(msg));
++		__write_msi_msg(irq_data->msi_desc, &msg);
++	}
 +}
 +
-+void ksm_vma_add_new(struct vm_area_struct *vma)
++static struct irq_domain_ops msi_domain_ops = {
++	.alloc = msi_domain_alloc,
++	.free = msi_domain_free,
++	.activate = msi_domain_activate,
++	.deactivate = msi_domain_deactivate,
++};
++
++struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
++					 struct irq_chip *chip,
++					 struct irq_domain *parent)
 +{
++	struct irq_domain *domain;
++
++	domain = irq_domain_add_tree(of_node, &msi_domain_ops, chip);
++	if (!domain)
++		return NULL;
++
++	domain->parent = parent;
++
++	return domain;
 +}
 +
- #ifdef CONFIG_MMU
- static inline int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
- 		unsigned long end, int advice, unsigned long *vm_flags)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 7f85520..ce0073e 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -41,6 +41,7 @@
- #include <linux/notifier.h>
- #include <linux/memory.h>
- #include <linux/printk.h>
-+#include <linux/ksm.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -911,10 +912,14 @@ again:			remove_next = 1 + (end > next->vm_end);
- 			vma_gap_update(next);
- 		else
- 			mm->highest_vm_end = end;
-+	} else {
-+		if (next && !insert)
-+			ksm_vma_add_new(next);
- 	}
- 	if (insert && file)
- 		uprobe_mmap(insert);
- 
-+	ksm_vma_add_new(vma);
- 	validate_mm(mm);
- 
- 	return 0;
-@@ -1307,6 +1312,9 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags) |
- 			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
- 
-+	/* If ksm is enabled, we add VM_MERGABLE to new VMAs. */
-+	ksm_vm_flags_mod(&vm_flags);
++int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
++			      struct pci_dev *dev, void *arg)
++{
++	int i, virq;
++	struct msi_desc *desc;
++	int node = dev_to_node(&dev->dev);
 +
- 	if (flags & MAP_LOCKED)
- 		if (!can_do_mlock())
- 			return -EPERM;
-@@ -1648,6 +1656,7 @@ munmap_back:
- 			allow_write_access(file);
- 	}
- 	file = vma->vm_file;
-+	ksm_vma_add_new(vma);
- out:
- 	perf_event_mmap(vma);
- 
-@@ -2484,6 +2493,8 @@ static int __split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
- 	else
- 		err = vma_adjust(vma, vma->vm_start, addr, vma->vm_pgoff, new);
- 
-+	ksm_vma_add_new(vma);
++	list_for_each_entry(desc, &dev->msi_list, list) {
++		arch_msi_irq_domain_set_hwirq(arg, msi_get_hwirq(dev, desc));
++		virq = irq_domain_alloc_irqs(domain, desc->nvec_used,
++					     node, arg);
++		if (virq < 0) {
++			/* Special handling for pci_enable_msi_range(). */
++			if (type == PCI_CAP_ID_MSI && desc->nvec_used > 1)
++				return 1;
++			else
++				return -ENOSPC;
++		}
++		for (i = 0; i < desc->nvec_used; i++)
++			irq_set_msi_desc_off(virq, i, desc);
++	}
 +
- 	/* Success. */
- 	if (!err)
- 		return 0;
-@@ -2659,6 +2670,9 @@ static unsigned long do_brk(unsigned long addr, unsigned long len)
- 	if (error)
- 		return error;
- 
-+	/* If ksm is enabled, we add VM_MERGABLE to new VMAs. */
-+	ksm_vm_flags_mod(&flags);
++	list_for_each_entry(desc, &dev->msi_list, list)
++		if (desc->nvec_used == 1)
++			dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", virq);
++		else
++			dev_dbg(&dev->dev, "irq [%d-%d] for MSI/MSI-X\n",
++				virq, virq + desc->nvec_used - 1);
 +
- 	/*
- 	 * mm->mmap_sem is required to protect against another thread
- 	 * changing the mappings in case we sleep.
-@@ -2708,6 +2722,7 @@ static unsigned long do_brk(unsigned long addr, unsigned long len)
- 	vma->vm_flags = flags;
- 	vma->vm_page_prot = vm_get_page_prot(flags);
- 	vma_link(mm, vma, prev, rb_link, rb_parent);
-+	ksm_vma_add_new(vma);
- out:
- 	perf_event_mmap(vma);
- 	mm->total_vm += len >> PAGE_SHIFT;
-@@ -2887,6 +2902,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
- 				new_vma->vm_ops->open(new_vma);
- 			vma_link(mm, new_vma, prev, rb_link, rb_parent);
- 			*need_rmap_locks = false;
-+			ksm_vma_add_new(new_vma);
- 		}
- 	}
- 	return new_vma;
-@@ -3004,6 +3020,7 @@ static struct vm_area_struct *__install_special_mapping(
- 	mm->total_vm += len >> PAGE_SHIFT;
++	return 0;
++}
++#endif /* CONFIG_PCI_MSI_IRQ_DOMAIN */
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 44f4746d033b..662c628fc2fa 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -75,4 +75,18 @@ struct msi_chip {
+ 	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
+ };
  
- 	perf_event_mmap(vma);
-+	ksm_vma_add_new(vma);
- 
- 	return vma;
- 
++#ifdef CONFIG_PCI_MSI_IRQ_DOMAIN
++struct irq_domain;
++struct irq_chip;
++
++struct irq_domain *msi_create_irq_domain(struct device_node *of_node,
++					 struct irq_chip *chip,
++					 struct irq_domain *parent);
++int msi_irq_domain_alloc_irqs(struct irq_domain *domain, int type,
++			      struct pci_dev *dev, void *arg);
++
++irq_hw_number_t arch_msi_irq_domain_get_hwirq(void *arg);
++void arch_msi_irq_domain_set_hwirq(void *arg, irq_hw_number_t hwirq);
++#endif /* CONFIG_PCI_MSI_IRQ_DOMAIN */
++
+ #endif /* LINUX_MSI_H */
 -- 
-2.1.3
+1.7.10.4
 
