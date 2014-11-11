@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaKKJM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:12:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725AbaKKJMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:12:25 -0500
-Message-ID: <5461D2C1.6020505@redhat.com>
-Date: Tue, 11 Nov 2014 10:11:29 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752651AbaKKJNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:13:54 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:38552 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaKKJNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 04:13:52 -0500
+Message-ID: <5461D343.60803@huawei.com>
+Date: Tue, 11 Nov 2014 17:13:39 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [linux-sunxi] [PATCH v2 0/5] ARM: sunxi: Add support for USB
- OTG PHY
-References: <cover.1415645258.git.rbyshko@gmail.com>
-In-Reply-To: <cover.1415645258.git.rbyshko@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Linux MM <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <wangnan0@huawei.com>
+Subject: [PATCH] memory-hotplug: remove redundant call of page_to_pfn
+References: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com>
+In-Reply-To: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com>
+X-Forwarded-Message-Id: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020209.5461D34E.0137,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 33d34fd3bdc8e32130f576a369758c89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The start_pfn can be obtained directly by
+phys_index << PFN_SECTION_SHIFT.
 
-On 11/10/2014 07:55 PM, Roman Byshko wrote:
-> Hi,
-> 
-> There is already support for two USB phys, which are used for
-> USB host controllers on Allwinner SoC aka sunxi.
-> 
-> This patch series add support for the USB OTG phy (aka phy0).
-> 
-> The code has been tested on Allwinner A20 aka sun7i (Cubietruck).
-> 
-> Best regards,
-> Roman Byshko
+Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+---
+ drivers/base/memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-First of all very cool that you're working on this, I somehow missed
-v1, but I'm very happy to see this.
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 7c5d871..85be040 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -228,8 +228,8 @@ memory_block_action(unsigned long phys_index, unsigned long action, int online_t
+ 	struct page *first_page;
+ 	int ret;
 
-Second some questions, this series seems to only add support for
-initializing the phy, without adding the necessary magic for
-switching from app to host mode, and without actually hooking up musb,
-I assume you've a follow up series adding musb support, which actually
-uses the phy ?
+-	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+-	start_pfn = page_to_pfn(first_page);
++	start_pfn = phys_index << PFN_SECTION_SHIFT;
++	first_page = pfn_to_page(start_pfn);
 
-Also have you coordinated your work with ChenYu? ATM ChenYu is mostly
-working on other stuff, but AFAIk he has been working on musb support
-in the past.
+ 	switch (action) {
+ 		case MEM_ONLINE:
+-- 
+1.8.1.4
 
-Regards,
 
-Hans
+.
+
+
+
+
