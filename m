@@ -1,182 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaKKGe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 01:34:26 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:32567 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751238AbaKKGeY (ORCPT
+	id S1751787AbaKKGhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 01:37:51 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9941 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaKKGht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 01:34:24 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: As0lAGutYVR5LbBUPGdsb2JhbABcgw5UWYI2tgIGk02BYYVsBAICgRoXAQEBAQEGAQEBATg7hAIBAQEDATocHAcFCwgDDgQGCSUPBSUDBwYUE4g4CA7MYQEBAQEBBQIBGwQYhiKEPoQAgh0HhEsFlwSCR4RZmm8pL4JLAQEB
-Date: Tue, 11 Nov 2014 17:34:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch] mm: vmscan: invoke slab shrinkers for each lruvec
-Message-ID: <20141111063419.GS23575@dastard>
-References: <1415317828-19390-1-git-send-email-hannes@cmpxchg.org>
- <20141110064640.GO23575@dastard>
- <20141110144405.GA6873@phnom.home.cmpxchg.org>
+	Tue, 11 Nov 2014 01:37:49 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 10 Nov 2014 22:38:09 -0800
+Message-ID: <5461AEB7.70507@nvidia.com>
+Date: Tue, 11 Nov 2014 15:37:43 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141110144405.GA6873@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>, <swarren@wwwdotorg.org>,
+        <thierry.reding@gmail.com>, <gnurou@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <wni@nvidia.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v4 REPOST 1/5] of: Add descriptions of thermtrip properties
+ to Tegra PMC bindings
+References: <1415625137-4791-1-git-send-email-mikko.perttunen@kapsi.fi> <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi>
+In-Reply-To: <1415625137-4791-2-git-send-email-mikko.perttunen@kapsi.fi>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 10, 2014 at 09:44:05AM -0500, Johannes Weiner wrote:
-> On Mon, Nov 10, 2014 at 05:46:40PM +1100, Dave Chinner wrote:
-> > On Thu, Nov 06, 2014 at 06:50:28PM -0500, Johannes Weiner wrote:
-> > > The slab shrinkers currently rely on the reclaim code providing an
-> > > ad-hoc concept of NUMA nodes that doesn't really exist: for all
-> > > scanned zones and lruvecs, the nodes and available LRU pages are
-> > > summed up, only to have the shrinkers then again walk that nodemask
-> > > when scanning slab caches.  This duplication will only get worse and
-> > > more expensive once the shrinkers become aware of cgroups.
-> > 
-> > As i said previously, it's not an "ad-hoc concept". It's exactly the
-> > same NUMA abstraction that the VM presents to anyone who wants to
-> > control memory allocation locality. i.e. node IDs and node masks.
-> 
-> That's what the page allocator takes as input, but it's translated to
-> zones fairly quickly, and it definitely doesn't exist in the reclaim
-> code anymore.  The way we reconstruct the node view on that level
-> really is ad-hoc.  And that is a problem.  It's not just duplicative,
-> it's also that reclaim really needs the ability to target types of
-> zones in order to meet allocation constraints, and right now we just
-> scatter-shoot slab objects and hope we free some desired zone memory.
-> 
-> I don't see any intrinsic value in symmetry here, especially since we
-> can easily encapsulate how the lists are organized for the shrinkers.
-> Vladimir is already pushing the interface in that direction: add
-> object, remove object, walk objects according to this shrink_control.
+On 11/10/2014 10:12 PM, Mikko Perttunen wrote:
+> From: Mikko Perttunen <mperttunen@nvidia.com>
+>
+> Hardware-triggered thermal reset requires configuring the I2C
+> reset procedure. This configuration is read from the device tree,
+> so document the relevant properties in the binding documentation.
+>
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> Reviewed-by: Wei Ni <wni@nvidia.com>
+> Tested-by: Wei Ni <wni@nvidia.com>
+> ---
+>   .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 24 ++++++++++++++++++++++
+>   1 file changed, 24 insertions(+)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+> index 68ac65f..dc13fb0 100644
+> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+> @@ -47,6 +47,21 @@ Required properties when nvidia,suspend-mode=<0>:
+>     sleep mode, the warm boot code will restore some PLLs, clocks and then
+>     bring up CPU0 for resuming the system.
+>
+> +Hardware-triggered thermal reset:
+> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode exists,
+> +hardware-triggered thermal reset will be enabled.
+> +
+> +Required properties for hardware-triggered thermal reset (inside 'i2c-thermtrip'):
+> +- nvidia,i2c-bus : Phandle to I2C bus containing the PMU
+> +- nvidia,bus-addr : Bus address of the PMU on the I2C bus
+> +- nvidia,reg-addr : I2C register address to write poweroff command to
+> +- nvidia,reg-data : Poweroff command to write to PMU
 
-You probably don't see the value in symmetry because you look at it
-from the inside. I lok at shrinkers from outside the VM, and so I
-see them from a very different view point. That is, I do not want
-the internal architecture of the VM dictating how I must do things.
-The shrinkers are extremely flexible and used in quite varied
-subsystems for very different purposes. The shrinker API and
-behaviour needs to be independent of the VM so we don't lose that
-flexibility....
-> 
-> > > Instead, invoke the shrinkers for each lruvec scanned - which is
-> > > either the zone level, or in case of cgroups, the subset of a zone's
-> > > pages that is charged to the scanned memcg.  The number of eligible
-> > > LRU pages is naturally available at that level - it is even more
-> > > accurate than simply looking at the global state and the number of
-> > > available swap pages, as get_scan_count() considers many other factors
-> > > when deciding which LRU pages to consider.
-> > > 
-> > > This invokes the shrinkers more often and with smaller page and scan
-> > > counts, but the ratios remain the same, and the shrinkers themselves
-> > > do not add significantly to the existing per-lruvec cost.
-> > 
-> > That goes in the opposite direction is which we've found filesystem
-> > shrinkers operate most effectively. i.e. larger batches with less
-> > frequent reclaim callouts tend to result in more consistent
-> > performance because shrinkers take locks and do IO that other
-> > application operations get stuck behind (shrink_batch exists
-> > for this reason ;).
-> 
-> Kswapd, which does the majority of reclaim - unless pressure mounts
-> too high - already invokes the shrinkers per-zone, so this seems like
-> a granularity we should generally get away with.
+This binding is taking two different routes to provide values to the driver:
 
-Pressure almost always mounts too high on filesystem intensive
-workloads. :/
+1) It uses a phandle for i2c-bus (which must then be provided by another 
+binding implemented in the two following patches)
 
-i.e. Almost all siginifcant memory allocation is done under GFP_NOFS
-and almost all the kernel caches that need reclaim are filesystem
-caches and hence will not do reclaim under GFP_NOFS allocation
-contexts. Hence all reclaim gets defered to kswapd very quickly
-and so kswapd has to deal with the reclaim backlog of multiple CPUs
-on each node generating significant memory pressure....
+2) It uses direct values for bus-addr, reg-addr and reg-data.
 
-> > > It would be great if other people could weigh in, and possibly also
-> > > expose it to their favorite filesystem and reclaim stress tests.
-> > 
-> > Causes substantial increase in performance variability on inode
-> > intensive benchmarks. On my standard fsmark benchmark, I see file
-> > creates sit at around 250,000/sec, but there's several second long
-> > dips to about 50,000/sec co-inciding with the inode cache being
-> > trimmed by several million inodes. Looking more deeply, this is due
-> > to memory pressure driving inode writeback - we're reclaiming inodes
-> > that haven't yet been written to disk, and so by reclaiming the
-> > inode cache slab more frequently it's driving larger peaks of IO
-> > and blocking ongoing filesystem operations more frequently.
-> > 
-> > My initial thoughts are that this correlates with the above comments
-> > I made about frequency of shrinker calls and batch sizes, so I
-> > suspect that the aggregation of shrinker-based reclaim work is
-> > necessary to minimise the interference that recalim causes at the
-> > filesystem level...
-> 
-> Could you share the benchmark you are running? 
+Do we need to use both approaches? bus-addr could just as well be 
+obtained through a phandle to the i2c device and reading its reg 
+property. From this phandle you could also go back up to the bus, making 
+the i2c-bus property unnecessary. reg-addr and reg-data cannot be 
+specified that way, obviously.
 
-I need to put this in the XFS FAQ. It's the same damn benchmark I've
-been running for almost 5 years now....
+Actually I think I'd prefer to see i2c-bus become an integer property 
+instead of a phandle, because at the end of the day it is a value field 
+of a particular register and the reference is only used to retrieve that 
+value. It is not like we are actually going to call functions on the bus 
+instance or change its state. And for the single purpose of retrieving 
+that value, this binding requires the addition of a new property on the 
+bus node that will probably never be used for something else.
 
-https://lkml.org/lkml/2013/12/4/813
+We can also imagine that some design may not have a PMIC device in the 
+DT but still want to use the thermal reset feature. In this case, it is 
+again preferable to use direct values.
 
-> Also, how many nodes
-> does this machine have?
-
-VM w/ 16p, 16Gb RAM, fakenuma=4, and a sparse 500TB filesystem image
-on a pair of SSDs in RAID0.
-
-> My suspicion is that invoking the shrinkers per-zone against the same
-> old per-node lists incorrectly triples the slab pressure relative to
-> the lru pressure.  Kswapd already does this, but I'm guessing it
-> matters less under lower pressure, and once pressure mounts direct
-> reclaim takes over, which my patch made more aggressive.
-> 
-> Organizing the slab objects on per-zone lists would solve this, and
-> would also allow proper zone reclaim to meet allocation restraints.
-
-Which is exactly the sort of increase in per-object cache + LRUs we
-want to avoid. Nothing outside the VM has the concept of zones - all
-our object caches are either global or per-node pools or LRUs. We
-need to keep some semblence of global LRU in filesystem
-caches because objects are heirarchical in importance. Hence the
-more finely grained we chop up the LRUs the worse our working set
-maintenance gets.
-
-Indeed, we've moved away from VM based page caches for our complex
-subsystems because the VM simply cannot express the reclaim
-relationships necessary for efficient maintenance of the working
-set. The working set has nothing to do with the locality of the
-objects maintained by the cache - it's all about the relationships
-between the objects.  Evicting objects based on memory locality does
-not work, and that's why we do not use the VM based page caches.
-
-This is precisely why I do not want the internal architecture of the
-VM to dictate how we cache and reclaim objects - the VM just has no
-concept of what the caches are used for and so therefore should not
-be dictating structure of the cache or it's reclaim algorithms.
-Shrinkers are simply a method of applying a measure of pressure to a
-cache, they do not and should not define how caches are structured
-or how they scale.
-
-> But for now, how about the following patch that invokes the shrinkers
-> once per node, but uses the allocator's preferred zone as the pivot
-> for nr_scanned / nr_eligible instead of summing up the node?  That
-> doesn't increase the current number of slab invocations, actually
-> reduces them for kswapd, but would put the shrinker calls at a more
-> natural level for reclaim, and would also allow us to go ahead with
-> the cgroup-aware slab shrinkers.
-
-I'll try to test it tomorrow.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
