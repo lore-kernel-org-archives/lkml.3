@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaKKSBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 13:01:05 -0500
-Received: from resqmta-ch2-09v.sys.comcast.net ([69.252.207.41]:42312 "EHLO
-	resqmta-ch2-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089AbaKKSBD (ORCPT
+	id S1752143AbaKKSBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 13:01:13 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33647 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaKKSBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 13:01:03 -0500
-Date: Tue, 11 Nov 2014 12:00:59 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: Future of NOHZ full/isolation development (was Re: [NOHZ] Remove
- scheduler_tick_max_deferment)
-In-Reply-To: <20141111173908.GY4901@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1411111159490.6018@gentwo.org>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org> <alpine.DEB.2.11.1411012313320.5308@nanos> <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
- <CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com> <20141110153147.GK4901@linux.vnet.ibm.com> <alpine.DEB.2.11.1411101226310.12918@gentwo.org> <20141111171526.GC3216@lerouge> <20141111173908.GY4901@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Nov 2014 13:01:09 -0500
+Date: Tue, 11 Nov 2014 17:59:43 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Thor Thayer <tthayer@opensource.altera.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20141111175943.GC3815@sirena.org.uk>
+References: <1415442589-29434-1-git-send-email-broonie@kernel.org>
+ <546214F7.1040007@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ky36DnKXfPqepASA"
+Content-Disposition: inline
+In-Reply-To: <546214F7.1040007@opensource.altera.com>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: spidev: Don't mangle max_speed_hz in underlying spi
+ device
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Paul E. McKenney wrote:
 
-> I guess I should have remembered that before suggesting this to Christoph,
-> my apologies to all!
+--ky36DnKXfPqepASA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-No this is good. Do not worry. I can just throw out the one or other patch
-to ensure that the discussion continues and then we can figure out how to
-come up with a correct solution. Patches are a way to say that you are
-serious about an issue on lkml.
+On Tue, Nov 11, 2014 at 07:53:59AM -0600, Thor Thayer wrote:
+> Hi Mark,
 
+Please delete irrelevant context from mails, it makes it much easier to
+find any new content you've added.
+
+> On 11/08/2014 04:29 AM, Mark Brown wrote:
+
+> >  			if (retval < 0)
+> >-				spi->max_speed_hz = save;
+> >+				spidev->speed_hz = tmp;
+> >  			else
+> >  				dev_dbg(&spi->dev, "%d Hz (max)\n", tmp);
+> >+			spi->max_speed_hz = save;
+
+> I think the test should be if (retval >= 0) otherwise the value is only
+> updated on an error. With this change, I was able to successfully change the
+> SPI speed without affecting the max speed. This was tested using
+> spidev_test.c on a Altera Cyclone V which includes the DesignWare SPI IP
+> (spi-dw.c).
+
+Yup, misleading code.
+
+> >  	if (status == 0)
+> >  		spi_set_drvdata(spi, spidev);
+> >  	else
+
+> The echo command calls spidev_write() directly. Although the speed can't be
+> specified in the echo command, it did prompt me to look at that path.
+
+> In that case I think we'd need to add the .speed_hz element in
+> spidev_sync_write() and spidev_sync_read().
+> struct spi_transfer    t = {
+>             .rx_buf        = spidev->rx_buffer,
+>             .len        = len,
+>             .speed_hz    = spidev->speed_hz,
+>         };
+
+Yup, looks that way.
+
+--ky36DnKXfPqepASA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUYk6PAAoJECTWi3JdVIfQx9wH/A63e3wpnb4wPhEBPgNs8gfs
+MxeWw6y6LibsDs6Mlg5O/tLwgD0LaWmPHumFd3t8BOkhPNX4DeDdIOIyIP+IRyJA
+0uouKCaFmOr5SB3yg9cAbA/nTHcfe9zWC5brLa1CMIDi/f7Fkpwi20PgR+wvWXB8
+CSQYYxzB/IXEydzI38L6ePhQbUuhDnHT9ExeESBZOxxLqnzp0GGBxpPK+VXXl5kI
+0Qvls5WptYVtHIcaB5kXTWkHXhjMAlbCbXea5XqB4aVqGzyI2dhf2S1HYuEIHhLl
+MANf5KEh3ctUbt612gAdMtJiiRanOqcbgM2OKccnY0Ya6G0rF4h/R7WRkU21I5c=
+=0CXa
+-----END PGP SIGNATURE-----
+
+--ky36DnKXfPqepASA--
