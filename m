@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaKKSW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 13:22:27 -0500
-Received: from dehamd003.servertools24.de ([31.47.254.18]:34516 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089AbaKKSW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 13:22:26 -0500
-Message-ID: <546253D2.9050400@ladisch.de>
-Date: Tue, 11 Nov 2014 19:22:10 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64;
-	rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751937AbaKKSWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 13:22:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47967 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895AbaKKSWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 13:22:41 -0500
+Date: Tue, 11 Nov 2014 19:22:35 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
+ memory errors
+Message-ID: <20141111182235.GL31490@pd.tnic>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+ <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
+ <20141111114248.GD31490@pd.tnic>
+ <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
+ <20141111161309.GG31490@pd.tnic>
+ <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
+ <20141111163059.GH31490@pd.tnic>
+ <CALCETrX+u-LZV0GGudi8z-VtcY0y7BD8Yk_4BgTA5C5hekVAtQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net
-CC: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Ramos <daramos@stanford.edu>
-Subject: Re: [PATCH RFC v1b] firewire: cdev: prevent kernel stack leaking
-	into ioctl arguments
-References: <55D28623-C1C7-47D2-9638-0B8FD0733C48@stanford.edu>	<20141111010340.3329bbd7@kant>
-	<20141111130143.2ff3d42e@kant>	<20141111171356.2fc62440@kant>
-	<20141111171644.7f6b17c7@kant>
-In-Reply-To: <20141111171644.7f6b17c7@kant>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-PPP-Message-ID: <20141111182104.924270.18534@dehamd003.servertools24.de>
-X-PPP-Vhost: ladisch.de
+Content-Disposition: inline
+In-Reply-To: <CALCETrX+u-LZV0GGudi8z-VtcY0y7BD8Yk_4BgTA5C5hekVAtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Richter wrote:
-> This fix simply always null-initializes the entire ioctl argument buffer
-> regardless of the actual length of expected user input.  That is, a
-> runtime overhead of memset(..., 40) is added to each firewirew-cdev
-> ioctl() call.
+On Tue, Nov 11, 2014 at 09:15:18AM -0800, Andy Lutomirski wrote:
+> Oh -- does it need to sleep?
 
-This part of the stack is most likely to be already in the cache.
+Oh yeah, iterates over all tasks and generally async access to VM stuff.
+You can have a look if bored: mm/memory-failure.c
 
+:-)
 
-Regards,
-Clemens
+> I find myself wondering whether a much cleaner solution might be to
+> sync regs and switch stacks before invoking do_machine_check rather
+> than afterwards.  Then do_machine_check would really be completely
+> non-atomic.  It would add a few lines of asm, though.
+
+That's like wagging the dog.
+
+I'd prefer much more to actually have a mechanism to do something to
+tasks before scheduling them in.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
