@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaKKTRv (ORCPT <rfc822;w@1wt.eu>);
+	id S1751879AbaKKTRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:17:54 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56909 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaKKTRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 14:17:51 -0500
-Received: from mail-bl2on0123.outbound.protection.outlook.com ([65.55.169.123]:21047
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751086AbaKKTRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:17:49 -0500
-X-WSS-ID: 0NEW2XJ-08-F9X-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <bhelgaas@google.com>
-CC: <liviu.dudau@arm.com>, <lorenzo.pieralisi@arm.com>, <will.deacon@arm.com>,
-        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: [PATCH V2 0/2] PCI: generic: Assiging msi-controller to PCI hostbridge
-Date: Tue, 11 Nov 2014 13:17:32 -0600
-Message-ID: <1415733454-24322-1-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
+Date: Tue, 11 Nov 2014 11:17:45 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v6 00/48] kernel: Add support for power-off handler call
+ chain
+Message-ID: <20141111191745.GA24918@roeck-us.net>
+References: <1415583785-6980-1-git-send-email-linux@roeck-us.net>
+ <20141110083347.GA29543@amd>
+ <20141111182023.GA21970@roeck-us.net>
+ <20141111185019.GA29452@amd>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(102836001)(106466001)(33646002)(84676001)(99396003)(120916001)(44976005)(50986999)(97736003)(31966008)(19580395003)(68736004)(19580405001)(53416004)(2351001)(229853001)(107046002)(46102003)(101416001)(110136001)(36756003)(86152002)(92726001)(92566001)(86362001)(93916002)(64706001)(20776003)(47776003)(77096003)(62966003)(77156002)(4396001)(50226001)(21056001)(48376002)(50466002)(105586002)(87936001)(87286001)(89996001)(104166001)(88136002)(95666004)(41533002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB205;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
-X-Forefront-PRVS: 0392679D18
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111185019.GA29452@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.546260DE.02E2,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On Tue, Nov 11, 2014 at 07:50:20PM +0100, Pavel Machek wrote:
+> On Tue 2014-11-11 10:20:23, Guenter Roeck wrote:
+> > On Mon, Nov 10, 2014 at 09:33:48AM +0100, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > Introduce a system power-off handler call chain to solve the described
+> > > > problems.  This call chain is expected to be executed from the architecture
+> > > > specific machine_power_off() function.  Drivers providing system power-off
+> > > > functionality are expected to register with this call chain.  By using the
+> > > > priority field in the notifier block, callers can control power-off
+> > > > handler
+> > > 
+> > > Linus rather disliked the idea of notifier chains for this... And I
+> > > don't see how it got addressed.
+> > > 
+> > Hi all,
+> > 
+> > After more thought, I concluded that it is technically impossible to support
+> > multiple power-off handlers without some kind of list or call chain, no matter
+> > how it is called. Given the opposition from Linus and the power maintainers
+> > to the series, I decided to shelf it.
+> 
+> Well, you can still do preparations -- current code directly setting
+> pm_power_off is ugly -- so that if you want to switch to call chain
+> later, it will be easy.
+> 
+Yes, it is ugly, but with pretty much everyone who counts opposed to my proposal
+for a cleanup I don't really have an idea how to continue. In addition to that,
+I did this as a community project in my free time, I don't need it myself,
+I already spent way more time on it than I thought it would take, there
+is no end in sight, and other things I am working on are significantly
+more important for me. At some point one has to cut one's losses.
 
-This patch set introduces a new callback function to allow PCI host drivers
-to specify MSI controller to be used for the child buses / devices.
-
-This is reabased from:
-    git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/host-generic
-
-Changes from V1:
-    - Adding "msi-parent" device tree binding in documentation.
-    - Rebase the patch to get rid of artifacts from other precursor patch
-      accidently applied to the developement tree. This should now apply cleanly
-      to the pci/host-generic branch.
-
-Suravee Suthikulpanit (2):
-  PCI: Add new pci_ops for setting MSI parent for PCI bus
-  PCI: generic: Add set_msi_parent callback
-
- Documentation/devicetree/bindings/pci/host-generic-pci.txt |  3 +++
- drivers/pci/host/pci-host-generic.c                        | 13 +++++++++++++
- drivers/pci/probe.c                                        |  3 +++
- include/linux/pci.h                                        |  1 +
- 4 files changed, 20 insertions(+)
-
--- 
-1.9.3
-
+Guenter
