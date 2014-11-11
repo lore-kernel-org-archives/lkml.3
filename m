@@ -1,221 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaKKNZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:25:38 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:57956 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaKKNZf (ORCPT
+	id S1751884AbaKKN1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:27:38 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:44472 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaKKN1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:25:35 -0500
-Message-ID: <54620E62.4040803@gmail.com>
-Date: Tue, 11 Nov 2014 14:25:54 +0100
-From: Goffredo Baroncelli <kreijack@gmail.com>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Tue, 11 Nov 2014 08:27:36 -0500
+Date: Tue, 11 Nov 2014 14:27:34 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v5 1/4] fuse: Add support for pid namespaces
+Message-ID: <20141111132734.GC333@tucsk>
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+ <1414013060-137148-2-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Goffredo Baroncelli <kreijack@inwind.it>
-Subject: [RESEND][PATCH 5/5] Export the temperatures via hwmon
-References: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
-In-Reply-To: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414013060-137148-2-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the temperature via the hwmon subsystem.
-See the list below for the sensors exported:
+On Wed, Oct 22, 2014 at 04:24:17PM -0500, Seth Forshee wrote:
+> If the userspace process servicing fuse requests is running in
+> a pid namespace then pids passed via the fuse fd need to be
+> translated relative to that namespace. Capture the pid namespace
+> in use when the filesystem is mounted and use this for pid
+> translation.
 
-$ cd /sys/devices/temperature/hwmon/hwmon0
-$ echo "name: $(cat name)"; for i in temp*; do echo "$i: $(cat $i)"; done
-name: therm_windtunnel
-temp1_input: 59312
-temp1_label: CPU
-temp2_input: 36750
-temp2_label: Case
-temp3_input: 37750
-temp3_label: Case2
+But WHY?
 
-The Case2 temperature is the sensor temperature inside the adm1030.
+I know it's been discussed, but the reasons should be spelled out here:
 
-Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
----
- drivers/macintosh/therm_windtunnel.c | 96 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 92 insertions(+), 4 deletions(-)
+ - capturing the namespace makes the code less complex (the strongest argument
+   that I've heard)
 
-diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
-index 30a6588..fd9061d 100644
---- a/drivers/macintosh/therm_windtunnel.c
-+++ b/drivers/macintosh/therm_windtunnel.c
-@@ -37,6 +37,8 @@
- #include <linux/init.h>
- #include <linux/kthread.h>
- #include <linux/of_platform.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
- 
- #include <asm/prom.h>
- #include <asm/machdep.h>
-@@ -58,9 +60,12 @@ static struct {
- 	struct i2c_client	*thermostat;
- 	struct i2c_client	*fan;
- 
-+	struct device		*hwmon;
-+
- 	int			overheat_temp;		/* 100% fan at this temp */
- 	int			overheat_hyst;
- 	int			temp;
-+	int			casetemp2;
- 	int			casetemp;
- 	int			fan_level;		/* active fan_table setting */
- 
-@@ -120,6 +125,66 @@ static DEVICE_ATTR(case_temperature, S_IRUGO, show_case_temperature, NULL );
- static DEVICE_ATTR(fan_level, S_IRUGO, show_fan_level, NULL);
- 
- 
-+static ssize_t
-+show_temp1(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d%03d\n", x.temp>>8,
-+					(x.temp & 0xff) * 1000 / 256);
-+}
-+
-+static ssize_t
-+show_temp1_label(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "CPU\n");
-+}
-+
-+static ssize_t
-+show_temp2(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d%03d\n", x.casetemp>>8,
-+					(x.casetemp & 0xff) * 1000 / 256);
-+}
-+
-+static ssize_t
-+show_temp2_label(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "Case\n");
-+}
-+
-+
-+static ssize_t
-+show_temp3(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d%03d\n", x.casetemp2>>8,
-+					(x.casetemp2 & 0xff) * 1000 / 256);
-+}
-+
-+static ssize_t
-+show_temp3_label(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "Case2\n");
-+}
-+
-+static DEVICE_ATTR(temp1_input, S_IRUGO, show_temp1, NULL);
-+static DEVICE_ATTR(temp1_label, S_IRUGO, show_temp1_label, NULL);
-+static DEVICE_ATTR(temp2_input, S_IRUGO, show_temp2, NULL);
-+static DEVICE_ATTR(temp2_label, S_IRUGO, show_temp2_label, NULL);
-+static DEVICE_ATTR(temp3_input, S_IRUGO, show_temp3, NULL);
-+static DEVICE_ATTR(temp3_label, S_IRUGO, show_temp3_label, NULL);
-+
-+static struct attribute  *therm_windtunnel_attrs[] = {
-+	&dev_attr_temp1_input.attr,
-+	&dev_attr_temp1_label.attr,
-+	&dev_attr_temp2_input.attr,
-+	&dev_attr_temp2_label.attr,
-+	&dev_attr_temp3_input.attr,
-+	&dev_attr_temp3_label.attr,
-+
-+	NULL,
-+};
-+
-+ATTRIBUTE_GROUPS(therm_windtunnel);
-+
- /************************************************************************/
- /*	controller thread						*/
- /************************************************************************/
-@@ -172,16 +237,23 @@ tune_fan( int fan_setting )
- static void
- poll_temp( void )
- {
--	int temp, i, level, casetemp, tempchanged;
-+	int temp, i, level, casetemp, tempchanged, casetemp2, reg06;
- 
-+	/* temperature read from ds1775 */
- 	temp = read_reg( x.thermostat, 0, 2 );
- 
- 	/* this actually occurs when the computer is loaded */
- 	if( temp < 0 )
- 		return;
- 
--	casetemp = read_reg(x.fan, 0x0b, 1) << 8;
--	casetemp |= (read_reg(x.fan, 0x06, 1) & 0x7) << 5;
-+	/*
-+	 * temperatures read from the adm1030
-+	 * casetemp is the external temperature sensor
-+	 * casetemp2 is the internal temperature sensor
-+	 */
-+	reg06 = read_reg(x.fan, 0x06, 1);
-+	casetemp = (read_reg(x.fan, 0x0b, 1) << 8) | (reg06 & 0x07 << 5);
-+	casetemp2 = (read_reg(x.fan, 0x0a, 1) << 8) | (reg06 & 0xc0);
- 
- 	level = -1;
- 	for( i=0; (temp & 0xffff) > fan_table[i].temp ; i++ )
-@@ -200,12 +272,15 @@ poll_temp( void )
- 	 * if verbose >=1 log each fan tuning
- 	 * if verbose >=2 log each cpu temperature change
- 	 */
--	tempchanged = x.temp != temp || x.casetemp != casetemp;
-+	tempchanged = x.temp != temp || x.casetemp != casetemp ||
-+		x.casetemp2 != casetemp2;
- 	if ((verbose > 1 && tempchanged) ||
- 	    (verbose > 0 && level >= 0)) {
- 		print_temp(KERN_INFO "CPU-temp: ", temp);
- 		if (casetemp)
- 			print_temp(", Case: ", casetemp);
-+		if (casetemp2)
-+			print_temp(", Case2: ", casetemp2);
- 		if (level >= 0)
- 			printk(", Fan: %d (tuned %+d)\n", 11-level,
- 				x.fan_level-level);
-@@ -215,6 +290,7 @@ poll_temp( void )
- 
- 	x.temp = temp;
- 	x.casetemp = casetemp;
-+	x.casetemp2 = casetemp2;
- 
- 	if( level >= 0 )
- 		tune_fan( level );
-@@ -274,11 +350,23 @@ setup_hardware( void )
- 	if (err)
- 		printk(KERN_WARNING
- 			"Failed to create temperature attribute file(s).\n");
-+
-+	x.hwmon = hwmon_device_register_with_groups(&x.of_dev->dev,
-+			"therm_windtunnel", NULL,
-+			therm_windtunnel_groups);
-+	if (IS_ERR(x.hwmon)) {
-+		dev_warn(&x.of_dev->dev, "Failed to create the hwmon device\n");
-+		x.hwmon = NULL;
-+	}
- }
- 
- static void
- restore_regs( void )
- {
-+	if (x.hwmon)
-+		hwmon_device_unregister(x.hwmon);
-+	x.hwmon = NULL;
-+
- 	device_remove_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
- 	device_remove_file( &x.of_dev->dev, &dev_attr_case_temperature );
- 	device_remove_file(&x.of_dev->dev, &dev_attr_fan_level);
--- 
-2.1.0.rc1
+ - there's a security concern with translating to current namespace (that I
+   still don't fully understand)
+
+ - changing the pid namespace after mounting is unlikely to be of any use
+
+ - if it turns out to be useful, we can still fix this later (can we?)
+
+What happens when the server does indeed change pid namespace after mounting?
+Will just receive bogus pid values?  Shouldn't it receive an error instead?
+
+More comments inline.
+
+> File locking changes based on previous work done by Eric
+> Biederman.
+> 
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  fs/fuse/dev.c    |  9 +++++----
+>  fs/fuse/file.c   | 38 +++++++++++++++++++++++++++-----------
+>  fs/fuse/fuse_i.h |  4 ++++
+>  fs/fuse/inode.c  |  4 ++++
+>  4 files changed, 40 insertions(+), 15 deletions(-)
+> 
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index ca887314aba9..839caebd34f1 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/swap.h>
+>  #include <linux/splice.h>
+>  #include <linux/aio.h>
+> +#include <linux/sched.h>
+>  
+>  MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+>  MODULE_ALIAS("devname:fuse");
+> @@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+>  	atomic_dec(&req->count);
+>  }
+>  
+> -static void fuse_req_init_context(struct fuse_req *req)
+> +static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+>  {
+>  	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+>  	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+> -	req->in.h.pid = current->pid;
+> +	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+>  }
+>  
+>  static bool fuse_block_alloc(struct fuse_conn *fc, bool for_background)
+> @@ -168,7 +169,7 @@ static struct fuse_req *__fuse_get_req(struct fuse_conn *fc, unsigned npages,
+>  		goto out;
+>  	}
+>  
+> -	fuse_req_init_context(req);
+> +	fuse_req_init_context(fc, req);
+>  	req->waiting = 1;
+>  	req->background = for_background;
+>  	return req;
+> @@ -257,7 +258,7 @@ struct fuse_req *fuse_get_req_nofail_nopages(struct fuse_conn *fc,
+>  	if (!req)
+>  		req = get_reserved_req(fc, file);
+>  
+> -	fuse_req_init_context(req);
+> +	fuse_req_init_context(fc, req);
+>  	req->waiting = 1;
+>  	req->background = 0;
+>  	return req;
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index caa8d95b24e8..cb0e40ecc362 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -2131,7 +2131,8 @@ static int fuse_direct_mmap(struct file *file, struct vm_area_struct *vma)
+>  	return generic_file_mmap(file, vma);
+>  }
+>  
+> -static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+> +static int convert_fuse_file_lock(struct fuse_conn *fc,
+> +				  const struct fuse_file_lock *ffl,
+>  				  struct file_lock *fl)
+>  {
+>  	switch (ffl->type) {
+> @@ -2146,7 +2147,11 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+>  
+>  		fl->fl_start = ffl->start;
+>  		fl->fl_end = ffl->end;
+> -		fl->fl_pid = ffl->pid;
+> +		rcu_read_lock();
+> +		fl->fl_pid = pid_vnr(find_pid_ns(ffl->pid, fc->pid_ns));
+> +		rcu_read_unlock();
+> +		if (ffl->pid != 0 && fl->fl_pid == 0)
+> +			return -EIO;
+
+This needs some comments: is this trying to translate the pid backwards?  Why is
+it not checking the return of find_pid_ns() then?  The man page documents l_pid
+value of -1 but not of 0, so why are we checking for "ffl->pid != 0"?  Or is the
+man page incomplete and in practice we get l_pid == 0 values?
 
 
+>  		break;
+>  
+>  	default:
+> @@ -2156,9 +2161,9 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+>  	return 0;
+>  }
+>  
+> -static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+> -			 const struct file_lock *fl, int opcode, pid_t pid,
+> -			 int flock)
+> +static int fuse_lk_fill(struct fuse_req *req, struct file *file,
+> +			 const struct file_lock *fl, int opcode,
+> +			 struct pid *pid, int flock)
+>  {
+>  	struct inode *inode = file_inode(file);
+>  	struct fuse_conn *fc = get_fuse_conn(inode);
+> @@ -2170,7 +2175,9 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+>  	arg->lk.start = fl->fl_start;
+>  	arg->lk.end = fl->fl_end;
+>  	arg->lk.type = fl->fl_type;
+> -	arg->lk.pid = pid;
+> +	arg->lk.pid = pid_nr_ns(pid, fc->pid_ns);
+> +	if (pid && arg->lk.pid == 0)
+> +		return -EOVERFLOW;
+
+Could have done the conversion immediately after getting 'pid' with task_tgid(),
+then the changes would have been smaller and more localized.
+
+
+>  	if (flock)
+>  		arg->lk_flags |= FUSE_LK_FLOCK;
+>  	req->in.h.opcode = opcode;
+> @@ -2178,6 +2185,8 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+>  	req->in.numargs = 1;
+>  	req->in.args[0].size = sizeof(*arg);
+>  	req->in.args[0].value = arg;
+> +
+> +	return 0;
+>  }
+>  
+>  static int fuse_getlk(struct file *file, struct file_lock *fl)
+> @@ -2192,16 +2201,19 @@ static int fuse_getlk(struct file *file, struct file_lock *fl)
+>  	if (IS_ERR(req))
+>  		return PTR_ERR(req);
+>  
+> -	fuse_lk_fill(req, file, fl, FUSE_GETLK, 0, 0);
+> +	err = fuse_lk_fill(req, file, fl, FUSE_GETLK, NULL, 0);
+> +	if (err)
+> +		goto out;
+>  	req->out.numargs = 1;
+>  	req->out.args[0].size = sizeof(outarg);
+>  	req->out.args[0].value = &outarg;
+>  	fuse_request_send(fc, req);
+>  	err = req->out.h.error;
+> -	fuse_put_request(fc, req);
+>  	if (!err)
+> -		err = convert_fuse_file_lock(&outarg.lk, fl);
+> +		err = convert_fuse_file_lock(fc, &outarg.lk, fl);
+>  
+> +out:
+> +	fuse_put_request(fc, req);
+>  	return err;
+>  }
+>  
+> @@ -2211,7 +2223,7 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
+>  	struct fuse_conn *fc = get_fuse_conn(inode);
+>  	struct fuse_req *req;
+>  	int opcode = (fl->fl_flags & FL_SLEEP) ? FUSE_SETLKW : FUSE_SETLK;
+> -	pid_t pid = fl->fl_type != F_UNLCK ? current->tgid : 0;
+> +	struct pid *pid = fl->fl_type != F_UNLCK ? task_tgid(current) : NULL;
+>  	int err;
+>  
+>  	if (fl->fl_lmops && fl->fl_lmops->lm_grant) {
+> @@ -2227,12 +2239,16 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
+>  	if (IS_ERR(req))
+>  		return PTR_ERR(req);
+>  
+> -	fuse_lk_fill(req, file, fl, opcode, pid, flock);
+> +	err = fuse_lk_fill(req, file, fl, opcode, pid, flock);
+> +	if (err)
+> +		goto out;
+>  	fuse_request_send(fc, req);
+>  	err = req->out.h.error;
+>  	/* locking is restartable */
+>  	if (err == -EINTR)
+>  		err = -ERESTARTSYS;
+> +
+> +out:
+>  	fuse_put_request(fc, req);
+>  	return err;
+>  }
+> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+> index e8e47a6ab518..a3ded071e2c6 100644
+> --- a/fs/fuse/fuse_i.h
+> +++ b/fs/fuse/fuse_i.h
+> @@ -22,6 +22,7 @@
+>  #include <linux/rbtree.h>
+>  #include <linux/poll.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/pid_namespace.h>
+>  
+>  /** Max number of pages that can be used in a single read request */
+>  #define FUSE_MAX_PAGES_PER_REQ 32
+> @@ -386,6 +387,9 @@ struct fuse_conn {
+>  	/** The group id for this mount */
+>  	kgid_t group_id;
+>  
+> +	/** The pid namespace for this mount */
+> +	struct pid_namespace *pid_ns;
+> +
+>  	/** The fuse mount flags for this mount */
+>  	unsigned flags;
+>  
+> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> index 03246cd9d47a..e137969815a3 100644
+> --- a/fs/fuse/inode.c
+> +++ b/fs/fuse/inode.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/random.h>
+>  #include <linux/sched.h>
+>  #include <linux/exportfs.h>
+> +#include <linux/pid_namespace.h>
+>  
+>  MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+>  MODULE_DESCRIPTION("Filesystem in Userspace");
+> @@ -616,6 +617,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+>  	fc->initialized = 0;
+>  	fc->attr_version = 1;
+>  	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
+> +	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+>  }
+>  EXPORT_SYMBOL_GPL(fuse_conn_init);
+>  
+> @@ -624,6 +626,8 @@ void fuse_conn_put(struct fuse_conn *fc)
+>  	if (atomic_dec_and_test(&fc->count)) {
+>  		if (fc->destroy_req)
+>  			fuse_request_free(fc->destroy_req);
+> +		put_pid_ns(fc->pid_ns);
+> +		fc->pid_ns = NULL;
+
+We don't usually zero out fields before freeing.  There are debugging config
+options to do that for us.
+
+>  		fc->release(fc);
+>  	}
+>  }
+> -- 
+> 1.9.1
+> 
