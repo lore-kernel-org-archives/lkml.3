@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaKKXUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 18:20:05 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33664 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489AbaKKXUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 18:20:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
-   d="scan'208";a="620835743"
-Message-ID: <5462999A.7090706@intel.com>
-Date: Tue, 11 Nov 2014 15:19:54 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752326AbaKKXVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 18:21:23 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:50754 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaKKXVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 18:21:21 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>, Matt Fleming <matt.fleming@intel.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141111230926.GR31490@pd.tnic>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141111213628.GP31490@pd.tnic> <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
+ <20141111223316.GQ31490@pd.tnic> <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+ <20141111230926.GR31490@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Nov 2014 15:21:00 -0800
+Message-ID: <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: Borislav Petkov <bp@alien8.de>
+Cc: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm seeing a BUG() at boot in __phys_addr when it has DEBUG_VIRTUAL enabled:
+On Tue, Nov 11, 2014 at 3:09 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Nov 11, 2014 at 02:40:12PM -0800, Andy Lutomirski wrote:
+>> I wonder what the IRET is for.  There had better not be another magic
+>> IRET unmask thing.  I'm guessing that the actual semantics are that
+>> nothing whatsoever can mask #MC, but that a second #MC when MCIP is
+>> still set is a shutdown condition.
+>
+> Hmmm, both manuals are unclear as to what exactly reenables #MC. So
+> forget about IRET and look at this: "When the processor receives a
+> machine check when MCIP is set, it automatically enters the shutdown
+> state." so this really reads like a second #MC while the first is
+> happening would shutdown the system - regardless whether I'm still in
+> #MC context or not, running the first #MC handler.
+>
+> I guess I needz me some hw people to actually confirm.
+>
+>> Define "atomic".
+>>
+>> You're still running with irqs off and MCIP set.  At some point,
+>
+> Yes, I need to be atomic wrt to another #MC so that I can be able to
+> read out the MCA MSRs in time and undisturbed.
+>
+>> you're presumably done with all of the machine check registers, and
+>> you can clear MCIP.  Now, if current == victim, you can enable irqs
+>> and do whatever you want.
+>
+> This is the key: if I enable irqs and the process gets scheduled on
+> another CPU, I lose. So I have to be able to say: before you run this
+> task on any CPU, kill it.
 
->> [    1.193264] ------------[ cut here ]------------
->> [    1.198502] kernel BUG at /home/davehans/linux.git/arch/x86/mm/physaddr.c:36!
-> ...
->> [    1.368810] Call Trace:
->> [    1.371590]  [<ffffffff8105824c>] __change_page_attr_set_clr+0x42c/0xff0
->> [    1.379197]  [<ffffffff81059e42>] kernel_map_pages_in_pgd+0x72/0x110
->> [    1.386410]  [<ffffffff81fe2be2>] __map_region+0x45/0x63
->> [    1.392437]  [<ffffffff81fe2e13>] efi_map_region+0x32/0xce
->> [    1.398663]  [<ffffffff81fe2936>] efi_enter_virtual_mode+0x18c/0x3a4
->> [    1.405876]  [<ffffffff81fcb0b6>] start_kernel+0x421/0x4a1
->> [    1.412101]  [<ffffffff81fcaa85>] ? set_init_arg+0x55/0x55
->> [    1.418327]  [<ffffffff81fca120>] ? early_idt_handlers+0x120/0x120
->> [    1.425342]  [<ffffffff81fca5f2>] x86_64_start_reservations+0x2a/0x2c
->> [    1.432652]  [<ffffffff81fca746>] x86_64_start_kernel+0x152/0x161
->> [    1.439565] Code: 0f 94 c2 31 c0 e8 a6 47 83 00 48 c7 c7 41 49 cc 81 31 c0 e8 98 47 83 00 31 d2 be 01 00 00 00 48 c7 c7 a0 49 f2 81 e8 ab 4a 0e 00 <0f> 0b 0f 0b 4c 89 e2 48 c7 c6 b3 e5 a0 81 48 c7 c7 5c 7a ca 81 
->> [    1.461866] RIP  [<ffffffff8105c055>] __phys_addr+0x185/0x260
->> [    1.468400]  RSP <ffffffff81e03cf8>
->> [    1.472396] ---[ end trace b59b0f17341a4bc4 ]---
->> [    1.477663] Kernel panic - not syncing: Attempted to kill the idle task!
->> [    1.485270] ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
+Why do you lose?  With my patch applied, you are that process, and the
+process can't possibly return to user space until you return from
+do_machine_check.  In other words, it works kind of like a page fault.
 
-But I've noticed something odd.  kernel_map_pages_in_pgd() takes a pfn:
+>
+>> In my mind, the benefit is that you don't need to think about how to
+>> save your information and arrange to get called back the next time
+>> that the victim task is a non-atomic context, since you *are* the
+>> victim task and you're running in normal irqs-disabled kernel mode.
+>>
+>> In contrast, with the current entry code, if you enable IRQs or so
+>> anything that could sleep, you're on the wrong stack, so you'll crash.
+>> That means that taking mutexes, even after clearing MCIP, is
+>> impossible.
+>
+> Hmm, it is late here and I need to think about this on a clear head
+> again but I think I can see the benefit of this to a certain extent.
+> However(!), I need to be able to run undisturbed and do the minimum work
+> in the #MC handler before I reenable MCEs.
+>
+> But Tony also has a valid point as in what is going to happen if I
+> get another MCE while doing the memory_failure() dance. I guess if
+> memory_failure() takes proper locks, the second #MC will get to wait
+> until the first is done. But who knows in reality ...
 
-extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long
-			address, unsigned numpages, unsigned long
-			page_flags);
+Yeah.  But if you haven't cleared MCIP, you go boom, which is the same
+with pretty much any approach.
 
-But the code in arch/x86/platform/efi/efi_64.c seems a bit confused
-about that.  Two users pass a physical address while a third passes in a
-pfn:
-
->         if (kernel_map_pages_in_pgd(pgd, text >> PAGE_SHIFT, text, npages, 0)) {
->         if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
->         if (kernel_map_pages_in_pgd(pgd, pa_memmap, pa_memmap, num_pages, _PAGE_NX)) {
-
-kernel_map_pages_in_pgd() also sticks that value in to 'struct
-cpa_data'->pfn.  But, then the "PFN" seems to get used like a physical
-address.  For instance:
-
-                set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE | ...
-
-How could this possibly work?
+--Andy
