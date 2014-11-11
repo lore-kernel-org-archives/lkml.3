@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaKKM0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:26:43 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39965 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070AbaKKM0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:26:40 -0500
-Date: Tue, 11 Nov 2014 13:26:36 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: lee.jones@linaro.org, laurentiu.palcu@intel.com, johan@kernel.org,
-        wsa@the-dreams.de, julia.lawall@lip6.fr, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] i2c: dln2: simplify return flow for dln2_i2c_enable
-Message-ID: <20141111122636.GF29789@localhost>
-References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com>
- <1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
+	id S1753277AbaKKM20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:28:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7785 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164AbaKKM2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:28:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="620525664"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Topic: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+ configuration changes
+Thread-Index: Ac/9kLfHSOSyagtOQAqEsc5J81STLv//ljeA//9iliA=
+Date: Tue, 11 Nov 2014 12:28:15 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00226FEEA@SHSMSX104.ccr.corp.intel.com>
+References: <E959C4978C3B6342920538CF579893F00226EF05@SHSMSX104.ccr.corp.intel.com>
+ <5461EC99.1000101@redhat.com>
+In-Reply-To: <5461EC99.1000101@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415708457-18798-3-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sABCSXOY004610
 
-On Tue, Nov 11, 2014 at 02:20:57PM +0200, Octavian Purdila wrote:
-> This fixes the following kbuild test robot warning:
-> 
-> >> drivers/i2c/busses/i2c-dln2.c:70:1-4: WARNING: end returns can be simplified if negative or 0 value
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
-> 
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> ---
->  drivers/i2c/busses/i2c-dln2.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-dln2.c b/drivers/i2c/busses/i2c-dln2.c
-> index 010a5fa..b3fb86a 100644
-> --- a/drivers/i2c/busses/i2c-dln2.c
-> +++ b/drivers/i2c/busses/i2c-dln2.c
-> @@ -54,7 +54,6 @@ struct dln2_i2c {
->  
->  static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
->  {
-> -	int ret;
->  	u16 cmd;
->  	struct {
->  		u8 port;
-> @@ -67,11 +66,7 @@ static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
->  	else
->  		cmd = DLN2_I2C_DISABLE;
->  
-> -	ret = dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
-> -	if (ret < 0)
-> -		return ret;
-> -
-> -	return 0;
-> +	return dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
 
-This looks like a bogus warning. It's not generally equivalent (ret > 0)
-and is not mandated by any style guide lines.
 
-Johan
+> -----Original Message-----
+> From: Paolo Bonzini [mailto:pbonzini@redhat.com]
+> Sent: Tuesday, November 11, 2014 7:02 PM
+> To: Wu, Feng; Alex Williamson
+> Cc: gleb@kernel.org; dwmw2@infradead.org; joro@8bytes.org;
+> tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
+> kvm@vger.kernel.org; iommu@lists.linux-foundation.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 05/13] KVM: Update IRTE according to guest interrupt
+> configuration changes
+> 
+> 
+> 
+> On 11/11/2014 10:20, Wu, Feng wrote:
+> > > Since legacy KVM device assignment is effectively deprecated, have you
+> > > considered how we might do this with VFIO?  Thanks,
+> >
+> > I haven't thought about how to enable this in VFIO so far. I think I can continue
+> to
+> > implement that if needed after this patch set is finished. What do you think of
+> this?
+> 
+> Hi Feng,
+> 
+> we are not applying new features to legacy KVM device assignment, since
+> it is unsafe (it does not honor ACS).
+> 
+> I and Alex can help you with designing a way to interface VFIO with KVM
+> posted interrupts.  Give us a few days to study these patches more, or
+> feel free to request comments if you have ideas about it yourself.
+> 
+> Paolo
+
+Okay, then I will put some efforts on getting familiar with VFIO mechanism. If
+You have any questions about these patches, we can discuss it together.
+
+Thanks,
+Feng
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
