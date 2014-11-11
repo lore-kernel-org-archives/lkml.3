@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463AbaKKLwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:52:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57443 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925AbaKKLKH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753929AbaKKLKH (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 06:10:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57415 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853AbaKKLKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:10:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: David Dueck <davidcdueck@googlemail.com>,
+        Anthony Harivel <anthony.harivel@emtrion.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 068/170] x86: bpf_jit: fix two bugs in eBPF JIT compiler
-Date: Tue, 11 Nov 2014 11:07:07 +0000
-Message-Id: <1415704129-12709-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 064/170] can: at91_can: add missing prepare and unprepare of the clock
+Date: Tue, 11 Nov 2014 11:07:03 +0000
+Message-Id: <1415704129-12709-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,125 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: David Dueck <davidcdueck@googlemail.com>
 
-commit e0ee9c12157dc74e49e4731e0d07512e7d1ceb95 upstream.
+commit e77980e50bc2850599d4d9c0192b67a9ffd6daac upstream.
 
-1.
-JIT compiler using multi-pass approach to converge to final image size,
-since x86 instructions are variable length. It starts with large
-gaps between instructions (so some jumps may use imm32 instead of imm8)
-and iterates until total program size is the same as in previous pass.
-This algorithm works only if program size is strictly decreasing.
-Programs that use LD_ABS insn need additional code in prologue, but it
-was not emitted during 1st pass, so there was a chance that 2nd pass would
-adjust imm32->imm8 jump offsets to the same number of bytes as increase in
-prologue, which may cause algorithm to erroneously decide that size converged.
-Fix it by always emitting largest prologue in the first pass which
-is detected by oldproglen==0 check.
-Also change error check condition 'proglen != oldproglen' to fail gracefully.
+In order to make the driver work with the common clock framework, this patch
+converts the clk_enable()/clk_disable() to
+clk_prepare_enable()/clk_disable_unprepare(). While there, add the missing
+error handling.
 
-2.
-while staring at the code realized that 64-byte buffer may not be enough
-when 1st insn is large, so increase it to 128 to avoid buffer overflow
-(theoretical maximum size of prologue+div is 109) and add runtime check.
-
-Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
-Reported-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.16: adjusted context ]
+Signed-off-by: David Dueck <davidcdueck@googlemail.com>
+Signed-off-by: Anthony Harivel <anthony.harivel@emtrion.de>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/net/bpf_jit_comp.c | 25 +++++++++++++++++++------
- 1 file changed, 19 insertions(+), 6 deletions(-)
+ drivers/net/can/at91_can.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index 99bef86ed6df..dcee40b5a330 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -211,12 +211,17 @@ struct jit_context {
- 	bool seen_ld_abs;
- };
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index f07fa89b5fd5..05e1aa090add 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -1123,7 +1123,9 @@ static int at91_open(struct net_device *dev)
+ 	struct at91_priv *priv = netdev_priv(dev);
+ 	int err;
  
-+/* maximum number of bytes emitted while JITing one eBPF insn */
-+#define BPF_MAX_INSN_SIZE	128
-+#define BPF_INSN_SAFETY		64
-+
- static int do_jit(struct sk_filter *bpf_prog, int *addrs, u8 *image,
- 		  int oldproglen, struct jit_context *ctx)
- {
- 	struct sock_filter_int *insn = bpf_prog->insnsi;
- 	int insn_cnt = bpf_prog->len;
--	u8 temp[64];
-+	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
-+	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
- 	int i;
- 	int proglen = 0;
- 	u8 *prog = temp;
-@@ -254,7 +259,7 @@ static int do_jit(struct sk_filter *bpf_prog, int *addrs, u8 *image,
- 	EMIT2(0x31, 0xc0); /* xor eax, eax */
- 	EMIT3(0x4D, 0x31, 0xED); /* xor r13, r13 */
+-	clk_enable(priv->clk);
++	err = clk_prepare_enable(priv->clk);
++	if (err)
++		return err;
  
--	if (ctx->seen_ld_abs) {
-+	if (seen_ld_abs) {
- 		/* r9d : skb->len - skb->data_len (headlen)
- 		 * r10 : skb->data
- 		 */
-@@ -655,7 +660,7 @@ xadd:			if (is_imm8(insn->off))
- 		case BPF_JMP | BPF_CALL:
- 			func = (u8 *) __bpf_call_base + imm32;
- 			jmp_offset = func - (image + addrs[i]);
--			if (ctx->seen_ld_abs) {
-+			if (seen_ld_abs) {
- 				EMIT2(0x41, 0x52); /* push %r10 */
- 				EMIT2(0x41, 0x51); /* push %r9 */
- 				/* need to adjust jmp offset, since
-@@ -669,7 +674,7 @@ xadd:			if (is_imm8(insn->off))
- 				return -EINVAL;
- 			}
- 			EMIT1_off32(0xE8, jmp_offset);
--			if (ctx->seen_ld_abs) {
-+			if (seen_ld_abs) {
- 				EMIT2(0x41, 0x59); /* pop %r9 */
- 				EMIT2(0x41, 0x5A); /* pop %r10 */
- 			}
-@@ -774,7 +779,8 @@ emit_jmp:
- 			goto common_load;
- 		case BPF_LD | BPF_ABS | BPF_W:
- 			func = CHOOSE_LOAD_FUNC(imm32, sk_load_word);
--common_load:		ctx->seen_ld_abs = true;
-+common_load:
-+			ctx->seen_ld_abs = seen_ld_abs = true;
- 			jmp_offset = func - (image + addrs[i]);
- 			if (!func || !is_simm32(jmp_offset)) {
- 				pr_err("unsupported bpf func %d addr %p image %p\n",
-@@ -848,6 +854,11 @@ common_load:		ctx->seen_ld_abs = true;
- 		}
+ 	/* check or determine and set bittime */
+ 	err = open_candev(dev);
+@@ -1149,7 +1151,7 @@ static int at91_open(struct net_device *dev)
+  out_close:
+ 	close_candev(dev);
+  out:
+-	clk_disable(priv->clk);
++	clk_disable_unprepare(priv->clk);
  
- 		ilen = prog - temp;
-+		if (ilen > BPF_MAX_INSN_SIZE) {
-+			pr_err("bpf_jit_compile fatal insn size error\n");
-+			return -EFAULT;
-+		}
-+
- 		if (image) {
- 			if (unlikely(proglen + ilen > oldproglen)) {
- 				pr_err("bpf_jit_compile fatal error\n");
-@@ -904,9 +915,11 @@ void bpf_int_jit_compile(struct sk_filter *prog)
- 			goto out;
- 		}
- 		if (image) {
--			if (proglen != oldproglen)
-+			if (proglen != oldproglen) {
- 				pr_err("bpf_jit: proglen=%d != oldproglen=%d\n",
- 				       proglen, oldproglen);
-+				goto out;
-+			}
- 			break;
- 		}
- 		if (proglen == oldproglen) {
+ 	return err;
+ }
+@@ -1166,7 +1168,7 @@ static int at91_close(struct net_device *dev)
+ 	at91_chip_stop(dev, CAN_STATE_STOPPED);
+ 
+ 	free_irq(dev->irq, dev);
+-	clk_disable(priv->clk);
++	clk_disable_unprepare(priv->clk);
+ 
+ 	close_candev(dev);
+ 
 -- 
 2.1.0
 
