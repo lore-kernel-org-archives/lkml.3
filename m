@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaKKMEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:04:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23370 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683AbaKKMET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:04:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
-   d="scan'208";a="630092098"
-Message-ID: <1415707434.22887.158.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Nov 2014 14:03:54 +0200
-In-Reply-To: <5461C5AD.5040705@nod.at>
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
-	 <5460F7D8.2030100@nod.at> <5461C5AD.5040705@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754768AbaKKMFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:05:14 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:49322 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaKKMFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:05:08 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 1/3] regulator: max77802: Document binding for regulator operating modes
+Date: Tue, 11 Nov 2014 13:04:43 +0100
+Message-Id: <1415707485-28563-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415707485-28563-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1415707485-28563-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 09:15 +0100, Richard Weinberger wrote:
-> > Do we really want the function name in every log message?
-> > IMHO this is not wise except for pure debug logs.
-> 
-> BTW: Why UBI-X? This looks odd. Either use UBIX or ubiX.
+Some regulators from the max77802 PMIC support to be configured in one
+of two operating mode: Output ON (normal) and Output On Low Power Mode.
+Not all regulators support these two modes and for some of them, the
+mode can be changed while the system is running in normal operation
+while others only support their mode to be changed on system suspend.
 
-How about something like this (untested):
+Extend the max77802 PMIC binding by documenting the possible operating
+modes values so the regulators modes can be configured correctly.
 
-
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Tue, 11 Nov 2014 13:56:34 +0200
-Subject: [PATCH] UBI: clean-up printing helpers
-
-Let's prefix UBI messages with 'ubiX' instead of 'UBI-X' - this is more
-consistent with the way we name UBI devices.
-
-Also, commit "32608703 UBI: Extend UBI layer debug/messaging capabilities"
-added the function name print to 'ubi_msg()' - lets revert this change, since
-these messages are supposed to be just informative messages, and not debugging
-messages.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/mtd/ubi/ubi.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ .../devicetree/bindings/regulator/max77802.txt     | 35 ++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index f80ffab..7a92283 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -50,13 +50,13 @@
- #define UBI_NAME_STR "ubi"
+diff --git a/Documentation/devicetree/bindings/regulator/max77802.txt b/Documentation/devicetree/bindings/regulator/max77802.txt
+index 5aeaffc..79e5476 100644
+--- a/Documentation/devicetree/bindings/regulator/max77802.txt
++++ b/Documentation/devicetree/bindings/regulator/max77802.txt
+@@ -25,6 +25,29 @@ with their hardware counterparts as follow. The valid names are:
+ 			example: LDO1, LDO2, LDO35.
+ 	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
+ 			example: BUCK1, BUCK5, BUCK10.
++
++The max77802 regulator supports two different operating modes: Normal and Low
++Power Mode. Some regulators support the modes to be changed at startup or by
++the consumers during normal operation while others only support to change the
++mode during system suspend. The standard regulator suspend states binding can
++be used to configure the regulator operating mode.
++
++The regulators that support the standard "regulator-initial-mode" property,
++changing their mode during normal operation are: LDOs 1, 3, 20 and 21.
++
++The possible values for "regulator-initial-mode" and "regulator-mode" are:
++	1: Normal regulator voltage output mode.
++	3: Low Power which reduces the quiescent current down to only 1uA
++
++The list of valid modes are defined in the dt-bindings/clock/maxim,max77802.h
++header and can be included by device tree source files.
++
++The standard "regulator-mode" property can only be used for regulators that
++support changing their mode to Low Power Mode during suspend. These regulators
++are: BUCKs 2-4 and LDOs 1-35. Also, it only takes effect if the regulator has
++been enabled for the given suspend state using "regulator-on-in-suspend" and
++has not been disabled for that state using "regulator-off-in-suspend".
++
+ Example:
  
- /* Normal UBI messages */
--#define ubi_msg(ubi, fmt, ...) pr_notice("UBI-%d: %s:" fmt "\n", \
--					 ubi->ubi_num, __func__, ##__VA_ARGS__)
-+#define ubi_msg(ubi, fmt, ...) pr_notice("ubi%d: " fmt "\n", \
-+					 ubi->ubi_num, ##__VA_ARGS__)
- /* UBI warning messages */
--#define ubi_warn(ubi, fmt, ...) pr_warn("UBI-%d warning: %s: " fmt "\n", \
-+#define ubi_warn(ubi, fmt, ...) pr_warn("ubi%d warning: %s: " fmt "\n", \
- 					ubi->ubi_num, __func__, ##__VA_ARGS__)
- /* UBI error messages */
--#define ubi_err(ubi, fmt, ...) pr_err("UBI-%d error: %s: " fmt "\n", \
-+#define ubi_err(ubi, fmt, ...) pr_err("ubi%d error: %s: " fmt "\n", \
- 				      ubi->ubi_num, __func__, ##__VA_ARGS__)
+ 	max77802@09 {
+@@ -36,11 +59,23 @@ Example:
+ 		#size-cells = <0>;
  
- /* Background thread name pattern */
+ 		regulators {
++			ldo1_reg: LDO1 {
++				regulator-name = "vdd_1v0";
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <1000000>;
++				regulator-always-on;
++				regulator-initial-mode = <MAX77802_OPMODE_LP>;
++			};
++
+ 			ldo11_reg: LDO11 {
+ 				regulator-name = "vdd_ldo11";
+ 				regulator-min-microvolt = <1900000>;
+ 				regulator-max-microvolt = <1900000>;
+ 				regulator-always-on;
++				regulator-state-mem {
++					regulator-on-in-suspend;
++					regulator-mode = <MAX77802_OPMODE_LP>;
++				};
+ 			};
+ 
+ 			buck1_reg: BUCK1 {
 -- 
-1.9.3
-
-
+2.1.0
 
