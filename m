@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaKKI5B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:57:01 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1752485AbaKKI7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:59:47 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42690 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124AbaKKI47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:56:59 -0500
-Message-ID: <5461CF56.5010407@nod.at>
-Date: Tue, 11 Nov 2014 09:56:54 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751905AbaKKI7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:59:46 -0500
+Message-ID: <5461CFFA.6030102@ti.com>
+Date: Tue, 11 Nov 2014 14:29:38 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Tanya Brokhman <tlinder@codeaurora.org>
-CC: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>	 <5460F7D8.2030100@nod.at> <1415642273.8868.8.camel@perches.com>	 <5461C7C6.6060604@codeaurora.org> <1415694886.16070.3.camel@perches.com>
-In-Reply-To: <1415694886.16070.3.camel@perches.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: <balbi@ti.com>, Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv70=?= =?UTF-8?B?Zw==?= 
+	<arve@android.com>,
+        Benoit Goby <benoit@android.com>
+Subject: Re: [RFC v5] usb: phy: Hold wakeupsource when USB is enumerated in
+ peripheral mode
+References: <1415095254-24683-1-git-send-email-kiran.kumar@linaro.org> <20141110152645.GF20766@saruman>
+In-Reply-To: <20141110152645.GF20766@saruman>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.11.2014 um 09:34 schrieb Joe Perches:
-> On Tue, 2014-11-11 at 10:24 +0200, Tanya Brokhman wrote:
->> On 11/10/2014 7:57 PM, Joe Perches wrote:
->>> On Mon, 2014-11-10 at 18:37 +0100, Richard Weinberger wrote:
->>>> Am 03.11.2014 um 14:58 schrieb Tanya Brokhman:
->>>>> If there is more then one UBI device mounted, there is no way to
->>>>> distinguish between messages from different UBI devices.
->>>>> Add device number to all ubi layer message types.
->>>
->>> Adding "error" and "warning" to the message logs is
->>> duplicative to the KERN_<LEVEL> logging information.
->>>
->>>>> Changes from V5:
->>>>> 	- Added ptr verification @ ubi_err/ubi_msg/ubi_warn
->>>>> 	Removed extra printing of ubi number
->>>>> 	Removed new messages.
->>>
->>> Did you all ever look at what I posted?
->>
->> I did. Its not my place to re-post your change in my patch. I personally 
->> prefer it the way I've done it but it's just a matter of opinion and 
->> personal preference.
+Hi Felipe,
+
+On Monday 10 November 2014 08:56 PM, Felipe Balbi wrote:
+> Hi,
 > 
-> Don't forget object code size.
+> On Tue, Nov 04, 2014 at 03:30:54PM +0530, Kiran Kumar Raparthy wrote:
+>> @@ -1469,6 +1484,7 @@ static int ab8500_usb_probe(struct platform_device *pdev)
+>>  
+>>  	abx500_usb_link_status_update(ab);
+>>  
+>> +	usb_phy_wsource_init(&ab->phy);
+> 
+> instead of adding this to all drivers, you can just it to
+> usb_add_phy_dev() and conversely, to usb_remove_phy().
 
-That's a good point.
-Tanya's patch is already in linux-ubifs.git (http://git.infradead.org/linux-ubifs.git).
-Later we could patch ubi.h to use Joe's log functions.
+'usb_phy_wsource_init' seems specific to usb and when these drivers are adapted
+to the generic PHY framework we can't add it to phy_create.
 
-But first I'd like to fix the logging style.
-I'm really unhappy with it.
+Should it be added in extcon instead?
 
-The patch does much more that the commit messages says:
-"If there is more then one UBI device mounted, there is no way to
-distinguish between messages from different UBI devices.
-Add device number to all ubi layer message types.
-
-The R/O block driver messages were replaced by pr_* since
-ubi_device structure is not used by it."
-
-There is no hint that it adds the function name to every log message.
-If so, I'd have nack'ed the patch.
-
-Thanks,
-//richard
+Thanks
+Kishon
