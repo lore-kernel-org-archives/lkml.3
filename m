@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaKKPsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:48:42 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56201 "EHLO
+	id S1752005AbaKKPto (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:49:44 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56200 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722AbaKKPsh (ORCPT
+	with ESMTP id S1751823AbaKKPsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:48:37 -0500
+	Tue, 11 Nov 2014 10:48:42 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Jiang Liu <jiang.liu@linux.intel.com>,
@@ -16,9 +16,9 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Will Deacon <will.deacon@arm.com>,
         Catalin marinas <catalin.marinas@arm.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 09/15] irqchip: GICv3: ITS: tables allocators
-Date: Tue, 11 Nov 2014 15:48:07 +0000
-Message-Id: <1415720893-13371-10-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH 13/15] irqchip: GICv3: ITS: plug ITS init into main GICv3 code
+Date: Tue, 11 Nov 2014 15:48:11 +0000
+Message-Id: <1415720893-13371-14-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
 References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
@@ -26,326 +26,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The interrupt translation is driven by a set of tables (device,
-ITT, and collection) to be in the end delivered to a CPU. Also,
-the redistributors rely on a couple of tables (configuration, and
-pending) to deliver the interrupts to the CPUs.
+As the ITS is always a subsystem if GICv3, its probing/init is
+driven by the main GICv3 code.
 
-This patch adds the required allocators for these tables.
+Plug that code in (guarded by a config option).
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-gic-v3-its.c | 293 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 293 insertions(+)
+ drivers/irqchip/irq-gic-v3.c       | 46 +++++++++++++++++++++++++++++++++-----
+ include/linux/irqchip/arm-gic-v3.h |  5 +++++
+ 2 files changed, 45 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
-index f57b6dc..92e0f49 100644
---- a/drivers/irqchip/irq-gic-v3-its.c
-+++ b/drivers/irqchip/irq-gic-v3-its.c
-@@ -90,6 +90,15 @@ struct its_device {
- 	u32			device_id;
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index c2cb081..2261bb8 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -76,9 +76,6 @@ static inline void __iomem *gic_dist_base(struct irq_data *d)
+ 	if (d->hwirq <= 1023)		/* SPI -> dist_base */
+ 		return gic_data.dist_base;
+ 
+-	if (d->hwirq >= 8192)
+-		BUG();		/* LPI Detected!!! */
+-
+ 	return NULL;
+ }
+ 
+@@ -276,11 +273,11 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
+ 	do {
+ 		irqnr = gic_read_iar();
+ 
+-		if (likely(irqnr > 15 && irqnr < 1020)) {
++		if (likely(irqnr > 15 && irqnr < 1020) || irqnr >= 8192) {
+ 			int err;
+ 			err = handle_domain_irq(gic_data.domain, irqnr, regs);
+ 			if (err) {
+-				WARN_ONCE(true, "Unexpected SPI received!\n");
++				WARN_ONCE(true, "Unexpected interrupt received!\n");
+ 				gic_write_eoir(irqnr);
+ 			}
+ 			continue;
+@@ -393,6 +390,11 @@ static void gic_cpu_sys_reg_init(void)
+ 	gic_write_grpen1(1);
+ }
+ 
++static int gic_dist_supports_lpis(void)
++{
++	return !!(readl_relaxed(gic_data.dist_base + GICD_TYPER) & GICD_TYPER_LPIS);
++}
++
+ static void gic_cpu_init(void)
+ {
+ 	void __iomem *rbase;
+@@ -407,6 +409,10 @@ static void gic_cpu_init(void)
+ 
+ 	gic_cpu_config(rbase, gic_redist_wait_for_rwp);
+ 
++	/* Give LPIs a spin */
++	if (IS_ENABLED(CONFIG_ARM_GIC_V3_ITS) && gic_dist_supports_lpis())
++		its_cpu_init();
++
+ 	/* initialise system registers */
+ 	gic_cpu_sys_reg_init();
+ }
+@@ -593,12 +599,21 @@ static struct irq_chip gic_chip = {
+ 	.irq_set_affinity	= gic_set_affinity,
  };
  
-+static LIST_HEAD(its_nodes);
-+static DEFINE_SPINLOCK(its_lock);
-+static struct irq_domain *lpi_domain;
-+static struct device_node *gic_root_node;
-+static struct rdists *gic_rdists;
++#define GIC_ID_NR		(1U << gic_data.rdists.id_bits)
 +
-+#define gic_data_rdist()		(raw_cpu_ptr(gic_rdists->rdist))
-+#define gic_data_rdist_rd_base()	(gic_data_rdist()->rd_base)
+ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 			      irq_hw_number_t hw)
+ {
+ 	/* SGIs are private to the core kernel */
+ 	if (hw < 16)
+ 		return -EPERM;
++	/* Nothing here */
++	if (hw >= gic_data.irq_nr && hw < 8192)
++		return -EPERM;
++	/* Off limits */
++	if (hw >= GIC_ID_NR)
++		return -EPERM;
 +
- /*
-  * ITS command descriptors - parameters to be encoded in a command
-  * block.
-@@ -688,3 +697,287 @@ static void its_lpi_free(unsigned long *bitmap, int base, int nr_ids)
- 
- 	kfree(bitmap);
+ 	/* PPIs */
+ 	if (hw < 32) {
+ 		irq_set_percpu_devid(irq);
+@@ -614,7 +629,20 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 		irq_set_handler(irq, handle_fasteoi_irq);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+ 	}
+-	irq_set_chip_data(irq, d->host_data);
++	/* LPIs */
++	if (hw >= 8192 && hw < GIC_ID_NR) {
++		if (!gic_dist_supports_lpis())
++			return -EPERM;
++		irq_domain_set_hwirq_and_chip(d, irq, hw,
++					      &gic_chip, d->host_data);
++		/*
++		 * We do NOT set the flow here, as this is handled at
++		 * the top level domain (most probably the MSI
++		 * one). We may have to revisit this at some point...
++		 */
++		set_irq_flags(irq, IRQF_VALID);
++	}
++
+ 	return 0;
  }
+ 
+@@ -635,6 +663,9 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
+ 	case 1:			/* PPI */
+ 		*out_hwirq = intspec[1] + 16;
+ 		break;
++	case GIC_IRQ_TYPE_LPI:	/* LPI */
++		*out_hwirq = intspec[1];
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -761,6 +792,9 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
+ 
+ 	set_handle_irq(gic_handle_irq);
+ 
++	if (IS_ENABLED(CONFIG_ARM_GIC_V3_ITS) && gic_dist_supports_lpis())
++		its_init(node, &gic_data.rdists, gic_data.domain);
 +
-+/*
-+ * We allocate 64kB for PROPBASE. That gives us at most 64K LPIs to
-+ * deal with (one configuration byte per interrupt). PENDBASE has to
-+ * be 64kB aligned (one bit per LPI, plus 8192 bits for SPI/PPI/SGI).
-+ */
-+#define LPI_PROPBASE_SZ		SZ_64K
-+#define LPI_PENDBASE_SZ		(LPI_PROPBASE_SZ / 8 + SZ_1K)
+ 	gic_smp_init();
+ 	gic_dist_init();
+ 	gic_cpu_init();
+diff --git a/include/linux/irqchip/arm-gic-v3.h b/include/linux/irqchip/arm-gic-v3.h
+index 2a7486b..479a082 100644
+--- a/include/linux/irqchip/arm-gic-v3.h
++++ b/include/linux/irqchip/arm-gic-v3.h
+@@ -318,6 +318,11 @@ static inline void gic_write_eoir(u64 irq)
+ 	isb();
+ }
+ 
++struct irq_domain;
++int its_cpu_init(void);
++int its_init(struct device_node *node, struct rdists *rdists,
++	     struct irq_domain *domain);
 +
-+/*
-+ * This is how many bits of ID we need, including the useless ones.
-+ */
-+#define LPI_NRBITS		ilog2(LPI_PROPBASE_SZ + SZ_8K)
-+
-+#define LPI_PROP_DEFAULT_PRIO	0xa0
-+
-+static int __init its_alloc_lpi_tables(void)
-+{
-+	phys_addr_t paddr;
-+
-+	gic_rdists->prop_page = alloc_pages(GFP_NOWAIT,
-+					   get_order(LPI_PROPBASE_SZ));
-+	if (!gic_rdists->prop_page) {
-+		pr_err("Failed to allocate PROPBASE\n");
-+		return -ENOMEM;
-+	}
-+
-+	paddr = page_to_phys(gic_rdists->prop_page);
-+	pr_info("GIC: using LPI property table @%pa\n", &paddr);
-+
-+	/* Priority 0xa0, Group-1, disabled */
-+	memset(page_address(gic_rdists->prop_page),
-+	       LPI_PROP_DEFAULT_PRIO | LPI_PROP_GROUP1,
-+	       LPI_PROPBASE_SZ);
-+
-+	/* Make sure the GIC will observe the written configuration */
-+	__flush_dcache_area(page_address(gic_rdists->prop_page), LPI_PROPBASE_SZ);
-+
-+	return 0;
-+}
-+
-+static const char *its_base_type_string[] = {
-+	[GITS_BASER_TYPE_DEVICE]	= "Devices",
-+	[GITS_BASER_TYPE_VCPU]		= "Virtual CPUs",
-+	[GITS_BASER_TYPE_CPU]		= "Physical CPUs",
-+	[GITS_BASER_TYPE_COLLECTION]	= "Interrupt Collections",
-+	[GITS_BASER_TYPE_RESERVED5] 	= "Reserved (5)",
-+	[GITS_BASER_TYPE_RESERVED6] 	= "Reserved (6)",
-+	[GITS_BASER_TYPE_RESERVED7] 	= "Reserved (7)",
-+};
-+
-+static void its_free_tables(struct its_node *its)
-+{
-+	int i;
-+
-+	for (i = 0; i < GITS_BASER_NR_REGS; i++) {
-+		if (its->tables[i]) {
-+			free_page((unsigned long)its->tables[i]);
-+			its->tables[i] = NULL;
-+		}
-+	}
-+}
-+
-+static int its_alloc_tables(struct its_node *its)
-+{
-+	int err;
-+	int i;
-+	int psz = PAGE_SIZE;
-+	u64 shr = GITS_BASER_InnerShareable;
-+
-+	for (i = 0; i < GITS_BASER_NR_REGS; i++) {
-+		u64 val = readq_relaxed(its->base + GITS_BASER + i * 8);
-+		u64 type = GITS_BASER_TYPE(val);
-+		u64 entry_size = GITS_BASER_ENTRY_SIZE(val);
-+		u64 tmp;
-+		void *base;
-+
-+		if (type == GITS_BASER_TYPE_NONE)
-+			continue;
-+
-+		/* We're lazy and only allocate a single page for now */
-+		base = (void *)get_zeroed_page(GFP_KERNEL);
-+		if (!base) {
-+			err = -ENOMEM;
-+			goto out_free;
-+		}
-+
-+		its->tables[i] = base;
-+
-+retry_baser:
-+		val = (virt_to_phys(base) 				 |
-+		       (type << GITS_BASER_TYPE_SHIFT)			 |
-+		       ((entry_size - 1) << GITS_BASER_ENTRY_SIZE_SHIFT) |
-+		       GITS_BASER_WaWb					 |
-+		       shr						 |
-+		       GITS_BASER_VALID);
-+
-+		switch (psz) {
-+		case SZ_4K:
-+			val |= GITS_BASER_PAGE_SIZE_4K;
-+			break;
-+		case SZ_16K:
-+			val |= GITS_BASER_PAGE_SIZE_16K;
-+			break;
-+		case SZ_64K:
-+			val |= GITS_BASER_PAGE_SIZE_64K;
-+			break;
-+		}
-+
-+		val |= (PAGE_SIZE / psz) - 1;
-+
-+		writeq_relaxed(val, its->base + GITS_BASER + i * 8);
-+		tmp = readq_relaxed(its->base + GITS_BASER + i * 8);
-+
-+		if ((val ^ tmp) & GITS_BASER_SHAREABILITY_MASK) {
-+			/*
-+			 * Shareability didn't stick. Just use
-+			 * whatever the read reported, which is likely
-+			 * to be the only thing this redistributor
-+			 * supports.
-+			 */
-+			shr = tmp & GITS_BASER_SHAREABILITY_MASK;
-+			goto retry_baser;
-+		}
-+
-+		if ((val ^ tmp) & GITS_BASER_PAGE_SIZE_MASK) {
-+			/*
-+			 * Page size didn't stick. Let's try a smaller
-+			 * size and retry. If we reach 4K, then
-+			 * something is horribly wrong...
-+			 */
-+			switch (psz) {
-+			case SZ_16K:
-+				psz = SZ_4K;
-+				goto retry_baser;
-+			case SZ_64K:
-+				psz = SZ_16K;
-+				goto retry_baser;
-+			}
-+		}
-+
-+		if (val != tmp) {
-+			pr_err("ITS: %s: GITS_BASER%d doesn't stick: %lx %lx\n",
-+			       its->msi_chip.of_node->full_name, i,
-+			       (unsigned long) val, (unsigned long) tmp);
-+			err = -ENXIO;
-+			goto out_free;
-+		}
-+
-+		pr_info("ITS: allocated %d %s @%lx (psz %dK, shr %d)\n",
-+			(int)(PAGE_SIZE / entry_size),
-+			its_base_type_string[type],
-+			(unsigned long)virt_to_phys(base),
-+			psz / SZ_1K, (int)shr >> GITS_BASER_SHAREABILITY_SHIFT);
-+	}
-+
-+	return 0;
-+
-+out_free:
-+	its_free_tables(its);
-+
-+	return err;
-+}
-+
-+static int its_alloc_collections(struct its_node *its)
-+{
-+	its->collections = kzalloc(nr_cpu_ids * sizeof(*its->collections),
-+				   GFP_KERNEL);
-+	if (!its->collections)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static void its_cpu_init_lpis(void)
-+{
-+	void __iomem *rbase = gic_data_rdist_rd_base();
-+	struct page *pend_page;
-+	u64 val, tmp;
-+
-+	/* If we didn't allocate the pending table yet, do it now */
-+	pend_page = gic_data_rdist()->pend_page;
-+	if (!pend_page) {
-+		phys_addr_t paddr;
-+		/*
-+		 * The pending pages have to be at least 64kB aligned,
-+		 * hence the 'max(LPI_PENDBASE_SZ, SZ_64K)' below.
-+		 */
-+		pend_page = alloc_pages(GFP_NOWAIT | __GFP_ZERO,
-+					get_order(max(LPI_PENDBASE_SZ, SZ_64K)));
-+		if (!pend_page) {
-+			pr_err("Failed to allocate PENDBASE for CPU%d\n",
-+			       smp_processor_id());
-+			return;
-+		}
-+
-+		/* Make sure the GIC will observe the zero-ed page */
-+		__flush_dcache_area(page_address(pend_page), LPI_PENDBASE_SZ);
-+
-+		paddr = page_to_phys(pend_page);
-+		pr_info("CPU%d: using LPI pending table @%pa\n",
-+			smp_processor_id(), &paddr);
-+		gic_data_rdist()->pend_page = pend_page;
-+	}
-+
-+	/* Disable LPIs */
-+	val = readl_relaxed(rbase + GICR_CTLR);
-+	val &= ~GICR_CTLR_ENABLE_LPIS;
-+	writel_relaxed(val, rbase + GICR_CTLR);
-+
-+	/*
-+	 * Make sure any change to the table is observable by the GIC.
-+	 */
-+	dsb(sy);
-+
-+	/* set PROPBASE */
-+	val = (page_to_phys(gic_rdists->prop_page) |
-+	       GICR_PROPBASER_InnerShareable |
-+	       GICR_PROPBASER_WaWb |
-+	       ((LPI_NRBITS - 1) & GICR_PROPBASER_IDBITS_MASK));
-+
-+	writeq_relaxed(val, rbase + GICR_PROPBASER);
-+	tmp = readq_relaxed(rbase + GICR_PROPBASER);
-+
-+	if ((tmp ^ val) & GICR_PROPBASER_SHAREABILITY_MASK) {
-+		pr_info_once("GIC: using cache flushing for LPI property table\n");
-+		gic_rdists->flags |= RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING;
-+	}
-+
-+	/* set PENDBASE */
-+	val = (page_to_phys(pend_page) |
-+	       GICR_PROPBASER_InnerShareable |
-+	       GICR_PROPBASER_WaWb);
-+
-+	writeq_relaxed(val, rbase + GICR_PENDBASER);
-+
-+	/* Enable LPIs */
-+	val = readl_relaxed(rbase + GICR_CTLR);
-+	val |= GICR_CTLR_ENABLE_LPIS;
-+	writel_relaxed(val, rbase + GICR_CTLR);
-+
-+	/* Make sure the GIC has seen the above */
-+	dsb(sy);
-+}
-+
-+static void its_cpu_init_collection(void)
-+{
-+	struct its_node *its;
-+	int cpu;
-+
-+	spin_lock(&its_lock);
-+	cpu = smp_processor_id();
-+
-+	list_for_each_entry(its, &its_nodes, entry) {
-+		u64 target;
-+
-+		/*
-+		 * We now have to bind each collection to its target
-+		 * redistributor.
-+		 */
-+		if (readq_relaxed(its->base + GITS_TYPER) & GITS_TYPER_PTA) {
-+			/*
-+			 * This ITS wants the physical address of the
-+			 * redistributor.
-+			 */
-+			target = gic_data_rdist()->phys_base;
-+		} else {
-+			/*
-+			 * This ITS wants a linear CPU number.
-+			 */
-+			target = readq_relaxed(gic_data_rdist_rd_base() + GICR_TYPER);
-+			target = GICR_TYPER_CPU_NUMBER(target);
-+		}
-+
-+		/* Perform collection mapping */
-+		its->collections[cpu].target_address = target;
-+		its->collections[cpu].col_id = cpu;
-+
-+		its_send_mapc(its, &its->collections[cpu], 1);
-+		its_send_invall(its, &its->collections[cpu]);
-+	}
-+
-+	spin_unlock(&its_lock);
-+}
+ #endif
+ 
+ #endif
 -- 
 2.0.4
 
