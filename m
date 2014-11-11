@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaKKCMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 21:12:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24860 "EHLO mga01.intel.com"
+	id S1752326AbaKKCNI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 21:13:08 -0500
+Received: from mga01.intel.com ([192.55.52.88]:64727 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877AbaKKCK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 21:10:56 -0500
+	id S1751618AbaKKCKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 21:10:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="414590936"
+   d="scan'208";a="414590927"
 From: Stephanie Wallick <stephanie.s.wallick@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         devel@driverdev.osuosl.org, "Sean O. Stalley" <sean.stalley@intel.com>
-Subject: [V2 PATCH 09/10] added tools for building/loading media agnostic (MA) USB drivers
-Date: Mon, 10 Nov 2014 18:09:40 -0800
-Message-Id: <1415671781-11351-9-git-send-email-stephanie.s.wallick@intel.com>
+Subject: [V2 PATCH 07/10] added media agnostic (MA) USB management packet handling
+Date: Mon, 10 Nov 2014 18:09:38 -0800
+Message-Id: <1415671781-11351-7-git-send-email-stephanie.s.wallick@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1415671781-11351-1-git-send-email-stephanie.s.wallick@intel.com>
 References: <MA USB drivers>
@@ -24,1167 +24,1010 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds various scripts for building, loading and unloading the MA USB
-drivers and a utility that can be used for connecting and disconnecting
-the host and device drivers.
+The Media Agnostic USB Specification outlines a number of managment
+packet types for management and control functions. Each function is
+initiated with a particular type of managment request packet and
+completed with the corresponding management response packet. This
+is where we fill the fields for outgoing management packets and parse
+and handle incoming management packets.
 
 Signed-off-by: Sean O. Stalley <sean.stalley@intel.com>
 Signed-off-by: Stephanie Wallick <stephanie.s.wallick@intel.com>
 ---
- drivers/staging/mausb/mausb-util/AUTHORS           |   2 +
- drivers/staging/mausb/mausb-util/Android.mk        |   3 +
- drivers/staging/mausb/mausb-util/ChangeLog         |   0
- drivers/staging/mausb/mausb-util/INSTALL           |   0
- drivers/staging/mausb/mausb-util/LICENCE           |   0
- drivers/staging/mausb/mausb-util/Makefile          |  14 ++
- drivers/staging/mausb/mausb-util/README            |  68 +++++++
- drivers/staging/mausb/mausb-util/config.mk         |  17 ++
- drivers/staging/mausb/mausb-util/src/Android.mk    |  13 ++
- drivers/staging/mausb/mausb-util/src/Makefile      |  18 ++
- drivers/staging/mausb/mausb-util/src/connect.c     |  69 +++++++
- drivers/staging/mausb/mausb-util/src/connect.h     |  22 +++
- drivers/staging/mausb/mausb-util/src/mausb.c       | 201 +++++++++++++++++++++
- drivers/staging/mausb/mausb-util/src/mausb.h       |  64 +++++++
- drivers/staging/mausb/mausb-util/src/mausb_ioctl.h |  24 +++
- drivers/staging/mausb/mausb-util/src/utils.c       |  94 ++++++++++
- drivers/staging/mausb/scripts/Android.mk           |  38 ++++
- .../staging/mausb/scripts/build_load_connect.sh    |  69 +++++++
- drivers/staging/mausb/scripts/load_gzero.sh        |   5 +
- .../mausb/scripts/load_mausb_android-dev.sh        |  31 ++++
- .../mausb/scripts/load_mausb_android-host.sh       |  31 ++++
- .../staging/mausb/scripts/load_mausb_android.sh    |  33 ++++
- drivers/staging/mausb/scripts/load_script.sh       | 125 +++++++++++++
- drivers/staging/mausb/scripts/modprobify.sh        |  10 +
- drivers/staging/mausb/scripts/unload_gzero.sh      |   5 +
- 25 files changed, 956 insertions(+)
- create mode 100644 drivers/staging/mausb/mausb-util/AUTHORS
- create mode 100644 drivers/staging/mausb/mausb-util/Android.mk
- create mode 100644 drivers/staging/mausb/mausb-util/ChangeLog
- create mode 100644 drivers/staging/mausb/mausb-util/INSTALL
- create mode 100644 drivers/staging/mausb/mausb-util/LICENCE
- create mode 100644 drivers/staging/mausb/mausb-util/Makefile
- create mode 100644 drivers/staging/mausb/mausb-util/README
- create mode 100644 drivers/staging/mausb/mausb-util/config.mk
- create mode 100644 drivers/staging/mausb/mausb-util/src/Android.mk
- create mode 100644 drivers/staging/mausb/mausb-util/src/Makefile
- create mode 100644 drivers/staging/mausb/mausb-util/src/connect.c
- create mode 100644 drivers/staging/mausb/mausb-util/src/connect.h
- create mode 100644 drivers/staging/mausb/mausb-util/src/mausb.c
- create mode 100644 drivers/staging/mausb/mausb-util/src/mausb.h
- create mode 100644 drivers/staging/mausb/mausb-util/src/mausb_ioctl.h
- create mode 100644 drivers/staging/mausb/mausb-util/src/utils.c
- create mode 100644 drivers/staging/mausb/scripts/Android.mk
- create mode 100755 drivers/staging/mausb/scripts/build_load_connect.sh
- create mode 100755 drivers/staging/mausb/scripts/load_gzero.sh
- create mode 100755 drivers/staging/mausb/scripts/load_mausb_android-dev.sh
- create mode 100755 drivers/staging/mausb/scripts/load_mausb_android-host.sh
- create mode 100755 drivers/staging/mausb/scripts/load_mausb_android.sh
- create mode 100755 drivers/staging/mausb/scripts/load_script.sh
- create mode 100755 drivers/staging/mausb/scripts/modprobify.sh
- create mode 100755 drivers/staging/mausb/scripts/unload_gzero.sh
+ drivers/staging/mausb/drivers/mausb_mgmt.c | 888 +++++++++++++++++++++++++++++
+ drivers/staging/mausb/drivers/mausb_mgmt.h |  88 +++
+ 2 files changed, 976 insertions(+)
+ create mode 100755 drivers/staging/mausb/drivers/mausb_mgmt.c
+ create mode 100644 drivers/staging/mausb/drivers/mausb_mgmt.h
 
-diff --git a/drivers/staging/mausb/mausb-util/AUTHORS b/drivers/staging/mausb/mausb-util/AUTHORS
-new file mode 100644
-index 0000000..6312e6a
+diff --git a/drivers/staging/mausb/drivers/mausb_mgmt.c b/drivers/staging/mausb/drivers/mausb_mgmt.c
+new file mode 100755
+index 0000000..7301ae3
 --- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/AUTHORS
-@@ -0,0 +1,2 @@
-+Sean O. Stalley <sean.stalley@intel.com>
-+Aymen Zayet <aymen.zayet@intel.com>
-diff --git a/drivers/staging/mausb/mausb-util/Android.mk b/drivers/staging/mausb/mausb-util/Android.mk
-new file mode 100644
-index 0000000..c455f97
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/Android.mk
-@@ -0,0 +1,3 @@
-+LOCAL_PATH := $(call my-dir)
++++ b/drivers/staging/mausb/drivers/mausb_mgmt.c
+@@ -0,0 +1,888 @@
++/* name:	mausb_mgmt.c
++ * description: Handles management packet operations common to both
++ *              hosts and devices. This includes parsing incoming packets,
++ *              as well as creating outgoing packets.
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
 +
-+include $(call all-subdir-makefiles)
-diff --git a/drivers/staging/mausb/mausb-util/ChangeLog b/drivers/staging/mausb/mausb-util/ChangeLog
-new file mode 100644
-index 0000000..e69de29
-diff --git a/drivers/staging/mausb/mausb-util/INSTALL b/drivers/staging/mausb/mausb-util/INSTALL
-new file mode 100644
-index 0000000..e69de29
-diff --git a/drivers/staging/mausb/mausb-util/LICENCE b/drivers/staging/mausb/mausb-util/LICENCE
-new file mode 100644
-index 0000000..e69de29
-diff --git a/drivers/staging/mausb/mausb-util/Makefile b/drivers/staging/mausb/mausb-util/Makefile
-new file mode 100644
-index 0000000..abd5fe0
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/Makefile
-@@ -0,0 +1,14 @@
-+include config.mk
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
 +
-+.PHONY: $(BINARY_NAME) all clean
++#include <linux/usb.h>
++#include <linux/slab.h>
 +
-+all: $(BINARY_NAME)
++#include "mausb_pkt.h"
++#include "mausb_mgmt.h"
++#include "mausb_mem.h"
++#include "mausb_msapi.h"
++#include "mausb_const.h"
 +
-+$(BINARY_NAME):
-+	$(MAKE) -C src/
-+	cp -rf src/$(BINARY_NAME) .
-+
-+
-+clean:
-+	$(MAKE) -C src/ clean
-+	rm -rf $(BINARY_NAME) *~
-diff --git a/drivers/staging/mausb/mausb-util/README b/drivers/staging/mausb/mausb-util/README
-new file mode 100644
-index 0000000..c921355
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/README
-@@ -0,0 +1,68 @@
-+#    #   ##   #    #  ####  #####     #    # ##### # #      # ##### #   #
-+##  ##  #  #  #    # #      #    #    #    #   #   # #      #   #    # #
-+# ## # #    # #    #  ####  #####     #    #   #   # #      #   #     #
-+#    # ###### #    #      # #    #    #    #   #   # #      #   #     #
-+#    # #    # #    # #    # #    #    #    #   #   # #      #   #     #
-+#    # #    #  ####   ####  #####      ####    #   # ###### #   #     #
-+
-+
-+Author: Aymen Zayet
-+License: GPL2
-+Version: 0.1
-+
-+1. Description
-+--------------
-+This tool includes many commands that help to test / debug the MAUSB devices.
-+mausb bin provides to the host a way to connect and disconnect from the MAUSB device
-+by selecting the mode (ip or llc).
-+
-+2. Usage
-+--------
-+(*) The following steps can be used to test the connection between two Moorefield based devices :
-+
-+>> adb devices
-+List of devices attached
-+INV140200379	device
-+INV140200169	device
-+
-+for device INV140200379:
-+>>adb -s INV140200379 shell busybox ifconfig wlan0
-+wlan0     Link encap:Ethernet  HWaddr 78:FF:57:00:6D:7A
-+          inet addr:192.168.2.100  Bcast:192.168.2.255  Mask:255.255.255.0
-+          inet6 addr: fe80::7aff:57ff:fe00:6d7a/64 Scope:Link
-+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-+          RX packets:264 errors:0 dropped:0 overruns:0 frame:0
-+          TX packets:287 errors:0 dropped:0 overruns:0 carrier:0
-+          collisions:0 txqueuelen:1000
-+          RX bytes:29906 (29.2 KiB)  TX bytes:29267 (28.5 KiB)
-+
-+for device INV140200169:
-+>> adb -s INV140200169 shell busybox ifconfig wlan0
-+wlan0     Link encap:Ethernet  HWaddr 78:FF:57:00:6C:A8
-+          inet addr:192.168.2.113  Bcast:192.168.2.255  Mask:255.255.255.0
-+          inet6 addr: fe80::7aff:57ff:fe00:6ca8/64 Scope:Link
-+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-+          RX packets:268 errors:0 dropped:0 overruns:0 frame:0
-+          TX packets:290 errors:0 dropped:0 overruns:0 carrier:0
-+          collisions:0 txqueuelen:1000
-+          RX bytes:31168 (30.4 KiB)  TX bytes:30413 (29.7 KiB)
-+
-+run INV140200379 as a MAUSB host:
-+>> adb -s INV140200379 shell load_mausb_android-host.sh
-+mausb load process complete
-+
-+then run INV140200169 as MAUSB device:
-+>>adb -s INV140200169 shell load_mausb_android-dev.sh
-+mausb load process complete
-+
-+now on the device side , run :
-+>> mausb --mode llc --connect --addr 78:FF:57:00:6D:7A
-+
-+then from the host side, run :
-+>> mausb --mode llc --connect --addr 78:FF:57:00:6C:A8 
-+
-+3. Documentation
-+----------------
-+
-+4. Miscellaneous
-+----------------
-diff --git a/drivers/staging/mausb/mausb-util/config.mk b/drivers/staging/mausb/mausb-util/config.mk
-new file mode 100644
-index 0000000..d272823
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/config.mk
-@@ -0,0 +1,17 @@
-+SRCDIR          = $(shell pwd)
-+DESTDIR         = /usr/local/bin
-+
-+CC              = gcc
-+CFLAGS          = -g -ggdb -D __DEBUG
-+LDFLAGS         =
-+SHELL           = /bin/sh
-+#CFLAGS         = -O2 -fomit-frame-pointer                                                 
-+
-+PROJECT_NAME    = mausb
-+PROJECT_VERSION = 0.1
-+
-+BINARY_NAME     = $(PROJECT_NAME)
-+
-+SOURCE_FILES    = utils.c connect.c mausb.c
-+
-+OBJECT_FILES    = $(SOURCE_FILES:.c=.o)
-diff --git a/drivers/staging/mausb/mausb-util/src/Android.mk b/drivers/staging/mausb/mausb-util/src/Android.mk
-new file mode 100644
-index 0000000..881c5fc
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/Android.mk
-@@ -0,0 +1,13 @@
-+LOCAL_PATH := $(call my-dir)
-+include $(CLEAR_VARS)
-+LOCAL_CFLAGS += -Wall -g
-+LOCAL_LDFLAGS +=
-+LOCAL_LDLIBS += -lpthread -lm -ldl
-+LOCAL_SRC_FILES:= \
-+	mausb.c \
-+	utils.c \
-+	connect.c
-+LOCAL_C_INCLUDES += linux/modules/ma-usb/drivers
-+LOCAL_MODULE := mausb
-+LOCAL_MODULE_TAGS := optional
-+include $(BUILD_EXECUTABLE)
-diff --git a/drivers/staging/mausb/mausb-util/src/Makefile b/drivers/staging/mausb/mausb-util/src/Makefile
-new file mode 100644
-index 0000000..deb98a6
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/Makefile
-@@ -0,0 +1,18 @@
-+include ../config.mk
-+
-+all: $(BINARY_NAME)
-+
-+$(BINARY_NAME): $(OBJECT_FILES)
-+	@echo -n "(LD)" $@ " "
-+	@$(CC) $(LDFLAGS) $(CFLAGS) $^ -o $@
-+	@echo OK
-+
-+%.o: %.c
-+	@echo -n "(CC)" $@ " "
-+	@$(CC) $(CFLAGS) -c $< -o $@
-+	@echo OK
-+
-+clean:
-+	rm -rf *.[oas] .*.flags *.ko .*.cmd .*.d .*.tmp *.mod.c .tmp_versions Module*.symv\
-+ers
-+	rm -f $(BINARY_NAME) *~
-\ No newline at end of file
-diff --git a/drivers/staging/mausb/mausb-util/src/connect.c b/drivers/staging/mausb/mausb-util/src/connect.c
-new file mode 100644
-index 0000000..6d6936b
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/connect.c
-@@ -0,0 +1,69 @@
-+/*
-+  (c) Aymen Zayet (aymen.zayet@intel.com)
-+
-+  This file is part of mausb utility.
-+
-+  mausb is free software: you can redistribute it and/or modify
-+  it under the terms of the GNU General Public License as published by
-+  the Free Software Foundation, either version 2 of the License, or
-+  (at your option) any later version.
-+
-+  mausb is distributed in the hope that it will be useful,
-+  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-+  GNU General Public License for more details.
-+
-+  You should have received a copy of the GNU General Public License
-+  along with mausb. If not, see <http://www.gnu.org/licenses/>.
-+*/
-+#include "mausb.h"
-+
-+int set_ipv4_addr(mausb_t *config)
++/**
++ * Returns the ma_dev structure for a given device.
++ */
++struct ma_dev *mausb_mgmt_to_ma_dev(struct mausb_mgmt *mgmt)
 +{
-+	char buf[128] = {0};
-+	printf("%s: setting ip address\n", __func__);
-+	sprintf(buf, "%u", config->ip);
-+	if (0 <= ioctl(config->device, IOCTL_SET_IP, buf))
-+		return 0;
-+	return errno;
++	return container_of(mgmt, struct ma_dev, mgmt);
 +}
++EXPORT_SYMBOL(mausb_mgmt_to_ma_dev);
 +
-+int set_mac_addr(mausb_t *config)
++/**
++ * Opens a connection to the Media Specific driver to pass management packets
++ * to a particular MA device.
++ *
++ * The caller should be holding the lock protecting the MA device's data.
++ *
++ * Returns 0 on success, or a negative errno on failure.
++ *
++ * @mgmt:		The struct for the management channel to the MA device.
++ *              	after this function
++ * @drv:		The specific medium we are communicating with
++ * @transfer_pkt:	A pointer to the function that should be called by the
++ *                    	MS driver to pass incoming management packets to the
++ *                    	MA driver.
++ * @pkt_sent:		Completion callback for outgoing management packets.
++ *			This function will be called by the MS driver once a
++ *			packet has been sent to the medium to indicate that
++ *			it is done with the packet. Note: the completion
++ *			callback can be disabled by setting this to NULL.
++ */
++int mausb_add_mgmt_channel(struct mausb_mgmt *mgmt, struct mausb_ms_drv *drv,
++		int  (*transfer_pkt)(struct ms_pkt *pkt, void *context),
++		void (*pkt_sent)(struct ms_pkt *pkt))
 +{
-+	char buf[128] = {0};
-+	printf("%s: setting mac address\n", __func__);
-+	memcpy(buf, config->mac, 6);
-+	if (0 <= ioctl(config->device, IOCTL_SET_MAC, buf)) {
-+		printf("Msg from kernel space : mac %s set successfully\n",
-+		       (char *)buf);
-+		return 0;
-+	}
-+	return errno;
-+}
-+int set_port(mausb_t *config)
-+{
-+	char buf[128] = {0};
-+	printf("%s: setting port\n", __func__);
-+	sprintf(buf, "%u", config->port);
-+	if (0 <= ioctl(config->device, IOCTL_SET_PORT, buf))
-+		return 0;
-+	return errno;
-+}
++	int				ret = 0;
++	struct mausb_transfer_pair	tx_pair;
++	unsigned long			irq_flags;
 +
-+int connect_device(mausb_t *config)
-+{
-+	char buf[128] = {0};
-+	printf("%s: connecting device\n", __func__);
-+	if (0 <= ioctl(config->device, IOCTL_GADGET_C, buf))
-+		return 0;
-+	return errno;
-+}
++	tx_pair.to_ma.transfer_packet = transfer_pkt;
++	tx_pair.pkt_sent = pkt_sent;
++	tx_pair.to_ma.context = mgmt;
++	tx_pair.handle = MAUSB_MGMT_HANDLE;
 +
-+int disconnect_device(mausb_t *config)
-+{
-+	char buf[128] = {0};
-+	printf("%s: disconnecting device\n", __func__);
-+	if (0 <= ioctl(config->device, IOCTL_GADGET_D, buf))
-+		return 0;
-+	return errno;
-+}
-diff --git a/drivers/staging/mausb/mausb-util/src/connect.h b/drivers/staging/mausb/mausb-util/src/connect.h
-new file mode 100644
-index 0000000..30bd1c5
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/connect.h
-@@ -0,0 +1,22 @@
-+/*
-+  (c) Aymen Zayet (aymen.zayet@intel.com)
++	ret = drv->ops->add_transfer_pair(&tx_pair);
 +
-+  This file is part of mausb utility.
-+
-+  mausb is free software: you can redistribute it and/or modify
-+  it under the terms of the GNU General Public License as published by
-+  the Free Software Foundation, either version 2 of the License, or
-+  (at your option) any later version.
-+
-+  mausb is distributed in the hope that it will be useful,
-+  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-+  GNU General Public License for more details.
-+
-+  You should have received a copy of the GNU General Public License
-+  along with mausb. If not, see <http://www.gnu.org/licenses/>.
-+*/
-+#ifndef CONNECT_H_
-+#define CONNECT_H_
-+
-+#endif /* CONNECT_H_ */
-diff --git a/drivers/staging/mausb/mausb-util/src/mausb.c b/drivers/staging/mausb/mausb-util/src/mausb.c
-new file mode 100644
-index 0000000..67903a6
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/mausb.c
-@@ -0,0 +1,201 @@
-+/*
-+  (c) Aymen Zayet (aymen.zayet@intel.com)
-+
-+  This file is part of mausb utility.
-+
-+  mausb is free software: you can redistribute it and/or modify
-+  it under the terms of the GNU General Public License as published by
-+  the Free Software Foundation, either version 2 of the License, or
-+  (at your option) any later version.
-+
-+  mausb is distributed in the hope that it will be useful,
-+  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-+  GNU General Public License for more details.
-+
-+  You should have received a copy of the GNU General Public License
-+  along with mausb. If not, see <http://www.gnu.org/licenses/>.
-+*/
-+
-+#include "mausb.h"
-+
-+
-+
-+static struct option l_opts[] = {
-+	/* no_argument options */
-+	{"help", no_argument, 0, 'h'},
-+	{"verbose", no_argument, 0, 'v'},
-+	{"connect", no_argument, 0, 'c'},
-+	{"disconnect", no_argument, 0, 'd'},
-+
-+	/* required_argument options */
-+	{"addr", required_argument, 0, 'a'},
-+	{"port", required_argument, 0, 'p'},
-+	{"mode", required_argument, 0, 'm'},
-+
-+	/* end */
-+	{0, 0, 0, 0},
-+};
-+
-+static void usage(const char *this)
-+{
-+	fprintf(stderr,
-+		"Usage: "
-+		"\t%s [[options]] command"
-+		"\n\t\t [--help/-h] show this help"
-+		"\n\t\t [--verbose/-h] Add more trace about what's going on"
-+		"\n\t\t [--mode/-m] mausb mode to be used : ip (default) or llc"
-+		"\n\t\t [--connect/-c] connect to mausb device"
-+		"\n\t\t [--disconnect/-d] disconnect from mausb device"
-+		"\n\t\t [--port/-p] set the port number in case of tcp connection"
-+		"\n\t\t [--addr/-a] ip or mac address depending on the given mode"
-+		"\n", this);
-+	return ;
-+}
-+
-+static int check_config(void)
-+{
-+	int ret;
-+
-+	if (config.cmd == disconnect)
-+		return 0;
-+
-+	switch (config.mode) {
-+	case ip:
-+		ret = !config.port;
-+		break;
-+	case llc:
-+		ret = !config.mac;
-+		break;
-+	default:
-+		ret = !! config.mode;
++	if (ret >= 0) {
++		spin_lock_irqsave(mgmt->ma_dev_lock, irq_flags);
++		mgmt->tx_pair = tx_pair;
++		spin_unlock_irqrestore(mgmt->ma_dev_lock, irq_flags);
 +	}
 +
-+	return ((config.cmd > max_command) ||
-+		(config.mode > supported_mode) ||
-+		ret);
-+}
-+
-+static void print_config(void)
-+{
-+	return ;
-+}
-+
-+static int process_options(int argc, char **argv)
-+{
-+	int option;
-+
-+	memset(&config, 0, sizeof(mausb_t));
-+        config.mode = ip;
-+	while ((option = getopt_long(argc, argv, "hfp:a:cdvm:", l_opts, NULL)) != EOF) {
-+		switch(option) {
-+		case 'h': // help
-+			usage(argv[0]);
-+			exit(0);
-+			break;
-+
-+		case 'v': // verbose
-+			config.verbose = 1;
-+			break;
-+ 
-+		case 'c': // connect
-+			config.cmd = connect;
-+			break;
-+
-+		case 'd': // disconnect
-+			config.cmd = disconnect;
-+			break;
-+
-+		case 'm': // mode
-+			if (strlen(optarg) == 3 && !strncmp(optarg, "llc", 3))
-+				config.mode = llc;
-+			else if (strlen(optarg) == 2 && !strncmp(optarg, "ip", 2))
-+				config.mode = ip;
-+			else {
-+				fprintf(stderr, "could not determine mode\n");
-+				goto err_options;
-+			}
-+			break;
-+
-+		case 'a': // addr
-+			if (config.mode == llc) {
-+				if (MACADDR_STR_SIZE != strlen(optarg))
-+					goto err_options;
-+				if (get_mac_address(optarg, config.mac))
-+					goto err_options;
-+			} else {
-+				if (strlen(optarg) >= IPADDR_MAX)
-+					goto err_options;
-+				if (convert_ipv4_to_uint32(optarg, &config.ip))
-+					goto err_options;
-+				strcpy(config.ip_addr, optarg);
-+			}
-+			break;
-+
-+		case 'p': // port
-+			config.port = atoi(optarg);
-+			break;
-+
-+		default:
-+			fprintf(stderr, "invalid option %c\n", option);
-+			goto err_options;
-+			break;
-+		}
-+	}
-+
-+	if (check_config()) {
-+		fprintf(stderr, "check_config() failed\n");
-+		goto err_options;
-+	}
-+
-+	if (config.verbose)
-+		print_config();
-+
-+	return 0;
-+
-+err_options:
-+	usage(argv[0]);
-+	return -1;
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	int ret;
-+
-+	if (ret = process_options(argc, argv))
-+		goto error;
-+
-+	printf("progran terminated successfully ip %x %s %d\n", config.ip,
-+	       config.ip_addr, config.port);
-+
-+	ret = config.device = open(MAUSB_DEVICE, 0);
-+	if (ret < 0) {
-+		fprintf(stderr, "cannot open device %d\n", ret);
-+		goto error;
-+	}
-+
-+	switch(config.cmd) {
-+	case connect:
-+		if (config.verbose)
-+			printf("connecting to %s port %u\n", config.ip_addr, config.port);
-+		if (config.mode == llc) {
-+			if (ret = set_mac_addr(&config))
-+				goto close_device;
-+		} else {
-+			if (ret = set_ipv4_addr(&config))
-+				goto close_device;
-+			if (ret = set_port(&config))
-+				goto close_device;
-+		}
-+		if  (ret = connect_device(&config))
-+			goto close_device;
-+		break;
-+	case disconnect:
-+		disconnect_device(&config);
-+		break;
-+	}
-+close_device:
-+	close(config.device);
-+error:
 +	return ret;
 +}
-diff --git a/drivers/staging/mausb/mausb-util/src/mausb.h b/drivers/staging/mausb/mausb-util/src/mausb.h
++EXPORT_SYMBOL(mausb_add_mgmt_channel);
++
++/**
++ * Fills the fields in an endpoint handle req.
++ *
++ * @dev:	The device struct that contains the endpoints to open.
++ * @req_flds:	The req_flds to fill.
++ *
++ * Note: this function can only be used on the host side.
++ */
++int mausb_fill_ep_handle_req_flds(struct mausb_dev *mausb_dev,
++		struct mausb_mgmt_pkt *req, bool add)
++{
++	int				   i = 0;
++	struct mausb_host_ep		   *ma_ep;
++	unsigned long			   irq_flags;
++	struct mausb_ss_ep_req		   *ss_ep_des;
++	struct mausb_ep_req		   *ep_des;
++	struct mausb_EPHandleReq_flds	   *req_flds = &req->ep_handle_req;
++	struct mausb_EPHandleDelete_flds   *del_flds = &req->ep_handle_delete;
++
++	req_flds->num_ep_des = 0;
++
++	if (USB_SPEED_SUPER == mausb_dev->dev->speed)
++		req_flds->size_ep_des = cpu_to_le32(MAUSB_SS_EP_REQ_SIZE);
++	else
++		req_flds->size_ep_des = cpu_to_le32(MAUSB_EP_REQ_SIZE);
++
++	/* for every endpoint */
++	spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	list_for_each_entry(ma_ep, &mausb_dev->ep_list, ep_list) {
++		spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++		spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++
++		/* if we need to add this endpoint */
++		if (add && (MAUSB_EP_HANDLE_UNASSIGNED
++					== ma_ep->ep_handle_state)) {
++
++			if (USB_SPEED_SUPER == mausb_dev->dev->speed &&
++				ma_ep->ep->desc.bEndpointAddress != 0x00) {
++				ss_ep_des = &req_flds->ss_ep_des[i];
++
++				memcpy(&ss_ep_des->ep_des,
++					&ma_ep->ep->desc,
++					USB_DT_ENDPOINT_SIZE);
++
++				memcpy(&ss_ep_des->ss_ep_comp_des,
++					&ma_ep->ep->ss_ep_comp,
++					USB_DT_SS_EP_COMP_SIZE);
++			} else {
++				ep_des = &req_flds->ep_des[i];
++
++				memcpy(&ep_des->ep_des,
++					&ma_ep->ep->desc,
++					USB_DT_ENDPOINT_SIZE);
++			}
++
++			if (ma_ep->ep->desc.bEndpointAddress == 0x00)
++				req_flds->size_ep_des = MAUSB_EP_REQ_SIZE;
++
++			i++;
++			req_flds->num_ep_des = i;
++
++		/* if we need to delete this endpoint */
++		} else if (!add &&
++			(MAUSB_EP_HANDLE_DELETED == ma_ep->ep_handle_state)) {
++
++			del_flds->ep_handle[i].handle =
++				cpu_to_le16(ma_ep->ep_handle.handle);
++
++			i++;
++			req_flds->num_ep_des = i;
++		}
++
++		spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++
++		spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	}
++
++	spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++
++	if (i <= 0)
++		return -ENODEV;
++
++	return 0;
++}
++
++/**
++ * Looks for inactive endpoints and fills EPInactivateReq packet fields
++ * accordingly.
++ */
++int mausb_fill_ep_inactivate_req_flds(struct mausb_dev *mausb_dev,
++		struct mausb_mgmt_pkt *req)
++{
++	int				    i = 0;
++	struct mausb_host_ep		    *ma_ep;
++	unsigned long			    irq_flags;
++	struct mausb_EPInactivateReq_flds   *req_flds = &req->ep_inactivate_req;
++
++	/*
++	 * Grab any inactive endpoints. After EPInactivateReq is sent, inactive
++	 * endoints will be marked for deletion.
++	 */
++	spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	list_for_each_entry(ma_ep, &mausb_dev->ep_list, ep_list) {
++		spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++		spin_lock_irqsave(&ma_ep->ep_lock, irq_flags);
++
++		/* If endpoint has been inactivated, include it in packet. */
++		if (ma_ep->ep_handle_state == MAUSB_EP_HANDLE_INACTIVE) {
++			req_flds->ep_handle[i] = ma_ep->ep_handle;
++			i++;
++			req_flds->num_ep_handles = i;
++			ma_ep->ep_handle_state = MAUSB_EP_HANDLE_DELETED;
++		}
++
++		spin_unlock_irqrestore(&ma_ep->ep_lock, irq_flags);
++		spin_lock_irqsave(&mausb_dev->dev_lock, irq_flags);
++	}
++
++	/*TODO: set suspend flag when needed */
++
++	spin_unlock_irqrestore(&mausb_dev->dev_lock, irq_flags);
++
++	return req_flds->num_ep_handles;
++}
++
++/**
++ * Transmits a mausb management packet req and awaits a resp
++ *
++ * Caller should be holding the lock in the mausb_mgmt structure.
++ *
++ * This function transmits a MA USB management request packet and waits for a
++ * response. If a response packet is received, this function will return
++ * 0 with valid data in the resp. If the request timed out, will return
++ * -ETIMEDOUT.
++ *
++ * Note: since the calling process sleeps, this function CANNOT be called
++ *       from an interrupt context.
++ *
++ * @req:	A pointer to the MA USB transferRequest packet to be sent.
++ * @resp:	A pointer to the MA USB transferResponse packet received.
++ * @ma_mgmt:	The Ma USB device's management structure.
++ */
++static int internal_mausb_tx_mgmt_req(struct mausb_pkt *req,
++		struct mausb_pkt **resp, struct mausb_mgmt *ma_mgmt)
++{
++	int				retries = 0;
++	int				rem_time = 0;
++	struct mausb_mgmt_req_list	*req_entry;
++	struct mausb_pkt_transfer	*transfer;
++	unsigned long			irq_flags = 0;
++
++	if (NULL == ma_mgmt->tx_pair.to_ms.transfer_packet)
++		return -EPIPE;
++	else
++		transfer = &ma_mgmt->tx_pair.to_ms;
++
++	req_entry = kzalloc(sizeof(struct mausb_mgmt_req_list), GFP_ATOMIC);
++	if (!req_entry)
++		return -ENOMEM;
++
++	req_entry->mgmt_req = req;
++	req_entry->mgmt_resp = NULL;
++	init_completion(&req_entry->resp_rcvd);
++	INIT_LIST_HEAD(&req_entry->req_list);
++
++	list_add_tail(&req_entry->req_list, &ma_mgmt->req_list);
++
++	req->common->length = cpu_to_le16(mausb_pkt_length(req));
++
++	ma_mgmt->token = (ma_mgmt->token % MAUSB_MGMT_MAX_TOKEN) + 1;
++	req->mgmt->token = ma_mgmt->token;
++
++	/* until we time out or complete */
++	for (retries = 0; (retries <= MAUSB_MGMT_TRANSFER_RETRIES) &&
++			(NULL == req_entry->mgmt_resp); retries++) {
++
++		/* if this is a retry */
++		if (retries > 0)
++			req->common->ver_flags |= MAUSB_PKT_FLAG_RETRY;
++
++		spin_unlock_irqrestore(ma_mgmt->ma_dev_lock, irq_flags);
++
++		mausb_pkt_fill_ms_pkt(req, GFP_ATOMIC);
++
++		mamgmt_dbg("%s: sending %s packet\n", __func__,
++			mausb_type_to_string(req->common->pkt_type));
++		transfer->transfer_packet(&req->pkt, transfer->context);
++
++		rem_time = wait_for_completion_interruptible_timeout(
++			&req_entry->resp_rcvd, MAUSB_MGMT_RT_DELAY);
++
++		spin_lock_irqsave(ma_mgmt->ma_dev_lock, irq_flags);
++	}
++
++	list_del(&req_entry->req_list);
++	*resp = req_entry->mgmt_resp;
++
++	kfree(req_entry);
++
++	if (rem_time == 0) /* if we timed out */
++		return -ETIMEDOUT;
++	else if (rem_time < 0) /* if an error happened */
++		return rem_time;
++	else /* return based on the status of the response */
++		return 0;
++}
++
++/**
++ * Accepts the EPHandleResp and EPHandleReq Fields and updates
++ * endpoint(s) state based on the Resp Fields.
++ */
++static int mausb_handle_ep_resp(struct mausb_dev *mausb_dev,
++		struct mausb_EPHandleReq_flds *req,
++		struct mausb_EPHandleResp_flds *resp)
++{
++	int				i;
++	int				ret = -EINVAL;
++	struct mausb_host_ep		*ma_ep;
++	struct usb_endpoint_descriptor	*ep_des;
++
++	if (le32_to_cpu(req->num_ep_des) != le32_to_cpu(resp->num_ep_des))
++		return -EINVAL;
++
++	for (i = 0; i < resp->num_ep_des; ++i) {
++
++		ep_des = mausb_ep_handle_req_get_ep_des(req, i);
++		if (NULL != ep_des) {
++
++			ma_ep = mausb_find_ep_by_desc(ep_des, mausb_dev);
++			if (ma_ep != NULL)
++				ret = mausb_update_ep(ma_ep, &resp->ep_des[i]);
++			else {
++				mamgmt_err("%s: could not find endpoint"
++				" for handle #%i (%x)\n", __func__, i,
++				le16_to_cpu(resp->ep_des[i].ep_handle.handle));
++			}
++		}
++	}
++
++	return ret;
++}
++
++/**
++ * Accepts the EPHandleDeleteReq and EPHandleDeleteResp Fields and updates
++ * the endpoint(s) state based on the Resp Fields.
++ */
++static int mausb_handle_ep_del_resp(struct mausb_dev *mausb_dev,
++		struct mausb_EPHandleDelete_flds *req,
++		struct mausb_EPHandleDelete_flds *resp)
++{
++	int ret			      = 0;
++	int			      i, j;
++	bool			      drop_failed;
++	struct mausb_host_ep	      *ma_ep;
++	struct mausb_ep_handle	      *req_handle;
++	struct mausb_ms_drv	      *ms_driver = mausb_dev->ma_dev->ms_driver;
++
++	/* for every endpoint in the req */
++	for (i = 0; i < req->num_ep; ++i) {
++
++		drop_failed = false;
++		req_handle = &req->ep_handle[i];
++
++		for (j = 0; j < le32_to_cpu(resp->num_ep); ++j) {
++			if (req_handle->handle ==
++				le16_to_cpu(resp->ep_handle[j].handle))
++
++				drop_failed = true;
++		}
++
++		if (false == drop_failed) {
++
++			ma_ep = mausb_find_ep_by_handle(req_handle, mausb_dev);
++
++			ret = ms_driver->ops->drop_transfer_pair(
++				ma_ep->ep_handle.handle,
++				ma_ep->tx_pair.to_ms.context);
++
++			if (0 <= ret) {
++				/* drop the endpoint locally */
++				ret = mausb_internal_drop_ep(ma_ep);
++			}
++		}
++	}
++
++	return ret;
++}
++
++/**
++ * Determines the speed to report in the USBDevHandleReq.
++ */
++static __u8 mausb_get_dev_speed(struct mausb_dev *dev)
++{
++	switch (dev->dev->speed) {
++	case USB_SPEED_LOW:
++		return MAUSB_LOW_SPEED;
++	case USB_SPEED_FULL:
++		return MAUSB_FULL_SPEED;
++	case USB_SPEED_HIGH:
++		return MAUSB_HIGH_SPEED;
++	case USB_SPEED_SUPER:
++		return MAUSB_SUPER_SPEED;
++	/* TODO: SUPER_SPEED_PLUS */
++	default:
++		return MAUSB_INVALID_SPEED;
++	}
++}
++
++/**
++ * Parses all descriptors for a given CapResp packet and stores data in
++ * corresponding device data structure.
++ *
++ * Returns number of descriptors read.
++ */
++int parse_cap_desc(struct mausb_pkt *resp, struct ma_dev *ma_dev)
++{
++	int			   ret = 0;
++	int			   offset = 0;
++	int			   desc_count = resp->mgmt->cap_resp.desc_count;
++	struct mausb_dev_cap_desc  *desc;
++
++	offset = MAUSB_PKT_HEADER_SIZE + sizeof(struct mausb_CapResp_flds);
++	desc = cap_desc_ptr_increment(resp->mgmt, offset);
++
++	if (resp->common->pkt_type != CapResp) {
++		mamgmt_err("%s: packet is type %i (not a CapResp)\n", __func__,
++			resp->common->pkt_type);
++		return -EINVAL;
++	}
++
++	while (desc_count) {
++		if (desc == NULL) {
++			mamgmt_err("%s: no descriptor to read\n", __func__);
++			return ret;
++		}
++
++		ret++;
++
++		switch (desc->cap_type) {
++		case MAUSB_DEV_CAP_SPEED:
++			ma_dev->speed = kzalloc(
++				sizeof(struct mausb_dev_cap_speed),
++				GFP_ATOMIC);
++			ma_dev->speed->speed = desc->speed.speed;
++			ma_dev->speed->lse = desc->speed.lse;
++			ma_dev->speed->st = desc->speed.st;
++			ma_dev->speed->lane_count =
++				desc->speed.lane_count;
++			ma_dev->speed->link_protocol =
++				desc->speed.link_protocol;
++			ma_dev->speed->lsm = desc->speed.lsm;
++			break;
++		case MAUSB_DEV_CAP_POUT:
++			ma_dev->pout = kzalloc(
++				sizeof(struct mausb_dev_cap_pout),
++				GFP_ATOMIC);
++			ma_dev->pout->elastic_buf_cap =
++				desc->pout.elastic_buf_cap;
++			ma_dev->pout->drop_notif =
++				desc->pout.drop_notif;
++			break;
++		case MAUSB_DEV_CAP_ISO:
++			ma_dev->pout = kzalloc(
++				sizeof(struct mausb_dev_cap_iso),
++				GFP_ATOMIC);
++			ma_dev->iso->iso_alignment =
++				desc->iso.iso_alignment;
++			break;
++		case MAUSB_DEV_CAP_SYNC:
++			ma_dev->pout = kzalloc(
++				sizeof(struct mausb_dev_cap_sync),
++				GFP_ATOMIC);
++			ma_dev->sync->media_time_avail =
++				desc->sync.media_time_avail;
++			ma_dev->sync->timestamp_req =
++				desc->sync.timestamp_req;
++			break;
++		case MAUSB_DEV_CAP_CONT_ID:
++			ma_dev->pout = kzalloc(
++				sizeof(struct mausb_dev_cap_cont_id),
++				GFP_ATOMIC);
++			ma_dev->cont_id->cont_id_upper =
++				desc->cont_id.cont_id_upper;
++			ma_dev->cont_id->cont_id_lower =
++				desc->cont_id.cont_id_lower;
++			break;
++		case MAUSB_DEV_CAP_LINK_SLEEP:
++			ma_dev->link_sleep = kzalloc(
++				sizeof(struct mausb_dev_cap_link_sleep),
++				GFP_ATOMIC);
++			ma_dev->link_sleep->link_sleep_cap =
++				desc->link_sleep.link_sleep_cap;
++			break;
++		default:
++			mamgmt_err("%s: unknown device capability descriptor"
++				" type %i\n", __func__, desc->cap_type);
++			ret--;
++			break;
++		}
++
++		desc_count--;
++		offset += desc->length;
++		desc = cap_desc_ptr_increment(resp->mgmt, offset);
++	}
++
++	return ret;
++}
++
++/**
++ * Transmits a management packet of the specified type for the given device.
++ *
++ * @type:	The type of MA USB management request packet being sent.
++ * @mgmt:	The management data we need to send the packet.
++ * @dev:	The device this packet is associated with. Set to NULL if
++ *	        there is no associated device (ex: for MAUSBDevReset).
++ * @host:	Set TRUE to indicate we are a host, set to FALSE if we are
++ *              a device.
++ */
++int mausb_tx_dev_mgmt_req(enum mausb_pkt_type type, struct mausb_mgmt *mgmt,
++		struct mausb_dev *dev, bool host)
++{
++	return mausb_tx_dev_mgmt_req_ep(type, mgmt, dev, host, NULL);
++}
++EXPORT_SYMBOL(mausb_tx_dev_mgmt_req);
++
++/**
++ * Only necessary to call directly if you need to specify an EP, otherwise
++ * mausb_tx_dev_mgmt_req will work.
++ */
++int mausb_tx_dev_mgmt_req_ep(enum mausb_pkt_type type, struct mausb_mgmt *mgmt,
++		struct mausb_dev *dev, bool host, struct mausb_host_ep *ma_ep)
++{
++	int			ret = 0;
++	struct mausb_pkt	*req;
++	struct mausb_pkt	*resp = NULL;
++	struct ma_dev		*ma_dev = mausb_mgmt_to_ma_dev(mgmt);
++	struct mausb_dev	*hub;
++	unsigned long		irq_flags;
++
++	req = mausb_alloc_pkt(MAUSB_PKT_TYPE_MGMT, &ret, GFP_ATOMIC);
++	if (!req)
++		return -ENOMEM;
++
++	spin_lock_irqsave(mgmt->ma_dev_lock, irq_flags);
++
++	req->common->ver_flags  |= MAUSB_VERSION_1_0;
++	req->common->pkt_type    = type;
++	if (NULL != dev)
++		req->common->dev_handle  = cpu_to_le16(dev->dev_handle);
++
++	req->common->ma_dev_addr = ma_dev->ma_dev_addr;
++	req->common->mass_id     = ma_dev->mass_id;
++	req->common->pkt_status  = NO_ERROR;
++
++	if (host)
++		req->common->ver_flags  |= MAUSB_PKT_FLAG_HOST;
++
++	switch (type) {
++	case CapReq:
++		req->mgmt->cap_req.max_mgmt_reqs = MAUSB_MGMT_MAX_TOKEN;
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++
++		if (0 <= ret) {
++			ma_dev->ma_cap.num_ep = resp->mgmt->cap_resp.num_ep;
++			ma_dev->ma_cap.num_dev = resp->mgmt->cap_resp.num_dev;
++			ma_dev->ma_cap.num_stream =
++					resp->mgmt->cap_resp.num_stream;
++			ma_dev->ma_cap.dev_type = resp->mgmt->cap_resp.dev_type;
++			ma_dev->ma_cap.max_tx_reqs =
++					resp->mgmt->cap_resp.max_tx_reqs;
++			ma_dev->ma_cap.max_mgmt_reqs =
++					resp->mgmt->cap_resp.max_mgmt_reqs;
++
++			/* look for descriptors */
++			if (resp->mgmt->cap_resp.desc_count > 0) {
++				ret = parse_cap_desc(resp, ma_dev);
++
++				if (ret != resp->mgmt->cap_resp.desc_count) {
++					mamgmt_err("%s: error reading"
++						" capability descriptors\n",
++						__func__);
++				}
++			}
++		}
++		break;
++
++	case EPHandleReq:
++		mausb_fill_ep_handle_req_flds(dev, req->mgmt, MAUSB_ADD);
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		if (0 <= ret) {
++			ret = mausb_handle_ep_resp(dev,
++				&req->mgmt->ep_handle_req,
++				&resp->mgmt->ep_handle_resp);
++		}
++		break;
++	case EPActivateReq:
++	case EPInactivateReq:
++		ret = mausb_fill_ep_inactivate_req_flds(dev, req->mgmt);
++		if (ret > 0)
++			ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		break;
++	case EPResetReq:
++	case EPClearTransferReq:
++		break;
++	case EPHandleDeleteReq:
++		mausb_fill_ep_handle_req_flds(dev, req->mgmt, MAUSB_DEL);
++
++		if (0 < le32_to_cpu(req->mgmt->ep_handle_delete.num_ep)) {
++			ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++
++			mausb_handle_ep_del_resp(dev,
++				&req->mgmt->ep_handle_delete,
++				&resp->mgmt->ep_handle_delete);
++		}
++		break;
++	case USBDevHandleReq:
++		req->mgmt->usb_dev_handle_req.dock_hub
++			= cpu_to_le16(mgmt->hub_dev_handle);
++		req->mgmt->usb_dev_handle_req.usb_rt_str
++			= cpu_to_le32(dev->dev->route);
++		req->mgmt->usb_dev_handle_req.speed =
++			cpu_to_le32(mausb_get_dev_speed(dev));
++		req->common->dev_handle = 0;
++
++		spin_unlock_irqrestore(mgmt->ma_dev_lock, irq_flags);
++		hub = mausb_find_dev(ma_dev, dev->dev->parent, NULL, NULL);
++		spin_lock_irqsave(mgmt->ma_dev_lock, irq_flags);
++
++		if (NULL != hub) {
++			/* This will work if the device is connected directly to
++			 * the dock, but not with a hub connected to the dock...
++			 * well... unless the hub in between is slower than high
++			 * speed. */
++			/* TODO: have the parent hub point to the proper hub for
++			 *       all conditions */
++			req->mgmt->usb_dev_handle_req.parent_hub =
++				hub->dev_handle;
++			req->mgmt->usb_dev_handle_req.parent_hub_port =
++				dev->dev->portnum;
++		} else {
++			/* parent_hub_port not set for SS */
++			mamgmt_dbg("%s: could not find parent hub at %p\n",
++				__func__, dev->dev->parent);
++		}
++
++		/* TODO: all the remaining fields */
++		req->mgmt->usb_dev_handle_req.mtt = 0;
++
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++
++		if (resp && (NULL != dev))
++			dev->dev_handle =
++				le16_to_cpu(resp->mgmt->usb_dev_handle_resp);
++		break;
++
++	case DevResetReq:
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		break;
++	case ModifyEP0Req:
++		if (NULL == ma_ep) {
++			mamgmt_err("%s: no ep0 for USB device at %p\n",
++				__func__, dev);
++		} else {
++			req->mgmt->modify_ep0_req.ep_handle = ma_ep->ep_handle;
++			req->mgmt->modify_ep0_req.max_pkt_size =
++				usb_endpoint_maxp(&ma_ep->ep->desc);
++		}
++
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		if (0 <= ret) {
++			if (SUCCESS == resp->common->pkt_status) {
++				if (resp->mgmt->modify_ep0_resp.ep_handle.handle) {
++					ma_ep->ep_handle = resp->mgmt->modify_ep0_resp.ep_handle;
++				}
++			} else
++				ret = -EIO;
++		}
++		break;
++	case SetUSBDevAddrReq:
++		/* TODO: verify timer value */
++		req->mgmt->set_dev_addr_req.resp_timeout =
++			cpu_to_le16(MAUSB_MGMT_RT_DELAY * (1000/HZ));
++
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++
++		if (0 <= ret) {
++			if (SUCCESS == resp->common->pkt_status) {
++				dev->dev_address =
++					le32_to_cpu(
++					resp->mgmt->set_dev_addr_resp.dev_addr);
++			} else
++				ret = -EIO;
++		}
++		break;
++	case UpdateDevReq:
++		break;
++	case USBDevDisconnectReq:
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		break;
++	case DevDisconnectReq:
++		req->common->dev_handle = 0;
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		break;
++	case SleepReq:         /* fallthrough */
++	case WakeReq:
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		/* not everyone supports power management yet */
++		/* if (SUCCESS != resp->common->pkt_status)
++			ret = -EBUSY; */
++		break;
++	case RemoteWakeReq:
++	case PingReq:
++	case DevInitDisconnectReq:
++	case SyncReq:
++		break;
++	case CancelTransferReq:
++		req->mgmt->cancel_transfer_req.ep_handle = ma_ep->ep_handle;
++		/* TODO: stream IDs (where applicable) */
++		req->mgmt->cancel_transfer_req.req_id =
++				ma_ep->state.active_request_id;
++		ret = internal_mausb_tx_mgmt_req(req, &resp, mgmt);
++		/* TODO: handle Responses */
++		break;
++	case USBDevResetReq:
++	case VendorSpecificReq:
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++
++	if (resp != NULL)
++		mausb_free_pkt(resp);
++
++	spin_unlock_irqrestore(mgmt->ma_dev_lock, irq_flags);
++	mausb_free_pkt(req);
++
++	return ret;
++}
++EXPORT_SYMBOL(mausb_tx_dev_mgmt_req_ep);
++
++/**
++ * Parses an incoming management packet resp.
++ *
++ * This function parses an incoming response packet and connects it to
++ * its associated request.
++ *
++ * @resp:	A pointer to the MA USB management response packet received.
++ * @ma_mgmt:	The MA USB device's management structure.
++ */
++int mausb_rx_mgmt_resp(struct mausb_pkt *resp, struct mausb_mgmt *ma_mgmt)
++{
++	struct mausb_mgmt_req_list	*ma_mgmt_req;
++	unsigned long			irq_flags;
++
++	spin_lock_irqsave(ma_mgmt->ma_dev_lock, irq_flags);
++
++	list_for_each_entry(ma_mgmt_req, &ma_mgmt->req_list, req_list) {
++
++		/* if we found the request that triggered this response */
++		if (ma_mgmt_req->mgmt_req->mgmt->token == resp->mgmt->token) {
++			ma_mgmt_req->mgmt_resp = resp;
++
++			complete_all(&ma_mgmt_req->resp_rcvd);
++			spin_unlock_irqrestore(ma_mgmt->ma_dev_lock, irq_flags);
++			return 0;
++		}
++	}
++
++	/* response given was not requested */
++	spin_unlock_irqrestore(ma_mgmt->ma_dev_lock, irq_flags);
++
++	mausb_free_pkt(resp);
++
++	return -EINVAL;
++}
++
++/**
++ * This function parses an incoming request packet and generates the
++ * appropriate response packet.
++ *
++ * @resp:	A pointer to the MA USB management request packet received.
++ * @ma_mgmt:	The MA USB device's management structure.
++ */
++int mausb_rx_mgmt_req(struct mausb_pkt *req, struct mausb_mgmt *mgmt)
++{
++	int				ret;
++	struct mausb_pkt		*resp;
++	struct ma_dev			*ma_dev = mausb_mgmt_to_ma_dev(mgmt);
++	struct mausb_pkt_transfer	*transfer = &mgmt->tx_pair.to_ms;
++	unsigned long			irq_flags;
++
++	resp = mausb_alloc_pkt(MAUSB_PKT_TYPE_MGMT, &ret, GFP_ATOMIC);
++	if (!resp)
++		return -ENOMEM;
++
++	spin_lock_irqsave(mgmt->ma_dev_lock, irq_flags);
++
++	ret = mgmt->req_switch(req->mgmt, resp->mgmt, mgmt);
++
++	if (ret >= 0) {
++		/* set the values common to all response packets */
++		resp->common->ver_flags |= MAUSB_VERSION_1_0;
++		/* type set above */
++		resp->common->length      = cpu_to_le16(mausb_pkt_length(resp));
++		/* device handle set above */
++		resp->common->ma_dev_addr = ma_dev->ma_dev_addr;
++		resp->common->mass_id     = ma_dev->mass_id;
++		/* pkt_status set above */
++		resp->mgmt->token         = req->mgmt->token;
++
++		mausb_pkt_fill_ms_pkt(resp, GFP_ATOMIC);
++		mamgmt_dbg("%s: sending %s packet\n", __func__,
++			mausb_type_to_string(resp->common->pkt_type));
++
++		spin_unlock_irqrestore(mgmt->ma_dev_lock, irq_flags);
++		transfer->transfer_packet(&resp->pkt, transfer->context);
++		spin_lock_irqsave(mgmt->ma_dev_lock, irq_flags);
++
++	} else {
++		/* we don't know how to handle this packet */
++		mamgmt_dbg("%s: packet type %s not supported\n", __func__,
++			mausb_type_to_string(resp->common->pkt_type));
++		mausb_free_pkt(resp);
++	}
++
++	spin_unlock_irqrestore(mgmt->ma_dev_lock, irq_flags);
++	return ret;
++}
++
++/**
++ * This function parses an incoming management packet, determines
++ * if it is a request or response, and passes the packet to the
++ * proper handler.
++ *
++ * @mgmt_pkt:	A pointer to the incoming MA USB management packet.
++ * @ma_mgmt:	The MA USB device's management structure.
++ */
++int mausb_rx_mgmt(struct mausb_pkt *mgmt_pkt, struct mausb_mgmt *mgmt)
++{
++	mamgmt_dbg("%s: %s packet received\n", __func__,
++		mausb_type_to_string(mgmt_pkt->common->pkt_type));
++
++	if (mausb_pkt_resp(mgmt_pkt))
++		return mausb_rx_mgmt_resp(mgmt_pkt, mgmt);
++	else
++		return mausb_rx_mgmt_req(mgmt_pkt, mgmt);
++}
++EXPORT_SYMBOL(mausb_rx_mgmt);
++
++/**
++ * Handles sent callback for management packets.
++ *
++ * Request packets are held until a response is received and should not be
++ * freed until then. Response packets can be freed as soon as they are sent out.
++ */
++void mausb_mgmt_pkt_sent(struct ms_pkt *ms_pkt)
++{
++	struct mausb_pkt *pkt;
++
++	pkt = ms_pkt_to_mausb_pkt(ms_pkt);
++
++	if (mausb_pkt_resp(pkt))
++		mausb_free_pkt(pkt);
++}
++EXPORT_SYMBOL(mausb_mgmt_pkt_sent);
++
+diff --git a/drivers/staging/mausb/drivers/mausb_mgmt.h b/drivers/staging/mausb/drivers/mausb_mgmt.h
 new file mode 100644
-index 0000000..547bc92a
+index 0000000..69ca13d
 --- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/mausb.h
-@@ -0,0 +1,64 @@
-+/*
-+  (c) Aymen Zayet (aymen.zayet@intel.com)
++++ b/drivers/staging/mausb/drivers/mausb_mgmt.h
+@@ -0,0 +1,88 @@
++/* name:	mausb_mgmt.h
++ * description: Handles management packet structures and declarations common
++ *              to both hosts and devices.
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * Contact Information:
++ * Sean Stalley, sean.stalley@intel.com
++ * Stephanie Wallick, stephanie.s.wallick@intel.com
++ * 2111 NE 25th Avenue
++ * Hillsboro, Oregon 97124
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
 +
-+  This file is part of mausb utility.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
 +
-+  mausb is free software: you can redistribute it and/or modify
-+  it under the terms of the GNU General Public License as published by
-+  the Free Software Foundation, either version 2 of the License, or
-+  (at your option) any later version.
++#ifndef __MAUSB_MGMT_H
++#define __MAUSB_MGMT_H
 +
-+  mausb is distributed in the hope that it will be useful,
-+  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-+  GNU General Public License for more details.
++#include "mausb_mem.h"
++#include "mausb_msapi.h"
 +
-+  You should have received a copy of the GNU General Public License
-+  along with mausb. If not, see <http://www.gnu.org/licenses/>.
-+*/
-+#ifndef MAUSB_H_
-+#define MAUSB_H_
++#ifdef DEBUG
++#define mamgmt_dbg(format, arg...) \
++	printk(KERN_DEBUG format, ##arg)
++#else
++#define mamgmt_dbg(format, arg...)
++#endif
 +
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <errno.h>
-+#include <stdint.h>
-+#include <stdio.h>
-+#include <getopt.h>
-+#include <sys/ioctl.h>
-+#include "connect.h"
-+#include "mausb_ioctl.h"
++#define mamgmt_warn(format, arg...) \
++	printk(KERN_WARNING format, ##arg)
 +
-+#define MAUSB_DEVICE "/dev/mausb"
-+#define IPADDR_MAX 16
-+#define MACADDR_STR_SIZE 17 /* excluding null termination char */
++#define mamgmt_err(format, arg...) \
++	printk(KERN_ERR format, ##arg)
 +
-+typedef enum {
-+	connect,
-+	disconnect,
-+	max_command,
-+} mausb_cmd;
-+
-+typedef enum {
-+	ip,
-+	llc,
-+	supported_mode,
-+} mausb_mode;
-+
-+typedef struct {
-+	int device;		       // file descriptor of the mausb device
-+	char verbose;		       // is verbose mode enabled
-+	mausb_cmd cmd;		       // keep the requested command to execute
-+	uint32_t ip;		       // ip address of the device in case of ip mode
-+	char ip_addr[IPADDR_MAX];      // ip address given in cmdline (x.x.x.x)
-+	uint8_t mac[6];		       // mac address (aa:bb:cc:dd:ee:ff)
-+	uint32_t port;		       // ip port number in case of ip mode
-+	mausb_mode mode;	       // default is ip
-+} mausb_t;
-+
-+mausb_t config;
-+int convert_ipv4_to_uint32(char *, uint32_t *);
-+
-+int get_mac_address(char *, uint8_t *);
-+#endif /* MAUSB_H_ */
-diff --git a/drivers/staging/mausb/mausb-util/src/mausb_ioctl.h b/drivers/staging/mausb/mausb-util/src/mausb_ioctl.h
-new file mode 100644
-index 0000000..e6953d3
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/mausb_ioctl.h
-@@ -0,0 +1,24 @@
-+#ifndef MAUSB_IOCTL_H
-+#define MAUSB_IOCTL_H
-+
-+#define BUFFER 80
-+#define DRIVER_VERSION "Alpha 0.0.25"
-+#define MAJOR_NUM 100
-+
-+/* These define the ioctl functions that can be used */
-+#define IOCTL_GET_VRSN _IOR(MAJOR_NUM, 0, char *)
-+#define IOCTL_GET_NAME _IOR(MAJOR_NUM, 1, char *)
-+#define IOCTL_GADGET_C _IOR(MAJOR_NUM, 2, char *)
-+#define IOCTL_GADGET_D _IOR(MAJOR_NUM, 3, char *)
-+#define IOCTL_SET_IP   _IOR(MAJOR_NUM, 4, char *)
-+#define IOCTL_SET_PORT _IOR(MAJOR_NUM, 5, char *)
-+#define IOCTL_SET_MAC  _IOR(MAJOR_NUM, 6, char *)
-+
-+
-+/* This is the location where the device file will be created. It is used to
-+ * read/write to in order to communicate to and from the device */
-+#define DEVICE_FILE_NAME "/dev/mausb"
-+
-+#define ETH_ALEN 6
++struct ma_dev *mausb_mgmt_to_ma_dev(struct mausb_mgmt *mgmt);
++int mausb_tx_dev_mgmt_req(enum mausb_pkt_type type, struct mausb_mgmt *mgmt,
++		struct mausb_dev *dev, bool host);
++int mausb_tx_dev_mgmt_req_ep(enum mausb_pkt_type type, struct mausb_mgmt *mgmt,
++		struct mausb_dev *dev, bool host, struct mausb_host_ep *ma_ep);
++int mausb_rx_mgmt(struct mausb_pkt *mgmt_pkt, struct mausb_mgmt *mgmt);
++void mausb_mgmt_pkt_sent(struct ms_pkt *pkt);
++int mausb_add_mgmt_channel(struct mausb_mgmt *mgmt, struct mausb_ms_drv *drv,
++		int (*transfer_pkt)(struct ms_pkt *pkt, void *context),
++		void (*pkt_sent)(struct ms_pkt *pkt));
 +
 +#endif
-diff --git a/drivers/staging/mausb/mausb-util/src/utils.c b/drivers/staging/mausb/mausb-util/src/utils.c
-new file mode 100644
-index 0000000..f06e2ce
---- /dev/null
-+++ b/drivers/staging/mausb/mausb-util/src/utils.c
-@@ -0,0 +1,94 @@
-+/*
-+  (c) Aymen Zayet (aymen.zayet@intel.com)
-+
-+  This file is part of mausb utility.
-+
-+  mausb is free software: you can redistribute it and/or modify
-+  it under the terms of the GNU General Public License as published by
-+  the Free Software Foundation, either version 2 of the License, or
-+  (at your option) any later version.
-+
-+  mausb is distributed in the hope that it will be useful,
-+  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-+  GNU General Public License for more details.
-+
-+  You should have received a copy of the GNU General Public License
-+  along with mausb. If not, see <http://www.gnu.org/licenses/>.
-+*/
-+#include "mausb.h"
-+
-+int convert_ipv4_to_uint32(char *addr, uint32_t *ipnum)
-+{
-+	uint8_t digits[4];
-+	int i, j = 0;
-+        char ip[64];
-+
-+	if (addr == NULL)
-+		goto input_err;
-+
-+	strncpy(ip, addr, strlen(addr)+1);
-+	i = strlen(ip);
-+	memset(digits, 0, 4);
-+
-+	if (IPADDR_MAX < strlen(ip))
-+		goto input_err;
-+
-+again:
-+	while (i-1 && ip[--i - 1] != '.');
-+        if (i-1) {
-+                ip[i-1] = '\0';
-+                digits[j++] = atoi(ip+i);
-+		goto again;
-+        } else
-+                digits[j++] = atoi(ip);
-+
-+	*ipnum = digits[3] << 24 |
-+		digits[2] << 16 |
-+		digits[1] << 8 |
-+		digits[0] << 0;
-+
-+        return 0;
-+
-+input_err:
-+	return -1;
-+}
-+
-+
-+int get_mac_address(char *addr, uint8_t *out)
-+{
-+
-+	uint8_t digits[6];
-+	int i, j = 0;
-+	char mac[64];
-+
-+	if (addr == NULL)
-+		goto input_err;
-+
-+	strncpy(mac, addr, strlen(addr)+1);
-+	i = strlen(mac);
-+	memset(digits, 0, 6);
-+
-+	if (MACADDR_STR_SIZE != strlen(mac))
-+		goto input_err;
-+
-+again:
-+	while (i-1 && mac[--i - 1] != ':');
-+	if (i-1) {
-+		mac[i-1] = '\0';
-+		digits[j++] = strtol(mac+i, NULL, 16);
-+		goto again;
-+	} else
-+		digits[j++] = strtol(mac, NULL, 16);
-+
-+	for (i = 0; i < 6; i++) {
-+                printf("[%d]=0x%x ", i, digits[i]);
-+		out[5-i] = digits[i];
-+        }
-+
-+        printf("\n");
-+	return 0;
-+
-+input_err:
-+	return -1;
-+}
-diff --git a/drivers/staging/mausb/scripts/Android.mk b/drivers/staging/mausb/scripts/Android.mk
-new file mode 100644
-index 0000000..ddba51a
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/Android.mk
-@@ -0,0 +1,38 @@
-+LOCAL_PATH := $(call my-dir)
-+
-+include $(CLEAR_VARS)
-+LOCAL_MODULE := load_mausb_android.sh
-+LOCAL_MODULE_TAGS := optional
-+LOCAL_SRC_FILES := $(LOCAL_MODULE)
-+LOCAL_MODULE_CLASS := EXECUTABLE
-+
-+ifeq ($(TARGET_OUT_EXECUTABLE),)
-+TARGET_OUT_EXECUTABLE := $(TARGET_OUT)/bin
-+endif
-+
-+include $(BUILD_PREBUILT)
-+
-+include $(CLEAR_VARS)
-+
-+LOCAL_MODULE := load_mausb_android-host.sh
-+LOCAL_MODULE_TAGS := optional
-+LOCAL_SRC_FILES := $(LOCAL_MODULE)
-+LOCAL_MODULE_CLASS := EXECUTABLE
-+
-+ifeq ($(TARGET_OUT_EXECUTABLE),)
-+TARGET_OUT_EXECUTABLE := $(TARGET_OUT)/bin
-+endif
-+
-+include $(BUILD_PREBUILT)
-+
-+include $(CLEAR_VARS)
-+LOCAL_MODULE := load_mausb_android-dev.sh
-+LOCAL_MODULE_TAGS := optional
-+LOCAL_SRC_FILES := $(LOCAL_MODULE)
-+LOCAL_MODULE_CLASS := EXECUTABLE
-+
-+ifeq ($(TARGET_OUT_EXECUTABLE),)
-+TARGET_OUT_EXECUTABLE := $(TARGET_OUT)/bin
-+endif
-+
-+include $(BUILD_PREBUILT)
-\ No newline at end of file
-diff --git a/drivers/staging/mausb/scripts/build_load_connect.sh b/drivers/staging/mausb/scripts/build_load_connect.sh
-new file mode 100755
-index 0000000..f40cdd7
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/build_load_connect.sh
-@@ -0,0 +1,69 @@
-+#!/bin/bash
-+
-+side="invalid"
-+mode="invalid"
-+addr="invalid"
-+
-+while getopts "hdbtsa:" opt; do
-+	case "$opt" in
-+	h) side="-h"
-+	   ;;
-+	d) side="-d"
-+	   ;;
-+	b) side="-b"
-+	   ;;
-+	t) mode="-t"
-+	   ;;
-+	s) mode="-s"
-+	   ;;
-+	a) addr=$OPTARG
-+	   ;;
-+	esac
-+done
-+
-+
-+if [ "$side" == "invalid" ]
-+then
-+	echo $side
-+	echo "please choose host (-h) or device (-d)"
-+	exit
-+fi
-+
-+if [ "$mode" == "invalid" ]
-+then
-+	echo $mode
-+	echo "please choose tcp (-t) or snap (-s)"
-+	exit
-+fi
-+
-+if [ "$addr" == "invalid" ]
-+then
-+	echo $addr
-+	echo "please enter a valid address (-a 1.2.3.4, -a 01:23:45:67:89:0a)"
-+	exit
-+fi
-+
-+
-+cd ../
-+# make clean && make
-+make -j8
-+cd drivers/
-+
-+wireshark -k -i eth0 &
-+
-+sudo ../scripts/load_script.sh $side $mode
-+
-+sudo cat /proc/modules | grep ma
-+
-+if [ "$mode" == "-s" ]
-+then
-+	echo "connecting mausb"
-+	../tools/mausb-util/mausb -c -m llc -a $addr
-+fi
-+
-+if [ "$mode" == "-t" ]
-+then
-+	echo "connecting mausb"
-+	../tools/mausb-util/mausb -c -m ip -p 9001 -a $addr
-+fi
-+
-diff --git a/drivers/staging/mausb/scripts/load_gzero.sh b/drivers/staging/mausb/scripts/load_gzero.sh
-new file mode 100755
-index 0000000..9266199
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/load_gzero.sh
-@@ -0,0 +1,5 @@
-+#!/bin/bash
-+
-+modprobe g_zero
-+
-+echo g_zero load process complete
-\ No newline at end of file
-diff --git a/drivers/staging/mausb/scripts/load_mausb_android-dev.sh b/drivers/staging/mausb/scripts/load_mausb_android-dev.sh
-new file mode 100755
-index 0000000..c23cdef
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/load_mausb_android-dev.sh
-@@ -0,0 +1,31 @@
-+#!/system/xbin/ash
-+
-+# For Android targets, insmod shall be used since
-+# the ueventd take care of the dependencies.
-+
-+GREEN="\\033[1;32m"
-+NORMAL="\\033[0;39m"
-+RED="\\033[1;31m"
-+
-+load_module()
-+{
-+    insmod $1
-+    if [ $? -ne 0 ]; then
-+	echo -e $RED
-+	echo "unable to insmod $1 (err : $?)"
-+	echo -e $NORMAL
-+	exit $?
-+    fi
-+}
-+
-+
-+load_module /lib/modules/matcp_core.ko
-+load_module /lib/modules/maudc.ko
-+#load_module /lib/modules/mamed.ko
-+load_module /lib/modules/matcp_dev.ko
-+
-+mknod /dev/mausb c 100 0
-+
-+echo -e $GREEN
-+echo "mausb load process complete"
-+echo -e $NORMAL
-diff --git a/drivers/staging/mausb/scripts/load_mausb_android-host.sh b/drivers/staging/mausb/scripts/load_mausb_android-host.sh
-new file mode 100755
-index 0000000..85f0a20
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/load_mausb_android-host.sh
-@@ -0,0 +1,31 @@
-+#!/system/xbin/ash
-+
-+# For Android targets, insmod shall be used since
-+# the ueventd take care of the dependencies.
-+
-+GREEN="\\033[1;32m"
-+NORMAL="\\033[0;39m"
-+RED="\\033[1;31m"
-+
-+load_module()
-+{
-+    insmod $1
-+    if [ $? -ne 0 ]; then
-+	echo -e $RED
-+	echo "unable to insmod $1 (err : $?)"
-+	echo -e $NORMAL
-+	exit $?
-+    fi
-+}
-+
-+
-+load_module /lib/modules/matcp_core.ko
-+load_module /lib/modules/mausb.ko
-+#load_module /lib/modules/mamed.ko
-+load_module /lib/modules/matcp_host.ko
-+
-+mknod /dev/mausb c 100 0
-+
-+echo -e $GREEN
-+echo "mausb load process complete"
-+echo -e $NORMAL
-diff --git a/drivers/staging/mausb/scripts/load_mausb_android.sh b/drivers/staging/mausb/scripts/load_mausb_android.sh
-new file mode 100755
-index 0000000..57f119e
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/load_mausb_android.sh
-@@ -0,0 +1,33 @@
-+#!/system/xbin/ash
-+
-+# For Android targets, insmod shall be used since
-+# the ueventd take care of the dependencies.
-+
-+GREEN="\\033[1;32m"
-+NORMAL="\\033[0;39m"
-+RED="\\033[1;31m"
-+
-+load_module()
-+{
-+    insmod $1
-+    if [ $? -ne 0 ]; then
-+	echo -e $RED
-+	echo "unable to insmod $1 (err : $?)"
-+	echo -e $NORMAL
-+	exit $?
-+    fi
-+}
-+
-+
-+load_module /lib/modules/matcp_core.ko
-+load_module /lib/modules/mausb.ko
-+load_module /lib/modules/maudc.ko
-+#load_module /lib/modules/mamed.ko
-+load_module /lib/modules/matcp_host.ko
-+load_module /lib/modules/matcp_dev.ko
-+
-+mknod /dev/mausb c 100 0
-+
-+echo -e $GREEN
-+echo "mausb load process complete"
-+echo -e $NORMAL
-\ No newline at end of file
-diff --git a/drivers/staging/mausb/scripts/load_script.sh b/drivers/staging/mausb/scripts/load_script.sh
-new file mode 100755
-index 0000000..7c92afa
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/load_script.sh
-@@ -0,0 +1,125 @@
-+#!/bin/bash
-+# This script is used for loading & unloading the mausb_driver
-+
-+# note: this script must be run with root priviledge (for the modprobes)
-+
-+side="invalid"
-+mode="invalid"
-+load="load"
-+
-+# Determine weather to load a host or device in TCP mode or snap mode
-+while getopts "hdbtslu" opt; do
-+	case "$opt" in
-+	h) side="host"
-+	   ;;
-+	d) side="device"
-+	   ;;
-+	b) side="both"
-+	   ;;
-+	t) mode="tcp"
-+	   ;;
-+	s) mode="snap"
-+	   ;;
-+	l) load="load"
-+	   ;;
-+	u) load="unload"
-+	   ;;
-+	esac
-+done
-+
-+if [ "$side" == "invalid" ]
-+then
-+	echo $side
-+	echo "please choose host (-h) or device (-d)"
-+	exit
-+fi
-+
-+if [ "$mode" == "invalid" ]
-+then
-+	echo $mode
-+	echo "please choose a tcp (-t) or snap (-s)"
-+	exit
-+fi
-+
-+
-+
-+if [ "$load" == "load" ]
-+then
-+	# copy the LKM into the module library
-+	pushd $(dirname $0)
-+	cp ../drivers/*.ko /lib/modules/$(uname -r)/kernel/drivers/usb/
-+	popd
-+
-+	# depmod so the kernel can figure out its dependacies
-+	depmod -A
-+
-+	# open the file for ioctl calls
-+	mknod /dev/mausb c 100 0
-+
-+	modprobe_flags=""
-+
-+elif [ "$load" == "unload" ]
-+then
-+	# unload the drivers instead of loading them
-+	modprobe_flags="-r"
-+
-+fi
-+
-+
-+
-+# load the drivers
-+
-+if [ "$mode" == "tcp" ] && [ "$load" == "load" ]
-+then
-+	modprobe $modprobe_flags matcp_core
-+
-+elif [ "$mode" == "snap" ]
-+then
-+	modprobe $modprobe_flags masnap_core
-+fi
-+
-+
-+if [ "$side" == "device" ] || [ "$side" == "both" ]
-+then
-+	if [ "$load" == "load" ]
-+	then
-+		modprobe $modprobe_flags maudc
-+	fi
-+
-+	modprobe $modprobe_flags g_zero
-+
-+	if [ "$mode" == "tcp" ]
-+	then
-+		modprobe $modprobe_flags matcp_dev
-+
-+	elif [ "$mode" == "snap" ]
-+	then
-+		modprobe $modprobe_flags masnap_dev
-+	fi
-+fi
-+
-+if [ "$side" == "host" ] || [ "$side" == "both" ]
-+then
-+	if [ "$load" == "load" ]
-+	then
-+		modprobe $modprobe_flags mausb
-+	fi
-+
-+	if [ "$mode" == "tcp" ]
-+	then
-+		modprobe $modprobe_flags matcp_host
-+
-+	elif [ "$mode" == "snap" ]
-+	then
-+		modprobe $modprobe_flags masnap_host
-+	fi
-+
-+fi
-+
-+if [ "$load" == "unload" ]
-+then
-+	modprobe $modprobe_flags maudc
-+	modprobe $modprobe_flags mausb
-+fi
-+
-+echo "$load mausb $side $mode driver complete"
-diff --git a/drivers/staging/mausb/scripts/modprobify.sh b/drivers/staging/mausb/scripts/modprobify.sh
-new file mode 100755
-index 0000000..b5f16ab
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/modprobify.sh
-@@ -0,0 +1,10 @@
-+#!/bin/bash
-+
-+
-+# note: this scripted needs to be run as a superuser to work
-+
-+# copy the LKM into the module library
-+cp ./*.ko /lib/modules/$(uname -r)/kernel/drivers/usb/
-+
-+# depmod so the kernel can figure out its dependacies
-+depmod -A
-diff --git a/drivers/staging/mausb/scripts/unload_gzero.sh b/drivers/staging/mausb/scripts/unload_gzero.sh
-new file mode 100755
-index 0000000..e506b2d
---- /dev/null
-+++ b/drivers/staging/mausb/scripts/unload_gzero.sh
-@@ -0,0 +1,5 @@
-+#!/bin/bash
-+
-+modprobe -r g_zero
-+
-+echo g_zero unload process complete
-\ No newline at end of file
 -- 
 1.9.1
 
