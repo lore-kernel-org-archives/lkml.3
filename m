@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaKKRI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:08:29 -0500
-Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:39352 "EHLO
-	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751218AbaKKRI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:08:27 -0500
-Date: Tue, 11 Nov 2014 11:08:23 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
-In-Reply-To: <20141111153653.GB3216@lerouge>
-Message-ID: <alpine.DEB.2.11.1411111107400.6018@gentwo.org>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org> <alpine.DEB.2.11.1411012313320.5308@nanos> <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
- <20141110224306.GC29741@lerouge> <alpine.DEB.2.11.1411110857480.5148@gentwo.org> <20141111153653.GB3216@lerouge>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751567AbaKKROF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:14:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54391 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089AbaKKROD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 12:14:03 -0500
+Date: Tue, 11 Nov 2014 18:13:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: guard against misaligned
+ microcode data
+Message-ID: <20141111171357.GK31490@pd.tnic>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-8-git-send-email-hmh@hmh.eng.br>
+ <20141107195905.GE5180@pd.tnic>
+ <20141107225425.GC18128@khazad-dum.debian.net>
+ <20141107234806.GG5180@pd.tnic>
+ <20141108215749.GC32023@khazad-dum.debian.net>
+ <20141111104700.GC31490@pd.tnic>
+ <20141111165731.GA2584@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141111165731.GA2584@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Frederic Weisbecker wrote:
+On Tue, Nov 11, 2014 at 02:57:31PM -0200, Henrique de Moraes Holschuh wrote:
+> Meh, I don't know where I came up with the wrong information that kmalloc
+> aligned to 16-bytes instead of 8 bytes.
+> 
+> I do wonder why I didn't hit this while testing, though.  Maybe an artifact
+> of slub, or just my luck that I never got a memory block that was not
+> aligned to 16 bytes.
 
-> "there" here is the syscall/exception/interrupt entry path. And like I said, updating
-> timekeeping from these places is overkill (although we do it in interrupt entry on
-> dynticks-idle, but we don't have timekeeping when all system is idle).
+The ARCH_KMALLOC_MINALIGN is conditioned on ARCH_DMA_MINALIGN and a
+bunch of other things. All I'm saying is, this needs a careful study
+when, if at all, kmalloc will not give an 16-byte aligned buffer.
 
-Well that is going to extremes I would think. Lets keep one processor
-alive so that the rest can be as noise free as possible.
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
