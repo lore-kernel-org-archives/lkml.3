@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaKKLKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:10:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57677 "EHLO
+	id S1754440AbaKKLLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57784 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251AbaKKLKv (ORCPT
+	with ESMTP id S1754356AbaKKLLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:51 -0500
+	Tue, 11 Nov 2014 06:11:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@fb.com>,
+Cc: Imre Deak <imre.deak@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 116/170] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
-Date: Tue, 11 Nov 2014 11:07:55 +0000
-Message-Id: <1415704129-12709-117-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 136/170] PM / Sleep: fix recovery during resuming from hibernation
+Date: Tue, 11 Nov 2014 11:08:15 +0000
+Message-Id: <1415704129-12709-137-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
+commit 94fb823fcb4892614f57e59601bb9d4920f24711 upstream.
 
-When sg_scsi_ioctl() fails to prepare request to submit in
-blk_rq_map_kern() we jump to a label where we just end up copying
-(luckily zeroed-out) kernel buffer to userspace instead of reporting
-error. Fix the problem by jumping to the right label.
+If a device's dev_pm_ops::freeze callback fails during the QUIESCE
+phase, we don't rollback things correctly calling the thaw and complete
+callbacks. This could leave some devices in a suspended state in case of
+an error during resuming from hibernation.
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org
-Coverity-id: 1226871
-Signed-off-by: Jan Kara <jack@suse.cz>
-
-Fixed up the, now unused, out label.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/scsi_ioctl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/power/hibernate.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 84ab119b6ffa..de3bd8287d81 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -490,7 +490,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 
- 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
- 		err = DRIVER_ERROR << 24;
--		goto out;
-+		goto error;
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index fcc2611d3f14..286ef6072714 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -505,8 +505,14 @@ int hibernation_restore(int platform_mode)
+ 	error = dpm_suspend_start(PMSG_QUIESCE);
+ 	if (!error) {
+ 		error = resume_target_kernel(platform_mode);
+-		dpm_resume_end(PMSG_RECOVER);
++		/*
++		 * The above should either succeed and jump to the new kernel,
++		 * or return with an error. Otherwise things are just
++		 * undefined, so let's be paranoid.
++		 */
++		BUG_ON(!error);
  	}
- 
- 	memset(sense, 0, sizeof(sense));
-@@ -499,7 +499,6 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 
- 	blk_execute_rq(q, disk, rq, 0);
- 
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
++	dpm_resume_end(PMSG_RECOVER);
+ 	pm_restore_gfp_mask();
+ 	ftrace_start();
+ 	resume_console();
 -- 
 2.1.0
 
