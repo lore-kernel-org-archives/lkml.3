@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaKKLLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:11:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57874 "EHLO
+	id S1754708AbaKKLOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:14:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57924 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993AbaKKLL2 (ORCPT
+	with ESMTP id S1753126AbaKKLLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:28 -0500
+	Tue, 11 Nov 2014 06:11:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wang Nan <wangnan0@huawei.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 151/170] cgroup/kmemleak: add kmemleak_free() for cgroup deallocations.
-Date: Tue, 11 Nov 2014 11:08:30 +0000
-Message-Id: <1415704129-12709-152-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 160/170] ext4: prevent bugon on race between write/fcntl
+Date: Tue, 11 Nov 2014 11:08:39 +0000
+Message-Id: <1415704129-12709-161-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -29,82 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Nan <wangnan0@huawei.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 401507d67d5c2854f5a88b3f93f64fc6f267bca5 upstream.
+commit a41537e69b4aa43f0fea02498c2595a81267383b upstream.
 
-Commit ff7ee93f4715 ("cgroup/kmemleak: Annotate alloc_page() for cgroup
-allocations") introduces kmemleak_alloc() for alloc_page_cgroup(), but
-corresponding kmemleak_free() is missing, which makes kmemleak be
-wrongly disabled after memory offlining.  Log is pasted at the end of
-this commit message.
+O_DIRECT flags can be toggeled via fcntl(F_SETFL). But this value checked
+twice inside ext4_file_write_iter() and __generic_file_write() which
+result in BUG_ON inside ext4_direct_IO.
 
-This patch add kmemleak_free() into free_page_cgroup().  During page
-offlining, this patch removes corresponding entries in kmemleak rbtree.
-After that, the freed memory can be allocated again by other subsystems
-without killing kmemleak.
+Let's initialize iocb->private unconditionally.
 
-  bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
+TESTCASE: xfstest:generic/036  https://patchwork.ozlabs.org/patch/402445/
 
-  Offlined Pages 32768
-  kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
-  CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x46/0x58
-    create_object+0x266/0x2c0
-    kmemleak_alloc+0x26/0x50
-    kmem_cache_alloc+0xd3/0x160
-    __sigqueue_alloc+0x49/0xd0
-    __send_signal+0xcb/0x410
-    send_signal+0x45/0x90
-    __group_send_sig_info+0x13/0x20
-    do_notify_parent+0x1bb/0x260
-    do_exit+0x767/0xa40
-    do_group_exit+0x44/0xa0
-    SyS_exit_group+0x17/0x20
-    system_call_fastpath+0x16/0x1b
+#TYPICAL STACK TRACE:
+kernel BUG at fs/ext4/inode.c:2960!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: brd iTCO_wdt lpc_ich mfd_core igb ptp dm_mirror dm_region_hash dm_log dm_mod
+CPU: 6 PID: 5505 Comm: aio-dio-fcntl-r Not tainted 3.17.0-rc2-00176-gff5c017 #161
+Hardware name: Intel Corporation W2600CR/W2600CR, BIOS SE5C600.86B.99.99.x028.061320111235 06/13/2011
+task: ffff88080e95a7c0 ti: ffff88080f908000 task.ti: ffff88080f908000
+RIP: 0010:[<ffffffff811fabf2>]  [<ffffffff811fabf2>] ext4_direct_IO+0x162/0x3d0
+RSP: 0018:ffff88080f90bb58  EFLAGS: 00010246
+RAX: 0000000000000400 RBX: ffff88080fdb2a28 RCX: 00000000a802c818
+RDX: 0000040000080000 RSI: ffff88080d8aeb80 RDI: 0000000000000001
+RBP: ffff88080f90bbc8 R08: 0000000000000000 R09: 0000000000001581
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff88080d8aeb80
+R13: ffff88080f90bbf8 R14: ffff88080fdb28c8 R15: ffff88080fdb2a28
+FS:  00007f23b2055700(0000) GS:ffff880818400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f23b2045000 CR3: 000000080cedf000 CR4: 00000000000407e0
+Stack:
+ ffff88080f90bb98 0000000000000000 7ffffffffffffffe ffff88080fdb2c30
+ 0000000000000200 0000000000000200 0000000000000001 0000000000000200
+ ffff88080f90bbc8 ffff88080fdb2c30 ffff88080f90be08 0000000000000200
+Call Trace:
+ [<ffffffff8112ca9d>] generic_file_direct_write+0xed/0x180
+ [<ffffffff8112f2b2>] __generic_file_write_iter+0x222/0x370
+ [<ffffffff811f495b>] ext4_file_write_iter+0x34b/0x400
+ [<ffffffff811bd709>] ? aio_run_iocb+0x239/0x410
+ [<ffffffff811bd709>] ? aio_run_iocb+0x239/0x410
+ [<ffffffff810990e5>] ? local_clock+0x25/0x30
+ [<ffffffff810abd94>] ? __lock_acquire+0x274/0x700
+ [<ffffffff811f4610>] ? ext4_unwritten_wait+0xb0/0xb0
+ [<ffffffff811bd756>] aio_run_iocb+0x286/0x410
+ [<ffffffff810990e5>] ? local_clock+0x25/0x30
+ [<ffffffff810ac359>] ? lock_release_holdtime+0x29/0x190
+ [<ffffffff811bc05b>] ? lookup_ioctx+0x4b/0xf0
+ [<ffffffff811bde3b>] do_io_submit+0x55b/0x740
+ [<ffffffff811bdcaa>] ? do_io_submit+0x3ca/0x740
+ [<ffffffff811be030>] SyS_io_submit+0x10/0x20
+ [<ffffffff815ce192>] system_call_fastpath+0x16/0x1b
+Code: 01 48 8b 80 f0 01 00 00 48 8b 18 49 8b 45 10 0f 85 f1 01 00 00 48 03 45 c8 48 3b 43 48 0f 8f e3 01 00 00 49 83 7c
+24 18 00 75 04 <0f> 0b eb fe f0 ff 83 ec 01 00 00 49 8b 44 24 18 8b 00 85 c0 89
+RIP  [<ffffffff811fabf2>] ext4_direct_IO+0x162/0x3d0
+ RSP <ffff88080f90bb58>
 
-  kmemleak: Kernel memory leak detector disabled
-  kmemleak: Object 0xffff880016900000 (size 524288):
-  kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
-  kmemleak:   min_count = 0
-  kmemleak:   count = 0
-  kmemleak:   flags = 0x1
-  kmemleak:   checksum = 0
-  kmemleak:   backtrace:
-        log_early+0x63/0x77
-        kmemleak_alloc+0x4b/0x50
-        init_section_page_cgroup+0x7f/0xf5
-        page_cgroup_init+0xc5/0xd0
-        start_kernel+0x333/0x408
-        x86_64_start_reservations+0x2a/0x2c
-        x86_64_start_kernel+0xf5/0xfc
-
-Fixes: ff7ee93f4715 (cgroup/kmemleak: Annotate alloc_page() for cgroup allocations)
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/page_cgroup.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 3708264d2833..5331c2bd85a2 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -171,6 +171,7 @@ static void free_page_cgroup(void *addr)
- 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
- 
- 		BUG_ON(PageReserved(page));
-+		kmemleak_free(addr);
- 		free_pages_exact(addr, table_size);
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 8695f70af1ef..b0d188939f5a 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -137,10 +137,10 @@ ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+ 			iov_iter_truncate(from, sbi->s_bitmap_maxbytes - pos);
  	}
- }
+ 
++	iocb->private = &overwrite;
+ 	if (o_direct) {
+ 		blk_start_plug(&plug);
+ 
+-		iocb->private = &overwrite;
+ 
+ 		/* check whether we do a DIO overwrite or not */
+ 		if (ext4_should_dioread_nolock(inode) && !aio_mutex &&
 -- 
 2.1.0
 
