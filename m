@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746AbaKKCGl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 21:06:41 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54316 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652AbaKKCGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 21:06:40 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: crypto: zeroization of sensitive data in af_alg
-Date: Tue, 11 Nov 2014 03:06:32 +0100
-Message-ID: <1533864.71MuF2upah@tachyon.chronox.de>
-User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141110140518.GD8578@gondor.apana.org.au>
-References: <1979092.odOtqL46qU@tachyon.chronox.de> <20141110140518.GD8578@gondor.apana.org.au>
+	id S1751867AbaKKCHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 21:07:53 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:56807 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaKKCHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 21:07:51 -0500
+Message-ID: <54616F74.5010408@codeaurora.org>
+Date: Mon, 10 Nov 2014 18:07:48 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: frowand.list@gmail.com
+CC: Kevin Hilman <khilman@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>
+Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
+References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com> <5461150B.2010907@codeaurora.org> <54616CB3.5000405@gmail.com>
+In-Reply-To: <54616CB3.5000405@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 10. November 2014, 22:05:18 schrieb Herbert Xu:
+On 11/10/2014 05:56 PM, Frank Rowand wrote:
+> On 11/10/2014 11:42 AM, Stephen Boyd wrote:
+>> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+>> index 09364dd8cf3a..d1bc6b6cbc70 100644
+>> --- a/drivers/tty/serial/msm_serial.c
+>> +++ b/drivers/tty/serial/msm_serial.c
+>> @@ -1046,14 +1046,14 @@ static int msm_serial_probe(struct platform_device *pdev)
+>>  	const struct of_device_id *id;
+>>  	int irq, line;
+>>  
+>> -	if (pdev->id == -1)
+>> -		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
+>> -
+>>  	if (pdev->dev.of_node)
+>>  		line = of_alias_get_id(pdev->dev.of_node, "serial");
+>>  	else
+>>  		line = pdev->id;
+>>  
+>> +	if (line < 0)
+>> +		line = atomic_inc_return(&msm_uart_next_id) - 1;
+>> +
+>>  	if (unlikely(line < 0 || line >= UART_NR))
+> Then this original check for "line < 0" can also be removed.
+>
+>
 
-Hi Herbert,
-
-> On Sun, Nov 09, 2014 at 11:33:52PM +0100, Stephan Mueller wrote:
-> > while working on the AF_ALG interface, I saw no active zeroizations of
-> > memory that may hold sensitive data that is maintained outside the kernel
-> > crypto API cipher handles. I think the following memory segments fall
-> > under that
-> > category:
-> Are you talking about temporary data that we generate as part of
-> the processing? If so they should be zeroed by the entity that
-> generates them.
-
-I currently see that the IV buffer (owned by skcipher) and the message digest 
-buffer (owned by hash) are not memset(0) before freeing them. I agree that 
-both are not really sensitive data. But wouldn't it be prudent to memset(0) 
-them nonetheless in the skcipher_sock_destruct and hash_sock_destruct 
-functions, respectively? 
-> 
-> > However, I am failing to find the right spot to add a zeroization for the
-> > latter one, i.e. the code that handles the pages send in by the user or
-> > the
-> > pages that are returned by the crypto API. Initially I thought
-> > skcipher_pull_sgl is a good spot for the symmetric ciphers as it evicts
-> > the
-> > used pages out of the scope of the kernel crypto API. I added a
-> > clear_page(sg_page(sg+1)) as well as memset(sg_page(sg+1), 0, plen) right
-> > before the put_page call. All that I got in return was a BUG() from the
-> > memory management layer.
-> 
-> I don't think I understand what exactly you're trying to zero.
-> Can you give an example?
-
-Apologies, my bad as I did not check get_user_pages_fast well enough. I see 
-now that we operate on the pages in user space directly without copy_from_user 
-that would imply a kernel-internal copy. Please disregard my comment.
-> 
-> Thanks,
-
+Well this matches what was there before. It would do atomic_inc_return
+if the line was negative and then still check for a negative value. I
+don't mind removing it though. Perhaps we should use an ida?
 
 -- 
-Ciao
-Stephan
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
