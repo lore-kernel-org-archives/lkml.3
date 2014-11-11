@@ -1,137 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaKKPKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:10:37 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:64134 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaKKPKf (ORCPT
+	id S1751482AbaKKPLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:11:46 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56118 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaKKPLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:10:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141103232913.GA7454@kroah.com>
-References: <20141006194418.GA399@debian>
-	<1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com>
-	<54576545.8030300@ti.com>
-	<20141103232913.GA7454@kroah.com>
-Date: Tue, 11 Nov 2014 16:10:34 +0100
-Message-ID: <CAFqH_51SVdKkP4Hfzz-Nc3zSvMn=M3xxkZNbyQff_YWkqh0jDQ@mail.gmail.com>
-Subject: Re: [PATCHv2] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
-From: Enric Balletbo Serra <eballetbo@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Oussama Ghorbel <ghorbel@pivasoftware.com>,
-        Rabin Vincent <rabin@rab.in>, rogerq@ti.com,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Angelo Dureghello <angelo70@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Nov 2014 10:11:45 -0500
+Message-ID: <1415718700.3929.11.camel@arm.com>
+Subject: Re: [RFC PATCH] virtio-mmio: support for multiple irqs
+From: Pawel Moll <pawel.moll@arm.com>
+To: Shannon Zhao <zhaoshenglong@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
+        "hangaohuai@huawei.com" <hangaohuai@huawei.com>,
+        "joel.schopp@amd.com" <joel.schopp@amd.com>,
+        "john.liuli@huawei.com" <john.liuli@huawei.com>,
+        "remy.gauguey@cea.fr" <remy.gauguey@cea.fr>,
+        "mst@redhat.com" <mst@redhat.com>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "n.nikolaev@virtualopensystems.com" 
+	<n.nikolaev@virtualopensystems.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "peter.huangpeng@huawei.com" <peter.huangpeng@huawei.com>
+Date: Tue, 11 Nov 2014 15:11:40 +0000
+In-Reply-To: <1415093712-15156-1-git-send-email-zhaoshenglong@huawei.com>
+References: <1415093712-15156-1-git-send-email-zhaoshenglong@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, 2014-11-04 at 09:35 +0000, Shannon Zhao wrote:
+> As the current virtio-mmio only support single irq,
+> so some advanced features such as vhost-net with irqfd
+> are not supported. And the net performance is not
+> the best without vhost-net and irqfd supporting.
 
-2014-11-04 0:29 GMT+01:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Mon, Nov 03, 2014 at 04:51:41PM +0530, Kishon Vijay Abraham I wrote:
->> Hi Greg,
->>
->> On Tuesday 07 October 2014 04:32 PM, Oussama Ghorbel wrote:
->> > The USB OTG port does not work since v3.16 on omap platform.
->> > This is a regression introduced by the commit
->> > eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
->> >  and remove).
->> > This because the call to pm_runtime_enable() function is moved after the
->> > call to devm_phy_create() function, which has side effect since later in
->> > the subsequent calls of devm_phy_create() there is a check with
->> > pm_runtime_enabled() to configure few things.
->>
->> This is the only fix for this -rc cycle in the PHY susbsystem. So can you take
->> this directly? Or else I can prepare a pull request. Let me know.
->>
->> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
->
-> I don't have this in my archives anymore, please resend so that I can
-> apply it from an email.
->
-> thanks,
->
-> greg k-h
+Could you, please, help understanding me where does the main issue is?
+Is it about:
 
-I'm trying to use the OTG port as HOST on OMAP3-based platform
-(IGEPv2), I saw that this patch is already applied in kernel
-3.18.0-rc4 so I expected it to work, but I've some problems. To
-explain the situation let me propose some test cases.
+1. The fact that the existing implementation blindly kicks all queues,
+instead only of the updated ones?
 
-The first tests I made were configuring the MUSB OTG as HOST only
-mode,In this mode test case A fails and test case B and C succeed.
+or:
 
-USB Mode Selection (HOST only mode)
-    Test case A) Boot the system :
-        mode : b_idle
-        vbus : Vbus off, timeout 1100 msec
-        1) Ground ID-pin
-            mode : a_idle
-            vbus : Vbus off, timeout 1100 msec
-        2) Plug pendrive
-            mode : a_idle
-            vbus : Vbus off, timeout 1100 msec
-        Failed: Pendrive is not detected.
+2. Literally having a dedicated interrupt line (remember, we're talking
+"real" interrupts here, not message signalled ones) per queue, so they
+can be handled by different processors at the same time?
 
-    Test case B) Boot with ID-pin grounded :
-        mode : a_idle
-        vbus : Vbus off, timeout 1100 msec
-        1) Plug pendrive
-            mode : a_host
-            vbus : Vbus off, timeout 1100 msec
-        Success: Pendrive is detected
+Now, if it's only about 1, the simplest solution would be to extend the
+VIRTIO_MMIO_INTERRUPT_STATUS register to signal up to 30 queues
+"readiness" in bits 2-31, still keeping bit 0 as a "combined"
+VIRTIO_MMIO_INT_VRING. In case when VIRTIO_MMIO_INT_VRING is set and
+none of the "individual" bits is (a device which doesn't support this
+feature or one that has more than 30 queues and of of those is ready) we
+would fall back to the original "kick all queues" approach. This could
+be a useful (and pretty simple) extension. In the worst case scenario it
+could be a post-1.0 standard addition, as it would provide backward
+compatibility.
 
-    Test case C) Boot with ID-pin grounded and pendrive
-        mode : a_host
-        vbus : Vbus off, timeout 1100 msec
-        Success: Pendrive is detected
+However, if it's about 2, we're talking larger changes here. From the
+device perspective, we can define it as having per-queue (plus one for
+config) interrupt output *and* a "combined" output, being simple logical
+"or" of all the others. Then, the Device Tree bindings would be used to
+express the implementation choices (I'd keep the kernel parameter
+approach supporting the single interrupt case only). This is a very
+popular and well understood approach for memory mapped peripherals (for
+example, see the . It allows the system integrator to make a decision
+when it's coming to latency vs number interrupt lines trade off. The
+main issue is that we can't really impose a limit on a number of queues,
+therefore on a number of interrupts. This would require adding a new
+"interrupt acknowledge" register, which would take a number of the queue
+(or a symbolic value for the config one) instead of a bit mask. And I
+must say that I'm not enjoying the idea of such substantial change to
+the specification that late in the process... (in other words: you'll
+have to put extra effort into convincing me :-)
 
-The second tests I made were configuring the MUSB OTG as Dual Role
-mode,In this mode all test cases failed.
+> This patch support virtio-mmio to request multiple
+> irqs like virtio-pci. With this patch and qemu assigning
+> multiple irqs for virtio-mmio device, it's ok to use
+> vhost-net with irqfd on arm/arm64.
 
-MUSB Mode Selection (Dual Role mode)
-    Test case A) Boot the system :
-        mode : b_idle
-        vbus : Vbus off, timeout 1100 msec
-        1) Ground ID-pin:
-            mode : a_idle
-            mode : Vbus off, timeout 1100 msec
-        2) Plug pendrive
-            mode : a_idle
-            vbus : Vbus off, timeout 1100 msec
-        Failed: Pendrive is not detected.
+Could you please tell me how many queues (interrupts) are we talking
+about in this case? 5? A dozen? Hundreds?
 
-    Test case B) Boot with ID-pin grounded :
-        mode : b_idle
-        vbus : Vbus off, timeout 1100 msec
-        1) Plug pendrive
-            mode : b_idle
-            vbus : Vbus off, timeout 1100 msec
-        Failed: Pendrive is not detected.
+Disclaimer: I have no personal experience with virtio and network (due
+to the fact how our Fast Models are implemented, I mostly us block
+devices and 9p protocol over virtio and I get enough performance from
+them :-).
 
-    Test case C) Boot with ID-pin grounded and pendrive
-        mode : b_idle
-        vbus : Vbus off, timeout 1100 msec
-        Failed: Pendrive is not detected.
+> As arm doesn't support msi-x now, 
 
-I got the mode and vbus values from sysfs:
+To be precise: "ARM" does "support" MSI-X :-) (google for GICv2m)
 
-    cat /sys/bus/platform/drivers/musb-hdrc/musb-hdrc.0.auto/mode
-    cat /sys/bus/platform/drivers/musb-hdrc/musb-hdrc.0.auto/vbus
+The correct statement would be: "normal memory mapped devices have no
+interface for message signalled interrupts (like MSI-X)"
 
-Did anybody test these test cases ?
+> we use GSI for multiple irq. 
 
-I'm a bit surprised with the vbus status because always reports Vbus
-off, although pendrive is working. I'm missing something ?
+I'm not sure what GSI stands for, but looking at the code I assume it's
+just a "normal" peripheral interrupt.
 
-Note that if you see at the mode transitions something looks wrong.
-For example, in Dual Role Mode test case B and C the mode is b_idle
-instead of a_idle.
+> In this patch we use "vm_try_to_find_vqs"
+> to check whether multiple irqs are supported like
+> virtio-pci.
 
-Thanks,
-   Enric
+Yeah, I can see that you have followed virtio-pci quite literally. I'm
+particularly not convinced to the one interrupt for config, one for all
+queues option. Doesn't make any sense to me here.
+
+> Is this the right direction? is there other ways to
+> make virtio-mmio support multiple irq? Hope for feedback.
+
+One point I'd like to make is that the device was intentionally designed
+with simplicity in mind first, performance later (something about
+"embedded" etc" :-). Changing this assumption is of course possible, but
+- I must say - makes me slightly uncomfortable... The extensions we're
+discussing here seem doable, but I've noticed your other patches doing
+with a shared memory region and I didn't like them at all, sorry.
+
+I see the subject has been already touched in the discussions, but let
+me bring PCI to the surface again. We're getting more server-class SOCs
+in the market, which obviously bring PCI with them to both arm and arm64
+world, something unheard of in the "mobile past". I believe the PCI
+patches for the arm64 have been already merged in the kernel.
+
+Therefore: I'm not your boss so, obviously, I can't tell you what to do,
+but could you consider redirecting your efforts into getting the "ARM
+PCI" up and running in qemu so you can simply use the existing
+infrastructure? This would save us a lot of work and pain in doing late
+functional changes to the standard and will be probably more
+future-proof from your perspective (PCI will happen, sooner or later -
+you can make it sooner ;-)
+
+Regards
+
+Pawel
+
