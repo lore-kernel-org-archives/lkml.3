@@ -1,83 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781AbaKKCUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 21:20:07 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51285 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaKKCUF (ORCPT
+	id S1751878AbaKKCUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 21:20:17 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:53230 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaKKCUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 21:20:05 -0500
-Message-ID: <54617251.10306@gmail.com>
-Date: Mon, 10 Nov 2014 18:20:01 -0800
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: frowand.list@gmail.com
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <545C4E1F.4060401@gmail.com>
-In-Reply-To: <545C4E1F.4060401@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Nov 2014 21:20:12 -0500
+From: David Fries <David@Fries.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATHC 0/2] cn: w1: buffer size checks
+Date: Mon, 10 Nov 2014 20:19:35 -0600
+Message-Id: <1415672377-18758-1-git-send-email-David@Fries.net>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <18541415578350@web5g.yandex.ru>
+References: <18541415578350@web5g.yandex.ru>
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Mon, 10 Nov 2014 20:19:51 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Rowand <frank.rowand@sonymobile.com>
+Greg Kroah-Hartman,
+These issues were found by Dan Carpenter with a static checker and will check
+message buffer lengths from userspace or avoid length overflows.  Evgeniy
+Polyakov has given his ack, and they can be applied to the stable branch as
+well.
 
-v2, changes from v1:
-  - The patch this documents was updated to make the serialN alias
-    optional instead of required.
-
-Update devicetree binding for msm_serial to reflect msm_serial_probe()
-getting line id from the serial alias.
-
-Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
----
- Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt |   15 +++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
-
-Index: linux/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-===================================================================
---- linux.orig/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-+++ linux/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-@@ -27,11 +27,21 @@ Optional properties:
- - dmas: Should contain dma specifiers for transmit and receive channels
- - dma-names: Should contain "tx" for transmit and "rx" for receive channels
- 
-+Note: Each UART port should have an alias correctly numbered in the
-+"aliases" node, according to serialN format, where N is the port number
-+(non-negative decimal integer).  If the aliases are not present then
-+the port numbers will be 0..(number of UARTS - 1), assigned in the driver
-+probe order.
-+
- Examples:
- 
- A uartdm v1.4 device with dma capabilities.
- 
--serial@f991e000 {
-+aliases {
-+	serial0 = &serial0;
-+};
-+
-+serial0: serial@f991e000 {
- 	compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
- 	reg = <0xf991e000 0x1000>;
- 	interrupts = <0 108 0x0>;
-@@ -43,7 +53,11 @@ serial@f991e000 {
- 
- A uartdm v1.3 device without dma capabilities and part of a GSBI complex.
- 
--serial@19c40000 {
-+aliases {
-+	serial0 = &serial0;
-+};
-+
-+serial0: serial@19c40000 {
- 	compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
- 	reg = <0x19c40000 0x1000>,
- 	      <0x19c00000 0x1000>;
+[PATCH 1/2] cn: verify msg->len before making callback
+[PATCH 2/2] w1: avoid potential u16 overflow
