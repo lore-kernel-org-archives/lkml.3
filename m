@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaKKXQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 18:16:36 -0500
-Received: from mout.gmx.com ([74.208.4.200]:56422 "EHLO mout.gmx.com"
+	id S1752569AbaKKXUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 18:20:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33664 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaKKXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 18:16:35 -0500
+	id S1752489AbaKKXUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 18:20:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
+   d="scan'208";a="620835743"
+Message-ID: <5462999A.7090706@intel.com>
+Date: Tue, 11 Nov 2014 15:19:54 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Message-ID: <trinity-9deba5f6-773b-4e0f-8a3f-b1df2e351d03-1415747793609@3capp-mailcom-lxa04>
-From: "Chateau DuBlanc" <chateaudublanc@post.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: <PulseAudio>
-Content-Type: text/plain; charset=UTF-8
-Date: Wed, 12 Nov 2014 00:16:34 +0100
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:qDZr9Yv6sqwmkQ+kI9LLAN0SAZKuv+2RmOQ0IP5t5es
- uQ7xLur4OWDsGRiakTQxsG0NJvKQVAZnK8xEvFHr7R5XVgnOH7
- Cdkl7NKphxXi7LtvQMSJJwAv08LWIZds7cUvB2zQW3Jl1tBM1q
- 2I4FLKffahsnyL0Syfv5mZqvoFay3sDmSfvDiFM1CcCIeL2K6P
- GP/43KrSHWn/SkBUHSh16DlrAGjlldrbenDAyljXXMCzsCNPXl
- 3DQNqk5PGNseTTBZp2KaIc8p4UdPhgkZI9gHTlAag7J+dIrj2q
- Oicwnkn4bDhj2rBTp4D87WlUMXR
-X-UI-Out-Filterresults: notjunk:1;
+To: Borislav Petkov <bp@suse.de>, Matt Fleming <matt.fleming@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I appreciate you work over the years making pulseaudio not a piece of shit.
-Poettering is like a leaf blowing in the wind with an attention span measured in
-dog years.
+I'm seeing a BUG() at boot in __phys_addr when it has DEBUG_VIRTUAL enabled:
 
-For my main systems I use pure alsa. Everything needed can and is done through it
-and it's config files (yes they're complex, but that's the workflow I prefer on
-systems I want to have tight control over). When I need to record alsa is where it is at.
-It is easy to use alsa config to combine multiple sound cards into one many channel
-virtual sound card and record (conncurrently multitrack) using that.
+>> [    1.193264] ------------[ cut here ]------------
+>> [    1.198502] kernel BUG at /home/davehans/linux.git/arch/x86/mm/physaddr.c:36!
+> ...
+>> [    1.368810] Call Trace:
+>> [    1.371590]  [<ffffffff8105824c>] __change_page_attr_set_clr+0x42c/0xff0
+>> [    1.379197]  [<ffffffff81059e42>] kernel_map_pages_in_pgd+0x72/0x110
+>> [    1.386410]  [<ffffffff81fe2be2>] __map_region+0x45/0x63
+>> [    1.392437]  [<ffffffff81fe2e13>] efi_map_region+0x32/0xce
+>> [    1.398663]  [<ffffffff81fe2936>] efi_enter_virtual_mode+0x18c/0x3a4
+>> [    1.405876]  [<ffffffff81fcb0b6>] start_kernel+0x421/0x4a1
+>> [    1.412101]  [<ffffffff81fcaa85>] ? set_init_arg+0x55/0x55
+>> [    1.418327]  [<ffffffff81fca120>] ? early_idt_handlers+0x120/0x120
+>> [    1.425342]  [<ffffffff81fca5f2>] x86_64_start_reservations+0x2a/0x2c
+>> [    1.432652]  [<ffffffff81fca746>] x86_64_start_kernel+0x152/0x161
+>> [    1.439565] Code: 0f 94 c2 31 c0 e8 a6 47 83 00 48 c7 c7 41 49 cc 81 31 c0 e8 98 47 83 00 31 d2 be 01 00 00 00 48 c7 c7 a0 49 f2 81 e8 ab 4a 0e 00 <0f> 0b 0f 0b 4c 89 e2 48 c7 c6 b3 e5 a0 81 48 c7 c7 5c 7a ca 81 
+>> [    1.461866] RIP  [<ffffffff8105c055>] __phys_addr+0x185/0x260
+>> [    1.468400]  RSP <ffffffff81e03cf8>
+>> [    1.472396] ---[ end trace b59b0f17341a4bc4 ]---
+>> [    1.477663] Kernel panic - not syncing: Attempted to kill the idle task!
+>> [    1.485270] ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
 
-(Though I prefer to use one of the real non-computer multitrack recording devices)
+But I've noticed something odd.  kernel_map_pages_in_pgd() takes a pfn:
 
-Pulseaudio, well it's fine on fire-and-forget systems I just install to be non-productive
-desktops. It has pauvcontrol, an easy gui for when I don't want to be bothered.
+extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long
+			address, unsigned numpages, unsigned long
+			page_flags);
 
-That's its value.
-Alsa if better for everything else.
+But the code in arch/x86/platform/efi/efi_64.c seems a bit confused
+about that.  Two users pass a physical address while a third passes in a
+pfn:
 
-Anyway, thanks for fixing what broke linux audio forever. I'm sure that was a long hard
-and thankless job. Someone made a mess, was incompetent, and you said "finally he's gone
-not to fix this shit and make it work like it promised to".
+>         if (kernel_map_pages_in_pgd(pgd, text >> PAGE_SHIFT, text, npages, 0)) {
+>         if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
+>         if (kernel_map_pages_in_pgd(pgd, pa_memmap, pa_memmap, num_pages, _PAGE_NX)) {
 
-Thanks for that.
-(Note: as I said before, on important machines I don't run pulse audio or other always-on
-daemons: the kernel is a security nightmare as is, don't need more of the same type of
-complex code always running on security-neccesary systems.)
+kernel_map_pages_in_pgd() also sticks that value in to 'struct
+cpa_data'->pfn.  But, then the "PFN" seems to get used like a physical
+address.  For instance:
 
-> Sent: Tuesday, November 11, 2014 at 9:41 PM
-> From: "Luke Yelavich" <themuso@ubuntu.com>
-> To: ubuntu-devel-discuss@lists.ubuntu.com
-> Subject: Re: <PulseAudio>
->
-> On Sun, Sep 28, 2014 at 03:05:57AM AEST, Nomen Nescio wrote:
-> > 2014-03-03 PulseAudio 5.0 has been released
-> > 
-> > http://www.freedesktop.org/wiki/Software/PulseAudio
-> 
-> This is known, however we have some very tight integration with PulseAudio, both for the Desktop and the phone, and updating all the integrated components in lockstep takes time.
-> 
-> Chances are vivid will have PulseAudio 5.0 or even 6.0, but I cannot promise anything at this stage.
-> 
-> Luke
-> 
-> -- 
-> Ubuntu-devel-discuss mailing list
-> Ubuntu-devel-discuss@lists.ubuntu.com
-> Modify settings or unsubscribe at: https://lists.ubuntu.com/mailman/listinfo/ubuntu-devel-discuss
-> 
+                set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE | ...
+
+How could this possibly work?
