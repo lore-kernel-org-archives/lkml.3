@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaKKLtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:49:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57470 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973AbaKKLKL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:11 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Pravin B Shelar <pshelar@nicira.com>, Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 074/170] ipv4: fix a potential use after free in ip_tunnel_core.c
-Date: Tue, 11 Nov 2014 11:07:13 +0000
-Message-Id: <1415704129-12709-75-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S932094AbaKKLuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:50:06 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:41600 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626AbaKKLuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:50:00 -0500
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH] mm: check memory reclaim bugs caused fs reentrance
+Date: Tue, 11 Nov 2014 15:49:50 +0400
+Message-Id: <1415706590-24159-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+If filesystem holds transaction open 'current->journal_info' it should not
+performs memory allocations with __GFP_FS flag enabled otherwise this result in fs
+reentarance which lead to:
+1) reentrance to itself : deadlock or internal assertion failure due to incorrect journal credits
+1) entrance to another fs: assertion faulure or silient corruption due to incorrect journal
 
-------------------
-
-From: Li RongQing <roy.qing.li@gmail.com>
-
-commit 1245dfc8cadb258386fcd27df38215a0eccb1f17 upstream.
-
-pskb_may_pull() maybe change skb->data and make eth pointer oboslete,
-so set eth after pskb_may_pull()
-
-Fixes:3d7b46cd("ip_tunnel: push generic protocol handling to ip_tunnel module")
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 ---
- net/ipv4/ip_tunnel_core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/kernel.h |    7 +++++++
+ mm/dmapool.c           |    1 +
+ mm/mempool.c           |    1 +
+ mm/page_alloc.c        |    1 +
+ mm/slab.c              |    1 +
+ mm/slub.c              |    1 +
+ 6 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/net/ipv4/ip_tunnel_core.c b/net/ipv4/ip_tunnel_core.c
-index f4c987bb7e94..88c386cf7d85 100644
---- a/net/ipv4/ip_tunnel_core.c
-+++ b/net/ipv4/ip_tunnel_core.c
-@@ -91,11 +91,12 @@ int iptunnel_pull_header(struct sk_buff *skb, int hdr_len, __be16 inner_proto)
- 	skb_pull_rcsum(skb, hdr_len);
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f5..69923d4 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -232,6 +232,13 @@ void might_fault(void);
+ static inline void might_fault(void) { }
+ #endif
  
- 	if (inner_proto == htons(ETH_P_TEB)) {
--		struct ethhdr *eh = (struct ethhdr *)skb->data;
-+		struct ethhdr *eh;
++#ifdef CONFIG_PROVE_LOCKING
++#define might_enter_fs_if(cond) \
++	 WARN_ON_ONCE((cond) && current->journal_info)
++#else
++static inline void might_enter_fs_if(bool cond) { }
++#endif
++
+ extern struct atomic_notifier_head panic_notifier_list;
+ extern long (*panic_blink)(int state);
+ __printf(1, 2)
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index fd5fe43..c543eb8 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -324,6 +324,7 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+ 	void *retval;
  
- 		if (unlikely(!pskb_may_pull(skb, ETH_HLEN)))
- 			return -ENOMEM;
+ 	might_sleep_if(mem_flags & __GFP_WAIT);
++	might_enter_fs_if(mem_flags & __GFP_FS);
  
-+		eh = (struct ethhdr *)skb->data;
- 		if (likely(ntohs(eh->h_proto) >= ETH_P_802_3_MIN))
- 			skb->protocol = eh->h_proto;
- 		else
+ 	spin_lock_irqsave(&pool->lock, flags);
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
+diff --git a/mm/mempool.c b/mm/mempool.c
+index e209c98..b5bb86f 100644
+--- a/mm/mempool.c
++++ b/mm/mempool.c
+@@ -204,6 +204,7 @@ void * mempool_alloc(mempool_t *pool, gfp_t gfp_mask)
+ 
+ 	VM_WARN_ON_ONCE(gfp_mask & __GFP_ZERO);
+ 	might_sleep_if(gfp_mask & __GFP_WAIT);
++	might_enter_fs_if(gfp_mask & __GFP_FS);
+ 
+ 	gfp_mask |= __GFP_NOMEMALLOC;	/* don't allocate emergency reserves */
+ 	gfp_mask |= __GFP_NORETRY;	/* don't loop in __alloc_pages */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9cd36b8..284a699 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2805,6 +2805,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	lockdep_trace_alloc(gfp_mask);
+ 
+ 	might_sleep_if(gfp_mask & __GFP_WAIT);
++	might_enter_fs_if(gfp_mask & __GFP_FS);
+ 
+ 	if (should_fail_alloc_page(gfp_mask, order))
+ 		return NULL;
+diff --git a/mm/slab.c b/mm/slab.c
+index eb2b2ea..43b0d2f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2844,6 +2844,7 @@ static inline void cache_alloc_debugcheck_before(struct kmem_cache *cachep,
+ 						gfp_t flags)
+ {
+ 	might_sleep_if(flags & __GFP_WAIT);
++	might_enter_fs_if(flags & __GFP_FS);
+ #if DEBUG
+ 	kmem_flagcheck(cachep, flags);
+ #endif
+diff --git a/mm/slub.c b/mm/slub.c
+index ae7b9f1..474fc53 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1238,6 +1238,7 @@ static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+ 	flags &= gfp_allowed_mask;
+ 	lockdep_trace_alloc(flags);
+ 	might_sleep_if(flags & __GFP_WAIT);
++	might_enter_fs_if(flags & __GFP_FS);
+ 
+ 	return should_failslab(s->object_size, flags, s->flags);
+ }
 -- 
-2.1.0
+1.7.1
 
