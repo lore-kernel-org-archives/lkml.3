@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaKKLW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:22:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57805 "EHLO
+	id S1754401AbaKKLLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57774 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259AbaKKLLP (ORCPT
+	with ESMTP id S1754259AbaKKLLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:15 -0500
+	Tue, 11 Nov 2014 06:11:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Christian Vogel <vogelchr@vogel.cx>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 141/170] drm/radeon/dpm: disable ulv support on SI
-Date: Tue, 11 Nov 2014 11:08:20 +0000
-Message-Id: <1415704129-12709-142-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 134/170] ALSA: bebob: Uninitialized id returned by saffirepro_both_clk_src_get
+Date: Tue, 11 Nov 2014 11:08:13 +0000
+Message-Id: <1415704129-12709-135-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +27,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Christian Vogel <vogelchr@vogel.cx>
 
-commit 6fa455935ab956248b165f150ec6ae9106210077 upstream.
+commit d1d0b6b668818571122d30d68a0b3f768bd83a52 upstream.
 
-Causes problems on some boards.
+snd_bebob_stream_check_internal_clock() may get an id from
+saffirepro_both_clk_src_get (via clk_src->get()) that was uninitialized.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=82889
+a) make logic in saffirepro_both_clk_src_get explicit
+b) test if id used in snd_bebob_stream_check_internal_clock matches array size
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[fixed missing signed prefix to *_maps[] by tiwai]
+
+Signed-off-by: Christian Vogel <vogelchr@vogel.cx>
+Reviewed-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/si_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/firewire/bebob/bebob_focusrite.c | 62 ++++++++++++++++++++++++++--------
+ sound/firewire/bebob/bebob_stream.c    | 18 ++++++++--
+ 2 files changed, 63 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
-index 58918868f894..78dfbe35393f 100644
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -6207,7 +6207,7 @@ static void si_parse_pplib_clock_info(struct radeon_device *rdev,
- 	if ((rps->class2 & ATOM_PPLIB_CLASSIFICATION2_ULV) &&
- 	    index == 0) {
- 		/* XXX disable for A0 tahiti */
--		si_pi->ulv.supported = true;
-+		si_pi->ulv.supported = false;
- 		si_pi->ulv.pl = *pl;
- 		si_pi->ulv.one_pcie_lane_in_ulv = false;
- 		si_pi->ulv.volt_change_delay = SISLANDS_ULVVOLTAGECHANGEDELAY_DFLT;
+diff --git a/sound/firewire/bebob/bebob_focusrite.c b/sound/firewire/bebob/bebob_focusrite.c
+index 45a0eed6d5b1..3b052ed0fbf5 100644
+--- a/sound/firewire/bebob/bebob_focusrite.c
++++ b/sound/firewire/bebob/bebob_focusrite.c
+@@ -27,12 +27,14 @@
+ #define SAFFIRE_CLOCK_SOURCE_INTERNAL		0
+ #define SAFFIRE_CLOCK_SOURCE_SPDIF		1
+ 
+-/* '1' is absent, why... */
++/* clock sources as returned from register of Saffire Pro 10 and 26 */
+ #define SAFFIREPRO_CLOCK_SOURCE_INTERNAL	0
++#define SAFFIREPRO_CLOCK_SOURCE_SKIP		1 /* never used on hardware */
+ #define SAFFIREPRO_CLOCK_SOURCE_SPDIF		2
+-#define SAFFIREPRO_CLOCK_SOURCE_ADAT1		3
+-#define SAFFIREPRO_CLOCK_SOURCE_ADAT2		4
++#define SAFFIREPRO_CLOCK_SOURCE_ADAT1		3 /* not used on s.pro. 10 */
++#define SAFFIREPRO_CLOCK_SOURCE_ADAT2		4 /* not used on s.pro. 10 */
+ #define SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK	5
++#define SAFFIREPRO_CLOCK_SOURCE_COUNT		6
+ 
+ /* S/PDIF, ADAT1, ADAT2 is enabled or not. three quadlets */
+ #define SAFFIREPRO_ENABLE_DIG_IFACES		0x01a4
+@@ -101,13 +103,34 @@ saffire_write_quad(struct snd_bebob *bebob, u64 offset, u32 value)
+ 				  &data, sizeof(__be32), 0);
+ }
+ 
++static char *const saffirepro_10_clk_src_labels[] = {
++	SND_BEBOB_CLOCK_INTERNAL, "S/PDIF", "Word Clock"
++};
+ static char *const saffirepro_26_clk_src_labels[] = {
+ 	SND_BEBOB_CLOCK_INTERNAL, "S/PDIF", "ADAT1", "ADAT2", "Word Clock"
+ };
+-
+-static char *const saffirepro_10_clk_src_labels[] = {
+-	SND_BEBOB_CLOCK_INTERNAL, "S/PDIF", "Word Clock"
++/* Value maps between registers and labels for SaffirePro 10/26. */
++static const signed char saffirepro_clk_maps[][SAFFIREPRO_CLOCK_SOURCE_COUNT] = {
++	/* SaffirePro 10 */
++	[0] = {
++		[SAFFIREPRO_CLOCK_SOURCE_INTERNAL]  =  0,
++		[SAFFIREPRO_CLOCK_SOURCE_SKIP]      = -1, /* not supported */
++		[SAFFIREPRO_CLOCK_SOURCE_SPDIF]     =  1,
++		[SAFFIREPRO_CLOCK_SOURCE_ADAT1]     = -1, /* not supported */
++		[SAFFIREPRO_CLOCK_SOURCE_ADAT2]     = -1, /* not supported */
++		[SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK] =  2,
++	},
++	/* SaffirePro 26 */
++	[1] = {
++		[SAFFIREPRO_CLOCK_SOURCE_INTERNAL]  =  0,
++		[SAFFIREPRO_CLOCK_SOURCE_SKIP]      = -1, /* not supported */
++		[SAFFIREPRO_CLOCK_SOURCE_SPDIF]     =  1,
++		[SAFFIREPRO_CLOCK_SOURCE_ADAT1]     =  2,
++		[SAFFIREPRO_CLOCK_SOURCE_ADAT2]     =  3,
++		[SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK] =  4,
++	}
+ };
++
+ static int
+ saffirepro_both_clk_freq_get(struct snd_bebob *bebob, unsigned int *rate)
+ {
+@@ -138,24 +161,35 @@ saffirepro_both_clk_freq_set(struct snd_bebob *bebob, unsigned int rate)
+ 
+ 	return saffire_write_quad(bebob, SAFFIREPRO_RATE_NOREBOOT, id);
+ }
++
++/*
++ * query hardware for current clock source, return our internally
++ * used clock index in *id, depending on hardware.
++ */
+ static int
+ saffirepro_both_clk_src_get(struct snd_bebob *bebob, unsigned int *id)
+ {
+ 	int err;
+-	u32 value;
++	u32 value;       /* clock source read from hw register */
++	const signed char *map;
+ 
+ 	err = saffire_read_quad(bebob, SAFFIREPRO_OFFSET_CLOCK_SOURCE, &value);
+ 	if (err < 0)
+ 		goto end;
+ 
+-	if (bebob->spec->clock->labels == saffirepro_10_clk_src_labels) {
+-		if (value == SAFFIREPRO_CLOCK_SOURCE_WORDCLOCK)
+-			*id = 2;
+-		else if (value == SAFFIREPRO_CLOCK_SOURCE_SPDIF)
+-			*id = 1;
+-	} else if (value > 1) {
+-		*id = value - 1;
++	/* depending on hardware, use a different mapping */
++	if (bebob->spec->clock->labels == saffirepro_10_clk_src_labels)
++		map = saffirepro_clk_maps[0];
++	else
++		map = saffirepro_clk_maps[1];
++
++	/* In a case that this driver cannot handle the value of register. */
++	if (value >= SAFFIREPRO_CLOCK_SOURCE_COUNT || map[value] < 0) {
++		err = -EIO;
++		goto end;
+ 	}
++
++	*id = (unsigned int)map[value];
+ end:
+ 	return err;
+ }
+diff --git a/sound/firewire/bebob/bebob_stream.c b/sound/firewire/bebob/bebob_stream.c
+index ef4d0c9f6578..1aab0a32870c 100644
+--- a/sound/firewire/bebob/bebob_stream.c
++++ b/sound/firewire/bebob/bebob_stream.c
+@@ -129,12 +129,24 @@ snd_bebob_stream_check_internal_clock(struct snd_bebob *bebob, bool *internal)
+ 	/* 1.The device has its own operation to switch source of clock */
+ 	if (clk_spec) {
+ 		err = clk_spec->get(bebob, &id);
+-		if (err < 0)
++		if (err < 0) {
+ 			dev_err(&bebob->unit->device,
+ 				"fail to get clock source: %d\n", err);
+-		else if (strncmp(clk_spec->labels[id], SND_BEBOB_CLOCK_INTERNAL,
+-				 strlen(SND_BEBOB_CLOCK_INTERNAL)) == 0)
++			goto end;
++		}
++
++		if (id >= clk_spec->num) {
++			dev_err(&bebob->unit->device,
++				"clock source %d out of range 0..%d\n",
++				id, clk_spec->num - 1);
++			err = -EIO;
++			goto end;
++		}
++
++		if (strncmp(clk_spec->labels[id], SND_BEBOB_CLOCK_INTERNAL,
++			    strlen(SND_BEBOB_CLOCK_INTERNAL)) == 0)
+ 			*internal = true;
++
+ 		goto end;
+ 	}
+ 
 -- 
 2.1.0
 
