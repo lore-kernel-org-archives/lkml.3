@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaKKVgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:36:36 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46891 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496AbaKKVge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:36:34 -0500
-Date: Tue, 11 Nov 2014 22:36:29 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Message-ID: <20141111213628.GP31490@pd.tnic>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+	id S1752076AbaKKVgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:36:50 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38174 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983AbaKKVgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 16:36:49 -0500
+Date: Tue, 11 Nov 2014 22:36:39 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave.hansen@intel.com>
+cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
+In-Reply-To: <54627512.7060806@intel.com>
+Message-ID: <alpine.DEB.2.11.1411112233180.3935@nanos>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241451280.5308@nanos> <545BED0B.8000001@intel.com> <alpine.DEB.2.11.1411111213450.3935@nanos>
+ <54627512.7060806@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A very big hmmm...
-
-On Tue, Nov 11, 2014 at 12:56:52PM -0800, Andy Lutomirski wrote:
-> This causes all non-NMI kernel entries from userspace to run on the
-> normal kernel stack.
-
-So one of the reasons #MC has its own stack is because we need a
-known-good stack in such situations. What if the normal kernel stack is
-corrupted too due to a #MC?
-
-> This means that machine check recovery can happen in non-atomic
-> context.  It also obviates the need for the paranoid_userspace path.
+On Tue, 11 Nov 2014, Dave Hansen wrote:
+> On 11/11/2014 10:27 AM, Thomas Gleixner wrote:
+> > On Thu, 6 Nov 2014, Dave Hansen wrote:
+> >> Instead of all of these games with dropping and reacquiring mmap_sem and
+> >> adding other locks, or deferring the work, why don't we just do a
+> >> get_user_pages()?  Something along the lines of:
+> >>
+> >> while (1) {
+> >> 	ret = cmpxchg(addr)
+> >> 	if (!ret)
+> >> 		break;
+> >> 	if (ret == -EFAULT)
+> >> 		get_user_pages(addr);
+> >> }
+> >>
+> >> Does anybody see a problem with that?
+> > 
+> > You want to do that under mmap_sem write held, right? Not a problem per
+> > se, except that you block normal faults for a possibly long time when
+> > the page(s) need to be swapped in.
 > 
-> Borislav has referred to this idea as the tail wagging the dog.  I
-> think that's okay -- the dog was pretty ugly.
+> Yeah, it might hold mmap_sem for write while doing this in the unmap
+> path.  But, that's only if the bounds directory entry has been swapped
+> out.  There's only 1 pointer of bounds directory entries there for every
+> 1MB of data, so it _should_ be relatively rare.  It would mean that
+> nobody's been accessing a 512MB swath of data controlled by the same
+> page of the bounds directory.
+> 
+> If it gets to be an issue, we can always add some code to fault it in
+> before mmap_sem is acquired.
 
-And I still am not sure about this: so the #MC handler makes implicit
-assumptions that while it is running nothing is going to interrupt it
-and it can access MCA MSRs. If you switch to process context, another
-#MC will preempt it and overwrite MCA MSRs. Which is a no-no.
+I don't think it's a real issue.
+ 
+> FWIW, I believe we have a fairly long road ahead of us to optimize MPX
+> in practice.  I have a list of things I want to go investigate, but I
+> have not looked in to it in detail at all.
 
-So unless I'm missing something - and I probably am - I don't think
-we can run #MC handler in process context. #MC is the highest prio
-abort-type exception along with processor reset for a reason.
+:)
+ 
+> > But yes, this might solve most of the issues at hand. Did not think
+> > about GUP at all :(
+> 
+> Whew.  Fixing it was getting nasty and complicated. :)
 
-Thanks.
+Indeed. Though I think that distangling specific parts of MPX from
+mmap_sem is still a worthwhile exercise. So not all of the complex
+ideas we came up with during the discussion are lost in the pointless
+complexity universe :)
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+	tglx
