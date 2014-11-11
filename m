@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281AbaKKFbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 00:31:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47497 "EHLO
+	id S1752565AbaKKFbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 00:31:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaKKFbS (ORCPT
+	with ESMTP id S1751660AbaKKFbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 00:31:18 -0500
-Date: Tue, 11 Nov 2014 14:30:00 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Driver needs an owner
-Message-ID: <20141111053000.GA29706@kroah.com>
-References: <CAOMZO5CZ0rzhBquTLp+oo0ddvwy22iz0yE3pyap+wVDT0+oMKQ@mail.gmail.com>
- <20141110234555.GB21278@kroah.com>
- <20141110235204.GA2914@katana>
+	Tue, 11 Nov 2014 00:31:39 -0500
+Date: Tue, 11 Nov 2014 14:30:20 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH RESEND 1/4] core: platform: add warning if driver has no
+ owner
+Message-ID: <20141111053020.GB29706@kroah.com>
+References: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
+ <1414514443-28943-2-git-send-email-wsa@the-dreams.de>
+ <CA+8MBbKZ4_OdrW=MurQ+OO8YW6x1iAF+thB5XASE4wXmXnREtQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141110235204.GA2914@katana>
+In-Reply-To: <CA+8MBbKZ4_OdrW=MurQ+OO8YW6x1iAF+thB5XASE4wXmXnREtQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 12:52:05AM +0100, Wolfram Sang wrote:
-> > Oops, we forgot that for drivers built into the kernel, THIS_MODULE is
-> > NULL :(
-> > 
-> > Wolfram, want me to revert this patch?
+On Mon, Nov 10, 2014 at 01:32:08PM -0800, Tony Luck wrote:
+> > +       if (!drv->owner)
+> > +               printk(KERN_WARNING "Driver '%s' needs an owner", drv->name);
 > 
-> Yes, I sent out the revert a second ago, too. Still wondering why this
-> did not trigger here... I'll have a look.
+> This showed up in next-20141110 and on ia64 I see 44 "needs an owner" messages,
+> even from drivers like e1000.
+> 
+> Anyone else seeing anything like that? Or is some ia64 initialization path
+> missing an update?
 
-Now applied, thanks.
+Yes, sorry, this patch is now reverted.
 
 greg k-h
