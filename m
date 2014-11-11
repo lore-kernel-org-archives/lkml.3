@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbaKKLSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:18:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57839 "EHLO
+	id S1754457AbaKKLLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57775 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461AbaKKLLW (ORCPT
+	with ESMTP id S1754293AbaKKLLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:22 -0500
+	Tue, 11 Nov 2014 06:11:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Jens=20Stein=20J=C3=B8rgensen?= <jens.s.stein@gmail.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Mathias Krause <minipli@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 148/170] drm/i915: Ignore VBT backlight check on Macbook 2, 1
-Date: Tue, 11 Nov 2014 11:08:27 +0000
-Message-Id: <1415704129-12709-149-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 130/170] posix-timers: Fix stack info leak in timer_create()
+Date: Tue, 11 Nov 2014 11:08:09 +0000
+Message-Id: <1415704129-12709-131-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,41 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: jens stein <jens.s.stein@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit b2a9601c587dbc5536546aa54009d1130adedd72 upstream.
+commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
 
-commit c675949ec58ca50d5a3ae3c757892f1560f6e896
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Wed Apr 9 11:31:37 2014 +0300
+If userland creates a timer without specifying a sigevent info, we'll
+create one ourself, using a stack local variable. Particularly will we
+use the timer ID as sival_int. But as sigev_value is a union containing
+a pointer and an int, that assignment will only partially initialize
+sigev_value on systems where the size of a pointer is bigger than the
+size of an int. On such systems we'll copy the uninitialized stack bytes
+from the timer_create() call to userland when the timer actually fires
+and we're going to deliver the signal.
 
-    drm/i915: do not setup backlight if not available according to VBT
+Initialize sigev_value with 0 to plug the stack info leak.
 
-prevents backlight setup on Macbook 2,1. Apply quirk to ignore the VBT
-check so backlight is set up properly.
+Found in the PaX patch, written by the PaX Team.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=81438
-Signed-off-by: Jens Stein Jørgensen <jens.s.stein@gmail.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ luis: backported to 3.16: file rename:
+  kernel/time/posix-timers.c -> kernel/posix-timers.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/posix-timers.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index ffaf8be939f1..373d652d01fa 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -11693,6 +11693,9 @@ static struct intel_quirk intel_quirks[] = {
- 	/* Acer C720 Chromebook (Core i3 4005U) */
- 	{ 0x0a16, 0x1025, 0x0a11, quirk_backlight_present },
- 
-+	/* Apple Macbook 2,1 (Core 2 T7400) */
-+	{ 0x27a2, 0x8086, 0x7270, quirk_backlight_present },
-+
- 	/* Toshiba CB35 Chromebook (Celeron 2955U) */
- 	{ 0x0a06, 0x1179, 0x0a88, quirk_backlight_present },
- 
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 424c2d4265c9..77e6b83c0431 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -634,6 +634,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 			goto out;
+ 		}
+ 	} else {
++		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
+ 		event.sigev_notify = SIGEV_SIGNAL;
+ 		event.sigev_signo = SIGALRM;
+ 		event.sigev_value.sival_int = new_timer->it_id;
 -- 
 2.1.0
 
