@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133AbaKKLoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:44:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57557 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072AbaKKLK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:27 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 090/170] staging:iio:ad5933: Drop "raw" from channel names
-Date: Tue, 11 Nov 2014 11:07:29 +0000
-Message-Id: <1415704129-12709-91-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1754148AbaKKLob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:44:31 -0500
+Received: from mga14.intel.com ([192.55.52.115]:12089 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754070AbaKKLoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:44:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="620509246"
+Message-ID: <1415706244.22887.156.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Nov 2014 13:44:04 +0200
+In-Reply-To: <1415642273.8868.8.camel@perches.com>
+References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
+	 <5460F7D8.2030100@nod.at> <1415642273.8868.8.camel@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-11-10 at 09:57 -0800, Joe Perches wrote:
+> On Mon, 2014-11-10 at 18:37 +0100, Richard Weinberger wrote:
+> > Am 03.11.2014 um 14:58 schrieb Tanya Brokhman:
+> > > If there is more then one UBI device mounted, there is no way to
+> > > distinguish between messages from different UBI devices.
+> > > Add device number to all ubi layer message types.
+> 
+> Adding "error" and "warning" to the message logs is
+> duplicative to the KERN_<LEVEL> logging information.
+> 
+> > > Changes from V5:
+> > > 	- Added ptr verification @ ubi_err/ubi_msg/ubi_warn
+> > > 	Removed extra printing of ubi number
+> > > 	Removed new messages.
+> 
+> Did you all ever look at what I posted?
+> 
+> https://lkml.org/lkml/2014/10/14/280
+> 
+> smaller code, consistent prefixing, consistent with
+> typical kernel style, etc.
 
-------------------
+No, I did not, because Tanya is someone who actually using and
+developing that stuff, and you are more of being on the watch for the
+kernel in general. So naturally, I use my limited time to first check
+her stuff. Sorry for this.
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+But Let me change small things in Tanya's patch first. The if you'd be
+kind enough to implement your changes on top of that, that'd be perfect.
 
-commit 6822ee34ad57b29a3b44df2c2829910f03c34fa4 upstream.
-
-"raw" is the name of a channel property, but should not be part of the
-channel name itself.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/staging/iio/impedance-analyzer/ad5933.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
-index 3854f997f45e..97d4b3fb7e95 100644
---- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-+++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-@@ -125,7 +125,7 @@ static const struct iio_chan_spec ad5933_channels[] = {
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "real_raw",
-+		.extend_name = "real",
- 		.address = AD5933_REG_REAL_DATA,
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -137,7 +137,7 @@ static const struct iio_chan_spec ad5933_channels[] = {
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "imag_raw",
-+		.extend_name = "imag",
- 		.address = AD5933_REG_IMAG_DATA,
- 		.scan_index = 1,
- 		.scan_type = {
--- 
-2.1.0
+Artem.
 
