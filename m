@@ -1,98 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaKKMGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:06:18 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:49328 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaKKMFK (ORCPT
+	id S932192AbaKKMGr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:06:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57218 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611AbaKKLJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:05:10 -0500
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 2/3] regulator: max77802: Fill regulator modes translation callback
-Date: Tue, 11 Nov 2014 13:04:44 +0100
-Message-Id: <1415707485-28563-3-git-send-email-javier.martinez@collabora.co.uk>
+	Tue, 11 Nov 2014 06:09:26 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 026/170] ext4: move error report out of atomic context in ext4_init_block_bitmap()
+Date: Tue, 11 Nov 2014 11:06:25 +0000
+Message-Id: <1415704129-12709-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415707485-28563-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1415707485-28563-1-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max77802 PMIC regulators output can be configured in one of two
-modes: Output ON (normal) and Output ON in Low Power Mode. Some of
-the regulators support their operating mode to be changed on startup
-or by consumers when the system is running while others only support
-their operating mode to be changed while the system has entered in a
-suspend state.
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-Use the max77802_map_mode() function to translate the device specific
-modes to the standard operating modes as used by the regulator core.
+------------------
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+
+commit aef4885ae14f1df75b58395c5314d71f613d26d9 upstream.
+
+Error report likely result in IO so it is bad idea to do it from
+atomic context.
+
+This patch should fix following issue:
+
+BUG: sleeping function called from invalid context at include/linux/buffer_head.h:349
+in_atomic(): 1, irqs_disabled(): 0, pid: 137, name: kworker/u128:1
+5 locks held by kworker/u128:1/137:
+ #0:  ("writeback"){......}, at: [<ffffffff81085618>] process_one_work+0x228/0x4d0
+ #1:  ((&(&wb->dwork)->work)){......}, at: [<ffffffff81085618>] process_one_work+0x228/0x4d0
+ #2:  (jbd2_handle){......}, at: [<ffffffff81242622>] start_this_handle+0x712/0x7b0
+ #3:  (&ei->i_data_sem){......}, at: [<ffffffff811fa387>] ext4_map_blocks+0x297/0x430
+ #4:  (&(&bgl->locks[i].lock)->rlock){......}, at: [<ffffffff811f3180>] ext4_read_block_bitmap_nowait+0x5d0/0x630
+CPU: 3 PID: 137 Comm: kworker/u128:1 Not tainted 3.17.0-rc2-00184-g82752e4 #165
+Hardware name: Intel Corporation W2600CR/W2600CR, BIOS SE5C600.86B.99.99.x028.061320111235 06/13/2011
+Workqueue: writeback bdi_writeback_workfn (flush-1:0)
+ 0000000000000411 ffff880813777288 ffffffff815c7fdc ffff880813777288
+ ffff880813a8bba0 ffff8808137772a8 ffffffff8108fb30 ffff880803e01e38
+ ffff880803e01e38 ffff8808137772c8 ffffffff811a8d53 ffff88080ecc6000
+Call Trace:
+ [<ffffffff815c7fdc>] dump_stack+0x51/0x6d
+ [<ffffffff8108fb30>] __might_sleep+0xf0/0x100
+ [<ffffffff811a8d53>] __sync_dirty_buffer+0x43/0xe0
+ [<ffffffff811a8e03>] sync_dirty_buffer+0x13/0x20
+ [<ffffffff8120f581>] ext4_commit_super+0x1d1/0x230
+ [<ffffffff8120fa03>] save_error_info+0x23/0x30
+ [<ffffffff8120fd06>] __ext4_error+0xb6/0xd0
+ [<ffffffff8120f260>] ? ext4_group_desc_csum+0x140/0x190
+ [<ffffffff811f2d8c>] ext4_read_block_bitmap_nowait+0x1dc/0x630
+ [<ffffffff8122e23a>] ext4_mb_init_cache+0x21a/0x8f0
+ [<ffffffff8113ae95>] ? lru_cache_add+0x55/0x60
+ [<ffffffff8112e16c>] ? add_to_page_cache_lru+0x6c/0x80
+ [<ffffffff8122eaa0>] ext4_mb_init_group+0x190/0x280
+ [<ffffffff8122ec51>] ext4_mb_good_group+0xc1/0x190
+ [<ffffffff8123309a>] ext4_mb_regular_allocator+0x17a/0x410
+ [<ffffffff8122c821>] ? ext4_mb_use_preallocated+0x31/0x380
+ [<ffffffff81233535>] ? ext4_mb_new_blocks+0x205/0x8e0
+ [<ffffffff8116ed5c>] ? kmem_cache_alloc+0xfc/0x180
+ [<ffffffff812335b0>] ext4_mb_new_blocks+0x280/0x8e0
+ [<ffffffff8116f2c4>] ? __kmalloc+0x144/0x1c0
+ [<ffffffff81221797>] ? ext4_find_extent+0x97/0x320
+ [<ffffffff812257f4>] ext4_ext_map_blocks+0xbc4/0x1050
+ [<ffffffff811fa387>] ? ext4_map_blocks+0x297/0x430
+ [<ffffffff811fa3ab>] ext4_map_blocks+0x2bb/0x430
+ [<ffffffff81200e43>] ? ext4_init_io_end+0x23/0x50
+ [<ffffffff811feb44>] ext4_writepages+0x564/0xaf0
+ [<ffffffff815cde3b>] ? _raw_spin_unlock+0x2b/0x40
+ [<ffffffff810ac7bd>] ? lock_release_non_nested+0x2fd/0x3c0
+ [<ffffffff811a009e>] ? writeback_sb_inodes+0x10e/0x490
+ [<ffffffff811a009e>] ? writeback_sb_inodes+0x10e/0x490
+ [<ffffffff811377e3>] do_writepages+0x23/0x40
+ [<ffffffff8119c8ce>] __writeback_single_inode+0x9e/0x280
+ [<ffffffff811a026b>] writeback_sb_inodes+0x2db/0x490
+ [<ffffffff811a0664>] wb_writeback+0x174/0x2d0
+ [<ffffffff810ac359>] ? lock_release_holdtime+0x29/0x190
+ [<ffffffff811a0863>] wb_do_writeback+0xa3/0x200
+ [<ffffffff811a0a40>] bdi_writeback_workfn+0x80/0x230
+ [<ffffffff81085618>] ? process_one_work+0x228/0x4d0
+ [<ffffffff810856cd>] process_one_work+0x2dd/0x4d0
+ [<ffffffff81085618>] ? process_one_work+0x228/0x4d0
+ [<ffffffff81085c1d>] worker_thread+0x35d/0x460
+ [<ffffffff810858c0>] ? process_one_work+0x4d0/0x4d0
+ [<ffffffff810858c0>] ? process_one_work+0x4d0/0x4d0
+ [<ffffffff8108a885>] kthread+0xf5/0x100
+ [<ffffffff810990e5>] ? local_clock+0x25/0x30
+ [<ffffffff8108a790>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff815ce2ac>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8108a790>] ? __init_kthread_work
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/regulator/max77802.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/balloc.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-index 9b4d127..0766615 100644
---- a/drivers/regulator/max77802.c
-+++ b/drivers/regulator/max77802.c
-@@ -378,6 +378,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.vsel_mask	= MAX77802_VSEL_MASK,				\
- 	.enable_reg	= MAX77802_REG_LDO1CTRL1 + num - 1,		\
- 	.enable_mask	= MAX77802_OPMODE_MASK << MAX77802_OPMODE_SHIFT_LDO, \
-+	.of_map_mode	= max77802_map_mode,				\
+diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+index fca382037ddd..06b65be20d48 100644
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -176,7 +176,7 @@ static unsigned int num_clusters_in_group(struct super_block *sb,
  }
  
- /* LDOs 1, 2, 8, 15, 17, 27, 30, 35 */
-@@ -398,6 +399,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.vsel_mask	= MAX77802_VSEL_MASK,				\
- 	.enable_reg	= MAX77802_REG_LDO1CTRL1 + num - 1,		\
- 	.enable_mask	= MAX77802_OPMODE_MASK << MAX77802_OPMODE_SHIFT_LDO, \
-+	.of_map_mode	= max77802_map_mode,				\
+ /* Initializes an uninitialized block bitmap */
+-static void ext4_init_block_bitmap(struct super_block *sb,
++static int ext4_init_block_bitmap(struct super_block *sb,
+ 				   struct buffer_head *bh,
+ 				   ext4_group_t block_group,
+ 				   struct ext4_group_desc *gdp)
+@@ -192,7 +192,6 @@ static void ext4_init_block_bitmap(struct super_block *sb,
+ 	/* If checksum is bad mark all blocks used to prevent allocation
+ 	 * essentially implementing a per-group read-only flag. */
+ 	if (!ext4_group_desc_csum_verify(sb, block_group, gdp)) {
+-		ext4_error(sb, "Checksum bad for group %u", block_group);
+ 		grp = ext4_get_group_info(sb, block_group);
+ 		if (!EXT4_MB_GRP_BBITMAP_CORRUPT(grp))
+ 			percpu_counter_sub(&sbi->s_freeclusters_counter,
+@@ -205,7 +204,7 @@ static void ext4_init_block_bitmap(struct super_block *sb,
+ 					   count);
+ 		}
+ 		set_bit(EXT4_GROUP_INFO_IBITMAP_CORRUPT_BIT, &grp->bb_state);
+-		return;
++		return -EIO;
+ 	}
+ 	memset(bh->b_data, 0, sb->s_blocksize);
+ 
+@@ -243,6 +242,7 @@ static void ext4_init_block_bitmap(struct super_block *sb,
+ 			     sb->s_blocksize * 8, bh->b_data);
+ 	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh);
+ 	ext4_group_desc_csum_set(sb, block_group, gdp);
++	return 0;
  }
  
- /* BUCKs 1, 6 */
-@@ -418,6 +420,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.vsel_mask	= MAX77802_DVS_VSEL_MASK,			\
- 	.enable_reg	= MAX77802_REG_BUCK ## num ## CTRL,		\
- 	.enable_mask	= MAX77802_OPMODE_MASK,				\
-+	.of_map_mode	= max77802_map_mode,				\
- }
- 
- /* BUCKS 2-4 */
-@@ -439,6 +442,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.enable_reg	= MAX77802_REG_BUCK ## num ## CTRL1,		\
- 	.enable_mask	= MAX77802_OPMODE_MASK <<			\
- 				MAX77802_OPMODE_BUCK234_SHIFT,		\
-+	.of_map_mode	= max77802_map_mode,				\
- }
- 
- /* BUCK 5 */
-@@ -459,6 +463,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.vsel_mask	= MAX77802_VSEL_MASK,				\
- 	.enable_reg	= MAX77802_REG_BUCK5CTRL,			\
- 	.enable_mask	= MAX77802_OPMODE_MASK,				\
-+	.of_map_mode	= max77802_map_mode,				\
- }
- 
- /* BUCKs 7-10 */
-@@ -479,6 +484,7 @@ static struct regulator_ops max77802_buck_dvs_ops = {
- 	.vsel_mask	= MAX77802_VSEL_MASK,				\
- 	.enable_reg	= MAX77802_REG_BUCK7CTRL + (num - 7) * 3,	\
- 	.enable_mask	= MAX77802_OPMODE_MASK,				\
-+	.of_map_mode	= max77802_map_mode,				\
- }
- 
- static const struct regulator_desc regulators[] = {
+ /* Return the number of free blocks in a block group.  It is used when
+@@ -438,11 +438,15 @@ ext4_read_block_bitmap_nowait(struct super_block *sb, ext4_group_t block_group)
+ 	}
+ 	ext4_lock_group(sb, block_group);
+ 	if (desc->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+-		ext4_init_block_bitmap(sb, bh, block_group, desc);
++		int err;
++
++		err = ext4_init_block_bitmap(sb, bh, block_group, desc);
+ 		set_bitmap_uptodate(bh);
+ 		set_buffer_uptodate(bh);
+ 		ext4_unlock_group(sb, block_group);
+ 		unlock_buffer(bh);
++		if (err)
++			ext4_error(sb, "Checksum bad for grp %u", block_group);
+ 		return bh;
+ 	}
+ 	ext4_unlock_group(sb, block_group);
 -- 
 2.1.0
 
