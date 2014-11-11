@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaKKRjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:39:20 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:37335 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561AbaKKRis (ORCPT
+	id S1751977AbaKKRjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:39:18 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:51613 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731AbaKKRis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 12:38:48 -0500
 From: Johan Hovold <johan@kernel.org>
 To: Florian Fainelli <f.fainelli@gmail.com>
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 11/22] net: phy: micrel: clean up led-mode setup
-Date: Tue, 11 Nov 2014 18:37:29 +0100
-Message-Id: <1415727460-20417-12-git-send-email-johan@kernel.org>
+Subject: [PATCH 16/22] net: phy: micrel: add has-broadcast-disable flag to type data
+Date: Tue, 11 Nov 2014 18:37:34 +0100
+Message-Id: <1415727460-20417-17-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1415727460-20417-1-git-send-email-johan@kernel.org>
 References: <1415727460-20417-1-git-send-email-johan@kernel.org>
@@ -21,94 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up led-mode setup by introducing proper defines for PHY Control
-registers 1 and 2 and only passing the register to the setup function.
+Add has_broadcast_disable flag to type-data and generic config_init.
+
+This allows us to remove the ksz8081 config_init callback.
+
+Note that ksz8021_config_init is kept for now due to a95a18afe4c8
+("phy/micrel: KSZ8031RNL RMII clock reconfiguration bug").
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/net/phy/micrel.c | 31 ++++++++++++++++++++++---------
- 1 file changed, 22 insertions(+), 9 deletions(-)
+ drivers/net/phy/micrel.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-index ec9ce35e934b..12e18f7273ce 100644
+index 928248187a11..6467bcc5a39d 100644
 --- a/drivers/net/phy/micrel.c
 +++ b/drivers/net/phy/micrel.c
-@@ -47,8 +47,12 @@
- #define	KSZPHY_INTCS_ALL			(KSZPHY_INTCS_LINK_UP |\
- 						KSZPHY_INTCS_LINK_DOWN)
+@@ -75,6 +75,7 @@
  
--/* general PHY control reg in vendor specific block. */
--#define	MII_KSZPHY_CTRL			0x1F
-+/* PHY Control 1 */
-+#define	MII_KSZPHY_CTRL_1			0x1e
+ struct kszphy_type {
+ 	u32 led_mode_reg;
++	bool has_broadcast_disable;
+ };
+ 
+ struct kszphy_priv {
+@@ -96,6 +97,7 @@ static const struct kszphy_type ksz8051_type = {
+ 
+ static const struct kszphy_type ksz8081_type = {
+ 	.led_mode_reg		= MII_KSZPHY_CTRL_2,
++	.has_broadcast_disable	= true,
+ };
+ 
+ static int ksz_config_flags(struct phy_device *phydev)
+@@ -247,6 +249,9 @@ static int kszphy_config_init(struct phy_device *phydev)
+ 
+ 	type = priv->type;
+ 
++	if (type->has_broadcast_disable)
++		kszphy_broadcast_disable(phydev);
 +
-+/* PHY Control 2 / PHY Control (if no PHY Control 1) */
-+#define	MII_KSZPHY_CTRL_2			0x1f
-+#define	MII_KSZPHY_CTRL				MII_KSZPHY_CTRL_2
- /* bitmap of PHY register to set interrupt mode */
- #define KSZPHY_CTRL_INT_ACTIVE_HIGH		BIT(9)
- #define KSZ9021_CTRL_INT_ACTIVE_HIGH		BIT(14)
-@@ -158,13 +162,12 @@ static int ks8737_config_intr(struct phy_device *phydev)
+ 	if (priv->led_mode >= 0)
+ 		kszphy_setup_led(phydev, type->led_mode_reg, priv->led_mode);
+ 
+@@ -278,13 +283,6 @@ static int ks8051_config_init(struct phy_device *phydev)
  	return rc < 0 ? rc : 0;
  }
  
--static int kszphy_setup_led(struct phy_device *phydev,
--			    unsigned int reg, unsigned int shift)
-+static int kszphy_setup_led(struct phy_device *phydev, u32 reg)
- {
- 
- 	struct device *dev = &phydev->dev;
- 	struct device_node *of_node = dev->of_node;
--	int rc, temp;
-+	int rc, temp, shift;
- 	u32 val;
- 
- 	if (!of_node && dev->parent->of_node)
-@@ -178,6 +181,17 @@ static int kszphy_setup_led(struct phy_device *phydev,
- 		return -EINVAL;
- 	}
- 
-+	switch (reg) {
-+	case MII_KSZPHY_CTRL_1:
-+		shift = 14;
-+		break;
-+	case MII_KSZPHY_CTRL_2:
-+		shift = 4;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
- 	temp = phy_read(phydev, reg);
- 	if (temp < 0) {
- 		rc = temp;
-@@ -220,15 +234,14 @@ static int kszphy_config_init(struct phy_device *phydev)
- 
- static int kszphy_config_init_led8041(struct phy_device *phydev)
- {
--	/* single led control, register 0x1e bits 15..14 */
--	return kszphy_setup_led(phydev, 0x1e, 14);
-+	return kszphy_setup_led(phydev, MII_KSZPHY_CTRL_1);
- }
- 
- static int ksz8021_config_init(struct phy_device *phydev)
- {
- 	int rc;
- 
--	kszphy_setup_led(phydev, 0x1f, 4);
-+	kszphy_setup_led(phydev, MII_KSZPHY_CTRL_2);
- 
- 	rc = ksz_config_flags(phydev);
- 	if (rc < 0)
-@@ -243,7 +256,7 @@ static int ks8051_config_init(struct phy_device *phydev)
- {
- 	int rc;
- 
--	kszphy_setup_led(phydev, 0x1f, 4);
-+	kszphy_setup_led(phydev, MII_KSZPHY_CTRL_2);
- 
- 	rc = ksz_config_flags(phydev);
- 	return rc < 0 ? rc : 0;
+-static int ksz8081_config_init(struct phy_device *phydev)
+-{
+-	kszphy_broadcast_disable(phydev);
+-
+-	return kszphy_config_init(phydev);
+-}
+-
+ static int ksz9021_load_values_from_of(struct phy_device *phydev,
+ 				       struct device_node *of_node, u16 reg,
+ 				       char *field1, char *field2,
+@@ -691,7 +689,7 @@ static struct phy_driver ksphy_driver[] = {
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+ 	.driver_data	= &ksz8081_type,
+ 	.probe		= kszphy_probe,
+-	.config_init	= ksz8081_config_init,
++	.config_init	= kszphy_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.ack_interrupt	= kszphy_ack_interrupt,
 -- 
 2.0.4
 
