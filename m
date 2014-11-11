@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaKKLcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:32:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57718 "EHLO
+	id S1753071AbaKKLcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:32:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57719 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288AbaKKLK7 (ORCPT
+	with ESMTP id S1754290AbaKKLK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:10:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robert Baldyga <r.baldyga@samsung.com>, Felipe Balbi <balbi@ti.com>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 120/170] usb: gadget: f_fs: remove redundant ffs_data_get()
-Date: Tue, 11 Nov 2014 11:07:59 +0000
-Message-Id: <1415704129-12709-121-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 124/170] nfsd4: fix crash on unknown operation number
+Date: Tue, 11 Nov 2014 11:08:03 +0000
+Message-Id: <1415704129-12709-125-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Baldyga <r.baldyga@samsung.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit a3058a5d82e296daaca07411c3738a9ddd79f302 upstream.
+commit 51904b08072a8bf2b9ed74d1bd7a5300a614471d upstream.
 
-During FunctionFS bind, ffs_data_get() function was called twice
-(in functionfs_bind() and in ffs_do_functionfs_bind()), while on unbind
-ffs_data_put() was called once (in functionfs_unbind() function).
-In result refcount never reached value 0, and ffs memory resources has
-been never released.
+Unknown operation numbers are caught in nfsd4_decode_compound() which
+sets op->opnum to OP_ILLEGAL and op->status to nfserr_op_illegal.  The
+error causes the main loop in nfsd4_proc_compound() to skip most
+processing.  But nfsd4_proc_compound also peeks ahead at the next
+operation in one case and doesn't take similar precautions there.
 
-Since ffs_data_get() call in ffs_do_functionfs_bind() is redundant
-and not neccessary, we remove it to have equal number of gets ans puts,
-and free allocated memory after refcount reach 0.
-
-Fixes: 5920cda (usb: gadget: FunctionFS: convert to new function
-	interface with backward compatibility)
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.16: file rename:
-  drivers/usb/gadget/function/f_fs.c -> drivers/usb/gadget/f_fs.c ]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/f_fs.c | 2 --
- 1 file changed, 2 deletions(-)
+ fs/nfsd/nfs4proc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 8598c27c7d43..538300c05c5a 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -2297,8 +2297,6 @@ static inline struct f_fs_opts *ffs_do_functionfs_bind(struct usb_function *f,
- 	func->conf = c;
- 	func->gadget = c->cdev->gadget;
- 
--	ffs_data_get(func->ffs);
+diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
+index 2cbe5d09166a..5d3031ecb1df 100644
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1231,7 +1231,8 @@ static bool need_wrongsec_check(struct svc_rqst *rqstp)
+ 	 */
+ 	if (argp->opcnt == resp->opcnt)
+ 		return false;
 -
++	if (next->opnum == OP_ILLEGAL)
++		return false;
+ 	nextd = OPDESC(next);
  	/*
- 	 * in drivers/usb/gadget/configfs.c:configfs_composite_bind()
- 	 * configurations are bound in sequence with list_for_each_entry,
+ 	 * Rest of 2.6.3.1.1: certain operations will return WRONGSEC
 -- 
 2.1.0
 
