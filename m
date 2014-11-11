@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaKKWua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 17:50:30 -0500
-Received: from imap.thunk.org ([74.207.234.97]:52424 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148AbaKKWu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 17:50:28 -0500
-Date: Tue, 11 Nov 2014 17:49:38 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Milosz Tanski <milosz@adfin.com>, Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
- only)
-Message-ID: <20141111224938.GA4112@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Jeff Moyer <jmoyer@redhat.com>, Milosz Tanski <milosz@adfin.com>,
-	Dave Chinner <david@fromorbit.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-	"linux-aio@kvack.org" <linux-aio@kvack.org>,
-	Mel Gorman <mgorman@suse.de>,
-	Volker Lendecke <Volker.Lendecke@sernet.de>,
-	Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-	Linux API <linux-api@vger.kernel.org>,
-	Michael Kerrisk <mtk.manpages@gmail.com>,
-	linux-arch@vger.kernel.org
-References: <cover.1415636409.git.milosz@adfin.com>
- <20141111064417.GT23575@dastard>
- <CANP1eJHfWT0Foe+weB1SJkJ10JnOge_g=E8CXBsQNPW7i2+4NA@mail.gmail.com>
- <x49ioilbrfx.fsf@segfault.boston.devel.redhat.com>
+	id S1752389AbaKKW6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 17:58:21 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56842 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752153AbaKKW6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 17:58:19 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18f1R+RtxneLArJnc29pUVIwat/pAPmtjA=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 49838618413
+Date: Tue, 11 Nov 2014 17:58:00 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Kevin Cernekee <cernekee@gmail.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-sh@vger.kernel.org,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
+        linux-mips@linux-mips.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] irqchip: atmel-aic: fix irqdomain initialization
+Message-ID: <20141111225800.GE3698@titan.lakedaemon.net>
+References: <20141110230301.GV4068@piout.net>
+ <1415712816-9202-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x49ioilbrfx.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1415712816-9202-1-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 12:03:14PM -0500, Jeff Moyer wrote:
+On Tue, Nov 11, 2014 at 02:33:36PM +0100, Boris Brezillon wrote:
+> First of all IRQCHIP_SKIP_SET_WAKE is not a valid irq_gc_flags and thus
+> should not be passed as the last argument of
+> irq_alloc_domain_generic_chips.
 > 
-> I think he's referring to xfstests.  Still, I think that's the wrong
-> place for functional testing.  ltp would be better, imo.
+> Then pass the correct handler (handle_fasteoi_irq) to
+> irq_alloc_domain_generic_chips instead of manually re-setting it in the
+> initialization loop.
+> 
+> And eventually initialize default irq flags to the pseudo standard:
+> IRQ_REQUEST | IRQ_PROBE | IRQ_AUTOEN.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> ---
+> Hello Kevin,
+> 
+> This patch has not been tested yet but it should solve the issue you've
+> experienced with the IRQ_GC_BE_IO flag and the atmel-aic driver.
+> 
+> I'll test it tomorrow and let you know if it actually works.
+> 
+> Regards,
+> 
+> Boris
+> 
+>  drivers/irqchip/irq-atmel-aic-common.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-I disagree; xfstests is the right place for adding these tests, because
-these patches seem to require fs-specific support, and file system
-developers are already using xfstests when checking for regressions.
-Using xfstests is already part of most of the file system developers'
-workflow; ltp is not. 
+Applied to irqchip/urgent with Kevin's Tested-by.  Also, flagged for
+stable, v3.17 and up.
 
-So if you want to make sure we notice regressions, it really needs to
-go into xfstests.  If you insist on putting it in ltp, then one of us
-will then have to make a copy of the tests and put it in xfstests.
+Boris, once this is in mainline, you may want to generate a patch
+against older versions (in the arch dir) for the stable team.
 
-Cheers,
+thx,
 
-						- Ted
+Jason.
