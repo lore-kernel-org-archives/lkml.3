@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749AbaKKLRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:17:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57894 "EHLO
+	id S1754477AbaKKLLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57832 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495AbaKKLLa (ORCPT
+	with ESMTP id S1754456AbaKKLLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:30 -0500
+	Tue, 11 Nov 2014 06:11:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andriy Skulysh <askulysh@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Will Deacon <will.deacon@arm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 155/170] sh: fix sh770x SCIF memory regions
-Date: Tue, 11 Nov 2014 11:08:34 +0000
-Message-Id: <1415704129-12709-156-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 146/170] zap_pte_range: update addr when forcing flush after TLB batching faiure
+Date: Tue, 11 Nov 2014 11:08:25 +0000
+Message-Id: <1415704129-12709-147-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -30,57 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andriy Skulysh <askulysh@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 5417421b270229bfce0795ccc99a4b481e4954ca upstream.
+commit ce9ec37bddb633404a0c23e1acb181a264e7f7f2 upstream.
 
-Resources scif1_resources & scif2_resources overlap.  Actual SCIF region
-size is 0x10.
+When unmapping a range of pages in zap_pte_range, the page being
+unmapped is added to an mmu_gather_batch structure for asynchronous
+freeing. If we run out of space in the batch structure before the range
+has been completely unmapped, then we break out of the loop, force a
+TLB flush and free the pages that we have batched so far. If there are
+further pages to unmap, then we resume the loop where we left off.
 
-This is regression from commit d850acf975be ("sh: Declare SCIF register
-base and IRQ as resources")
+Unfortunately, we forget to update addr when we break out of the loop,
+which causes us to truncate the range being invalidated as the end
+address is exclusive. When we re-enter the loop at the same address, the
+page has already been freed and the pte_present test will fail, meaning
+that we do not reconsider the address for invalidation.
 
-Signed-off-by: Andriy Skulysh <askulysh@gmail.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+This patch fixes the problem by incrementing addr by the PAGE_SIZE
+before breaking out of the loop on batch failure.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sh/kernel/cpu/sh3/setup-sh770x.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memory.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/sh/kernel/cpu/sh3/setup-sh770x.c b/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-index 9139d14b9c53..538c10db3537 100644
---- a/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-+++ b/arch/sh/kernel/cpu/sh3/setup-sh770x.c
-@@ -118,7 +118,7 @@ static struct plat_sci_port scif0_platform_data = {
- };
- 
- static struct resource scif0_resources[] = {
--	DEFINE_RES_MEM(0xfffffe80, 0x100),
-+	DEFINE_RES_MEM(0xfffffe80, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x4e0)),
- };
- 
-@@ -143,7 +143,7 @@ static struct plat_sci_port scif1_platform_data = {
- };
- 
- static struct resource scif1_resources[] = {
--	DEFINE_RES_MEM(0xa4000150, 0x100),
-+	DEFINE_RES_MEM(0xa4000150, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x900)),
- };
- 
-@@ -169,7 +169,7 @@ static struct plat_sci_port scif2_platform_data = {
- };
- 
- static struct resource scif2_resources[] = {
--	DEFINE_RES_MEM(0xa4000140, 0x100),
-+	DEFINE_RES_MEM(0xa4000140, 0x10),
- 	DEFINE_RES_IRQ(evt2irq(0x880)),
- };
- 
+diff --git a/mm/memory.c b/mm/memory.c
+index 533023da2faa..7e9f0918559b 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1145,6 +1145,7 @@ again:
+ 				print_bad_pte(vma, addr, ptent, page);
+ 			if (unlikely(!__tlb_remove_page(tlb, page))) {
+ 				force_flush = 1;
++				addr += PAGE_SIZE;
+ 				break;
+ 			}
+ 			continue;
 -- 
 2.1.0
 
