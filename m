@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673AbaKKMCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:02:47 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:11785 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384AbaKKMCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:02:45 -0500
-X-IronPort-AV: E=Sophos;i="5.07,360,1413244800"; 
-   d="scan'208";a="190082680"
-Date: Tue, 11 Nov 2014 11:52:25 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 10/13] xen/arm/arm64: introduce
- xen_arch_need_swiotlb
-In-Reply-To: <20141110183453.GG25609@e104818-lin.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1411111151030.26318@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1411101607130.22875@kaball.uk.xensource.com> <1415636045-24669-10-git-send-email-stefano.stabellini@eu.citrix.com> <20141110183453.GG25609@e104818-lin.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1753666AbaKKLJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:09:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57241 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642AbaKKLJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:09:30 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 031/170] drm/radeon: fix speaker allocation setup
+Date: Tue, 11 Nov 2014 11:06:30 +0000
+Message-Id: <1415704129-12709-32-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014, Catalin Marinas wrote:
-> On Mon, Nov 10, 2014 at 04:14:02PM +0000, Stefano Stabellini wrote:
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> >  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
-> >  #define xen_unmap(cookie) iounmap((cookie))
-> >  
-> > +bool xen_arch_need_swiotlb(struct device *dev,
-> > +			   unsigned long pfn,
-> > +			   unsigned long mfn);
-> > +
-> >  #endif /* _ASM_ARM_XEN_PAGE_H */
-> > diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> > index 0e96023..1b087cd 100644
-> > --- a/arch/arm/xen/mm.c
-> > +++ b/arch/arm/xen/mm.c
-> > @@ -102,6 +102,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
-> >  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
-> >  }
-> >  
-> > +bool xen_arch_need_swiotlb(struct device *dev,
-> > +			   unsigned long pfn,
-> > +			   unsigned long mfn)
-> > +{
-> > +	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-> > +}
-> 
-> Why not a static inline? It doesn't look like a big function.
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-Because the next patch is going to make this change:
+------------------
 
--   return ((pfn != mfn) && !is_device_dma_coherent(dev));
-+   return (!hypercall_cflush && (pfn != mfn) && !is_device_dma_coherent(dev));
+From: Alex Deucher <alexander.deucher@amd.com>
 
-and I think it makes sense to keep hypercall_cflush as a static variable
-within arch/arm/xen/mm.c (avoid exporting it in page.h).
+commit 4910403836ded89803fab201d4b5caaa85de3a89 upstream.
+
+If the sad_count is 0, set the hw to stereo and change
+the error message to a warn.  A lot of monitors don't
+set the speaker allocation block.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.16: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/radeon/dce3_1_afmt.c    | 4 ++--
+ drivers/gpu/drm/radeon/dce6_afmt.c      | 6 +++---
+ drivers/gpu/drm/radeon/evergreen_hdmi.c | 6 +++---
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+index 51800e340a57..71f4d26669cd 100644
+--- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
++++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+@@ -49,8 +49,8 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 
+ 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
+ 	if (sad_count < 0) {
+-		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
+-		return;
++		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
++		sad_count = 0;
+ 	}
+ 
+ 	/* program the speaker allocation */
+diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
+index 0a65dc7e93e7..ee5da3b56fbf 100644
+--- a/drivers/gpu/drm/radeon/dce6_afmt.c
++++ b/drivers/gpu/drm/radeon/dce6_afmt.c
+@@ -174,9 +174,9 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	}
+ 
+ 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
+-	if (sad_count <= 0) {
+-		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
+-		return;
++	if (sad_count < 0) {
++		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
++		sad_count = 0;
+ 	}
+ 
+ 	/* program the speaker allocation */
+diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+index 1ec0e6e83f9f..d9c8bb9559a9 100644
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -118,9 +118,9 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	}
+ 
+ 	sad_count = drm_edid_to_speaker_allocation(radeon_connector->edid, &sadb);
+-	if (sad_count <= 0) {
+-		DRM_ERROR("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
+-		return;
++	if (sad_count < 0) {
++		DRM_DEBUG("Couldn't read Speaker Allocation Data Block: %d\n", sad_count);
++		sad_count = 0;
+ 	}
+ 
+ 	/* program the speaker allocation */
+-- 
+2.1.0
+
