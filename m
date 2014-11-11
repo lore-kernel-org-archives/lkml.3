@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaKKTJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 14:09:57 -0500
-Received: from mail-bl2on0123.outbound.protection.outlook.com ([65.55.169.123]:21568
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751086AbaKKTJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:09:55 -0500
-Message-ID: <1415732980.15957.33.camel@freescale.com>
-Subject: Re: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ
- platforms
-From: Scott Wood <scottwood@freescale.com>
-To: Yuantian Tang <Yuantian.Tang@freescale.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Date: Tue, 11 Nov 2014 13:09:40 -0600
-In-Reply-To: <6aaa50ef5f234fe2896f1c66eb646dfb@DM2PR03MB574.namprd03.prod.outlook.com>
-References: <1413515616-15874-1-git-send-email-B29983@freescale.com>
-	 <CAKohpokotKSvQ13uU4MnCer+qzBUUbGVTd19y7xswCAEKk3nGQ@mail.gmail.com>
-	 <6aaa50ef5f234fe2896f1c66eb646dfb@DM2PR03MB574.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1751714AbaKKTMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:12:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34347 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421AbaKKTMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 14:12:46 -0500
+Date: Tue, 11 Nov 2014 20:12:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ross Zwisler <ross.zwisler@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <h.peter.anvin@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/6] x86: Add support for the clwb instruction
+Message-ID: <20141111191239.GC31523@pd.tnic>
+References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1415731396-19364-4-git-send-email-ross.zwisler@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BL2PR05CA0036.namprd05.prod.outlook.com (10.255.226.36) To
- CY1PR0301MB0729.namprd03.prod.outlook.com (25.160.159.147)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0729;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0729;
-X-Forefront-PRVS: 0392679D18
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(189002)(24454002)(199003)(51704005)(36756003)(92726001)(92566001)(93916002)(87976001)(88136002)(86362001)(20776003)(47776003)(64706001)(89996001)(122386002)(62966003)(77096003)(50226001)(77156002)(4396001)(87286001)(103116003)(101416001)(102836001)(46102003)(50466002)(97736003)(104166001)(40100003)(120916001)(99396003)(42186005)(76176999)(50986999)(31966008)(107046002)(110136001)(33646002)(21056001)(105586002)(95666004)(106356001)(23676002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0729;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0729;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1415731396-19364-4-git-send-email-ross.zwisler@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-21 at 08:59 +0000, Yuantian Tang wrote:
-> > > -config PPC_CORENET_CPUFREQ
-> > > -       tristate "CPU frequency scaling driver for Freescale E500MC SoCs"
-> > > -       depends on PPC_E500MC && OF && COMMON_CLK
-> > > +config QORIQ_CPUFREQ
-> > > +       tristate "CPU frequency scaling driver for Freescale QorIQ SoCs"
-> > > +       depends on OF && COMMON_CLK
-> > >         select CLK_PPC_CORENET
-> > >         help
-> > > -         This adds the CPUFreq driver support for Freescale e500mc,
-> > > -         e5500 and e6500 series SoCs which are capable of changing
-> > > -         the CPU's frequency dynamically.
-> > > +         This adds the CPUFreq driver support for Freescale QorIQ SoCs
-> > > +         which are capable of changing the CPU's frequency dynamically.
-> > >
-> > >  config CPU_FREQ_PMAC
-> > >         bool "Support for Apple PowerBooks"
-> > 
-> > Don't need this duplication at all. Just move this to Kconfig instead of .arm and
-> > ppc.
-> > 
-> If I do so, menuconfig will display like this(on PPC):
-> 	PowerPC CPU frequency scaling drivers  ----  
->     QorIQ CPU Frequency scaling  --->    
->   		<*> CPU frequency scaling driver for Freescale QorIQ SoCs
-> On ARM, there should be a similar problem.
-> Isn't weird?
+On Tue, Nov 11, 2014 at 11:43:13AM -0700, Ross Zwisler wrote:
+> Add support for the new clwb instruction.  This instruction was
+> announced in the document "Intel Architecture Instruction Set Extensions
+> Programming Reference" with reference number 319433-022.
+> 
+> https://software.intel.com/sites/default/files/managed/0d/53/319433-022.pdf
+> 
+> Here are some things of note:
+> 
+>  - As with the clflushopt patches before this, I'm assuming that the addressing
+>    mode generated by the original clflush instruction will match the new
+>    clflush instruction with the 0x66 prefix for clflushopt, and for the
+>    xsaveopt instruction with the 0x66 prefix for clwb.  For all the test cases
+>    that I've come up with and for the new clwb code generated by this patch
+>    series, this has proven to be true on my test machine.
+> 
+>  - According to the SDM, xsaveopt has a form where it has a REX.W prefix.  I
+>    believe that this prefix will not be generated by gcc in x86_64 kernel code.
+>    Based on this, I don't believe I need to account for this extra prefix when
+>    dealing with the assembly language created for clwb.  Please correct me if
+>    I'm wrong.
+> 
+> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+> Cc: H Peter Anvin <h.peter.anvin@intel.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: x86@kernel.org
+> ---
+>  arch/x86/include/asm/cpufeature.h    |  1 +
+>  arch/x86/include/asm/special_insns.h | 10 ++++++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index b3e6b89..fbbed34 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -227,6 +227,7 @@
+>  #define X86_FEATURE_SMAP	( 9*32+20) /* Supervisor Mode Access Prevention */
+>  #define X86_FEATURE_PCOMMIT	( 9*32+22) /* PCOMMIT instruction */
+>  #define X86_FEATURE_CLFLUSHOPT	( 9*32+23) /* CLFLUSHOPT instruction */
+> +#define X86_FEATURE_CLWB	( 9*32+24) /* CLWB instruction */
+>  #define X86_FEATURE_AVX512PF	( 9*32+26) /* AVX-512 Prefetch */
+>  #define X86_FEATURE_AVX512ER	( 9*32+27) /* AVX-512 Exponential and Reciprocal */
+>  #define X86_FEATURE_AVX512CD	( 9*32+28) /* AVX-512 Conflict Detection */
+> diff --git a/arch/x86/include/asm/special_insns.h b/arch/x86/include/asm/special_insns.h
+> index 1709a2e..a328460 100644
+> --- a/arch/x86/include/asm/special_insns.h
+> +++ b/arch/x86/include/asm/special_insns.h
+> @@ -199,6 +199,16 @@ static inline void clflushopt(volatile void *__p)
+>  		       "+m" (*(volatile char __force *)__p));
+>  }
+>  
+> +static inline void clwb(volatile void *__p)
+> +{
+> +	alternative_io_2(".byte " __stringify(NOP_DS_PREFIX) "; clflush %P0",
 
-What purpose do those "<arch> CPU frequency scaling drivers" submenus
-serve, versus just including the options in the main cpufreq menu?  It's
-not as if more than one arch would be visible at once (and when a
-situation with multiple visible menus popped up, it was considered a
-bug).
+Any particular reason for using 0x3e as a prefix to have the insns be
+the same size or is it simply because CLFLUSH can stomach it?
 
--Scott
+:-)
 
+> +			 ".byte 0x66; clflush %P0",
+> +			 X86_FEATURE_CLFLUSHOPT,
+> +			 ".byte 0x66; xsaveopt %P0",
 
+Huh, XSAVEOPT?!? Shouldn't that be CLWB??
+
+> +			 X86_FEATURE_CLWB,
+> +			 "+m" (*(volatile char __force *)__p));
+> +}
+> +
+>  static inline void pcommit(void)
+>  {
+>  	alternative(ASM_NOP4, ".byte 0x66, 0x0f, 0xae, 0xf8",
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
