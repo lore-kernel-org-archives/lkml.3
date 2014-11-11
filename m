@@ -1,143 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaKKLYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:24:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57766 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaKKLLI (ORCPT
+	id S1752416AbaKKLYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:24:32 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55997 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaKKLYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:08 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Brian Silverman <bsilver16384@gmail.com>, austin.linux@gmail.com,
-        darren@dvhart.com, peterz@infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 131/170] futex: Fix a race condition between REQUEUE_PI and task death
-Date: Tue, 11 Nov 2014 11:08:10 +0000
-Message-Id: <1415704129-12709-132-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 11 Nov 2014 06:24:30 -0500
+Date: Tue, 11 Nov 2014 11:24:24 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Cc: "bhelgaas@google.com" <bhelgaas@google.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: generic: Add set_msi_parent callback
+Message-ID: <20141111112424.GB16265@arm.com>
+References: <1415647480-3320-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1415647480-3320-3-git-send-email-suravee.suthikulpanit@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415647480-3320-3-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+Hi Suravee,
 
-------------------
+On Mon, Nov 10, 2014 at 07:24:40PM +0000, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
+> This patch implement set_msi_parent callback for PCI generic host controller.
+> 
+> Cc: Bjorn Helgass <bhelgaas@google.com>
+> Cc: Liviu Dudau <liviu.dudau@arm.com>
+> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> ---
+>  drivers/pci/host/pci-host-generic.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
+> index 036ab1b..f9bb97a 100644
+> --- a/drivers/pci/host/pci-host-generic.c
+> +++ b/drivers/pci/host/pci-host-generic.c
+> @@ -42,6 +42,7 @@ struct gen_pci {
+>  	struct pci_host_bridge			host;
+>  	struct gen_pci_cfg_windows		cfg;
+>  	struct list_head			resources;
+> +	struct msi_chip				*mchip;
+>  };
+>  
+>  #ifdef CONFIG_ARM
+> @@ -128,9 +129,19 @@ static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
+>  	return PCIBIOS_SUCCESSFUL;
+>  }
+>  
+> +static int gen_pci_set_msi_parent(struct pci_bus *bus)
+> +{
+> +	struct gen_pci *pci = bus_to_gen_pci(bus);
+> +
+> +	bus->msi = pci->mchip;
+> +
+> +	return PCIBIOS_SUCCESSFUL;
+> +}
 
-From: Brian Silverman <bsilver16384@gmail.com>
+I don't think this makes much sense a host controller callback. Why can't
+bus->msi be set in generic code?
 
-commit 30a6b8031fe14031ab27c1fa3483cb9780e7f63c upstream.
+>  static struct pci_ops gen_pci_ops = {
+>  	.read	= gen_pci_config_read,
+>  	.write	= gen_pci_config_write,
+> +	.set_msi_parent = gen_pci_set_msi_parent,
+>  };
+>  
+>  static const struct of_device_id gen_pci_of_match[] = {
+> @@ -313,6 +324,9 @@ static int gen_pci_probe(struct platform_device *pdev)
+>  		return err;
+>  	}
+>  
+> +	pci->mchip = of_pci_find_msi_chip_by_node(of_parse_phandle(np,
+> +						  "msi-parent", 0));
 
-free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
-exit_pi_state_list takes the hb lock first, and most callers of
-free_pi_state do too. requeue_pi doesn't, which means free_pi_state
-can free the pi_state out from under exit_pi_state_list. For example:
+This bit should be in the generic of_pci.c code and not duplicated for
+each host controller.
 
-task A                            |  task B
-exit_pi_state_list                |
-  pi_state =                      |
-      curr->pi_state_list->next   |
-                                  |  futex_requeue(requeue_pi=1)
-                                  |    // pi_state is the same as
-                                  |    // the one in task A
-                                  |    free_pi_state(pi_state)
-                                  |      list_del_init(&pi_state->list)
-                                  |      kfree(pi_state)
-  list_del_init(&pi_state->list)  |
-
-Move the free_pi_state calls in requeue_pi to before it drops the hb
-locks which it's already holding.
-
-[ tglx: Removed a pointless free_pi_state() call and the hb->lock held
-  	debugging. The latter comes via a seperate patch ]
-
-Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
-Cc: austin.linux@gmail.com
-Cc: darren@dvhart.com
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1414282837-23092-1-git-send-email-bsilver16384@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ luis: backported to 3.16: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/futex.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index c5909b46af98..9fba3c706e2b 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -641,8 +641,14 @@ static struct futex_pi_state * alloc_pi_state(void)
- 	return pi_state;
- }
- 
-+/*
-+ * Must be called with the hb lock held.
-+ */
- static void free_pi_state(struct futex_pi_state *pi_state)
- {
-+	if (!pi_state)
-+		return;
-+
- 	if (!atomic_dec_and_test(&pi_state->refcount))
- 		return;
- 
-@@ -1554,15 +1560,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
- 	}
- 
- retry:
--	if (pi_state != NULL) {
--		/*
--		 * We will have to lookup the pi_state again, so free this one
--		 * to keep the accounting correct.
--		 */
--		free_pi_state(pi_state);
--		pi_state = NULL;
--	}
--
- 	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
-@@ -1652,6 +1649,8 @@ retry_private:
- 		case 0:
- 			break;
- 		case -EFAULT:
-+			free_pi_state(pi_state);
-+			pi_state = NULL;
- 			double_unlock_hb(hb1, hb2);
- 			hb_waiters_dec(hb2);
- 			put_futex_key(&key2);
-@@ -1662,6 +1661,8 @@ retry_private:
- 			goto out;
- 		case -EAGAIN:
- 			/* The owner was exiting, try again. */
-+			free_pi_state(pi_state);
-+			pi_state = NULL;
- 			double_unlock_hb(hb1, hb2);
- 			hb_waiters_dec(hb2);
- 			put_futex_key(&key2);
-@@ -1738,6 +1739,7 @@ retry_private:
- 	}
- 
- out_unlock:
-+	free_pi_state(pi_state);
- 	double_unlock_hb(hb1, hb2);
- 	hb_waiters_dec(hb2);
- 
-@@ -1755,8 +1757,6 @@ out_put_keys:
- out_put_key1:
- 	put_futex_key(&key1);
- out:
--	if (pi_state != NULL)
--		free_pi_state(pi_state);
- 	return ret ? ret : task_count;
- }
- 
--- 
-2.1.0
-
+Will
