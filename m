@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaKKLKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:10:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57597 "EHLO
+	id S1754283AbaKKLKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:10:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57677 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142AbaKKLKg (ORCPT
+	with ESMTP id S1754251AbaKKLKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:36 -0500
+	Tue, 11 Nov 2014 06:10:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>, Bernd Porr <mail@berndporr.me.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 096/170] staging: comedi: (regression) channel list must be set for COMEDI_CMD ioctl
-Date: Tue, 11 Nov 2014 11:07:35 +0000
-Message-Id: <1415704129-12709-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 116/170] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
+Date: Tue, 11 Nov 2014 11:07:55 +0000
+Message-Id: <1415704129-12709-117-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,79 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Jan Kara <jack@suse.cz>
 
-commit 6cab7a37f5c048bb2a768f24b0ec748b052fda09 upstream.
+commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
 
-`do_cmd_ioctl()`, the handler for the `COMEDI_CMD` ioctl can incorrectly
-call the Comedi subdevice's `do_cmd()` handler with a NULL channel list
-pointer.  This is a regression as the `do_cmd()` handler has never been
-expected to deal with that, leading to a kernel OOPS when it tries to
-dereference it.
+When sg_scsi_ioctl() fails to prepare request to submit in
+blk_rq_map_kern() we jump to a label where we just end up copying
+(luckily zeroed-out) kernel buffer to userspace instead of reporting
+error. Fix the problem by jumping to the right label.
 
-A NULL channel list pointer is allowed for the `COMEDI_CMDTEST` ioctl,
-handled by `do_cmdtest_ioctl()` and the subdevice's `do_cmdtest()`
-handler, but not for the `COMEDI_CMD` ioctl and its handlers.
+CC: Jens Axboe <axboe@kernel.dk>
+CC: linux-scsi@vger.kernel.org
+Coverity-id: 1226871
+Signed-off-by: Jan Kara <jack@suse.cz>
 
-Both `do_cmd_ioctl()` and `do_cmdtest_ioctl()` call
-`__comedi_get_user_chanlist()` to copy the channel list from user memory
-into dynamically allocated kernel memory and check it for consistency.
-That function currently returns 0 if the `user_chanlist` parameter
-(pointing to the channel list in user memory) is NULL.  That's fine for
-`do_cmdtest_ioctl()`, but `do_cmd_ioctl()` incorrectly assumes the
-kernel copy of the channel list has been set-up correctly.
+Fixed up the, now unused, out label.
 
-Fix it by not allowing the `user_chanlist` parameter to be NULL in
-`__comedi_get_user_chanlist()`, and only calling it from
-`do_cmdtest_ioctl()` if the parameter is non-NULL.
-
-Thanks to Bernd Porr for reporting the bug via an initial patch sent
-privately.
-
-Fixes: c6cd0eefb27b ("staging: comedi: comedi_fops: introduce __comedi_get_user_chanlist()")
-Reported-by: Bernd Porr <mail@berndporr.me.uk>
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Bernd Porr <mail@berndporr.me.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/comedi_fops.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ block/scsi_ioctl.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 9d99fb3c18a6..2126d49a0049 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1466,10 +1466,6 @@ static int __comedi_get_user_chanlist(struct comedi_device *dev,
- 	unsigned int *chanlist;
- 	int ret;
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 84ab119b6ffa..de3bd8287d81 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -490,7 +490,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
  
--	/* user_chanlist could be NULL for do_cmdtest ioctls */
--	if (!user_chanlist)
--		return 0;
--
- 	chanlist = memdup_user(user_chanlist,
- 			       cmd->chanlist_len * sizeof(unsigned int));
- 	if (IS_ERR(chanlist))
-@@ -1613,10 +1609,13 @@ static int do_cmdtest_ioctl(struct comedi_device *dev,
+ 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
+ 		err = DRIVER_ERROR << 24;
+-		goto out;
++		goto error;
+ 	}
  
- 	s = &dev->subdevices[cmd.subdev];
+ 	memset(sense, 0, sizeof(sense));
+@@ -499,7 +499,6 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
  
--	/* load channel/gain list */
--	ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
--	if (ret)
--		return ret;
-+	/* user_chanlist can be NULL for COMEDI_CMDTEST ioctl */
-+	if (user_chanlist) {
-+		/* load channel/gain list */
-+		ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
-+		if (ret)
-+			return ret;
-+	}
+ 	blk_execute_rq(q, disk, rq, 0);
  
- 	ret = s->do_cmdtest(dev, s, &cmd);
- 
+-out:
+ 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
+ 	if (err) {
+ 		if (rq->sense_len && rq->sense) {
 -- 
 2.1.0
 
