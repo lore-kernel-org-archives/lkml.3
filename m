@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaKKKDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 05:03:54 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:57395 "EHLO sipsolutions.net"
+	id S1752936AbaKKKGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 05:06:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43773 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275AbaKKKDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 05:03:52 -0500
-Message-ID: <1415700220.2163.3.camel@sipsolutions.net>
-Subject: Re: [PATCH 1/1] linux-wireless: Added psk in struct
- cfg80211_connect_params needed for offloading 4way handshake to driver
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "Gautam (Gautam Kumar) Shukla" <gautams@broadcom.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jithu Jance <jithu@broadcom.com>, Sreenath S <sreenats@broadcom.com>
-Date: Tue, 11 Nov 2014 11:03:40 +0100
-In-Reply-To: <5461DCC9.5050702@broadcom.com>
-References: <DF163EE1A432BF4BBE6B2088220663A67437BD@SJEXCHMB06.corp.ad.broadcom.com>
-	 <1415698161.2163.0.camel@sipsolutions.net> <5461DCC9.5050702@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751422AbaKKKGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 05:06:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="414739709"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf tools: Fix annotation with kcore
+Date: Tue, 11 Nov 2014 12:04:54 +0200
+Message-Id: <1415700294-30816-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 10:54 +0100, Arend van Spriel wrote:
+Patch "perf tools: Fix build-id matching on vmlinux"
+breaks annotation with kcore.  The problem is that
+symbol__annotate() first gets the filename based on
+the build-id which was previously not set.
+This patch provides a quick fix, however there should
+probably be only one way to determine the filename. e.g.
+symbol__annotate() should use the same way as
+dso__data_fd().
 
-> > Also, there's a competing approach from QCA that's far more suited.
-> 
-> I probably was not paying attention to it, but would you have a
-> reference to this.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/annotate.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-... digs around in email ...
-
-http://mid.gmane.org/1343907187-6686-1-git-send-email-qca_vkondrat@qca.qualcomm.com
-
-Anyway, looking back at that, it wasn't really all that different, just
-a bit more complete maybe.
-
-johannes
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 7dabde1..873c877 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -915,6 +915,8 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 			return -ENOMEM;
+ 		}
+ 		goto fallback;
++	} else if (dso__is_kcore(dso)) {
++		goto fallback;
+ 	} else if (readlink(symfs_filename, command, sizeof(command)) < 0 ||
+ 		   strstr(command, "[kernel.kallsyms]") ||
+ 		   access(symfs_filename, R_OK)) {
+-- 
+1.9.1
 
