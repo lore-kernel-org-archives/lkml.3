@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaKKRSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:18:18 -0500
+	id S1752035AbaKKRSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:18:16 -0500
 Received: from mail-by2on0073.outbound.protection.outlook.com ([207.46.100.73]:65408
 	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751573AbaKKRSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751507AbaKKRSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 12:18:13 -0500
 From: <dinguyen@opensource.altera.com>
 To: <paulz@synopsys.com>, <balbi@ti.com>
@@ -16,9 +16,9 @@ CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
         <dianders@chromium.org>, <kever.yang@rock-chips.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCHv7 7/8] usb: dwc2: move usb_disabled() call to host driver only
-Date: Tue, 11 Nov 2014 11:13:39 -0600
-Message-ID: <1415726020-19238-8-git-send-email-dinguyen@opensource.altera.com>
+Subject: [PATCHv7 8/8] usb: dwc2: Update Kconfig to support dual-role
+Date: Tue, 11 Nov 2014 11:13:40 -0600
+Message-ID: <1415726020-19238-9-git-send-email-dinguyen@opensource.altera.com>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
 References: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
@@ -42,49 +42,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <dinguyen@opensource.altera.com>
 
-Since platform.c will get built for both Host and Gadget, if we leave the
-usb_disabled() call in platform.c, it results in the following build error
-when (!USB && USB_GADGET) condition is met.
-
-ERROR: "usb_disabled" [drivers/usb/dwc2/dwc2_platform.ko] undefined!
-
-Since usb_disabled() is mostly used to disable USB host functionality, move
-the call the host portion for the DWC2 driver.
+Update DWC2 kconfig and makefile to support dual-role mode. The platform
+file will always get compiled for the case where the controller is directly
+connected to the CPU. So for loadable modules, dwc2.ko is built for host,
+peripheral, and dual-role mode. The PCI bus interface will be called
+dwc2_pci.ko and the platform interface module will be called dwc2_platform.ko.
 
 Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 ---
- drivers/usb/dwc2/hcd.c      | 3 +++
- drivers/usb/dwc2/platform.c | 3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+v7: None
+v6: Correct notes for USB_DWC2_DUAL_ROLE and USB_DWC2_PERIPHERAL
+    Remove extra default for USB_DWC2_PLATFORM and make it a condition for
+    building dwc2_platform.ko. In addition USB_DWC2_PLATFORM and USB_DWC2_PCI
+    are now tristate.
+v5: dwc2.ko for all modes along with dwc2_platform.ko and dwc2_pci.ko will
+    get built for kernel modules.
+v3: Add USB_GADGET=y and USB_GADGET=USB_DWC2 for peripheral and dual-role
+    config options.
+v2: Remove reference to dwc2_gadget
+---
+ drivers/usb/dwc2/Kconfig  | 66 ++++++++++++++++++++++++++++-------------------
+ drivers/usb/dwc2/Makefile | 32 +++++++++++------------
+ 2 files changed, 55 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-index fa60f4a..755e16b 100644
---- a/drivers/usb/dwc2/hcd.c
-+++ b/drivers/usb/dwc2/hcd.c
-@@ -2780,6 +2780,9 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
- 	int i, num_channels;
- 	int retval;
- 
-+	if (usb_disabled())
-+		return -ENODEV;
-+
- 	dev_dbg(hsotg->dev, "DWC OTG HCD INIT\n");
- 
- 	/* Detect config values from hardware */
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 3552602..57eb8a3 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -157,9 +157,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	int retval;
- 	int irq;
- 
--	if (usb_disabled())
--		return -ENODEV;
+diff --git a/drivers/usb/dwc2/Kconfig b/drivers/usb/dwc2/Kconfig
+index 4d02718..b323c4c 100644
+--- a/drivers/usb/dwc2/Kconfig
++++ b/drivers/usb/dwc2/Kconfig
+@@ -1,5 +1,5 @@
+ config USB_DWC2
+-	bool "DesignWare USB2 DRD Core Support"
++	tristate "DesignWare USB2 DRD Core Support"
+ 	depends on USB || USB_GADGET
+ 	help
+ 	  Say Y here if your system has a Dual Role Hi-Speed USB
+@@ -10,49 +10,61 @@ config USB_DWC2
+ 	  bus interface module (if you have a PCI bus system) will be
+ 	  called dwc2_pci.ko, and the platform interface module (for
+ 	  controllers directly connected to the CPU) will be called
+-	  dwc2_platform.ko. For gadget mode, there will be a single
+-	  module called dwc2_gadget.ko.
 -
- 	match = of_match_device(dwc2_of_match_table, &dev->dev);
- 	if (match && match->data) {
- 		params = match->data;
+-	  NOTE: The s3c-hsotg driver is now renamed to dwc2_gadget. The
+-	  host and gadget drivers are still currently separate drivers.
+-	  There are plans to merge the dwc2_gadget driver with the dwc2
+-	  host driver in the near future to create a dual-role driver.
++	  dwc2_platform.ko. For all modes(host, gadget and dual-role), there
++	  will be an additional module named dwc2.ko.
+ 
+ if USB_DWC2
+ 
++choice
++	bool "DWC2 Mode Selection"
++	default USB_DWC2_DUAL_ROLE if (USB && USB_GADGET)
++	default USB_DWC2_HOST if (USB && !USB_GADGET)
++	default USB_DWC2_PERIPHERAL if (!USB && USB_GADGET)
++
+ config USB_DWC2_HOST
+-	tristate "Host only mode"
++	bool "Host only mode"
+ 	depends on USB
+ 	help
+ 	  The Designware USB2.0 high-speed host controller
+-	  integrated into many SoCs.
++	  integrated into many SoCs. Select this option if you want the
++	  driver to operate in Host-only mode.
+ 
+-config USB_DWC2_PLATFORM
+-	bool "DWC2 Platform"
+-	depends on USB_DWC2_HOST
+-	default USB_DWC2_HOST
++comment "Gadget/Dual-role mode requires USB Gadget support to be enabled"
++
++config USB_DWC2_PERIPHERAL
++	bool "Gadget only mode"
++	depends on USB_GADGET=y || USB_GADGET=USB_DWC2
++	help
++	  The Designware USB2.0 high-speed gadget controller
++	  integrated into many SoCs. Select this option if you want the
++	  driver to operate in Peripheral-only mode. This option requires
++	  USB_GADGET to be enabled.
++
++config USB_DWC2_DUAL_ROLE
++	bool "Dual Role mode"
++	depends on (USB=y || USB=USB_DWC2) && (USB_GADGET=y || USB_GADGET=USB_DWC2)
+ 	help
+-	  The Designware USB2.0 platform interface module for
+-	  controllers directly connected to the CPU. This is only
+-	  used for host mode.
++	  Select this option if you want the driver to work in a dual-role
++	  mode. In this mode both host and gadget features are enabled, and
++	  the role will be determined by the cable that gets plugged-in. This
++	  option requires USB_GADGET to be enabled.
++endchoice
++
++config USB_DWC2_PLATFORM
++	tristate "DWC2 Platform"
++	default USB_DWC2_HOST || USB_DWC2_PERIPHERAL
++        help
++          The Designware USB2.0 platform interface module for
++          controllers directly connected to the CPU.
+ 
+ config USB_DWC2_PCI
+-	bool "DWC2 PCI"
++	tristate "DWC2 PCI"
+ 	depends on USB_DWC2_HOST && PCI
+ 	default USB_DWC2_HOST
+ 	help
+ 	  The Designware USB2.0 PCI interface module for controllers
+ 	  connected to a PCI bus. This is only used for host mode.
+ 
+-comment "Gadget mode requires USB Gadget support to be enabled"
+-
+-config USB_DWC2_PERIPHERAL
+-	tristate "Gadget only mode"
+-	depends on USB_GADGET
+-	help
+-	  The Designware USB2.0 high-speed gadget controller
+-	  integrated into many SoCs.
+-
+ config USB_DWC2_DEBUG
+ 	bool "Enable Debugging Messages"
+ 	help
+diff --git a/drivers/usb/dwc2/Makefile b/drivers/usb/dwc2/Makefile
+index b73d2a5..8f75267 100644
+--- a/drivers/usb/dwc2/Makefile
++++ b/drivers/usb/dwc2/Makefile
+@@ -1,28 +1,28 @@
+ ccflags-$(CONFIG_USB_DWC2_DEBUG)	+= -DDEBUG
+ ccflags-$(CONFIG_USB_DWC2_VERBOSE)	+= -DVERBOSE_DEBUG
+ 
+-obj-$(CONFIG_USB_DWC2_HOST)		+= dwc2.o
++obj-$(CONFIG_USB_DWC2)			+= dwc2.o
+ dwc2-y					:= core.o core_intr.o
+-dwc2-y					+= hcd.o hcd_intr.o
+-dwc2-y					+= hcd_queue.o hcd_ddma.o
++
++ifneq ($(filter y,$(CONFIG_USB_DWC2_HOST) $(CONFIG_USB_DWC2_DUAL_ROLE)),)
++	dwc2-y				+= hcd.o hcd_intr.o
++	dwc2-y				+= hcd_queue.o hcd_ddma.o
++endif
++
++ifneq ($(filter y,$(CONFIG_USB_DWC2_PERIPHERAL) $(CONFIG_USB_DWC2_DUAL_ROLE)),)
++	dwc2-y       			+= gadget.o
++endif
+ 
+ # NOTE: The previous s3c-hsotg peripheral mode only driver has been moved to
+ # this location and renamed gadget.c. When building for dynamically linked
+-# modules, dwc2_gadget.ko will get built for peripheral mode. For host mode,
+-# the core module will be dwc2.ko, the PCI bus interface module will called
+-# dwc2_pci.ko and the platform interface module will be called dwc2_platform.ko.
+-# At present the host and gadget driver will be separate drivers, but there
+-# are plans in the near future to create a dual-role driver.
++# modules, dwc2.ko will get built for host mode, peripheral mode, and dual-role
++# mode. The PCI bus interface module will called dwc2_pci.ko and the platform
++# interface module will be called dwc2_platform.ko.
+ 
+ ifneq ($(CONFIG_USB_DWC2_PCI),)
+-	obj-$(CONFIG_USB_DWC2_HOST)	+= dwc2_pci.o
++	obj-$(CONFIG_USB_DWC2)		+= dwc2_pci.o
+ 	dwc2_pci-y			:= pci.o
+ endif
+ 
+-ifneq ($(CONFIG_USB_DWC2_PLATFORM),)
+-	obj-$(CONFIG_USB_DWC2_HOST)	+= dwc2_platform.o
+-	dwc2_platform-y			:= platform.o
+-endif
+-
+-obj-$(CONFIG_USB_DWC2_PERIPHERAL)	+= dwc2_gadget.o
+-dwc2_gadget-y				:= gadget.o
++obj-$(CONFIG_USB_DWC2_PLATFORM)		+= dwc2_platform.o
++dwc2_platform-y				:= platform.o
 -- 
 2.0.3
 
