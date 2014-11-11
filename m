@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaKKRTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:19:03 -0500
-Received: from mail-by2on0083.outbound.protection.outlook.com ([207.46.100.83]:49862
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751913AbaKKRSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:18:09 -0500
-From: <dinguyen@opensource.altera.com>
-To: <paulz@synopsys.com>, <balbi@ti.com>
-CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
-        <b.zolnierkie@samsung.com>, <matthijs@stdin.nl>,
-        <r.baldyga@samsung.com>, <jg1.han@samsung.com>,
-        <sachin.kamat@linaro.org>, <ben-linux@fluff.org>,
-        <dianders@chromium.org>, <kever.yang@rock-chips.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCHv7 6/8] usb: dwc2: gadget: Do not fail probe if there isn't a clock node
-Date: Tue, 11 Nov 2014 11:13:38 -0600
-Message-ID: <1415726020-19238-7-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 2.0.3
-In-Reply-To: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
-References: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
+	id S1752138AbaKKRT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:19:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38445 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081AbaKKRTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 12:19:23 -0500
+Date: Tue, 11 Nov 2014 18:19:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on
+ NO_LIBELF=1
+Message-ID: <20141111171917.GN10501@worktop.programming.kicks-ass.net>
+References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
+ <20141107082723.GB23531@worktop.programming.kicks-ass.net>
+ <1415372259.1648.51.camel@leonhard>
+ <20141107173718.GD29390@twins.programming.kicks-ass.net>
+ <87mw7zva3c.fsf@sejong.aot.lge.com>
+ <20141110121105.GL3337@twins.programming.kicks-ass.net>
+ <CAM9d7cgCzkh3_26=g0+6yUr-xBbk7_F8QP2e1sEkYw9o5OTmjw@mail.gmail.com>
+ <20141111102745.GJ10501@worktop.programming.kicks-ass.net>
+ <20141111130326.GT18464@kernel.org>
+ <20141111140200.GV18464@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR07CA079.namprd07.prod.outlook.com (25.160.24.34) To
- CY1PR0301MB1196.namprd03.prod.outlook.com (25.160.165.27)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1196;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1196;
-X-Forefront-PRVS: 0392679D18
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(64706001)(20776003)(47776003)(66066001)(53416004)(33646002)(40100003)(101416001)(50466002)(48376002)(122386002)(97736003)(42186005)(102836001)(50226001)(4396001)(105586002)(107046002)(19580395003)(19580405001)(95666004)(21056001)(229853001)(106356001)(86152002)(88136002)(92726001)(104166001)(31966008)(62966003)(87976001)(92566001)(77096003)(87286001)(77156002)(99396003)(89996001)(46102003)(69596002)(120916001)(81156004)(93916002)(86362001)(50986999)(76176999);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1196;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1196;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111140200.GV18464@kernel.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
+On Tue, Nov 11, 2014 at 11:02:00AM -0300, Arnaldo Carvalho de Melo wrote:
+> Can you try the patch below?
+> 
 
-Since the dwc2 hcd driver is currently not looking for a clock node during
-init, we should not completely fail if there isn't a clock provided.
-By assigning clk = NULL, this allows the driver, when configured for dual-role
-mode, to be able to continue loading the host portion of the driver when
-a clock node is not specified.
+> diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+> index c9541fea9514..b55f96d49503 100644
+> --- a/tools/perf/util/symbol-minimal.c
+> +++ b/tools/perf/util/symbol-minimal.c
+> @@ -341,7 +341,7 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
+>  
+>  	if (filename__read_build_id(ss->name, build_id, BUILD_ID_SIZE) > 0) {
+>  		dso__set_build_id(dso, build_id);
+> -		return 1;
+> +		return 0;
+>  	}
+>  	return 0;
+>  }
 
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
----
-v7: Reworked to use clk=NULL and remove the need to is IS_ERR(clk)
-v6: none
-v5: reworked to not access gadget functions from the hcd.
----
- drivers/usb/dwc2/gadget.c | 1 +
- 1 file changed, 1 insertion(+)
+removing libelf-dev and recompiling to verify its broken again, then I
+made this change, recompiled and tried again and that seems to work.
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 37c7916..367689b 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -3431,6 +3431,7 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- 
- 	hsotg->clk = devm_clk_get(dev, "otg");
- 	if (IS_ERR(hsotg->clk)) {
-+		hsotg->clk = NULL;
- 		dev_err(dev, "cannot get otg clock\n");
- 		return PTR_ERR(hsotg->clk);
- 	}
--- 
-2.0.3
+Control flow seems redundant though, might as well remove the entire
+return stmt.
 
+Still wondering why the generic code accepts DSOs without symbols
+though. But whatever ;-)
