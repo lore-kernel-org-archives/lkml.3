@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaKKJFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:05:33 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45833 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaKKJF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:05:28 -0500
-Date: Tue, 11 Nov 2014 10:05:22 +0100
-From: Veaceslav Falico <vfalico@gmail.com>
-To: Michal Kubecek <mkubecek@suse.cz>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jay Vosburgh <j.vosburgh@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>, Jiri Pirko <jiri@resnulli.us>
-Subject: Re: [PATCH net-next 0/3] dev_disable_lro() improvements for stacked
- devices
-Message-ID: <20141111090522.GB20586@raspberrypi>
-References: <cover.1415692212.git.mkubecek@suse.cz>
+	id S1752326AbaKKJM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:12:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751725AbaKKJMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 04:12:25 -0500
+Message-ID: <5461D2C1.6020505@redhat.com>
+Date: Tue, 11 Nov 2014 10:11:29 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <cover.1415692212.git.mkubecek@suse.cz>
+To: linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [linux-sunxi] [PATCH v2 0/5] ARM: sunxi: Add support for USB
+ OTG PHY
+References: <cover.1415645258.git.rbyshko@gmail.com>
+In-Reply-To: <cover.1415645258.git.rbyshko@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 09:21:30AM +0100, Michal Kubecek wrote:
->Large receive offloading is known to cause problems if received packets
->are passed to other host. Therefore the kernel disables it by calling
->dev_disable_lro() whenever a network device is enslaved in a bridge or
->forwarding is enabled for it (or globally). For virtual devices we need
->to disable LRO on the underlying physical device (which is actually
->receiving the packets).
->
->Current dev_disable_lro() code handles this propagation for a vlan
->(including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
->This patch adds LRO disabling propagation for
->
->  - macvlan on top of a vlan or any stacked combination of those
->  - bonding
->  - teaming
+Hi,
 
-All of these drivers use the netdev_upper and friends, so why not make it
-generic with netdev_for_each_all_lower() in dev_disable_lro()?
+On 11/10/2014 07:55 PM, Roman Byshko wrote:
+> Hi,
+> 
+> There is already support for two USB phys, which are used for
+> USB host controllers on Allwinner SoC aka sunxi.
+> 
+> This patch series add support for the USB OTG phy (aka phy0).
+> 
+> The code has been tested on Allwinner A20 aka sun7i (Cubietruck).
+> 
+> Best regards,
+> Roman Byshko
 
->
->In the bonding and teaming case, it is necessary to disable LRO not only
->on slaves when dev_disable_lro() is called but also on any slave (port)
->added later.
->
->Michal Kubecek (3):
->  net: handle more general stacking in dev_disable_lro()
->  team: add helper to check if device is a team master
->  net: propagate LRO disabling to bond and team slaves
->
-> drivers/net/bonding/bond_main.c |  3 +++
-> drivers/net/team/team.c         |  6 +++++-
-> include/linux/netdevice.h       |  7 +++++++
-> net/core/dev.c                  | 31 ++++++++++++++++++++++---------
-> 4 files changed, 37 insertions(+), 10 deletions(-)
->
->-- 
->1.8.4.5
->
+First of all very cool that you're working on this, I somehow missed
+v1, but I'm very happy to see this.
+
+Second some questions, this series seems to only add support for
+initializing the phy, without adding the necessary magic for
+switching from app to host mode, and without actually hooking up musb,
+I assume you've a follow up series adding musb support, which actually
+uses the phy ?
+
+Also have you coordinated your work with ChenYu? ATM ChenYu is mostly
+working on other stuff, but AFAIk he has been working on musb support
+in the past.
+
+Regards,
+
+Hans
