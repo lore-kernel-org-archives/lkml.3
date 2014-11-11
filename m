@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaKKVgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:36:50 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38174 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaKKVgt (ORCPT
+	id S1752180AbaKKVkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:40:14 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:53620 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaKKVkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:36:49 -0500
-Date: Tue, 11 Nov 2014 22:36:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
-In-Reply-To: <54627512.7060806@intel.com>
-Message-ID: <alpine.DEB.2.11.1411112233180.3935@nanos>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241451280.5308@nanos> <545BED0B.8000001@intel.com> <alpine.DEB.2.11.1411111213450.3935@nanos>
- <54627512.7060806@intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 11 Nov 2014 16:40:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Feng Kan <fkan@apm.com>, patches@apm.com, jassisingbrar@gmail.com,
+        =devicetree@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hieu Le <hnle@apm.com>
+Subject: Re: [PATCH 5/6] Documentation: i2c: Add APM X-Gene platform SLIMpro I2C driver documentation
+Date: Tue, 11 Nov 2014 22:40:01 +0100
+Message-ID: <3205278.6fp3VTYkMI@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412726809-7525-6-git-send-email-fkan@apm.com>
+References: <1412726809-7525-1-git-send-email-fkan@apm.com> <1412726809-7525-6-git-send-email-fkan@apm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:iYBZAlTthioHV6LrF9tPvDbI/rWSfadeFg3SBP/87cx
+ spOzyWvomyFrNumVnXb5HIQdJwJBjlJsbl+NTMi8fUrUO5UWNl
+ 8QXItKEc95sDsAVnuMXjadhivAm9xDW+M703jftyTVRShZPFPz
+ HqJMYP2yA9ToAvhfrdOSHhkwu8hPTyPoJjOeJRgWVsdTlDkmU/
+ AeC8bJJQodIV8hAY4Z1T+w0Di0e+0EZhytVcqQiYa96Qf6QPZG
+ YOIKV4QClg36C2s0x+24Z0+Oy7rBlZTl6cSWC/fylQ5j7H/eP1
+ +e67sc7Upqlo1gH2CObl9wZZWdQ23oecGd6ZfcxXprcktLOfQl
+ iEPVptuaiW5y4tSIgwf4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Dave Hansen wrote:
-> On 11/11/2014 10:27 AM, Thomas Gleixner wrote:
-> > On Thu, 6 Nov 2014, Dave Hansen wrote:
-> >> Instead of all of these games with dropping and reacquiring mmap_sem and
-> >> adding other locks, or deferring the work, why don't we just do a
-> >> get_user_pages()?  Something along the lines of:
-> >>
-> >> while (1) {
-> >> 	ret = cmpxchg(addr)
-> >> 	if (!ret)
-> >> 		break;
-> >> 	if (ret == -EFAULT)
-> >> 		get_user_pages(addr);
-> >> }
-> >>
-> >> Does anybody see a problem with that?
-> > 
-> > You want to do that under mmap_sem write held, right? Not a problem per
-> > se, except that you block normal faults for a possibly long time when
-> > the page(s) need to be swapped in.
+On Tuesday 07 October 2014 17:06:48 Feng Kan wrote:
+> Add APM X-Gene platform SLIMpro I2C driver documentation.
 > 
-> Yeah, it might hold mmap_sem for write while doing this in the unmap
-> path.  But, that's only if the bounds directory entry has been swapped
-> out.  There's only 1 pointer of bounds directory entries there for every
-> 1MB of data, so it _should_ be relatively rare.  It would mean that
-> nobody's been accessing a 512MB swath of data controlled by the same
-> page of the bounds directory.
+
+Don't just repeat the subject line, explain what this is for.
+
+> Signed-off-by: Feng Kan <fkan@apm.com>
+> Signed-off-by: Hieu Le <hnle@apm.com>
+> ---
+>  .../devicetree/bindings/i2c/i2c-xgene-slimpro.txt    | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
 > 
-> If it gets to be an issue, we can always add some code to fault it in
-> before mmap_sem is acquired.
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt b/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
+> new file mode 100644
+> index 0000000..1a79d53
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
+> @@ -0,0 +1,20 @@
+> +APM X-Gene SLIMpro Mailbox I2C Driver
+> +
+> +This is a I2C driver that access the I2C bus through the mailbox mechanism.
+> +There is documentation of the mailbox driver in the
+> +Documentation/devicetree/binding/mailbox/xgene-slimpro-mbox.txt
+> +
+> +Required properties :
+> +
+> + - compatible : should be "apm,xgene-slimpro-i2c"
+> + - mbox : ptr to the mailbox dts node, use the name of the mailbox as the
+> +	  first parameter. The second parameter is the channel number.
+> +	  The APM X-Gene SLIMpro mailbox has 8 channels.
+> + - mbox-names : the name of the mailbox channel.
 
-I don't think it's a real issue.
- 
-> FWIW, I believe we have a fairly long road ahead of us to optimize MPX
-> in practice.  I have a list of things I want to go investigate, but I
-> have not looked in to it in detail at all.
+The current form of the mailbox interface no longer uses mbox-names, so
+just drop that. In the old form, the binding would have been incomplete
+because you don't list the required name.
 
-:)
- 
-> > But yes, this might solve most of the issues at hand. Did not think
-> > about GUP at all :(
-> 
-> Whew.  Fixing it was getting nasty and complicated. :)
-
-Indeed. Though I think that distangling specific parts of MPX from
-mmap_sem is still a worthwhile exercise. So not all of the complex
-ideas we came up with during the discussion are lost in the pointless
-complexity universe :)
-
-Thanks,
-
-	tglx
+	Arnd
