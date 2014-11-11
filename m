@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaKKIWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:22:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32784 "EHLO mx2.suse.de"
+	id S1753461AbaKKIWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:22:23 -0500
+Received: from mga14.intel.com ([192.55.52.115]:52069 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753227AbaKKIWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:22:02 -0500
-Message-Id: <cc53d655bc743bfdb790dfcd8880338d1c4b4c91.1415692212.git.mkubecek@suse.cz>
-In-Reply-To: <cover.1415692212.git.mkubecek@suse.cz>
-References: <cover.1415692212.git.mkubecek@suse.cz>
-From: Michal Kubecek <mkubecek@suse.cz>
-Subject: [PATCH net-next 3/3] net: propagate LRO disabling to bond and team
- slaves
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jay Vosburgh <j.vosburgh@gmail.com>,
-        Veaceslav Falico <vfalico@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>, Jiri Pirko <jiri@resnulli.us>
-Date: Tue, 11 Nov 2014 09:22:00 +0100 (CET)
+	id S1753213AbaKKIWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:22:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="414704216"
+Date: Tue, 11 Nov 2014 10:22:01 +0200
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com
+Subject: Re: [PATCH v6 10/10] tpm: TPM 2.0 sysfs attributes
+Message-ID: <20141111082201.GC7088@intel.com>
+References: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1415623794-6090-11-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20141110180305.GC5296@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110180305.GC5296@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As LRO doesn't work correctly if incoming packets are passed to other
-hosts, it needs to be disabled if a device is enslaved into a bridge or
-forwarding is enabled for it.
+On Mon, Nov 10, 2014 at 11:03:05AM -0700, Jason Gunthorpe wrote:
+> On Mon, Nov 10, 2014 at 02:49:54PM +0200, Jarkko Sakkinen wrote:
+> 
+> >  	if (len > le32_to_cpu(cca->cmd_size)) {
+> > -		dev_err(chip->dev,
+> > +		dev_err(&chip->dev,
+> 
+> Is this out of sequence in the patch series?
 
-For a bond/team master, LRO needs to be disabled for all its slaves as
-they are actually receiving the packets. Once LRO is disabled for
-a bond/team master, we also need to make sure to disable it for newly
-added slaves.
+It is, must have rebased the fixup into wrong commit.
 
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
----
- drivers/net/bonding/bond_main.c | 3 +++
- drivers/net/team/team.c         | 3 +++
- net/core/dev.c                  | 8 ++++++++
- 3 files changed, 14 insertions(+)
+> >  	rc = tpm2_do_selftest(chip);
+> > -	if (rc) {
+> > -		dev_err(dev, "self-test failed\n");
+> > +	if (rc)
+> >  		return rc;
+> > -	}
+> >  
+> >  	rc = tpm_chip_register(chip);
+> > -	if (rc) {
+> > -		dev_err(dev, "registering the chip failed\n");
+> > +	if (rc)
+> >  		return rc;
+> > -	}
+> 
+> Ditto.
+> 
+> Also, just:
+> 
+>    return tpm_chip_register(chip);
+> 
+> Jason
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index b9b3456..8575fee 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1526,6 +1526,9 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 	}
- #endif
- 
-+	if (!(bond_dev->features & NETIF_F_LRO))
-+		dev_disable_lro(slave_dev);
-+
- 	res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
- 					 new_slave);
- 	if (res) {
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index e1e2b85..217b973 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1179,6 +1179,9 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
- 		goto err_enable_netpoll;
- 	}
- 
-+	if (!(dev->features & NETIF_F_LRO))
-+		dev_disable_lro(port_dev);
-+
- 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
- 					 port);
- 	if (err) {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index ebcd308..b132f44 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1438,6 +1438,8 @@ EXPORT_SYMBOL(dev_close);
- void dev_disable_lro(struct net_device *dev)
- {
- 	struct net_device *prev_dev;
-+	struct net_device *lower_dev;
-+	struct list_head *iter;
- 
- 	do {
- 		prev_dev = dev;
-@@ -1458,6 +1460,12 @@ void dev_disable_lro(struct net_device *dev)
- 
- 	if (unlikely(dev->features & NETIF_F_LRO))
- 		netdev_WARN(dev, "failed to disable LRO!\n");
-+
-+	/* if dev is a bond/team master, disable LRO for all its slaves */
-+	if (netif_is_bond_master(dev) || netif_is_team_master(dev)) {
-+		netdev_for_each_lower_dev(dev, lower_dev, iter)
-+			dev_disable_lro(lower_dev);
-+	}
- }
- EXPORT_SYMBOL(dev_disable_lro);
- 
--- 
-1.8.4.5
-
+/Jarkko
