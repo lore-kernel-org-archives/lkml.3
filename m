@@ -1,101 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaKKVo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:44:27 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:62665 "EHLO
+	id S1752611AbaKKVo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:44:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:55229 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752057AbaKKVmI (ORCPT
+	by vger.kernel.org with ESMTP id S1752179AbaKKVmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:42:08 -0500
-Message-Id: <20141111214206.647185045@goodmis.org>
+	Tue, 11 Nov 2014 16:42:09 -0500
+Message-Id: <20141111214207.126077555@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 11 Nov 2014 16:41:29 -0500
+Date: Tue, 11 Nov 2014 16:41:32 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 2/6] ftracetest: Add functions file that holds helper functions
+Subject: [PATCH 5/6] ftracetest: Clear trace buffer after running kprobe testcases
 References: <20141111214127.196849367@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-ftracetest-Add-functions-file-that-holds-helper-func.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0005-ftracetest-Clear-trace-buffer-after-running-kprobe-t.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Created the file tools/testing/ftrace/test.d/functions that will
-hold helper functions.
+The kprobe testcases create, use and delete dynamic events during the
+test but didn't clear the trace buffer so it'll leave the result after
+it finishes.
 
-Current helper functions include:
+  # ./ftracetest
+  ...
 
- Add clear_trace() helper to reset the trace file
+  # cat trace
+  # tracer: nop
+  #
+  # entries-in-buffer/entries-written: 2/2   #P:12
+  #
+  #                              _-----=> irqs-off
+  #                             / _----=> need-resched
+  #                            | / _---=> hardirq/softirq
+  #                            || / _--=> preempt-depth
+  #                            ||| /     delay
+  #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+  #              | |       |   ||||       |         |
+        ftracetest-26474 [009] d..1 79417.143782: Unknown type 1099
+        ftracetest-26498 [009] d..1 79417.208034: Unknown type 1101
 
-   Used as a descriptive name to show that "echo > trace" is clearing
-   the trace file.
-
- Add disable/enable_tracing() helper calls
-
-   Add calls that disable and enable tracing respectively by echoing
-   0 or 1 into tracing_on.
-
- Add helper reset_tracer() function
-
-    Add a helper function reset_tracer() that will clear the current_tracer
-    (echo nop > current_tracer).
-
-Link: http://lkml.kernel.org/r/20141103212737.696365174@goodmis.org
-Link: http://lkml.kernel.org/r/20141104153028.465517119@goodmis.org
+Link: http://lkml.kernel.org/r/1415239470-28705-2-git-send-email-namhyung@kernel.org
 
 Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/selftests/ftrace/ftracetest       |  3 +++
- tools/testing/selftests/ftrace/test.d/functions | 16 ++++++++++++++++
- 2 files changed, 19 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/test.d/functions
+ tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc | 1 +
+ tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc     | 1 +
+ tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc    | 1 +
+ tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc | 1 +
+ 4 files changed, 4 insertions(+)
 
-diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
-index f15c0da07aca..c6381a9faf83 100755
---- a/tools/testing/selftests/ftrace/ftracetest
-+++ b/tools/testing/selftests/ftrace/ftracetest
-@@ -235,6 +235,9 @@ run_test() { # testfile
-   fi
- }
+diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+index 1b8b665ab2b3..a5a426211129 100644
+--- a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
++++ b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+@@ -9,3 +9,4 @@ echo p:myevent do_fork > kprobe_events
+ grep myevent kprobe_events
+ test -d events/kprobes/myevent
+ echo > kprobe_events
++clear_trace
+diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+index b55c84003587..d8c7bb6581fe 100644
+--- a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
++++ b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+@@ -11,3 +11,4 @@ echo 1 > events/kprobes/myevent/enable
+ echo > kprobe_events && exit 1 # this must fail
+ echo 0 > events/kprobes/myevent/enable
+ echo > kprobe_events # this must succeed
++clear_trace
+diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
+index a603d3f8db7b..c45ee2761354 100644
+--- a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
++++ b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
+@@ -12,5 +12,6 @@ echo 1 > events/kprobes/testprobe/enable
+ ( echo "forked")
+ echo 0 > events/kprobes/testprobe/enable
+ echo "-:testprobe" >> kprobe_events
++clear_trace
+ test -d events/kprobes/testprobe && exit 1 || exit 0
  
-+# load in the helper functions
-+. $TEST_DIR/functions
-+
- # Main loop
- for t in $TEST_CASES; do
-   run_test $t
-diff --git a/tools/testing/selftests/ftrace/test.d/functions b/tools/testing/selftests/ftrace/test.d/functions
-new file mode 100644
-index 000000000000..5d8cd06d920f
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/functions
-@@ -0,0 +1,16 @@
-+
-+clear_trace() { # reset trace output
-+    echo > trace
-+}
-+
-+disable_tracing() { # stop trace recording
-+    echo 0 > tracing_on
-+}
-+
-+enable_tracing() { # start trace recording
-+    echo 1 > tracing_on
-+}
-+
-+reset_tracer() { # reset the current tracer
-+    echo nop > current_tracer
-+}
+diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
+index 283c29e7f7c4..31717985acc7 100644
+--- a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
++++ b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
+@@ -12,4 +12,5 @@ echo 1 > events/kprobes/testprobe2/enable
+ ( echo "forked")
+ echo 0 > events/kprobes/testprobe2/enable
+ echo '-:testprobe2' >> kprobe_events
++clear_trace
+ test -d events/kprobes/testprobe2 && exit 1 || exit 0
 -- 
 2.1.1
 
