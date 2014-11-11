@@ -1,137 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaKKP1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:27:51 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:59194 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580AbaKKP1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751604AbaKKP1r (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 10:27:47 -0500
-From: "R, Vignesh" <vigneshr@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        "richardcochran@gmail.com" <richardcochran@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, "Balbi, Felipe" <balbi@ti.com>,
-        "Griffis, Brad" <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: RE: [PATCH v3 3/6] mfd: ti_am335x_tscadc: Remove unwanted
- reg_se_cache save
-Thread-Topic: [PATCH v3 3/6] mfd: ti_am335x_tscadc: Remove unwanted
- reg_se_cache save
-Thread-Index: AQHP/Yp+gO0+/Ht8MEGJbTH4WilZEJxa/iEAgACMCNA=
-Date: Tue, 11 Nov 2014 15:26:19 +0000
-Message-ID: <71C24A547111EA4E84AE759B748D9EAE4B976C@DBDE04.ent.ti.com>
-References: <1415694844-11230-1-git-send-email-vigneshr@ti.com>
- <1415694844-11230-4-git-send-email-vigneshr@ti.com>
- <20141111122623.GA24004@x1>
-In-Reply-To: <20141111122623.GA24004@x1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47400 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaKKP1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 10:27:43 -0500
+Message-ID: <54622AED.9060205@kernel.dk>
+Date: Tue, 11 Nov 2014 08:27:41 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Fabian Frederick <fabf@skynet.be>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the block tree
+References: <20141111131216.3742d156@canb.auug.org.au> <318149421.176770.1415704819915.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <318149421.176770.1415704819915.open-xchange@webmail.nmp.skynet.be>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sABFS0FK005660
 
+On 2014-11-11 04:20, Fabian Frederick wrote:
+>
+>
+>> On 11 November 2014 at 03:12 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>>
+>> Hi Jens,
+>>
+>> After merging the block tree, today's linux-next build (x86_64
+>> allmodconfig) failed like this:
+>>
+>> drivers/built-in.o: In function `cdrom_sysctl_handler':
+>> cdrom_sysctl.c:(.text+0x156d92): undefined reference to `cdrom_mutex'
+>> cdrom_sysctl.c:(.text+0x156da0): undefined reference to `cdrom_autoclose'
+>> cdrom_sysctl.c:(.text+0x156dae): undefined reference to `cdrom_autoeject'
+>> cdrom_sysctl.c:(.text+0x156dbc): undefined reference to `cdrom_debug'
+>> cdrom_sysctl.c:(.text+0x156dca): undefined reference to `cdrom_lockdoor'
+>> cdrom_sysctl.c:(.text+0x156dd8): undefined reference to
+>> `cdrom_check_media_type'
+>> cdrom_sysctl.c:(.text+0x156e0b): undefined reference to `cdrom_list'
+>> cdrom_sysctl.c:(.text+0x156e37): undefined reference to `cdrom_autoclose'
+>> cdrom_sysctl.c:(.text+0x156e57): undefined reference to `cdrom_autoeject'
+>> cdrom_sysctl.c:(.text+0x156e77): undefined reference to
+>> `cdrom_check_media_type'
+>> cdrom_sysctl.c:(.text+0x156ea4): undefined reference to `cdrom_lockdoor'
+>> cdrom_sysctl.c:(.text+0x156eb5): undefined reference to `cdrom_list'
+>> cdrom_sysctl.c:(.text+0x15702e): undefined reference to `cdrom_mutex'
+>> drivers/built-in.o: In function `cdrom_print_info.constprop.0':
+>> cdrom_sysctl.c:(.text+0x1570f3): undefined reference to `cdrom_list'
+>> cdrom_sysctl.c:(.text+0x157189): undefined reference to `cdrom_list'
+>> drivers/built-in.o: In function `cdrom_sysctl_info':
+>> cdrom_sysctl.c:(.text+0x1572c3): undefined reference to `cdrom_mutex'
+>> cdrom_sysctl.c:(.text+0x1576dc): undefined reference to `cdrom_mutex'
+>> drivers/built-in.o: In function `cdrom_sysctl_register':
+>> (.text+0x157765): undefined reference to `cdrom_autoclose'
+>> drivers/built-in.o: In function `cdrom_sysctl_register':
+>> (.text+0x157781): undefined reference to `cdrom_autoeject'
+>> drivers/built-in.o: In function `cdrom_sysctl_register':
+>> (.text+0x15778e): undefined reference to `cdrom_debug'
+>> drivers/built-in.o: In function `cdrom_sysctl_register':
+>> (.text+0x15779b): undefined reference to `cdrom_lockdoor'
+>> drivers/built-in.o: In function `cdrom_sysctl_register':
+>> (.text+0x1577a8): undefined reference to `cdrom_check_media_type'
+>>
+>> Probably caused by commit d01681d1457c ("cdrom: export sysctl code").
+>> This build has CONFIG_SYSCTL=y, CONFIG_BLK_DEV_IDECD=m,
+>> CONFIG_BLK_DEV_SR=m, CONFIG_PARIDE_PCD=m, CONFIG_CDROM_PKTCDVD=m,
+>> CONFIG_GDROM=n.
+>>
+>> I have used the block tree from next-20141110 for today.
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> Hi Stephen,
+>
+> Problem is in Makefile:
+>
+> obj-$(CONFIG_BLK_DEV_SR) += cdrom.o
+> obj-$(CONFIG_PARIDE_PCD) += cdrom.o
+> obj-$(CONFIG_CDROM_PKTCDVD) += cdrom.o
+> +obj-$(CONFIG_SYSCTL) += cdrom_sysctl.o
+>
+> I tried cdrom-$(CONFIG_SYSCTL)  += cdrom_sysctl.o
+> to add sysctl only when cdrom.o is created
+>
+> but now
+>
+> drivers/scsi/sr_mod.ko
+> drivers/ide/ide-cd_mod.ko
+> drivers/ide/ide-cd_mod.ko
+>
+> can't find cdrom.c functions ...
+>
+> Is there another way to do it ?
 
-On Tue, 11 Nov 2014, Vignesh R wrote:
+The problem is, now you can have cdrom/sr modular, but cdrom_sysctl.o is 
+linked in. That's just not going to work. Instead of jumping through 
+hoops to make this work, leave the section in cdrom.c and hid it behind a
 
-> In one shot mode, sequencer automatically disables all enabled steps 
-> at the end of each cycle. (both ADC steps and TSC steps) Hence these 
-> steps need not be saved in reg_se_cache for clearing these steps at a 
-> later stage.
-> Also, when ADC wakes up Sequencer should not be busy executing any of 
-> the config steps except for the charge step. Previously charge step 
-> was 1 ADC clock cycle and hence it was ignored.
-> 
-> Signed-off-by: Vignesh R <vigneshr@ti.com>
-> ---
+#if defined(CONFIG_SYSCTL)
+...
+#endif
 
-You need to provide a changelog here when submitting new versions.
+at the bottom or something.
 
-I have included changelog in the cover page. Will include them in 
-individual patches next time.
+-- 
+Jens Axboe
 
->  drivers/mfd/ti_am335x_tscadc.c       | 7 +++++--
->  include/linux/mfd/ti_am335x_tscadc.h | 1 +
->  2 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/ti_am335x_tscadc.c 
-> b/drivers/mfd/ti_am335x_tscadc.c index d877e777cce6..110038859a8d 
-> 100644
-> --- a/drivers/mfd/ti_am335x_tscadc.c
-> +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -86,8 +86,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
->  		spin_lock_irq(&tsadc->reg_lock);
->  		finish_wait(&tsadc->reg_se_wait, &wait);
->  
-> +		/*
-> +		 * Sequencer should either be idle or
-> +		 * busy applying the charge step.
-> +		 */
->  		reg = tscadc_readl(tsadc, REG_ADCFSM);
-> -		WARN_ON(reg & SEQ_STATUS);
-> +		WARN_ON((reg & SEQ_STATUS) && !(reg & CHARGE_STEP));
->  		tsadc->adc_waiting = false;
->  	}
->  	tsadc->adc_in_use = true;
-> @@ -96,7 +100,6 @@ static void am335x_tscadc_need_adc(struct 
-> ti_tscadc_dev *tsadc)  void am335x_tsc_se_set_once(struct 
-> ti_tscadc_dev *tsadc, u32 val)  {
->  	spin_lock_irq(&tsadc->reg_lock);
-> -	tsadc->reg_se_cache |= val;
-
-You didn't answer my question about this?
-I did reply to the question in the previous thread.  
-
-Previously, TSC did not reliably re-enable its steps as the TSC irq handler received 
-false pen up events. Hence, in order to use TSC after ADC operation, it was necessary to
- save and re-enable TSC steps (basically, to keep TSC steps enabled always).
-The change was more of a workaround to overcome limitation of TSC irq handler. With 
-this series of patches, TSC irq handler is very reliable and the workaround is no longer required.
-
->  	am335x_tscadc_need_adc(tsadc);
->  
->  	tscadc_writel(tsadc, REG_SE, val);
-> diff --git a/include/linux/mfd/ti_am335x_tscadc.h 
-> b/include/linux/mfd/ti_am335x_tscadc.h
-> index c99be5dc0f5c..fcce182e4a35 100644
-> --- a/include/linux/mfd/ti_am335x_tscadc.h
-> +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -128,6 +128,7 @@
->  
->  /* Sequencer Status */
->  #define SEQ_STATUS BIT(5)
-> +#define CHARGE_STEP		0x11
->  
->  #define ADC_CLK			3000000
->  #define TOTAL_STEPS		16
-
---
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead Linaro.org â”‚ Open source software for ARM SoCs Follow Linaro: Facebook | Twitter | Blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
