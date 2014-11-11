@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaKKQXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:23:10 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:35183 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaKKQXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:23:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141111161309.GG31490@pd.tnic>
-References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
- <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
- <20141111114248.GD31490@pd.tnic> <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
- <20141111161309.GG31490@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Nov 2014 08:22:45 -0800
-Message-ID: <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
- memory errors
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751937AbaKKQXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:23:33 -0500
+Received: from mout.gmx.net ([212.227.15.18]:57703 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436AbaKKQXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 11:23:32 -0500
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-man <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH] getrandom.2: treatment of interrupts
+Date: Tue, 11 Nov 2014 17:19:58 +0100
+Message-Id: <1415722798-4894-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <CAKgNAkj_Bs7d=YV_CFLNHuJacbp_+Kk_Jux_FdiBSuUAsObA=Q@mail.gmail.com>
+References: <CAKgNAkj_Bs7d=YV_CFLNHuJacbp_+Kk_Jux_FdiBSuUAsObA=Q@mail.gmail.com>
+X-Provags-ID: V03:K0:YvDZIS/ij/o+h+6kFLU+KloD0AXB/U8fdkgCINvbKiW0bG8F+5G
+ 7I3Gj9RklP18kU+lR4sVV4pEyqlFqAWRKZccVm7W6S+aVv9DJhLAUKPf6C34wJ1UBf/6IjB
+ hleZo3A+0XLawaL77qKK4n6pmXnUbEIK/hrYVj02fYqwY7h+dP5oqPI2U82Cdu5iJMwFPsM
+ SnHN9ZxLCMOIiB578cBuQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 8:13 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Nov 11, 2014 at 07:42:48AM -0800, Andy Lutomirski wrote:
->> The last time I looked at the MCE code, I got a bit lost in the
->> control flow.  Is there ever a userspace-killing MCE that's delivered
->> from kernel mode?
->
-> Yep, so while you're executing a userspace process, you get
-> an #MC raised which reports an error for which action is
-> required, i.e. look at all those MCE_AR_SEVERITY errors in
-> arch/x86/kernel/cpu/mcheck/mce-severity.c.
->
-> It happened within the context of current so we go and run the #MC
-> handler which decides that the process needs to be killed in order to
-> contain the error. So after we exit the handler and before we return to
-> try to sched in the process again on any core, we want to actually kill
-> it and poison all its memory.
->
->> By that, I mean that I think that all userspace-killing MCEs go have
->> user_mode_vm(regs) and go through paranoid_exit.
->
-> Yes.
->
->> If so, why do you need to jump through hoops at all?  You can't call
->> do_exit, but it should be completely safe to force a fatal signal and
->> let the scheduler and signal code take care of killing the process,
->> right?  For that matter, you should also be able to poke at vm
->> structures, etc.
->
-> Well, we do that already. memory-failure.c does kill the processes when
-> it decides to.
->
-> The only question is whether adding two new members to task_struct is
-> ok. It is nicely convenient and it all falls into place.
->
-> In the #MC handler we do:
->
->                 if (worst == MCE_AR_SEVERITY) {
->                         /* schedule action before return to userland */
-> +                       current->paddr = m.addr;
-> +                       current->restartable = !!(m.mcgstatus & MCG_STATUS_RIPV);
->                         set_thread_flag(TIF_MCE_NOTIFY);
->                 }
->
-> and then before we return to userspace we do:
->
-> +       if (!current->restartable)
->                 flags |= MF_MUST_KILL;
->         if (memory_failure(pfn, MCE_VECTOR, flags) < 0) {
->
-> and the MF_MUST_KILL makes sure memory_failure() does a force_sig().
->
-> So I think this is ok, I only think that people might oppose the two new
-> members to task_struct but it looks clean to me this way. IMHO at least.
->
+|| pick 0ef180e getrandom.2: Add a sentence to clarify the default behavior...
+|| pick 62342ef getrandom.2: Reword GRND_NONBLOCK description
+|| pick 0c90d3d getrandom.2: Reword GRND_RANDOM description
+These patches look ok.
 
-I think it's okay-ish, but only if it's necessary, and I still don't
-see why it's necessary.
+|| FIXME is the following paragraph correct?
+Paragraph is correct. FIXME removed.
 
-Can't you just remove TIF_MCE_NOTIFY entirely and just do all the
-mce_notify_process work directly in do_machine_check?  IOW, why do you
-need to store any state per-task when it's already on the stack
-anyway.
+The appended patch removed two FIXMEs.
+The description of the treatment of interrupts is updated.
 
-Or am I missing something here?
+|| FIXME Here, I think there needs to be an opening paragraph ...
+The description of the treatment of interupts has been reworked.
+FIXME removed.
 
---Andy
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ man2/getrandom.2 | 21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
 
->> Or is there a meaningful case where mce_notify_process needs to help
->> with recovery but the original MCE happened with !user_mode_vm(regs)?
->
-> Well, for the !user_mode_vm(regs) case we panic anyway.
->
-> Thanks Andy.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-
-
-
+diff --git a/man2/getrandom.2 b/man2/getrandom.2
+index 59ebbe0..5bf57b7 100644
+--- a/man2/getrandom.2
++++ b/man2/getrandom.2
+@@ -55,7 +55,6 @@ Therefore
+ should not be used for Monte Carlo simulations or other
+ programs/algorithms which are doing probabilistic sampling.
+ 
+-.\" FIXME is the following paragraph correct?
+ By default,
+ .BR getrandom ()
+ draws entropy from the
+@@ -157,10 +156,14 @@ was introduced in version 3.17 of the Linux kernel.
+ This system call is Linux-specific.
+ .SH NOTES
+ .SS Interruption by a signal handler
+-.\" FIXME Here, I think there needs to be an opening paragraph that describes
+-.\" the cases where getrandom() can block. This should cover the cases with
+-.\" GRND_RANDOM and without GRND_RANDOM. Reading the existing page, I am
+-.\" still not completely confident that I know what the cases are.
++If a blocking call is interrupted by a signal
++when reading from
++.I /dev/random
++.RB ( GRND_RANDOM
++is set),
++.B EINTR
++will be returned.
++.PP
+ The reaction of
+ .BR getrandom ()
+ in case of an interruption of a blocking call by a signal
+@@ -182,14 +185,6 @@ will not return
+ .BR EINTR .
+ Instead, it will return all of the bytes that have been requested.
+ .PP
+-When reading from
+-.I /dev/random
+-.RB ( GRND_RANDOM
+-is set)
+-these guarantees do
+-.I not
+-apply.
+-.PP
+ Calling
+ .BR getrandom ()
+ to read
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+2.1.1
+
