@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaKKJx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:53:26 -0500
-Received: from smtpout3.wanadoo.co.uk ([80.12.242.59]:17406 "EHLO
-	smtpout.wanadoo.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848AbaKKJxZ (ORCPT
+	id S1753041AbaKKJyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:54:24 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:41960 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169AbaKKJyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:53:25 -0500
-X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Nov 2014 04:53:24 EST
-X-ME-Helo: bother.homenet
-X-ME-Date: Tue, 11 Nov 2014 10:45:51 +0100
-X-ME-IP: 95.146.110.34
-Date: Tue, 11 Nov 2014 09:45:50 +0000
-From: Chris Vine <chris@cvine.freeserve.co.uk>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: intel drm regression with linux-3.18-rc4 kernel
-Message-ID: <20141111094550.0765545e@bother.homenet>
-X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.25; i686-pc-linux-gnu)
+	Tue, 11 Nov 2014 04:54:21 -0500
+X-IronPort-AV: E=Sophos;i="5.07,359,1413270000"; 
+   d="scan'208";a="50578033"
+Message-ID: <5461DCC9.5050702@broadcom.com>
+Date: Tue, 11 Nov 2014 10:54:17 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "Gautam (Gautam Kumar) Shukla" <gautams@broadcom.com>
+CC: "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jithu Jance <jithu@broadcom.com>, Sreenath S <sreenats@broadcom.com>
+Subject: Re: [PATCH 1/1] linux-wireless: Added psk in struct cfg80211_connect_params
+ needed for offloading 4way handshake to driver
+References: <DF163EE1A432BF4BBE6B2088220663A67437BD@SJEXCHMB06.corp.ad.broadcom.com> <1415698161.2163.0.camel@sipsolutions.net>
+In-Reply-To: <1415698161.2163.0.camel@sipsolutions.net>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11-11-14 10:29, Johannes Berg wrote:
+> On Tue, 2014-11-11 at 05:56 +0000, Gautam (Gautam Kumar) Shukla wrote:
+>> For offloading 4 way handshake to driver, currently we don't have any
+>> member  of struct cfg80211_connect_params to pass PSK from supplicant
+>> to driver. I have added psk for the same and added rest of the code
+>> needed in nl80211.h and nl80211.c to parse and make it available to
+>> driver.
+>> From supplicant, we already have psk member field in assoc_params to
+>> use .
+>>
+>> Tested on x86 linux.
+> 
+> Your commit message needs serious work.
+> 
+> Also, there's a competing approach from QCA that's far more suited.
 
-There seems to be a regression with linux-3.18-rc4 using drm with i915
-graphics on one of my machines, a crappy netbook which uses a Intel
-Corporation Mobile 945GM/GMS/GME, 943/940GML Express Integrated
-Graphics Controller (rev 03) graphics controller, when using
-gnome-shell.  The first time I bring up X, direct rendering seems to
-fail and at a guess the system falls back to software (llvm-pipe)
-rendering - in any event, it is very slow (around 4 or 5 frames/sec
-instead of 60 frames/sec).  If I log out and log in again drm works
-fine thereafter, with normal frame rates.
+I probably was not paying attention to it, but would you have a
+reference to this.
 
-This regression occurred somewhere between the 3.17 and 3.18-rc4
-kernels.
+> In either case though, I'm going to ask which driver is going to use
+> this and when it's going to land in mainline.
 
-Chris
+I had the same question ;-)
+
+> johannes
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
