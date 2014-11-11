@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbaKKLKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:10:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57424 "EHLO
+	id S932114AbaKKLvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:51:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57452 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaKKLKE (ORCPT
+	with ESMTP id S1753935AbaKKLKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:04 -0500
+	Tue, 11 Nov 2014 06:10:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amos Kong <akong@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 065/170] virtio-rng: fix stuck of hot-unplugging busy device
-Date: Tue, 11 Nov 2014 11:07:04 +0000
-Message-Id: <1415704129-12709-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 071/170] vxlan: using pskb_may_pull as early as possible
+Date: Tue, 11 Nov 2014 11:07:10 +0000
+Message-Id: <1415704129-12709-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amos Kong <akong@redhat.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit 3856e548372513665670ca5db60d9a74b970fe0d upstream.
+commit 91269e390d062b526432f2ef1352b8df82e0e0bc upstream.
 
-When we try to hot-remove a busy virtio-rng device from QEMU monitor,
-the device can't be hot-removed. Because virtio-rng driver hangs at
-wait_for_completion_killable().
+pskb_may_pull should be used to check if skb->data has enough space,
+skb->len can not ensure that.
 
-This patch exits the waiting by completing have_data completion before
-unregistering, resets data_avail to avoid the hwrng core use wrong
-buffer bytes.
-
-Signed-off-by: Amos Kong <akong@redhat.com>
-Reviewed-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/hw_random/virtio-rng.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/vxlan.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-index f1aa13b21f74..b50252c08009 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -137,6 +137,8 @@ static void remove_common(struct virtio_device *vdev)
- {
- 	struct virtrng_info *vi = vdev->priv;
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index a5da8d49a824..53b5bdeb45af 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1438,9 +1438,6 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
+ 	if (!in6_dev)
+ 		goto out;
  
-+	vi->data_avail = 0;
-+	complete(&vi->have_data);
- 	vdev->config->reset(vdev);
- 	vi->busy = false;
- 	if (vi->hwrng_register_done)
+-	if (!pskb_may_pull(skb, skb->len))
+-		goto out;
+-
+ 	iphdr = ipv6_hdr(skb);
+ 	saddr = &iphdr->saddr;
+ 	daddr = &iphdr->daddr;
+@@ -1945,7 +1942,8 @@ static netdev_tx_t vxlan_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			return arp_reduce(dev, skb);
+ #if IS_ENABLED(CONFIG_IPV6)
+ 		else if (ntohs(eth->h_proto) == ETH_P_IPV6 &&
+-			 skb->len >= sizeof(struct ipv6hdr) + sizeof(struct nd_msg) &&
++			 pskb_may_pull(skb, sizeof(struct ipv6hdr)
++				       + sizeof(struct nd_msg)) &&
+ 			 ipv6_hdr(skb)->nexthdr == IPPROTO_ICMPV6) {
+ 				struct nd_msg *msg;
+ 
 -- 
 2.1.0
 
