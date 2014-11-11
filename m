@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaKKRPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:15:51 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:62533 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaKKRPk (ORCPT
+	id S1751685AbaKKRRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:17:35 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33577 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaKKRRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:15:40 -0500
+	Tue, 11 Nov 2014 12:17:34 -0500
+Date: Tue, 11 Nov 2014 17:16:08 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: lee.jones@linaro.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
+        ckeepax@opensource.wolfsonmicro.com
+Message-ID: <20141111171608.GZ3815@sirena.org.uk>
+References: <20141111165227.GA24344@opensource.wolfsonmicro.com>
+ <20141111170432.GB25738@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <20141111163059.GH31490@pd.tnic>
-References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
- <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
- <20141111114248.GD31490@pd.tnic> <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
- <20141111161309.GG31490@pd.tnic> <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
- <20141111163059.GH31490@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Nov 2014 09:15:18 -0800
-Message-ID: <CALCETrX+u-LZV0GGudi8z-VtcY0y7BD8Yk_4BgTA5C5hekVAtQ@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
- memory errors
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UQXM1TyQrj1TTJf+"
+Content-Disposition: inline
+In-Reply-To: <20141111170432.GB25738@opensource.wolfsonmicro.com>
+X-Cookie: Some optional equipment shown.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] gpio: arizona: Add support for CS47L24
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 8:30 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Nov 11, 2014 at 08:22:45AM -0800, Andy Lutomirski wrote:
->> I think it's okay-ish, but only if it's necessary, and I still don't
->> see why it's necessary.
->>
->> Can't you just remove TIF_MCE_NOTIFY entirely and just do all the
->> mce_notify_process work directly in do_machine_check?  IOW, why do you
->> need to store any state per-task when it's already on the stack
->> anyway.
->
-> I wish but memory_failure() can't run in #MC context as it noodles
-> quite a lot and grabs all kinds of locks and does a bunch of other
-> atomit-context-unsafe things.
 
-Oh -- does it need to sleep?
+--UQXM1TyQrj1TTJf+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I find myself wondering whether a much cleaner solution might be to
-sync regs and switch stacks before invoking do_machine_check rather
-than afterwards.  Then do_machine_check would really be completely
-non-atomic.  It would add a few lines of asm, though.
+On Tue, Nov 11, 2014 at 05:04:32PM +0000, Richard Fitzgerald wrote:
 
---Andy
+> + * Copyright 2014 CirrusLogic, Inc.
 
->
-> And it needs to run *before* the process is killed as it looks at its
-> pages.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+Deathtospaces.
 
+--UQXM1TyQrj1TTJf+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+iQEcBAEBAgAGBQJUYkRYAAoJECTWi3JdVIfQ3JAH/A9WeY1B1wrly4T60UT1l4eI
+CvClLp6IHg6/Qofi9HbXWyH3JhfFvRS8EF6Rk4EiIKEsbuP0/V/q3HD50gMvznzN
+K7VtinQP7GSCKqUIPVNwY2acoT5ou1YgqH363CrCd3iDDMNPTCylmGr1joDl+lWa
+RhH5t26sg8KvqSt3zDipKgZo01O4aunon3WYZrvRjaTBd6rJlFN7kNeq4VC6dsJn
+ag9Ag9OwnpzbSAnmXTbH+HrHI9L4Mm2OZx3UOA1v1T423KZFSOhl1Ef17BVyf9/U
+0YS+GMXsfl340M+McUpbfANcG8GdXoNCckTPgsdhxY+9ojFCohg56jNPExDV0KY=
+=mqhu
+-----END PGP SIGNATURE-----
+
+--UQXM1TyQrj1TTJf+--
