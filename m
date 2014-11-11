@@ -1,280 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaKKAhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 19:37:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56243 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506AbaKKAh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 19:37:29 -0500
-Date: Tue, 11 Nov 2014 09:04:02 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Dongsu Park <dongsu.park@profitbricks.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] workqueue: allow rescuer thread to do more work.
-Message-ID: <20141111090402.35fa0700@notabene.brown>
-In-Reply-To: <20141110085250.GB15948@quack.suse.cz>
-References: <20141029172608.39119c80@notabene.brown>
-	<20141029143210.GA25226@htj.dyndns.org>
-	<20141030101932.2241daa7@notabene.brown>
-	<20141104142240.GD14459@htj.dyndns.org>
-	<20141106165811.GA2338@gmail.com>
-	<545C368C.5040704@cn.fujitsu.com>
-	<20141110162848.6f2246bb@notabene.brown>
-	<20141110085250.GB15948@quack.suse.cz>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.24; x86_64-suse-linux-gnu)
+	id S1751614AbaKKAkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 19:40:36 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44885 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaKKAkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 19:40:33 -0500
+Date: Mon, 10 Nov 2014 16:37:16 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: compiler bug gcc4.6/4.7 with ACCESS_ONCE and workarounds
+Message-ID: <20141111003716.GQ4901@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1415360716-9670-2-git-send-email-borntraeger@de.ibm.com>
+ <54611D86.4040306@de.ibm.com>
+ <CA+55aFyEigSL64RJH8AO86gFBBB84+dgk7eEUPx=CaLwJMcO_w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/SB31ldLPAPOAMu_Q+qL_B6/"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyEigSL64RJH8AO86gFBBB84+dgk7eEUPx=CaLwJMcO_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14111100-0033-0000-0000-000002A19818
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/SB31ldLPAPOAMu_Q+qL_B6/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 10, 2014 at 01:07:33PM -0800, Linus Torvalds wrote:
+> On Mon, Nov 10, 2014 at 12:18 PM, Christian Borntraeger
+> <borntraeger@de.ibm.com> wrote:
+> >
+> > Now: I can reproduces belows miscompile on gcc46 and gcc 47
+> > gcc 45 seems ok, gcc 48 is fixed.  This makes blacklisting
+> > a bit hard, especially since it is not limited to s390, but
+> > covers all architectures.
+> > In essence ACCESS_ONCE will not work reliably on aggregate
+> > types with gcc 4.6 and gcc 4.7.
+> > In Linux we seem to use ACCESS_ONCE mostly on scalar types,
+> > below code is an example were we dont - and break.
+> 
+> Hmm. I think we should see how painful it would be to make it a rule
+> that ACCESS_ONCE() only works on scalar types.
 
-On Mon, 10 Nov 2014 09:52:50 +0100 Jan Kara <jack@suse.cz> wrote:
+For whatever it is worth, I have been assuming that ACCESS_ONCE() was
+only ever supposed to work on scalar types.  And one of the reasons
+that I have been giving the pre-EV56 Alpha guys a hard time is because
+I would like us to be able to continue using ACCESS_ONCE() on 8-bit and
+16-bit quantities as well.
 
-> On Mon 10-11-14 16:28:48, NeilBrown wrote:
-> > On Fri, 7 Nov 2014 11:03:40 +0800 Lai Jiangshan <laijs@cn.fujitsu.com> =
-wrote:
-> > > On 11/07/2014 12:58 AM, Dongsu Park wrote:
-> > > > Hi Tejun & Neil,
-> > > >=20
-> > > > On 04.11.2014 09:22, Tejun Heo wrote:
-> > > >> On Thu, Oct 30, 2014 at 10:19:32AM +1100, NeilBrown wrote:
-> > > >>>>                           Given that workder depletion is pool-w=
-ide
-> > > >>>> event, maybe it'd make sense to trigger rescuers immediately whi=
-le
-> > > >>>> workers are in short supply?  e.g. while there's a manager stuck=
- in
-> > > >>>> maybe_create_worker() with the mayday timer already triggered?
-> > > >>>
-> > > >>> So what if I change "need_more_worker" to "need_to_create_worker"=
- ?
-> > > >>> Then it will stop as soon as there in an idle worker thread.
-> > > >>> That is the condition that keeps maybe_create_worker() looping.
-> > > >>> ??
-> > > >>
-> > > >> Yeah, that'd be a better condition and can work out.  Can you plea=
-se
-> > > >> write up a patch to do that and do some synthetic tests excercising
-> > > >> the code path?  Also please cc Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > >> when posting the patch.
-> > > >=20
-> > > > This issue looks exactly like what I've encountered occasionally in=
- our test
-> > > > setup. (with a custom kernel based on 3.12, MD/raid1, dm-multipath,=
- etc.)
-> > > > When a system suffers from high memory pressure, and at the same ti=
-me
-> > > > underlying devices of RAID arrays are repeatedly removed and re-add=
-ed,
-> > > > then sometimes the whole system gets locked up on a worker pool's l=
-ock.
-> > > > So I had to fix our custom MD code to allocate a separate ordered w=
-orkqueue
-> > > > with WQ_MEM_RECLAIM, apart from md_wq or md_misc_wq.
-> > > > Then the lockup seemed to have disappeared.
-> > > >=20
-> > > > Now that I read the Neil's patch, which looks like an ultimate solu=
-tion
-> > > > to the problem I have seen. I'm really looking forward to seeing th=
-is
-> > > > change in mainline.
-> > > >=20
-> > > > How about the attached patch? Based on the Neil's patch, I replaced
-> > > > need_more_worker() with need_to_create_worker() as Tejun suggested.
-> > > >=20
-> > > > Test is running with this patch, which seems to be working for now.
-> > > > But I'm going to observe the test result carefully for a few more d=
-ays.
-> > > >=20
-> > > > Regards,
-> > > > Dongsu
-> > > >=20
-> > > > ----
-> > > >>From de9aadd6fb742ea8acce4245a27946d3f233ab7f Mon Sep 17 00:00:00 2=
-001
-> > > > From: Dongsu Park <dongsu.park@profitbricks.com>
-> > > > Date: Wed, 5 Nov 2014 17:28:07 +0100
-> > > > Subject: [RFC PATCH] workqueue: allow rescuer thread to do more work
-> > > >=20
-> > > > Original commit message from NeilBrown <neilb@suse.de>:
-> > > > =3D=3D=3D=3D
-> > > > When there is serious memory pressure, all workers in a pool could =
-be
-> > > > blocked, and a new thread cannot be created because it requires mem=
-ory
-> > > > allocation.
-> > > >=20
-> > > > In this situation a WQ_MEM_RECLAIM workqueue will wake up the rescu=
-er
-> > > > thread to do some work.
-> > > >=20
-> > > > The rescuer will only handle requests that are already on ->worklis=
-t.
-> > > > If max_requests is 1, that means it will handle a single request.
-> > > >=20
-> > > > The rescuer will be woken again in 100ms to handle another max_requ=
-ests
-> > > > requests.
-> > >=20
-> > >=20
-> > > I also observed this problem by review when I was developing
-> > > the per-pwq-worklist patchset which has a side-affect that it also na=
-turally
-> > > fix the problem.
-> > >=20
-> > > However, it is nothing about correctness and I made promise to Freder=
-ic Weisbecker
-> > > for working on unbound pool for power-saving, then the per-pwq-workli=
-st patchset
-> > > is put off. So I have to ack it.
-> >=20
-> > Thanks!
-> > However testing showed that the patch isn't quite right.
-> > The test on ->nr_active is not correct.  I was meaning to test "are the=
-re
-> > any requests that have been activated but not yet serviced", but this t=
-est
-> > only covers the first half.
-> >=20
-> > If a queue allows a number of active requests (max_active > 1), and sev=
-eral
-> > are blocked waiting for something (e.g. more memory), then max_active w=
-ill be
-> > positive even though there is no useful work for the rescuer thread to =
-do -
-> > so it will spin.
-> >=20
-> > Jan Kara and I came up with a different patch which testing has shown is
-> > quite successful.  However it makes changes to when mayday_clear_cpu() =
-is
-> > set, and that isn't relevant in the current kernel.
-> >=20
-> > I've ported the patch to -mainline, but haven't really tested it proper=
-ly
-> > (just compile tested so far).
-> > That version is below.
-> ...
-> >=20
-> > From: NeilBrown <neilb@suse.de>
-> > Subject: workqueue: Make rescuer thread process more works
-> >=20
-> > Currently workqueue rescuer thread processes at most max_active works f=
-rom a
-> > workqueue before it goes back to sleep for 100 ms. Especially for workq=
-ueues
-> > with low max_active this leads to rescuer being very slow and when queu=
-ed
-> > work is blocking reclaim it leads to machine taking very long time (min=
-utes
-> > or more) to recover from a situation when new workers cannot be created.
-> >=20
-> > Fix the problem by going through worklist until either new worker is cr=
-eated
-> > or all no new works can be found.
-> >=20
-> > We remove and re-add the pool_workqueue to the mayday list so that each=
- pool_workqueue
-> > so that no one pool_workqueue can starve the others.
-> >=20
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> >=20
-> > diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> > index 09b685daee3d..19ecee70e3e9 100644
-> > --- a/kernel/workqueue.c
-> > +++ b/kernel/workqueue.c
-> > @@ -2253,6 +2253,10 @@ repeat:
-> >  			if (get_work_pwq(work) =3D=3D pwq)
-> >  				move_linked_works(work, scheduled, &n);
-> > =20
-> > +		if (!list_empty(scheduled) && need_to_create_worker(pool))
-> > +			/* Try again, in case more requests get added */
-> > +			if (list_empty(&pwq->mayday_node))
-> > +				list_add_tail(&pwq->mayday_node, &wq->maydays);
-> >  		process_scheduled_works(rescuer);
->   This is certainly missing locking - we need to hold wq_mayday_lock when
-> changing wq->maydays list. Otherwise the patch looks good to me.
->=20
-> 								Honza
+> Even in the actual code you show as an example, the "fix" is really to
+> use the "unsigned long val" member of the union for the ACCESS_ONCE().
+> And that seems to be true in many other cases too.
+> 
+> So before blacklisting any compilers, let's first see if
+> 
+>  (a) we can actually make it a real rule that we only use ACCESS_ONCE on scalars
+>  (b) we can somehow enforce this with a compiler warning/error for mis-uses
+> 
+> For example, the attached patch works for some cases, but shows how we
+> use ACCESS_ONCE() on pointers to pte_t's etc, so it doesn't come even
+> close to compiling the whole kernel. But I wonder how painful that
+> would be to change.. The places where it complains are actually
+> somewhat debatable to begin with, like:
+> 
+>  - handle_pte_fault(.. pte_t *pte ..):
+> 
+>         entry = ACCESS_ONCE(*pte);
+> 
+> and the thing is, "pte" is actually possibly an 8-byte entity on
+> x86-32, and that ACCESS_ONCE() fundamentally will be two 32-byte
+> reads.
+> 
+> So there is a very valid argument for saying "well, you shouldn't do
+> that, then", and that we might be better off cleaning up our
+> ACCESS_ONCE() uses, than to just blindly blacklist compilers.
+> 
+> NOTE! I'm not at all advocating the attached patch. I'm sending it out
+> white-space damaged on purpose, it's more of a "hey, something like
+> this might be the direction we want to go in", with the spinlock.h
+> part of the patch also acting as an example of the kind of changes the
+> "ACCESS_ONCE() only works on scalars" rule would require.
+> 
+> So I do agree with Heiko that we generally don't want to work around
+> compiler bugs if we can avoid it. But sometimes the compiler bugs do
+> end up saying "your'e doing something very fragile". Maybe we should
+> try to be less fragile here.
+> 
+> And in your example, the whole
+> 
+>         old = ACCESS_ONCE(*ic);
+> 
+> *could* just be a
+> 
+>         old->val = ACCESS_ONCE(ic->val);
+> 
+> the same way the x86 spinlock.h changes below.
+> 
+> I did *not* try to see how many other cases we have. It's possible
+> that your "don't use ACCESS_ONCE, use a barrier() instead" ends up
+> being a valid workaround. For the pte case, that may well be the
+> solution, for example (because what we really care about is not so
+> much "it's an atomic access" but "it's still the same that we
+> originally assumed").  Sometimes we want ACCESS_ONCE() because we
+> really want an atomic value (and we just don't care if it's old or
+> new), but sometimes it's really because we don't want the compiler to
+> re-load it and possibly see two different values - one that we check,
+> and one that we actually use (and then a barrier() would generally be
+> perfectly sufficient)
+> 
+> Adding some more people to the discussion just to see if anybody else
+> has comments about ACCESS_ONCE() on aggregate types.
+> 
+> (Btw, it's not just aggregate types, even non-aggregate types like
+> "long long" are not necessarily safe, to give the same 64-bit on
+> x86-32 example. So adding an assert that it's smaller or equal in size
+> to a "long" might also not be unreasonable)
 
+Good point on "long long" on 32-bit systems.
 
-Thanks... I can't just take wq_mayday_lock to cover that code as we already
-have pool->lock and they nest the other way.
+Another reason to avoid trying to do anything that even smells atomic on
+non-machine-sized/aligned variables is that the compiler guys' current
+reaction to this sort of situation is "No problem!!!  The compiler can
+just invent a lock to guard all such accesses!"  I don't think that we
+want to go there.
 
-What do people think of this approach?
+>                    Linus
+> 
+> ---
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index d5ad7b1118fc..63e82f1dfc1a 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -378,7 +378,11 @@ void ftrace_likely_update(struct
+> ftrace_branch_data *f, int val, int expect);
+>   * use is to mediate communication between process-level code and irq/NMI
+>   * handlers, all running on the same CPU.
+>   */
+> -#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+> +#define get_scalar_volatile_pointer(x) ({ \
+> +       typeof(x) *__p = &(x); \
+> +       volatile typeof(x) *__vp = __p; \
+> +       (void)(long)*__p; __vp; })
+> +#define ACCESS_ONCE(x) (*get_scalar_volatile_pointer(x))
 
-We hold onto wq_mayday_lock a bit longer, until we know if there is  really
-any work to do.
-The bit I'm least sure of is moving worker_attach_to_pool() after
-"rescuer->pool =3D pool".  Might that be a problem?
+I know you said that this was to be experimental, but it happily loads
+from a "long long" on 32-bit x86 running gcc version 4.6.3, and does it
+32 bits at a time.  How about something like the following instead?
 
-Thanks,
-NeilBrown
+#define get_scalar_volatile_pointer(x) ({ \
+	typeof(x) *__p = &(x); \
+	BUILD_BUG_ON(sizeof(x) != sizeof(char) && \
+		     sizeof(x) != sizeof(short) && \
+		     sizeof(x) != sizeof(int) && \
+		     sizeof(x) != sizeof(long)); \
+	volatile typeof(x) *__vp = __p; \
+	(void)(long)*__p; __vp; })
+#define ACCESS_ONCE(x) (*get_scalar_volatile_pointer(x))
 
+							Thanx, Paul
 
+> 
+>  /* Ignore/forbid kprobes attach on very low level functions marked by
+> this attribute: */
+>  #ifdef CONFIG_KPROBES
+> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+> index 9295016485c9..b7e6825af5e3 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -105,7 +105,7 @@ static __always_inline int
+> arch_spin_trylock(arch_spinlock_t *lock)
+>  {
+>         arch_spinlock_t old, new;
+> 
+> -       old.tickets = ACCESS_ONCE(lock->tickets);
+> +       old.head_tail = ACCESS_ONCE(lock->head_tail);
+>         if (old.tickets.head != (old.tickets.tail & ~TICKET_SLOWPATH_FLAG))
+>                 return 0;
+> 
+> @@ -162,16 +162,14 @@ static __always_inline void
+> arch_spin_unlock(arch_spinlock_t *lock)
+> 
+>  static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+>  {
+> -       struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+> -
+> -       return tmp.tail != tmp.head;
+> +       struct arch_spinlock tmp = { .head_tail =
+> ACCESS_ONCE(lock->head_tail) };
+> +       return tmp.tickets.tail != tmp.tickets.head;
+>  }
+> 
+>  static inline int arch_spin_is_contended(arch_spinlock_t *lock)
+>  {
+> -       struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+> -
+> -       return (__ticket_t)(tmp.tail - tmp.head) > TICKET_LOCK_INC;
+> +       struct arch_spinlock tmp = { .head_tail =
+> ACCESS_ONCE(lock->head_tail) };
+> +       return (__ticket_t)(tmp.tickets.tail - tmp.tickets.head) >
+> TICKET_LOCK_INC;
+>  }
+>  #define arch_spin_is_contended arch_spin_is_contended
+> 
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 09b685daee3d..f2db6073c498 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2235,11 +2235,6 @@ repeat:
- 		struct work_struct *work, *n;
-=20
- 		__set_current_state(TASK_RUNNING);
--		list_del_init(&pwq->mayday_node);
--
--		spin_unlock_irq(&wq_mayday_lock);
--
--		worker_attach_to_pool(rescuer, pool);
-=20
- 		spin_lock_irq(&pool->lock);
- 		rescuer->pool =3D pool;
-@@ -2253,8 +2248,16 @@ repeat:
- 			if (get_work_pwq(work) =3D=3D pwq)
- 				move_linked_works(work, scheduled, &n);
-=20
--		process_scheduled_works(rescuer);
-+		if (list_empty(scheduled) || !need_to_create_worker(pool))
-+			/* We can let go of this one  now */
-+			list_del_init(&pwq->mayday_node);
-+		spin_unlock_irq(&wq_mayday_lock);
-+
-+		if (!list_empty(scheduled)) {
-+			worker_attach_to_pool(rescuer, pool);
-=20
-+			process_scheduled_works(rescuer);
-+		}
- 		/*
- 		 * Put the reference grabbed by send_mayday().  @pool won't
- 		 * go away while we're still attached to it.
-
---Sig_/SB31ldLPAPOAMu_Q+qL_B6/
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVGE2Ujnsnt1WYoG5AQLqbA//U3kY4QgWEjsY1Qq3i+auxkfFk1Zq/M2d
-IjeyzsfjpAKDtFBSYFz1X6DJ3V+FYAli1XmGHrsRu5Ch/uqfpMrTAKuDywtm79Pq
-axKW6nQ5WYvordjJaGxEYtwMvqVWzKgOSlwSyJBVSfQP1el+PYqtKau72Gjrwkbo
-WDolpMFkQNFbXLXSyhE3rgvoI1+W8XCLg3+9r3+gkvMoK5YYijK7eIiIA3arODmo
-1fsK5nQP5OgLsXC9+W836bB9QDqbsLKBphozNvB4xA/1taBbN+6TS1BEzttVcm4O
-pIcGYpmQE3xV0lgq+cFSJSmOSNtqIBHCAG6ZUB1hBzYUPsWw2s6Qb6w14jFljfVq
-kY9BtJacmH5n9mNMZ2IzKuopCMWlnmjv2bLDWIzRM6BieJButFFeMtVHaxbVgBXd
-TkUQZbxQrqPafV17PKyZWGTbXW/uD4BWC8Dn6SsqGr53WCqxO2/j3VkgProRtc67
-x1XJW2gEDZBBSTvcDSlm70LVR06LiVDwfmsgzj4VWE3e0yOcfGX0RD3Ox+AFds1d
-rEPh42ln4Gal8t3yCffziWdp1XBkfPkKRzIPwlkr8RKsU/l6EDdTVIupZanX/YkR
-aEOczEmXb4u5E5ZE+YK9WP0PMC941xAG6PjjvI54V8+RRQpMVF23BQ4O0WwVDfEx
-1pMoeyiXvmg=
-=yTwk
------END PGP SIGNATURE-----
-
---Sig_/SB31ldLPAPOAMu_Q+qL_B6/--
