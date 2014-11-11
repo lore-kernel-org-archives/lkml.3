@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaKKK3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 05:29:36 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:24049 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905AbaKKK3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 05:29:35 -0500
-X-IronPort-AV: E=Sophos;i="5.07,360,1413244800"; 
-   d="scan'208";a="190062960"
-Message-ID: <5461E50C.4040309@citrix.com>
-Date: Tue, 11 Nov 2014 10:29:32 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1753217AbaKKKbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 05:31:38 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:45683 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaKKKbg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 05:31:36 -0500
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
-        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH V3 3/8] xen: Delay m2p_override initialization
-References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-4-git-send-email-jgross@suse.com>
-In-Reply-To: <1415684626-18590-4-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+In-Reply-To: <CAAVeFu+fsgG86b8iYVeHNmGqtb2m_P6esF1QFrbsMhwTh+P7Aw@mail.gmail.com>
+References: <1414825380-15322-1-git-send-email-acourbot@nvidia.com>
+	<CACRpkdaaXxXCm9===0zaKW5QJsHFBznnERdFrcbtKLQhxygzhA@mail.gmail.com>
+	<CAAVeFu+fsgG86b8iYVeHNmGqtb2m_P6esF1QFrbsMhwTh+P7Aw@mail.gmail.com>
+Date: Tue, 11 Nov 2014 11:31:35 +0100
+Message-ID: <CACRpkdaA=F852HRhEYLYscCyTr5pYmNSAGw-dZU=oA4C6Qh2gA@mail.gmail.com>
+Subject: Re: [RFC] gpio: remove gpio_descs global array
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/14 05:43, Juergen Gross wrote:
-> The m2p overrides are used to be able to find the local pfn for a
-> foreign mfn mapped into the domain. They are used by driver backends
-> having to access frontend data.
-> 
-> As this functionality isn't used in early boot it makes no sense to
-> initialize the m2p override functions very early. It can be done
-> later without doing any harm, removing the need for allocating memory
-> via extend_brk().
-> 
-> While at it make some m2p override functions static as they are only
-> used internally.
+On Tue, Nov 4, 2014 at 10:10 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Mon, Nov 3, 2014 at 11:11 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Sat, Nov 1, 2014 at 8:03 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>
+>>> The issue with this patch is its use of kzalloc() in gpiochip_add(), a
+>>> function potentially called during early boot, before kzalloc() becomes
+>>> usable. Hence its [RFC] status until we can find a solution for this or
+>>> agree that this issue is actually never ran into (from which point can
+>>> one use kzalloc()?)
+>>
+>> So which driver requires that the gpiochip be statically defined...
+>> I heard about early call but not *that* early.
+>
+> Let me know if you feel adventurous - in that case I will submit a
+> proper version of this patch to put in -next, and we'll see if people
+> complain... :)
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+лес рубят — щепки летят as the russians say.
 
-But...
+Let us have the patch.
 
->  static struct page *m2p_find_override(unsigned long mfn)
->  {
->  	unsigned long flags;
-> -	struct list_head *bucket = &m2p_overrides[mfn_hash(mfn)];
-> +	struct list_head *bucket;
->  	struct page *p, *ret;
-
-
-    if (unlikely(!m2p_overrides))
-        return NULL;
-
-Would be preferred,
-
-David
+Yours,
+Linus Walleij
