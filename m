@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaKKXjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 18:39:48 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38020 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaKKXjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 18:39:46 -0500
-Message-ID: <54629E4A.7050201@wwwdotorg.org>
-Date: Tue, 11 Nov 2014 16:39:54 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752513AbaKKXr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 18:47:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54771 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752320AbaKKXr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 18:47:58 -0500
+Date: Wed, 12 Nov 2014 00:47:52 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG() at boot in __phys_addr with DEBUG_VIRTUAL
+Message-ID: <20141111234752.GC32130@pd.tnic>
+References: <5462999A.7090706@intel.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Thierry Reding <thierry.reding@gmail.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        gregkh@linux-foundation.org, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH] ARM: dts: tegra: move serial aliases to per-board
-References: <1415738970-7963-1-git-send-email-olof@lixom.net>	<54627C1F.9050200@wwwdotorg.org> <CAOesGMh_8Ft=DKqm=e0fQdREC4aLmAAp3N0QyNsqWn2_rCbmnA@mail.gmail.com>
-In-Reply-To: <CAOesGMh_8Ft=DKqm=e0fQdREC4aLmAAp3N0QyNsqWn2_rCbmnA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5462999A.7090706@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 03:45 PM, Olof Johansson wrote:
-> [again in plain text mode. Sigh]
->
->
-> On Tue, Nov 11, 2014 at 1:14 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 11/11/2014 01:49 PM, Olof Johansson wrote:
->>>
->>> There are general changes pending to make the /aliases/serial* entries
->>> number the serial ports on the system. On tegra, so far the ports have
->>> been
->>> just numbered dynamically as they are configured so that makes them
->>> change.
->>>
->>> To avoid this, add specific aliases per board to keep the old numbers.
->>> This
->>> allows us to change the numbering by default on future SoCs while keeping
->>> the
->>> numbering on existing boards.
->>
->>
->> This change seems mostly OK to me. FWIW though, I had suggested this
->> approach when the UART aliases were first added, and Laxman disagreed with
->> it. See commit b6551bb933f9 "ARM: tegra: dts: add aliases and DMA requestor
->> for serial controller", and its discussion:
->> https://lkml.org/lkml/2012/12/25/4. I've CC'd Laxman in case he still
->> objects.
->>
->>> Signed-off-by: Olof Johansson <olof@lixom.net>
->>> ---
->>>
->>> Stephen/Thierry/Alex, as noticed this week we really should try to get
->>> this in before the 3.19 merge window so that the global aliases change
->>> can happen there without regression.
->>
->>
->> How did we resolve the issue that patch causes with old DTs; namely that it
->> causes a change in behaviour for those old DTs? On IRC, I'd wondered whether
->> we should set a flag so the kernel ignored aliases for boards containing
->> currently upstreamed Tegra SoCs so that issue wouldn't occur. If we did
->> that, we wouldn't need this patch.
->
-> Another way could be to remove aliases from the kernel side during
-> booting if they're found. Anyway, feel free to send a patch to do that
-> if that's your preference.
+On Tue, Nov 11, 2014 at 03:19:54PM -0800, Dave Hansen wrote:
+> I'm seeing a BUG() at boot in __phys_addr when it has DEBUG_VIRTUAL enabled:
+> 
+> >> [    1.193264] ------------[ cut here ]------------
+> >> [    1.198502] kernel BUG at /home/davehans/linux.git/arch/x86/mm/physaddr.c:36!
+> > ...
+> >> [    1.368810] Call Trace:
+> >> [    1.371590]  [<ffffffff8105824c>] __change_page_attr_set_clr+0x42c/0xff0
+> >> [    1.379197]  [<ffffffff81059e42>] kernel_map_pages_in_pgd+0x72/0x110
+> >> [    1.386410]  [<ffffffff81fe2be2>] __map_region+0x45/0x63
+> >> [    1.392437]  [<ffffffff81fe2e13>] efi_map_region+0x32/0xce
+> >> [    1.398663]  [<ffffffff81fe2936>] efi_enter_virtual_mode+0x18c/0x3a4
+> >> [    1.405876]  [<ffffffff81fcb0b6>] start_kernel+0x421/0x4a1
+> >> [    1.412101]  [<ffffffff81fcaa85>] ? set_init_arg+0x55/0x55
+> >> [    1.418327]  [<ffffffff81fca120>] ? early_idt_handlers+0x120/0x120
+> >> [    1.425342]  [<ffffffff81fca5f2>] x86_64_start_reservations+0x2a/0x2c
+> >> [    1.432652]  [<ffffffff81fca746>] x86_64_start_kernel+0x152/0x161
+> >> [    1.439565] Code: 0f 94 c2 31 c0 e8 a6 47 83 00 48 c7 c7 41 49 cc 81 31 c0 e8 98 47 83 00 31 d2 be 01 00 00 00 48 c7 c7 a0 49 f2 81 e8 ab 4a 0e 00 <0f> 0b 0f 0b 4c 89 e2 48 c7 c6 b3 e5 a0 81 48 c7 c7 5c 7a ca 81 
+> >> [    1.461866] RIP  [<ffffffff8105c055>] __phys_addr+0x185/0x260
+> >> [    1.468400]  RSP <ffffffff81e03cf8>
+> >> [    1.472396] ---[ end trace b59b0f17341a4bc4 ]---
+> >> [    1.477663] Kernel panic - not syncing: Attempted to kill the idle task!
+> >> [    1.485270] ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
+> 
+> But I've noticed something odd.  kernel_map_pages_in_pgd() takes a pfn:
+> 
+> extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long
+> 			address, unsigned numpages, unsigned long
+> 			page_flags);
+> 
+> But the code in arch/x86/platform/efi/efi_64.c seems a bit confused
+> about that.  Two users pass a physical address while a third passes in a
+> pfn:
+> 
+> >         if (kernel_map_pages_in_pgd(pgd, text >> PAGE_SHIFT, text, npages, 0)) {
 
-That would work too.
+Does it work if you drop the ">> PAGE_SHIFT" ?
 
-I'll let Thierry make the call re: whether it's important to support old 
-DTs with the current aliase content without a change in device names 
-when booted on a newer kernel. If not, as I mentioned, I'm fine with 
-this patch.
+> >         if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
+> >         if (kernel_map_pages_in_pgd(pgd, pa_memmap, pa_memmap, num_pages, _PAGE_NX)) {
+> 
+> kernel_map_pages_in_pgd() also sticks that value in to 'struct
+> cpa_data'->pfn.  But, then the "PFN" seems to get used like a physical
+> address.  For instance:
 
+Yeah, I called it pfn because struct cpa_data has a pfn member and at
+the time I wanted to reuse it for the physical address.
+
+I guess I should change that by adding a ->paddr instead of misusing
+pfn.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
