@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaKKKos (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 05:44:48 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:8615 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaKKKoq (ORCPT
+	id S1752980AbaKKKqt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 05:46:49 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44288 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaKKKqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 05:44:46 -0500
-X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
-   d="scan'208";a="50363440"
-Message-ID: <5461E89A.1060908@broadcom.com>
-Date: Tue, 11 Nov 2014 11:44:42 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 11 Nov 2014 05:46:48 -0500
+Date: Tue, 11 Nov 2014 10:46:42 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] MFD fixes for v3.18
+Message-ID: <20141111104642.GV24004@x1>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "Gautam (Gautam Kumar) Shukla" <gautams@broadcom.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jithu Jance <jithu@broadcom.com>, Sreenath S <sreenats@broadcom.com>,
-        Vladimir Kondratiev <vkondrat@qca.qualcomm.com>
-Subject: Re: [PATCH 1/1] linux-wireless: Added psk in struct cfg80211_connect_params
- needed for offloading 4way handshake to driver
-References: <DF163EE1A432BF4BBE6B2088220663A67437BD@SJEXCHMB06.corp.ad.broadcom.com>		 <1415698161.2163.0.camel@sipsolutions.net> <5461DCC9.5050702@broadcom.com>	 <1415700220.2163.3.camel@sipsolutions.net> <5461E67E.7010408@broadcom.com> <1415702338.2163.5.camel@sipsolutions.net>
-In-Reply-To: <1415702338.2163.5.camel@sipsolutions.net>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-14 11:38, Johannes Berg wrote:
-> On Tue, 2014-11-11 at 11:35 +0100, Arend van Spriel wrote:
-> 
->> What did pop up is the wiphy flags vs. nl80211 feature flags. When that
->> comes up it looks like 'potAtoes, potaetoes' to me.
->>
->> So is there are clear design rule for when to use which flag. For me the
->> wiphy object represents the device/firmware and 4-way handshake offload
->> support is determined by what the device/firmware supports.
-> 
-> There are three types of flags:
-> 
->  * wiphy flag attributes - deprecated as far as I'm concerned
+Hi Linus,
 
-Ok. deprecated is clear enough ;-)
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
->  * wiphy nl80211 feature flags - much easier to use in kernel (and
-> userspace)
->  * nl80211 protocol flags - only one exists
->                             (NL80211_PROTOCOL_FEATURE_SPLIT_WIPHY_DUMP)
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
 
-Thanks,
-Arend
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-fixes-3.18
+
+for you to fetch changes up to 481c7f868c6d855f31a29c69b445ac4aee9625a6:
+
+  mfd: twl4030-power: Fix poweroff with PM configuration enabled (2014-11-10 15:22:04 +0000)
+
+----------------------------------------------------------------
+ - Register offset fix for stmpe
+ - Eradicate build warning when !PM in rtsx_pcr
+ - Fix device ID collision when multiple boards are connected in viperboard
+ - Use correct Regmap handle - fixing unhanded IRQs in max77693
+ - Unmask MUIC IRQs in max77693
+ - Clear VBUS & CHG bits so board doesn't reboot instead of poweroff in twl4030
+
+----------------------------------------------------------------
+Johan Hovold (1):
+      mfd: viperboard: Fix platform-device id collision
+
+Krzysztof Kozlowski (2):
+      mfd: max77693: Use proper regmap for handling MUIC interrupts
+      mfd: max77693: Fix always masked MUIC interrupts
+
+Linus Walleij (1):
+      mfd: stmpe: Fix STMPE24xx GPMR LSB
+
+Thierry Reding (1):
+      mfd: rtsx: Fix build warnings for !PM
+
+Tony Lindgren (1):
+      mfd: twl4030-power: Fix poweroff with PM configuration enabled
+
+ drivers/mfd/max77693.c               | 14 +++++++++-
+ drivers/mfd/rtsx_pcr.c               |  2 ++
+ drivers/mfd/stmpe.h                  |  2 +-
+ drivers/mfd/twl4030-power.c          | 52 ++++++++++++++++++++++++++++++++++++
+ drivers/mfd/viperboard.c             |  5 ++--
+ include/linux/mfd/max77693-private.h |  7 +++++
+ 6 files changed, 78 insertions(+), 4 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
