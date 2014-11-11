@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaKKQcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:32:04 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:46815 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345AbaKKQcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:32:01 -0500
+	id S1751996AbaKKQc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:32:26 -0500
+Received: from mga03.intel.com ([134.134.136.65]:54607 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293AbaKKQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 11:32:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="486551109"
+Message-ID: <54623A10.9030705@linux.intel.com>
+Date: Wed, 12 Nov 2014 00:32:16 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1411111717270.2047@localhost6.localdomain6>
-References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com>
-	<1415708457-18798-2-git-send-email-octavian.purdila@intel.com>
-	<alpine.DEB.2.02.1411111717270.2047@localhost6.localdomain6>
-Date: Tue, 11 Nov 2014 18:32:00 +0200
-Message-ID: <CAE1zotLOZX8Kfy=ajSLf0wredSWVvGt1LqO0bYUtzmugg_Ph8A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mfd: dln2: fix _dln2_transfer return code
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Johan Hovold <johan@kernel.org>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 00/15] arm64: PCI/MSI: GICv3 ITS support (stacked domain
+ edition)
+References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com> <546234FA.3060501@linux.intel.com> <546238FA.3040307@arm.com>
+In-Reply-To: <546238FA.3040307@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 6:18 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> On Tue, 11 Nov 2014, Octavian Purdila wrote:
->
->> If wait_for_completion_interruptible_timeout returns a positive value
->> it may be propagated as the return value of _dln2_transfer. This
->> contradicts the documentation of the function and exposes unnecessary
->> internals to the callers.
->>
->> This patch makes sure to set the return value to 0 in that case.
->
-> I didn't keep around the code or the address of the git tree, but I wonder
-> if this makes a later assignment of ret to 0 unnecessary?
->
-
-Yes, you are right, we can skip setting it when ibuf is NULL. I will
-send v2 that fixes this and the coding style issue.
+On 2014/11/12 0:27, Marc Zyngier wrote:
+> On 11/11/14 16:10, Jiang Liu wrote:
+>> Hi Marc,
+>> 	Sorry for the late notification. I have heavily reworked the
+>> interfaces for MSI irqdomain support based on review comments.
+>> Please refer to https://lkml.org/lkml/2014/11/9/88, please give your
+>> comments on the new interfaces:)
+> 
+> Ah, I feel like I have more catch-up to do. Hopefully the changes are
+> simple enough to implement. Rebase time...
+The new interfaces are still RFC, so comments are warmly welcomed!
+Regards!
+Gerry
+> 
+> Thanks,
+> 
+> 	M.
+> 
