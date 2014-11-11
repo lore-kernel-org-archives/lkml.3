@@ -1,98 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600AbaKKNJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:09:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10294 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152AbaKKNJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:09:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="414801397"
-Date: Tue, 11 Nov 2014 15:09:04 +0200
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mfd: dln2: add support for USB-SPI module
-Message-ID: <20141111130904.GN5826@lpalcu-linux>
-References: <1415364314-30320-1-git-send-email-laurentiu.palcu@intel.com>
- <1415364314-30320-3-git-send-email-laurentiu.palcu@intel.com>
- <20141110093005.GF21424@x1>
+	id S1752385AbaKKNJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:09:24 -0500
+Received: from relay.parallels.com ([195.214.232.42]:38478 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608AbaKKNJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 08:09:22 -0500
+Message-ID: <1415711354.15631.15.camel@tkhai>
+Subject: Re: [PATCH v4] sched/deadline: support dl task migration during cpu
+ hotplug
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Wanpeng Li <kernellwp@gmail.com>
+CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@arm.com>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Nov 2014 16:09:14 +0300
+In-Reply-To: <546209FD.8060102@gmail.com>
+References: <1415673043-62281-1-git-send-email-wanpeng.li@linux.intel.com>
+	 <1415704209.15631.14.camel@tkhai> <546209FD.8060102@gmail.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141110093005.GF21424@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-On Mon, Nov 10, 2014 at 09:30:05AM +0000, Lee Jones wrote:
-> On Fri, 07 Nov 2014, Laurentiu Palcu wrote:
+В Вт, 11/11/2014 в 21:07 +0800, Wanpeng Li пишет:
+> Hi Kirill,
+> On 11/11/14, 7:10 PM, Kirill Tkhai wrote:
+> > В Вт, 11/11/2014 в 10:30 +0800, Wanpeng Li пишет:
+> >> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
+> >> addition, task may/may not be running again if cpu is added back. The root cause
+> >> which I found is that dl task will be throtted and removed from dl rq after
+> >> comsuming all budget, which leads to stop task can't pick it up from dl rq and
+> >> migrate to other cpus during hotplug.
+> >>
+> >> The method to reproduce:
+> >> schedtool -E -t 50000:100000 -e ./test
+> >> Actually test is just a simple for loop. Then observe which cpu the test
+> >> task is on.
+> >> echo 0 > /sys/devices/system/cpu/cpuN/online
+> >>
+> >> This patch fix it by push the task to another cpu in dl_task_timer() if
+> >> rq is offline.
+> >>
+> >> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> > I'm still thinking we don't have to guarantee any "deadlines" during cpu hotplug...
+> > But, if speaking about this way:
+> >
+> >> ---
+> >> v3 -> v4:
+> >>   * use tsk_cpus_allowed wrapper
+> >>   * fix compile error
+> >> v2 -> v3:
+> >>   * don't get_task_struct
+> >>   * if cannot preempt any rq, fallback to pick any online cpus
+> >>   * use cpu_active_mask as original later_mask if cpu is offline
+> >> v1 -> v2:
+> >>   * push the task to another cpu in dl_task_timer() if rq is offline.
+> >>
+> >>
+> >>   kernel/sched/deadline.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++---
+> >>   1 file changed, 48 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> >> index 00324af..e0fbba4 100644
+> >> --- a/kernel/sched/deadline.c
+> >> +++ b/kernel/sched/deadline.c
+> >> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+> >>   	return hrtimer_active(&dl_se->dl_timer);
+> >>   }
+> >>   
+> >> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
+> >>   /*
+> >>    * This is the bandwidth enforcement timer callback. If here, we know
+> >>    * a task is not on its dl_rq, since the fact that the timer was running
+> >> @@ -538,6 +539,46 @@ again:
+> >>   	update_rq_clock(rq);
+> >>   	dl_se->dl_throttled = 0;
+> >>   	dl_se->dl_yielded = 0;
+> >> +
+> >> +	/*
+> >> +	 * So if we find that the rq the task was on is no longer
+> >> +	 * available, we need to select a new rq.
+> >> +	 */
+> >> +	if (!rq->online) {
+> >> +		struct rq *later_rq = NULL;
+> >> +
+> >> +		raw_spin_unlock(&rq->lock);
+> >> +
+> >> +		later_rq = find_lock_later_rq(p, rq);
+> > find_lock_later_rq() expects that rq is locked.
+> >
+> > The comment near its head confuses a reader. It locks newly found rq.
 > 
-> > Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
-> > ---
-> >  drivers/mfd/dln2.c | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> > 
-> > diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-> > index 9765a17..0cdad2d 100644
-> > --- a/drivers/mfd/dln2.c
-> > +++ b/drivers/mfd/dln2.c
-> > @@ -52,6 +52,7 @@ enum dln2_handle {
-> >  	DLN2_HANDLE_CTRL,
-> >  	DLN2_HANDLE_GPIO,
-> >  	DLN2_HANDLE_I2C,
-> > +	DLN2_HANDLE_SPI,
-> >  	DLN2_HANDLES
-> >  };
-> >  
-> > @@ -634,6 +635,12 @@ static struct dln2_platform_data dln2_pdata_i2c = {
-> >  	.port = 0,
-> >  };
-> >  
-> > +/* Only one SPI port supported */
-> > +static struct dln2_platform_data dln2_pdata_spi = {
-> 
-> Is this ever fiddled with?  If not, const?
-Well, if we declare this const we also need to cast the assignment below to
-void* since platform_data is void*. Otherwise we get a "assignment
-discards ‘const’ qualifier from pointer target type" warning. 
+> Sorry for my bad, what's you think should be changed?
 
-Also, for consistency, we have to do it for all dln2_pdata_*. I'm not
-sure it's worth it...
-
-laurentiu
+raw_spin_unlock(&rq->lock) is wrong here. It's not need.
 
 > 
-> > +	.handle = DLN2_HANDLE_SPI,
-> > +	.port = 0,
-> > +};
-> > +
-> >  static const struct mfd_cell dln2_devs[] = {
-> >  	{
-> >  		.name = "dln2-gpio",
-> > @@ -645,6 +652,11 @@ static const struct mfd_cell dln2_devs[] = {
-> >  		.platform_data = &dln2_pdata_i2c,
-> >  		.pdata_size = sizeof(struct dln2_platform_data),
-> >  	},
-> > +	{
-> > +		.name = "dln2-spi",
-> > +		.platform_data = &dln2_pdata_spi,
-> > +		.pdata_size = sizeof(struct dln2_platform_data),
-> > +	},
-> >  };
-> >  
-> >  static void dln2_disconnect(struct usb_interface *interface)
+> >
+> >> +
+> >> +		if (!later_rq) {
+> >> +			int cpu;
+> >> +
+> >> +			/*
+> >> +			 * If cannot preempt any rq, fallback to pick any
+> >> +			 * online cpu.
+> >> +			 */
+> >> +			for_each_cpu(cpu, tsk_cpus_allowed(p))
+> >> +				if (cpu_online(cpu))
+> >> +					later_rq = cpu_rq(cpu);
+> >> +			if (!later_rq) {
+> >> +				pr_warn("fail to find any online and task "
+> >> +				    "will never come back to us\n");
+> >> +				goto out;
+> >> +			}
+> >> +		}
+> >> +
+> >> +		deactivate_task(rq, p, 0);
+> >> +		set_task_cpu(p, later_rq->cpu);
+> >> +		activate_task(later_rq, p, 0);
+> >> +
+> >> +		resched_curr(later_rq);
+> >> +
+> >> +		double_unlock_balance(rq, later_rq);
+> > double_unlock_balance() unlocks later_rq only.
+> >
+> >> +
+> >> +		goto out;
+> >> +	}
+> >> +
+> >>   	if (task_on_rq_queued(p)) {
+> >>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+> >>   		if (dl_task(rq->curr))
+> >> @@ -555,7 +596,7 @@ again:
+> >>   	}
+> >>   unlock:
+> >>   	raw_spin_unlock(&rq->lock);
+> >> -
+> >> +out:
+> >>   	return HRTIMER_NORESTART;
+> >>   }
+> >>   
+> >> @@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
+> >>   	 * We have to consider system topology and task affinity
+> >>   	 * first, then we can look for a suitable cpu.
+> >>   	 */
+> >> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+> >> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+> >> +	if (likely(task_rq(task)->online)) {
+> >> +		cpumask_copy(later_mask, task_rq(task)->rd->span);
+> >> +		cpumask_and(later_mask, later_mask, cpu_active_mask);
+> >> +	} else
+> >> +		/* for offline cpus we have a singleton rd */
+> >> +		cpumask_copy(later_mask, cpu_active_mask);
+> >>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+> >>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+> >>   			task, later_mask);
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+
+
