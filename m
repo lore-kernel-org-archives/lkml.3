@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaKKTBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 14:01:16 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:56766 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaKKTBL (ORCPT
+	id S1751959AbaKKTBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:01:05 -0500
+Received: from resqmta-ch2-09v.sys.comcast.net ([69.252.207.41]:60060 "EHLO
+	resqmta-ch2-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751671AbaKKTBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:01:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141111150139.A904BC416AF@trevor.secretlab.ca>
-References: <1415283784-10885-1-git-send-email-romain.perier@gmail.com>
-	<1415283784-10885-2-git-send-email-romain.perier@gmail.com>
-	<20141111150139.A904BC416AF@trevor.secretlab.ca>
-Date: Tue, 11 Nov 2014 20:01:10 +0100
-Message-ID: <CABgxDoLfGYRnGCLmxnW6XCwJo3AoecO3=sLNBsOUAHig3P8New@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] of: Rename "poweroff-source" property to "system-power-controller"
-From: Romain Perier <romain.perier@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Johan Hovold <johan@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Nov 2014 14:01:01 -0500
+Date: Tue, 11 Nov 2014 13:00:56 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: j.glisse@gmail.com
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>, linux-fsdevel@vger.kernel.org,
+        Linda Wang <lwang@redhat.com>, Kevin E Martin <kem@redhat.com>,
+        Jerome Glisse <jglisse@redhat.com>, Jeff Law <law@redhat.com>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Sagi Grimberg <sagig@mellanox.com>
+Subject: Re: HMM (heterogeneous memory management) v6
+In-Reply-To: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+Message-ID: <alpine.DEB.2.11.1411111259560.6657@gentwo.org>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-11 16:01 GMT+01:00 Grant Likely <grant.likely@linaro.org>:
-> So, to be a little pendantic, the 'ti,' prefix is basically just for
-> backwards compatibility with the old binding, and that old binding is
-> only used on palmas.c, tps65*.c and twl4030-power.c, correct?
+On Mon, 10 Nov 2014, j.glisse@gmail.com wrote:
 
-No, the backward compatibility here is only useful for drivers which
-used "ti,system-power-controller" in the past and recently switched to
-the new property through the standard helper function. As most of the
-dts were not updated to use the new property, previous patches broke
-compatibility with "ti,system-power-controller" (this compat would be
-reverted with this serie). Only one driver has this problem, it is
-tps65910.
+> In a nutshell HMM is a subsystem that provide an easy to use api to mirror a
+> process address on a device with minimal hardware requirement (mainly device
+> page fault and read only page mapping). This does not rely on ATS and PASID
+> PCIE extensions. It intends to supersede those extensions by allowing to move
+> system memory to device memory in a transparent fashion for core kernel mm
+> code (ie cpu page fault on page residing in device memory will trigger
+> migration back to system memory).
 
-So, What you propose is that I should handle the old property directly
-from tps65910, and keep the standard helper generic right ?
-
-Romain
-
-
-
-
->
-> We don't actually want a ti comparison in the generic code. Normally
-> what you'd do here is have the fixup in the ti driver code, possibly
-> with a ti specific helper for those 4 files.
->
-> I'm not going to nak this patch and I know you need to get things cleaned
-> up, but the static inline really should be reduced back to just checking
-> only for "system-power-controller". The current mainline code does the
-> right thing anyway, and it is a *tiny* amount of extra code in 4 drivers
-> file.
->
-> g.
->
->
->>  }
->>
->>  #endif /* _LINUX_OF_H */
->> --
->> 1.9.1
->>
->
+Could we define a new NUMA node that maps memory from the GPU and
+then simply use the existing NUMA features to move a process over there.
