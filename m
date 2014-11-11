@@ -1,130 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaKKPiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:38:16 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:48722 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaKKPiO (ORCPT
+	id S1751547AbaKKPjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:39:33 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:51746 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaKKPjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:38:14 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Seth Forshee <seth.forshee@canonical.com>,
+	Tue, 11 Nov 2014 10:39:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141111152429.GA7906@ubuntu-hedt>
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+ <1414013060-137148-2-git-send-email-seth.forshee@canonical.com>
+ <20141111132734.GC333@tucsk> <20141111152429.GA7906@ubuntu-hedt>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Nov 2014 07:39:09 -0800
+Message-ID: <CALCETrUzkyu85BtM=Zn8+x6NqyZj+-d2u-1EiPkOO8-dwzYN_g@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] fuse: Add support for pid namespaces
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
         Andy Lutomirski <luto@amacapital.net>,
         Michael j Theall <mtheall@us.ibm.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
-	<1414013060-137148-3-git-send-email-seth.forshee@canonical.com>
-	<20141111140454.GD333@tucsk>
-Date: Tue, 11 Nov 2014 09:37:10 -0600
-In-Reply-To: <20141111140454.GD333@tucsk> (Miklos Szeredi's message of "Tue,
-	11 Nov 2014 15:04:54 +0100")
-Message-ID: <87mw7xd9zt.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+8oBC+u4iIVl4/8M2L/MKasar64LlJl3w=
-X-SA-Exim-Connect-IP: 67.3.195.30
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4965]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.2 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 374 ms - load_scoreonly_sql: 0.04 (0.0%),
-	signal_user_changed: 3.5 (0.9%), b_tie_ro: 2.5 (0.7%), parse: 0.95 (0.3%),
-	extract_message_metadata: 16 (4.2%), get_uri_detail_list: 3.1 (0.8%),
-	tests_pri_-1000: 5 (1.3%), tests_pri_-950: 1.32 (0.4%), tests_pri_-900: 1.08
-	(0.3%), tests_pri_-400: 23 (6.2%), check_bayes: 22 (5.9%), b_tokenize: 7
-	(1.8%), b_tok_get_all: 8 (2.2%), b_comp_prob: 2.5 (0.7%), b_tok_touch_all:
-	2.4 (0.6%), b_finish: 0.63 (0.2%), tests_pri_0: 316 (84.4%), tests_pri_500:
-	4.1 (1.1%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCH v5 2/4] fuse: Support fuse filesystems outside of init_user_ns
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+        fuse-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
-
-> On Wed, Oct 22, 2014 at 04:24:18PM -0500, Seth Forshee wrote:
->> Update fuse to translate uids and gids to/from the user namspace
->> of the process servicing requests on /dev/fuse. Any ids which do
->> not map into the namespace will result in errors. inodes will
->> also be marked bad when unmappable ids are received from
->> userspace.
+On Tue, Nov 11, 2014 at 7:24 AM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Tue, Nov 11, 2014 at 02:27:34PM +0100, Miklos Szeredi wrote:
+>> On Wed, Oct 22, 2014 at 04:24:17PM -0500, Seth Forshee wrote:
+>> > If the userspace process servicing fuse requests is running in
+>> > a pid namespace then pids passed via the fuse fd need to be
+>> > translated relative to that namespace. Capture the pid namespace
+>> > in use when the filesystem is mounted and use this for pid
+>> > translation.
+>>
+>> But WHY?
+>>
+>> I know it's been discussed, but the reasons should be spelled out here:
 >
-> Okay.
+> The reasons relate much more to user namespaces rather than pid
+> namespaces, but in my opinion it doesn't make much sense to handle them
+> differently. It might make more sense to reorder the patches to add user
+> namespace support first, give the justification there, and then for this
+> one just say "to be consistent with userns support."
 >
->> Due to security concerns the namespace used should be fixed,
->> otherwise a user might be able to gain elevated privileges or
->> influence processes that the user would otherwise be unable to
->> manipulate. Thus the namespace of the mounting process is used
->> for all translations, and this namespace is required to be the
->> same as the one in use when /dev/fuse was opened.
+>>  - capturing the namespace makes the code less complex (the strongest argument
+>>    that I've heard)
 >
-> Maybe I'm being dense, but can someone give a concrete example of such an
-> attack?
+> For pid namespaces it's not so bad, except maybe for file locking (I
+> can't remember for sure about that). For user namespaces though it does
+> get much more complex to use the namespace from the /dev/fuse IO path,
+> because frequently the raw data from userspace is being handed off to
+> another thread before it is interpreted. That means we either have to
+> capture the userns and pass it along with the data or restructure the
+> code to do all of this in the IO paths. Either way having a static
+> namespace in fuse_conn works out to be much simpler.
+>
+>>  - there's a security concern with translating to current namespace (that I
+>>    still don't fully understand)
+>
+> There's the one I explained with suid, which in reality should be
+> mitigated by some of the other protections in fuse. Other than that I
+> don't know of anything specific Eric had in mind other than the fact
+> that other sources of userns security bugs have been "time of open
+> versus time of use" sorts of problems, and he believes that capturing
+> the userns at IO time instead of mount time is likely to be similarly
+> vulnerable.
+>
 
-There are two variants of things at play here.
+The general concern is that read(2) and write(2) really have no
+business looking at creds.  ioctl is considerably less dangerous.  The
+risk is that you get an fd and use at as stderr for a setuid process
+or something along those lines.
 
-There is the classic if you don't freeze your context at open time when
-you pass that file descriptor to another process unexpected things can
-happen.  
+> Otherwise I can't add any specifics beyond what Eric has already said in
+> http://lkml.kernel.org/g/87egv26mcz.fsf@x220.int.ebiederm.org. Maybe
+> Eric or Andy could elaborate further. I'll also look at some of the past
+> vulnerabilities and see if I get any ideas for specific attacks.
+>
+>>  - changing the pid namespace after mounting is unlikely to be of any use
+>
+> This sounds like trying to prove a negative. All I can say is that no
+> one has stepped forward to voice any specific use cases which would
+> require it.
+>
+>>  - if it turns out to be useful, we can still fix this later (can we?)
+>
+> I don't see why we couldn't as long as nothing in userspace came to rely
+> upon the behavior.
 
-An essentially harmless but extremely confusing example is what happens
-to a partial read when it stops halfway through a uid value and the next
-read on the same file descriptor is from a process in a different user
-namespace.  Which uid value should be returned to userspace.
+Just to be clear, the current behavior is to reject /dev/fuse io
+attempts with namespaces that don't match the opener, right?  If so,
+that seems like the conservative option, and changing it won't break
+things.
 
-If the kernel is just reporting values all that happens is confusion
-with a correct implementation.  Confusion however is a breeding ground
-for little unexpected behaviors that trigger bugs in the code.
+>
+>> What happens when the server does indeed change pid namespace after mounting?
+>> Will just receive bogus pid values?  Shouldn't it receive an error instead?
+>
+> Yeah, I suppose it does receive bogus pids and userid values. About all
+> we could do to prevent this is make the /dev/fuse read/write paths
+> return an error if the current namespace isn't the same as the one at
+> mount time. But then requests could get stuck in the queue forever, so
+> maybe we should also fail all requests in the queue when this happens.
+> Unless you have a better idea?
+>
 
-If the kernel is reading values things can get ugly.  As root in a user
-a namespace I am allowed to call setuid and setgid to any uid or gid
-that is mapped into my user namespace but no others.
+If this is actually read(2)/write(2), then I think you need to either
+error out or use the namespaces at the time of open.  Anything else is
+asking for trouble when the caller of read(2) or write(2) doesn't
+realize that the fd is a /dev/fuse fd.
 
-Now if I am in a nefarious mood I can create a unprivileged user
-namespace, open /dev/fuse and mount a fuse filesystem.  Pass the file
-descriptor to /dev/fuse to a processes that is in the default user
-namespace (and thus can use any uid/gid).   With that file desctipor
-report that there is a setuid 0 exectuable on that file system.
+--Andy
 
-The version of fuse in these patches has two different defenses against
-that kind of nefariousness.  The first defense restrictions /dev/fuse
-to speak the uids and gids that the opener of /dev/fuse has in their
-user namespace.  The second defense restricts who can access a fuse file
-system by requiring them to be in the user namespace of the opener of
-/dev/fuse and the mounter of the fuse filesystem.
+>>
+>> More comments inline.
+>>
+>> > File locking changes based on previous work done by Eric
+>> > Biederman.
+>> >
+>> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+>> > Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+>> > Cc: Andy Lutomirski <luto@amacapital.net>
+>> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+>> > ---
+>> >  fs/fuse/dev.c    |  9 +++++----
+>> >  fs/fuse/file.c   | 38 +++++++++++++++++++++++++++-----------
+>> >  fs/fuse/fuse_i.h |  4 ++++
+>> >  fs/fuse/inode.c  |  4 ++++
+>> >  4 files changed, 40 insertions(+), 15 deletions(-)
+>> >
+>> > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+>> > index ca887314aba9..839caebd34f1 100644
+>> > --- a/fs/fuse/dev.c
+>> > +++ b/fs/fuse/dev.c
+>> > @@ -20,6 +20,7 @@
+>> >  #include <linux/swap.h>
+>> >  #include <linux/splice.h>
+>> >  #include <linux/aio.h>
+>> > +#include <linux/sched.h>
+>> >
+>> >  MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+>> >  MODULE_ALIAS("devname:fuse");
+>> > @@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+>> >     atomic_dec(&req->count);
+>> >  }
+>> >
+>> > -static void fuse_req_init_context(struct fuse_req *req)
+>> > +static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+>> >  {
+>> >     req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+>> >     req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+>> > -   req->in.h.pid = current->pid;
+>> > +   req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+>> >  }
+>> >
+>> >  static bool fuse_block_alloc(struct fuse_conn *fc, bool for_background)
+>> > @@ -168,7 +169,7 @@ static struct fuse_req *__fuse_get_req(struct fuse_conn *fc, unsigned npages,
+>> >             goto out;
+>> >     }
+>> >
+>> > -   fuse_req_init_context(req);
+>> > +   fuse_req_init_context(fc, req);
+>> >     req->waiting = 1;
+>> >     req->background = for_background;
+>> >     return req;
+>> > @@ -257,7 +258,7 @@ struct fuse_req *fuse_get_req_nofail_nopages(struct fuse_conn *fc,
+>> >     if (!req)
+>> >             req = get_reserved_req(fc, file);
+>> >
+>> > -   fuse_req_init_context(req);
+>> > +   fuse_req_init_context(fc, req);
+>> >     req->waiting = 1;
+>> >     req->background = 0;
+>> >     return req;
+>> > diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+>> > index caa8d95b24e8..cb0e40ecc362 100644
+>> > --- a/fs/fuse/file.c
+>> > +++ b/fs/fuse/file.c
+>> > @@ -2131,7 +2131,8 @@ static int fuse_direct_mmap(struct file *file, struct vm_area_struct *vma)
+>> >     return generic_file_mmap(file, vma);
+>> >  }
+>> >
+>> > -static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+>> > +static int convert_fuse_file_lock(struct fuse_conn *fc,
+>> > +                             const struct fuse_file_lock *ffl,
+>> >                               struct file_lock *fl)
+>> >  {
+>> >     switch (ffl->type) {
+>> > @@ -2146,7 +2147,11 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+>> >
+>> >             fl->fl_start = ffl->start;
+>> >             fl->fl_end = ffl->end;
+>> > -           fl->fl_pid = ffl->pid;
+>> > +           rcu_read_lock();
+>> > +           fl->fl_pid = pid_vnr(find_pid_ns(ffl->pid, fc->pid_ns));
+>> > +           rcu_read_unlock();
+>> > +           if (ffl->pid != 0 && fl->fl_pid == 0)
+>> > +                   return -EIO;
+>>
+>> This needs some comments: is this trying to translate the pid backwards?  Why is
+>> it not checking the return of find_pid_ns() then?  The man page documents l_pid
+>> value of -1 but not of 0, so why are we checking for "ffl->pid != 0"?  Or is the
+>> man page incomplete and in practice we get l_pid == 0 values?
+>
+> I'll add comments. It's converting the pid in the fuse_file_lock into
+> the current pid namespace. pid_vnr calls pid_nr_ns, which returns 0 if
+> the pid can't be translated into the namespace, thus we return the
+> error.
+>
+> pid_vnr's return values don't necessarily conform to the expectations of
+> the fcntl syscall in all cases, and as far as I can tell it should never
+> return <0. But if fcntl doesn't expect l_pid == 0 and pid_vnr could
+> return that value then doesn't it makes sense for fuse to return an
+> error in cases where this would happen?
+>
+> Fwiw, this is also an example of a case where it's simpler to have a
+> static namespace. If we were to use the current ns from the /dev/fuse IO
+> path then we either have to process the request there or grab a
+> reference to the ns there and pass it alongside the request (and we
+> have to do it for all requests unless the IO path is going to look at
+> the request type and decide whether or not it requires a reference to
+> the namespace).
+>
+>>
+>>
+>> >             break;
+>> >
+>> >     default:
+>> > @@ -2156,9 +2161,9 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+>> >     return 0;
+>> >  }
+>> >
+>> > -static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+>> > -                    const struct file_lock *fl, int opcode, pid_t pid,
+>> > -                    int flock)
+>> > +static int fuse_lk_fill(struct fuse_req *req, struct file *file,
+>> > +                    const struct file_lock *fl, int opcode,
+>> > +                    struct pid *pid, int flock)
+>> >  {
+>> >     struct inode *inode = file_inode(file);
+>> >     struct fuse_conn *fc = get_fuse_conn(inode);
+>> > @@ -2170,7 +2175,9 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+>> >     arg->lk.start = fl->fl_start;
+>> >     arg->lk.end = fl->fl_end;
+>> >     arg->lk.type = fl->fl_type;
+>> > -   arg->lk.pid = pid;
+>> > +   arg->lk.pid = pid_nr_ns(pid, fc->pid_ns);
+>> > +   if (pid && arg->lk.pid == 0)
+>> > +           return -EOVERFLOW;
+>>
+>> Could have done the conversion immediately after getting 'pid' with task_tgid(),
+>> then the changes would have been smaller and more localized.
+>
+> The changes would be very marginally smaller since currently only one
+> caller of fuse_lk_fill which passes a non-zero pid. If additional
+> callers were ever added with non-zero pids then there would be
+> duplication of this code. But I'll do it whichever way you prefer, just
+> let me know.
+>
+>> >     if (flock)
+>> >             arg->lk_flags |= FUSE_LK_FLOCK;
+>> >     req->in.h.opcode = opcode;
+>> > @@ -2178,6 +2185,8 @@ static void fuse_lk_fill(struct fuse_req *req, struct file *file,
+>> >     req->in.numargs = 1;
+>> >     req->in.args[0].size = sizeof(*arg);
+>> >     req->in.args[0].value = arg;
+>> > +
+>> > +   return 0;
+>> >  }
+>> >
+>> >  static int fuse_getlk(struct file *file, struct file_lock *fl)
+>> > @@ -2192,16 +2201,19 @@ static int fuse_getlk(struct file *file, struct file_lock *fl)
+>> >     if (IS_ERR(req))
+>> >             return PTR_ERR(req);
+>> >
+>> > -   fuse_lk_fill(req, file, fl, FUSE_GETLK, 0, 0);
+>> > +   err = fuse_lk_fill(req, file, fl, FUSE_GETLK, NULL, 0);
+>> > +   if (err)
+>> > +           goto out;
+>> >     req->out.numargs = 1;
+>> >     req->out.args[0].size = sizeof(outarg);
+>> >     req->out.args[0].value = &outarg;
+>> >     fuse_request_send(fc, req);
+>> >     err = req->out.h.error;
+>> > -   fuse_put_request(fc, req);
+>> >     if (!err)
+>> > -           err = convert_fuse_file_lock(&outarg.lk, fl);
+>> > +           err = convert_fuse_file_lock(fc, &outarg.lk, fl);
+>> >
+>> > +out:
+>> > +   fuse_put_request(fc, req);
+>> >     return err;
+>> >  }
+>> >
+>> > @@ -2211,7 +2223,7 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
+>> >     struct fuse_conn *fc = get_fuse_conn(inode);
+>> >     struct fuse_req *req;
+>> >     int opcode = (fl->fl_flags & FL_SLEEP) ? FUSE_SETLKW : FUSE_SETLK;
+>> > -   pid_t pid = fl->fl_type != F_UNLCK ? current->tgid : 0;
+>> > +   struct pid *pid = fl->fl_type != F_UNLCK ? task_tgid(current) : NULL;
+>> >     int err;
+>> >
+>> >     if (fl->fl_lmops && fl->fl_lmops->lm_grant) {
+>> > @@ -2227,12 +2239,16 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
+>> >     if (IS_ERR(req))
+>> >             return PTR_ERR(req);
+>> >
+>> > -   fuse_lk_fill(req, file, fl, opcode, pid, flock);
+>> > +   err = fuse_lk_fill(req, file, fl, opcode, pid, flock);
+>> > +   if (err)
+>> > +           goto out;
+>> >     fuse_request_send(fc, req);
+>> >     err = req->out.h.error;
+>> >     /* locking is restartable */
+>> >     if (err == -EINTR)
+>> >             err = -ERESTARTSYS;
+>> > +
+>> > +out:
+>> >     fuse_put_request(fc, req);
+>> >     return err;
+>> >  }
+>> > diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+>> > index e8e47a6ab518..a3ded071e2c6 100644
+>> > --- a/fs/fuse/fuse_i.h
+>> > +++ b/fs/fuse/fuse_i.h
+>> > @@ -22,6 +22,7 @@
+>> >  #include <linux/rbtree.h>
+>> >  #include <linux/poll.h>
+>> >  #include <linux/workqueue.h>
+>> > +#include <linux/pid_namespace.h>
+>> >
+>> >  /** Max number of pages that can be used in a single read request */
+>> >  #define FUSE_MAX_PAGES_PER_REQ 32
+>> > @@ -386,6 +387,9 @@ struct fuse_conn {
+>> >     /** The group id for this mount */
+>> >     kgid_t group_id;
+>> >
+>> > +   /** The pid namespace for this mount */
+>> > +   struct pid_namespace *pid_ns;
+>> > +
+>> >     /** The fuse mount flags for this mount */
+>> >     unsigned flags;
+>> >
+>> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+>> > index 03246cd9d47a..e137969815a3 100644
+>> > --- a/fs/fuse/inode.c
+>> > +++ b/fs/fuse/inode.c
+>> > @@ -20,6 +20,7 @@
+>> >  #include <linux/random.h>
+>> >  #include <linux/sched.h>
+>> >  #include <linux/exportfs.h>
+>> > +#include <linux/pid_namespace.h>
+>> >
+>> >  MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+>> >  MODULE_DESCRIPTION("Filesystem in Userspace");
+>> > @@ -616,6 +617,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+>> >     fc->initialized = 0;
+>> >     fc->attr_version = 1;
+>> >     get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
+>> > +   fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+>> >  }
+>> >  EXPORT_SYMBOL_GPL(fuse_conn_init);
+>> >
+>> > @@ -624,6 +626,8 @@ void fuse_conn_put(struct fuse_conn *fc)
+>> >     if (atomic_dec_and_test(&fc->count)) {
+>> >             if (fc->destroy_req)
+>> >                     fuse_request_free(fc->destroy_req);
+>> > +           put_pid_ns(fc->pid_ns);
+>> > +           fc->pid_ns = NULL;
+>>
+>> We don't usually zero out fields before freeing.  There are debugging config
+>> options to do that for us.
+>
+> Okay, I'll remove that line.
+>
+> Thanks,
+> Seth
+>
+>>
+>> >             fc->release(fc);
+>> >     }
+>> >  }
+>> > --
+>> > 1.9.1
+>> >
 
-I find the first defense stronger and easier to analyze.  If non-sense
-uids can't get past fuse into the vfs we simply don't have to worry
-about them.
 
-I hope that helps.
 
-> That might also help me understand how exactly user/pid namespaces work...
-
-The idea of user/pid namespaces is to translate uid, gids and pids at
-the edge of userspace into a kernel internal form that can be use
-everywhere.  In this case we get into the subtlties of which
-translations make sense.
-
-> Patch otherwise looks okay.
-
-Eric
-
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
