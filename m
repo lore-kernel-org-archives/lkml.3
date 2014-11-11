@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaKKVnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:43:47 -0500
-Received: from mout.web.de ([212.227.17.11]:61892 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045AbaKKVnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:43:20 -0500
-Message-ID: <546282DC.7070606@web.de>
-Date: Tue, 11 Nov 2014 22:42:52 +0100
-From: Soeren Moch <smoch@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752644AbaKKVo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:44:27 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:62665 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752057AbaKKVmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 16:42:08 -0500
+Message-Id: <20141111214206.647185045@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 11 Nov 2014 16:41:29 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 2/6] ftracetest: Add functions file that holds helper functions
+References: <20141111214127.196849367@goodmis.org>
 MIME-Version: 1.0
-To: Robin Gong <b38343@freescale.com>, shawn.guo@linaro.org
-CC: robh+dt@kernel.org, mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, shawn.guo@freescale.com, kernel@pengutronix.de,
-        LW@KARO-electronics.de, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, grant.likely@linaro.org, linux@arm.linux.org.uk,
-        pawel.moll@arm.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 2/3] power: reset: imx-snvs-poweroff: add power off
- driver for i.mx6
-In-Reply-To: <1411703947-31956-3-git-send-email-b38343@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:3PC7Kz6bHwiXu/ev0tiegeCKcVa5XQhvAvPGXjFAbQLhYTjzNnc
- ZdovzrhOqYCI4O2qt8muLAYSow3Vve0WpoSl7xwcXOvhTWhs3ZxjYiMj99vPDJKzAJUA6kG
- 92Uj3L4XznVBIv7IcbmRbiLW2tHeKZmTIPTX0xc/OwYXGrWoZF6anDDuKdPSX54I9gkwQhP
- kLPdTXm3lf8sh3h6dkUmg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-ftracetest-Add-functions-file-that-holds-helper-func.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This driver register pm_power_off with snvs power off function. If
-> your boards NOT use PMIC_ON_REQ to turn on/off external pmic, or use
-> other pin to do, please disable the driver in dts, otherwise, your
-> pm_power_off maybe overwrote by this driver.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
+Created the file tools/testing/ftrace/test.d/functions that will
+hold helper functions.
 
-Any news on this?
-Maybe this patchset was lost because it was sent to the old email address of Shawn?
+Current helper functions include:
 
-I tested this patchset on a TBS2910 board, works as expected.  Very important feature for me.
+ Add clear_trace() helper to reset the trace file
 
+   Used as a descriptive name to show that "echo > trace" is clearing
+   the trace file.
 
-Tested-by: Soeren Moch <smoch@web.de>
+ Add disable/enable_tracing() helper calls
+
+   Add calls that disable and enable tracing respectively by echoing
+   0 or 1 into tracing_on.
+
+ Add helper reset_tracer() function
+
+    Add a helper function reset_tracer() that will clear the current_tracer
+    (echo nop > current_tracer).
+
+Link: http://lkml.kernel.org/r/20141103212737.696365174@goodmis.org
+Link: http://lkml.kernel.org/r/20141104153028.465517119@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/selftests/ftrace/ftracetest       |  3 +++
+ tools/testing/selftests/ftrace/test.d/functions | 16 ++++++++++++++++
+ 2 files changed, 19 insertions(+)
+ create mode 100644 tools/testing/selftests/ftrace/test.d/functions
+
+diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
+index f15c0da07aca..c6381a9faf83 100755
+--- a/tools/testing/selftests/ftrace/ftracetest
++++ b/tools/testing/selftests/ftrace/ftracetest
+@@ -235,6 +235,9 @@ run_test() { # testfile
+   fi
+ }
+ 
++# load in the helper functions
++. $TEST_DIR/functions
++
+ # Main loop
+ for t in $TEST_CASES; do
+   run_test $t
+diff --git a/tools/testing/selftests/ftrace/test.d/functions b/tools/testing/selftests/ftrace/test.d/functions
+new file mode 100644
+index 000000000000..5d8cd06d920f
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/functions
+@@ -0,0 +1,16 @@
++
++clear_trace() { # reset trace output
++    echo > trace
++}
++
++disable_tracing() { # stop trace recording
++    echo 0 > tracing_on
++}
++
++enable_tracing() { # start trace recording
++    echo 1 > tracing_on
++}
++
++reset_tracer() { # reset the current tracer
++    echo nop > current_tracer
++}
+-- 
+2.1.1
+
 
