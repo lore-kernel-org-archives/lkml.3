@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaKKRcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:32:53 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53287 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751089AbaKKRcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:32:51 -0500
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: arm@kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        device tree <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v3 1/2] arm64: Create link to include/dt-bindings to enable C preprocessor use.
-Date: Tue, 11 Nov 2014 17:32:10 +0000
-Message-Id: <1415727131-4572-2-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
+	id S1751529AbaKKRiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:38:21 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:15647 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184AbaKKRiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 12:38:19 -0500
+X-IronPort-AV: E=Sophos;i="5.07,362,1413244800"; 
+   d="scan'208";a="190231776"
+Message-ID: <5462497A.1080806@citrix.com>
+Date: Tue, 11 Nov 2014 17:38:02 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <x86@kernel.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH V3 6/8] xen: Hide get_phys_to_machine() to
+ be able to tune common path
+References: <1415684626-18590-1-git-send-email-jgross@suse.com> <1415684626-18590-7-git-send-email-jgross@suse.com>
+In-Reply-To: <1415684626-18590-7-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT files used in the compilation phase can be preprocessed by the C
-preprocessor. This requires an include/dt-bindings directory to be
-present in the arch/arm64/boot/dts directory.
+On 11/11/14 05:43, Juergen Gross wrote:
+> Today get_phys_to_machine() is always called when the mfn for a pfn
+> is to be obtained. Add a wrapper __pfn_to_mfn() as inline function
+> to be able to avoid calling get_phys_to_machine() when possible as
+> soon as the switch to a linear mapped p2m list has been done.
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
----
- arch/arm64/boot/dts/include/dt-bindings | 1 +
- 1 file changed, 1 insertion(+)
- create mode 120000 arch/arm64/boot/dts/include/dt-bindings
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-diff --git a/arch/arm64/boot/dts/include/dt-bindings b/arch/arm64/boot/dts/include/dt-bindings
-new file mode 120000
-index 0000000..08c00e4
---- /dev/null
-+++ b/arch/arm64/boot/dts/include/dt-bindings
-@@ -0,0 +1 @@
-+../../../../../include/dt-bindings
-\ No newline at end of file
--- 
-2.1.3
-
+David
