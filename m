@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaKKLLD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:11:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57712 "EHLO
+	id S1751937AbaKKL0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:26:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57731 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaKKLK6 (ORCPT
+	with ESMTP id S1754305AbaKKLLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:58 -0500
+	Tue, 11 Nov 2014 06:11:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 122/170] usb: musb: dsps: start OTG timer on resume again
-Date: Tue, 11 Nov 2014 11:08:01 +0000
-Message-Id: <1415704129-12709-123-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 127/170] Revert "iwlwifi: mvm: treat EAPOLs like mgmt frames wrt rate"
+Date: Tue, 11 Nov 2014 11:08:06 +0000
+Message-Id: <1415704129-12709-128-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 53185b3a441a6cc9bb3f57e924342d249138dcd6 upstream.
+commit 1ffde699aae127e7abdb98dbdedc2cc6a973a1a1 upstream.
 
-Commit 468bcc2a2ca ("usb: musb: dsps: kill OTG timer on suspend") stopped
-the timer in suspend path but forgot the re-enable it in the resume
-path. This patch fixes the behaviour.
+This reverts commit aa11bbf3df026d6b1c6b528bef634fd9de7c2619.
+This commit was causing connection issues and is not needed
+if IWL_MVM_RS_RSSI_BASED_INIT_RATE is set to false by default.
 
-Fixes 468bcc2a2ca "usb: musb: dsps: kill OTG timer on suspend"
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Regardless of the issues mentioned above, this patch added the
+following WARNING:
+
+WARNING: CPU: 0 PID: 3946 at drivers/net/wireless/iwlwifi/mvm/tx.c:190 iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]()
+Got an HT rate for a non data frame 0x8
+CPU: 0 PID: 3946 Comm: wpa_supplicant Tainted: G           O   3.17.0+ #6
+Hardware name: LENOVO 20ANCTO1WW/20ANCTO1WW, BIOS GLET71WW (2.25 ) 07/02/2014
+ 0000000000000009 ffffffff814fa911 ffff8804288db8f8 ffffffff81064f52
+ 0000000000001808 ffff8804288db948 ffff88040add8660 ffff8804291b5600
+ 0000000000000000 ffffffff81064fb7 ffffffffa07b73d0 0000000000000020
+Call Trace:
+ [<ffffffff814fa911>] ? dump_stack+0x41/0x51
+ [<ffffffff81064f52>] ? warn_slowpath_common+0x72/0x90
+ [<ffffffff81064fb7>] ? warn_slowpath_fmt+0x47/0x50
+ [<ffffffffa07a39ea>] ? iwl_mvm_set_tx_params+0x60a/0x6f0 [iwlmvm]
+ [<ffffffffa07a3cf8>] ? iwl_mvm_tx_skb+0x48/0x3c0 [iwlmvm]
+ [<ffffffffa079cb9b>] ? iwl_mvm_mac_tx+0x7b/0x180 [iwlmvm]
+ [<ffffffffa0746ce9>] ? __ieee80211_tx+0x2b9/0x3c0 [mac80211]
+ [<ffffffffa07492f3>] ? ieee80211_tx+0xb3/0x100 [mac80211]
+ [<ffffffffa0749c49>] ? ieee80211_subif_start_xmit+0x459/0xca0 [mac80211]
+ [<ffffffff814116e7>] ? dev_hard_start_xmit+0x337/0x5f0
+ [<ffffffff81430d46>] ? sch_direct_xmit+0x96/0x1f0
+ [<ffffffff81411ba3>] ? __dev_queue_xmit+0x203/0x4f0
+ [<ffffffff8142f670>] ? ether_setup+0x70/0x70
+ [<ffffffff814e96a1>] ? packet_sendmsg+0xf81/0x1110
+ [<ffffffff8140625c>] ? skb_free_datagram+0xc/0x40
+ [<ffffffff813f7538>] ? sock_sendmsg+0x88/0xc0
+ [<ffffffff813f7274>] ? move_addr_to_kernel.part.20+0x14/0x60
+ [<ffffffff811c47c2>] ? __inode_wait_for_writeback+0x62/0xb0
+ [<ffffffff813f7a91>] ? SYSC_sendto+0xf1/0x180
+ [<ffffffff813f88f9>] ? __sys_recvmsg+0x39/0x70
+ [<ffffffff8150066d>] ? system_call_fastpath+0x1a/0x1f
+---[ end trace cc19a150d311fc63 ]---
+
+which was reported here: https://bugzilla.kernel.org/show_bug.cgi?id=85691
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/musb/musb_dsps.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/mvm/tx.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 6983e805147b..302968bf592e 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -806,7 +806,9 @@ static int dsps_resume(struct device *dev)
- 	dsps_writel(mbase, wrp->mode, glue->context.mode);
- 	dsps_writel(mbase, wrp->tx_mode, glue->context.tx_mode);
- 	dsps_writel(mbase, wrp->rx_mode, glue->context.rx_mode);
--	setup_timer(&glue->timer, otg_timer, (unsigned long) musb);
-+	if (musb->xceiv->state == OTG_STATE_B_IDLE &&
-+	    musb->port_mode == MUSB_PORT_MODE_DUAL_ROLE)
-+		mod_timer(&glue->timer, jiffies + wrp->poll_seconds * HZ);
+diff --git a/drivers/net/wireless/iwlwifi/mvm/tx.c b/drivers/net/wireless/iwlwifi/mvm/tx.c
+index f2465f60122e..3846a6c41eb1 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
+@@ -169,14 +169,10 @@ static void iwl_mvm_set_tx_cmd_rate(struct iwl_mvm *mvm,
  
- 	return 0;
- }
+ 	/*
+ 	 * for data packets, rate info comes from the table inside the fw. This
+-	 * table is controlled by LINK_QUALITY commands. Exclude ctrl port
+-	 * frames like EAPOLs which should be treated as mgmt frames. This
+-	 * avoids them being sent initially in high rates which increases the
+-	 * chances for completion of the 4-Way handshake.
++	 * table is controlled by LINK_QUALITY commands
+ 	 */
+ 
+-	if (ieee80211_is_data(fc) && sta &&
+-	    !(info->control.flags & IEEE80211_TX_CTRL_PORT_CTRL_PROTO)) {
++	if (ieee80211_is_data(fc) && sta) {
+ 		tx_cmd->initial_rate_index = 0;
+ 		tx_cmd->tx_flags |= cpu_to_le32(TX_CMD_FLG_STA_RATE);
+ 		return;
 -- 
 2.1.0
 
