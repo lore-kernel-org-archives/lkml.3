@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaKKLOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:14:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57924 "EHLO
+	id S1754578AbaKKLOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:14:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57928 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaKKLLg (ORCPT
+	with ESMTP id S1754531AbaKKLLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:11:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 160/170] ext4: prevent bugon on race between write/fcntl
-Date: Tue, 11 Nov 2014 11:08:39 +0000
-Message-Id: <1415704129-12709-161-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 162/170] ext4: bail out from make_indexed_dir() on first error
+Date: Tue, 11 Nov 2014 11:08:41 +0000
+Message-Id: <1415704129-12709-163-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Jan Kara <jack@suse.cz>
 
-commit a41537e69b4aa43f0fea02498c2595a81267383b upstream.
+commit 6050d47adcadbb53582434d919ed7f038d936712 upstream.
 
-O_DIRECT flags can be toggeled via fcntl(F_SETFL). But this value checked
-twice inside ext4_file_write_iter() and __generic_file_write() which
-result in BUG_ON inside ext4_direct_IO.
+When ext4_handle_dirty_dx_node() or ext4_handle_dirty_dirent_node()
+fail, there's really something wrong with the fs and there's no point in
+continuing further. Just return error from make_indexed_dir() in that
+case. Also initialize frames array so that if we return early due to
+error, dx_release() doesn't try to dereference uninitialized memory
+(which could happen also due to error in do_split()).
 
-Let's initialize iocb->private unconditionally.
-
-TESTCASE: xfstest:generic/036  https://patchwork.ozlabs.org/patch/402445/
-
-#TYPICAL STACK TRACE:
-kernel BUG at fs/ext4/inode.c:2960!
-invalid opcode: 0000 [#1] SMP
-Modules linked in: brd iTCO_wdt lpc_ich mfd_core igb ptp dm_mirror dm_region_hash dm_log dm_mod
-CPU: 6 PID: 5505 Comm: aio-dio-fcntl-r Not tainted 3.17.0-rc2-00176-gff5c017 #161
-Hardware name: Intel Corporation W2600CR/W2600CR, BIOS SE5C600.86B.99.99.x028.061320111235 06/13/2011
-task: ffff88080e95a7c0 ti: ffff88080f908000 task.ti: ffff88080f908000
-RIP: 0010:[<ffffffff811fabf2>]  [<ffffffff811fabf2>] ext4_direct_IO+0x162/0x3d0
-RSP: 0018:ffff88080f90bb58  EFLAGS: 00010246
-RAX: 0000000000000400 RBX: ffff88080fdb2a28 RCX: 00000000a802c818
-RDX: 0000040000080000 RSI: ffff88080d8aeb80 RDI: 0000000000000001
-RBP: ffff88080f90bbc8 R08: 0000000000000000 R09: 0000000000001581
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff88080d8aeb80
-R13: ffff88080f90bbf8 R14: ffff88080fdb28c8 R15: ffff88080fdb2a28
-FS:  00007f23b2055700(0000) GS:ffff880818400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f23b2045000 CR3: 000000080cedf000 CR4: 00000000000407e0
-Stack:
- ffff88080f90bb98 0000000000000000 7ffffffffffffffe ffff88080fdb2c30
- 0000000000000200 0000000000000200 0000000000000001 0000000000000200
- ffff88080f90bbc8 ffff88080fdb2c30 ffff88080f90be08 0000000000000200
-Call Trace:
- [<ffffffff8112ca9d>] generic_file_direct_write+0xed/0x180
- [<ffffffff8112f2b2>] __generic_file_write_iter+0x222/0x370
- [<ffffffff811f495b>] ext4_file_write_iter+0x34b/0x400
- [<ffffffff811bd709>] ? aio_run_iocb+0x239/0x410
- [<ffffffff811bd709>] ? aio_run_iocb+0x239/0x410
- [<ffffffff810990e5>] ? local_clock+0x25/0x30
- [<ffffffff810abd94>] ? __lock_acquire+0x274/0x700
- [<ffffffff811f4610>] ? ext4_unwritten_wait+0xb0/0xb0
- [<ffffffff811bd756>] aio_run_iocb+0x286/0x410
- [<ffffffff810990e5>] ? local_clock+0x25/0x30
- [<ffffffff810ac359>] ? lock_release_holdtime+0x29/0x190
- [<ffffffff811bc05b>] ? lookup_ioctx+0x4b/0xf0
- [<ffffffff811bde3b>] do_io_submit+0x55b/0x740
- [<ffffffff811bdcaa>] ? do_io_submit+0x3ca/0x740
- [<ffffffff811be030>] SyS_io_submit+0x10/0x20
- [<ffffffff815ce192>] system_call_fastpath+0x16/0x1b
-Code: 01 48 8b 80 f0 01 00 00 48 8b 18 49 8b 45 10 0f 85 f1 01 00 00 48 03 45 c8 48 3b 43 48 0f 8f e3 01 00 00 49 83 7c
-24 18 00 75 04 <0f> 0b eb fe f0 ff 83 ec 01 00 00 49 8b 44 24 18 8b 00 85 c0 89
-RIP  [<ffffffff811fabf2>] ext4_direct_IO+0x162/0x3d0
- RSP <ffff88080f90bb58>
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Coverity-id: 741300
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/namei.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 8695f70af1ef..b0d188939f5a 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -137,10 +137,10 @@ ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
- 			iov_iter_truncate(from, sbi->s_bitmap_maxbytes - pos);
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 50d9225d9e3e..5c0b71c734ea 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1840,31 +1840,39 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
+ 		hinfo.hash_version += EXT4_SB(dir->i_sb)->s_hash_unsigned;
+ 	hinfo.seed = EXT4_SB(dir->i_sb)->s_hash_seed;
+ 	ext4fs_dirhash(name, namelen, &hinfo);
++	memset(frames, 0, sizeof(frames));
+ 	frame = frames;
+ 	frame->entries = entries;
+ 	frame->at = entries;
+ 	frame->bh = bh;
+ 	bh = bh2;
+ 
+-	ext4_handle_dirty_dx_node(handle, dir, frame->bh);
+-	ext4_handle_dirty_dirent_node(handle, dir, bh);
++	retval = ext4_handle_dirty_dx_node(handle, dir, frame->bh);
++	if (retval)
++		goto out_frames;	
++	retval = ext4_handle_dirty_dirent_node(handle, dir, bh);
++	if (retval)
++		goto out_frames;	
+ 
+ 	de = do_split(handle,dir, &bh, frame, &hinfo);
+ 	if (IS_ERR(de)) {
+-		/*
+-		 * Even if the block split failed, we have to properly write
+-		 * out all the changes we did so far. Otherwise we can end up
+-		 * with corrupted filesystem.
+-		 */
+-		ext4_mark_inode_dirty(handle, dir);
+-		dx_release(frames);
+-		return PTR_ERR(de);
++		retval = PTR_ERR(de);
++		goto out_frames;
  	}
+ 	dx_release(frames);
  
-+	iocb->private = &overwrite;
- 	if (o_direct) {
- 		blk_start_plug(&plug);
+ 	retval = add_dirent_to_buf(handle, dentry, inode, de, bh);
+ 	brelse(bh);
+ 	return retval;
++out_frames:
++	/*
++	 * Even if the block split failed, we have to properly write
++	 * out all the changes we did so far. Otherwise we can end up
++	 * with corrupted filesystem.
++	 */
++	ext4_mark_inode_dirty(handle, dir);
++	dx_release(frames);
++	return retval;
+ }
  
--		iocb->private = &overwrite;
- 
- 		/* check whether we do a DIO overwrite or not */
- 		if (ext4_should_dioread_nolock(inode) && !aio_mutex &&
+ /*
 -- 
 2.1.0
 
