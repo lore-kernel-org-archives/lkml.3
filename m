@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaKKWse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 17:48:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50310 "EHLO mx1.redhat.com"
+	id S1752451AbaKKWua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 17:50:30 -0500
+Received: from imap.thunk.org ([74.207.234.97]:52424 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933AbaKKWsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 17:48:33 -0500
-Date: Tue, 11 Nov 2014 16:48:25 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Petr Mladek <pmladek@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        live-patching@vger.kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: module notifier: was Re: [PATCH 2/2] kernel: add support for
- live patching
-Message-ID: <20141111224825.GB9066@cerebellum.variantweb.net>
-References: <1415284748-14648-1-git-send-email-sjenning@redhat.com>
- <1415284748-14648-3-git-send-email-sjenning@redhat.com>
- <20141107171307.GC1136@dhcp128.suse.cz>
- <20141107180711.GC2057@cerebellum.variantweb.net>
- <20141107184011.GF1136@dhcp128.suse.cz>
- <20141111194008.GA9066@cerebellum.variantweb.net>
- <alpine.LNX.2.00.1411112315180.4454@pobox.suse.cz>
+	id S1752148AbaKKWu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 17:50:28 -0500
+Date: Tue, 11 Nov 2014 17:49:38 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Milosz Tanski <milosz@adfin.com>, Dave Chinner <david@fromorbit.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
+ only)
+Message-ID: <20141111224938.GA4112@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jeff Moyer <jmoyer@redhat.com>, Milosz Tanski <milosz@adfin.com>,
+	Dave Chinner <david@fromorbit.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Christoph Hellwig <hch@infradead.org>,
+	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	"linux-aio@kvack.org" <linux-aio@kvack.org>,
+	Mel Gorman <mgorman@suse.de>,
+	Volker Lendecke <Volker.Lendecke@sernet.de>,
+	Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+	Linux API <linux-api@vger.kernel.org>,
+	Michael Kerrisk <mtk.manpages@gmail.com>,
+	linux-arch@vger.kernel.org
+References: <cover.1415636409.git.milosz@adfin.com>
+ <20141111064417.GT23575@dastard>
+ <CANP1eJHfWT0Foe+weB1SJkJ10JnOge_g=E8CXBsQNPW7i2+4NA@mail.gmail.com>
+ <x49ioilbrfx.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411112315180.4454@pobox.suse.cz>
+In-Reply-To: <x49ioilbrfx.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 11:17:39PM +0100, Jiri Kosina wrote:
-> On Tue, 11 Nov 2014, Seth Jennings wrote:
+On Tue, Nov 11, 2014 at 12:03:14PM -0500, Jeff Moyer wrote:
 > 
-> > It will be in v2 (hopefully out in the next couple of days).
-> 
-> FWIW we are also working on a few patches on top of v1 to back some of the 
-> proposals we've made during the first round of review, so maybe it might 
-> make sense to wait with v2 a little bit more, so that it incorporates as 
-> much v1 feedback as possible ... ?
+> I think he's referring to xfstests.  Still, I think that's the wrong
+> place for functional testing.  ltp would be better, imo.
 
-What proposals in particular?  I've already made many of the changes
-that we agreed upon.
+I disagree; xfstests is the right place for adding these tests, because
+these patches seem to require fs-specific support, and file system
+developers are already using xfstests when checking for regressions.
+Using xfstests is already part of most of the file system developers'
+workflow; ltp is not. 
 
-Thanks,
-Seth
+So if you want to make sure we notice regressions, it really needs to
+go into xfstests.  If you insist on putting it in ltp, then one of us
+will then have to make a copy of the tests and put it in xfstests.
 
-> 
-> Thanks,
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
+Cheers,
+
+						- Ted
