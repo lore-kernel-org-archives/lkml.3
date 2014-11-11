@@ -1,109 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507AbaKKLzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:55:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57380 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845AbaKKLJz (ORCPT
+	id S1754530AbaKKLzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:55:38 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53697 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaKKLzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:55 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Quentin Casasnovas <quentin.casasnovas@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>,
-        Jamie Iles <jamie.iles@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 056/170] kvm: fix excessive pages un-pinning in kvm_iommu_map error path.
-Date: Tue, 11 Nov 2014 11:06:55 +0000
-Message-Id: <1415704129-12709-57-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 11 Nov 2014 06:55:36 -0500
+Message-ID: <5461F927.6020702@gmail.com>
+Date: Tue, 11 Nov 2014 19:55:19 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
+        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3] sched/deadline: support dl task migration during
+ cpu hotplug
+References: <1415241649-59561-1-git-send-email-wanpeng.li@linux.intel.com> <20141111113347.GL10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141111113347.GL10501@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+Hi Peter,
+On 14/11/11 下午7:33, Peter Zijlstra wrote:
+> On Thu, Nov 06, 2014 at 10:40:49AM +0800, Wanpeng Li wrote:
+>> @@ -538,6 +539,46 @@ again:
+>>   	update_rq_clock(rq);
+>>   	dl_se->dl_throttled = 0;
+>>   	dl_se->dl_yielded = 0;
+>> +
+>> +	/*
+>> +	 * So if we find that the rq the task was on is no longer
+>> +	 * available, we need to select a new rq.
+>> +	 */
+>> +	if (!rq->online) {
+>> +		struct rq *later_rq = NULL;
+>> +
+>> +		raw_spin_unlock(&rq->lock);
+>> +
+>> +		later_rq = find_lock_later_rq(p, rq);
+>> +
+>> +		if (!later_rq) {
+>> +			int cpu;
+>> +
+>> +			/*
+>> +			 * If cannot preempt any rq, fallback to pick any
+>> +			 * online cpu.
+>> +			 */
+>> +			for_each_cpu(cpu, &p->cpus_allowed)
+>> +				if (cpu_online(cpu))
+>> +					later_rq = cpu_rq(cpu);
+> 			cpu = cpumask_any_and(cpu_active_mask, tsk_cpus_allowed(p));
+> 			if (cpu >= nr_cpu_ids)
+> 				/* fail */
+>
+> 			later_rq = cpu_rq(cpu);
 
-------------------
+Ok.
 
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+>> +			if (!later_rq) {
+>> +				pr_warn("fail to find any online and task
+>> +						will never come back to us\n");
+>> +				goto out;
+>> +			}
+>> +		}
+>> +
+>> +		deactivate_task(rq, p, 0);
+>> +		set_task_cpu(p, later_rq->cpu);
+>> +		activate_task(later_rq, p, 0);
+>> +
+>> +		resched_curr(later_rq);
+>> +
+>> +		double_unlock_balance(rq, later_rq);
+>> +
+>> +		goto out;
+>> +	}
+>> +
+>>   	if (task_on_rq_queued(p)) {
+>>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
+>>   		if (dl_task(rq->curr))
+>> @@ -555,7 +596,7 @@ again:
+>>   	}
+>>   unlock:
+>>   	raw_spin_unlock(&rq->lock);
+>> -
+>> +out:
+>>   	return HRTIMER_NORESTART;
+>>   }
+>>   
+>> @@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
+>>   	 * We have to consider system topology and task affinity
+>>   	 * first, then we can look for a suitable cpu.
+>>   	 */
+>> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
+>> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
+>> +	if (likely(task_rq(task)->online)) {
+>> +		cpumask_copy(later_mask, task_rq(task)->rd->span);
+>> +		cpumask_and(later_mask, later_mask, cpu_active_mask);
+>> +	} else
+>> +		/* for offline cpus we have a singleton rd */
+>> +		cpumask_copy(later_mask, cpu_active_mask);
+>>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
+>>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
+>>   			task, later_mask);
+> 	cpumask_copy(later_mask, cpu_active_mask);
+> 	if (likely(task_rq(task)->online))
+> 		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
+>
+> Is the same, right and less lines.
 
-commit 3d32e4dbe71374a6780eaf51d719d76f9a9bf22f upstream.
+Thanks for your great help! I will fold these to my patch and send out a 
+newer version tomorrow. ;-)
 
-The third parameter of kvm_unpin_pages() when called from
-kvm_iommu_map_pages() is wrong, it should be the number of pages to un-pin
-and not the page size.
+Regards,
+Wanpeng Li
 
-This error was facilitated with an inconsistent API: kvm_pin_pages() takes
-a size, but kvn_unpin_pages() takes a number of pages, so fix the problem
-by matching the two.
-
-This was introduced by commit 350b8bd ("kvm: iommu: fix the third parameter
-of kvm_iommu_put_pages (CVE-2014-3601)"), which fixes the lack of
-un-pinning for pages intended to be un-pinned (i.e. memory leak) but
-unfortunately potentially aggravated the number of pages we un-pin that
-should have stayed pinned. As far as I understand though, the same
-practical mitigations apply.
-
-This issue was found during review of Red Hat 6.6 patches to prepare
-Ksplice rebootless updates.
-
-Thanks to Vegard for his time on a late Friday evening to help me in
-understanding this code.
-
-Fixes: 350b8bd ("kvm: iommu: fix the third parameter of... (CVE-2014-3601)")
-Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
-Reviewed-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- virt/kvm/iommu.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 714b94932312..1f0dc1e5f1f0 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -43,13 +43,13 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
- 				gfn_t base_gfn, unsigned long npages);
- 
- static pfn_t kvm_pin_pages(struct kvm_memory_slot *slot, gfn_t gfn,
--			   unsigned long size)
-+			   unsigned long npages)
- {
- 	gfn_t end_gfn;
- 	pfn_t pfn;
- 
- 	pfn     = gfn_to_pfn_memslot(slot, gfn);
--	end_gfn = gfn + (size >> PAGE_SHIFT);
-+	end_gfn = gfn + npages;
- 	gfn    += 1;
- 
- 	if (is_error_noslot_pfn(pfn))
-@@ -119,7 +119,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		 * Pin all pages we are about to map in memory. This is
- 		 * important because we unmap and unpin in 4kb steps later.
- 		 */
--		pfn = kvm_pin_pages(slot, gfn, page_size);
-+		pfn = kvm_pin_pages(slot, gfn, page_size >> PAGE_SHIFT);
- 		if (is_error_noslot_pfn(pfn)) {
- 			gfn += 1;
- 			continue;
-@@ -131,7 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		if (r) {
- 			printk(KERN_ERR "kvm_iommu_map_address:"
- 			       "iommu failed to map pfn=%llx\n", pfn);
--			kvm_unpin_pages(kvm, pfn, page_size);
-+			kvm_unpin_pages(kvm, pfn, page_size >> PAGE_SHIFT);
- 			goto unmap_pages;
- 		}
- 
--- 
-2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
