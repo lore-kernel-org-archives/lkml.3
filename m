@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaKKUGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:06:46 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:53038 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaKKUGp (ORCPT
+	id S1751541AbaKKUIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:08:09 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:37445 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaKKUII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:06:45 -0500
-Message-ID: <54626C51.6080401@amacapital.net>
-Date: Tue, 11 Nov 2014 12:06:41 -0800
+	Tue, 11 Nov 2014 15:08:08 -0500
+Message-ID: <54626CA4.4070508@amacapital.net>
+Date: Tue, 11 Nov 2014 12:08:04 -0800
 From: Andy Lutomirski <luto@amacapital.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
 To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/8] x86: Make old K8 swapgs workaround conditional
-References: <1415663739-25525-1-git-send-email-andi@firstfloor.org> <1415663739-25525-5-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1415663739-25525-5-git-send-email-andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 8/8] x86: Use rd/wr fs/gs base in arch_prctl
+References: <1415663739-25525-1-git-send-email-andi@firstfloor.org> <1415663739-25525-8-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1415663739-25525-8-git-send-email-andi@firstfloor.org>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,76 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 11/10/2014 03:55 PM, Andi Kleen wrote:
 > From: Andi Kleen <ak@linux.intel.com>
 > 
-> Every gs selector/index reload always paid an extra MFENCE
-> between the two SWAPGS. This was to work around an old
-> bug in early K8 steppings.  All other CPUs don't need the extra
-> mfence. Patch the extra MFENCE only in for K8.
+> Convert arch_prctl to use the new instructions to
+> change fs/gs if available, instead of using MSRs.
+> 
+> This is merely a small performance optimization,
+> no new functionality.
+> 
+> With the new instructions the syscall is really obsolete,
+> as everything can be set directly in ring 3. But the syscall
+> is widely used by existing software, so we still support it.
+> 
+> The syscall still enforces that the addresses are not
+> in kernel space, even though that is not needed more.
+> This is mainly so that the programs written for new CPUs
+> do not suddenly fail on old CPUs.
+> 
+> With the new instructions available it prefers to use
+> them in the context switch, instead of using the old
+> "use GDT segment rewrite" trick.
 > 
 > Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  arch/x86/include/asm/cpufeature.h |  1 +
->  arch/x86/kernel/cpu/amd.c         |  3 +++
->  arch/x86/kernel/entry_64.S        | 10 +++++++++-
->  3 files changed, 13 insertions(+), 1 deletion(-)
+>  arch/x86/kernel/process_64.c | 45 ++++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 37 insertions(+), 8 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index 0bb1335..85b3f1f 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -106,6 +106,7 @@
->  #define X86_FEATURE_APERFMPERF	( 3*32+28) /* APERFMPERF */
->  #define X86_FEATURE_EAGER_FPU	( 3*32+29) /* "eagerfpu" Non lazy FPU restore */
->  #define X86_FEATURE_NONSTOP_TSC_S3 ( 3*32+30) /* TSC doesn't stop in S3 state */
-> +#define X86_FEATURE_SWAPGS_MFENCE (3*32+31) /* SWAPGS may need MFENCE */
-> 
+> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+> index df554e2..010fe15 100644
+> --- a/arch/x86/kernel/process_64.c
+> +++ b/arch/x86/kernel/process_64.c
+> @@ -483,15 +483,23 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
+>  	int ret = 0;
+>  	int doit = task == current;
+>  	int cpu;
+> +	int fast_seg = boot_cpu_has(X86_FEATURE_FSGSBASE);
+>  
+>  	switch (code) {
+>  	case ARCH_SET_GS:
+> +		/*
+> +		 * With fast_seg we don't need that check anymore,
+> +		 * but keep it so that programs do not suddenly
+> +		 * start failing when run on older CPUs.
+> +		 * If you really want to set a address in kernel space
+> +		 * use WRGSBASE directly.
+> +		 */
+>  		if (addr >= TASK_SIZE_OF(task))
+>  			return -EPERM;
+>  		cpu = get_cpu();
+>  		/* handle small bases via the GDT because that's faster to
+>  		   switch. */
+> -		if (addr <= 0xffffffff) {
+> +		if (addr <= 0xffffffff && !fast_seg) {
+>  			set_32bit_tls(task, GS_TLS, addr);
+>  			if (doit) {
+>  				load_TLS(&task->thread, cpu);
+> @@ -503,8 +511,17 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
+>  			task->thread.gsindex = 0;
+>  			task->thread.gs = addr;
+>  			if (doit) {
+> -				load_gs_index(0);
+> -				ret = wrmsrl_safe(MSR_KERNEL_GS_BASE, addr);
+> +				if (fast_seg) {
+> +					local_irq_disable();
+> +					swapgs();
+> +					loadsegment(gs, 0);
+> +					wrgsbase(addr);
+> +					swapgs();
+> +					local_irq_enable();
 
-Can this use the new X86_BUG thing?
+Does this (and the other copies of this) need kprobe protection?
 
 --Andy
-
-
->  /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
->  #define X86_FEATURE_XMM3	( 4*32+ 0) /* "pni" SSE-3 */
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index 813d29d..1553184 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -551,6 +551,9 @@ static void init_amd_k8(struct cpuinfo_x86 *c)
->  	if ((level >= 0x0f48 && level < 0x0f50) || level >= 0x0f58)
->  		set_cpu_cap(c, X86_FEATURE_REP_GOOD);
->  
-> +	/* Early steppings needed a mfence on swapgs. */
-> +	set_cpu_cap(c, X86_FEATURE_SWAPGS_MFENCE);
-> +
->  	/*
->  	 * Some BIOSes incorrectly force this feature, but only K8 revision D
->  	 * (model = 0x14) and later actually support it.
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 9f7fde5..a8c5584 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -1203,13 +1203,21 @@ ENTRY(native_load_gs_index)
->  	SWAPGS
->  gs_change:
->  	movl %edi,%gs
-> -2:	mfence		/* workaround */
-> +2:	ASM_NOP3	/* may be replaced with mfence */
->  	SWAPGS
->  	popfq_cfi
->  	ret
->  	CFI_ENDPROC
->  END(native_load_gs_index)
->  
-> +	/* Early K8 systems needed an mfence after swapgs to workaround a bug */
-> +	.section .altinstr_replacement,"ax"
-> +3:	mfence
-> +	.previous
-> +	.section .altinstructions,"a"
-> +	altinstruction_entry 2b,3b,X86_FEATURE_SWAPGS_MFENCE,3,3
-> +	.previous
-> +
->  	_ASM_EXTABLE(gs_change,bad_gs)
->  	.section .fixup,"ax"
->  	/* running with kernelgs */
-> 
-
