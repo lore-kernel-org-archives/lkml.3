@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaKKWjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 17:39:44 -0500
-Received: from mout.gmx.net ([212.227.15.15]:63045 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055AbaKKWjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 17:39:42 -0500
-Message-ID: <54629026.3080002@gmx.de>
-Date: Tue, 11 Nov 2014 23:39:34 +0100
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+	id S1752384AbaKKWkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 17:40:35 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:48350 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbaKKWke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 17:40:34 -0500
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-References: <1415028270-25860-1-git-send-email-iivanov@mm-sol.com>	 <1415028270-25860-3-git-send-email-iivanov@mm-sol.com>	 <54612A0D.7020308@gmx.de> <1415694109.22935.13.camel@mm-sol.com>
-In-Reply-To: <1415694109.22935.13.camel@mm-sol.com>
+In-Reply-To: <20141111223316.GQ31490@pd.tnic>
+References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+ <20141111213628.GP31490@pd.tnic> <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
+ <20141111223316.GQ31490@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Nov 2014 14:40:12 -0800
+Message-ID: <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+To: Borislav Petkov <bp@alien8.de>
+Cc: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:3CoOdJgSNEHYZXwtILkkrcNYmmoknGtP90EUAMaoFEZBgXKbULB
- kxcPa8KT9h0hQXAEmAAf0CgbddCzdUdd2RFv+AFLfD1vpc8goFkTqjFJv+L8wok8Yb3Wth7
- KHokTu+Z/rg11XnArDlXaoexqerWTRpDgX7Pb0u0zbdGeb4LVClKgslHAh4IOzRCBco4T1c
- M8rGfazUJEnTUr/iSHYLQ==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ivan T. Ivanov schrieb am 11.11.2014 09:21:
-> Hi Hartmut,
-> 
-> On Mon, 2014-11-10 at 22:11 +0100, Hartmut Knaack wrote:
->> Ivan T. Ivanov schrieb am 03.11.2014 16:24:
->>> From: Stanimir Varbanov <svarbanov@mm-sol.com>
->>>
->>> The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
->>> 15 bits resolution and register space inside PMIC accessible across
->>> SPMI bus.
->>>
->>> The vadc driver registers itself through IIO interface.
->> Reviewing again, I got the feeling that due to the complexity of adc reads (writing to register 
->> to start conversion, waiting a decent time for the conversion to complete, reading the result), 
->> it would be beneficial to use a mutex in vadc_read_raw or its depending functions.
-> 
-> Hm, yes, but there is such a nice info_exist_lock :-) in core functions,
-> which in practice serve the same purpose.
-I seem to miss that. Please point me in the right direction.
-> 
->> Also, I would want to double-check that the CPU in this type of chips is little endian.
-> 
-> Yes, it is.
-> 
->> Besides that, a few minor issues inline.
-> 
->>> +static int vadc_probe(struct platform_device *pdev)
->>> +{
->>> +       struct device_node *node = pdev->dev.of_node;
->>> +       struct device *dev = &pdev->dev;
->>> +       struct iio_dev *indio_dev;
->>> +       struct vadc_priv *vadc;
->>> +       struct regmap *regmap;
->>> +       int ret, irq_eoc;
->>> +       u32 res;
->> Since vadc->base is u16, shouldn't res be u16 as well? Also think about naming it reg, as this is 
->> the property name in DT.
-> 
-> Yes, but #address-cells for the node is 1, so I would like to keep it 32 bits.
-> 
->>> +
->>> +       regmap = dev_get_regmap(dev->parent, NULL);
->>> +       if (!regmap)
->>> +       return -ENODEV;
->>> +
->>> +       ret = of_property_read_u32(node, "reg", &res);
->> For u16, there would be of_property_read_u16().
->>> +       if (ret < 0)
->>> +       return -ENODEV;
->> Just return ret here?
-> 
-> I am usually trying to follow these recommendations[1]. In practice driver
-> core cares only for EPROBE_DEFER, ENODEV and ENXIO, while of_property_read_u32()
-> can return ENODATA and EOVERFLOW, which did't not make sense for the core.
-Please point me in the right direction on this one, too. It is pretty common to pass error codes up, as it is also mentioned in [1].
-Yet, this thread in [1] seems more like a draft to me, as Greg K-H wrote in the end: "Fair enough, care to respin this and send it out to me for review?"
-> 
-> Thank you,
-> Ivan
-> 
-> [1] http://www.gossamer-threads.com/lists/linux/kernel/1010603
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+On Tue, Nov 11, 2014 at 2:33 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Nov 11, 2014 at 02:12:18PM -0800, Andy Lutomirski wrote:
+>> I don't see why it would be any more likely for the normal kernel
+>> stack to be corrupted due to a hardware issue that interrupted ring 3
+>> code than that the IST stack is corrupted.
+>
+> The IST stack is, well, used solely be used for the vectors it is
+> assigned for. Maybe the probabability of it getting bad is a bit
+> lower..., who knows.
+>
+>> I don't know what, if anything, masks and unmasks #MC, but certainly
+>> switching to process context like this patch does will not unmask it.
+>
+> Manuals say to clear MCG_STATUS[MCIP] before you return but you also
+> have to IRET. Because not having cleared MCIP and returning would shut
+> down the machine on another #MC.
 
+I wonder what the IRET is for.  There had better not be another magic
+IRET unmask thing.  I'm guessing that the actual semantics are that
+nothing whatsoever can mask #MC, but that a second #MC when MCIP is
+still set is a shutdown condition.
+
+>
+> But then what does it bring me to run on the kernel stack if I'm still
+> in atomic context and I can't take locks? That doesn't help me with the
+> memory_failure() thing.
+
+Define "atomic".
+
+You're still running with irqs off and MCIP set.  At some point,
+you're presumably done with all of the machine check registers, and
+you can clear MCIP.  Now, if current == victim, you can enable irqs
+and do whatever you want.
+
+In my mind, the benefit is that you don't need to think about how to
+save your information and arrange to get called back the next time
+that the victim task is a non-atomic context, since you *are* the
+victim task and you're running in normal irqs-disabled kernel mode.
+
+In contrast, with the current entry code, if you enable IRQs or so
+anything that could sleep, you're on the wrong stack, so you'll crash.
+That means that taking mutexes, even after clearing MCIP, is
+impossible.
+
+--Andy
