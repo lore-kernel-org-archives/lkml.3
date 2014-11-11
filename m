@@ -1,65 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaKKLob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:44:31 -0500
-Received: from mga14.intel.com ([192.55.52.115]:12089 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070AbaKKLoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754090AbaKKLoJ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Nov 2014 06:44:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
-   d="scan'208";a="620509246"
-Message-ID: <1415706244.22887.156.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joe Perches <joe@perches.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Tanya Brokhman <tlinder@codeaurora.org>, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Nov 2014 13:44:04 +0200
-In-Reply-To: <1415642273.8868.8.camel@perches.com>
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org>
-	 <5460F7D8.2030100@nod.at> <1415642273.8868.8.camel@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from youngberry.canonical.com ([91.189.89.112]:57556 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073AbaKKLK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:10:27 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 089/170] staging:iio:ad5933: Fix NULL pointer deref when enabling buffer
+Date: Tue, 11 Nov 2014 11:07:28 +0000
+Message-Id: <1415704129-12709-90-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 09:57 -0800, Joe Perches wrote:
-> On Mon, 2014-11-10 at 18:37 +0100, Richard Weinberger wrote:
-> > Am 03.11.2014 um 14:58 schrieb Tanya Brokhman:
-> > > If there is more then one UBI device mounted, there is no way to
-> > > distinguish between messages from different UBI devices.
-> > > Add device number to all ubi layer message types.
-> 
-> Adding "error" and "warning" to the message logs is
-> duplicative to the KERN_<LEVEL> logging information.
-> 
-> > > Changes from V5:
-> > > 	- Added ptr verification @ ubi_err/ubi_msg/ubi_warn
-> > > 	Removed extra printing of ubi number
-> > > 	Removed new messages.
-> 
-> Did you all ever look at what I posted?
-> 
-> https://lkml.org/lkml/2014/10/14/280
-> 
-> smaller code, consistent prefixing, consistent with
-> typical kernel style, etc.
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-No, I did not, because Tanya is someone who actually using and
-developing that stuff, and you are more of being on the watch for the
-kernel in general. So naturally, I use my limited time to first check
-her stuff. Sorry for this.
+------------------
 
-But Let me change small things in Tanya's patch first. The if you'd be
-kind enough to implement your changes on top of that, that'd be perfect.
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Artem.
+commit 824269c5868d2a7a26417e5ef3841a27d42c6139 upstream.
+
+In older versions of the IIO framework it was possible to pass a
+completely different set of channels to iio_buffer_register() as the one
+that is assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
+iio_sw_buffer_preenable much more general.") introduced a restriction that
+requires that the set of channels that is passed to iio_buffer_register() is
+a subset of the channels assigned to the IIO device as the IIO core will use
+the list of channels that is assigned to the device to lookup a channel by
+scan index in iio_compute_scan_bytes(). If it can not find the channel the
+function will crash. This patch fixes the issue by making sure that the same
+set of channels is assigned to the IIO device and passed to
+iio_buffer_register().
+
+Fixes the follow NULL pointer derefernce kernel crash:
+	Unable to handle kernel NULL pointer dereference at virtual address 00000016
+	pgd = d53d0000
+	[00000016] *pgd=1534e831, *pte=00000000, *ppte=00000000
+	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+	Modules linked in:
+	CPU: 1 PID: 1626 Comm: bash Not tainted 3.15.0-19969-g2a180eb-dirty #9545
+	task: d6c124c0 ti: d539a000 task.ti: d539a000
+	PC is at iio_compute_scan_bytes+0x34/0xa8
+	LR is at iio_compute_scan_bytes+0x34/0xa8
+	pc : [<c03052e4>]    lr : [<c03052e4>]    psr: 60070013
+	sp : d539beb8  ip : 00000001  fp : 00000000
+	r10: 00000002  r9 : 00000000  r8 : 00000001
+	r7 : 00000000  r6 : d6dc8800  r5 : d7571000  r4 : 00000002
+	r3 : d7571000  r2 : 00000044  r1 : 00000001  r0 : 00000000
+	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+	Control: 18c5387d  Table: 153d004a  DAC: 00000015
+	Process bash (pid: 1626, stack limit = 0xd539a240)
+	Stack: (0xd539beb8 to 0xd539c000)
+	bea0:                                                       c02fc0e4 d7571000
+	bec0: d76c1640 d6dc8800 d757117c 00000000 d757112c c0305b04 d76c1690 d76c1640
+	bee0: d7571188 00000002 00000000 d7571000 d539a000 00000000 000dd1c8 c0305d54
+	bf00: d7571010 0160b868 00000002 c69d3900 d7573278 d7573308 c69d3900 c01ece90
+	bf20: 00000002 c0103fac c0103f6c d539bf88 00000002 c69d3b00 c69d3b0c c0103468
+	bf40: 00000000 00000000 d7694a00 00000002 000af408 d539bf88 c000dd84 c00b2f94
+	bf60: d7694a00 000af408 00000002 d7694a00 d7694a00 00000002 000af408 c000dd84
+	bf80: 00000000 c00b32d0 00000000 00000000 00000002 b6f1aa78 00000002 000af408
+	bfa0: 00000004 c000dc00 b6f1aa78 00000002 00000001 000af408 00000002 00000000
+	bfc0: b6f1aa78 00000002 000af408 00000004 be806a4c 000a6094 00000000 000dd1c8
+	bfe0: 00000000 be8069cc b6e8ab77 b6ec125c 40070010 00000001 22940489 154a5007
+	[<c03052e4>] (iio_compute_scan_bytes) from [<c0305b04>] (__iio_update_buffers+0x248/0x438)
+	[<c0305b04>] (__iio_update_buffers) from [<c0305d54>] (iio_buffer_store_enable+0x60/0x7c)
+	[<c0305d54>] (iio_buffer_store_enable) from [<c01ece90>] (dev_attr_store+0x18/0x24)
+	[<c01ece90>] (dev_attr_store) from [<c0103fac>] (sysfs_kf_write+0x40/0x4c)
+	[<c0103fac>] (sysfs_kf_write) from [<c0103468>] (kernfs_fop_write+0x110/0x154)
+	[<c0103468>] (kernfs_fop_write) from [<c00b2f94>] (vfs_write+0xd0/0x160)
+	[<c00b2f94>] (vfs_write) from [<c00b32d0>] (SyS_write+0x40/0x78)
+	[<c00b32d0>] (SyS_write) from [<c000dc00>] (ret_fast_syscall+0x0/0x30)
+	Code: ea00000e e1a01008 e1a00005 ebfff6fc (e5d0a016)
+
+Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/staging/iio/impedance-analyzer/ad5933.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index 2b96665da8a2..3854f997f45e 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -115,6 +115,7 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.channel = 0,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+ 		.address = AD5933_REG_TEMP_DATA,
++		.scan_index = -1,
+ 		.scan_type = {
+ 			.sign = 's',
+ 			.realbits = 14,
+@@ -125,8 +126,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "real_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_REAL_DATA,
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -139,8 +138,6 @@ static const struct iio_chan_spec ad5933_channels[] = {
+ 		.indexed = 1,
+ 		.channel = 0,
+ 		.extend_name = "imag_raw",
+-		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+-		BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = AD5933_REG_IMAG_DATA,
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -748,14 +745,14 @@ static int ad5933_probe(struct i2c_client *client,
+ 	indio_dev->name = id->name;
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	indio_dev->channels = ad5933_channels;
+-	indio_dev->num_channels = 1; /* only register temp0_input */
++	indio_dev->num_channels = ARRAY_SIZE(ad5933_channels);
+ 
+ 	ret = ad5933_register_ring_funcs_and_init(indio_dev);
+ 	if (ret)
+ 		goto error_disable_reg;
+ 
+-	/* skip temp0_input, register in0_(real|imag)_raw */
+-	ret = iio_buffer_register(indio_dev, &ad5933_channels[1], 2);
++	ret = iio_buffer_register(indio_dev, ad5933_channels,
++		ARRAY_SIZE(ad5933_channels));
+ 	if (ret)
+ 		goto error_unreg_ring;
+ 
+-- 
+2.1.0
 
