@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaKKTzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 14:55:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11797 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934AbaKKTzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:55:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="414976417"
-Message-ID: <1415735698.21508.4.camel@theros.lm.intel.com>
-Subject: Re: [PATCH 3/6] x86: Add support for the clwb instruction
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <h.peter.anvin@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        x86@kernel.org
-Date: Tue, 11 Nov 2014 12:54:58 -0700
-In-Reply-To: <20141111194621.GB12555@pd.tnic>
-References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
-	 <1415731396-19364-4-git-send-email-ross.zwisler@linux.intel.com>
-	 <20141111191239.GC31523@pd.tnic> <20141111191904.GA12555@pd.tnic>
-	 <1415734800.21508.0.camel@theros.lm.intel.com>
-	 <20141111194621.GB12555@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20.rez) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752087AbaKKT6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:58:39 -0500
+Received: from mail-bn1on0064.outbound.protection.outlook.com ([157.56.110.64]:11264
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751538AbaKKT6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 14:58:37 -0500
+X-Greylist: delayed 867 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Nov 2014 14:58:37 EST
+Date: Tue, 11 Nov 2014 13:41:09 -0600
+From: Graham Moore <grmoore@opensource.altera.com>
+X-X-Sender: lavauser@lava-test-server
+To: bpqw <bpqw@micron.com>
+CC: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        Graham Moore <grmoore@opensource.altera.com>
+Subject: Re: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+In-Reply-To: <54613259.4070903@opensource.altera.com>
+Message-ID: <alpine.DEB.2.02.1411111336010.1356@lava-test-server>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com> <201409251211.57183.marex@denx.de> <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com> <201409261046.07132.marex@denx.de> <A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
+ <54613259.4070903@opensource.altera.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CY1PR12CA0031.namprd12.prod.outlook.com (25.160.137.41) To
+ BY2PR03MB441.namprd03.prod.outlook.com (10.141.141.142)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB441;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB441;
+X-Forefront-PRVS: 0392679D18
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(199003)(189002)(164054003)(479174003)(24454002)(377454003)(54356999)(31966008)(4396001)(105586002)(77096003)(62966003)(77156002)(120916001)(122386002)(76176999)(97736003)(99396003)(106356001)(95666004)(83506001)(42186005)(81156004)(33716001)(53416004)(40100003)(50986999)(93886004)(102836001)(107046002)(20776003)(87976001)(66066001)(23726002)(64706001)(50466002)(46102003)(46406003)(101416001)(47776003)(92566001)(69596002)(21056001)(86362001)(110136001)(92726001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB441;H:lava-test-server.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB441;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-11 at 20:46 +0100, Borislav Petkov wrote:
-> On Tue, Nov 11, 2014 at 12:40:00PM -0700, Ross Zwisler wrote:
-> > Yep, it's weird, I know.  :)
+On 11/05/2014 09:09 PM, bpqw wrote:
+> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
 > 
-> But sure, saving opcode space, makes sense to me.
-> 
-> Btw, I'd still be interested about this:
-> 
-> > +static inline void clwb(volatile void *__p)
-> > +{
-> > +     alternative_io_2(".byte " __stringify(NOP_DS_PREFIX) "; clflush %P0",
-> 
-> Any particular reason for using 0x3e as a prefix to have the insns be
-> the same size or is it simply because CLFLUSH can stomach it?
+> For Micron SPI NOR flash,enabling or disabling quad I/O protocol is
+> controlled
+> by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
+> When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O
+> mode.
 
-Ah, sorry, I was still responding to your first mail.  :)  Response
-copied here to save searching:
+Hi, I'm having trouble with this patch using a Cadence QSPI controller and
+Micron n25q00 part.
 
-        Essentially we need one additional byte at the beginning of the
-        clflush so that we can flip it into a clflushopt by changing that byte
-        into a 0x66 prefix.  Two options are to either insert a 1 byte
-        ASM_NOP1, or to add a 1 byte NOP_DS_PREFIX.  Both have no functional
-        effect with the plain clflush, but I've been told that executing a
-        clflush + prefix should be faster than executing a clflush + NOP.
+I can use quad commands in Extended SPI mode, but I can't make this EVCR Quad
+mode work.
 
-I agree, this is useful info - I'll add it to the patch comments for v2.
+The Cadence QSPI Controller has fields to configure the quad transfer, and can
+support quad opcode, quad address, and quad data, or some combination.  There
+is a chart in the docs which shows the combinations for various read commands.
 
-Thank you for the feedback.
+Problem is, I've tried all of the combinations and all I get is FF with this
+EVCR patch.
 
-- Ross
+If I don't set the quad mode in the EVCR, then I can use quad read commands no
+problem.
+
+Bottom line, with the Cadence QSPI controller, if I use quad commands in
+Extended SPI mode, then all good.  If I use this EVCR quad mode, then all bad.
+
+Anybody else have a Cadence QSPI controller and using EVCR quad mode
+successfully?
+
+Thanks,
+Graham Moore
 
