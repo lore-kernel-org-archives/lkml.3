@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaKKLUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:20:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57813 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaKKLLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:17 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 140/170] evm: check xattr value length and type in evm_inode_setxattr()
-Date: Tue, 11 Nov 2014 11:08:19 +0000
-Message-Id: <1415704129-12709-141-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1753317AbaKKLU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:20:27 -0500
+Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:14239 "EHLO
+	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752832AbaKKLUW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:20:22 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=1oN0sfwJalOpr2aHay7Qy/p3C2/DrgK1QE5UNNaX0S8= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=rOUgymgbAAAA:8 a=xM62jmtblYMnR76zc78A:9 a=QEXdDO2ut3YA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah4LAPzvYVTD7hTT/2dsb2JhbABcgw6BLYMGtS8CAwabIQKBGBYBAQEBAX2EAgEBAQMBI1YFCwUEAhgCAhgOAgJXBgESEYgnDZl8nF+HAo8vAQEBBwEBAQEegS2FDYonMweCd4FUBbUFg3s8L4JLAQEB
+Date: Tue, 11 Nov 2014 12:20:19 +0100 (CET)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Message-ID: <318149421.176770.1415704819915.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <20141111131216.3742d156@canb.auug.org.au>
+References: <20141111131216.3742d156@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the block tree
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> On 11 November 2014 at 03:12 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+>
+> Hi Jens,
+>
+> After merging the block tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> drivers/built-in.o: In function `cdrom_sysctl_handler':
+> cdrom_sysctl.c:(.text+0x156d92): undefined reference to `cdrom_mutex'
+> cdrom_sysctl.c:(.text+0x156da0): undefined reference to `cdrom_autoclose'
+> cdrom_sysctl.c:(.text+0x156dae): undefined reference to `cdrom_autoeject'
+> cdrom_sysctl.c:(.text+0x156dbc): undefined reference to `cdrom_debug'
+> cdrom_sysctl.c:(.text+0x156dca): undefined reference to `cdrom_lockdoor'
+> cdrom_sysctl.c:(.text+0x156dd8): undefined reference to
+> `cdrom_check_media_type'
+> cdrom_sysctl.c:(.text+0x156e0b): undefined reference to `cdrom_list'
+> cdrom_sysctl.c:(.text+0x156e37): undefined reference to `cdrom_autoclose'
+> cdrom_sysctl.c:(.text+0x156e57): undefined reference to `cdrom_autoeject'
+> cdrom_sysctl.c:(.text+0x156e77): undefined reference to
+> `cdrom_check_media_type'
+> cdrom_sysctl.c:(.text+0x156ea4): undefined reference to `cdrom_lockdoor'
+> cdrom_sysctl.c:(.text+0x156eb5): undefined reference to `cdrom_list'
+> cdrom_sysctl.c:(.text+0x15702e): undefined reference to `cdrom_mutex'
+> drivers/built-in.o: In function `cdrom_print_info.constprop.0':
+> cdrom_sysctl.c:(.text+0x1570f3): undefined reference to `cdrom_list'
+> cdrom_sysctl.c:(.text+0x157189): undefined reference to `cdrom_list'
+> drivers/built-in.o: In function `cdrom_sysctl_info':
+> cdrom_sysctl.c:(.text+0x1572c3): undefined reference to `cdrom_mutex'
+> cdrom_sysctl.c:(.text+0x1576dc): undefined reference to `cdrom_mutex'
+> drivers/built-in.o: In function `cdrom_sysctl_register':
+> (.text+0x157765): undefined reference to `cdrom_autoclose'
+> drivers/built-in.o: In function `cdrom_sysctl_register':
+> (.text+0x157781): undefined reference to `cdrom_autoeject'
+> drivers/built-in.o: In function `cdrom_sysctl_register':
+> (.text+0x15778e): undefined reference to `cdrom_debug'
+> drivers/built-in.o: In function `cdrom_sysctl_register':
+> (.text+0x15779b): undefined reference to `cdrom_lockdoor'
+> drivers/built-in.o: In function `cdrom_sysctl_register':
+> (.text+0x1577a8): undefined reference to `cdrom_check_media_type'
+>
+> Probably caused by commit d01681d1457c ("cdrom: export sysctl code").
+> This build has CONFIG_SYSCTL=y, CONFIG_BLK_DEV_IDECD=m,
+> CONFIG_BLK_DEV_SR=m, CONFIG_PARIDE_PCD=m, CONFIG_CDROM_PKTCDVD=m,
+> CONFIG_GDROM=n.
+>
+> I have used the block tree from next-20141110 for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-commit 3b1deef6b1289a99505858a3b212c5b50adf0c2f upstream.
+Hi Stephen,
 
-evm_inode_setxattr() can be called with no value. The function does not
-check the length so that following command can be used to produce the
-kernel oops: setfattr -n security.evm FOO. This patch fixes it.
+Problem is in Makefile:
 
-Changes in v3:
-* there is no reason to return different error codes for EVM_XATTR_HMAC
-  and non EVM_XATTR_HMAC. Remove unnecessary test then.
+obj-$(CONFIG_BLK_DEV_SR) += cdrom.o
+obj-$(CONFIG_PARIDE_PCD) += cdrom.o
+obj-$(CONFIG_CDROM_PKTCDVD) += cdrom.o
++obj-$(CONFIG_SYSCTL) += cdrom_sysctl.o
 
-Changes in v2:
-* testing for validity of xattr type
+I tried cdrom-$(CONFIG_SYSCTL)  += cdrom_sysctl.o
+to add sysctl only when cdrom.o is created
 
-[ 1106.396921] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1106.398192] IP: [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.399244] PGD 29048067 PUD 290d7067 PMD 0
-[ 1106.399953] Oops: 0000 [#1] SMP
-[ 1106.400020] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
-[ 1106.400020] CPU: 0 PID: 3635 Comm: setxattr Not tainted 3.16.0-kds+ #2936
-[ 1106.400020] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[ 1106.400020] task: ffff8800291a0000 ti: ffff88002917c000 task.ti: ffff88002917c000
-[ 1106.400020] RIP: 0010:[<ffffffff812af7b8>]  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.400020] RSP: 0018:ffff88002917fd50  EFLAGS: 00010246
-[ 1106.400020] RAX: 0000000000000000 RBX: ffff88002917fdf8 RCX: 0000000000000000
-[ 1106.400020] RDX: 0000000000000000 RSI: ffffffff818136d3 RDI: ffff88002917fdf8
-[ 1106.400020] RBP: ffff88002917fd68 R08: 0000000000000000 R09: 00000000003ec1df
-[ 1106.400020] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800438a0a00
-[ 1106.400020] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-[ 1106.400020] FS:  00007f7dfa7d7740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
-[ 1106.400020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1106.400020] CR2: 0000000000000000 CR3: 000000003763e000 CR4: 00000000000006f0
-[ 1106.400020] Stack:
-[ 1106.400020]  ffff8800438a0a00 ffff88002917fdf8 0000000000000000 ffff88002917fd98
-[ 1106.400020]  ffffffff812a1030 ffff8800438a0a00 ffff88002917fdf8 0000000000000000
-[ 1106.400020]  0000000000000000 ffff88002917fde0 ffffffff8116d08a ffff88002917fdc8
-[ 1106.400020] Call Trace:
-[ 1106.400020]  [<ffffffff812a1030>] security_inode_setxattr+0x5d/0x6a
-[ 1106.400020]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
-[ 1106.400020]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
-[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[ 1106.400020]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
-[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[ 1106.400020]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
-[ 1106.400020]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
-[ 1106.400020]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
-[ 1106.400020] Code: c3 0f 1f 44 00 00 55 48 89 e5 41 55 49 89 d5 41 54 49 89 fc 53 48 89 f3 48 c7 c6 d3 36 81 81 48 89 df e8 18 22 04 00 85 c0 75 07 <41> 80 7d 00 02 74 0d 48 89 de 4c 89 e7 e8 5a fe ff ff eb 03 83
-[ 1106.400020] RIP  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.400020]  RSP <ffff88002917fd50>
-[ 1106.400020] CR2: 0000000000000000
-[ 1106.428061] ---[ end trace ae08331628ba3050 ]---
+but now
 
-Reported-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- security/integrity/evm/evm_main.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+drivers/scsi/sr_mod.ko
+drivers/ide/ide-cd_mod.ko
+drivers/ide/ide-cd_mod.ko
 
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 3bcb80df4d01..9f5f923f7bfd 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -311,9 +311,12 @@ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- {
- 	const struct evm_ima_xattr_data *xattr_data = xattr_value;
- 
--	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
--	    && (xattr_data->type == EVM_XATTR_HMAC))
--		return -EPERM;
-+	if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
-+		if (!xattr_value_len)
-+			return -EINVAL;
-+		if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
-+			return -EPERM;
-+	}
- 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
- 				 xattr_value_len);
- }
--- 
-2.1.0
+can't find cdrom.c functions ...
 
+Is there another way to do it ?
+
+Regards,
+Fabian
