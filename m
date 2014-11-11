@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaKKMvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:51:52 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:40598 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaKKMvv (ORCPT
+	id S1752101AbaKKMwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:52:18 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:57852 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaKKMwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:51:51 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: sa11x0: Use void __iomem * in MMIO accessors
-Date: Tue, 11 Nov 2014 13:51:48 +0100
-Message-Id: <1415710308-29662-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Tue, 11 Nov 2014 07:52:16 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <7569b6a008b2785ebe92088b14eb2237>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Andy yan <andy.yan@rock-chips.com>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com
+Subject: [PATCH v7 2/7] staging: imx-drm: imx-hdmi: return defer if can't get ddc i2c adapter
+Date: Tue, 11 Nov 2014 20:51:51 +0800
+Message-Id: <1415710311-11983-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415710229-11935-1-git-send-email-andy.yan@rock-chips.com>
+References: <1415710229-11935-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+drm driver may probe before the i2c bus, so the driver should
+defer probing until it is available
 
-MMIO accessors such as readl() and writel() want a void __iomem * for
-the address. Update the BSE nanoEngine PCI driver to pass such pointers
-instead of unsigned long in preparation to converting ARM to use generic
-and more rigidly typed accessors.
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
-Hi Arnd,
 
-This is a follow-up patch to the asm-generic/io.h overhaul series that
-fixes a couple of build warnings reported by Fengguang's build system.
-I've sorted this near the beginning of the series, like so:
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4:
+- defer probe ddc i2c adapter
 
-	ARM: ebsa110: Properly override I/O accessors
-	ARM: sa11x0: Use void __iomem * in MMIO accessors
-	ARC: Remove redundant PCI_IOBASE declaration
+Changes in v3: None
+Changes in v2: None
 
-But I think anywhere before commit
+ drivers/staging/imx-drm/imx-hdmi.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-	ARM: Use include/asm-generic/io.h
-
-should be fine, too.
-
-Thierry
-
- arch/arm/mach-sa1100/pci-nanoengine.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-sa1100/pci-nanoengine.c b/arch/arm/mach-sa1100/pci-nanoengine.c
-index ff02e2da99f2..b704433c529c 100644
---- a/arch/arm/mach-sa1100/pci-nanoengine.c
-+++ b/arch/arm/mach-sa1100/pci-nanoengine.c
-@@ -33,12 +33,12 @@
- static DEFINE_SPINLOCK(nano_lock);
+diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
+index 79daec4..c2b035a 100644
+--- a/drivers/staging/imx-drm/imx-hdmi.c
++++ b/drivers/staging/imx-drm/imx-hdmi.c
+@@ -1611,8 +1611,11 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
+ 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
+ 	if (ddc_node) {
+ 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
+-		if (!hdmi->ddc)
++		if (!hdmi->ddc) {
+ 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
++			of_node_put(ddc_node);
++			return -EPROBE_DEFER;
++		}
  
- static int nanoengine_get_pci_address(struct pci_bus *bus,
--	unsigned int devfn, int where, unsigned long *address)
-+	unsigned int devfn, int where, void __iomem **address)
- {
- 	int ret = PCIBIOS_DEVICE_NOT_FOUND;
- 	unsigned int busnr = bus->number;
- 
--	*address = NANO_PCI_CONFIG_SPACE_VIRT +
-+	*address = (void __iomem *)NANO_PCI_CONFIG_SPACE_VIRT +
- 		((bus->number << 16) | (devfn << 8) | (where & ~3));
- 
- 	ret = (busnr > 255 || devfn > 255 || where > 255) ?
-@@ -51,7 +51,7 @@ static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int w
- 	int size, u32 *val)
- {
- 	int ret;
--	unsigned long address;
-+	void __iomem *address;
- 	unsigned long flags;
- 	u32 v;
- 
-@@ -85,7 +85,7 @@ static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int
- 	int size, u32 val)
- {
- 	int ret;
--	unsigned long address;
-+	void __iomem *address;
- 	unsigned long flags;
- 	unsigned shift;
- 	u32 v;
+ 		of_node_put(ddc_node);
+ 	} else {
 -- 
-2.1.3
+1.9.1
+
 
