@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaKKBwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 20:52:44 -0500
-Received: from mga03.intel.com ([134.134.136.65]:14563 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552AbaKKBwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 20:52:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,357,1413270000"; 
-   d="scan'208";a="605658804"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@arm.com>
-Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH 2/2] sched/deadline: fix start high-res preemption tick for a non-running task
-Date: Tue, 11 Nov 2014 09:52:27 +0800
-Message-Id: <1415670747-58726-2-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1415670747-58726-1-git-send-email-wanpeng.li@linux.intel.com>
+	id S1751830AbaKKB4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 20:56:09 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:53932 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaKKB4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 20:56:07 -0500
+Message-ID: <54616CB3.5000405@gmail.com>
+Date: Mon, 10 Nov 2014 17:56:03 -0800
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Kevin Hilman <khilman@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>
+Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
+References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com> <5461150B.2010907@codeaurora.org>
+In-Reply-To: <5461150B.2010907@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Queued ticks are scheduled to match the budget, which means the budget 
-is overall consumed and the dl task should be throttled. Dl task will 
-be replenished immediately if fail to start a dl timer. 
+On 11/10/2014 11:42 AM, Stephen Boyd wrote:
+> On 11/10/2014 10:54 AM, Kevin Hilman wrote:
+>> On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>> We rely on probe order of this driver to determine the line number for
+>>> the uart port. This makes it impossible to know the line number
+>>> when these devices are populated via DT. Use the DT alias
+>>> mechanism to assign the line based on the aliases node.
+>>>
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> FYI... this patch hit linux-next and caused multiple boot failures on
+>> qcom platforms[1] as of next-20141110.  I'm assuming this is because
+>> the corresponding DTS changes have not hit linux-next yet.
+>>
+>> Kevin
+>>
+>> [1] http://status.armcloud.us/boot/?qcom
+> 
+> Hmm the intention was to make it optional so that dts changes aren't
+> necessary unless you want deterministic numbering. I screwed that up
+> badly :/ Thanks for finding this.
+> 
+> Greg, can you also apply this patch or squash it into the bad one?
+> 
+> ----8<-----
+> 
+> From: Stephen Boyd <sboyd@codeaurora.org>
+> Subject: [PATCH] tty: serial: msm_serial: Don't required DT aliases
+> 
+> If there isn't a DT alias then of_alias_get_id() will return
+> -ENODEV. This will cause the msm_serial driver to fail probe,
+> when we want to keep the previous behavior where we generated a
+> dynamic line number at probe time. Restore this behavior by
+> generating a dynamic id if the line number is still negative
+> after checking for an alias or (in the non-DT case) looking at the
+> .id field of the platform device.
+> 
+> Reported-by: Kevin Hilman <khilman@kernel.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/tty/serial/msm_serial.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+> index 09364dd8cf3a..d1bc6b6cbc70 100644
+> --- a/drivers/tty/serial/msm_serial.c
+> +++ b/drivers/tty/serial/msm_serial.c
+> @@ -1046,14 +1046,14 @@ static int msm_serial_probe(struct platform_device *pdev)
+>  	const struct of_device_id *id;
+>  	int irq, line;
+>  
+> -	if (pdev->id == -1)
+> -		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
+> -
+>  	if (pdev->dev.of_node)
+>  		line = of_alias_get_id(pdev->dev.of_node, "serial");
+>  	else
+>  		line = pdev->id;
+>  
+> +	if (line < 0)
+> +		line = atomic_inc_return(&msm_uart_next_id) - 1;
+> +
+>  	if (unlikely(line < 0 || line >= UART_NR))
 
-However, the curr maybe not the left most dl task in the rb tree any 
-more after this immediately replenished and reschedule is needed. 
-Start high-res preemption tick for this upcoming rescheduled dl task 
-is not correct. 
+Then this original check for "line < 0" can also be removed.
 
-This patch fix it by not starting high-res preemption tick for a 
-non-running dl task.
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
- kernel/sched/deadline.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 56674f6..2a6a5bb 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1090,7 +1090,8 @@ static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
- {
- 	update_curr_dl(rq);
- 
--	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0)
-+	if (hrtick_enabled(rq) && queued && p->dl.runtime > 0 &&
-+	    is_leftmost(p, &rq->dl))
- 		start_hrtick_dl(rq, p);
- }
- 
--- 
-1.9.1
+>  		return -ENXIO;
+>  
+> 
 
