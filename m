@@ -1,57 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567AbaKKU4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:56:09 -0500
-Received: from ezexch.ezchip.com ([212.179.42.101]:42555 "EHLO ezchip.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751086AbaKKU4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:56:07 -0500
-Message-ID: <546277D2.2060500@ezchip.com>
-Date: Tue, 11 Nov 2014 15:55:46 -0500
-From: Chris Metcalf <cmetcalf@ezchip.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile: Use the more common pr_warn instead of pr_warning
-References: <cover.1414691783.git.joe@perches.com>	 <5453946F.3030803@tilera.com> <1414777846.13647.3.camel@perches.com>
-In-Reply-To: <1414777846.13647.3.camel@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [12.216.194.146]
-X-ClientProxiedBy: DM2PR00CA0032.namprd00.prod.outlook.com (25.160.243.42) To
- DB3PR02MB0539.eurprd02.prod.outlook.com (25.160.51.150)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0539;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0539;
-X-Forefront-PRVS: 0392679D18
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(51704005)(24454002)(377454003)(479174003)(41574002)(189002)(199003)(99396003)(23756003)(87976001)(4396001)(120916001)(83506001)(97736003)(92566001)(92726001)(15975445006)(19580405001)(102836001)(59896002)(46102003)(101416001)(40100003)(19580395003)(80316001)(33656002)(77096003)(64126003)(42186005)(62966003)(77156002)(31966008)(95666004)(50986999)(107046002)(50466002)(105586002)(15202345003)(86362001)(36756003)(106356001)(110136001)(87266999)(122386002)(76176999)(65806001)(66066001)(54356999)(21056001)(20776003)(65956001)(65816999)(47776003)(64706001)(18886065003);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB0539;H:[10.7.0.239];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0539;
-X-OriginatorOrg: ezchip.com
-X-TM-AS-Product-Ver: SMEX-11.0.0.1191-7.500.1018-21094.002
-X-TM-AS-Result: No--3.179500-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	id S1751742AbaKKU46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:56:58 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:40542 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaKKU45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 15:56:57 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: Borislav Petkov <bp@alien8.de>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
+Date: Tue, 11 Nov 2014 12:56:52 -0800
+Message-Id: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 1:50 PM, Joe Perches wrote:
-> And other message logging neatening.
->
-> Other miscellanea:
->
-> o coalesce formats
-> o realign arguments
-> o standardize a couple of macros
-> o use __func__ instead of embedding the function name
->
-> Signed-off-by: Joe Perches<joe@perches.com>
+This causes all non-NMI kernel entries from userspace to run on the
+normal kernel stack.
 
-Thanks!  Taken into the tile tree.
+This means that machine check recovery can happen in non-atomic
+context.  It also obviates the need for the paranoid_userspace path.
 
+Borislav has referred to this idea as the tail wagging the dog.  I
+think that's okay -- the dog was pretty ugly.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/kernel/entry_64.S | 61 +++++++++++++++++++++++++---------------------
+ 1 file changed, 33 insertions(+), 28 deletions(-)
+
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index df088bb03fb3..9c0a7311af0d 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1064,6 +1064,9 @@ ENTRY(\sym)
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 
+ 	.if \paranoid
++	CFI_REMEMBER_STATE
++	testl $3, CS(%rsp)		/* If coming from userspace, switch */
++	jnz 1f				/* stacks. */
+ 	call save_paranoid
+ 	.else
+ 	call error_entry
+@@ -1104,6 +1107,36 @@ ENTRY(\sym)
+ 	jmp error_exit			/* %ebx: no swapgs flag */
+ 	.endif
+ 
++	.if \paranoid
++	CFI_RESTORE_STATE
++	/*
++	 * Paranoid entry from userspace.  Switch stacks and treat it
++	 * as a normal entry.  This means that paranoid handlers
++	 * run in real process context if user_mode(regs).
++	 */
++1:
++	call error_entry
++
++	DEFAULT_FRAME 0
++
++	movq %rsp,%rdi			/* pt_regs pointer */
++	call sync_regs
++	movq %rax,%rsp			/* switch stack */
++
++	movq %rsp,%rdi			/* pt_regs pointer */
++
++	.if \has_error_code
++	movq ORIG_RAX(%rsp),%rsi	/* get error code */
++	movq $-1,ORIG_RAX(%rsp)		/* no syscall to restart */
++	.else
++	xorl %esi,%esi			/* no error code */
++	.endif
++
++	call \do_sym
++
++	jmp error_exit			/* %ebx: no swapgs flag */
++	.endif
++
+ 	CFI_ENDPROC
+ END(\sym)
+ .endm
+@@ -1324,8 +1357,6 @@ ENTRY(paranoid_exit)
+ 	TRACE_IRQS_OFF_DEBUG
+ 	testl %ebx,%ebx				/* swapgs needed? */
+ 	jnz paranoid_restore
+-	testl $3,CS(%rsp)
+-	jnz   paranoid_userspace
+ paranoid_swapgs:
+ 	TRACE_IRQS_IRETQ 0
+ 	SWAPGS_UNSAFE_STACK
+@@ -1335,32 +1366,6 @@ paranoid_restore:
+ 	TRACE_IRQS_IRETQ_DEBUG 0
+ 	RESTORE_ALL 8
+ 	jmp irq_return
+-paranoid_userspace:
+-	GET_THREAD_INFO(%rcx)
+-	movl TI_flags(%rcx),%ebx
+-	andl $_TIF_WORK_MASK,%ebx
+-	jz paranoid_swapgs
+-	movq %rsp,%rdi			/* &pt_regs */
+-	call sync_regs
+-	movq %rax,%rsp			/* switch stack for scheduling */
+-	testl $_TIF_NEED_RESCHED,%ebx
+-	jnz paranoid_schedule
+-	movl %ebx,%edx			/* arg3: thread flags */
+-	TRACE_IRQS_ON
+-	ENABLE_INTERRUPTS(CLBR_NONE)
+-	xorl %esi,%esi 			/* arg2: oldset */
+-	movq %rsp,%rdi 			/* arg1: &pt_regs */
+-	call do_notify_resume
+-	DISABLE_INTERRUPTS(CLBR_NONE)
+-	TRACE_IRQS_OFF
+-	jmp paranoid_userspace
+-paranoid_schedule:
+-	TRACE_IRQS_ON
+-	ENABLE_INTERRUPTS(CLBR_ANY)
+-	SCHEDULE_USER
+-	DISABLE_INTERRUPTS(CLBR_ANY)
+-	TRACE_IRQS_OFF
+-	jmp paranoid_userspace
+ 	CFI_ENDPROC
+ END(paranoid_exit)
+ 
 -- 
-Chris Metcalf, EZChip Semiconductor
-http://www.ezchip.com
+1.9.3
 
