@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaKKLV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:21:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57807 "EHLO
+	id S1753237AbaKKLV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:21:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57812 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403AbaKKLLQ (ORCPT
+	with ESMTP id S1754411AbaKKLLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:11:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+Cc: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 139/170] ima: check xattr value length and type in the ima_inode_setxattr()
-Date: Tue, 11 Nov 2014 11:08:18 +0000
-Message-Id: <1415704129-12709-140-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 142/170] drm/radeon: Use drm_malloc_ab instead of kmalloc_array
+Date: Tue, 11 Nov 2014 11:08:21 +0000
+Message-Id: <1415704129-12709-143-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,94 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
 
-commit a48fda9de94500a3152a56b723d0a64ae236547c upstream.
+commit e5a5fd4df21b9c4acb67e815ec949cce594860f8 upstream.
 
-ima_inode_setxattr() can be called with no value. Function does not
-check the length so that following command can be used to produce
-kernel oops: setfattr -n security.ima FOO. This patch fixes it.
+Should avoid kmalloc failures due to large number of array entries.
 
-Changes in v3:
-* for stable reverted "allow setting hash only in fix or log mode"
-  It will be a separate patch.
-
-Changes in v2:
-* testing validity of xattr type
-* allow setting hash only in fix or log mode (Mimi)
-
-[  261.562522] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  261.564109] IP: [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
-[  261.564109] PGD 3112f067 PUD 42965067 PMD 0
-[  261.564109] Oops: 0000 [#1] SMP
-[  261.564109] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
-[  261.564109] CPU: 0 PID: 3299 Comm: setxattr Not tainted 3.16.0-kds+ #2924
-[  261.564109] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  261.564109] task: ffff8800428c2430 ti: ffff880042be0000 task.ti: ffff880042be0000
-[  261.564109] RIP: 0010:[<ffffffff812af272>]  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
-[  261.564109] RSP: 0018:ffff880042be3d50  EFLAGS: 00010246
-[  261.564109] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000015
-[  261.564109] RDX: 0000001500000000 RSI: 0000000000000000 RDI: ffff8800375cc600
-[  261.564109] RBP: ffff880042be3d68 R08: 0000000000000000 R09: 00000000004d6256
-[  261.564109] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002149ba00
-[  261.564109] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-[  261.564109] FS:  00007f6c1e219740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
-[  261.564109] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  261.564109] CR2: 0000000000000000 CR3: 000000003b35a000 CR4: 00000000000006f0
-[  261.564109] Stack:
-[  261.564109]  ffff88002149ba00 ffff880042be3df8 0000000000000000 ffff880042be3d98
-[  261.564109]  ffffffff812a101b ffff88002149ba00 ffff880042be3df8 0000000000000000
-[  261.564109]  0000000000000000 ffff880042be3de0 ffffffff8116d08a ffff880042be3dc8
-[  261.564109] Call Trace:
-[  261.564109]  [<ffffffff812a101b>] security_inode_setxattr+0x48/0x6a
-[  261.564109]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
-[  261.564109]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
-[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[  261.564109]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
-[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[  261.564109]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
-[  261.564109]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
-[  261.564109]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
-[  261.564109] Code: 48 89 f7 48 c7 c6 58 36 81 81 53 31 db e8 73 27 04 00 85 c0 75 28 bf 15 00 00 00 e8 8a a5 d9 ff 84 c0 75 05 83 cb ff eb 15 31 f6 <41> 80 7d 00 03 49 8b 7c 24 68 40 0f 94 c6 e8 e1 f9 ff ff 89 d8
-[  261.564109] RIP  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
-[  261.564109]  RSP <ffff880042be3d50>
-[  261.564109] CR2: 0000000000000000
-[  261.599998] ---[ end trace 39a89a3fc267e652 ]---
-
-Reported-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=81991
+Reviewed-by: Dave Airlie <airlied@redhat.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/integrity/ima/ima_appraise.c | 2 ++
- security/integrity/integrity.h        | 1 +
- 2 files changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/radeon_cs.c   | 2 +-
+ drivers/gpu/drm/radeon/radeon_ring.c | 4 ++--
+ drivers/gpu/drm/radeon/radeon_vm.c   | 4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index bd8cef5b67e4..85b147eddcf5 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -370,6 +370,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
- 				   xattr_value_len);
- 	if (result == 1) {
-+		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
-+			return -EINVAL;
- 		ima_reset_appraise_flags(dentry->d_inode,
- 			 (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
- 		result = 0;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 2f8715d77a5a..6a3d6aa14c09 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -57,6 +57,7 @@ enum evm_ima_xattr_type {
- 	EVM_XATTR_HMAC,
- 	EVM_IMA_XATTR_DIGSIG,
- 	IMA_XATTR_DIGEST_NG,
-+	IMA_XATTR_LAST
- };
+diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
+index 8f7d56f342f1..c50a1da6c12a 100644
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -418,7 +418,7 @@ static void radeon_cs_parser_fini(struct radeon_cs_parser *parser, int error, bo
+ 	kfree(parser->track);
+ 	kfree(parser->relocs);
+ 	kfree(parser->relocs_ptr);
+-	kfree(parser->vm_bos);
++	drm_free_large(parser->vm_bos);
+ 	for (i = 0; i < parser->nchunks; i++)
+ 		drm_free_large(parser->chunks[i].kdata);
+ 	kfree(parser->chunks);
+diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
+index f8050f5429e2..2d763910fe5d 100644
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -571,7 +571,7 @@ unsigned radeon_ring_backup(struct radeon_device *rdev, struct radeon_ring *ring
+ 	}
  
- struct evm_ima_xattr_data {
+ 	/* and then save the content of the ring */
+-	*data = kmalloc_array(size, sizeof(uint32_t), GFP_KERNEL);
++	*data = drm_malloc_ab(size, sizeof(uint32_t));
+ 	if (!*data) {
+ 		mutex_unlock(&rdev->ring_lock);
+ 		return 0;
+@@ -613,7 +613,7 @@ int radeon_ring_restore(struct radeon_device *rdev, struct radeon_ring *ring,
+ 	}
+ 
+ 	radeon_ring_unlock_commit(rdev, ring);
+-	kfree(data);
++	drm_free_large(data);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/radeon/radeon_vm.c b/drivers/gpu/drm/radeon/radeon_vm.c
+index 725d3669014f..abf8e2c876ac 100644
+--- a/drivers/gpu/drm/radeon/radeon_vm.c
++++ b/drivers/gpu/drm/radeon/radeon_vm.c
+@@ -132,8 +132,8 @@ struct radeon_cs_reloc *radeon_vm_get_bos(struct radeon_device *rdev,
+ 	struct radeon_cs_reloc *list;
+ 	unsigned i, idx;
+ 
+-	list = kmalloc_array(vm->max_pde_used + 2,
+-			     sizeof(struct radeon_cs_reloc), GFP_KERNEL);
++	list = drm_malloc_ab(vm->max_pde_used + 2,
++			     sizeof(struct radeon_cs_reloc));
+ 	if (!list)
+ 		return NULL;
+ 
 -- 
 2.1.0
 
