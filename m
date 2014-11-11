@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaKKOvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:51:00 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5611 "EHLO mga11.intel.com"
+	id S1752110AbaKKOvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:51:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19198 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016AbaKKOu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:50:57 -0500
+	id S1751877AbaKKOvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:51:08 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
-   d="scan'208";a="620586736"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="414838968"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v7 06/14] perf: Add AUX record
-Date: Tue, 11 Nov 2014 16:48:20 +0200
-Message-Id: <1415717308-209223-7-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v7 11/14] x86: perf: Intel PT and LBR/BTS are mutually exclusive
+Date: Tue, 11 Nov 2014 16:48:25 +0200
+Message-Id: <1415717308-209223-12-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -30,114 +30,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When there's new data in the AUX space, output a record indicating its
-offset and size and a set of flags, such as PERF_AUX_FLAG_TRUNCATED, to
-mean the described data was truncated to fit in the ring buffer.
+Intel PT cannot be used at the same time as LBR or BTS and will cause a
+general protection fault if they are used together. In order to avoid
+fixing up GPs in the fast path, instead we disallow creating LBR/BTS
+events when PT events are present and vice versa.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
- include/uapi/linux/perf_event.h | 19 +++++++++++++++++++
- kernel/events/core.c            | 34 ++++++++++++++++++++++++++++++++++
- kernel/events/internal.h        |  3 +++
- 3 files changed, 56 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c       | 43 ++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h       | 40 +++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel.c | 26 ++++++++++----------
+ 3 files changed, 95 insertions(+), 14 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9a13e5fded..272258380e 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -733,6 +733,20 @@ enum perf_event_type {
- 	 */
- 	PERF_RECORD_MMAP2			= 10,
- 
-+	/*
-+	 * Records that new data landed in the AUX buffer part.
-+	 *
-+	 * struct {
-+	 * 	struct perf_event_header	header;
-+	 *
-+	 * 	u64				aux_offset;
-+	 * 	u64				aux_size;
-+	 *	u64				flags;
-+	 * 	struct sample_id		sample_id;
-+	 * };
-+	 */
-+	PERF_RECORD_AUX				= 11,
-+
- 	PERF_RECORD_MAX,			/* non-ABI */
- };
- 
-@@ -750,6 +764,11 @@ enum perf_callchain_context {
- 	PERF_CONTEXT_MAX		= (__u64)-4095,
- };
- 
-+/**
-+ * PERF_RECORD_AUX::flags bits
-+ */
-+#define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
-+
- #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
- #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
- #define PERF_FLAG_PID_CGROUP		(1UL << 2) /* pid=cgroup id, per-cpu mode only */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2399c12e49..779f60d300 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5606,6 +5606,40 @@ void perf_event_mmap(struct vm_area_struct *vma)
- 	perf_event_mmap_event(&mmap_event);
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 143e5f5dc8..1cca1ac9b6 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -259,6 +259,14 @@ static void hw_perf_event_destroy(struct perf_event *event)
+ 	}
  }
  
-+void perf_event_aux_event(struct perf_event *event, unsigned long head,
-+			  unsigned long size, u64 flags)
++void hw_perf_lbr_event_destroy(struct perf_event *event)
 +{
-+	struct perf_output_handle handle;
-+	struct perf_sample_data sample;
-+	struct perf_aux_event {
-+		struct perf_event_header	header;
-+		u64				offset;
-+		u64				size;
-+		u64				flags;
-+	} rec = {
-+		.header = {
-+			.type = PERF_RECORD_AUX,
-+			.misc = 0,
-+			.size = sizeof(rec),
-+		},
-+		.offset		= head,
-+		.size		= size,
-+		.flags		= flags,
-+	};
-+	int ret;
++	hw_perf_event_destroy(event);
 +
-+	perf_event_header__init_id(&rec.header, &sample, event);
-+	ret = perf_output_begin(&handle, event, rec.header.size);
-+
-+	if (ret)
-+		return;
-+
-+	perf_output_put(&handle, rec);
-+	perf_event__output_id_sample(event, &handle, &sample);
-+
-+	perf_output_end(&handle);
++	/* undo the lbr/bts event accounting */
++	x86_del_exclusive(x86_lbr_exclusive_lbr);
 +}
 +
- /*
-  * IRQ throttle logging
-  */
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 0f6d080159..4d117a9814 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -62,6 +62,9 @@ static inline bool rb_has_aux(struct ring_buffer *rb)
- 	return !!rb->aux_nr_pages;
+ static inline int x86_pmu_initialized(void)
+ {
+ 	return x86_pmu.handle_irq != NULL;
+@@ -298,6 +306,35 @@ set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event *event)
+ 	return x86_pmu_extra_regs(val, event);
  }
  
-+void perf_event_aux_event(struct perf_event *event, unsigned long head,
-+			  unsigned long size, u64 flags);
++/*
++ * Check if we can create event of a certain type (that no conflicting events
++ * are present).
++ */
++int x86_add_exclusive(unsigned int what)
++{
++	int ret = -EBUSY, i;
 +
- extern void
- perf_event_header__init_id(struct perf_event_header *header,
- 			   struct perf_sample_data *data,
++	if (atomic_inc_not_zero(&x86_pmu.lbr_exclusive[what]))
++		return 0;
++
++	mutex_lock(&pmc_reserve_mutex);
++	for (i = 0; i < ARRAY_SIZE(x86_pmu.lbr_exclusive); i++)
++		if (i != what && atomic_read(&x86_pmu.lbr_exclusive[i]))
++			goto out;
++
++	atomic_inc(&x86_pmu.lbr_exclusive[what]);
++	ret = 0;
++
++out:
++	mutex_unlock(&pmc_reserve_mutex);
++	return ret;
++}
++
++void x86_del_exclusive(unsigned int what)
++{
++	atomic_dec(&x86_pmu.lbr_exclusive[what]);
++}
++
+ int x86_setup_perfctr(struct perf_event *event)
+ {
+ 	struct perf_event_attr *attr = &event->attr;
+@@ -342,6 +379,12 @@ int x86_setup_perfctr(struct perf_event *event)
+ 		/* BTS is currently only allowed for user-mode. */
+ 		if (!attr->exclude_kernel)
+ 			return -EOPNOTSUPP;
++
++		/* disallow bts if conflicting events are present */
++		if (x86_add_exclusive(x86_lbr_exclusive_lbr))
++			return -EBUSY;
++
++		event->destroy = hw_perf_lbr_event_destroy;
+ 	}
+ 
+ 	hwc->config |= config;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fc5eb390b3..620612d311 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -402,6 +402,12 @@ union x86_pmu_config {
+ 
+ #define X86_CONFIG(args...) ((union x86_pmu_config){.bits = {args}}).value
+ 
++enum {
++	x86_lbr_exclusive_lbr,
++	x86_lbr_exclusive_pt,
++	x86_lbr_exclusive_max,
++};
++
+ /*
+  * struct x86_pmu - generic x86 pmu
+  */
+@@ -498,6 +504,11 @@ struct x86_pmu {
+ 	bool		lbr_double_abort;	   /* duplicated lbr aborts */
+ 
+ 	/*
++	 * Intel PT/LBR/BTS are exclusive
++	 */
++	atomic_t	lbr_exclusive[x86_lbr_exclusive_max];
++
++	/*
+ 	 * Extra registers for events
+ 	 */
+ 	struct extra_reg *extra_regs;
+@@ -582,6 +593,12 @@ static inline int x86_pmu_rdpmc_index(int index)
+ 	return x86_pmu.rdpmc_index ? x86_pmu.rdpmc_index(index) : index;
+ }
+ 
++int x86_add_exclusive(unsigned int what);
++
++void x86_del_exclusive(unsigned int what);
++
++void hw_perf_lbr_event_destroy(struct perf_event *event);
++
+ int x86_setup_perfctr(struct perf_event *event);
+ 
+ int x86_pmu_hw_config(struct perf_event *event);
+@@ -668,6 +685,29 @@ static inline int amd_pmu_init(void)
+ 
+ #ifdef CONFIG_CPU_SUP_INTEL
+ 
++static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
++{
++	/* user explicitly requested branch sampling */
++	if (has_branch_stack(event))
++		return true;
++
++	/* implicit branch sampling to correct PEBS skid */
++	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
++	    x86_pmu.intel_cap.pebs_format < 2)
++		return true;
++
++	return false;
++}
++
++static inline bool intel_pmu_has_bts(struct perf_event *event)
++{
++	if (event->attr.config == PERF_COUNT_HW_BRANCH_INSTRUCTIONS &&
++	    !event->attr.freq && event->hw.sample_period == 1)
++		return true;
++
++	return false;
++}
++
+ int intel_pmu_save_and_restart(struct perf_event *event);
+ 
+ struct event_constraint *
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 944bf019b7..c64e97a1cb 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1029,20 +1029,6 @@ static __initconst const u64 slm_hw_cache_event_ids
+  },
+ };
+ 
+-static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+-{
+-	/* user explicitly requested branch sampling */
+-	if (has_branch_stack(event))
+-		return true;
+-
+-	/* implicit branch sampling to correct PEBS skid */
+-	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+-	    x86_pmu.intel_cap.pebs_format < 2)
+-		return true;
+-
+-	return false;
+-}
+-
+ static void intel_pmu_disable_all(void)
+ {
+ 	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+@@ -1751,6 +1737,18 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 		ret = intel_pmu_setup_lbr_filter(event);
+ 		if (ret)
+ 			return ret;
++
++		/*
++		 * bts is set up earlier in this path, so don't account
++		 * twice
++		 */
++		if (!intel_pmu_has_bts(event)) {
++			/* disallow lbr if conflicting events are present */
++			if (x86_add_exclusive(x86_lbr_exclusive_lbr))
++				return -EBUSY;
++
++			event->destroy = hw_perf_lbr_event_destroy;
++		}
+ 	}
+ 
+ 	if (event->attr.type != PERF_TYPE_RAW)
 -- 
 2.1.1
 
