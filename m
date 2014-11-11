@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaKKQUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:20:41 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:53277
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751228AbaKKQUk (ORCPT
+	id S1751881AbaKKQVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:21:15 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:61161 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbaKKQVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:20:40 -0500
-X-IronPort-AV: E=Sophos;i="5.07,362,1413237600"; 
-   d="scan'208";a="87512341"
-Date: Tue, 11 Nov 2014 17:20:37 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Octavian Purdila <octavian.purdila@intel.com>
-cc: Johan Hovold <johan@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Julia Lawall <julia.lawall@lip6.fr>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] i2c: dln2: simplify return flow for
- dln2_i2c_enable
-In-Reply-To: <CAE1zotKi+kpv6a9xM=-qkpo3K9R5xKjrf2RZgDV7advXFS92FA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1411111718460.2047@localhost6.localdomain6>
-References: <1415708457-18798-1-git-send-email-octavian.purdila@intel.com> <1415708457-18798-3-git-send-email-octavian.purdila@intel.com> <20141111122636.GF29789@localhost> <CAE1zotKi+kpv6a9xM=-qkpo3K9R5xKjrf2RZgDV7advXFS92FA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Nov 2014 11:21:14 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jim Davis <jim.epost@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH -next] vt: Fix build breakage when !CONFIG_VT_CONSOLE
+Date: Tue, 11 Nov 2014 11:20:56 -0500
+Message-Id: <1415722856-5651-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141110180929.GA13084@kroah.com>
+References: <20141110180929.GA13084@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Octavian Purdila wrote:
+Commit 68952076e9226cc23ebce66d3fc2fdb8b6c04c30 ("vt: Remove
+vt_get_kmsg_redirect() from uapi header") fails to compile if
+!CONFIG_VT_CONSOLE.
 
-> On Tue, Nov 11, 2014 at 2:26 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Tue, Nov 11, 2014 at 02:20:57PM +0200, Octavian Purdila wrote:
-> >> This fixes the following kbuild test robot warning:
-> >>
-> >> >> drivers/i2c/busses/i2c-dln2.c:70:1-4: WARNING: end returns can be simplified if negative or 0 value
-> >>
-> >> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> >> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
-> >>
-> >> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> >> ---
-> >>  drivers/i2c/busses/i2c-dln2.c | 7 +------
-> >>  1 file changed, 1 insertion(+), 6 deletions(-)
-> >>
-> >> diff --git a/drivers/i2c/busses/i2c-dln2.c b/drivers/i2c/busses/i2c-dln2.c
-> >> index 010a5fa..b3fb86a 100644
-> >> --- a/drivers/i2c/busses/i2c-dln2.c
-> >> +++ b/drivers/i2c/busses/i2c-dln2.c
-> >> @@ -54,7 +54,6 @@ struct dln2_i2c {
-> >>
-> >>  static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
-> >>  {
-> >> -     int ret;
-> >>       u16 cmd;
-> >>       struct {
-> >>               u8 port;
-> >> @@ -67,11 +66,7 @@ static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
-> >>       else
-> >>               cmd = DLN2_I2C_DISABLE;
-> >>
-> >> -     ret = dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
-> >> -     if (ret < 0)
-> >> -             return ret;
-> >> -
-> >> -     return 0;
-> >> +     return dln2_transfer_tx(dln2->pdev, cmd, &tx, sizeof(tx));
-> >
-> > This looks like a bogus warning. It's not generally equivalent (ret > 0)
-> > and is not mandated by any style guide lines.
-> >
-> 
-> In this particular it should be equivalent (with the previous fix) and
-> it saves 5 lines, so I think its worth it.
+Move macro definition for vt_get_kmsg_redirect() up with file-scope
+function declarations.
 
-It's marked as a warning because it is not generally equivalent.  But 
-there may be many cases where it is equivalent, and in this case the 
-documentation for the function said that it should have been.  So I think 
-that the warning is useful.
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/vt/vt.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-julia
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index 3dc5d56..ad27ade 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -156,6 +156,8 @@ static void console_callback(struct work_struct *ignored);
+ static void blank_screen_t(unsigned long dummy);
+ static void set_palette(struct vc_data *vc);
+ 
++#define vt_get_kmsg_redirect() vt_kmsg_redirect(-1)
++
+ static int printable;		/* Is console ready for printing? */
+ int default_utf8 = true;
+ module_param(default_utf8, int, S_IRUGO | S_IWUSR);
+@@ -2509,8 +2511,6 @@ int vt_kmsg_redirect(int new)
+ 		return kmsg_con;
+ }
+ 
+-#define vt_get_kmsg_redirect() vt_kmsg_redirect(-1)
+-
+ /*
+  *	Console on virtual terminal
+  *
+-- 
+2.1.3
+
