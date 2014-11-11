@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaKKNKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:10:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799AbaKKNKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:10:52 -0500
-Date: Tue, 11 Nov 2014 11:10:30 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        brendan.d.gregg@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC] perf-cache command interface design
-Message-ID: <20141111131030.GG4468@redhat.com>
-References: <87lhnr5sbl.fsf@sejong.aot.lge.com>
- <54588905.7040002@linux.vnet.ibm.com>
- <5458CD15.4010101@hitachi.com>
- <874muew2hk.fsf@sejong.aot.lge.com>
- <5459E865.6050207@hitachi.com>
- <545B1DDE.9000202@linux.vnet.ibm.com>
- <545C80F4.4020905@hitachi.com>
- <54609A8C.4050308@hitachi.com>
- <20141110122321.GC4468@redhat.com>
- <5461B276.50004@hitachi.com>
+	id S1752070AbaKKNLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:11:23 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:52290 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaKKNLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 08:11:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5461B276.50004@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <5461FEA0.5070706@redhat.com>
+References: <1415199239-19019-1-git-send-email-prarit@redhat.com>
+	<1415199239-19019-6-git-send-email-prarit@redhat.com>
+	<CAKohpon3ybK1YhemeZ_kxFCLowsJSZSO3P7=CTZaWpAMwNh7Dg@mail.gmail.com>
+	<5461FEA0.5070706@redhat.com>
+Date: Tue, 11 Nov 2014 18:41:21 +0530
+Message-ID: <CAKohpongwC4anO6+kLWVMDefuLWUmpNvUdBoLgFw7ru1vRYLgw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] cpufreq, add BUG() messages in critical paths to aid
+ debugging failures
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Robert_Sch=C3=B6ne?= <robert.schoene@tu-dresden.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 11, 2014 at 03:53:42PM +0900, Masami Hiramatsu escreveu:
-> (2014/11/10 21:23), Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Nov 10, 2014 at 07:59:24PM +0900, Masami Hiramatsu escreveu:
-> >> Here is the second try for the probe-cache. This version simplifies
-> >> the synopsis, and unifies the SDT and probe caches.
-> >> Please give me your comments/ideas!
-> >>
-> >> Command-line Synopsis
-> >> =====================
+On 11 November 2014 17:48, Prarit Bhargava <prarit@redhat.com> wrote:
+> the problem is tht the userful information is the values of initialized,
+> enabled, and what the  event was :(
+>
+> in every case i ended up needing the values.
 
-> >> Add elf(or symbols) and probe-caches of SDT if exists in <FILES>
-> >>  perf cache --add <FILES> [--probe <SPEC>] # for user programs
+So, just add a pr_debug instead and let every thing crash as it does today.
 
-> > Why the --probe above? Shouldn't this be just (if you are talking about
-> > ELF files only):
+>>> @@ -258,7 +268,13 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>>> -       WARN_ON(!dbs_data && (event != CPUFREQ_GOV_POLICY_INIT));
+>>> +       if (!dbs_data && (event != CPUFREQ_GOV_POLICY_INIT)) {
+>>> +               pr_emerg("governor_data is NULL but governor %s is initialized = %d [governor_enabled = %d event = %u]\n",
+>>> +                        policy->governor->name,
+>>> +                        atomic_read(&policy->governor->initialized),
+>>> +                        policy->governor_enabled, event);
+>>> +               BUG();
+>>
+>> How is the BUG better than the WARN here ?
+>>
+>
+> we null pointer panic later on, and again the useful values are the ones displayed.
 
-> > perf cache --add <FILES>
- 
-> Yes, for the elf and sdt cache, we don't need --probe.
-> Note that "[]" means optional. If we would like to add some probe cache,
-> we need a spec of probe definition.
+For the values, I would add a pr_debug() for all cases. And maybe just
+do s/WARN_ON/BUG_ON
 
-I understand that, its just that it looked superfluous at that specific
-place, where you are explaining how to add ELF files.
+>>>         switch (event) {
+>>>         case CPUFREQ_GOV_POLICY_INIT:
+>>> @@ -329,6 +345,12 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>>>         case CPUFREQ_GOV_POLICY_EXIT:
+>>>                 mutex_lock(&dbs_data->usage_count_mutex);
+>>>                 if (atomic_dec_and_test(&dbs_data->usage_count)) {
+>>> +                       if (atomic_read(&policy->governor->initialized) > 1) {
+>>
+>> Isn't this wrong? Consider 4 CPUs with separate clock line and have set
+>> governor-per-policy to true. EXIT will be called for every CPU hotplug and
+>> initialized will be 4 initially..
+>>
+>> Or I am still vacation lag'd ? :)
+>
+> oh, is that right?  i'll look into that.
 
-> >>  perf cache --kcore <FILE> [--probe <SPEC>] # for kcore ?
-
-> > Adrian, aren't kcore files easily identifiable as such and thus could be
-> > added as:
-
-> >  perf cache --add <FILES>
-
-> >>  perf cache --probe <SPEC>  # for the current kernel
-
-> > Why do we need a --probe here? Don't they always start with a character
-> > that is seldomly used in ELF file names and thus we could get away with
-> > not requiring --probe?
-
-> This is only for adding the probe cache (not elf, nor sdt), which requires
-> a probe definition. Moreover, I'd like to unify the specification of the
-> probe definition with perf-probe. In that case, --probe is more natural.
-
-What I meant was, what is wrong with replacing:
-
- perf cache --probe <SPEC>  # for the current kernel
-
-With:
-
- perf cache --add <PROBE-SPEC> # for the current kernel
-
-And have it figure out that what is being added is a probe and do the
-right thing?
- 
-> >> Remove caches related to <FILES> or <BUILDIDS>
-> >>  perf cache --remove <FILES>|<BUILDIDS>
-> >>
-> >> Show all probe caches(including SDT) or buildids
-> >>  perf cache --list [probe|buildid]
-> >>
-> >> Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
-> >>  perf cache　--probe-del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-> > 
-> > Ditto, i.e. can't we just use:
-> > 
-> >  perf cache　--remove [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-> > 
-> > And it figure out that this is a probe that is being removed?
-> 
-> In most cases, it may be OK, but it is also possible to cause unexpected
-> result when mis-typing. I think if <FILE> is always starting at '/', it
-> is easy to identify.
-
-We can keep the explicit switch (--probe-del) perhaps to resolve
-ambiguities, if they happen, but make it so that it is not strictly
-required for the common case.
- 
-- Thanks,
-
-- Arnaldo
+What is right? sorry couldn't understand :(
