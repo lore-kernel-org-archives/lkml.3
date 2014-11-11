@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaKKTOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 14:14:34 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:37695 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaKKTOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:14:32 -0500
-Message-ID: <54626015.3030907@gmail.com>
-Date: Tue, 11 Nov 2014 11:14:29 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751814AbaKKTRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:17:51 -0500
+Received: from mail-bl2on0123.outbound.protection.outlook.com ([65.55.169.123]:21047
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751086AbaKKTRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 14:17:49 -0500
+X-WSS-ID: 0NEW2XJ-08-F9X-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <bhelgaas@google.com>
+CC: <liviu.dudau@arm.com>, <lorenzo.pieralisi@arm.com>, <will.deacon@arm.com>,
+        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH V2 0/2] PCI: generic: Assiging msi-controller to PCI hostbridge
+Date: Tue, 11 Nov 2014 13:17:32 -0600
+Message-ID: <1415733454-24322-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-To: Johan Hovold <johan@kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] net: phy: add module_phy_driver macro
-References: <1415731559-10015-1-git-send-email-johan@kernel.org>
-In-Reply-To: <1415731559-10015-1-git-send-email-johan@kernel.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(102836001)(106466001)(33646002)(84676001)(99396003)(120916001)(44976005)(50986999)(97736003)(31966008)(19580395003)(68736004)(19580405001)(53416004)(2351001)(229853001)(107046002)(46102003)(101416001)(110136001)(36756003)(86152002)(92726001)(92566001)(86362001)(93916002)(64706001)(20776003)(47776003)(77096003)(62966003)(77156002)(4396001)(50226001)(21056001)(48376002)(50466002)(105586002)(87936001)(87286001)(89996001)(104166001)(88136002)(95666004)(41533002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB205;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-Forefront-PRVS: 0392679D18
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 10:45 AM, Johan Hovold wrote:
-> Add module_phy_driver macro that can be used by PHY drivers that only
-> calls phy_driver_register or phy_drivers_register (and the corresponding
-> unregister functions) in their module init (and exit).
-> 
-> This allows us to eliminate a lot of boilerplate code.
-> 
-> Split in three patches (actual macro and two driver change classes) in
-> order to facilitate review.
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-Looks good to me:
+This patch set introduces a new callback function to allow PCI host drivers
+to specify MSI controller to be used for the child buses / devices.
 
-Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+This is reabased from:
+    git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/host-generic
 
-Thanks!
+Changes from V1:
+    - Adding "msi-parent" device tree binding in documentation.
+    - Rebase the patch to get rid of artifacts from other precursor patch
+      accidently applied to the developement tree. This should now apply cleanly
+      to the pci/host-generic branch.
 
-> 
-> Johan
-> 
-> 
-> Johan Hovold (3):
->   net: phy: add module_phy_driver macro
->   net: phy: replace phy_driver_register calls
->   net: phy: replace phy_drivers_register calls
-> 
->  drivers/net/phy/amd-xgbe-phy.c | 15 +--------------
->  drivers/net/phy/amd.c          | 17 +++--------------
->  drivers/net/phy/at803x.c       | 14 +-------------
->  drivers/net/phy/bcm63xx.c      | 15 +--------------
->  drivers/net/phy/bcm7xxx.c      | 15 +--------------
->  drivers/net/phy/bcm87xx.c      | 14 +-------------
->  drivers/net/phy/broadcom.c     | 15 +--------------
->  drivers/net/phy/cicada.c       | 15 +--------------
->  drivers/net/phy/davicom.c      | 15 +--------------
->  drivers/net/phy/et1011c.c      | 17 +++--------------
->  drivers/net/phy/icplus.c       | 15 +--------------
->  drivers/net/phy/lxt.c          | 15 +--------------
->  drivers/net/phy/marvell.c      | 15 +--------------
->  drivers/net/phy/micrel.c       | 15 +--------------
->  drivers/net/phy/national.c     | 17 +++--------------
->  drivers/net/phy/qsemi.c        | 17 +++--------------
->  drivers/net/phy/realtek.c      | 13 +------------
->  drivers/net/phy/smsc.c         | 14 +-------------
->  drivers/net/phy/ste10Xp.c      | 15 +--------------
->  drivers/net/phy/vitesse.c      | 14 +-------------
->  include/linux/phy.h            | 24 ++++++++++++++++++++++++
->  21 files changed, 52 insertions(+), 274 deletions(-)
-> 
+Suravee Suthikulpanit (2):
+  PCI: Add new pci_ops for setting MSI parent for PCI bus
+  PCI: generic: Add set_msi_parent callback
+
+ Documentation/devicetree/bindings/pci/host-generic-pci.txt |  3 +++
+ drivers/pci/host/pci-host-generic.c                        | 13 +++++++++++++
+ drivers/pci/probe.c                                        |  3 +++
+ include/linux/pci.h                                        |  1 +
+ 4 files changed, 20 insertions(+)
+
+-- 
+1.9.3
 
