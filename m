@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791AbaKKMGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:06:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57222 "EHLO
+	id S1753613AbaKKLJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:09:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57116 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468AbaKKLJ0 (ORCPT
+	with ESMTP id S1753468AbaKKLJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:26 -0500
+	Tue, 11 Nov 2014 06:09:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 028/170] ARC: Update order of registers in KGDB to match GDB 7.5
-Date: Tue, 11 Nov 2014 11:06:27 +0000
-Message-Id: <1415704129-12709-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 010/170] nfs: fix duplicate proc entries
+Date: Tue, 11 Nov 2014 11:06:09 +0000
+Message-Id: <1415704129-12709-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,75 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Kolesov <Anton.Kolesov@synopsys.com>
+From: Fabian Frederick <fabf@skynet.be>
 
-commit ebc0c74e76cec9c4dd860eb0ca1c0b39dc63c482 upstream.
+commit 2f3169fb18f4643ac9a6a097a6a6c71f0b2cef75 upstream.
 
-Order of registers has changed in GDB moving from 6.8 to 7.5. This patch
-updates KGDB to work properly with GDB 7.5, though makes it incompatible
-with 6.8.
+Commit 65b38851a174
+("NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes")
 
-Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+updated the following function:
+static int nfs_volume_list_open(struct inode *inode, struct file *file)
+
+it used &nfs_server_list_ops instead of &nfs_volume_list_ops
+which means cat /proc/fs/nfsfs/volumes = /proc/fs/nfsfs/servers
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Fixes: 65b38851a174 (NFS: Fix /proc/fs/nfsfs/servers and...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arc/include/asm/kgdb.h | 32 ++++++++++++++++++--------------
- 1 file changed, 18 insertions(+), 14 deletions(-)
+ fs/nfs/client.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arc/include/asm/kgdb.h b/arch/arc/include/asm/kgdb.h
-index b65fca7ffeb5..fea931634136 100644
---- a/arch/arc/include/asm/kgdb.h
-+++ b/arch/arc/include/asm/kgdb.h
-@@ -19,7 +19,7 @@
-  * register API yet */
- #undef DBG_MAX_REG_NUM
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index 180d1ec9c32e..180786a33d6f 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -1310,7 +1310,7 @@ static int nfs_server_list_show(struct seq_file *m, void *v)
+  */
+ static int nfs_volume_list_open(struct inode *inode, struct file *file)
+ {
+-	return seq_open_net(inode, file, &nfs_server_list_ops,
++	return seq_open_net(inode, file, &nfs_volume_list_ops,
+ 			   sizeof(struct seq_net_private));
+ }
  
--#define GDB_MAX_REGS		39
-+#define GDB_MAX_REGS		87
- 
- #define BREAK_INSTR_SIZE	2
- #define CACHE_FLUSH_IS_SAFE	1
-@@ -33,23 +33,27 @@ static inline void arch_kgdb_breakpoint(void)
- 
- extern void kgdb_trap(struct pt_regs *regs);
- 
--enum arc700_linux_regnums {
-+/* This is the numbering of registers according to the GDB. See GDB's
-+ * arc-tdep.h for details.
-+ *
-+ * Registers are ordered for GDB 7.5. It is incompatible with GDB 6.8. */
-+enum arc_linux_regnums {
- 	_R0		= 0,
- 	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
- 	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
- 	_R25, _R26,
--	_BTA		= 27,
--	_LP_START	= 28,
--	_LP_END		= 29,
--	_LP_COUNT	= 30,
--	_STATUS32	= 31,
--	_BLINK		= 32,
--	_FP		= 33,
--	__SP		= 34,
--	_EFA		= 35,
--	_RET		= 36,
--	_ORIG_R8	= 37,
--	_STOP_PC	= 38
-+	_FP		= 27,
-+	__SP		= 28,
-+	_R30		= 30,
-+	_BLINK		= 31,
-+	_LP_COUNT	= 60,
-+	_STOP_PC	= 64,
-+	_RET		= 64,
-+	_LP_START	= 65,
-+	_LP_END		= 66,
-+	_STATUS32	= 67,
-+	_ECR		= 76,
-+	_BTA		= 82,
- };
- 
- #else
 -- 
 2.1.0
 
