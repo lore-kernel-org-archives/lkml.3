@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608AbaKKPcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:32:10 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:43350 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaKKPcI (ORCPT
+	id S1751307AbaKKPhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:37:00 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:45257 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaKKPg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:32:08 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>,
-        Frank Rowand <frowand.list@gmail.com>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org>
-	<CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com>
-	<5461150B.2010907@codeaurora.org>
-Date: Tue, 11 Nov 2014 07:31:58 -0800
-In-Reply-To: <5461150B.2010907@codeaurora.org> (Stephen Boyd's message of
-	"Mon, 10 Nov 2014 11:42:03 -0800")
-Message-ID: <7hsihpois1.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 11 Nov 2014 10:36:59 -0500
+Date: Tue, 11 Nov 2014 16:36:55 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qti.qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
+Message-ID: <20141111153653.GB3216@lerouge>
+References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org>
+ <alpine.DEB.2.11.1411012003390.5308@nanos>
+ <alpine.DEB.2.11.1411011646280.7732@gentwo.org>
+ <alpine.DEB.2.11.1411012313320.5308@nanos>
+ <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
+ <20141110224306.GC29741@lerouge>
+ <alpine.DEB.2.11.1411110857480.5148@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1411110857480.5148@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Boyd <sboyd@codeaurora.org> writes:
+On Tue, Nov 11, 2014 at 08:58:35AM -0600, Christoph Lameter wrote:
+> On Mon, 10 Nov 2014, Frederic Weisbecker wrote:
+> 
+> > Ok, I confess we moved part of that housekeeping to the syscall/exception/interrupt
+> > entry path. We did that for cputime accounting and RCU. And it's possible to
+> > even do that for timekeeping. But then the kernel entrypoint is going to be extremely
+> > costly. It's worth CPU 0 as a sacrificial lamb.
+> 
+> Well we can redirect to the scheduler setting the task flag and handle
+> costly stuff there if necessary?
 
-> On 11/10/2014 10:54 AM, Kevin Hilman wrote:
->> On Wed, Oct 22, 2014 at 5:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>> We rely on probe order of this driver to determine the line number for
->>> the uart port. This makes it impossible to know the line number
->>> when these devices are populated via DT. Use the DT alias
->>> mechanism to assign the line based on the aliases node.
->>>
->>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> FYI... this patch hit linux-next and caused multiple boot failures on
->> qcom platforms[1] as of next-20141110.  I'm assuming this is because
->> the corresponding DTS changes have not hit linux-next yet.
->>
->> Kevin
->>
->> [1] http://status.armcloud.us/boot/?qcom
->
-> Hmm the intention was to make it optional so that dts changes aren't
-> necessary unless you want deterministic numbering. I screwed that up
-> badly :/ Thanks for finding this.
->
-> Greg, can you also apply this patch or squash it into the bad one?
->
-> ----8<-----
->
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> Subject: [PATCH] tty: serial: msm_serial: Don't required DT aliases
->
-> If there isn't a DT alias then of_alias_get_id() will return
-> -ENODEV. This will cause the msm_serial driver to fail probe,
-> when we want to keep the previous behavior where we generated a
-> dynamic line number at probe time. Restore this behavior by
-> generating a dynamic id if the line number is still negative
-> after checking for an alias or (in the non-DT case) looking at the
-> .id field of the platform device.
->
-> Reported-by: Kevin Hilman <khilman@kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-
-Tested-by: Kevin Hilman <khilman@linaro.org>
-
-I confirm that this patch gets things booting again for the
-msm8974/xperia-z1 and the apq8064/ifc6410.
-
-Kevin
+"there" here is the syscall/exception/interrupt entry path. And like I said, updating
+timekeeping from these places is overkill (although we do it in interrupt entry on
+dynticks-idle, but we don't have timekeeping when all system is idle).
