@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065AbaKKIQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:16:28 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64359 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031AbaKKIQY (ORCPT
+	id S1753099AbaKKIQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:16:31 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54831 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbaKKIQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:16:24 -0500
+	Tue, 11 Nov 2014 03:16:28 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v3 14/21] backports: update dependencies map file
-Date: Tue, 11 Nov 2014 00:15:05 -0800
-Message-Id: <1415693712-23743-15-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v3 15/21] backports: split Kconfig into Kconfig.package and Kconfig.sources
+Date: Tue, 11 Nov 2014 00:15:06 -0800
+Message-Id: <1415693712-23743-16-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,69 +23,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-During development of kernel integration support using CONFIG_BACKPORT
-was evaluated as a prefix over CPTCFG even for packaging backports,
-for some reason this change lifted some restrictions one some device
-drivers which was present before and as such requires some changes to
-the dependencies map file to ensure correct compilation for respective
-kernel versions.
+This splits up the Kconfig from things which are needed due to
+our copy of code from the kernel and things which we need
+specifically only for packaging backports. We will later then
+share the Kconfig.souce for instance for kernel integration.
+
+While at it, split up the list of files that we need to copy
+into what we know could be shared for integration. The the
+case of backport packaging Kconfig.package will be copied to
+the package's Kconfig when building the package with gentree.py.
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- dependencies | 31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ backport/Kconfig         | 44 --------------------------------------------
+ backport/Kconfig.package | 24 ++++++++++++++++++++++++
+ backport/Kconfig.sources | 23 +++++++++++++++++++++++
+ gentree.py               | 27 ++++++++++++++++++++++-----
+ 4 files changed, 69 insertions(+), 49 deletions(-)
+ delete mode 100644 backport/Kconfig
+ create mode 100644 backport/Kconfig.package
+ create mode 100644 backport/Kconfig.sources
 
-diff --git a/dependencies b/dependencies
-index 4964aa6..64903dc 100644
---- a/dependencies
-+++ b/dependencies
-@@ -16,6 +16,8 @@ USB_GSPCA_OV534 3.5
- # we only support on >= 3.4 give that reguatory itself depends
- # on -EPROBE_DEFER.
- SOC_CAMERA 3.4
-+VIDEO_S5K5BAF 3.4
-+VIDEO_S5K4ECGX 3.4
- # 49920bc6 and 1003cab8 and while it seems there is a
- # one to one map DMA_FROM_DEVICE to DMA_DEV_TO_MEM
- # I can't verify this fully yet.
-@@ -29,16 +31,29 @@ DVB_USB_RTL28XXU 3.4
- # missing linux/gpio/consumer.h
- VIDEO_ADV7604 3.13
- # missing function clk_prepare_enable(), clk_disable_unprepare() and devm_regulator_bulk_get()
--VIDEO_MT9P031 3.3
--VIDEO_MT9T001 3.3
- VIDEO_MT9V032 3.3
--VIDEO_NOON010PC30 3.3
--VIDEO_S5K6A3 3.3
- VIDEO_S5K6AA 3.3
--VIDEO_S5K5BAF 3.3
--VIDEO_S5K4ECGX 3.3
--VIDEO_M5MOLS 3.3
--VIDEO_S5C73M3 3.3
+diff --git a/backport/Kconfig b/backport/Kconfig
+deleted file mode 100644
+index b729d47..0000000
+--- a/backport/Kconfig
++++ /dev/null
+@@ -1,44 +0,0 @@
+-mainmenu "Linux Backports from $BACKPORTED_KERNEL_NAME $BACKPORTED_KERNEL_VERSION (with backports $BACKPORTS_VERSION)"
+-
+-config BACKPORT_DIR
+-	string
+-	option env="BACKPORT_DIR"
+-config BACKPORTS_VERSION
+-	string
+-	option env="BACKPORTS_VERSION"
+-config BACKPORTED_KERNEL_VERSION
+-	string
+-	option env="BACKPORTED_KERNEL_VERSION"
+-config BACKPORTED_KERNEL_NAME
+-	string
+-	option env="BACKPORTED_KERNEL_NAME"
+-
+-source "$BACKPORT_DIR/Kconfig.kernel"
+-source "$BACKPORT_DIR/Kconfig.versions"
+-
+-# Packaging hacks
+-source "$BACKPORT_DIR/Kconfig.package.hacks"
+-
+-# this has the configuration for the backport code
+-source "$BACKPORT_DIR/compat/Kconfig"
+-
+-# these are copied from the kernel
+-source "$BACKPORT_DIR/net/wireless/Kconfig"
+-source "$BACKPORT_DIR/net/mac80211/Kconfig"
+-source "$BACKPORT_DIR/net/bluetooth/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
+-
+-source "$BACKPORT_DIR/drivers/ssb/Kconfig"
+-source "$BACKPORT_DIR/drivers/bcma/Kconfig"
+-
+-source "$BACKPORT_DIR/net/nfc/Kconfig"
+-
+-source "$BACKPORT_DIR/drivers/media/Kconfig"
+-
+-source "$BACKPORT_DIR/net/ieee802154/Kconfig"
+-source "$BACKPORT_DIR/net/mac802154/Kconfig"
+-source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
+-
+-source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
+diff --git a/backport/Kconfig.package b/backport/Kconfig.package
+new file mode 100644
+index 0000000..9684574
+--- /dev/null
++++ b/backport/Kconfig.package
+@@ -0,0 +1,24 @@
++mainmenu "Backports from $BACKPORTED_KERNEL_NAME $BACKPORTED_KERNEL_VERSION (backports $BACKPORTS_VERSION)"
 +
-+# missing devm_regulator_bulk_get
-+VIDEO_MT9T001 3.5
-+VIDEO_NOON010PC30 3.5
-+VIDEO_MT9P031 3.5
++config BACKPORT_DIR
++	string
++	option env="BACKPORT_DIR"
++config BACKPORTS_VERSION
++	string
++	option env="BACKPORTS_VERSION"
++config BACKPORTED_KERNEL_VERSION
++	string
++	option env="BACKPORTED_KERNEL_VERSION"
++config BACKPORTED_KERNEL_NAME
++	string
++	option env="BACKPORTED_KERNEL_NAME"
 +
-+# missing of_property_read_bool() added via fa4d34cc on v3.4-rc1~71, backport
-+# that attomically and you can enable this for older kernels.
-+VIDEO_ADV7343 3.4
++# Packaging hacks
++source "$BACKPORT_DIR/Kconfig.package.hacks"
 +
-+# for whoever wants to backport this: GPIOF_EXPORT was redefined via commit
-+# 79a9becd on v3.13-rc1~120^2~15, before this it was redefined via commit
-+# f567fde2 on v3.5-rc7~32^2~4 and finally added via commit fc3a1f04 on
-+# v3.5-rc1~93^2~25. We don't address any of these changes yet so we require
-+# the latest interpretation.
-+VIDEO_S5K6AA 3.13
-+VIDEO_S5K6A3 3.13
++# Code we backport
++source "$BACKPORT_DIR/Kconfig.sources"
 +
-+# missing linux/sizes.h
-+VIDEO_M5MOLS 3.6
-+VIDEO_S5C73M3 3.6
++# these will be generated
++source "$BACKPORT_DIR/Kconfig.kernel"
++source "$BACKPORT_DIR/Kconfig.versions"
+diff --git a/backport/Kconfig.sources b/backport/Kconfig.sources
+new file mode 100644
+index 0000000..cdf993c
+--- /dev/null
++++ b/backport/Kconfig.sources
+@@ -0,0 +1,23 @@
++# this has the configuration for the backport code
++source "$BACKPORT_DIR/compat/Kconfig"
++
++# these are copied from the kernel
++source "$BACKPORT_DIR/net/wireless/Kconfig"
++source "$BACKPORT_DIR/net/mac80211/Kconfig"
++source "$BACKPORT_DIR/net/bluetooth/Kconfig"
++source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
++source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
++source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
++
++source "$BACKPORT_DIR/drivers/ssb/Kconfig"
++source "$BACKPORT_DIR/drivers/bcma/Kconfig"
++
++source "$BACKPORT_DIR/net/nfc/Kconfig"
++
++source "$BACKPORT_DIR/drivers/media/Kconfig"
++
++source "$BACKPORT_DIR/net/ieee802154/Kconfig"
++source "$BACKPORT_DIR/net/mac802154/Kconfig"
++source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
++
++source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
+diff --git a/gentree.py b/gentree.py
+index 7632b90..71e52e4 100755
+--- a/gentree.py
++++ b/gentree.py
+@@ -798,12 +798,28 @@ def process(kerneldir, copy_list_file, git_revision=None,
+     check_output_dir(bpid.target_dir, args.clean)
  
- # missing function devm_regmap_init_i2c()
- VIDEO_LM3646 3.3
+     # do the copy
++    backport_package_files = [(x, x) for x in [
++        'Makefile',
++        'kconf/',
++        'Makefile.real',
++        'Makefile.kernel',
++        'Kconfig.package.hacks',
++        'scripts/',
++        '.blacklist.map',
++        '.gitignore',
++        'Makefile.build'] ]
++    backport_package_files += [
++            ('Kconfig.package', 'Kconfig'),
++            ]
+     backport_files = [(x, x) for x in [
+-        'Kconfig', 'Kconfig.package.hacks',
+-        'Makefile', 'Makefile.build', 'Makefile.kernel', '.gitignore',
+-        'Makefile.real', 'compat/', 'backport-include/', 'kconf/',
+-        'scripts/', '.blacklist.map',
++        'Kconfig.sources',
++        'compat/',
++        'backport-include/',
+     ]]
++
++    if not bpid.integrate:
++        backport_files += backport_package_files
++
+     if not args.git_revision:
+         logwrite('Copy original source files ...')
+     else:
+@@ -827,6 +843,7 @@ def process(kerneldir, copy_list_file, git_revision=None,
+     git_debug_snapshot(args, 'Add driver sources')
+ 
+     disable_list = add_automatic_backports(args)
++
+     if disable_list:
+         # No need to verify_sources() as compat's Kconfig has no 'source' call
+         bpcfg = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'compat', 'Kconfig'), bpid)
+@@ -877,7 +894,7 @@ def process(kerneldir, copy_list_file, git_revision=None,
+ 
+     # write local symbol list -- needed during packaging build
+     if not bpid.integrate:
+-        f = open(os.path.join(bpid.project_dir, '.local-symbols'), 'w')
++        f = open(os.path.join(bpid.target_dir, '.local-symbols'), 'w')
+         for sym in symbols:
+             f.write('%s=\n' % sym)
+         f.close()
 -- 
 2.1.1
 
