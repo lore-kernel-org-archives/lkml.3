@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445AbaKKUai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:30:38 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:48097 "EHLO
+	id S1752421AbaKKUag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:30:36 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:48084 "EHLO
 	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaKKU22 (ORCPT
+	with ESMTP id S1751949AbaKKU22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 15:28:28 -0500
-X-Quarantine-ID: <kqKDghyxRXWq>
+X-Quarantine-ID: <YHBc+Ow-08UT>
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
 X-Spam-Flag: NO
 X-Spam-Score: -4.399
@@ -19,9 +19,9 @@ To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v2 16/19] selftests/sysctl: add install target to enable installing test
-Date: Tue, 11 Nov 2014 13:27:56 -0700
-Message-Id: <d9d5e5733e0720efbf77552fa2caf1880a3e3cf5.1415735831.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v2 15/19] selftests/ptrace: add install target to enable installing test
+Date: Tue, 11 Nov 2014 13:27:55 -0700
+Message-Id: <5e075603a9e0ec1fe21ce07a9a94dbf15d46c557.1415735831.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1415735831.git.shuahkh@osg.samsung.com>
 References: <cover.1415735831.git.shuahkh@osg.samsung.com>
@@ -38,47 +38,40 @@ only from top level source dir.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/sysctl/Makefile | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ tools/testing/selftests/ptrace/Makefile | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/tools/testing/selftests/sysctl/Makefile b/tools/testing/selftests/sysctl/Makefile
-index 0a92ada..34cca1b 100644
---- a/tools/testing/selftests/sysctl/Makefile
-+++ b/tools/testing/selftests/sysctl/Makefile
-@@ -4,12 +4,31 @@
- # No binaries, but make sure arg-less "make" doesn't trigger "run_tests".
- all:
+diff --git a/tools/testing/selftests/ptrace/Makefile b/tools/testing/selftests/ptrace/Makefile
+index 47ae2d3..9ef3c4b 100644
+--- a/tools/testing/selftests/ptrace/Makefile
++++ b/tools/testing/selftests/ptrace/Makefile
+@@ -1,10 +1,23 @@
+ CFLAGS += -iquote../../../../include/uapi -Wall
+-peeksiginfo: peeksiginfo.c
  
-+INSTALL_PROGS = common_tests run_numerictests run_stringtests
-+NUMERIC_TEST_STR = /bin/sh ./run_numerictests
-+STRING_TEST_STR = /bin/sh ./run_stringtests
+-all: peeksiginfo
++TEST_STR = ./peeksiginfo || echo peeksiginfo selftests: [FAIL]
 +
- # Allow specific tests to be selected.
- test_num:
--	@/bin/sh ./run_numerictests
-+	@$(NUMERIC_TEST_STR)
- 
- test_string:
--	@/bin/sh ./run_stringtests
-+	@$(STRING_TEST_STR)
++all:
++	gcc peeksiginfo.c -o peeksiginfo
 +
-+install: all
++install:
 +ifdef INSTALL_KSFT_PATH
-+	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
-+	@echo echo Start sysctl numeric tests .... >> $(KSELFTEST)
-+	@echo "$(NUMERIC_TEST_STR)" >> $(KSELFTEST)
-+	@echo echo End sysctl numeric tests .... >> $(KSELFTEST)
-+	@echo echo -------------------- >> $(KSELFTEST)
-+	@echo echo Start sysctl string tests .... >> $(KSELFTEST)
-+	@echo "$(STRING_TEST_STR)" >> $(KSELFTEST)
-+	@echo echo End sysctl string test .... >> $(KSELFTEST)
++	install ./peeksiginfo $(INSTALL_KSFT_PATH)
++	@echo echo Start ptrace test .... >> $(KSELFTEST)
++	@echo "$(TEST_STR)" >> $(KSELFTEST)
++	@echo echo End ptrace test .... >> $(KSELFTEST)
 +	@echo echo ============================== >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
  
- run_tests: all test_num test_string
+ clean:
+ 	rm -f peeksiginfo
  
+ run_tests: all
+-	@./peeksiginfo || echo "peeksiginfo selftests: [FAIL]"
++	@$(TEST_STR)
 -- 
 1.9.1
 
