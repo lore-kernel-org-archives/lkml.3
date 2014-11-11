@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaKKOU4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:20:56 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:64861 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaKKOUx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:20:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141111114825.GA4135@red-moon>
-References: <1414168089-8130-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1414168089-8130-2-git-send-email-lorenzo.pieralisi@arm.com>
- <20141110230454.GA21470@google.com> <20141111114825.GA4135@red-moon>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Nov 2014 07:20:31 -0700
-Message-ID: <CAErSpo4nWpN0xDb3h7FCpExM-Q5fmr5oyuOLf6Y_w55HEQZP4w@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Content-Type: text/plain; charset=UTF-8
+	id S1752708AbaKKOUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:20:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64540 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752665AbaKKOUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:20:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
+   d="scan'208";a="630152232"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 18/25] perf tools: Add member to struct dso for an instruction cache
+Date: Tue, 11 Nov 2014 16:16:56 +0200
+Message-Id: <1415715423-15563-19-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415715423-15563-1-git-send-email-adrian.hunter@intel.com>
+References: <1415715423-15563-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 4:48 AM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
-> On Mon, Nov 10, 2014 at 11:04:54PM +0000, Bjorn Helgaas wrote:
->> ...
->> Here's what I think I understand so far:
->>
->>   Applications can mmap PCI memory space via either sysfs or procfs (the
->>   procfs method is deprecated but still supported):
->>
->>     - In sysfs, there's a separate /sys/devices/pci*/.../resource* file
->>       for each device BAR, and the application opens the appropriate
->>       file and supplies the offset from the beginning of the BAR as the
->>       mmap(2) offset.
->>
->>     - In procfs, the application opens the single /proc/bus/pci/... file
->>       for the device.  On most platforms, it supplies the CPU physical
->>       address as the mmap(2) offset.  On a few platforms, such as SPARC,
->>       it supplies the bus address, i.e., a BAR value, instead.
->>
->> But I'm not sure I have this right.  If the procfs offset is either the
->> CPU physical address or the BAR value, then pci_resource_to_user()
->> should be (depending on the arch) either a no-op or use
->> pci_resource_to_bus().
->
-> Exactly (pcibios_resource_to_bus() ?).
->
->> But that's not how it's implemented.  Maybe it *could* be?  If
->> pci_resource_to_user() gives you something that's not a CPU physical
->> address and not a bus address, what *does* it give you, and why would we
->> need this third kind of thing?
->
-> Well, you need a per arch function implementation where to define if
-> the conversion from CPU physical address to PCI bus should take place
-> or not right ? As you mentioned above, if that should be a per-arch
-> decision, there has to be a per-arch function to filter the resource
-> in question, I guess that's my understanding behind pci_resource_to_user(),
-> but I am not sure either, and understanding that was the primary reason
-> for this patchset so comments are welcome.
+Add a member to struct dso that can be used by Instruction
+Trace implementations to hold a cache for decoded instructions.
 
-I agree that we need pci_resource_to_user() because arches do
-different things, so we can't just remove pci_resource_to_user() and
-replace it with pci_resource_to_bus().  My point is that we have a
-generic pci_resource_to_user() implementation that does nothing, and
-if an arch *does* implement its own pci_resource_to_user(), it seems
-like it should simply call pci_resource_to_user().
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/dso.c | 2 ++
+ tools/perf/util/dso.h | 3 +++
+ 2 files changed, 5 insertions(+)
 
-Bjorn
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 45be944..73e28ca 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -4,6 +4,7 @@
+ #include "symbol.h"
+ #include "dso.h"
+ #include "machine.h"
++#include "itrace.h"
+ #include "util.h"
+ #include "debug.h"
+ 
+@@ -914,6 +915,7 @@ void dso__delete(struct dso *dso)
+ 	}
+ 
+ 	dso__data_close(dso);
++	itrace_cache__free(dso->itrace_cache);
+ 	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 3782c82..c27c8fc 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -101,6 +101,8 @@ struct dsos {
+ 	struct rb_root	 root;	/* rbtree root sorted by long name */
+ };
+ 
++struct itrace_cache;
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
+@@ -130,6 +132,7 @@ struct dso {
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
+ 	void		*dwfl;			/* DWARF debug info */
++	struct itrace_cache *itrace_cache;
+ 
+ 	/* dso data file */
+ 	struct {
+-- 
+1.9.1
+
