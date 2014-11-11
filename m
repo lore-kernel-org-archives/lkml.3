@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaKKQaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:30:15 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58722 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaKKQaO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:30:14 -0500
-Date: Tue, 11 Nov 2014 11:30:07 -0500 (EST)
-Message-Id: <20141111.113007.194586174190893576.davem@davemloft.net>
-To: pebolle@tiscali.nl
-Cc: valentinrothberg@gmail.com, jcmvbkbc@gmail.com, dg@emlix.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: s6gmac: remove driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1415694742.16021.11.camel@x220>
-References: <CAMo8BfJ-wvDoDmm+HLHvC3VRUshdqU4eJchOGYt_YJsUktap8Q@mail.gmail.com>
-	<20141019.132801.424495087167944921.davem@davemloft.net>
-	<1415694742.16021.11.camel@x220>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 08:30:12 -0800 (PST)
+	id S1751976AbaKKQbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:31:06 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48627 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751887AbaKKQbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 11:31:04 -0500
+Date: Tue, 11 Nov 2014 17:30:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
+ memory errors
+Message-ID: <20141111163059.GH31490@pd.tnic>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+ <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
+ <20141111114248.GD31490@pd.tnic>
+ <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
+ <20141111161309.GG31490@pd.tnic>
+ <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Bolle <pebolle@tiscali.nl>
-Date: Tue, 11 Nov 2014 09:32:22 +0100
-
-> On Sun, 2014-10-19 at 13:28 -0400, David Miller wrote:
->> From: Max Filippov <jcmvbkbc@gmail.com>
->> Date: Sun, 19 Oct 2014 21:26:05 +0400
->> 
->> > On Sun, Oct 19, 2014 at 8:45 PM, David Miller <davem@davemloft.net> wrote:
->> >> From: Daniel Glöckner <dg@emlix.com>
->> >> Date: Sun, 19 Oct 2014 00:49:05 +0200
->> >>
->> >>> The s6000 Xtensa support is removed from the kernel. There are no
->> >>> other chips using this driver.
->> >>
->> >> That's not what I see in Linus's current tree:
->> > 
->> > David, s6000 removal is queued for 3.18.
->> 
->> Then there is zero reason for me to apply this to my networking
->> tree.
+On Tue, Nov 11, 2014 at 08:22:45AM -0800, Andy Lutomirski wrote:
+> I think it's okay-ish, but only if it's necessary, and I still don't
+> see why it's necessary.
 > 
-> Commit 4006e565e150 ("xtensa: remove s6000 variant and s6105 platform")
-> is included in linux-next as of next-20141111. So now we see:
->     $ git grep XTENSA_VARIANT_S6000 next-20141111
->     next-20141111:drivers/net/ethernet/Kconfig:     depends on XTENSA_VARIANT_S6000
-> 
-> Should Daniel resubmit, for net-next, perhaps with a commit explanation
-> that references this commit?
+> Can't you just remove TIF_MCE_NOTIFY entirely and just do all the
+> mce_notify_process work directly in do_machine_check?  IOW, why do you
+> need to store any state per-task when it's already on the stack
+> anyway.
 
-When the s6000 removal shows up in Linus's tree, submit it.
+I wish but memory_failure() can't run in #MC context as it noodles
+quite a lot and grabs all kinds of locks and does a bunch of other
+atomit-context-unsafe things.
+
+And it needs to run *before* the process is killed as it looks at its
+pages.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
