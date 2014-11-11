@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaKKL0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:26:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57741 "EHLO
+	id S1751746AbaKKLZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:25:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57742 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaKKLLE (ORCPT
+	with ESMTP id S1754291AbaKKLLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:11:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Jack Pham <jackp@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 129/170] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
-Date: Tue, 11 Nov 2014 11:08:08 +0000
-Message-Id: <1415704129-12709-130-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 128/170] usb: dwc3: gadget: Properly initialize LINK TRB
+Date: Tue, 11 Nov 2014 11:08:07 +0000
+Message-Id: <1415704129-12709-129-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jack Pham <jackp@codeaurora.org>
 
-commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
+commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
 
-These models need i8042.notimeout, otherwise the touchpad will not work.
+On ISOC endpoints the last trb_pool entry used as a
+LINK TRB is not getting zeroed out correctly due to
+memset being called incorrectly and in the wrong place.
+If pool allocated from DMA was not zero-initialized
+to begin with this will result in the size and ctrl
+values being random garbage. Call memset correctly after
+assignment of the trb_link pointer.
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
+Signed-off-by: Jack Pham <jackp@codeaurora.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/usb/dwc3/gadget.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 713e3ddb43bd..11137969f1d5 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -616,6 +616,22 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
- 		},
- 	},
- 	{
-+		/* Fujitsu A544 laptop */
-+		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
-+		},
-+	},
-+	{
-+		/* Fujitsu AH544 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
-+		},
-+	},
-+	{
- 		/* Fujitsu U574 laptop */
- 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
- 		.matches = {
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 0a046870bdfb..9a565f0e3532 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -615,12 +615,11 @@ static int __dwc3_gadget_ep_enable(struct dwc3_ep *dep,
+ 		if (!usb_endpoint_xfer_isoc(desc))
+ 			return 0;
+ 
+-		memset(&trb_link, 0, sizeof(trb_link));
+-
+ 		/* Link TRB for ISOC. The HWO bit is never reset */
+ 		trb_st_hw = &dep->trb_pool[0];
+ 
+ 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
++		memset(trb_link, 0, sizeof(*trb_link));
+ 
+ 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+ 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
 -- 
 2.1.0
 
