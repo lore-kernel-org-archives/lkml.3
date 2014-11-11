@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaKKUIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:08:09 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:37445 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaKKUII (ORCPT
+	id S1751651AbaKKUJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:09:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:39959 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaKKUJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:08:08 -0500
-Message-ID: <54626CA4.4070508@amacapital.net>
-Date: Tue, 11 Nov 2014 12:08:04 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 8/8] x86: Use rd/wr fs/gs base in arch_prctl
-References: <1415663739-25525-1-git-send-email-andi@firstfloor.org> <1415663739-25525-8-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1415663739-25525-8-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Nov 2014 15:09:57 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2] PCI: Apply _HPX link control for all supported pcie device
+Date: Tue, 11 Nov 2014 12:09:46 -0800
+Message-Id: <1415736586-16044-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 03:55 PM, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Convert arch_prctl to use the new instructions to
-> change fs/gs if available, instead of using MSRs.
-> 
-> This is merely a small performance optimization,
-> no new functionality.
-> 
-> With the new instructions the syscall is really obsolete,
-> as everything can be set directly in ring 3. But the syscall
-> is widely used by existing software, so we still support it.
-> 
-> The syscall still enforces that the addresses are not
-> in kernel space, even though that is not needed more.
-> This is mainly so that the programs written for new CPUs
-> do not suddenly fail on old CPUs.
-> 
-> With the new instructions available it prefers to use
-> them in the context switch, instead of using the old
-> "use GDT segment rewrite" trick.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/process_64.c | 45 ++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 37 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-> index df554e2..010fe15 100644
-> --- a/arch/x86/kernel/process_64.c
-> +++ b/arch/x86/kernel/process_64.c
-> @@ -483,15 +483,23 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
->  	int ret = 0;
->  	int doit = task == current;
->  	int cpu;
-> +	int fast_seg = boot_cpu_has(X86_FEATURE_FSGSBASE);
->  
->  	switch (code) {
->  	case ARCH_SET_GS:
-> +		/*
-> +		 * With fast_seg we don't need that check anymore,
-> +		 * but keep it so that programs do not suddenly
-> +		 * start failing when run on older CPUs.
-> +		 * If you really want to set a address in kernel space
-> +		 * use WRGSBASE directly.
-> +		 */
->  		if (addr >= TASK_SIZE_OF(task))
->  			return -EPERM;
->  		cpu = get_cpu();
->  		/* handle small bases via the GDT because that's faster to
->  		   switch. */
-> -		if (addr <= 0xffffffff) {
-> +		if (addr <= 0xffffffff && !fast_seg) {
->  			set_32bit_tls(task, GS_TLS, addr);
->  			if (doit) {
->  				load_TLS(&task->thread, cpu);
-> @@ -503,8 +511,17 @@ long do_arch_prctl(struct task_struct *task, int code, unsigned long addr)
->  			task->thread.gsindex = 0;
->  			task->thread.gs = addr;
->  			if (doit) {
-> -				load_gs_index(0);
-> -				ret = wrmsrl_safe(MSR_KERNEL_GS_BASE, addr);
-> +				if (fast_seg) {
-> +					local_irq_disable();
-> +					swapgs();
-> +					loadsegment(gs, 0);
-> +					wrgsbase(addr);
-> +					swapgs();
-> +					local_irq_enable();
+With commit 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
+and following commits, we apply _HPX for pci devices.
 
-Does this (and the other copies of this) need kprobe protection?
+that is called via pci_scan_slot
+			==>pci_scan_single_device
+				==>pci_device_add
+					==>pci_configure_device
+						==>program_hpp_type2
+and dev->subordinate is not allocated yet.
 
---Andy
+So that link control setup get skipped.
+
+Acoording to ACPI spec, there is no requirement that need to be set to pcie
+root port or downstream port.
+
+We could just change to pcie_cap_has_lnkctl to cover all pcie devices with
+link control cap.
+
+-v2: Do not move pcie_cap_has_lnkctl() out of pci/access.c according to Bjorn.
+
+Fixes: 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/access.c |    2 +-
+ drivers/pci/pci.h    |    2 ++
+ drivers/pci/probe.c  |    2 +-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -1323,7 +1323,7 @@ static void program_hpp_type2(struct pci
+ 			~hpp->pci_exp_devctl_and, hpp->pci_exp_devctl_or);
+ 
+ 	/* Initialize Link Control Register */
+-	if (dev->subordinate)
++	if (pcie_cap_has_lnkctl(dev))
+ 		pcie_capability_clear_and_set_word(dev, PCI_EXP_LNKCTL,
+ 			~hpp->pci_exp_lnkctl_and, hpp->pci_exp_lnkctl_or);
+ 
+Index: linux-2.6/drivers/pci/pci.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.h
++++ linux-2.6/drivers/pci/pci.h
+@@ -6,6 +6,8 @@
+ 
+ extern const unsigned char pcie_link_speed[];
+ 
++bool pcie_cap_has_lnkctl(const struct pci_dev *dev);
++
+ /* Functions internal to the PCI core code */
+ 
+ int pci_create_sysfs_dev_files(struct pci_dev *pdev);
+Index: linux-2.6/drivers/pci/access.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/access.c
++++ linux-2.6/drivers/pci/access.c
+@@ -444,7 +444,7 @@ static inline int pcie_cap_version(const
+ 	return pcie_caps_reg(dev) & PCI_EXP_FLAGS_VERS;
+ }
+ 
+-static inline bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
++bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
+ {
+ 	int type = pci_pcie_type(dev);
+ 
