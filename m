@@ -1,154 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaKKJoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:44:21 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:59383 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaKKJoS (ORCPT
+	id S1752750AbaKKJqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:46:35 -0500
+Received: from relay.parallels.com ([195.214.232.42]:56128 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaKKJqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:44:18 -0500
-X-IronPort-AV: E=Sophos;i="5.07,359,1413270000"; 
-   d="scan'208";a="50577597"
-Message-ID: <5461DA68.9030607@broadcom.com>
-Date: Tue, 11 Nov 2014 10:44:08 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 11 Nov 2014 04:46:33 -0500
+Message-ID: <1415699189.15631.6.camel@tkhai>
+Subject: [PATCH] sched/numa: Init numa balancing fields of init_task
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Tue, 11 Nov 2014 12:46:29 +0300
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: "Gautam (Gautam Kumar) Shukla" <gautams@broadcom.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>
-CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "johannes@sipsolutions.net" <johannes@sipsolutions.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jithu Jance <jithu@broadcom.com>, Sreenath S <sreenats@broadcom.com>
-Subject: Re: [PATCH 1/1] linux-wireless: Added psk in struct cfg80211_connect_params
- needed for offloading 4way handshake to driver
-References: <DF163EE1A432BF4BBE6B2088220663A67437BD@SJEXCHMB06.corp.ad.broadcom.com>
-In-Reply-To: <DF163EE1A432BF4BBE6B2088220663A67437BD@SJEXCHMB06.corp.ad.broadcom.com>
-Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-14 06:56, Gautam (Gautam Kumar) Shukla wrote:
->
 
-Hi Gautam,
+We do not initialize init_task.numa_preferred_nid,
+but this value is inherited by userspace "init"
+process:
 
-Good to see more upstream contributions, but it might be useful to have
-a driver implementation as well in this series. Maybe we can take a shot
-with brcmfmac for obvious reasons. Would you happen to have
-wpa_supplicant changes as well?
+rest_init()->kernel_thread(kernel_init)->do_fork(CLONE_VM);
 
-I added some inline comments below.
+__sched_fork()
+{
+	if (clone_flags & CLONE_VM)
+		p->numa_preferred_nid = current->numa_preferred_nid;
+	else
+		p->numa_preferred_nid = -1;
+}
 
-Regards,
-Arend
+kernel_init() becomes userspace "init" process.
 
-> For offloading 4 way handshake to driver, currently we don't have any member  of struct cfg80211_connect_params to pass PSK from supplicant to driver. I have added psk for the same and added rest of the code needed in nl80211.h and nl80211.c to parse and make it available to driver.
-> From supplicant, we already have psk member field in assoc_params to use .
+So, we propagate garbage nid to userspace, and it may be used
+during numa balancing.
 
-In the commit message you should not describe what you did, but what
-problem you are trying to solve and/or what functional change the patch
-provides.
+Currently, we do not have reports about this brings a problem,
+but it seem we should set it for sure.
 
-> Tested on x86 linux.
-> 
-> Signed-off-by: Gautam kumar shukla <gautams@broadcom.com>
-> ---
-> include/net/cfg80211.h       | 2 ++
->  include/uapi/linux/nl80211.h | 8 +++++++-
->  net/wireless/nl80211.c       | 4 ++++
->  3 files changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h index a2ddcf2..6f744e0 100644
-> --- a/include/net/cfg80211.h
-> +++ b/include/net/cfg80211.h
-> @@ -1758,6 +1758,7 @@ struct cfg80211_ibss_params {
->   *    allowed to ignore this @bssid_hint if it has knowledge of a better BSS
->   *    to use.
->   * @ssid: SSID
-> + * @psk:preshared key for WPA2-PSK connection or %NULL if not specified
+Even if init_task.numa_preferred_nid is zero, we may meet a weird
+configuration without nid#0. On sparc64, where processors are
+numbered physically, I saw a machine without cpu#1, while cpu#2
+existed. Possible, something similar may be with numa nodes.
+So, let's initialize it and be sure we're safe.
 
-add space after the colon sign.
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ include/linux/init_task.h |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
->   * @ssid_len: Length of ssid in octets
->   * @auth_type: Authentication type (algorithm)
->   * @ie: IEs for association request
-> @@ -1783,6 +1784,7 @@ struct cfg80211_connect_params {
->      const u8 *bssid;
->      const u8 *bssid_hint;
->      const u8 *ssid;
-> +    const u8 *psk;
->      size_t ssid_len;
->      enum nl80211_auth_type auth_type;
->      const u8 *ie;
-> diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h index 4b28dc0..b01d5dd 100644
-> --- a/include/uapi/linux/nl80211.h
-> +++ b/include/uapi/linux/nl80211.h
-> @@ -421,7 +421,7 @@
->   *    %NL80211_ATTR_MAC, %NL80211_ATTR_WIPHY_FREQ, %NL80211_ATTR_CONTROL_PORT,
->   *    %NL80211_ATTR_CONTROL_PORT_ETHERTYPE,
->   *    %NL80211_ATTR_CONTROL_PORT_NO_ENCRYPT, %NL80211_ATTR_MAC_HINT, and
-> - *    %NL80211_ATTR_WIPHY_FREQ_HINT.
-> + *    %NL80211_ATTR_WIPHY_FREQ_HINT, and %NL80211_ATTR_PSK.
->   *    If included, %NL80211_ATTR_MAC and %NL80211_ATTR_WIPHY_FREQ are
->   *    restrictions on BSS selection, i.e., they effectively prevent roaming
->   *    within the ESS. %NL80211_ATTR_MAC_HINT and %NL80211_ATTR_WIPHY_FREQ_HINT @@ -1638,6 +1638,10 @@ enum nl80211_commands {
->   * @NL80211_ATTR_SMPS_MODE: SMPS mode to use (ap mode). see
->   *    &enum nl80211_smps_mode.
->   *
-> + *    @NL80211_ATTR_PSK: a PSK value (u8 attribute).This is 32-octet 
-> + (256-bit)
-> + *    PSK.
-> + *
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 77fc43f..5f30ac8 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -166,6 +166,15 @@ extern struct task_group root_task_group;
+ # define INIT_RT_MUTEXES(tsk)
+ #endif
+ 
++#ifdef CONFIG_NUMA_BALANCING
++# define INIT_NUMA_BALANCING(tsk)					\
++	.numa_preferred_nid = -1,					\
++	.numa_group = NULL,						\
++	.numa_faults = NULL,
++#else
++# define INIT_NUMA_BALANCING(tsk)
++#endif
++
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -237,6 +246,7 @@ extern struct task_group root_task_group;
+ 	INIT_CPUSET_SEQ(tsk)						\
+ 	INIT_RT_MUTEXES(tsk)						\
+ 	INIT_VTIME(tsk)							\
++	INIT_NUMA_BALANCING(tsk)					\
+ }
+ 
 
-Some indentation gone haywire here. I would remove '(u8 attribute)'. The
-mention of 32-octet seems sufficient to me.
 
->   * @NL80211_ATTR_MAX: highest attribute number currently defined
->   * @__NL80211_ATTR_AFTER_LAST: internal use
->   */
-> @@ -1990,6 +1994,8 @@ enum nl80211_attrs {
->  
->      NL80211_ATTR_SMPS_MODE,
->  
-> +    NL80211_ATTR_PSK,
-> +
->      /* add attributes here, update the policy in nl80211.c */
->  
->      __NL80211_ATTR_AFTER_LAST,
-> diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c index 5839c85..91c24b1 100644
-> --- a/net/wireless/nl80211.c
-> +++ b/net/wireless/nl80211.c
-> @@ -395,6 +395,7 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
->      [NL80211_ATTR_USER_PRIO] = { .type = NLA_U8 },
->      [NL80211_ATTR_ADMITTED_TIME] = { .type = NLA_U16 },
->      [NL80211_ATTR_SMPS_MODE] = { .type = NLA_U8 },
-> +    [NL80211_ATTR_PSK] = { .type = NLA_BINARY, .len = 32 },
->  };
->  
->  /* policy for the key attributes */
-> @@ -7310,6 +7311,9 @@ static int nl80211_connect(struct sk_buff *skb, struct genl_info *info)
->          connect.flags |= ASSOC_REQ_USE_RRM;
->      }
->  
-> +    if (info->attrs[NL80211_ATTR_PSK])
-> +        connect.psk = nla_data(info->attrs[NL80211_ATTR_PSK]);
-> +
->      wdev_lock(dev->ieee80211_ptr);
->      err = cfg80211_connect(rdev, dev, &connect, connkeys, NULL);
->      wdev_unlock(dev->ieee80211_ptr);
-> --
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+
 
