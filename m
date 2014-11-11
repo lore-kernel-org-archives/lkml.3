@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaKKMiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:38:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34573 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829AbaKKMiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:38:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
-   d="scan'208";a="605901644"
-Date: Tue, 11 Nov 2014 14:38:08 +0200
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] spi: add support for DLN-2 USB-SPI adapter
-Message-ID: <20141111123808.GM5826@lpalcu-linux>
-References: <1415364314-30320-1-git-send-email-laurentiu.palcu@intel.com>
- <1415364314-30320-2-git-send-email-laurentiu.palcu@intel.com>
- <20141108104606.GH2722@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141108104606.GH2722@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751499AbaKKMnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:43:15 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63686 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaKKMnO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 07:43:14 -0500
+From: Barry Song <21cnbao@gmail.com>
+To: daniel.lezcano@linaro.org, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        Yanchang Li <yl22@csr.com>, Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH] clocksource: sirf: remove hard-coded clock rate
+Date: Tue, 11 Nov 2014 20:42:52 +0800
+Message-Id: <1415709772-2747-1-git-send-email-21cnbao@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Yanchang Li <yl22@csr.com>
 
-On Sat, Nov 08, 2014 at 10:46:06AM +0000, Mark Brown wrote:
-> On Fri, Nov 07, 2014 at 02:45:13PM +0200, Laurentiu Palcu wrote:
-> 
-> > +static int dln2_spi_transfer_one_message(struct spi_master *master,
-> > +					 struct spi_message *msg)
-> 
-> It's a bit sad not to do transfer_one() but it's reasonable not to
-> because of the fun way /CS is being set.
-My first attempts were with transfer_one()/set_cs() until I realized,
-using an oscilloscope, that DLN2 automatically toggles the /CS during
-read/write operations and that DLN2_SPI_SET_SS only instructs device
-which CS pins to toggle... :/
+customers might adjust the whole PLL and dividers according to different
+user scenerios, and this causes the parent clock of sirf clocksource not
+be divided exactly by current hard-coded 1MHz clock rate.
+this patch removes the hard-coded rate and make clocksource drivers more
+adaptive to external changes.
 
-> 
-> > +	ret = dln2_spi_get_speed_range(dln2,
-> > +					   &master->min_speed_hz,
-> > +					   &master->max_speed_hz);
-> 
-> Strange indentation here.
-I did some last minute function renaming and forgot to re-indent. Will
-fix in v2.
-> 
-> > +static int dln2_spi_remove(struct platform_device *pdev)
-> > +{
-> > +	struct spi_master *master = spi_master_get(platform_get_drvdata(pdev));
-> > +	struct dln2_spi *dln2 = spi_master_get_devdata(master);
-> > +
-> > +	if (dln2_spi_enable(dln2, false) < 0)
-> > +		dev_err(&pdev->dev, "Failed to disable SPI module\n");
-> > +
-> > +	spi_master_put(master);
-> 
-> You shouldn't need this _put(), it's defeating the purpose of having the
-> devm_ registration.
-Agreed! I used spi-rockchip.c as a template and I took it for granted.
-I'll remove this line in v2. And, if you think it's worth it, I can send
-a separate patch for spi-rockchip.c too.
+Signed-off-by: Yanchang Li <yl22@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+---
+ drivers/clocksource/timer-marco.c | 23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
-thanks,
-laurentiu
-
-
+diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
+index caf7a20..361a789 100644
+--- a/drivers/clocksource/timer-marco.c
++++ b/drivers/clocksource/timer-marco.c
+@@ -20,8 +20,6 @@
+ #include <linux/of_address.h>
+ #include <linux/sched_clock.h>
+ 
+-#define MARCO_CLOCK_FREQ 1000000
+-
+ #define SIRFSOC_TIMER_32COUNTER_0_CTRL			0x0000
+ #define SIRFSOC_TIMER_32COUNTER_1_CTRL			0x0004
+ #define SIRFSOC_TIMER_MATCH_0				0x0018
+@@ -40,6 +38,8 @@
+ 
+ #define SIRFSOC_TIMER_REG_CNT 6
+ 
++static unsigned long marco_timer_rate;
++
+ static const u32 sirfsoc_timer_reg_list[SIRFSOC_TIMER_REG_CNT] = {
+ 	SIRFSOC_TIMER_WATCHDOG_EN,
+ 	SIRFSOC_TIMER_32COUNTER_0_CTRL,
+@@ -195,7 +195,7 @@ static int sirfsoc_local_timer_setup(struct clock_event_device *ce)
+ 	ce->rating = 200;
+ 	ce->set_mode = sirfsoc_timer_set_mode;
+ 	ce->set_next_event = sirfsoc_timer_set_next_event;
+-	clockevents_calc_mult_shift(ce, MARCO_CLOCK_FREQ, 60);
++	clockevents_calc_mult_shift(ce, marco_timer_rate, 60);
+ 	ce->max_delta_ns = clockevent_delta2ns(-2, ce);
+ 	ce->min_delta_ns = clockevent_delta2ns(2, ce);
+ 	ce->cpumask = cpumask_of(cpu);
+@@ -257,7 +257,6 @@ static void __init sirfsoc_clockevent_init(void)
+ /* initialize the kernel jiffy timer source */
+ static void __init sirfsoc_marco_timer_init(struct device_node *np)
+ {
+-	unsigned long rate;
+ 	u32 timer_div;
+ 	struct clk *clk;
+ 
+@@ -266,16 +265,12 @@ static void __init sirfsoc_marco_timer_init(struct device_node *np)
+ 
+ 	BUG_ON(clk_prepare_enable(clk));
+ 
+-	rate = clk_get_rate(clk);
+-
+-	BUG_ON(rate < MARCO_CLOCK_FREQ);
+-	BUG_ON(rate % MARCO_CLOCK_FREQ);
++	marco_timer_rate = clk_get_rate(clk);
+ 
+-	/* Initialize the timer dividers */
+-	timer_div = rate / MARCO_CLOCK_FREQ - 1;
+-	writel_relaxed(timer_div << 16, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
+-	writel_relaxed(timer_div << 16, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL);
+-	writel_relaxed(timer_div << 16, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_1_CTRL);
++	/* timer dividers: 0, not divided */
++	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
++	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL);
++	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_1_CTRL);
+ 
+ 	/* Initialize timer counters to 0 */
+ 	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_LO);
+@@ -288,7 +283,7 @@ static void __init sirfsoc_marco_timer_init(struct device_node *np)
+ 	/* Clear all interrupts */
+ 	writel_relaxed(0xFFFF, sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
+ 
+-	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, MARCO_CLOCK_FREQ));
++	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, marco_timer_rate));
+ 
+ 	sirfsoc_clockevent_init();
+ }
+-- 
+2.1.1
 
