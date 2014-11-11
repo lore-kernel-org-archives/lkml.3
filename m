@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168AbaKKMCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:02:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57265 "EHLO
+	id S1753798AbaKKMCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:02:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57259 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669AbaKKLJe (ORCPT
+	with ESMTP id S1753664AbaKKLJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:09:34 -0500
+	Tue, 11 Nov 2014 06:09:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 036/170] OOM, PM: OOM killed task shouldn't escape PM suspend
-Date: Tue, 11 Nov 2014 11:06:35 +0000
-Message-Id: <1415704129-12709-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 034/170] MIPS: cp1emu: Fix ISA restrictions for cop1x_op instructions
+Date: Tue, 11 Nov 2014 11:06:33 +0000
+Message-Id: <1415704129-12709-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,179 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 5695be142e203167e3cb515ef86a88424f3524eb upstream.
+commit a5466d7bba9af83a82cc7c081b2a7d557cde3204 upstream.
 
-PM freezer relies on having all tasks frozen by the time devices are
-getting frozen so that no task will touch them while they are getting
-frozen. But OOM killer is allowed to kill an already frozen task in
-order to handle OOM situtation. In order to protect from late wake ups
-OOM killer is disabled after all tasks are frozen. This, however, still
-keeps a window open when a killed task didn't manage to die by the time
-freeze_processes finishes.
+Commit 08a07904e1828 ("MIPS: math-emu: Remove most ifdefery") removed
+the #ifdef ISA conditions and switched to runtime detection. However,
+according to the instruction set manual, the cop1x_op instructions are
+available in >=MIPS32r2 as well. This fixes a problem on MIPS32r2
+with the ntpd package which failed to execute with a SIGILL exit code due
+to the fact that a madd.d instruction was not being emulated.
 
-Reduce the race window by checking all tasks after OOM killer has been
-disabled. This is still not race free completely unfortunately because
-oom_killer_disable cannot stop an already ongoing OOM killer so a task
-might still wake up from the fridge and get killed without
-freeze_processes noticing. Full synchronization of OOM and freezer is,
-however, too heavy weight for this highly unlikely case.
-
-Introduce and check oom_kills counter which gets incremented early when
-the allocator enters __alloc_pages_may_oom path and only check all the
-tasks if the counter changes during the freezing attempt. The counter
-is updated so early to reduce the race window since allocator checked
-oom_killer_disabled which is set by PM-freezing code. A false positive
-will push the PM-freezer into a slow path but that is not a big deal.
-
-Changes since v1
-- push the re-check loop out of freeze_processes into
-  check_frozen_processes and invert the condition to make the code more
-  readable as per Rafael
-
-Fixes: f660daac474c6f (oom: thaw threads if oom killed thread is frozen before deferring)
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Fixes: 08a07904e1828 ("MIPS: math-emu: Remove most ifdefery")
+Cc: linux-mips@linux-mips.org
+Reviewed-by: Paul Burton <paul.burton@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8173/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/oom.h    |  3 +++
- kernel/power/process.c | 40 +++++++++++++++++++++++++++++++++++++++-
- mm/oom_kill.c          | 17 +++++++++++++++++
- mm/page_alloc.c        |  8 ++++++++
- 4 files changed, 67 insertions(+), 1 deletion(-)
+ arch/mips/math-emu/cp1emu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 4cd62677feb9..17f0949bd822 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -50,6 +50,9 @@ static inline bool oom_task_origin(const struct task_struct *p)
- extern unsigned long oom_badness(struct task_struct *p,
- 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
- 		unsigned long totalpages);
-+
-+extern int oom_kills_count(void);
-+extern void note_oom_kill(void);
- extern void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			     unsigned int points, unsigned long totalpages,
- 			     struct mem_cgroup *memcg, nodemask_t *nodemask,
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 4ee194eb524b..7a37cf3eb1a2 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -108,6 +108,28 @@ static int try_to_freeze_tasks(bool user_only)
- 	return todo ? -EBUSY : 0;
- }
+diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
+index 7a4727795a70..51a0fde4bec1 100644
+--- a/arch/mips/math-emu/cp1emu.c
++++ b/arch/mips/math-emu/cp1emu.c
+@@ -1023,7 +1023,7 @@ emul:
+ 					goto emul;
  
-+/*
-+ * Returns true if all freezable tasks (except for current) are frozen already
-+ */
-+static bool check_frozen_processes(void)
-+{
-+	struct task_struct *g, *p;
-+	bool ret = true;
-+
-+	read_lock(&tasklist_lock);
-+	for_each_process_thread(g, p) {
-+		if (p != current && !freezer_should_skip(p) &&
-+		    !frozen(p)) {
-+			ret = false;
-+			goto done;
-+		}
-+	}
-+done:
-+	read_unlock(&tasklist_lock);
-+
-+	return ret;
-+}
-+
- /**
-  * freeze_processes - Signal user space processes to enter the refrigerator.
-  * The current thread will not be frozen.  The same process that calls
-@@ -118,6 +140,7 @@ static int try_to_freeze_tasks(bool user_only)
- int freeze_processes(void)
- {
- 	int error;
-+	int oom_kills_saved;
+ 				case cop1x_op:
+-					if (cpu_has_mips_4_5 || cpu_has_mips64)
++					if (cpu_has_mips_4_5 || cpu_has_mips64 || cpu_has_mips32r2)
+ 						/* its one of ours */
+ 						goto emul;
  
- 	error = __usermodehelper_disable(UMH_FREEZING);
- 	if (error)
-@@ -131,12 +154,27 @@ int freeze_processes(void)
+@@ -1068,7 +1068,7 @@ emul:
+ 		break;
  
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
-+	oom_kills_saved = oom_kills_count();
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
--		printk("done.");
- 		__usermodehelper_set_disable_depth(UMH_DISABLED);
- 		oom_killer_disable();
-+
-+		/*
-+		 * There might have been an OOM kill while we were
-+		 * freezing tasks and the killed task might be still
-+		 * on the way out so we have to double check for race.
-+		 */
-+		if (oom_kills_count() != oom_kills_saved &&
-+				!check_frozen_processes()) {
-+			__usermodehelper_set_disable_depth(UMH_ENABLED);
-+			printk("OOM in progress.");
-+			error = -EBUSY;
-+			goto done;
-+		}
-+		printk("done.");
- 	}
-+done:
- 	printk("\n");
- 	BUG_ON(in_atomic());
+ 	case cop1x_op:
+-		if (!cpu_has_mips_4_5 && !cpu_has_mips64)
++		if (!cpu_has_mips_4_5 && !cpu_has_mips64 && !cpu_has_mips32r2)
+ 			return SIGILL;
  
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 3291e82d4352..171c00f2e495 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -406,6 +406,23 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- 		dump_tasks(memcg, nodemask);
- }
- 
-+/*
-+ * Number of OOM killer invocations (including memcg OOM killer).
-+ * Primarily used by PM freezer to check for potential races with
-+ * OOM killed frozen task.
-+ */
-+static atomic_t oom_kills = ATOMIC_INIT(0);
-+
-+int oom_kills_count(void)
-+{
-+	return atomic_read(&oom_kills);
-+}
-+
-+void note_oom_kill(void)
-+{
-+	atomic_inc(&oom_kills);
-+}
-+
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /*
-  * Must be called while holding a reference to p, which will be released upon
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1cd18c7d2d20..8f4ba9ae030f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2208,6 +2208,14 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	}
- 
- 	/*
-+	 * PM-freezer should be notified that there might be an OOM killer on
-+	 * its way to kill and wake somebody up. This is too early and we might
-+	 * end up not killing anything but false positives are acceptable.
-+	 * See freeze_processes.
-+	 */
-+	note_oom_kill();
-+
-+	/*
- 	 * Go through the zonelist yet one more time, keep very high watermark
- 	 * here, this is only to catch a parallel oom killing, we must fail if
- 	 * we're still under heavy pressure.
+ 		sig = fpux_emu(xcp, ctx, ir, fault_addr);
 -- 
 2.1.0
 
