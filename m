@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaKKQLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:11:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12720 "EHLO mga09.intel.com"
+	id S1751521AbaKKQNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:13:17 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33367 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751097AbaKKQLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:11:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
-   d="scan'208";a="635125271"
-Message-ID: <546234FA.3060501@linux.intel.com>
-Date: Wed, 12 Nov 2014 00:10:34 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751097AbaKKQNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 11:13:16 -0500
+Date: Tue, 11 Nov 2014 17:13:09 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
+ memory errors
+Message-ID: <20141111161309.GG31490@pd.tnic>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+ <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
+ <20141111114248.GD31490@pd.tnic>
+ <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 00/15] arm64: PCI/MSI: GICv3 ITS support (stacked domain
- edition)
-References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
-In-Reply-To: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
-	Sorry for the late notification. I have heavily reworked the
-interfaces for MSI irqdomain support based on review comments.
-Please refer to https://lkml.org/lkml/2014/11/9/88, please give your
-comments on the new interfaces:)
-Regards!
-Gerry
+On Tue, Nov 11, 2014 at 07:42:48AM -0800, Andy Lutomirski wrote:
+> The last time I looked at the MCE code, I got a bit lost in the
+> control flow.  Is there ever a userspace-killing MCE that's delivered
+> from kernel mode?
 
-On 2014/11/11 23:47, Marc Zyngier wrote:
-> The GICv3 architecture provides a way to implement support for
-> MSI/MSI-X using a specific block called the ITS (Interrupt Translation
-> Service).
-> 
-> The ITS can be accurately described as "page tables for
-> interrupts". If you think this sounds scary, you're spot on. It uses a
-> set of opaque memory tables that are manipulated through commands
-> (software almost never touches the tables directly). In order to make
-> it slightly easier to digest, the code has been split into (mostly)
-> logical units.
-> 
-> To make things more fun, this relies on Jiang Liu's stacked domain
-> patch series [1]. In order to make this work, the first three patches
-> introduce support for stacked MSI domain on arm64 (the first patch is
-> just a version of a existing patch by Yingjoe Chen, and is only
-> included here for reference; the following two are the actual
-> implementation).
-> 
-> I'd welcome some guidance of this stacked domain support, as this goes
-> into a slightly different direction compared to what we've had on
-> 32bit ARM so far (using the setup_irq/teardown_irq methods).
-> 
-> This has been tested on arm64 with an FVP model, and is based on
-> 3.18-rc4 + Jiang's p2v5 series + a number of arm64-specific PCI
-> patches. The whole thing is available at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/stacked-its
-> 
-> 	M.
-> 
-> [1]: http://lwn.net/Articles/619388/
-> 
-> Marc Zyngier (15):
->   genirq: Add a few more helper funtions to support stacked irq_chip
->   PCI/MSI: genirq: allow architecture-specific override of flow handler
->   arm64: MSI: Add support for stacked MSI domain
->   irqchip: GICv3: Convert to domain hierarchy
->   irqchip: GICv3: rework redistributor structure
->   irqchip: GICv3: ITS command queue
->   irqchip: GICv3: ITS: irqchip implementation
->   irqchip: GICv3: ITS: LPI allocator
->   irqchip: GICv3: ITS: tables allocators
->   irqchip: GICv3: ITS: device allocation and configuration
->   irqchip: GICv3: ITS: MSI support
->   irqchip: GICv3: ITS: DT probing and initialization
->   irqchip: GICv3: ITS: plug ITS init into main GICv3 code
->   irqchip: GICv3: ITS: enable compilation of the ITS driver
->   irqchip: GICv3: Binding updates for ITS
-> 
->  Documentation/devicetree/bindings/arm/gic-v3.txt |   39 +
->  arch/arm64/Kconfig                               |    1 +
->  arch/arm64/include/asm/msi.h                     |   26 +
->  arch/arm64/kernel/Makefile                       |    1 +
->  arch/arm64/kernel/msi.c                          |   80 ++
->  drivers/irqchip/Kconfig                          |    5 +
->  drivers/irqchip/Makefile                         |    1 +
->  drivers/irqchip/irq-gic-v3-its.c                 | 1343 ++++++++++++++++++++++
->  drivers/irqchip/irq-gic-v3.c                     |  163 ++-
->  drivers/pci/msi.c                                |    7 +-
->  include/linux/irq.h                              |    6 +
->  include/linux/irqchip/arm-gic-v3.h               |  128 +++
->  kernel/irq/chip.c                                |   31 +
->  13 files changed, 1790 insertions(+), 41 deletions(-)
->  create mode 100644 arch/arm64/include/asm/msi.h
->  create mode 100644 arch/arm64/kernel/msi.c
->  create mode 100644 drivers/irqchip/irq-gic-v3-its.c
-> 
+Yep, so while you're executing a userspace process, you get
+an #MC raised which reports an error for which action is
+required, i.e. look at all those MCE_AR_SEVERITY errors in
+arch/x86/kernel/cpu/mcheck/mce-severity.c.
+
+It happened within the context of current so we go and run the #MC
+handler which decides that the process needs to be killed in order to
+contain the error. So after we exit the handler and before we return to
+try to sched in the process again on any core, we want to actually kill
+it and poison all its memory.
+
+> By that, I mean that I think that all userspace-killing MCEs go have
+> user_mode_vm(regs) and go through paranoid_exit.
+
+Yes.
+
+> If so, why do you need to jump through hoops at all?  You can't call
+> do_exit, but it should be completely safe to force a fatal signal and
+> let the scheduler and signal code take care of killing the process,
+> right?  For that matter, you should also be able to poke at vm
+> structures, etc.
+
+Well, we do that already. memory-failure.c does kill the processes when
+it decides to.
+
+The only question is whether adding two new members to task_struct is
+ok. It is nicely convenient and it all falls into place.
+
+In the #MC handler we do:
+
+ 		if (worst == MCE_AR_SEVERITY) {
+ 			/* schedule action before return to userland */
++			current->paddr = m.addr;
++			current->restartable = !!(m.mcgstatus & MCG_STATUS_RIPV);
+			set_thread_flag(TIF_MCE_NOTIFY);
+		}
+
+and then before we return to userspace we do:
+
++	if (!current->restartable)
+ 		flags |= MF_MUST_KILL;
+ 	if (memory_failure(pfn, MCE_VECTOR, flags) < 0) {
+
+and the MF_MUST_KILL makes sure memory_failure() does a force_sig().
+
+So I think this is ok, I only think that people might oppose the two new
+members to task_struct but it looks clean to me this way. IMHO at least.
+
+> Or is there a meaningful case where mce_notify_process needs to help
+> with recovery but the original MCE happened with !user_mode_vm(regs)?
+
+Well, for the !user_mode_vm(regs) case we panic anyway.
+
+Thanks Andy.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
