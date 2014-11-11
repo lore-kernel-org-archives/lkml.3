@@ -1,367 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaKKL3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:29:30 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:53369 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750814AbaKKL31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:29:27 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH 1/2] watchdog: Add driver for Mediatek mt6589 watchdog
-From: Eddie Huang <eddie.huang@mediatek.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: "wim@iguana.be" <wim@iguana.be>, "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ibanezchen@gmail.com" <ibanezchen@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        <greta.zhang@mediatek.com>, <yingjoe.chen@mediatek.com>
-In-Reply-To: <1414428092-20725-2-git-send-email-matthias.bgg@gmail.com>
-References: <1414428092-20725-1-git-send-email-matthias.bgg@gmail.com>
-	 <1414428092-20725-2-git-send-email-matthias.bgg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Nov 2014 19:29:17 +0800
-Message-ID: <1415705357.1776.11.camel@mtksdaap41>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+	id S1752593AbaKKL2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:28:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64854 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905AbaKKL2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:28:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="634998819"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v6 09/14] perf: Add wakeup watermark control to AUX area
+Date: Tue, 11 Nov 2014 13:26:55 +0200
+Message-Id: <1415705221-182873-10-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415705221-182873-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1415705221-182873-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-28 at 00:41 +0800, Matthias Brugger wrote:
-> This patch adds a driver for the Mediatek mt6589 SoC integrated
-> watchdog.
-> 
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-> ---
->  drivers/watchdog/Kconfig   |  10 ++
->  drivers/watchdog/Makefile  |   1 +
->  drivers/watchdog/mtk_wdt.c | 264 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 275 insertions(+)
->  create mode 100644 drivers/watchdog/mtk_wdt.c
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index d0107d4..fcbca1b 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -505,6 +505,16 @@ config MESON_WATCHDOG
->           To compile this driver as a module, choose M here: the
->           module will be called meson_wdt.
-> 
-> +config MEDIATEK_WATCHDOG
-> +       tristate "Mediatek SoCs watchdog support"
-> +       depends on ARCH_MEDIATEK
-> +       select WATCHDOG_CORE
-> +       help
-> +         Say Y here to include support for the watchdog timer
-> +         in Mediatek SoCs.
-> +         To compile this driver as a module, choose M here: the
-> +         module will be called mtk_wdt.
-> +
->  # AVR32 Architecture
-> 
->  config AT32AP700X_WDT
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index c569ec8..0d4821f 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -63,6 +63,7 @@ obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
->  obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
->  obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
->  obj-$(CONFIG_MESON_WATCHDOG) += meson_wdt.o
-> +obj-$(CONFIG_MEDIATEK_WATCHDOG) += mtk_wdt.o
-> 
->  # AVR32 Architecture
->  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
-> diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
-> new file mode 100644
-> index 0000000..4624821
-> --- /dev/null
-> +++ b/drivers/watchdog/mtk_wdt.c
-> @@ -0,0 +1,264 @@
-> +/*
-> + * Mediatek Watchdog Driver
-> + *
-> + * Copyright (C) 2014 Matthias Brugger
-> + *
-> + * Matthias Brugger <matthias.bgg@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Based on mtk_wdt.c
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/types.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/notifier.h>
-> +#include <linux/reboot.h>
-> +#include <linux/delay.h>
-> +
-> +#define WDT_MAX_TIMEOUT                31
-> +#define WDT_MIN_TIMEOUT                1
-> +#define WDT_LENGTH_TIMEOUT(n)  ((n) << 5)
-> +
-> +#define WDT_LENGTH             0x04
-> +#define WDT_LENGTH_KEY         0x8
-> +
-> +#define WDT_RST                        0x08
-> +#define WDT_RST_RELOAD         0x1971
-> +
-> +#define WDT_MODE               0x00
-> +#define WDT_MODE_EN            (1 << 0)
-> +#define WDT_MODE_EXT_POL_LOW   (0 << 1)
-> +#define WDT_MODE_EXT_POL_HIGH  (1 << 1)
-> +#define WDT_MODE_EXRST_EN      (1 << 2)
-> +#define WDT_MODE_IRQ_EN                (1 << 3)
-> +#define WDT_MODE_AUTO_START    (1 << 4)
-> +#define WDT_MODE_DUAL_EN       (1 << 6)
-> +#define WDT_MODE_KEY           0x22000000
-> +
-> +#define WDT_SWRST              0x14
-> +#define WDT_SWRST_KEY          0x1209
-> +
-> +#define DRV_NAME               "mtk-wdt"
-> +#define DRV_VERSION            "1.0"
-> +
-> +static bool nowayout = WATCHDOG_NOWAYOUT;
-> +static unsigned int timeout = WDT_MAX_TIMEOUT;
-> +
-> +struct mtk_wdt_dev {
-> +       struct watchdog_device wdt_dev;
-> +       void __iomem *wdt_base;
-> +       struct notifier_block restart_handler;
-> +};
-> +
-> +static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
-> +                               void *cmd)
-> +{
-> +       struct mtk_wdt_dev *mtk_wdt = container_of(this,
-> +                                                      struct mtk_wdt_dev,
-> +                                                      restart_handler);
-> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
-> +       u32 reg;
-> +
-> +       /* Enable watchdog */
-> +       reg = readl(wdt_base + WDT_MODE);
-> +       reg |= WDT_MODE_EN;
-> +       writel(reg, wdt_base + WDT_MODE);
-> +
-> +       /* Reload counter */
-> +       writel(WDT_RST_RELOAD, wdt_base + WDT_RST);
-> +
-> +       /* Reset system */
-> +       writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
-> +
-> +       while (1) {
-> +               mdelay(5);
-> +               writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
-> +       }
-> +       return NOTIFY_DONE;
-> +
-> +}
-> +
-> +static int mtk_wdt_ping(struct watchdog_device *wdt_dev)
-> +{
-> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
-> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
-> +
-> +       iowrite32(WDT_RST_RELOAD, wdt_base + WDT_RST);
-> +
-> +       return 0;
-> +}
-> +
-> +static int mtk_wdt_set_timeout(struct watchdog_device *wdt_dev,
-> +               unsigned int timeout)
-> +{
-> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
-> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
-> +       u32 reg;
-> +
-> +       mtk_wdt->wdt_dev.timeout = timeout;
-> +
-> +       /* One bit is the value of 512 ticks
-> +        * The clock has 32 KHz
-> +        */
-> +       reg = WDT_LENGTH_TIMEOUT(timeout << 6) | WDT_LENGTH_KEY;
-> +       iowrite32(reg, wdt_base + WDT_LENGTH);
-> +
-> +       mtk_wdt_ping(wdt_dev);
-> +
-> +       return 0;
-> +}
-> +
-> +static int mtk_wdt_stop(struct watchdog_device *wdt_dev)
-> +{
-> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
-> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
-> +       u32 reg;
-> +
-> +       reg = readl(wdt_base + WDT_MODE);
-> +       reg &= ~(WDT_MODE_EN);
-> +       iowrite32(reg, wdt_base + WDT_MODE);
-> +
-> +       return 0;
-> +}
-> +
-> +static int mtk_wdt_start(struct watchdog_device *wdt_dev)
-> +{
-> +       u32 reg;
-> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
-> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
-> +       u32 ret;
-> +
-> +       ret = mtk_wdt_set_timeout(&mtk_wdt->wdt_dev,
-> +                       mtk_wdt->wdt_dev.timeout);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       reg = ioread32(wdt_base + WDT_MODE);
-> +       reg |= (WDT_MODE_EN | WDT_MODE_KEY);
+When AUX area gets a certain amount of new data, we want to wake up
+userspace to collect it. This adds a new control to specify how much
+data will cause a wakeup. This is then passed down to pmu drivers via
+output handle's "wakeup" field, so that the driver can find the nearest
+point where it can generate an interrupt.
 
-According to datasheet, default value of register WDT_MODE bit6 is 1.
-Which means when reach timeout, still need another timeout time to
-restart the system. Should clear this bit to disable dual mode:
-        reg &= ~(WDT_MODE_DUAL_EN);
+We repurpose __reserved_2 in the event attribute for this, even though
+it was never checked to be zero before, aux_watermark will only matter
+for new AUX-aware code, so the old code should still be fine.
 
-> +       iowrite32(reg, wdt_base + WDT_MODE);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct watchdog_info mtk_wdt_info = {
-> +       .identity       = DRV_NAME,
-> +       .options        = WDIOF_SETTIMEOUT |
-> +                         WDIOF_KEEPALIVEPING |
-> +                         WDIOF_MAGICCLOSE,
-> +};
-> +
-> +static const struct watchdog_ops mtk_wdt_ops = {
-> +       .owner          = THIS_MODULE,
-> +       .start          = mtk_wdt_start,
-> +       .stop           = mtk_wdt_stop,
-> +       .ping           = mtk_wdt_ping,
-> +       .set_timeout    = mtk_wdt_set_timeout,
-> +};
-> +
-> +static int mtk_wdt_probe(struct platform_device *pdev)
-> +{
-> +       struct mtk_wdt_dev *mtk_wdt;
-> +       struct resource *res;
-> +       int err;
-> +
-> +       mtk_wdt = devm_kzalloc(&pdev->dev, sizeof(*mtk_wdt), GFP_KERNEL);
-> +       if (!mtk_wdt)
-> +               return -EINVAL;
-> +
-> +       platform_set_drvdata(pdev, mtk_wdt);
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       mtk_wdt->wdt_base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(mtk_wdt->wdt_base))
-> +               return PTR_ERR(mtk_wdt->wdt_base);
-> +
-> +       mtk_wdt->wdt_dev.info = &mtk_wdt_info;
-> +       mtk_wdt->wdt_dev.ops = &mtk_wdt_ops;
-> +       mtk_wdt->wdt_dev.timeout = WDT_MAX_TIMEOUT;
-> +       mtk_wdt->wdt_dev.max_timeout = WDT_MAX_TIMEOUT;
-> +       mtk_wdt->wdt_dev.min_timeout = WDT_MIN_TIMEOUT;
-> +       mtk_wdt->wdt_dev.parent = &pdev->dev;
-> +
-> +       watchdog_init_timeout(&mtk_wdt->wdt_dev, timeout, &pdev->dev);
-> +       watchdog_set_nowayout(&mtk_wdt->wdt_dev, nowayout);
-> +
-> +       watchdog_set_drvdata(&mtk_wdt->wdt_dev, mtk_wdt);
-> +
-> +       mtk_wdt_stop(&mtk_wdt->wdt_dev);
-> +
-> +       err = watchdog_register_device(&mtk_wdt->wdt_dev);
-> +       if (unlikely(err))
-> +               return err;
-> +
-> +       mtk_wdt->restart_handler.notifier_call = mtk_reset_handler;
-> +       mtk_wdt->restart_handler.priority = 128;
-> +       err = register_restart_handler(&mtk_wdt->restart_handler);
-> +       if (err)
-> +               dev_err(&pdev->dev,
-> +                       "cannot register restart handler (err=%d)\n", err);
-> +
-> +       dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
-> +                       mtk_wdt->wdt_dev.timeout, nowayout);
-> +
-> +       return 0;
-> +}
-> +
-> +static int mtk_wdt_remove(struct platform_device *pdev)
-> +{
-> +       struct mtk_wdt_dev *mtk_wdt = platform_get_drvdata(pdev);
-> +
-> +       unregister_restart_handler(&mtk_wdt->restart_handler);
-> +
-> +       watchdog_unregister_device(&mtk_wdt->wdt_dev);
-> +       watchdog_set_drvdata(&mtk_wdt->wdt_dev, NULL);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct of_device_id mtk_wdt_dt_ids[] = {
-> +       { .compatible = "mediatek,mt6589-wdt" },
-> +       { /* sentinel */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, mtk_wdt_dt_ids);
-> +
-> +static struct platform_driver mtk_wdt_driver = {
-> +       .probe          = mtk_wdt_probe,
-> +       .remove         = mtk_wdt_remove,
-> +       .driver         = {
-> +               .owner          = THIS_MODULE,
-> +               .name           = DRV_NAME,
-> +               .of_match_table = mtk_wdt_dt_ids,
-> +       },
-> +};
-> +
-> +module_platform_driver(mtk_wdt_driver);
-> +
-> +module_param(timeout, uint, 0);
-> +MODULE_PARM_DESC(timeout, "Watchdog heartbeat in seconds");
-> +
-> +module_param(nowayout, bool, 0);
-> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> +                       __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Matthias Brugger <matthias.bgg@gmail.com>");
-> +MODULE_DESCRIPTION("Mediatek WatchDog Timer Driver");
-> +MODULE_VERSION(DRV_VERSION);
-> --
-> 1.9.1
-> 
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ include/uapi/linux/perf_event.h |  7 +++++--
+ kernel/events/core.c            |  3 ++-
+ kernel/events/internal.h        |  4 +++-
+ kernel/events/ring_buffer.c     | 22 +++++++++++++++++++---
+ 4 files changed, 29 insertions(+), 7 deletions(-)
 
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index f36aac2ac5..ffd52c0861 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -238,6 +238,7 @@ enum perf_event_read_format {
+ #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+ #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
+ 					/* add: sample_stack_user */
++					/* add: aux_watermark */
+ 
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+@@ -332,8 +333,10 @@ struct perf_event_attr {
+ 	 */
+ 	__u32	sample_stack_user;
+ 
+-	/* Align to u64. */
+-	__u32	__reserved_2;
++	/*
++	 * Wakeup watermark for AUX area
++	 */
++	__u32	aux_watermark;
+ };
+ 
+ #define perf_flags(attr)	(*(&(attr)->read_format + 1))
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 48b8dc0d36..da2e44aedd 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4419,7 +4419,8 @@ accounting:
+ 		perf_event_init_userpage(event);
+ 		perf_event_update_userpage(event);
+ 	} else {
+-		ret = rb_alloc_aux(rb, event, vma->vm_pgoff, nr_pages, flags);
++		ret = rb_alloc_aux(rb, event, vma->vm_pgoff, nr_pages,
++				   event->attr.aux_watermark, flags);
+ 		if (!ret)
+ 			rb->aux_mmap_locked = extra;
+ 	}
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index b1ed80f87d..4715aae48b 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -27,6 +27,7 @@ struct ring_buffer {
+ 	local_t				lost;		/* nr records lost   */
+ 
+ 	long				watermark;	/* wakeup watermark  */
++	long				aux_watermark;
+ 	/* poll crap */
+ 	spinlock_t			event_lock;
+ 	struct list_head		event_list;
+@@ -38,6 +39,7 @@ struct ring_buffer {
+ 	/* AUX area */
+ 	local_t				aux_head;
+ 	local_t				aux_nest;
++	local_t				aux_wakeup;
+ 	unsigned long			aux_pgoff;
+ 	int				aux_nr_pages;
+ 	int				aux_overwrite;
+@@ -57,7 +59,7 @@ extern struct ring_buffer *
+ rb_alloc(int nr_pages, long watermark, int cpu, int flags);
+ extern void perf_event_wakeup(struct perf_event *event);
+ extern int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+-			pgoff_t pgoff, int nr_pages, int flags);
++			pgoff_t pgoff, int nr_pages, long watermark, int flags);
+ extern void rb_free_aux(struct ring_buffer *rb);
+ extern struct ring_buffer *ring_buffer_get(struct perf_event *event);
+ extern void ring_buffer_put(struct ring_buffer *rb);
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index b94fd5ad51..12a01d67a9 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -295,6 +295,7 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
+ 	 */
+ 	if (!rb->aux_overwrite) {
+ 		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
++		handle->wakeup = local_read(&rb->aux_wakeup) + rb->aux_watermark;
+ 		if (aux_head - aux_tail < perf_aux_size(rb))
+ 			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
+ 
+@@ -358,9 +359,12 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
+ 		perf_event_aux_event(handle->event, aux_head, size, flags);
+ 	}
+ 
+-	rb->user_page->aux_head = local_read(&rb->aux_head);
++	aux_head = rb->user_page->aux_head = local_read(&rb->aux_head);
+ 
+-	perf_output_wakeup(handle);
++	if (aux_head - local_read(&rb->aux_wakeup) >= rb->aux_watermark) {
++		perf_output_wakeup(handle);
++		local_add(rb->aux_watermark, &rb->aux_wakeup);
++	}
+ 	handle->event = NULL;
+ 
+ 	local_set(&rb->aux_nest, 0);
+@@ -382,6 +386,14 @@ int perf_aux_output_skip(struct perf_output_handle *handle, unsigned long size)
+ 
+ 	local_add(size, &rb->aux_head);
+ 
++	aux_head = rb->user_page->aux_head = local_read(&rb->aux_head);
++	if (aux_head - local_read(&rb->aux_wakeup) >= rb->aux_watermark) {
++		perf_output_wakeup(handle);
++		local_add(rb->aux_watermark, &rb->aux_wakeup);
++		handle->wakeup = local_read(&rb->aux_wakeup) +
++				 rb->aux_watermark;
++	}
++
+ 	handle->head = aux_head;
+ 	handle->size -= size;
+ 
+@@ -432,7 +444,7 @@ static void rb_free_aux_page(struct ring_buffer *rb, int idx)
+ }
+ 
+ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+-		 pgoff_t pgoff, int nr_pages, int flags)
++		 pgoff_t pgoff, int nr_pages, long watermark, int flags)
+ {
+ 	bool overwrite = !(flags & RING_BUFFER_WRITABLE);
+ 	int node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
+@@ -493,6 +505,10 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 	kref_init(&rb->aux_refcount);
+ 
+ 	rb->aux_overwrite = overwrite;
++	rb->aux_watermark = watermark;
++
++	if (!rb->aux_watermark && !rb->aux_overwrite)
++		rb->aux_watermark = nr_pages << (PAGE_SHIFT - 1);
+ 
+ out:
+ 	if (!ret)
+-- 
+2.1.1
 
