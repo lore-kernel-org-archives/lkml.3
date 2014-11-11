@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaKKRSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 12:18:10 -0500
-Received: from mail-by2on0083.outbound.protection.outlook.com ([207.46.100.83]:49862
+	id S1752071AbaKKRSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 12:18:18 -0500
+Received: from mail-by2on0073.outbound.protection.outlook.com ([207.46.100.73]:65408
 	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751573AbaKKRSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 12:18:05 -0500
+	id S1751573AbaKKRSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 12:18:13 -0500
 From: <dinguyen@opensource.altera.com>
 To: <paulz@synopsys.com>, <balbi@ti.com>
 CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
@@ -16,9 +16,9 @@ CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
         <dianders@chromium.org>, <kever.yang@rock-chips.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCHv7 3/8] usb: dwc2: convert to use dev_pm_ops API
-Date: Tue, 11 Nov 2014 11:13:35 -0600
-Message-ID: <1415726020-19238-4-git-send-email-dinguyen@opensource.altera.com>
+Subject: [PATCHv7 7/8] usb: dwc2: move usb_disabled() call to host driver only
+Date: Tue, 11 Nov 2014 11:13:39 -0600
+Message-ID: <1415726020-19238-8-git-send-email-dinguyen@opensource.altera.com>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
 References: <1415726020-19238-1-git-send-email-dinguyen@opensource.altera.com>
@@ -42,62 +42,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <dinguyen@opensource.altera.com>
 
-Update suspend/resume to use dev_pm_ops API.
+Since platform.c will get built for both Host and Gadget, if we leave the
+usb_disabled() call in platform.c, it results in the following build error
+when (!USB && USB_GADGET) condition is met.
+
+ERROR: "usb_disabled" [drivers/usb/dwc2/dwc2_platform.ko] undefined!
+
+Since usb_disabled() is mostly used to disable USB host functionality, move
+the call the host portion for the DWC2 driver.
 
 Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
 ---
- drivers/usb/dwc2/platform.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/usb/dwc2/hcd.c      | 3 +++
+ drivers/usb/dwc2/platform.c | 3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
+index fa60f4a..755e16b 100644
+--- a/drivers/usb/dwc2/hcd.c
++++ b/drivers/usb/dwc2/hcd.c
+@@ -2780,6 +2780,9 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
+ 	int i, num_channels;
+ 	int retval;
+ 
++	if (usb_disabled())
++		return -ENODEV;
++
+ 	dev_dbg(hsotg->dev, "DWC OTG HCD INIT\n");
+ 
+ 	/* Detect config values from hardware */
 diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index eeba8a4..b94867b 100644
+index 3552602..57eb8a3 100644
 --- a/drivers/usb/dwc2/platform.c
 +++ b/drivers/usb/dwc2/platform.c
-@@ -219,9 +219,9 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	return retval;
- }
+@@ -157,9 +157,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	int retval;
+ 	int irq;
  
--static int dwc2_suspend(struct platform_device *dev, pm_message_t state)
-+static int dwc2_suspend(struct device *dev)
- {
--	struct dwc2_hsotg *dwc2 = platform_get_drvdata(dev);
-+	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
- 	int ret = 0;
- 
- 	if (dwc2_is_device_mode(dwc2))
-@@ -229,9 +229,9 @@ static int dwc2_suspend(struct platform_device *dev, pm_message_t state)
- 	return ret;
- }
- 
--static int dwc2_resume(struct platform_device *dev)
-+static int dwc2_resume(struct device *dev)
- {
--	struct dwc2_hsotg *dwc2 = platform_get_drvdata(dev);
-+	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
- 	int ret = 0;
- 
- 	if (dwc2_is_device_mode(dwc2))
-@@ -239,15 +239,18 @@ static int dwc2_resume(struct platform_device *dev)
- 	return ret;
- }
- 
-+static const struct dev_pm_ops dwc2_dev_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(dwc2_suspend, dwc2_resume)
-+};
-+
- static struct platform_driver dwc2_platform_driver = {
- 	.driver = {
- 		.name = dwc2_driver_name,
- 		.of_match_table = dwc2_of_match_table,
-+		.pm = &dwc2_dev_pm_ops,
- 	},
- 	.probe = dwc2_driver_probe,
- 	.remove = dwc2_driver_remove,
--	.suspend = dwc2_suspend,
--	.resume = dwc2_resume,
- };
- 
- module_platform_driver(dwc2_platform_driver);
+-	if (usb_disabled())
+-		return -ENODEV;
+-
+ 	match = of_match_device(dwc2_of_match_table, &dev->dev);
+ 	if (match && match->data) {
+ 		params = match->data;
 -- 
 2.0.3
 
