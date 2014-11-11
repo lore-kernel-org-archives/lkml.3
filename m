@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaKKEZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 23:25:00 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:49187 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571AbaKKEY7 (ORCPT
+	id S1751602AbaKKE3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 23:29:17 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:35362 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaKKE3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 23:24:59 -0500
+	Mon, 10 Nov 2014 23:29:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141110121105.GL3337@twins.programming.kicks-ass.net>
-References: <1415337606-2186-1-git-send-email-namhyung@kernel.org>
- <20141107082723.GB23531@worktop.programming.kicks-ass.net>
- <1415372259.1648.51.camel@leonhard> <20141107173718.GD29390@twins.programming.kicks-ass.net>
- <87mw7zva3c.fsf@sejong.aot.lge.com> <20141110121105.GL3337@twins.programming.kicks-ass.net>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 11 Nov 2014 13:24:38 +0900
-X-Google-Sender-Auth: nOjq0CrQio9Y1-gpBOws417VWXA
-Message-ID: <CAM9d7cgCzkh3_26=g0+6yUr-xBbk7_F8QP2e1sEkYw9o5OTmjw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf tools: Allow vmlinux to fallback to kallsyms on NO_LIBELF=1
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>
+In-Reply-To: <CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+	<1415644096-3513-4-git-send-email-j.glisse@gmail.com>
+	<CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+	<20141110205814.GA4186@gmail.com>
+	<CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
+	<20141110225036.GB4186@gmail.com>
+	<CA+55aFyfgj5ntoXEJeTZyGdOZ9_A_TK0fwt1px_FUhemXGgr0Q@mail.gmail.com>
+	<20141111024531.GA2503@gmail.com>
+	<CA+55aFw5MdJVK5AWV39rorMsmuny00=jVaBrnMRAoKAxBeZO7Q@mail.gmail.com>
+Date: Mon, 10 Nov 2014 20:29:15 -0800
+X-Google-Sender-Auth: W4j--_tKwcjxixd70N6uNNtrgeI
+Message-ID: <CA+55aFwxdT+G26O3mSmrMuq5f3Tf9cRVhOLxR7kpXZu49x8c5Q@mail.gmail.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page table
+ (gpt) v2.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On Mon, Nov 10, 2014 at 9:11 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Nov 10, 2014 at 03:33:11PM +0900, Namhyung Kim wrote:
->> Hmm.. I don't think it's specific to the minimal elf parser.  The return
->> value of dso__load_sym() is a number of symbols found so when it sees a
->> dso with 0 symbols it'll fall back to the next option IMHO (not
->> tested).  Did you see a problem with the current code?
+On Mon, Nov 10, 2014 at 7:16 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> So your patch:
->
-> +++ b/tools/perf/util/symbol-minimal.c
-> @@ -335,6 +335,9 @@ int dso__load_sym(struct dso *dso, struct map *map __maybe_unused,
->         unsigned char *build_id[BUILD_ID_SIZE];
->         int ret;
->
-> +       if (dso->kernel)
-> +               return 0;  /* always use kallsyms */
-> +
->
-> changes the symbol-minimal.c file to add this exception. That is very
-> much specific to the minimal elf parser, or am I just seeing things?
+> There's no reason for a "u64 cast". The value of "1 << pd_shift" is
+> going to be an "int" regardless of what type pd_shift is. The type of
+> a shift expression is the type of the left-hand side (with the C
+> promotion rules forcing it to at least "int"), the right-hand
+> expression type has absolutely no relevance.
 
-What minimal parser does here is just skip kernel dsos (vmlinux) since
-it didn't deal with all the details of parsing vmlinux currently.
+Btw, for that exact reason, code like this:
 
++                  (uint64_t)(pdp->index +
++                  (1UL << (gpt_pdp_shift(gpt, pdp) + gpt->pd_shift)) - 1UL));
 
->
-> What I was saying, why not have a util/symbol.c change that disregards
-> all DSOs with 0 symbols in.
+is likely buggy if you actually care about the uint64_t part.
 
-The util/symbol.c doesn't need this because it can handle vmlinux
-reliably.  So after reading symbol table, it'll use the dso if it
-actually contains symbols or fallback to next dso if it has 0 symbols.
-IOW it already disregards all dsos with 0 symbols in.
+On 32-bit, 1ul will be 32-bit. And so will "(1ul << .. ) -1UL",
+regardless of the type of the right hand of the shift. So the fact
+that gpt->pd_shift and gpt_pdp_shift() are both u64, the actual end
+result is u32 (page->index is a 32-bit entity on 32-bit architectures,
+since pgoff_t is an "unsigned long" too). So you're doing the shifts
+in 32-bit, the addition in 32-bit, and then just casting the resulting
+32-bit thing to a 64-bit entity.  The high 32 bits are guaranteed to
+be zero, in other words.
 
--- 
-Thanks,
-Namhyung
+This just highlights how wrong it is to make those shifts be u64. That
+gpt_pdp_shift() helper similarly should at no point be returning u64.
+It doesn't help, it only hurts. It makes the structure bigger for no
+gain, and apparently it confuses people into thinking those shifts are
+done in 64 bit.
+
+When you do "a+b" or similar operations, the end result is the biggest
+type size of 'a' and 'b' respectively (with the normal promotion to at
+least 'int'). But that's not true of shifts, the type of the shift
+expression is the (integer-promoted) left-hand side. The right-hand
+side just gives the amount that value is shifted by, it doesn't affect
+the type of the result.
+
+                       Linus
