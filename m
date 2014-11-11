@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaKKWkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 17:40:35 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:48350 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaKKWke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 17:40:34 -0500
+	id S1752457AbaKKWnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 17:43:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:33896 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071AbaKKWnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 17:43:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,362,1413270000"; 
+   d="scan'208";a="620820341"
+Date: Tue, 11 Nov 2014 14:42:22 -0800
+From: "Sean O. Stalley" <sean.stalley@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Stephanie Wallick <stephanie.s.wallick@intel.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [V2 PATCH 03/10] added media agnostic (MA) data structures and
+ handling
+Message-ID: <20141111224222.GB3415@sean.stalley.intel.com>
+References: <1415671781-11351-1-git-send-email-stephanie.s.wallick@intel.com>
+ <1415671781-11351-3-git-send-email-stephanie.s.wallick@intel.com>
+ <20141111043821.GD22068@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20141111223316.GQ31490@pd.tnic>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141111213628.GP31490@pd.tnic> <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
- <20141111223316.GQ31490@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Nov 2014 14:40:12 -0800
-Message-ID: <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
-Subject: Re: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from userspace
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111043821.GD22068@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 2:33 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Nov 11, 2014 at 02:12:18PM -0800, Andy Lutomirski wrote:
->> I don't see why it would be any more likely for the normal kernel
->> stack to be corrupted due to a hardware issue that interrupted ring 3
->> code than that the IST stack is corrupted.
->
-> The IST stack is, well, used solely be used for the vectors it is
-> assigned for. Maybe the probabability of it getting bad is a bit
-> lower..., who knows.
->
->> I don't know what, if anything, masks and unmasks #MC, but certainly
->> switching to process context like this patch does will not unmask it.
->
-> Manuals say to clear MCG_STATUS[MCIP] before you return but you also
-> have to IRET. Because not having cleared MCIP and returning would shut
-> down the machine on another #MC.
+On Tue, Nov 11, 2014 at 01:38:21PM +0900, Greg KH wrote:
+> On Mon, Nov 10, 2014 at 06:09:34PM -0800, Stephanie Wallick wrote:
+> Intel has a whole group of very experienced Linux kernel developers who
+> will review code before you sent it out publicly.  Please take advantage
+> of them and run this all through them before resending this out again.
+> 
+> If you did run this code through that group, please let me know who it
+> was specifically that allowed this stuff to get through, and why they
+> didn't want their name on this code submission.  I need to have a strong
+> word with them...
 
-I wonder what the IRET is for.  There had better not be another magic
-IRET unmask thing.  I'm guessing that the actual semantics are that
-nothing whatsoever can mask #MC, but that a second #MC when MCIP is
-still set is a shutdown condition.
+We submitted the patches for internal review and got no objections to
+release. We will be more aggressive in seeking out feedback (and approval)
+before resubmitting any code.
+ 
+> Yes, I am holding you to a higher standard than staging code normally
+> is, and yes, it is purely because of the company you work for.  But I
+> only do that because your company knows how to do this stuff right, and
+> you have access to the resources and talent to help make this code
+> right.  Other people and companies do not have the kind of advantage
+> that you do.
 
->
-> But then what does it bring me to run on the kernel stack if I'm still
-> in atomic context and I can't take locks? That doesn't help me with the
-> memory_failure() thing.
+We know we are fortunate to work for a company with so much talent and
+resources and we don't mind being held to a higher standard. We have been
+receiving multiple requests for our host driver and wanted to make it
+available as soon as possible for others to use. We thought putting our
+host driver into staging would be a good way to release it, but realize now
+that it was premature. 
 
-Define "atomic".
+> Wasting community member's time (i.e. mine) by forcing _them_ to review
+> stuff like this, is something that your company knows better than to do,
+> as should you as well.
+> 
+> I want to see some more senior Intel kernel developer's signed-off-by
+> lines on this code before I will ever consider accepting it for the
+> kernel.  Please do not resend this code until that happens.
+> 
+> greg k-h
 
-You're still running with irqs off and MCIP set.  At some point,
-you're presumably done with all of the machine check registers, and
-you can clear MCIP.  Now, if current == victim, you can enable irqs
-and do whatever you want.
+We apologize for wasting everyone's time and will certainly learn from this.
+We won't resubmit the driver until a senior kernel developer has signed off on it.
 
-In my mind, the benefit is that you don't need to think about how to
-save your information and arrange to get called back the next time
-that the victim task is a non-atomic context, since you *are* the
-victim task and you're running in normal irqs-disabled kernel mode.
-
-In contrast, with the current entry code, if you enable IRQs or so
-anything that could sleep, you're on the wrong stack, so you'll crash.
-That means that taking mutexes, even after clearing MCIP, is
-impossible.
-
---Andy
+Sincerely,
+Sean O. Stalley
+Stephanie S. Wallick
