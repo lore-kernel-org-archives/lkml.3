@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaKKLgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:36:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55181 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513AbaKKLgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:36:20 -0500
-Date: Tue, 11 Nov 2014 19:36:08 +0800
-From: Minfei Huang <mhuang@redhat.com>
-To: Minfei Huang <mnfhuang@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/mm: Give the correct initail value to the pmd_idx
-Message-ID: <20141111113608.GA3531@dhcp-17-108.nay.redhat.com>
-References: <1415252513-6453-1-git-send-email-mnfhuang@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415252513-6453-1-git-send-email-mnfhuang@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753445AbaKKLfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:35:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57662 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235AbaKKLKt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:10:49 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jason Baron <jbaron@akamai.com>, Borislav Petkov <bp@suse.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 113/170] i82860_edac: Report CE events properly
+Date: Tue, 11 Nov 2014 11:07:52 +0000
+Message-Id: <1415704129-12709-114-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could someone who help me review my patch?
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks
-Minfei
+------------------
 
-On 11/06/14 at 01:41pm, Minfei Huang wrote:
-> The variable value is undefined from the stack eara. So it makes sense to
-> init the variable to run process correctly.
-> 
-> If the variable pmd_idx inits the value more than PTRS_PER_PMD, the
-> count may be smaller than the correct value, and the allocated page may
-> be not enough for pte entry.
-> 
-> The kernel may panic cause by the undefine variable which is allocated
-> from stack.
-> 
-> Signed-off-by: Minfei Huang <mnfhuang@gmail.com>
-> ---
->  arch/x86/mm/init_32.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-> index c8140e1..c23ab1e 100644
-> --- a/arch/x86/mm/init_32.c
-> +++ b/arch/x86/mm/init_32.c
-> @@ -137,6 +137,7 @@ page_table_range_init_count(unsigned long start, unsigned long end)
->  
->  	vaddr = start;
->  	pgd_idx = pgd_index(vaddr);
-> +	pmd_idx = pmd_index(vaddr);
->  
->  	for ( ; (pgd_idx < PTRS_PER_PGD) && (vaddr != end); pgd_idx++) {
->  		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+From: Jason Baron <jbaron@akamai.com>
+
+commit ab0543de6ff0877474f57a5aafbb51a61e88676f upstream.
+
+Fix CE event being reported as HW_EVENT_ERR_UNCORRECTED.
+
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+Link: http://lkml.kernel.org/r/7aee8e244a32ff86b399a8f966c4aae70296aae0.1413405053.git.jbaron@akamai.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/edac/i82860_edac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
+index 3382f6344e42..4382343a7c60 100644
+--- a/drivers/edac/i82860_edac.c
++++ b/drivers/edac/i82860_edac.c
+@@ -124,7 +124,7 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
+ 				     dimm->location[0], dimm->location[1], -1,
+ 				     "i82860 UE", "");
+ 	else
+-		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 1,
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 1,
+ 				     info->eap, 0, info->derrsyn,
+ 				     dimm->location[0], dimm->location[1], -1,
+ 				     "i82860 CE", "");
+-- 
+2.1.0
+
