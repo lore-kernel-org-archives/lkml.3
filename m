@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbaKKSYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 13:24:20 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56371 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaKKSYT (ORCPT
+	id S1751614AbaKKS1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 13:27:51 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37298 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087AbaKKS1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 13:24:19 -0500
-Date: Tue, 11 Nov 2014 18:24:18 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        alvise rigo <a.rigo@virtualopensystems.com>
-Subject: Re: [PATCH] pci: generic host: make it more generic
-Message-ID: <20141111182418.GA5507@red-moon>
-References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
- <20141111122901.GA4419@red-moon>
- <CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
+	Tue, 11 Nov 2014 13:27:50 -0500
+Date: Tue, 11 Nov 2014 19:27:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave.hansen@intel.com>
+cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
+In-Reply-To: <545BED0B.8000001@intel.com>
+Message-ID: <alpine.DEB.2.11.1411111213450.3935@nanos>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241451280.5308@nanos> <545BED0B.8000001@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVNAc9axtESmo1zGZ3GMquTzjzWR3jx-b3tbhhLfQDDRcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 02:02:20PM +0000, Ming Lei wrote:
-
-[...]
-
-> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296535.html
-> >
-> > Patch above is already queued and applies most of the changes you have posted
-> > above.
+On Thu, 6 Nov 2014, Dave Hansen wrote:
+> Instead of all of these games with dropping and reacquiring mmap_sem and
+> adding other locks, or deferring the work, why don't we just do a
+> get_user_pages()?  Something along the lines of:
 > 
-> I should have looked at list first before writing the patch, :-(
+> while (1) {
+> 	ret = cmpxchg(addr)
+> 	if (!ret)
+> 		break;
+> 	if (ret == -EFAULT)
+> 		get_user_pages(addr);
+> }
 > 
-> Could you make it more generic so that other ARCHs(at least ARM64)
-> can benefit from it too?
+> Does anybody see a problem with that?
 
-That's our current goal, we are carrying out clean-ups to remove arch
-dependency and move code to the generic layer PCI layer.
+You want to do that under mmap_sem write held, right? Not a problem per
+se, except that you block normal faults for a possibly long time when
+the page(s) need to be swapped in.
 
-Lorenzo
+But yes, this might solve most of the issues at hand. Did not think
+about GUP at all :(
+
+Thanks,
+
+	tglx
+
