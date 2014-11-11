@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367AbaKKLsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:48:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57478 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986AbaKKLKN (ORCPT
+	id S1754422AbaKKLtD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:49:03 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:57825 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454AbaKKLs7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:10:13 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Karl Beldan <karl.beldan@rivierawaves.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 076/170] net: tso: fix unaligned access to crafted TCP header in helper API
-Date: Tue, 11 Nov 2014 11:07:15 +0000
-Message-Id: <1415704129-12709-77-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 11 Nov 2014 06:48:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <201411111230.30686.linux@rainbow-software.org>
+References: <1415638712-18486-1-git-send-email-linux@rainbow-software.org>
+	<CAPDyKFpUS6yG1Fq+dVFn_8AG7-_B-_moo2JCz4AQBKgvp-YaHQ@mail.gmail.com>
+	<201411111230.30686.linux@rainbow-software.org>
+Date: Tue, 11 Nov 2014 12:48:58 +0100
+Message-ID: <CAPDyKFoe9FCaKPvr7FpmGY5xzUDPVMgcKY3gmaBQ7keov6L39Q@mail.gmail.com>
+Subject: Re: [PATCH v4] mmc: add Toshiba PCI SD controller driver
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+On 11 November 2014 12:30, Ondrej Zary <linux@rainbow-software.org> wrote:
+> On Tuesday 11 November 2014, Ulf Hansson wrote:
+>> On 10 November 2014 17:58, Ondrej Zary <linux@rainbow-software.org> wrote:
+>> > This patch resurrects an old never-finished driver for Toshiba PCI SD
+>> > controllers found in some older Toshiba laptops (such as Portege R100):
+>> >
+>> > 02:0d.0 System peripheral [0880]: Toshiba America Info Systems SD TypA
+>> > Controller [1179:0805] (rev 05)
+>> >
+>> > The code is fixed, cleaned up and successfully tested with SD, SDHC, SDXC
+>> > and MMC cards on Portege R100. (MMC cards don't even work in Windows!)
+>> > SDIO probably does not work (don't have any SDIO card).
+>> >
+>> > The hardware is slow (around 2 MB/s - same in Windows) because it does
+>> > not support bus mastering (busmaster enable bit cannot be set in PCI
+>> > control reg). Also the card clock is limited to 16MHz (33MHz PCI clock
+>> > divided by 2).
+>> >
+>> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>>
+>> Hi Ondrej,
+>>
+>> I get these compiler warning while building for x86. Can you please fix
+>> them.
+>>
+>> ../drivers/mmc/host/toshsd.c: In function ‘toshsd_init’:
+>> ../drivers/mmc/host/toshsd.c:70:9: warning: large integer implicitly
+>> truncated to unsigned type [-Woverflow]
+>>          host->ioaddr + SD_INTMASKCARD);
+>>          ^
+>
+> Which GCC version did you use? I get no warnings with 4.7.2 (Debian Stable).
 
-------------------
+gcc (Ubuntu 4.8.2-19ubuntu1) 4.8.2
 
-From: Karl Beldan <karl.beldan@rivierawaves.com>
-
-commit a63ba13eec092b70d4e5522d692eaeb2f9747387 upstream.
-
-The crafted header start address is from a driver supplied buffer, which
-one can reasonably expect to be aligned on a 4-bytes boundary.
-However ATM the TSO helper API is only used by ethernet drivers and
-the tcp header will then be aligned to a 2-bytes only boundary from the
-header start address.
-
-Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/core/tso.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/net/core/tso.c b/net/core/tso.c
-index 8c3203c585b0..630b30b4fb53 100644
---- a/net/core/tso.c
-+++ b/net/core/tso.c
-@@ -1,6 +1,7 @@
- #include <linux/export.h>
- #include <net/ip.h>
- #include <net/tso.h>
-+#include <asm/unaligned.h>
- 
- /* Calculate expected number of TX descriptors */
- int tso_count_descs(struct sk_buff *skb)
-@@ -23,7 +24,7 @@ void tso_build_hdr(struct sk_buff *skb, char *hdr, struct tso_t *tso,
- 	iph->id = htons(tso->ip_id);
- 	iph->tot_len = htons(size + hdr_len - mac_hdr_len);
- 	tcph = (struct tcphdr *)(hdr + skb_transport_offset(skb));
--	tcph->seq = htonl(tso->tcp_seq);
-+	put_unaligned_be32(tso->tcp_seq, &tcph->seq);
- 	tso->ip_id++;
- 
- 	if (!is_last) {
--- 
-2.1.0
-
+Kind regards
+Uffe
