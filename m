@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaKKPsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:48:43 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56200 "EHLO
+	id S1751712AbaKKPsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:48:35 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56180 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaKKPsk (ORCPT
+	with ESMTP id S1751641AbaKKPsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:48:40 -0500
+	Tue, 11 Nov 2014 10:48:31 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Jiang Liu <jiang.liu@linux.intel.com>,
@@ -16,9 +16,9 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Will Deacon <will.deacon@arm.com>,
         Catalin marinas <catalin.marinas@arm.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 08/15] irqchip: GICv3: ITS: LPI allocator
-Date: Tue, 11 Nov 2014 15:48:06 +0000
-Message-Id: <1415720893-13371-9-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH 07/15] irqchip: GICv3: ITS: irqchip implementation
+Date: Tue, 11 Nov 2014 15:48:05 +0000
+Message-Id: <1415720893-13371-8-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
 References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
@@ -26,126 +26,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LPIs are the type of interrupts that are used by the ITS. Given
-the size of the namespace (anywhere between 16 and 32bit), interrupt
-IDs are allocated in chunks of 32.
+The usual methods that are used to present an irqchip to the rest
+of the kernel
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-gic-v3-its.c | 103 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 103 insertions(+)
+ drivers/irqchip/irq-gic-v3-its.c | 77 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
 diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
-index c904769..f57b6dc 100644
+index 1082173..c904769 100644
 --- a/drivers/irqchip/irq-gic-v3-its.c
 +++ b/drivers/irqchip/irq-gic-v3-its.c
-@@ -585,3 +585,106 @@ static struct irq_chip its_irq_chip = {
- 	.irq_eoi		= its_eoi_irq,
- 	.irq_set_affinity	= its_set_affinity,
- };
+@@ -40,6 +40,8 @@
+ 
+ #define ITS_FLAGS_CMDQ_NEEDS_FLUSHING		(1 << 0)
+ 
++#define RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING	(1 << 0)
++
+ /*
+  * Collection structure - just an ID, and a redistributor address to
+  * ping. We use one per CPU as a bag of interrupts assigned to this
+@@ -508,3 +510,78 @@ static void its_send_invall(struct its_node *its, struct its_collection *col)
+ 
+ 	its_send_single_command(its, its_build_invall_cmd, &desc);
+ }
 +
 +/*
-+ * How we allocate LPIs:
-+ *
-+ * The GIC has id_bits bits for interrupt identifiers. From there, we
-+ * must subtract 8192 which are reserved for SGIs/PPIs/SPIs. Then, as
-+ * we allocate LPIs by chunks of 32, we can shift the whole thing by 5
-+ * bits to the right.
-+ *
-+ * This gives us (((1UL << id_bits) - 8192) >> 5) possible allocations.
++ * irqchip functions - assumes MSI, mostly.
 + */
-+#define IRQS_PER_CHUNK_SHIFT	5
-+#define IRQS_PER_CHUNK		(1 << IRQS_PER_CHUNK_SHIFT)
 +
-+static unsigned long *lpi_bitmap;
-+static u32 lpi_chunks;
-+static DEFINE_SPINLOCK(lpi_lock);
-+
-+static int its_lpi_to_chunk(int lpi)
++static inline u32 its_get_event_id(struct irq_data *d)
 +{
-+	return (lpi - 8192) >> IRQS_PER_CHUNK_SHIFT;
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	return d->hwirq - its_dev->lpi_base;
 +}
 +
-+static int its_chunk_to_lpi(int chunk)
++static void lpi_set_config(struct irq_data *d, bool enable)
 +{
-+	return (chunk << IRQS_PER_CHUNK_SHIFT) + 8192;
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	irq_hw_number_t hwirq = d->hwirq;
++	u32 id = its_get_event_id(d);
++	u8 *cfg = page_address(gic_rdists->prop_page) + hwirq - 8192;
++
++	if (enable)
++		*cfg |= LPI_PROP_ENABLED;
++	else
++		*cfg &= ~LPI_PROP_ENABLED;
++
++	/*
++	 * Make the above write visible to the redistributors.
++	 * And yes, we're flushing exactly: One. Single. Byte.
++	 * Humpf...
++	 */
++	if (gic_rdists->flags & RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING)
++		__flush_dcache_area(cfg, sizeof(*cfg));
++	else
++		dsb(ishst);
++	its_send_inv(its_dev, id);
 +}
 +
-+static int its_lpi_init(u32 id_bits)
++static void its_mask_irq(struct irq_data *d)
 +{
-+	lpi_chunks = its_lpi_to_chunk(1UL << id_bits);
-+
-+	lpi_bitmap = kzalloc(BITS_TO_LONGS(lpi_chunks) * sizeof(long),
-+			     GFP_KERNEL);
-+	if (!lpi_bitmap) {
-+		lpi_chunks = 0;
-+		return -ENOMEM;
-+	}
-+
-+	pr_info("ITS: Allocated %d chunks for LPIs\n", (int)lpi_chunks);
-+	return 0;
++	lpi_set_config(d, false);
 +}
 +
-+static unsigned long *its_lpi_alloc_chunks(int nr_irqs, int *base, int *nr_ids)
++static void its_unmask_irq(struct irq_data *d)
 +{
-+	unsigned long *bitmap = NULL;
-+	int chunk_id;
-+	int nr_chunks;
-+	int i;
-+
-+	nr_chunks = DIV_ROUND_UP(nr_irqs, IRQS_PER_CHUNK);
-+
-+	spin_lock(&lpi_lock);
-+
-+	do {
-+		chunk_id = bitmap_find_next_zero_area(lpi_bitmap, lpi_chunks,
-+						      0, nr_chunks, 0);
-+		if (chunk_id < lpi_chunks)
-+			break;
-+
-+		nr_chunks--;
-+	} while (nr_chunks > 0);
-+
-+	if (!nr_chunks)
-+		goto out;
-+
-+	bitmap = kzalloc(BITS_TO_LONGS(nr_chunks * IRQS_PER_CHUNK) * sizeof (long),
-+			 GFP_ATOMIC);
-+	if (!bitmap)
-+		goto out;
-+
-+	for (i = 0; i < nr_chunks; i++)
-+		set_bit(chunk_id + i, lpi_bitmap);
-+
-+	*base = its_chunk_to_lpi(chunk_id);
-+	*nr_ids = nr_chunks * IRQS_PER_CHUNK;
-+
-+out:
-+	spin_unlock(&lpi_lock);
-+
-+	return bitmap;
++	lpi_set_config(d, true);
 +}
 +
-+static void its_lpi_free(unsigned long *bitmap, int base, int nr_ids)
++static void its_eoi_irq(struct irq_data *d)
 +{
-+	int lpi;
-+
-+	spin_lock(&lpi_lock);
-+
-+	for (lpi = base; lpi < (base + nr_ids); lpi += IRQS_PER_CHUNK) {
-+		int chunk = its_lpi_to_chunk(lpi);
-+		BUG_ON(chunk > lpi_chunks);
-+		if (test_bit(chunk, lpi_bitmap)) {
-+			clear_bit(chunk, lpi_bitmap);
-+		} else {
-+			pr_err("Bad LPI chunk %d\n", chunk);
-+		}
-+	}
-+
-+	spin_unlock(&lpi_lock);
-+
-+	kfree(bitmap);
++	gic_write_eoir(d->hwirq);
 +}
++
++static int its_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
++			    bool force)
++{
++	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	struct its_device *its_dev = irq_data_get_irq_chip_data(d);
++	struct its_collection *target_col;
++	u32 id = its_get_event_id(d);
++
++	if (cpu >= nr_cpu_ids)
++		return -EINVAL;
++
++	target_col = &its_dev->its->collections[cpu];
++	its_send_movi(its_dev, target_col, id);
++	its_dev->collection = target_col;
++
++	return IRQ_SET_MASK_OK;
++}
++
++static struct irq_chip its_irq_chip = {
++	.name			= "ITS",
++	.irq_mask		= its_mask_irq,
++	.irq_unmask		= its_unmask_irq,
++	.irq_eoi		= its_eoi_irq,
++	.irq_set_affinity	= its_set_affinity,
++};
 -- 
 2.0.4
 
