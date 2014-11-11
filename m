@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaKKMIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:08:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57195 "EHLO
+	id S1754815AbaKKMIk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:08:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57196 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487AbaKKLJV (ORCPT
+	with ESMTP id S1753565AbaKKLJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:09:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 023/170] ext4: add ext4_iget_normal() which is to be used for dir tree lookups
-Date: Tue, 11 Nov 2014 11:06:22 +0000
-Message-Id: <1415704129-12709-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 020/170] target: Fix APTPL metadata handling for dynamic MappedLUNs
+Date: Tue, 11 Nov 2014 11:06:19 +0000
+Message-Id: <1415704129-12709-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,95 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit f4bb2981024fc91b23b4d09a8817c415396dbabb upstream.
+commit e24805637d2d270d7975502e9024d473de86afdb upstream.
 
-If there is a corrupted file system which has directory entries that
-point at reserved, metadata inodes, prohibit them from being used by
-treating them the same way we treat Boot Loader inodes --- that is,
-mark them to be bad inodes.  This prohibits them from being opened,
-deleted, or modified via chmod, chown, utimes, etc.
+This patch fixes a bug in handling of SPC-3 PR Activate Persistence
+across Target Power Loss (APTPL) logic where re-creation of state for
+MappedLUNs from dynamically generated NodeACLs did not occur during
+I_T Nexus establishment.
 
-In particular, this prevents a corrupted file system which has a
-directory entry which points at the journal inode from being deleted
-and its blocks released, after which point Much Hilarity Ensues.
+It adds the missing core_scsi3_check_aptpl_registration() call during
+core_tpg_check_initiator_node_acl() -> core_tpg_add_node_to_devs() in
+order to replay any pre-loaded APTPL metadata state associated with
+the newly connected SCSI Initiator Port.
 
-Reported-by: Sami Liedes <sami.liedes@iki.fi>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/ext4.h  | 1 +
- fs/ext4/inode.c | 7 +++++++
- fs/ext4/namei.c | 4 ++--
- fs/ext4/super.c | 2 +-
- 4 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/target/target_core_device.c | 3 ++-
+ drivers/target/target_core_pr.c     | 6 +++---
+ drivers/target/target_core_pr.h     | 2 +-
+ drivers/target/target_core_tpg.c    | 8 ++++++++
+ 4 files changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index b6874405f0dc..2f4eb9f9d634 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2108,6 +2108,7 @@ int do_journal_get_write_access(handle_t *handle,
- #define CONVERT_INLINE_DATA	 2
- 
- extern struct inode *ext4_iget(struct super_block *, unsigned long);
-+extern struct inode *ext4_iget_normal(struct super_block *, unsigned long);
- extern int  ext4_write_inode(struct inode *, struct writeback_control *);
- extern int  ext4_setattr(struct dentry *, struct iattr *);
- extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index eee357d03a87..2b06bac72c94 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4244,6 +4244,13 @@ bad_inode:
- 	return ERR_PTR(ret);
- }
- 
-+struct inode *ext4_iget_normal(struct super_block *sb, unsigned long ino)
-+{
-+	if (ino < EXT4_FIRST_INO(sb) && ino != EXT4_ROOT_INO)
-+		return ERR_PTR(-EIO);
-+	return ext4_iget(sb, ino);
-+}
-+
- static int ext4_inode_blocks_set(handle_t *handle,
- 				struct ext4_inode *raw_inode,
- 				struct ext4_inode_info *ei)
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 1cafd5d98a9b..8a48fcb9a91a 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1441,7 +1441,7 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, unsi
- 					 dentry);
- 			return ERR_PTR(-EIO);
- 		}
--		inode = ext4_iget(dir->i_sb, ino);
-+		inode = ext4_iget_normal(dir->i_sb, ino);
- 		if (inode == ERR_PTR(-ESTALE)) {
- 			EXT4_ERROR_INODE(dir,
- 					 "deleted inode referenced: %u",
-@@ -1474,7 +1474,7 @@ struct dentry *ext4_get_parent(struct dentry *child)
- 		return ERR_PTR(-EIO);
- 	}
- 
--	return d_obtain_alias(ext4_iget(child->d_inode->i_sb, ino));
-+	return d_obtain_alias(ext4_iget_normal(child->d_inode->i_sb, ino));
- }
- 
- /*
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index b0761012ef7e..90720fe38d5a 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1002,7 +1002,7 @@ static struct inode *ext4_nfs_get_inode(struct super_block *sb,
- 	 * Currently we don't know the generation for parent directory, so
- 	 * a generation of 0 means "accept any"
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index 98da90167159..15a1c133ec05 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1409,7 +1409,8 @@ int core_dev_add_initiator_node_lun_acl(
+ 	 * Check to see if there are any existing persistent reservation APTPL
+ 	 * pre-registrations that need to be enabled for this LUN ACL..
  	 */
--	inode = ext4_iget(sb, ino);
-+	inode = ext4_iget_normal(sb, ino);
- 	if (IS_ERR(inode))
- 		return ERR_CAST(inode);
- 	if (generation && inode->i_generation != generation) {
+-	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, lacl);
++	core_scsi3_check_aptpl_registration(lun->lun_se_dev, tpg, lun, nacl,
++					    lacl->mapped_lun);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
+index df357862286e..1aadcfc9a8c1 100644
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -944,10 +944,10 @@ int core_scsi3_check_aptpl_registration(
+ 	struct se_device *dev,
+ 	struct se_portal_group *tpg,
+ 	struct se_lun *lun,
+-	struct se_lun_acl *lun_acl)
++	struct se_node_acl *nacl,
++	u32 mapped_lun)
+ {
+-	struct se_node_acl *nacl = lun_acl->se_lun_nacl;
+-	struct se_dev_entry *deve = nacl->device_list[lun_acl->mapped_lun];
++	struct se_dev_entry *deve = nacl->device_list[mapped_lun];
+ 
+ 	if (dev->dev_reservation_flags & DRF_SPC2_RESERVATIONS)
+ 		return 0;
+diff --git a/drivers/target/target_core_pr.h b/drivers/target/target_core_pr.h
+index 2ee2936fa0bd..749fd7bb7510 100644
+--- a/drivers/target/target_core_pr.h
++++ b/drivers/target/target_core_pr.h
+@@ -60,7 +60,7 @@ extern int core_scsi3_alloc_aptpl_registration(
+ 			unsigned char *, u16, u32, int, int, u8);
+ extern int core_scsi3_check_aptpl_registration(struct se_device *,
+ 			struct se_portal_group *, struct se_lun *,
+-			struct se_lun_acl *);
++			struct se_node_acl *, u32);
+ extern void core_scsi3_free_pr_reg_from_nacl(struct se_device *,
+ 					     struct se_node_acl *);
+ extern void core_scsi3_free_all_registrations(struct se_device *);
+diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
+index c036595b17cf..fb8a1a12dda9 100644
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -40,6 +40,7 @@
+ #include <target/target_core_fabric.h>
+ 
+ #include "target_core_internal.h"
++#include "target_core_pr.h"
+ 
+ extern struct se_device *g_lun0_dev;
+ 
+@@ -166,6 +167,13 @@ void core_tpg_add_node_to_devs(
+ 
+ 		core_enable_device_list_for_node(lun, NULL, lun->unpacked_lun,
+ 				lun_access, acl, tpg);
++		/*
++		 * Check to see if there are any existing persistent reservation
++		 * APTPL pre-registrations that need to be enabled for this dynamic
++		 * LUN ACL now..
++		 */
++		core_scsi3_check_aptpl_registration(dev, tpg, lun, acl,
++						    lun->unpacked_lun);
+ 		spin_lock(&tpg->tpg_lun_lock);
+ 	}
+ 	spin_unlock(&tpg->tpg_lun_lock);
 -- 
 2.1.0
 
