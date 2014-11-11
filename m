@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaKKLMC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:12:02 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:41639 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbaKKLL6 (ORCPT
+	id S932069AbaKKLMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:12:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57962 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaKKLLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:58 -0500
-Date: Tue, 11 Nov 2014 11:11:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
- XPower
-Message-ID: <20141111111152.GX24004@x1>
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
- <54616E55.80204@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54616E55.80204@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Nov 2014 06:11:43 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 169/170] mnt: Prevent pivot_root from creating a loop in the mount tree
+Date: Tue, 11 Nov 2014 11:08:48 +0000
+Message-Id: <1415704129-12709-170-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Aaron Lu wrote:
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
-> On 10/31/2014 02:08 PM, Aaron Lu wrote:
-> > On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
-> > ACPI operation regions defined for the Power Management Integrated Circuit
-> > device, one is for power resource handling and one is for thermal: sensor
-> > temperature reporting, trip point setting, etc. There are different PMIC
-> > chips used on those platforms and though each has the same two operation
-> > regions and functionality, their implementation is different so every PMIC
-> > will need a driver. But since their functionality is similar, some common
-> > code is abstracted into the intel_soc_pmic_opregion.c.
-> > 
-> > The last version is posted here:
-> > https://lkml.org/lkml/2014/9/8/801
-> > 
-> > Changes since then:
-> > 1 Move to drivers/acpi as discussed on the above thread;
-> > 2 Added support for XPower AXP288 PMIC operation region support;
-> > 3 Since operation region handler can not be removed(at the moment at least),
-> >   use bool for the two operation region driver configs instead of tristate;
-> >   Another reason to do this is that, with Mika's MFD ACPI support patch, all
-> >   those MFD cell devices created will have the same modalias as their parent's
-> >   so it doesn't make much sense to compile these drivers into modules.
-> > 
-> > Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
-> > patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
-> > driver XPower AXP288 and iio driver axp288_adc is located.
-> 
-> Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
-> would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
-> 
-> Rafael,
-> Can I get your ACK for the three patches?
-> 
-> Lee,
-> Can you please take the series if Rafael gives it ack?
+------------------
 
-Yes, no problem.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-> > Aaron Lu (3):
-> >   ACPI / pmic_opregion: support PMIC operation region for CrystalCove
-> >   ACPI / pmic_opregion: support PMIC operation region for XPower AXP288
-> >   ACPI / pmic_opregion: AXP288: support virtual GPIO in ACPI table
-> > 
-> 
+commit 0d0826019e529f21c84687521d03f60cd241ca7d upstream.
 
+Andy Lutomirski recently demonstrated that when chroot is used to set
+the root path below the path for the new ``root'' passed to pivot_root
+the pivot_root system call succeeds and leaks mounts.
+
+In examining the code I see that starting with a new root that is
+below the current root in the mount tree will result in a loop in the
+mount tree after the mounts are detached and then reattached to one
+another.  Resulting in all kinds of ugliness including a leak of that
+mounts involved in the leak of the mount loop.
+
+Prevent this problem by ensuring that the new mount is reachable from
+the current root of the mount tree.
+
+[Added stable cc.  Fixes CVE-2014-7970.  --Andy]
+
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/87bnpmihks.fsf@x220.int.ebiederm.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/namespace.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index e544a0680a7c..f24161a45b06 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2840,6 +2840,9 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
+ 	/* make sure we can reach put_old from new_root */
+ 	if (!is_path_reachable(old_mnt, old.dentry, &new))
+ 		goto out4;
++	/* make certain new is below the root */
++	if (!is_path_reachable(new_mnt, new.dentry, &root))
++		goto out4;
+ 	root_mp->m_count++; /* pin it so it won't go away */
+ 	lock_mount_hash();
+ 	detach_mnt(new_mnt, &parent_path);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.1.0
+
