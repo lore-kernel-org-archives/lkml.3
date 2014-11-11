@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaKKQc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:32:26 -0500
-Received: from mga03.intel.com ([134.134.136.65]:54607 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbaKKQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:32:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="486551109"
-Message-ID: <54623A10.9030705@linux.intel.com>
-Date: Wed, 12 Nov 2014 00:32:16 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751460AbaKKQvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:51:16 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:46776 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaKKQvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 11:51:14 -0500
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 00/15] arm64: PCI/MSI: GICv3 ITS support (stacked domain
- edition)
-References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com> <546234FA.3060501@linux.intel.com> <546238FA.3040307@arm.com>
-In-Reply-To: <546238FA.3040307@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5461D2C1.6020505@redhat.com>
+References: <cover.1415645258.git.rbyshko@gmail.com> <5461D2C1.6020505@redhat.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Wed, 12 Nov 2014 00:50:53 +0800
+X-Google-Sender-Auth: XpZmVQvrKVi91PFgSU-22xOhMRA
+Message-ID: <CAGb2v65=xbP+QMTBtVGRg6cEXHhsYda45yKHGrq9QfKcXozHiA@mail.gmail.com>
+Subject: Re: [linux-sunxi] [PATCH v2 0/5] ARM: sunxi: Add support for USB OTG PHY
+To: Hans De Goede <hdegoede@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        Roman Byshko <rbyshko@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/12 0:27, Marc Zyngier wrote:
-> On 11/11/14 16:10, Jiang Liu wrote:
->> Hi Marc,
->> 	Sorry for the late notification. I have heavily reworked the
->> interfaces for MSI irqdomain support based on review comments.
->> Please refer to https://lkml.org/lkml/2014/11/9/88, please give your
->> comments on the new interfaces:)
-> 
-> Ah, I feel like I have more catch-up to do. Hopefully the changes are
-> simple enough to implement. Rebase time...
-The new interfaces are still RFC, so comments are warmly welcomed!
-Regards!
-Gerry
-> 
-> Thanks,
-> 
-> 	M.
-> 
+On Tue, Nov 11, 2014 at 5:11 PM, Hans de Goede <hdegoede@redhat.com> wrote:
+> Hi,
+>
+> On 11/10/2014 07:55 PM, Roman Byshko wrote:
+>> Hi,
+>>
+>> There is already support for two USB phys, which are used for
+>> USB host controllers on Allwinner SoC aka sunxi.
+>>
+>> This patch series add support for the USB OTG phy (aka phy0).
+>>
+>> The code has been tested on Allwinner A20 aka sun7i (Cubietruck).
+>>
+>> Best regards,
+>> Roman Byshko
+>
+> First of all very cool that you're working on this, I somehow missed
+> v1, but I'm very happy to see this.
+>
+> Second some questions, this series seems to only add support for
+> initializing the phy, without adding the necessary magic for
+> switching from app to host mode, and without actually hooking up musb,
+> I assume you've a follow up series adding musb support, which actually
+> uses the phy ?
+>
+> Also have you coordinated your work with ChenYu? ATM ChenYu is mostly
+> working on other stuff, but AFAIk he has been working on musb support
+> in the past.
+
+I'm happy that someone has taken over. I was mostly just exploring what
+OTG is, not much code actually made it into my working branch, which is
+available on github.
+
+ChenYu
