@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaKKCEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 21:04:50 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43203 "EHLO mga09.intel.com"
+	id S1751746AbaKKCGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 21:06:41 -0500
+Received: from mail.eperm.de ([89.247.134.16]:54316 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaKKCEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 21:04:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,357,1413270000"; 
-   d="scan'208";a="605663168"
-Message-ID: <54616E55.80204@intel.com>
-Date: Tue, 11 Nov 2014 10:03:01 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751652AbaKKCGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 21:06:40 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: crypto: zeroization of sensitive data in af_alg
+Date: Tue, 11 Nov 2014 03:06:32 +0100
+Message-ID: <1533864.71MuF2upah@tachyon.chronox.de>
+User-Agent: KMail/4.14.2 (Linux/3.17.2-300.fc21.x86_64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141110140518.GD8578@gondor.apana.org.au>
+References: <1979092.odOtqL46qU@tachyon.chronox.de> <20141110140518.GD8578@gondor.apana.org.au>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lee Jones <lee.jones@linaro.org>
-CC: linux-acpi@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH 0/3] Support PMIC operation region for CrystalCove and
- XPower
-References: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
-In-Reply-To: <1414735705-18366-1-git-send-email-aaron.lu@intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2014 02:08 PM, Aaron Lu wrote:
-> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
-> ACPI operation regions defined for the Power Management Integrated Circuit
-> device, one is for power resource handling and one is for thermal: sensor
-> temperature reporting, trip point setting, etc. There are different PMIC
-> chips used on those platforms and though each has the same two operation
-> regions and functionality, their implementation is different so every PMIC
-> will need a driver. But since their functionality is similar, some common
-> code is abstracted into the intel_soc_pmic_opregion.c.
-> 
-> The last version is posted here:
-> https://lkml.org/lkml/2014/9/8/801
-> 
-> Changes since then:
-> 1 Move to drivers/acpi as discussed on the above thread;
-> 2 Added support for XPower AXP288 PMIC operation region support;
-> 3 Since operation region handler can not be removed(at the moment at least),
->   use bool for the two operation region driver configs instead of tristate;
->   Another reason to do this is that, with Mika's MFD ACPI support patch, all
->   those MFD cell devices created will have the same modalias as their parent's
->   so it doesn't make much sense to compile these drivers into modules.
-> 
-> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
-> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
-> driver XPower AXP288 and iio driver axp288_adc is located.
+Am Montag, 10. November 2014, 22:05:18 schrieb Herbert Xu:
 
-Since patch 2-3 are based on top of the mfd/ib-mfd-iio-3.19 branch, it
-would be easy to go through the mfd/ib-mfd-iio-3.19 branch.
+Hi Herbert,
 
-Rafael,
-Can I get your ACK for the three patches?
+> On Sun, Nov 09, 2014 at 11:33:52PM +0100, Stephan Mueller wrote:
+> > while working on the AF_ALG interface, I saw no active zeroizations of
+> > memory that may hold sensitive data that is maintained outside the kernel
+> > crypto API cipher handles. I think the following memory segments fall
+> > under that
+> > category:
+> Are you talking about temporary data that we generate as part of
+> the processing? If so they should be zeroed by the entity that
+> generates them.
 
-Lee,
-Can you please take the series if Rafael gives it ack?
-
-Thanks,
-Aaron
-
+I currently see that the IV buffer (owned by skcipher) and the message digest 
+buffer (owned by hash) are not memset(0) before freeing them. I agree that 
+both are not really sensitive data. But wouldn't it be prudent to memset(0) 
+them nonetheless in the skcipher_sock_destruct and hash_sock_destruct 
+functions, respectively? 
 > 
-> Aaron Lu (3):
->   ACPI / pmic_opregion: support PMIC operation region for CrystalCove
->   ACPI / pmic_opregion: support PMIC operation region for XPower AXP288
->   ACPI / pmic_opregion: AXP288: support virtual GPIO in ACPI table
+> > However, I am failing to find the right spot to add a zeroization for the
+> > latter one, i.e. the code that handles the pages send in by the user or
+> > the
+> > pages that are returned by the crypto API. Initially I thought
+> > skcipher_pull_sgl is a good spot for the symmetric ciphers as it evicts
+> > the
+> > used pages out of the scope of the kernel crypto API. I added a
+> > clear_page(sg_page(sg+1)) as well as memset(sg_page(sg+1), 0, plen) right
+> > before the put_page call. All that I got in return was a BUG() from the
+> > memory management layer.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> I don't think I understand what exactly you're trying to zero.
+> Can you give an example?
 
+Apologies, my bad as I did not check get_user_pages_fast well enough. I see 
+now that we operate on the pages in user space directly without copy_from_user 
+that would imply a kernel-internal copy. Please disregard my comment.
+> 
+> Thanks,
+
+
+-- 
+Ciao
+Stephan
