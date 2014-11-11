@@ -1,71 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaKKIPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:15:51 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413AbaKKIPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:15:47 -0500
-Message-ID: <5461C5AD.5040705@nod.at>
-Date: Tue, 11 Nov 2014 09:15:41 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V6] UBI: Extend UBI layer debug/messaging capabilities
-References: <1415023112-21704-1-git-send-email-tlinder@codeaurora.org> <5460F7D8.2030100@nod.at>
-In-Reply-To: <5460F7D8.2030100@nod.at>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1752888AbaKKIP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:15:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56774 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413AbaKKIPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:15:55 -0500
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [PATCH v3 08/21] backports: replace BACKPORT_PWD with BACKPORT_DIR
+Date: Tue, 11 Nov 2014 00:14:59 -0800
+Message-Id: <1415693712-23743-9-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.11.2014 um 18:37 schrieb Richard Weinberger:
-> Am 03.11.2014 um 14:58 schrieb Tanya Brokhman:
->> If there is more then one UBI device mounted, there is no way to
->> distinguish between messages from different UBI devices.
->> Add device number to all ubi layer message types.
->>
->> The R/O block driver messages were replaced by pr_* since
->> ubi_device structure is not used by it.
->>
->> Amended a bit by Artem.
->>
->> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
->> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> I've rebased my fastmap work to linux-ubifs.git which contains this patch.
-> While testing I noticed that the log output looks quite different.
-> 
-> e.g.
-> [   26.564111] UBI-0: ubi_attach_mtd_dev:default fastmap pool size: 256
-> [   26.565438] UBI-0: ubi_attach_mtd_dev:default fastmap WL pool size: 128
-> [   26.566781] UBI-0: ubi_attach_mtd_dev:attaching mtd0 to ubi0
-> [   26.653704] UBI-0: scan_all:scanning is finished
-> [   26.654379] UBI-0: late_analysis:empty MTD device detected
-> [   26.761154] UBI-0: ubi_attach_mtd_dev:attached mtd0 (name "NAND simulator partition 0", size 128 MiB)
-> [   26.762112] UBI-0: ubi_attach_mtd_dev:PEB size: 16384 bytes (16 KiB), LEB size: 15872 bytes
-> [   26.762933] UBI-0: ubi_attach_mtd_dev:min./max. I/O unit sizes: 512/512, sub-page size 256
-> [   26.763765] UBI-0: ubi_attach_mtd_dev:VID header offset: 256 (aligned 256), data offset: 512
-> [   26.764607] UBI-0: ubi_attach_mtd_dev:good PEBs: 8192, bad PEBs: 0, corrupted PEBs: 0
-> [   26.765394] UBI-0: ubi_attach_mtd_dev:user volume: 0, internal volumes: 1, max. volumes count: 92
-> [   26.766244] UBI-0: ubi_attach_mtd_dev:max/mean erase counter: 0/0, WL threshold: 4096, image sequence number: 3297366243
-> [   26.767287] UBI-0: ubi_attach_mtd_dev:available PEBs: 8014, total reserved PEBs: 178, PEBs reserved for bad PEB handling: 160
-> [   26.769050] UBI-0: ubi_thread:background thread "ubi_bgt0d" started, PID 2686
-> [   29.119991] UBI-0: ubi_detach_mtd_dev:detaching mtd0
-> [   29.121084] UBI-0: ubi_thread:background thread "ubi_bgt0d" should stop, PID 2686
-> [   29.165538] UBI-0: ubi_detach_mtd_dev:mtd0 is detached
-> 
-> Do we really want the function name in every log message?
-> IMHO this is not wise except for pure debug logs.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-BTW: Why UBI-X? This looks odd. Either use UBIX or ubiX.
+This will also be used for built-in kernel integration, by
+using this we can share more code with the built-in kernel
+approach.
 
-Thanks,
-//richard
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ backport/Makefile             | 6 +++---
+ backport/Makefile.build       | 4 ++--
+ backport/Makefile.real        | 2 +-
+ backport/scripts/uninstall.sh | 4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/backport/Makefile b/backport/Makefile
+index ea3982b..fcf2f01 100644
+--- a/backport/Makefile
++++ b/backport/Makefile
+@@ -6,7 +6,7 @@ ifeq ($(KERNELRELEASE),)
+ 
+ MAKEFLAGS += --no-print-directory
+ SHELL := /bin/bash
+-BACKPORT_PWD := $(shell pwd)
++BACKPORT_DIR := $(shell pwd)
+ 
+ KMODDIR ?= updates
+ ifneq ($(origin KLIB), undefined)
+@@ -20,7 +20,7 @@ KERNEL_CONFIG := $(KLIB_BUILD)/.config
+ KERNEL_MAKEFILE := $(KLIB_BUILD)/Makefile
+ CONFIG_MD5 := $(shell md5sum $(KERNEL_CONFIG) 2>/dev/null | sed 's/\s.*//')
+ 
+-export KLIB KLIB_BUILD BACKPORT_PWD KMODDIR KMODPATH_ARG
++export KLIB KLIB_BUILD BACKPORT_DIR KMODDIR KMODPATH_ARG
+ 
+ # disable built-in rules for this file
+ .SUFFIXES:
+@@ -159,5 +159,5 @@ help: defconfig-help
+ 	@echo ""
+ 	@echo "Execute "make" or "make all" to build all targets marked with [*]"
+ else
+-include $(BACKPORT_PWD)/Makefile.kernel
++include $(BACKPORT_DIR)/Makefile.kernel
+ endif
+diff --git a/backport/Makefile.build b/backport/Makefile.build
+index d209041..a848b37 100644
+--- a/backport/Makefile.build
++++ b/backport/Makefile.build
+@@ -3,8 +3,8 @@ export
+ 
+ .PHONY: modules
+ modules:
+-	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD) modules
++	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR) modules
+ 
+ .PHONY: clean
+ clean:
+-	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD) clean
++	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR) clean
+diff --git a/backport/Makefile.real b/backport/Makefile.real
+index f60d5ca..a0f4916 100644
+--- a/backport/Makefile.real
++++ b/backport/Makefile.real
+@@ -89,7 +89,7 @@ modules: backport-include/backport/autoconf.h
+ 
+ .PHONY: install
+ install: modules
+-	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD)			\
++	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR)			\
+ 		INSTALL_MOD_DIR=$(KMODDIR) $(KMODPATH_ARG)		\
+ 		modules_install
+ 	@./scripts/blacklist.sh $(KLIB)/ $(KLIB)/$(KMODDIR)
+diff --git a/backport/scripts/uninstall.sh b/backport/scripts/uninstall.sh
+index 1eb42b0..b46d3fe 100755
+--- a/backport/scripts/uninstall.sh
++++ b/backport/scripts/uninstall.sh
+@@ -10,8 +10,8 @@ else
+ 	compr=""
+ fi
+ 
+-for driver in $(find ${BACKPORT_PWD} -type f -name *.ko); do
+-	mod_name=${driver/${BACKPORT_PWD}/${KLIB}${KMODDIR}}${compr}
++for driver in $(find ${BACKPORT_DIR} -type f -name *.ko); do
++	mod_name=${driver/${BACKPORT_DIR}/${KLIB}${KMODDIR}}${compr}
+ 	echo "  uninstall" $mod_name
+ 	rm -f $mod_name
+ done
+-- 
+2.1.1
+
