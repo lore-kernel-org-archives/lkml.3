@@ -1,206 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaKKL06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:26:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57726 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299AbaKKLLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:01 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 125/170] iwlwifi: configure the LTR
-Date: Tue, 11 Nov 2014 11:08:04 +0000
-Message-Id: <1415704129-12709-126-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1752167AbaKKL12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:27:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35996 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618AbaKKL10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:27:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="605873883"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v6 00/14] perf: Add infrastructure and support for Intel PT
+Date: Tue, 11 Nov 2014 13:26:46 +0200
+Message-Id: <1415705221-182873-1-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
+Hi Peter and all,
 
-------------------
+[full description below the changelog]
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+This version of the patchset addresses comments from the previous (v5)
+version. Changes:
 
-commit 9180ac50716a097a407c6d7e7e4589754a922260 upstream.
+  * dropped "bypass mask", bits that a privileged user could set in
+    RTIT_CTL,
+  * merged configuring and enabling RTIT_CTL writes,
+  * fixed kernel-doc comments
+  * if LBR/BTS events are present in the system, PT event creation is
+    disallowed and vice versa,
+  * fixed a bug with high order allocation under pressure,
+  * fixed undoing vm_locked accounting in case of AUX allocation
+    failure,
+  * replaced kref with atomic in aux refcounting,
+  * left out kernel counters for a separate series to keep this one
+    concise.
 
-The LTR is the handshake between the device and the root
-complex about the latency allowed when the bus exits power
-save. This configuration was missing and this led to high
-latency in the link power up. The end user could experience
-high latency in the network because of this.
+This patchset adds support for Intel Processor Trace (PT) extension [1] of
+Intel Architecture that allows the capture of information about software
+execution flow, to the perf kernel infrastructure.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/wireless/iwlwifi/iwl-trans.h        |  2 ++
- drivers/net/wireless/iwlwifi/mvm/fw-api-power.h | 35 ++++++++++++++++++++++++-
- drivers/net/wireless/iwlwifi/mvm/fw-api.h       |  1 +
- drivers/net/wireless/iwlwifi/mvm/fw.c           |  9 +++++++
- drivers/net/wireless/iwlwifi/mvm/ops.c          |  1 +
- drivers/net/wireless/iwlwifi/pcie/trans.c       | 16 ++++++-----
- 6 files changed, 56 insertions(+), 8 deletions(-)
+The single most notable thing is that while PT outputs trace data in a
+compressed binary format, it will still generate hundreds of megabytes
+of trace data per second per core. Decoding this binary stream takes
+2-3 orders of magnitude the cpu time that it takes to generate
+it. These considerations make it impossible to carry out decoding in
+kernel space. Therefore, the trace data is exported to userspace as a
+zero-copy mapping that userspace can collect and store for later
+decoding. To address this, this patchset extends perf ring buffer with
+an "AUX space", which is allocated for hardware blocks such as PT to
+export their trace data with minimal overhead. This space can be
+configured via buffer's user page and mmapped from the same file
+descriptor with a given offset. Data can then be collected from it
+by reading the aux_head (write) pointer from the user page and updating
+aux_tail (read) pointer similarly to data_{head,tail} of the
+traditional perf buffer. There is an api between perf core and pmu
+drivers that wish to make use of this AUX space to export their data.
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-trans.h b/drivers/net/wireless/iwlwifi/iwl-trans.h
-index 34d49e171fb4..653fe018e6b5 100644
---- a/drivers/net/wireless/iwlwifi/iwl-trans.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans.h
-@@ -545,6 +545,7 @@ enum iwl_trans_state {
-  *	Set during transport allocation.
-  * @hw_id_str: a string with info about HW ID. Set during transport allocation.
-  * @pm_support: set to true in start_hw if link pm is supported
-+ * @ltr_enabled: set to true if the LTR is enabled
-  * @dev_cmd_pool: pool for Tx cmd allocation - for internal use only.
-  *	The user should use iwl_trans_{alloc,free}_tx_cmd.
-  * @dev_cmd_headroom: room needed for the transport's private use before the
-@@ -571,6 +572,7 @@ struct iwl_trans {
- 	u8 rx_mpdu_cmd, rx_mpdu_cmd_hdr_size;
- 
- 	bool pm_support;
-+	bool ltr_enabled;
- 
- 	/* The following fields are internal only */
- 	struct kmem_cache *dev_cmd_pool;
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-index cbbcd8e284e4..ebfe23d8dd1f 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-power.h
-@@ -66,13 +66,46 @@
- 
- /* Power Management Commands, Responses, Notifications */
- 
-+/**
-+ * enum iwl_ltr_config_flags - masks for LTR config command flags
-+ * @LTR_CFG_FLAG_FEATURE_ENABLE: Feature operational status
-+ * @LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS: allow LTR change on shadow
-+ *	memory access
-+ * @LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH: allow LTR msg send on ANY LTR
-+ *	reg change
-+ * @LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3: allow LTR msg send on transition from
-+ *	D0 to D3
-+ * @LTR_CFG_FLAG_SW_SET_SHORT: fixed static short LTR register
-+ * @LTR_CFG_FLAG_SW_SET_LONG: fixed static short LONG register
-+ * @LTR_CFG_FLAG_DENIE_C10_ON_PD: allow going into C10 on PD
-+ */
-+enum iwl_ltr_config_flags {
-+	LTR_CFG_FLAG_FEATURE_ENABLE = BIT(0),
-+	LTR_CFG_FLAG_HW_DIS_ON_SHADOW_REG_ACCESS = BIT(1),
-+	LTR_CFG_FLAG_HW_EN_SHRT_WR_THROUGH = BIT(2),
-+	LTR_CFG_FLAG_HW_DIS_ON_D0_2_D3 = BIT(3),
-+	LTR_CFG_FLAG_SW_SET_SHORT = BIT(4),
-+	LTR_CFG_FLAG_SW_SET_LONG = BIT(5),
-+	LTR_CFG_FLAG_DENIE_C10_ON_PD = BIT(6),
-+};
-+
-+/**
-+ * struct iwl_ltr_config_cmd - configures the LTR
-+ * @flags: See %enum iwl_ltr_config_flags
-+ */
-+struct iwl_ltr_config_cmd {
-+	__le32 flags;
-+	__le32 static_long;
-+	__le32 static_short;
-+} __packed;
-+
- /* Radio LP RX Energy Threshold measured in dBm */
- #define POWER_LPRX_RSSI_THRESHOLD	75
- #define POWER_LPRX_RSSI_THRESHOLD_MAX	94
- #define POWER_LPRX_RSSI_THRESHOLD_MIN	30
- 
- /**
-- * enum iwl_scan_flags - masks for power table command flags
-+ * enum iwl_power_flags - masks for power table command flags
-  * @POWER_FLAGS_POWER_SAVE_ENA_MSK: '1' Allow to save power by turning off
-  *		receiver and transmitter. '0' - does not allow.
-  * @POWER_FLAGS_POWER_MANAGEMENT_ENA_MSK: '0' Driver disables power management,
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw-api.h b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-index 67363080f83d..41a181683a00 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
-@@ -144,6 +144,7 @@ enum {
- 	/* Power - legacy power table command */
- 	POWER_TABLE_CMD = 0x77,
- 	PSM_UAPSD_AP_MISBEHAVING_NOTIFICATION = 0x78,
-+	LTR_CONFIG = 0xee,
- 
- 	/* Thermal Throttling*/
- 	REPLY_THERMAL_MNG_BACKOFF = 0x7e,
-diff --git a/drivers/net/wireless/iwlwifi/mvm/fw.c b/drivers/net/wireless/iwlwifi/mvm/fw.c
-index 883e702152d5..bf720a875e6b 100644
---- a/drivers/net/wireless/iwlwifi/mvm/fw.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw.c
-@@ -475,6 +475,15 @@ int iwl_mvm_up(struct iwl_mvm *mvm)
- 	/* Initialize tx backoffs to the minimal possible */
- 	iwl_mvm_tt_tx_backoff(mvm, 0);
- 
-+	if (mvm->trans->ltr_enabled) {
-+		struct iwl_ltr_config_cmd cmd = {
-+			.flags = cpu_to_le32(LTR_CFG_FLAG_FEATURE_ENABLE),
-+		};
-+
-+		WARN_ON(iwl_mvm_send_cmd_pdu(mvm, LTR_CONFIG, 0,
-+					     sizeof(cmd), &cmd));
-+	}
-+
- 	ret = iwl_mvm_power_update_device(mvm);
- 	if (ret)
- 		goto error;
-diff --git a/drivers/net/wireless/iwlwifi/mvm/ops.c b/drivers/net/wireless/iwlwifi/mvm/ops.c
-index cc2f7de396de..6b4f3525fdca 100644
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -323,6 +323,7 @@ static const char *const iwl_mvm_cmd_strings[REPLY_MAX] = {
- 	CMD(REPLY_BEACON_FILTERING_CMD),
- 	CMD(REPLY_THERMAL_MNG_BACKOFF),
- 	CMD(MAC_PM_POWER_TABLE),
-+	CMD(LTR_CONFIG),
- 	CMD(BT_COEX_CI),
- 	CMD(PSM_UAPSD_AP_MISBEHAVING_NOTIFICATION),
- 	CMD(ANTENNA_COUPLING_NOTIFICATION),
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
-index 788085bc65d7..3aefff039df0 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -109,6 +109,7 @@ static void iwl_pcie_apm_config(struct iwl_trans *trans)
- {
- 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
- 	u16 lctl;
-+	u16 cap;
- 
- 	/*
- 	 * HW bug W/A for instability in PCIe bus L0S->L1 transition.
-@@ -119,16 +120,17 @@ static void iwl_pcie_apm_config(struct iwl_trans *trans)
- 	 *    power savings, even without L1.
- 	 */
- 	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
--	if (lctl & PCI_EXP_LNKCTL_ASPM_L1) {
--		/* L1-ASPM enabled; disable(!) L0S */
-+	if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
- 		iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Enabled; Disabling L0S\n");
--	} else {
--		/* L1-ASPM disabled; enable(!) L0S */
-+	else
- 		iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
--		dev_info(trans->dev, "L1 Disabled; Enabling L0S\n");
--	}
- 	trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
-+
-+	pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
-+	trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
-+	dev_info(trans->dev, "L1 %sabled - LTR %sabled\n",
-+		 (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
-+		 trans->ltr_enabled ? "En" : "Dis");
- }
- 
- /*
+For tracing blocks that don't support hardware scatter-gather tables,
+we provide high-order physically contiguous allocations to minimize
+the overhead needed for software double buffering and PMI pressure.
+
+This way we get a normal perf data stream that provides sideband
+information that is required to decode the trace data, such as MMAPs,
+COMMs etc, plus the actual trace in its own logical space.
+
+If the trace buffer is mapped writable, the driver will stop tracing
+when it fills up (aux_head approaches aux_tail), till data is read,
+aux_tail pointer is moved forward and an ioctl() is issued to
+re-enable tracing. If the trace buffer is mapped read only, the
+tracing will continue, overwriting older data, so that the buffer
+always contains the most recent data. Tracing can be stopped with an
+ioctl() and restarted once the data is collected.
+
+Another use case is annotating samples of other perf events: setting
+PERF_SAMPLE_AUX requests attr.aux_sample_size bytes of trace to be
+included in each event's sample.
+
+This patchset consists of necessary changes to the perf kernel
+infrastructure, and PT and BTS pmu drivers. The tooling support is not
+included in this series, however, it can be found in my github tree [2].
+
+[1] http://software.intel.com/en-us/intel-isa-extensions
+[2] http://github.com/virtuoso/linux-perf/tree/intel_pt
+
+Alexander Shishkin (13):
+  perf: Add data_{offset,size} to user_page
+  perf: Support high-order allocations for AUX space
+  perf: Add a capability for AUX_NO_SG pmus to do software double
+    buffering
+  perf: Add a pmu capability for "exclusive" events
+  perf: Add AUX record
+  perf: Add api for pmus to write to AUX area
+  perf: Support overwrite mode for AUX area
+  perf: Add wakeup watermark control to AUX area
+  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
+  x86: perf: Intel PT and LBR/BTS are mutually exclusive
+  x86: perf: intel_pt: Intel PT PMU driver
+  x86: perf: intel_bts: Add BTS PMU driver
+  perf: add ITRACE_START record to indicate that tracing has started
+
+Peter Zijlstra (1):
+  perf: Add AUX area to ring buffer for raw data streams
+
+ arch/x86/include/asm/cpufeature.h          |    1 +
+ arch/x86/include/uapi/asm/msr-index.h      |   18 +
+ arch/x86/kernel/cpu/Makefile               |    1 +
+ arch/x86/kernel/cpu/intel_pt.h             |  131 ++++
+ arch/x86/kernel/cpu/perf_event.c           |   43 ++
+ arch/x86/kernel/cpu/perf_event.h           |   49 ++
+ arch/x86/kernel/cpu/perf_event_intel.c     |   40 +-
+ arch/x86/kernel/cpu/perf_event_intel_bts.c |  525 ++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |    3 +-
+ arch/x86/kernel/cpu/perf_event_intel_pt.c  | 1077 ++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/scattered.c            |    1 +
+ include/linux/perf_event.h                 |   47 +-
+ include/uapi/linux/perf_event.h            |   59 +-
+ kernel/events/core.c                       |  268 ++++++-
+ kernel/events/internal.h                   |   33 +
+ kernel/events/ring_buffer.c                |  324 ++++++++-
+ 16 files changed, 2569 insertions(+), 51 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
+
 -- 
-2.1.0
+2.1.1
 
