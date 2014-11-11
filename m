@@ -1,78 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaKKUYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:24:08 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14912 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750944AbaKKUYG (ORCPT
+	id S1751753AbaKKU2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:28:12 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:47945 "EHLO
+	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaKKU2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:24:06 -0500
-Date: Tue, 11 Nov 2014 12:27:08 -0800
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Bjorn Andersson <bjorn@kryo.se>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Stanimir Varbanov <svarbanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH] mfd: qcom-spmi-pmic: Add support for more chips versions
-Message-ID: <20141111202708.GA13013@sonymobile.com>
-References: <1415108003-16387-1-git-send-email-iivanov@mm-sol.com>
- <CAJAp7OgU64=KCuDhYEZTYppVeBz6wKvTDsof5vDRznfdZgAfZw@mail.gmail.com>
- <1415212271.14949.1.camel@mm-sol.com>
- <CAJAp7OgXHGWQj7MWh51LTUdmZpgZc=6m=o-Az=z8QxR7yfrw7g@mail.gmail.com>
- <1415260480.13103.3.camel@mm-sol.com>
- <CAJAp7OgPGhM=EnMNU2JfjG6Qb-EiWSPSRyZWGicSPmpicBQW7g@mail.gmail.com>
- <1415374390.26058.1.camel@mm-sol.com>
- <1415374852.26058.3.camel@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1415374852.26058.3.camel@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Nov 2014 15:28:09 -0500
+X-Quarantine-ID: <22Y74t9pzWNR>
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
+X-Spam-Flag: NO
+X-Spam-Score: -4.399
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        ebiederm@xmission.com, serge.hallyn@ubuntu.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v2 02/19] kbuild: kselftest_install - add a new make target to install selftests
+Date: Tue, 11 Nov 2014 13:27:42 -0700
+Message-Id: <a2344d4df903d673afe1631118f40917f773cc9a.1415735831.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1415735831.git.shuahkh@osg.samsung.com>
+References: <cover.1415735831.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1415735831.git.shuahkh@osg.samsung.com>
+References: <cover.1415735831.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 04:40:52PM +0100, Ivan T. Ivanov wrote:
-> On Fri, 2014-11-07 at 17:33 +0200, Ivan T. Ivanov wrote:
-> > On Thu, 2014-11-06 at 08:55 -0800, Bjorn Andersson wrote:
-> > > On Wed, Nov 5, 2014 at 11:54 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> > > > On Wed, 2014-11-05 at 17:36 -0800, Bjorn Andersson wrote:
-[...]
-> > > > > Could you be a little bit more elaborate on what you're trying to do
-> > > > > and which child devices that might be?
-> > > > 
-> > > > For example ADC drivers are required temperature compensation based
-> > > > on PMIC variant and chip manufacturer.
-> > > > 
-> > > 
-> > > I see, is that compensation of any practical value? Or is the
-> > > compensation of academic proportions?
-> > 
-> > It depends of what you mean by academic :-). Attached file have test
-> > application which dump difference between non compensated and compensated
-> > values for different temperature, manufacture and input value.
-> > 
-[...]
-> Forgot to add. PMIC subtype and version are used also in charger and BMS
-> drivers to workaround hardware issues.
+Add a new make target to install to install kernel selftests.
+This new target will build and install selftests. kselftest
+target now depends on kselftest_install and runs the generated
+kselftest script to reduce duplicate work and for common look
+and feel when running tests.
 
-All of the blocks on the PM8x41 series have their own version numbers.
-There's no need to look at the chip revision.
+Approach:
 
-In fact, the SMBB (charger) documentation (80-NA555-12) specifically
-refers to the SMBB_MISC block revision registers as the method for
-determining the hardware version.  The "qpnp-charger" SMBB driver in the
-CAF 3.4 & 3.10 trees utilizes block specific revision numbers, as do the
-"qpnp-bms" BMS driver, the "qpnp-adc-current" IADC driver, and the
-"qpnp-adc-voltage" VADC driver.
+make kselftest_target:
+-- exports kselftest INSTALL_KSFT_PATH
+   default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
+-- exports path for ksefltest.sh
+-- runs selftests make install target:
 
-The revision of the PMIC itself should be completely irrelevant to any
-of the software interfacing with it.
+selftests make install target
+-- creates kselftest.sh script in install install dir
+-- runs install targets for all INSTALL_TARGETS
+   (Note: ftrace and powerpc aren't included in INSTALL_TARGETS,
+          to not add more content to patch v1 series. This work
+          will happen soon. In this series these two targets are
+          run after running the generated kselftest script, without
+          any regression in the way these tests are run with
+          "make kselftest" prior to this work.)
+-- install target can be run only from top level source dir.
 
--Courtney
+Individual test make install targets:
+-- install test programs and/or scripts in install dir
+-- append to the ksefltest.sh file to add commands to run test
+-- install target can be run only from top level source dir.
+
+Adds the following new ways to initiate selftests:
+-- Installing and running kselftest from install directory
+   by running  "make kselftest"
+-- Running kselftest script from install directory
+
+Maintains the following ways to run tests:
+-- make -C tools/testing/selftests run_tests
+-- make -C tools/testing/selftests TARGETS=target run_tests
+   Ability specify targets: e.g TARGETS=net
+-- make run_tests from tools/testing/selftests
+-- make run_tests from individual test directories:
+   e.g: make run_tests in tools/testing/selftests/breakpoints
+
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ Makefile | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 05d67af..ccbd2e1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1071,12 +1071,26 @@ headers_check: headers_install
+ 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
+ 
+ # ---------------------------------------------------------------------------
+-# Kernel selftest
++# Kernel selftest targets
++
++PHONY += __kselftest_configure
++INSTALL_KSFT_PATH=$(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
++export INSTALL_KSFT_PATH
++KSELFTEST=$(INSTALL_KSFT_PATH)/kselftest.sh
++export KSELFTEST
+ 
+ PHONY += kselftest
+-kselftest:
++kselftest: kselftest_install
+ 	$(Q)$(MAKE) -C tools/testing/selftests run_tests
+ 
++# Kernel selftest install
++
++PHONY += kselftest_install
++kselftest_install: __kselftest_configure
++	@rm -rf $(INSTALL_KSFT_PATH)
++	@mkdir -p $(INSTALL_KSFT_PATH)
++	$(Q)$(MAKE) -C tools/testing/selftests install
++
+ # ---------------------------------------------------------------------------
+ # Modules
+ 
+@@ -1285,6 +1299,9 @@ help:
+ 	@echo  '                    Build, install, and boot kernel before'
+ 	@echo  '                    running kselftest on it'
+ 	@echo  ''
++	@echo  '  kselftest_install - Install Kselftests to INSTALL_KSFT_PATH'
++	@echo  '                      default: $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)'
++	@echo  ''
+ 	@echo  'Kernel packaging:'
+ 	@$(MAKE) $(build)=$(package-dir) help
+ 	@echo  ''
+-- 
+1.9.1
+
