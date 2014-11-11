@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaKKLNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:13:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57956 "EHLO
+	id S1754626AbaKKLM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:12:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57959 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaKKLLl (ORCPT
+	with ESMTP id S1754563AbaKKLLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:41 -0500
+	Tue, 11 Nov 2014 06:11:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rabin Vincent <rabin@rab.in>, Steven Rostedt <rostedt@goodmis.org>,
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 166/170] tracing/syscalls: Ignore numbers outside NR_syscalls' range
-Date: Tue, 11 Nov 2014 11:08:45 +0000
-Message-Id: <1415704129-12709-167-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 167/170] x86_64, entry: Filter RFLAGS.NT on entry from userspace
+Date: Tue, 11 Nov 2014 11:08:46 +0000
+Message-Id: <1415704129-12709-168-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -27,90 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin@rab.in>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 086ba77a6db00ed858ff07451bedee197df868c9 upstream.
+commit 8c7aa698baca5e8f1ba9edb68081f1e7a1abf455 upstream.
 
-ARM has some private syscalls (for example, set_tls(2)) which lie
-outside the range of NR_syscalls.  If any of these are called while
-syscall tracing is being performed, out-of-bounds array access will
-occur in the ftrace and perf sys_{enter,exit} handlers.
+The NT flag doesn't do anything in long mode other than causing IRET
+to #GP.  Oddly, CPL3 code can still set NT using popf.
 
- # trace-cmd record -e raw_syscalls:* true && trace-cmd report
- ...
- true-653   [000]   384.675777: sys_enter:            NR 192 (0, 1000, 3, 4000022, ffffffff, 0)
- true-653   [000]   384.675812: sys_exit:             NR 192 = 1995915264
- true-653   [000]   384.675971: sys_enter:            NR 983045 (76f74480, 76f74000, 76f74b28, 76f74480, 76f76f74, 1)
- true-653   [000]   384.675988: sys_exit:             NR 983045 = 0
- ...
+Entry via hardware or software interrupt clears NT automatically, so
+the only relevant entries are fast syscalls.
 
- # trace-cmd record -e syscalls:* true
- [   17.289329] Unable to handle kernel paging request at virtual address aaaaaace
- [   17.289590] pgd = 9e71c000
- [   17.289696] [aaaaaace] *pgd=00000000
- [   17.289985] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
- [   17.290169] Modules linked in:
- [   17.290391] CPU: 0 PID: 704 Comm: true Not tainted 3.18.0-rc2+ #21
- [   17.290585] task: 9f4dab00 ti: 9e710000 task.ti: 9e710000
- [   17.290747] PC is at ftrace_syscall_enter+0x48/0x1f8
- [   17.290866] LR is at syscall_trace_enter+0x124/0x184
+If user code causes kernel code to run with NT set, then there's at
+least some (small) chance that it could cause trouble.  For example,
+user code could cause a call to EFI code with NT set, and who knows
+what would happen?  Apparently some games on Wine sometimes do
+this (!), and, if an IRET return happens, they will segfault.  That
+segfault cannot be handled, because signal delivery fails, too.
 
-Fix this by ignoring out-of-NR_syscalls-bounds syscall numbers.
+This patch programs the CPU to clear NT on entry via SYSCALL (both
+32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
+in software on entry via SYSENTER.
 
-Commit cd0980fc8add "tracing: Check invalid syscall nr while tracing syscalls"
-added the check for less than zero, but it should have also checked
-for greater than NR_syscalls.
+To save a few cycles, this borrows a trick from Jan Beulich in Xen:
+it checks whether NT is set before trying to clear it.  As a result,
+it seems to have very little effect on SYSENTER performance on my
+machine.
 
-Link: http://lkml.kernel.org/p/1414620418-29472-1-git-send-email-rabin@rab.in
+There's another minor bug fix in here: it looks like the CFI
+annotations were wrong if CONFIG_AUDITSYSCALL=n.
 
-Fixes: cd0980fc8add "tracing: Check invalid syscall nr while tracing syscalls"
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
+
+I haven't touched anything on 32-bit kernels.
+
+The syscall mask change comes from a variant of this patch by Anish
+Bhatt.
+
+Note to stable maintainers: there is no known security issue here.
+A misguided program can set NT and cause the kernel to try and fail
+to deliver SIGSEGV, crashing the program.  This patch fixes Far Cry
+on Wine: https://bugs.winehq.org/show_bug.cgi?id=33275
+
+Reported-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace_syscalls.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/ia32/ia32entry.S    | 18 +++++++++++++++++-
+ arch/x86/kernel/cpu/common.c |  2 +-
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 759d5e004517..7e3cd7aaec83 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -313,7 +313,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	int size;
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 4299eb05023c..711de084ab57 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -151,6 +151,16 @@ ENTRY(ia32_sysenter_target)
+ 1:	movl	(%rbp),%ebp
+ 	_ASM_EXTABLE(1b,ia32_badarg)
+ 	ASM_CLAC
++
++	/*
++	 * Sysenter doesn't filter flags, so we need to clear NT
++	 * ourselves.  To save a few cycles, we can check whether
++	 * NT was set instead of doing an unconditional popfq.
++	 */
++	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
++	jnz sysenter_fix_flags
++sysenter_flags_fixed:
++
+ 	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	CFI_REMEMBER_STATE
+@@ -184,6 +194,8 @@ sysexit_from_sys_call:
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS_SYSEXIT32
  
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
++	CFI_RESTORE_STATE
++
+ #ifdef CONFIG_AUDITSYSCALL
+ 	.macro auditsys_entry_common
+ 	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
+@@ -226,7 +238,6 @@ sysexit_from_sys_call:
+ 	.endm
  
- 	/* Here we're inside tp handler's rcu_read_lock_sched (__DO_TRACE) */
-@@ -360,7 +360,7 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	int syscall_nr;
+ sysenter_auditsys:
+-	CFI_RESTORE_STATE
+ 	auditsys_entry_common
+ 	movl %ebp,%r9d			/* reload 6th syscall arg */
+ 	jmp sysenter_dispatch
+@@ -235,6 +246,11 @@ sysexit_audit:
+ 	auditsys_exit sysexit_from_sys_call
+ #endif
  
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
++sysenter_fix_flags:
++	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
++	popfq_cfi
++	jmp sysenter_flags_fixed
++
+ sysenter_tracesys:
+ #ifdef CONFIG_AUDITSYSCALL
+ 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index ef1b93f18ed1..ae52a082a01c 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1176,7 +1176,7 @@ void syscall_init(void)
+ 	/* Flags to clear on syscall */
+ 	wrmsrl(MSR_SYSCALL_MASK,
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
+-	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
++	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+ }
  
- 	/* Here we're inside tp handler's rcu_read_lock_sched (__DO_TRACE()) */
-@@ -567,7 +567,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int size;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
-@@ -641,7 +641,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int size;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
+ /*
 -- 
 2.1.0
 
