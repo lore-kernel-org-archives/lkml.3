@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaKKVkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 16:40:14 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:53620 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaKKVkL (ORCPT
+	id S1752233AbaKKVkX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 16:40:23 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:2939 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751741AbaKKVkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 16:40:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Feng Kan <fkan@apm.com>, patches@apm.com, jassisingbrar@gmail.com,
-        =devicetree@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hieu Le <hnle@apm.com>
-Subject: Re: [PATCH 5/6] Documentation: i2c: Add APM X-Gene platform SLIMpro I2C driver documentation
-Date: Tue, 11 Nov 2014 22:40:01 +0100
-Message-ID: <3205278.6fp3VTYkMI@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412726809-7525-6-git-send-email-fkan@apm.com>
-References: <1412726809-7525-1-git-send-email-fkan@apm.com> <1412726809-7525-6-git-send-email-fkan@apm.com>
+	Tue, 11 Nov 2014 16:40:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlRhAEiBYlR5LbBUPGdsb2JhbABcgw5UWYI2hQexDwIDBpNKgWWFbAICAQECgRkXAQEBAQEGAQEBATg7hAMBAQQ6HCMQCAMYCSUPBSUDBxoTiEDPNgELAR8YhiKKWgeESwWFIAKRYocggTWHAZI5KS+CSwEBAQ
+Date: Wed, 12 Nov 2014 08:40:12 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
+ only)
+Message-ID: <20141111214012.GU23575@dastard>
+References: <cover.1415636409.git.milosz@adfin.com>
+ <20141111064417.GT23575@dastard>
+ <CANP1eJHfWT0Foe+weB1SJkJ10JnOge_g=E8CXBsQNPW7i2+4NA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:iYBZAlTthioHV6LrF9tPvDbI/rWSfadeFg3SBP/87cx
- spOzyWvomyFrNumVnXb5HIQdJwJBjlJsbl+NTMi8fUrUO5UWNl
- 8QXItKEc95sDsAVnuMXjadhivAm9xDW+M703jftyTVRShZPFPz
- HqJMYP2yA9ToAvhfrdOSHhkwu8hPTyPoJjOeJRgWVsdTlDkmU/
- AeC8bJJQodIV8hAY4Z1T+w0Di0e+0EZhytVcqQiYa96Qf6QPZG
- YOIKV4QClg36C2s0x+24Z0+Oy7rBlZTl6cSWC/fylQ5j7H/eP1
- +e67sc7Upqlo1gH2CObl9wZZWdQ23oecGd6ZfcxXprcktLOfQl
- iEPVptuaiW5y4tSIgwf4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANP1eJHfWT0Foe+weB1SJkJ10JnOge_g=E8CXBsQNPW7i2+4NA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 October 2014 17:06:48 Feng Kan wrote:
-> Add APM X-Gene platform SLIMpro I2C driver documentation.
+On Tue, Nov 11, 2014 at 11:02:00AM -0500, Milosz Tanski wrote:
+> On Tue, Nov 11, 2014 at 1:44 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Mon, Nov 10, 2014 at 11:40:23AM -0500, Milosz Tanski wrote:
+> >> This patcheset introduces an ability to perform a non-blocking read from
+> >> regular files in buffered IO mode. This works by only for those filesystems
+> >> that have data in the page cache.
+> >>
+> >> It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
+> >> new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
+> >> extra flag argument (RWF_NONBLOCK).
+> >>
+> >> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
+> >> perform buffered IO operations. They submit the work form another thread
+> >> that performs network IO and epoll or other threads that perform CPU work. This
+> >> leads to increased latency for processing, esp. in the case of data that's
+> >> already cached in the page cache.
+> >>
+> >> With the new interface the applications will now be able to fetch the data in
+> >> their network / cpu bound thread(s) and only defer to a threadpool if it's not
+> >> there. In our own application (VLDB) we've observed a decrease in latency for
+> >> "fast" request by avoiding unnecessary queuing and having to swap out current
+> >> tasks in IO bound work threads.
+> >
+> > Can you write a test (or set of) for fstests that exercises this new
+> > functionality? I'm not worried about performance, just
+> > correctness....
 > 
+> Sure thing. Can you point me at the fstests repo? A quick google
+> search reveals lots of projects named fstests, most of them abandoned.
 
-Don't just repeat the subject line, explain what this is for.
+git://git.kernel.org/pub/scm/fs/xfs/xfstests-dev.git
 
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> Signed-off-by: Hieu Le <hnle@apm.com>
-> ---
->  .../devicetree/bindings/i2c/i2c-xgene-slimpro.txt    | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt b/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
-> new file mode 100644
-> index 0000000..1a79d53
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
-> @@ -0,0 +1,20 @@
-> +APM X-Gene SLIMpro Mailbox I2C Driver
-> +
-> +This is a I2C driver that access the I2C bus through the mailbox mechanism.
-> +There is documentation of the mailbox driver in the
-> +Documentation/devicetree/binding/mailbox/xgene-slimpro-mbox.txt
-> +
-> +Required properties :
-> +
-> + - compatible : should be "apm,xgene-slimpro-i2c"
-> + - mbox : ptr to the mailbox dts node, use the name of the mailbox as the
-> +	  first parameter. The second parameter is the channel number.
-> +	  The APM X-Gene SLIMpro mailbox has 8 channels.
-> + - mbox-names : the name of the mailbox channel.
+Cheers,
 
-The current form of the mailbox interface no longer uses mbox-names, so
-just drop that. In the old form, the binding would have been incomplete
-because you don't list the required name.
-
-	Arnd
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
