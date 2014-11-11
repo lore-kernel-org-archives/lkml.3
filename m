@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaKKJ60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:58:26 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:60976 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaKKJ6Y (ORCPT
+	id S1753018AbaKKJ7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:59:12 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36015 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbaKKJ7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:58:24 -0500
-From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-To: <Larry.Finger@lwfinger.net>, <Jes.Sorensen@redhat.com>
-CC: <gregkh@linuxfoundation.org>, <linux-wireless@vger.kernel.org>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH] staging:rtl8723au: core: Fix checkpatch warning
-Date: Tue, 11 Nov 2014 15:28:14 +0530
-Message-ID: <1415699894-20243-1-git-send-email-sanjeev_sharma@mentor.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <wrfjy4rxzk5b.fsf@redhat.com>
-References: <wrfjy4rxzk5b.fsf@redhat.com>
+	Tue, 11 Nov 2014 04:59:09 -0500
+Date: Tue, 11 Nov 2014 10:59:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joerg Roedel <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
+Subject: Re: [PATCH 3/5] lib: lockless generic and arch independent page
+ table (gpt) v2.
+Message-ID: <20141111095903.GH10501@worktop.programming.kicks-ass.net>
+References: <1415644096-3513-1-git-send-email-j.glisse@gmail.com>
+ <1415644096-3513-4-git-send-email-j.glisse@gmail.com>
+ <CA+55aFwHd4QYopHvd=H6hxoQeqDV3HT6=436LGU-FRb5A0p7Vg@mail.gmail.com>
+ <20141110205814.GA4186@gmail.com>
+ <CA+55aFwwKV_D5oWT6a97a70G7OnvsPD_j9LsuR+_e4MEdCOO9A@mail.gmail.com>
+ <20141110225036.GB4186@gmail.com>
+ <CA+55aFyfgj5ntoXEJeTZyGdOZ9_A_TK0fwt1px_FUhemXGgr0Q@mail.gmail.com>
+ <20141111024531.GA2503@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141111024531.GA2503@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the rtw_cmd.c file that fixes following
-Warning by introducing temporary structure.
+On Mon, Nov 10, 2014 at 09:45:33PM -0500, Jerome Glisse wrote:
+> All the complexity arise from two things, first the need to keep ad-hoc
+> link btw directory level to facilitate iteration over range.
 
-WARNING: line over 80 characters
-
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
- drivers/staging/rtl8723au/core/rtw_cmd.c | 42 ++++++++++++++++----------------
- 1 file changed, 21 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-index cd2e915..6eccd86 100644
---- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-@@ -919,34 +919,34 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
- 	u8 bHigherBusyTxTraffic = false;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 	int BusyThreshold = 100;
-+	struct rt_link_detect *ldi = &pmlmepriv->LinkDetectInfo;
-+
- 	/*  */
- 	/*  Determine if our traffic is busy now */
- 	/*  */
- 	if (check_fwstate(pmlmepriv, _FW_LINKED)) {
- 		if (rtl8723a_BT_coexist(padapter))
- 			BusyThreshold = 50;
--		else if (pmlmepriv->LinkDetectInfo.bBusyTraffic)
-+		else if (ldi->bBusyTraffic)
- 			BusyThreshold = 75;
- 		/*  if we raise bBusyTraffic in last watchdog, using
- 		    lower threshold. */
--		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > BusyThreshold ||
--		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > BusyThreshold) {
-+		if (ldi->NumRxOkInPeriod > BusyThreshold ||
-+		    ldi->NumTxOkInPeriod > BusyThreshold) {
- 			bBusyTraffic = true;
- 
--			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
--			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
-+			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
- 				bRxBusyTraffic = true;
- 			else
- 				bTxBusyTraffic = true;
- 		}
- 
- 		/*  Higher Tx/Rx data. */
--		if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod > 4000 ||
--		    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod > 4000) {
-+		if (ldi->NumRxOkInPeriod > 4000 ||
-+		    ldi->NumTxOkInPeriod > 4000) {
- 			bHigherBusyTraffic = true;
- 
--			if (pmlmepriv->LinkDetectInfo.NumRxOkInPeriod >
--			    pmlmepriv->LinkDetectInfo.NumTxOkInPeriod)
-+			if (ldi->NumRxOkInPeriod > ldi->NumTxOkInPeriod)
- 				bHigherBusyRxTraffic = true;
- 			else
- 				bHigherBusyTxTraffic = true;
-@@ -955,9 +955,9 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
- 		if (!rtl8723a_BT_coexist(padapter) ||
- 		    !rtl8723a_BT_using_antenna_1(padapter)) {
- 		/*  check traffic for  powersaving. */
--			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
--			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
--			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod > 2)
-+			if (((ldi->NumRxUnicastOkInPeriod +
-+			      ldi->NumTxOkInPeriod) > 8) ||
-+			    ldi->NumRxUnicastOkInPeriod > 2)
- 				bEnterPS = false;
- 			else
- 				bEnterPS = true;
-@@ -971,15 +971,15 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
- 	} else
- 		LPS_Leave23a(padapter);
- 
--	pmlmepriv->LinkDetectInfo.NumRxOkInPeriod = 0;
--	pmlmepriv->LinkDetectInfo.NumTxOkInPeriod = 0;
--	pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod = 0;
--	pmlmepriv->LinkDetectInfo.bBusyTraffic = bBusyTraffic;
--	pmlmepriv->LinkDetectInfo.bTxBusyTraffic = bTxBusyTraffic;
--	pmlmepriv->LinkDetectInfo.bRxBusyTraffic = bRxBusyTraffic;
--	pmlmepriv->LinkDetectInfo.bHigherBusyTraffic = bHigherBusyTraffic;
--	pmlmepriv->LinkDetectInfo.bHigherBusyRxTraffic = bHigherBusyRxTraffic;
--	pmlmepriv->LinkDetectInfo.bHigherBusyTxTraffic = bHigherBusyTxTraffic;
-+	ldi->NumRxOkInPeriod = 0;
-+	ldi->NumTxOkInPeriod = 0;
-+	ldi->NumRxUnicastOkInPeriod = 0;
-+	ldi->bBusyTraffic = bBusyTraffic;
-+	ldi->bTxBusyTraffic = bTxBusyTraffic;
-+	ldi->bRxBusyTraffic = bRxBusyTraffic;
-+	ldi->bHigherBusyTraffic = bHigherBusyTraffic;
-+	ldi->bHigherBusyRxTraffic = bHigherBusyRxTraffic;
-+	ldi->bHigherBusyTxTraffic = bHigherBusyTxTraffic;
- }
- 
- static void dynamic_chk_wk_hdl(struct rtw_adapter *padapter, u8 *pbuf, int sz)
--- 
-1.7.11.7
-
+btw means "by the way" not "between", use a dictionary some time.
