@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaKKJfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:35:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34685 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559AbaKKJe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:34:59 -0500
-Date: Tue, 11 Nov 2014 10:34:57 +0100
-From: Michal Kubecek <mkubecek@suse.cz>
-To: Veaceslav Falico <vfalico@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jay Vosburgh <j.vosburgh@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>, Jiri Pirko <jiri@resnulli.us>
-Subject: Re: [PATCH net-next 0/3] dev_disable_lro() improvements for stacked
- devices
-Message-ID: <20141111093457.GA30178@unicorn.suse.cz>
-References: <cover.1415692212.git.mkubecek@suse.cz>
- <20141111090522.GB20586@raspberrypi>
+	id S1752926AbaKKJh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:37:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35889 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaKKJhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 04:37:25 -0500
+Date: Tue, 11 Nov 2014 10:37:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v3 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20141111093719.GG10501@worktop.programming.kicks-ass.net>
+References: <1415276602-10337-1-git-send-email-matt@console-pimps.org>
+ <1415276602-10337-11-git-send-email-matt@console-pimps.org>
+ <20141107123431.GE3337@twins.programming.kicks-ass.net>
+ <20141110213140.GG1292@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141111090522.GB20586@raspberrypi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141110213140.GG1292@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 10:05:22AM +0100, Veaceslav Falico wrote:
-> On Tue, Nov 11, 2014 at 09:21:30AM +0100, Michal Kubecek wrote:
-> >Large receive offloading is known to cause problems if received packets
-> >are passed to other host. Therefore the kernel disables it by calling
-> >dev_disable_lro() whenever a network device is enslaved in a bridge or
-> >forwarding is enabled for it (or globally). For virtual devices we need
-> >to disable LRO on the underlying physical device (which is actually
-> >receiving the packets).
-> >
-> >Current dev_disable_lro() code handles this propagation for a vlan
-> >(including 802.1ad nested vlan), macvlan or a vlan on top of a macvlan.
-> >This patch adds LRO disabling propagation for
-> >
-> > - macvlan on top of a vlan or any stacked combination of those
-> > - bonding
-> > - teaming
-> 
-> All of these drivers use the netdev_upper and friends, so why not make it
-> generic with netdev_for_each_all_lower() in dev_disable_lro()?
+On Mon, Nov 10, 2014 at 09:31:40PM +0000, Matt Fleming wrote:
+> Actually, yeah, that does look like it'd work. Are you OK with me adding
+> an enum to the cqm_rmid_entry? You had concerns in the past about
+> growing the size of the struct.
 
-I wanted to preserve current approach where for vlan and macvlan, LRO is
-disabled on the real device instead of the original one (rather than in
-addition to it) as LRO is always disabled on them.
+That was because I was thinking you did nr_rmid*sizeof(cqm_rmid_entry)
+allocation, shortly thereafter I noticed you did a pointer alloc and
+then allocated each individual entry.
 
-Handling all four uniformly would make the code nicer but would bring
-unnecessary overhead of traversing the list and dev_disable_lro()
-recursion. On the other hand, this operation is not time critical so it
-might be acceptable after all.
-
-                                                         Michal Kubecek
-
+Also, that enum can fit the hole you made there I think.
