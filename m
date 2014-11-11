@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaKKQCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:02:07 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:33983 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474AbaKKQCD (ORCPT
+	id S1751260AbaKKQEE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:04:04 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53683 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751218AbaKKQEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:02:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141111064417.GT23575@dastard>
-References: <cover.1415636409.git.milosz@adfin.com>
-	<20141111064417.GT23575@dastard>
-Date: Tue, 11 Nov 2014 11:02:00 -0500
-Message-ID: <CANP1eJHfWT0Foe+weB1SJkJ10JnOge_g=E8CXBsQNPW7i2+4NA@mail.gmail.com>
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
-From: Milosz Tanski <milosz@adfin.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Nov 2014 11:04:02 -0500
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] mailbox: add tx_prepare client callback
+Date: Tue, 11 Nov 2014 16:04:12 +0000
+Message-Id: <1415721852-10193-1-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 1:44 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Mon, Nov 10, 2014 at 11:40:23AM -0500, Milosz Tanski wrote:
->> This patcheset introduces an ability to perform a non-blocking read from
->> regular files in buffered IO mode. This works by only for those filesystems
->> that have data in the page cache.
->>
->> It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
->> new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
->> extra flag argument (RWF_NONBLOCK).
->>
->> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
->> perform buffered IO operations. They submit the work form another thread
->> that performs network IO and epoll or other threads that perform CPU work. This
->> leads to increased latency for processing, esp. in the case of data that's
->> already cached in the page cache.
->>
->> With the new interface the applications will now be able to fetch the data in
->> their network / cpu bound thread(s) and only defer to a threadpool if it's not
->> there. In our own application (VLDB) we've observed a decrease in latency for
->> "fast" request by avoiding unnecessary queuing and having to swap out current
->> tasks in IO bound work threads.
->
-> Can you write a test (or set of) for fstests that exercises this new
-> functionality? I'm not worried about performance, just
-> correctness....
+If the mailbox controller expects the payload is in place before
+initiating the transmit, then it's impossible to reuse the list
+maintained by core mailbox code currently. Maintaining another list
+for sending the message in the controller seems totally unnecessary
+as core mailbox library already provides that feature.
 
-Sure thing. Can you point me at the fstests repo? A quick google
-search reveals lots of projects named fstests, most of them abandoned.
+This patch introduces tx_prepare callback in mbox_client which
+can be used by the core mailbox library before initiating the
+transaction through mbox->ops->send_data. The client driver can
+implement this callback to ensure the payload is copied to the
+shared memory.
 
->
-> Cheers,
->
-> Dave.
->
-> --
-> Dave Chinner
-> david@fromorbit.com
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/mailbox/mailbox.c      | 2 ++
+ include/linux/mailbox_client.h | 1 +
+ 2 files changed, 3 insertions(+)
 
-
-
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index afcb430508ec..4b4044f47b45 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -76,6 +76,8 @@ static void msg_submit(struct mbox_chan *chan)
+ 
+ 	data = chan->msg_data[idx];
+ 
++	if (chan->cl->tx_prepare)
++		chan->cl->tx_prepare(chan->cl, data);
+ 	/* Try to submit a message to the MBOX controller */
+ 	err = chan->mbox->ops->send_data(chan, data);
+ 	if (!err) {
+diff --git a/include/linux/mailbox_client.h b/include/linux/mailbox_client.h
+index 307d9cab2026..5a1a6db63e96 100644
+--- a/include/linux/mailbox_client.h
++++ b/include/linux/mailbox_client.h
+@@ -34,6 +34,7 @@ struct mbox_client {
+ 	bool knows_txdone;
+ 
+ 	void (*rx_callback)(struct mbox_client *cl, void *mssg);
++	void (*tx_prepare)(struct mbox_client *cl, void *mssg);
+ 	void (*tx_done)(struct mbox_client *cl, void *mssg, int r);
+ };
+ 
 -- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
+1.9.1
 
-p: 646-253-9055
-e: milosz@adfin.com
