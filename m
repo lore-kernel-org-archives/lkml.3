@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaKKO2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:28:42 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:61839 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294AbaKKO2k (ORCPT
+	id S1751747AbaKKO3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:29:00 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55636 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaKKO25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:28:40 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
-Subject: [GIT PULL] KVM fixes for 3.18-rc5
-Date: Tue, 11 Nov 2014 15:28:32 +0100
-Message-Id: <1415716112-9462-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 11 Nov 2014 09:28:57 -0500
+Message-ID: <54621D21.2000100@linaro.org>
+Date: Tue, 11 Nov 2014 14:28:49 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Rob Clark <robdclark@gmail.com>
+CC: David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [PATCH v3.18-rc3] drm: msm: Allow exported dma-bufs to be mapped
+References: <1415639805-17477-1-git-send-email-daniel.thompson@linaro.org> <CAF6AEGspGE2EsS7zuVFXh1kT2Rq8Rt8Z1dpGNdVKPr4mBcTZuw@mail.gmail.com>
+In-Reply-To: <CAF6AEGspGE2EsS7zuVFXh1kT2Rq8Rt8Z1dpGNdVKPr4mBcTZuw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 10/11/14 17:36, Rob Clark wrote:
+> On Mon, Nov 10, 2014 at 12:16 PM, Daniel Thompson
+> <daniel.thompson@linaro.org> wrote:
+>> diff --git a/drivers/gpu/drm/msm/msm_gem_prime.c b/drivers/gpu/drm/msm/msm_gem_prime.c
+>> index ad772fe36115..4e4fa5828d5d 100644
+>> --- a/drivers/gpu/drm/msm/msm_gem_prime.c
+>> +++ b/drivers/gpu/drm/msm/msm_gem_prime.c
+>> @@ -20,6 +20,14 @@
+>>
+>>  #include <linux/dma-buf.h>
+>>
+>> +struct dma_buf *msm_gem_prime_export(struct drm_device *dev,
+>> +                                    struct drm_gem_object *obj, int flags)
+>> +{
+>> +       /* we want to be able to write in mmapped buffer */
+>> +       flags |= O_RDWR;
+>> +       return drm_gem_prime_export(dev, obj, flags);
+>> +}
+>> +
+> 
+> seems like this probably should be done more centrally..  and in fact,
+> might be better to have something like this in
+> drm_prime_handle_to_fd_ioctl:
+> 
+>     /* check flags are valid */
+> -    if (args->flags & ~DRM_CLOEXEC)
+> +    if (args->flags & ~(DRM_CLOEXEC | O_RDWR))
+>        return -EINVAL;
+> 
+> so exporter can specify whether to allow mmap or not.
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+That makes sense I'll try this.
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
+Do we need to wrap O_RDWR in the same way we wrap O_CLOEXEC? (I don't
+really understand why DRM_CLOEXEC exists; even the patch description
+from when the symbol was introduced names it O_CLOEXEC).
 
-are available in the git repository at:
+Also the "flags |= O_RDWR" approach is copied from the sti driver. I'll
+share a patch to remove it but that will definitely needs Benjamin's ack
+because it will stop some userspaces working correctly (however I
+suspect that Benjamin may be the only person currently with such a
+userspace and that he can be persuaded not to call it a regression).
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
 
-for you to fetch changes up to d29b9d7ed76c0b961603ca692b8a562556a20212:
-
-  KVM: x86: Fix uninitialized op->type for some immediate values (2014-11-05 12:36:58 +0100)
-
-----------------------------------------------------------------
-Two fixes---one of them not exactly a one liner, but things are
-calming down on the KVM front at last.
-
-----------------------------------------------------------------
-Nadav Amit (1):
-      KVM: x86: Fix uninitialized op->type for some immediate values
-
-Paolo Bonzini (1):
-      Merge tag 'kvm-s390-20141103' of git://git.kernel.org/.../kvms390/linux into kvm-master
-
-Sebastian Ott (1):
-      KVM: s390: virtio_ccw: remove unused variable
-
- arch/x86/kvm/emulate.c        | 8 ++++++++
- drivers/s390/kvm/virtio_ccw.c | 1 -
- 2 files changed, 8 insertions(+), 1 deletion(-)
+Daniel.
