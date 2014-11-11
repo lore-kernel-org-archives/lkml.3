@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaKKDU2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 22:20:28 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:51745 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaKKDU0 (ORCPT
+	id S1751713AbaKKDWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 22:22:06 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:49542 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaKKDWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 22:20:26 -0500
-Message-ID: <54618077.9000108@gmail.com>
-Date: Mon, 10 Nov 2014 19:20:23 -0800
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 10 Nov 2014 22:22:04 -0500
+From: Xie XiuQi <xiexiuqi@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-doc@vger.kernel.org>, <paulmck@linux.vnet.ibm.com>,
+        <josh@joshtriplett.org>, <rostedt@goodmis.org>,
+        <mathieu.desnoyers@efficios.com>, <laijs@cn.fujitsu.com>,
+        <corbet@lwn.net>, <mingo@kernel.org>
+Subject: [PATCH] documentation: Update sysfs path for rcu_cpu_stall_timeout
+Date: Tue, 11 Nov 2014 12:03:26 +0800
+Message-ID: <1415678606-28216-1-git-send-email-xiexiuqi@huawei.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Kevin Hilman <khilman@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Tyler Baker <tyler.baker@linaro.org>
-Subject: Re: [PATCH] tty: serial: msm_serial: Use DT aliases
-References: <1414024381-12204-1-git-send-email-sboyd@codeaurora.org> <CAMAWPa_f1K1qUG_UTmM0w8Sz8wed7+CQkK9tc8t1W=CTJvdjyw@mail.gmail.com> <5461150B.2010907@codeaurora.org> <54616CB3.5000405@gmail.com> <54616F74.5010408@codeaurora.org>
-In-Reply-To: <54616F74.5010408@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.175.100.166]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020209.546180CB.0107,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: a09fc78026a2e37758451c14052d3300
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 6:07 PM, Stephen Boyd wrote:
-> On 11/10/2014 05:56 PM, Frank Rowand wrote:
->> On 11/10/2014 11:42 AM, Stephen Boyd wrote:
->>> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
->>> index 09364dd8cf3a..d1bc6b6cbc70 100644
->>> --- a/drivers/tty/serial/msm_serial.c
->>> +++ b/drivers/tty/serial/msm_serial.c
->>> @@ -1046,14 +1046,14 @@ static int msm_serial_probe(struct platform_device *pdev)
->>>  	const struct of_device_id *id;
->>>  	int irq, line;
->>>  
->>> -	if (pdev->id == -1)
->>> -		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
->>> -
->>>  	if (pdev->dev.of_node)
->>>  		line = of_alias_get_id(pdev->dev.of_node, "serial");
->>>  	else
->>>  		line = pdev->id;
->>>  
->>> +	if (line < 0)
->>> +		line = atomic_inc_return(&msm_uart_next_id) - 1;
->>> +
->>>  	if (unlikely(line < 0 || line >= UART_NR))
->> Then this original check for "line < 0" can also be removed.
->>
->>
-> 
-> Well this matches what was there before. It would do atomic_inc_return
-> if the line was negative and then still check for a negative value. I
-> don't mind removing it though. Perhaps we should use an ida?:
-> 
+Commit 6bfc09e2327d ("rcu: Provide RCU CPU stall warnings for tiny RCU")
+moved the rcu_cpu_stall_timeout module parameter from rcutree.c to
+rcupdate.c, but failed to update Documentation/RCU/stallwarn.txt. This
+commit therefore repairs this omission.
 
-OK, you are right.  If (pdev->id < -1) and (!pdev->dev.of_node) then
-the check is still needed.
+commit 96224daa16d6 ("documentation: Update sysfs path for rcu_cpu_stall_suppress")
+updated the path for rcu_cpu_stall_suppress, but failed to update for
+rcu_cpu_stall_timeout.
 
-You could use an ida.  Some drivers use a bit map.  I really don't think
-this should become a complicated algorithm though.  If the rule is that
-either all UARTS have an alias, or no UART has an alias, then I think
-the patch could be something like the following.
+Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+---
+ Documentation/RCU/stallwarn.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This combines your original patch, plus your fix patch, plus making
-the aliases all or nothing.  Not tested, not even compiled.
-
-What do you think?
-
-
-Index: linux/drivers/tty/serial/msm_serial.c
-===================================================================
---- linux.orig/drivers/tty/serial/msm_serial.c
-+++ linux/drivers/tty/serial/msm_serial.c
-@@ -1044,17 +1044,28 @@ static int msm_serial_probe(struct platf
- 	struct resource *resource;
- 	struct uart_port *port;
- 	const struct of_device_id *id;
--	int irq;
-+	int irq, line;
-+	static int no_prev_alias = 1;
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index ef5a2fd..da6a801 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -15,7 +15,7 @@ CONFIG_RCU_CPU_STALL_TIMEOUT
+ 	21 seconds.
  
--	if (pdev->id == -1)
--		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
-+	if (pdev->dev.of_node) {
-+		line = of_alias_get_id(pdev->dev.of_node, "serial");
-+		if (line < 0 && no_prev_alias)
-+			line = atomic_inc_return(&msm_uart_next_id) - 1;
-+		else
-+			no_prev_alias = 0;
-+	} else {
-+		if (pdev->id < 0 && no_prev_alias)
-+			line = atomic_inc_return(&msm_uart_next_id) - 1;
-+		else
-+			line = pdev->id;
-+	}
- 
--	if (unlikely(pdev->id < 0 || pdev->id >= UART_NR))
-+	if (unlikely(line < 0 || line >= UART_NR))
- 		return -ENXIO;
- 
--	dev_info(&pdev->dev, "msm_serial: detected port #%d\n", pdev->id);
-+	dev_info(&pdev->dev, "msm_serial: detected port #%d\n", line);
- 
--	port = get_port_from_line(pdev->id);
-+	port = get_port_from_line(line);
- 	port->dev = &pdev->dev;
- 	msm_port = UART_TO_MSM(port);
- 
+ 	This configuration parameter may be changed at runtime via the
+-	/sys/module/rcutree/parameters/rcu_cpu_stall_timeout, however
++	/sys/module/rcupdate/parameters/rcu_cpu_stall_timeout, however
+ 	this parameter is checked only at the beginning of a cycle.
+ 	So if you are 10 seconds into a 40-second stall, setting this
+ 	sysfs parameter to (say) five will shorten the timeout for the
+-- 
+1.7.1
+
