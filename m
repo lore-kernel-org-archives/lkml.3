@@ -1,137 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaKKUqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:46:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202AbaKKUqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:46:51 -0500
-Message-ID: <54627563.5000400@redhat.com>
-Date: Tue, 11 Nov 2014 12:45:23 -0800
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>, alexander.duyck@gmail.com
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] arch: Introduce read_acquire()
-References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home> <CA+55aFwo9f3tWaRqN1Xam9UkWv1B5F4YnRP1Qx3T78E4o=8YJQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwo9f3tWaRqN1Xam9UkWv1B5F4YnRP1Qx3T78E4o=8YJQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751758AbaKKUsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:48:43 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:47272 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaKKUsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 15:48:41 -0500
+From: Olof Johansson <olof@lixom.net>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linux-foundation.org,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH] ARM: dts: tegra: move serial aliases to per-board
+Date: Tue, 11 Nov 2014 12:49:30 -0800
+Message-Id: <1415738970-7963-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are general changes pending to make the /aliases/serial* entries
+number the serial ports on the system. On tegra, so far the ports have been
+just numbered dynamically as they are configured so that makes them change.
 
-On 11/11/2014 11:40 AM, Linus Torvalds wrote:
-> On Tue, Nov 11, 2014 at 10:57 AM,  <alexander.duyck@gmail.com> wrote:
->>
->>
->> On reviewing the documentation and code for smp_load_acquire() it occurred
->> to me that implementing something similar for CPU <-> device interaction
->> would be worth while.  This commit provides just the load/read side of this
->> in the form of read_acquire().
->
-> So I don't hate the concept, but. there's a couple of reasons to think
-> this is broken.
->
-> One is just the name. Why do we have "smp_load_acquire()", but then
-> call the non-smp version "read_acquire()"? That makes very little
-> sense to me. Why did "load" become "read"?
+To avoid this, add specific aliases per board to keep the old numbers. This
+allows us to change the numbering by default on future SoCs while keeping the
+numbering on existing boards.
 
-The idea behind read vs load in the name was because smp_load_acquire is 
-using a full smp_mb() whereas this just falls back to rmb() for the 
-cases it is dealing with.  My main conern is that a full memory barrier 
-would be more expensive so I didn't want to give the idea that this is 
-as completed as smp_load_acquire().  The read_acquire() call is not 
-strictly enforcing any limitations on writes/stores, although there are 
-a few cases where the barriers used do leak that functionality over as a 
-side-effect.
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
 
-> The other is more of a technical issue. Namely the fact that being
-> *device* ordered is completely and totally different from being *CPU*
-> ordered.
->
-> All sane modern architectures do memory ordering as part of the cache
-> coherency protocol. But part of that is that it actually requires all
-> the CPU's to follow said cache coherency protocol.
->
-> And bus-master devices don't necessarily follow the same ordering
-> rules. Yes, any sane DMA will be cache-coherent, although sadly the
-> insane kind still exists. But even when DMA is cache _coherent_, that
-> does not necessarily mean that that coherency follows the *ordering*
-> guarantees.
->
-> Now, in practice, I think that DMA tends to be more strictly ordered
-> than  CPU memory ordering is, and the above all "just works". But I'd
-> really want a lot of ack's from architecture maintainers. Particularly
-> PowerPC and ARM64. I'm not 100% sure that "smp_load_acquire()" will
-> necessarily order the read wrt DMA traffic. PPC in particular has some
-> really odd IO ordering rules, but I *think* all the problems come up
-> with just MMIO, not with DMA.
->
-> But we do have a very real difference between "smp_rmb()" (inter-cpu
-> cache coherency read barrier) and "rmb()" (full memory barrier that
-> synchronizes with IO).
->
-> And your patch is very confused about this. In *some* places you use
-> "rmb()", and in other places you just use "smp_load_acquire()". Have
-> you done extensive verification to check that this is actually ok?
-> Because the performance difference you quote very much seems to be
-> about your x86 testing now akipping the IO-synchronizing "rmb()", and
-> depending on DMA being ordered even without it.
+Stephen/Thierry/Alex, as noticed this week we really should try to get
+this in before the 3.19 merge window so that the global aliases change
+can happen there without regression.
 
-I am far from an expert on some of these synchronization primitives so I 
-probably did make some blunders.  I meant to send this as an RFC, but as 
-is I plan to submit a v2 to just fix the spelling errors in the patch 
-description anyway.
+If you have more fixes queued up, feel free to add this to the next pull
+request. If not, a review and ack would be appreciated.
 
-The architectures where I thought I might be able to take advantage of 
-the smp_load_acquire functionality are arm, x86, ia64, sparc, and s390. 
-  The rest are essentially still just an rmb() call following the 
-volatile read.
+ arch/arm/boot/dts/tegra114-dalmore.dts        |    1 +
+ arch/arm/boot/dts/tegra114-roth.dts           |    4 ++++
+ arch/arm/boot/dts/tegra114-tn7.dts            |    4 ++++
+ arch/arm/boot/dts/tegra114.dtsi               |    7 -------
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts     |    1 +
+ arch/arm/boot/dts/tegra124-nyan-big.dts       |    1 +
+ arch/arm/boot/dts/tegra124-venice2.dts        |    1 +
+ arch/arm/boot/dts/tegra124.dtsi               |    7 -------
+ arch/arm/boot/dts/tegra20-harmony.dts         |    1 +
+ arch/arm/boot/dts/tegra20-iris-512.dts        |    5 +++++
+ arch/arm/boot/dts/tegra20-medcom-wide.dts     |    4 ++++
+ arch/arm/boot/dts/tegra20-paz00.dts           |    2 ++
+ arch/arm/boot/dts/tegra20-seaboard.dts        |    1 +
+ arch/arm/boot/dts/tegra20-tamonten.dtsi       |    1 +
+ arch/arm/boot/dts/tegra20-trimslice.dts       |    1 +
+ arch/arm/boot/dts/tegra20-ventana.dts         |    1 +
+ arch/arm/boot/dts/tegra20-whistler.dts        |    1 +
+ arch/arm/boot/dts/tegra20.dtsi                |    8 --------
+ arch/arm/boot/dts/tegra30-apalis-eval.dts     |    4 ++++
+ arch/arm/boot/dts/tegra30-beaver.dts          |    1 +
+ arch/arm/boot/dts/tegra30-cardhu.dtsi         |    2 ++
+ arch/arm/boot/dts/tegra30-colibri-eval-v3.dts |    3 +++
+ arch/arm/boot/dts/tegra30.dtsi                |    8 --------
+ 23 files changed, 39 insertions(+), 30 deletions(-)
 
-> And I'm pretty sure that's actually fine on x86. The real
-> IO-synchronizing rmb() (which translates into a lfence) is only needed
-> for when you have uncached accesses (ie mmio) on x86. So I don't think
-> your code is wrong, I just want to verify that everybody understands
-> the issues. I'm not even sure DMA can ever really have weaker memory
-> ordering (I really don't see how you'd be able to do a read barrier
-> without DMA stores being ordered natively), so maybe I worry too much,
-> but the ppc people in particular should look at this, because the ppc
-> memory ordering rules and serialization are some completely odd ad-hoc
-> black magic....
+diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+index 5c21d21..8b7aa0d 100644
+--- a/arch/arm/boot/dts/tegra114-dalmore.dts
++++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+@@ -15,6 +15,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps65913@58";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uartd;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra114-roth.dts b/arch/arm/boot/dts/tegra114-roth.dts
+index c7c6825..a80f1e2 100644
+--- a/arch/arm/boot/dts/tegra114-roth.dts
++++ b/arch/arm/boot/dts/tegra114-roth.dts
+@@ -15,6 +15,10 @@
+ 		linux,initrd-end = <0x82800000>;
+ 	};
+ 
++	aliases {
++		serial0 = &uartd;
++	};
++
+ 	firmware {
+ 		trusted-foundations {
+ 			compatible = "tlm,trusted-foundations";
+diff --git a/arch/arm/boot/dts/tegra114-tn7.dts b/arch/arm/boot/dts/tegra114-tn7.dts
+index 9636621..2301c66 100644
+--- a/arch/arm/boot/dts/tegra114-tn7.dts
++++ b/arch/arm/boot/dts/tegra114-tn7.dts
+@@ -15,6 +15,10 @@
+ 		linux,initrd-end = <0x82800000>;
+ 	};
+ 
++	aliases {
++		serial0 = &uartd;
++	};
++
+ 	firmware {
+ 		trusted-foundations {
+ 			compatible = "tlm,trusted-foundations";
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index 2ca9c18..222f3b3 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -9,13 +9,6 @@
+ 	compatible = "nvidia,tegra114";
+ 	interrupt-parent = <&gic>;
+ 
+-	aliases {
+-		serial0 = &uarta;
+-		serial1 = &uartb;
+-		serial2 = &uartc;
+-		serial3 = &uartd;
+-	};
+-
+ 	host1x@50000000 {
+ 		compatible = "nvidia,tegra114-host1x", "simple-bus";
+ 		reg = <0x50000000 0x00028000>;
+diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+index f46a789..4eb540b 100644
+--- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
++++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@0,7000d000/pmic@40";
+ 		rtc1 = "/rtc@0,7000e000";
++		serial0 = &uartd;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts b/arch/arm/boot/dts/tegra124-nyan-big.dts
+index 7d0784c..53181d3 100644
+--- a/arch/arm/boot/dts/tegra124-nyan-big.dts
++++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@0,7000d000/pmic@40";
+ 		rtc1 = "/rtc@0,7000e000";
++		serial0 = &uarta;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
+index 1300885..5c3f781 100644
+--- a/arch/arm/boot/dts/tegra124-venice2.dts
++++ b/arch/arm/boot/dts/tegra124-venice2.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@0,7000d000/pmic@40";
+ 		rtc1 = "/rtc@0,7000e000";
++		serial0 = &uarta;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index f765110..dde226e 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -13,13 +13,6 @@
+ 	#address-cells = <2>;
+ 	#size-cells = <2>;
+ 
+-	aliases {
+-		serial0 = &uarta;
+-		serial1 = &uartb;
+-		serial2 = &uartc;
+-		serial3 = &uartd;
+-	};
+-
+ 	pcie-controller@0,01003000 {
+ 		compatible = "nvidia,tegra124-pcie";
+ 		device_type = "pci";
+diff --git a/arch/arm/boot/dts/tegra20-harmony.dts b/arch/arm/boot/dts/tegra20-harmony.dts
+index a37279a..b926a07 100644
+--- a/arch/arm/boot/dts/tegra20-harmony.dts
++++ b/arch/arm/boot/dts/tegra20-harmony.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps6586x@34";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uartd;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20-iris-512.dts b/arch/arm/boot/dts/tegra20-iris-512.dts
+index 8cfb83f..1dd7d7b 100644
+--- a/arch/arm/boot/dts/tegra20-iris-512.dts
++++ b/arch/arm/boot/dts/tegra20-iris-512.dts
+@@ -6,6 +6,11 @@
+ 	model = "Toradex Colibri T20 512MB on Iris";
+ 	compatible = "toradex,iris", "toradex,colibri_t20-512", "nvidia,tegra20";
+ 
++	aliases {
++		serial0 = &uarta;
++		serial1 = &uartd;
++	};
++
+ 	host1x@50000000 {
+ 		hdmi@54280000 {
+ 			status = "okay";
+diff --git a/arch/arm/boot/dts/tegra20-medcom-wide.dts b/arch/arm/boot/dts/tegra20-medcom-wide.dts
+index 1b7c56b..9b87526 100644
+--- a/arch/arm/boot/dts/tegra20-medcom-wide.dts
++++ b/arch/arm/boot/dts/tegra20-medcom-wide.dts
+@@ -6,6 +6,10 @@
+ 	model = "Avionic Design Medcom-Wide board";
+ 	compatible = "ad,medcom-wide", "ad,tamonten", "nvidia,tegra20";
+ 
++	aliases {
++		serial0 = &uartd;
++	};
++
+ 	pwm@7000a000 {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/tegra20-paz00.dts b/arch/arm/boot/dts/tegra20-paz00.dts
+index d4438e3..ed7e100 100644
+--- a/arch/arm/boot/dts/tegra20-paz00.dts
++++ b/arch/arm/boot/dts/tegra20-paz00.dts
+@@ -10,6 +10,8 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps6586x@34";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uarta;
++		serial1 = &uartc;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
+index a1d4bf9..ea282c7 100644
+--- a/arch/arm/boot/dts/tegra20-seaboard.dts
++++ b/arch/arm/boot/dts/tegra20-seaboard.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps6586x@34";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uartd;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20-tamonten.dtsi b/arch/arm/boot/dts/tegra20-tamonten.dtsi
+index 80e7d38..13d4e61 100644
+--- a/arch/arm/boot/dts/tegra20-tamonten.dtsi
++++ b/arch/arm/boot/dts/tegra20-tamonten.dtsi
+@@ -7,6 +7,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps6586x@34";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uartd;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20-trimslice.dts b/arch/arm/boot/dts/tegra20-trimslice.dts
+index 5ad8797..d99af4e 100644
+--- a/arch/arm/boot/dts/tegra20-trimslice.dts
++++ b/arch/arm/boot/dts/tegra20-trimslice.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000c500/rtc@56";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uarta;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/tegra20-ventana.dts
+index ca8484c..04c58e9 100644
+--- a/arch/arm/boot/dts/tegra20-ventana.dts
++++ b/arch/arm/boot/dts/tegra20-ventana.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps6586x@34";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uartd;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20-whistler.dts b/arch/arm/boot/dts/tegra20-whistler.dts
+index 1843725..340d811 100644
+--- a/arch/arm/boot/dts/tegra20-whistler.dts
++++ b/arch/arm/boot/dts/tegra20-whistler.dts
+@@ -10,6 +10,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/max8907@3c";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uarta;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 3b374c4..8acf5d8 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -9,14 +9,6 @@
+ 	compatible = "nvidia,tegra20";
+ 	interrupt-parent = <&intc>;
+ 
+-	aliases {
+-		serial0 = &uarta;
+-		serial1 = &uartb;
+-		serial2 = &uartc;
+-		serial3 = &uartd;
+-		serial4 = &uarte;
+-	};
+-
+ 	host1x@50000000 {
+ 		compatible = "nvidia,tegra20-host1x", "simple-bus";
+ 		reg = <0x50000000 0x00024000>;
+diff --git a/arch/arm/boot/dts/tegra30-apalis-eval.dts b/arch/arm/boot/dts/tegra30-apalis-eval.dts
+index 45d40f0..6236bde 100644
+--- a/arch/arm/boot/dts/tegra30-apalis-eval.dts
++++ b/arch/arm/boot/dts/tegra30-apalis-eval.dts
+@@ -11,6 +11,10 @@
+ 		rtc0 = "/i2c@7000c000/rtc@68";
+ 		rtc1 = "/i2c@7000d000/tps65911@2d";
+ 		rtc2 = "/rtc@7000e000";
++		serial0 = &uarta;
++		serial1 = &uartb;
++		serial2 = &uartc;
++		serial3 = &uartd;
+ 	};
+ 
+ 	pcie-controller@00003000 {
+diff --git a/arch/arm/boot/dts/tegra30-beaver.dts b/arch/arm/boot/dts/tegra30-beaver.dts
+index cee8f22..6b157ee 100644
+--- a/arch/arm/boot/dts/tegra30-beaver.dts
++++ b/arch/arm/boot/dts/tegra30-beaver.dts
+@@ -9,6 +9,7 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps65911@2d";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uarta;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+index 2063795..a1b682e 100644
+--- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
++++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+@@ -30,6 +30,8 @@
+ 	aliases {
+ 		rtc0 = "/i2c@7000d000/tps65911@2d";
+ 		rtc1 = "/rtc@7000e000";
++		serial0 = &uarta;
++		serial1 = &uartc;
+ 	};
+ 
+ 	memory {
+diff --git a/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts b/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
+index 7793abd..4d3ddc5 100644
+--- a/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
++++ b/arch/arm/boot/dts/tegra30-colibri-eval-v3.dts
+@@ -10,6 +10,9 @@
+ 		rtc0 = "/i2c@7000c000/rtc@68";
+ 		rtc1 = "/i2c@7000d000/tps65911@2d";
+ 		rtc2 = "/rtc@7000e000";
++		serial0 = &uarta;
++		serial1 = &uartb;
++		serial2 = &uartd;
+ 	};
+ 
+ 	host1x@50000000 {
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index aa6ccea..b270b9e 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -9,14 +9,6 @@
+ 	compatible = "nvidia,tegra30";
+ 	interrupt-parent = <&intc>;
+ 
+-	aliases {
+-		serial0 = &uarta;
+-		serial1 = &uartb;
+-		serial2 = &uartc;
+-		serial3 = &uartd;
+-		serial4 = &uarte;
+-	};
+-
+ 	pcie-controller@00003000 {
+ 		compatible = "nvidia,tegra30-pcie";
+ 		device_type = "pci";
+-- 
+1.7.10.4
 
-Like I said before the PowerPC version is likely the lowest risk.  It is 
-just a standard rmb() call after the read.
-
-I'm pretty sure x86 is safe as well since the issue that triggered the 
-introduction of the rmb() into the Intel network drivers was on a 
-PowerPC as I recall and the code had been running on x86 for quite some 
-time without issue when it was reported.
-
-> But anything with non-cache-coherent DMA is obviously very suspect too.
->
->                         Linus
-
-Well for not I am only focused on what should be cache-coherent DMA 
-which usually applies to things like descriptor rings where interaction 
-is expected to be bi-directional without the need for a map or unmap.
-
-Thanks,
-
-Alex
