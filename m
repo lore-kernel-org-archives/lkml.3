@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaKKIS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:18:29 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:55739 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaKKIQT (ORCPT
+	id S1752980AbaKKIQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:16:15 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:39968 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaKKIQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:16:19 -0500
+	Tue, 11 Nov 2014 03:16:11 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v3 13/21] backports: use BACKPORT_DIR prefix on kconfig sources
-Date: Tue, 11 Nov 2014 00:15:04 -0800
-Message-Id: <1415693712-23743-14-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v3 11/21] backports: modify kconfig parser to use bpid and target_dir
+Date: Tue, 11 Nov 2014 00:15:02 -0800
+Message-Id: <1415693712-23743-12-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,23 +23,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-This will allow us to do less work for built-in integration support.
-When packaging we only use BACKPORT_DIR for Kconfig sources we control,
-to avoid a large change we avoid doing this for other Kconfig files.
-
-For integration we'll always have to use BACKPORT_DIR on kconfig sources.
-
-Suporting requires a bit of self evaluation of the variable within our
-kconfig library, ideally we'd have support for groking all variables
-defined within the Kconfig setup but that requires quite a lot more
-work as it means also parsing Makefiles and inheriting these definitions
-within config symbols when used. Since we only define one right now and
-its used for built-in support we deal with it ourselves for now.
-
-Please consider the complexity of adding others, it doesn't seem like
-there would be much need for others though. If others wanted to use a
-different BACKPORT_DIR path other than 'backports' that would require
-tweaking here, but we'll start by assuming no one will want to do that.
+The kconfig parser sets a base directory using the directory
+in which the Kconfig file passed lives in. This strategy assumes the
+kernel uses relative paths, while this is truly supported in
+practice though upstream only deals with full paths based on
+the actual root directory of the kernel. Its safer, cleaner and
+much simpler to support full paths, and since the kernel uses
+full paths anyway lets stick to that and complain when relative
+paths are found. This also modifies our own provided Kconfig to
+use full paths as well, we'll need this later to adjust our
+Kconfigs for kernel integration.
 
 $ time /home/mcgrof/backports/devel/ckmake --allyesconfig
 1   3.0.101             [  OK  ]
@@ -62,260 +55,249 @@ $ time /home/mcgrof/backports/devel/ckmake --allyesconfig
 18  3.17.1              [  OK  ]
 19  3.18-rc1            [  OK  ]
 
-real    42m41.825s
-user    1187m38.880s
-sys     141m11.760s
+real    44m3.002s
+user    1188m20.708s
+sys     140m25.540s
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- backport/Kconfig | 40 +++++++++++++++---------------
- gentree.py       | 18 ++++++++++++--
- lib/kconfig.py   | 74 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 107 insertions(+), 25 deletions(-)
+ backport/Kconfig | 36 ++++++++++++++++++------------------
+ gentree.py       |  6 +++---
+ lib/kconfig.py   | 51 +++++++++++++++++++++++++++++++++------------------
+ 3 files changed, 54 insertions(+), 39 deletions(-)
 
 diff --git a/backport/Kconfig b/backport/Kconfig
-index 415db89..b729d47 100644
+index a8f2867..415db89 100644
 --- a/backport/Kconfig
 +++ b/backport/Kconfig
-@@ -1,5 +1,8 @@
- mainmenu "Linux Backports from $BACKPORTED_KERNEL_NAME $BACKPORTED_KERNEL_VERSION (with backports $BACKPORTS_VERSION)"
- 
-+config BACKPORT_DIR
-+	string
-+	option env="BACKPORT_DIR"
- config BACKPORTS_VERSION
- 	string
- 	option env="BACKPORTS_VERSION"
-@@ -10,33 +13,32 @@ config BACKPORTED_KERNEL_NAME
- 	string
+@@ -11,32 +11,32 @@ config BACKPORTED_KERNEL_NAME
  	option env="BACKPORTED_KERNEL_NAME"
  
--# these will be generated
--source "Kconfig.kernel"
--source "Kconfig.versions"
-+source "$BACKPORT_DIR/Kconfig.kernel"
-+source "$BACKPORT_DIR/Kconfig.versions"
+ # these will be generated
+-source Kconfig.kernel
+-source Kconfig.versions
++source "Kconfig.kernel"
++source "Kconfig.versions"
  
  # Packaging hacks
--source "Kconfig.package.hacks"
-+source "$BACKPORT_DIR/Kconfig.package.hacks"
+-source Kconfig.package.hacks
++source "Kconfig.package.hacks"
  
  # this has the configuration for the backport code
--source "compat/Kconfig"
-+source "$BACKPORT_DIR/compat/Kconfig"
+-source compat/Kconfig
++source "compat/Kconfig"
  
  # these are copied from the kernel
--source "net/wireless/Kconfig"
--source "net/mac80211/Kconfig"
--source "net/bluetooth/Kconfig"
--source "drivers/net/wireless/Kconfig"
--source "drivers/net/ethernet/Kconfig"
--source "drivers/net/usb/Kconfig"
-+source "$BACKPORT_DIR/net/wireless/Kconfig"
-+source "$BACKPORT_DIR/net/mac80211/Kconfig"
-+source "$BACKPORT_DIR/net/bluetooth/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/ethernet/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
+-source net/wireless/Kconfig
+-source net/mac80211/Kconfig
+-source net/bluetooth/Kconfig
+-source drivers/net/wireless/Kconfig
+-source drivers/net/ethernet/Kconfig
+-source drivers/net/usb/Kconfig
++source "net/wireless/Kconfig"
++source "net/mac80211/Kconfig"
++source "net/bluetooth/Kconfig"
++source "drivers/net/wireless/Kconfig"
++source "drivers/net/ethernet/Kconfig"
++source "drivers/net/usb/Kconfig"
  
--source "drivers/ssb/Kconfig"
--source "drivers/bcma/Kconfig"
-+source "$BACKPORT_DIR/drivers/ssb/Kconfig"
-+source "$BACKPORT_DIR/drivers/bcma/Kconfig"
+-source drivers/ssb/Kconfig
+-source drivers/bcma/Kconfig
++source "drivers/ssb/Kconfig"
++source "drivers/bcma/Kconfig"
  
--source "net/nfc/Kconfig"
-+source "$BACKPORT_DIR/net/nfc/Kconfig"
+-source net/nfc/Kconfig
++source "net/nfc/Kconfig"
  
--source "drivers/media/Kconfig"
-+source "$BACKPORT_DIR/drivers/media/Kconfig"
+-source drivers/media/Kconfig
++source "drivers/media/Kconfig"
  
--source "net/ieee802154/Kconfig"
--source "net/mac802154/Kconfig"
--source "drivers/net/ieee802154/Kconfig"
-+source "$BACKPORT_DIR/net/ieee802154/Kconfig"
-+source "$BACKPORT_DIR/net/mac802154/Kconfig"
-+source "$BACKPORT_DIR/drivers/net/ieee802154/Kconfig"
+-source net/ieee802154/Kconfig
+-source net/mac802154/Kconfig
+-source drivers/net/ieee802154/Kconfig
++source "net/ieee802154/Kconfig"
++source "net/mac802154/Kconfig"
++source "drivers/net/ieee802154/Kconfig"
  
--source "drivers/usb/class/Kconfig"
-+source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
+-source drivers/usb/class/Kconfig
++source "drivers/usb/class/Kconfig"
 diff --git a/gentree.py b/gentree.py
-index 2c08bba..7632b90 100755
+index 68efce9..2c08bba 100755
 --- a/gentree.py
 +++ b/gentree.py
-@@ -32,7 +32,8 @@ class Bp_Identity(object):
-     """
-     def __init__(self, integrate=False, kconfig_prefix='CPTCFG_',
-                  project_prefix='', project_dir='',
--                 target_dir='', target_dir_name=''):
-+                 target_dir='', target_dir_name='',
-+                 kconfig_source_var=None):
-         self.integrate = integrate
-         self.kconfig_prefix = kconfig_prefix
-         self.kconfig_prefix_resafe = re.escape(kconfig_prefix)
-@@ -43,6 +44,11 @@ class Bp_Identity(object):
-         self.project_dir = project_dir
-         self.target_dir = target_dir
-         self.target_dir_name = target_dir_name
-+        self.kconfig_source_var = kconfig_source_var
-+        if self.kconfig_source_var:
-+            self.kconfig_source_var_resafe = re.escape(self.kconfig_source_var)
-+        else:
-+            self.kconfig_source_var_resafe = None
- 
- def read_copy_list(copyfile):
-     """
-@@ -681,6 +687,7 @@ def _main():
-                            project_dir = args.outdir,
-                            target_dir = os.path.join(args.outdir, 'backports/'),
-                            target_dir_name = 'backports/',
-+                           kconfig_source_var = '$BACKPORT_DIR',
-                            )
-     else:
-         bpid = Bp_Identity(integrate = integrate,
-@@ -689,6 +696,7 @@ def _main():
-                            project_dir = args.outdir,
-                            target_dir = args.outdir,
-                            target_dir_name = '',
-+                           kconfig_source_var = '$BACKPORT_DIR',
-                            )
- 
-     def logwrite(msg):
-@@ -820,6 +828,7 @@ def process(kerneldir, copy_list_file, git_revision=None,
+@@ -226,7 +226,7 @@ def add_automatic_backports(args):
+     disable_list = []
+     export = re.compile(r'^EXPORT_SYMBOL(_GPL)?\((?P<sym>[^\)]*)\)')
+     bpi = kconfig.get_backport_info(os.path.join(args.bpid.target_dir, 'compat', 'Kconfig'))
+-    configtree = kconfig.ConfigTree(os.path.join(args.bpid.target_dir, 'Kconfig'))
++    configtree = kconfig.ConfigTree(os.path.join(args.bpid.target_dir, 'Kconfig'), args.bpid)
+     all_selects = configtree.all_selects()
+     for sym, vals in bpi.items():
+         if sym.startswith('BACKPORT_BUILD_'):
+@@ -820,14 +820,14 @@ def process(kerneldir, copy_list_file, git_revision=None,
  
      disable_list = add_automatic_backports(args)
      if disable_list:
-+        # No need to verify_sources() as compat's Kconfig has no 'source' call
-         bpcfg = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'compat', 'Kconfig'), bpid)
+-        bpcfg = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'compat', 'Kconfig'))
++        bpcfg = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'compat', 'Kconfig'), bpid)
          bpcfg.disable_symbols(disable_list)
      git_debug_snapshot(args, 'Add automatic backports')
-@@ -828,10 +837,15 @@ def process(kerneldir, copy_list_file, git_revision=None,
+ 
+     apply_patches(args, "backport", source_dir, 'patches', bpid.target_dir, logwrite)
  
      # some post-processing is required
-     configtree = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'Kconfig'), bpid)
-+    ignore=['Kconfig.kernel', 'Kconfig.versions']
-+
-+    configtree.verify_sources(ignore=ignore)
-+    git_debug_snapshot(args, "verify sources on top level backports Kconfig")
-+
+-    configtree = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'Kconfig'))
++    configtree = kconfig.ConfigTree(os.path.join(bpid.target_dir, 'Kconfig'), bpid)
      orig_symbols = configtree.symbols()
  
      logwrite('Modify Kconfig tree ...')
--    configtree.prune_sources(ignore=['Kconfig.kernel', 'Kconfig.versions'])
-+    configtree.prune_sources(ignore=ignore)
-     git_debug_snapshot(args, "prune Kconfig tree")
- 
-     if not bpid.integrate:
 diff --git a/lib/kconfig.py b/lib/kconfig.py
-index ac96613..ca3af63 100644
+index 3562630..f348d4a 100644
 --- a/lib/kconfig.py
 +++ b/lib/kconfig.py
-@@ -12,10 +12,41 @@ sel_line = re.compile(r'^(?P<spc>\s+)select\s+(?P<sym>[^\s]*)\s*$')
+@@ -4,7 +4,8 @@
+ 
+ import os, re
+ 
+-src_line = re.compile(r'^\s*source\s+"?(?P<src>[^\s"]*)"?\s*$')
++src_line = re.compile(r'^\s*source\s+"(?P<src>[^\s"]*)"?\s*$')
++src_line_rel = re.compile(r'^\s*source\s+(?P<src>[^\s"]*)"?\s*$')
+ tri_line = re.compile(r'^(?P<spc>\s+)tristate')
+ bool_line = re.compile(r'^(?P<spc>\s+)bool')
+ cfg_line = re.compile(r'^(?P<opt>config|menuconfig)\s+(?P<sym>[^\s]*)')
+@@ -12,32 +13,46 @@ sel_line = re.compile(r'^(?P<spc>\s+)select\s+(?P<sym>[^\s]*)\s*$')
  backport_line = re.compile(r'^\s+#(?P<key>[ch]-file|module-name)\s*(?P<name>.*)')
  
  class ConfigTree(object):
-+    """
-+    If you suppport kernel integration you should use bpid.kconfig_source_var
-+    and set that to the the variable name you have used on your Kconfig file
-+    for use as a directory prefix. When packaging you only need to set this on
-+    the Kconfig sources part of backports. For integration this variable will
-+    be used to prefix all Kconfig sources taken from the kernel. This variable
-+    is used by Kconfig to expand to bpid.target_dir_name. All kernel Kconfig
-+    source entries use a full path based on bpid.project_dir, when using
-+    integration a prefix is needed on backported Kconfig entries to
-+    help ensure that the base directory used for backported code is
-+    bpid.target_dir and not bpid.project_dir. To help with we provide a
-+    verification / modifier, verify_sources(), of the Kconfig entries, you
-+    run this before working on the ConfigTree with any other helper.
-+
-+    Verification is only needed when integrating and if the top level Kconfig
-+    entries that have a source entry.
-+    """
-     def __init__(self, rootfile, bpid):
-         self.bpid = bpid
+-    def __init__(self, rootfile):
+-        self.basedir = os.path.dirname(rootfile)
++    def __init__(self, rootfile, bpid):
++        self.bpid = bpid
          self.rootfile = os.path.basename(rootfile)
--        self.src_line = re.compile(r'^\s*source\s+"(?P<src>[^\s"]*)"?\s*$')
-+        if self.bpid.kconfig_source_var:
-+            self.src_line = re.compile(r'^\s*source\s+"(?P<kconfig_var>' + self.bpid.kconfig_source_var_resafe + ')?/?(?P<src>[^\s"]*)"?\s*$')
-+            self.kconfig_var_line = re.compile(r'.*(?P<kconfig_var>' + self.bpid.kconfig_source_var_resafe + ')+/+')
-+        else:
-+            self.src_line = re.compile(r'^\s*source\s+"(?P<src>[^\s"]*)"?\s*$')
-+            self.kconfig_var_line = None
-+        self.verified = False
-+        self.need_verification = False
-+        if self.bpid.integrate:
-+            for l in open(os.path.join(self.bpid.target_dir, rootfile), 'r'):
-+                m = self.src_line.match(l)
-+                mrel = src_line_rel.match(l)
-+                if m or mrel:
-+                    self.need_verification = True
-+                    break
  
-     def _check_relative_source(self, f, l):
-     #
-@@ -28,12 +59,17 @@ class ConfigTree(object):
-         if m:
-             raise Exception('File: %s uses relative kconfig source entries (line: \'%s\'), use full path  with quotes' %
-                             (os.path.join(self.bpid.target_dir, f), l))
--    def _walk(self, f):
-+    def _walk(self, f, first_pass=False):
-+        if self.bpid.integrate:
-+            if not self.bpid.kconfig_source_var and self.need_verification:
-+                raise Exception("You enabled integration but haven't set bpid.kconfig_source_var, this seems incorrect")
-+            if not first_pass and not self.verified and self.need_verification:
-+                raise Exception("You must run verify_sources() first, we don't do that for you as you may want to ignore some source files")
++    def _check_relative_source(self, f, l):
++    #
++    # Although we can support relative kconfig source lines its a lot safer,
++    # clearer to use full paths; it also makes it easier to support / parse and
++    # modify kconfig entries. The kernel also uses full paths anyway but if
++    # a relative path is found we should consider changing that upstream to
++    # streamline usage of full path.
++        m = src_line_rel.match(l)
++        if m:
++            raise Exception('File: %s uses relative kconfig source entries (line: \'%s\'), use full path  with quotes' %
++                            (os.path.join(self.bpid.target_dir, f), l))
+     def _walk(self, f):
          yield f
-         for l in open(os.path.join(self.bpid.target_dir, f), 'r'):
-             m = self.src_line.match(l)
-             if m and os.path.exists(os.path.join(self.bpid.target_dir, m.group('src'))):
--                for i in self._walk(m.group('src')):
-+                for i in self._walk(m.group('src'), first_pass=first_pass):
+-        for l in open(os.path.join(self.basedir, f), 'r'):
++        for l in open(os.path.join(self.bpid.target_dir, f), 'r'):
+             m = src_line.match(l)
+-            if m and os.path.exists(os.path.join(self.basedir, m.group('src'))):
++            if m and os.path.exists(os.path.join(self.bpid.target_dir, m.group('src'))):
+                 for i in self._walk(m.group('src')):
                      yield i
-             else:
-                 self._check_relative_source(f, l)
-@@ -49,12 +85,42 @@ class ConfigTree(object):
-                     continue
-                 src = m.group('src')
-                 if src in ignore or os.path.exists(os.path.join(self.bpid.target_dir, src)):
-+                        out += l
-+                else:
-+                        out += '#' + l
-+            outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
-+            outf.write(out)
-+            outf.close()
-+
-+    def verify_sources(self, ignore=[]):
-+        if not self.need_verification:
-+            return
-+        for nf in self._walk(self.rootfile, first_pass=True):
-+            out = ''
++            else:
++                self._check_relative_source(f, l)
+ 
+     def _prune_sources(self, f, ignore):
+         for nf in self._walk(f):
+             out = ''
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
 +            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
-+                m = self.src_line.match(l)
-+                if not m:
+                 m = src_line.match(l)
+                 if not m:
 +                    self._check_relative_source(nf, l)
                      out += l
-+                    continue
-+                src = m.group('src')
-+                k = self.kconfig_var_line.match(l)
+                     continue
+                 src = m.group('src')
+-                if src in ignore or os.path.exists(os.path.join(self.basedir, src)):
 +                if src in ignore or os.path.exists(os.path.join(self.bpid.target_dir, src)):
-+                    if k:
-+                        out += l
-+                    else:
-+                        out += 'source "%s/%s"\n' % (self.bpid.kconfig_source_var,  m.group('src'))
+                     out += l
                  else:
--                    out += '#' + l
-+                    if k:
-+                        out += '# source "' + self.bpid.kconfig_source_var + '/' + src + '"\n'
-+                    else:
-+                        out += '#' + l
-             outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
+                     out += '#' + l
+-            outf = open(os.path.join(self.basedir, nf), 'w')
++            outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
              outf.write(out)
              outf.close()
-+        # Now the kconfig_var is always required from now on
-+        self.src_line = re.compile(r'^\s*source\s+"(?P<kconfig_var>' + self.bpid.kconfig_source_var_resafe + ')+/+(?P<src>[^\s"]*)"?\s*$')
-+        self.verified = True
  
-     def prune_sources(self, ignore=[]):
-         self._prune_sources(self.rootfile, ignore)
+@@ -47,19 +62,19 @@ class ConfigTree(object):
+     def force_tristate_modular(self):
+         for nf in self._walk(self.rootfile):
+             out = ''
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
++            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
+                 m = tri_line.match(l)
+                 out += l
+                 if m:
+                     out += m.group('spc') + "depends on m\n"
+-            outf = open(os.path.join(self.basedir, nf), 'w')
++            outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
+             outf.write(out)
+             outf.close()
+ 
+     def symbols(self):
+         syms = []
+         for nf in self._walk(self.rootfile):
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
++            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
+                 m = cfg_line.match(l)
+                 if m:
+                     syms.append(m.group('sym'))
+@@ -68,7 +83,7 @@ class ConfigTree(object):
+     def all_selects(self):
+         result = []
+         for nf in self._walk(self.rootfile):
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
++            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
+                 m = sel_line.match(l)
+                 if m:
+                     result.append(m.group('sym'))
+@@ -78,7 +93,7 @@ class ConfigTree(object):
+         syms = self.symbols()
+         for nf in self._walk(self.rootfile):
+             out = ''
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
++            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
+                 m = sel_line.match(l)
+                 if m and not m.group('sym') in syms:
+                     if 'BACKPORT_' + m.group('sym') in syms:
+@@ -87,32 +102,32 @@ class ConfigTree(object):
+                         out += m.group('spc') + "depends on " + m.group('sym') + '\n'
+                 else:
+                     out += l
+-            outf = open(os.path.join(self.basedir, nf), 'w')
++            outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
+             outf.write(out)
+             outf.close()
+ 
+     def disable_symbols(self, syms):
+         for nf in self._walk(self.rootfile):
+             out = ''
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
++            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
+                 m = cfg_line.match(l)
+                 out += l
+                 if m and m.group('sym') in syms:
+                     out += "\tdepends on n\n"
+-            outf = open(os.path.join(self.basedir, nf), 'w')
++            outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
+             outf.write(out)
+             outf.close()
+ 
+     def add_dependencies(self, deps):
+         for nf in self._walk(self.rootfile):
+             out = ''
+-            for l in open(os.path.join(self.basedir, nf), 'r'):
++            for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
+                 m = cfg_line.match(l)
+                 out += l
+                 if m:
+                     for dep in deps.get(m.group('sym'), []):
+                         out += "\tdepends on %s\n" % dep
+-            outf = open(os.path.join(self.basedir, nf), 'w')
++            outf = open(os.path.join(self.bpid.target_dir, nf), 'w')
+             outf.write(out)
+             outf.close()
+ 
 -- 
 2.1.1
 
