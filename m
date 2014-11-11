@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaKKO6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:58:40 -0500
-Received: from resqmta-po-09v.sys.comcast.net ([96.114.154.168]:55240 "EHLO
-	resqmta-po-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751344AbaKKO6j (ORCPT
+	id S1751674AbaKKPAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:00:19 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:56740 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaKKPAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:58:39 -0500
-Date: Tue, 11 Nov 2014 08:58:35 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [NOHZ] Remove scheduler_tick_max_deferment
-In-Reply-To: <20141110224306.GC29741@lerouge>
-Message-ID: <alpine.DEB.2.11.1411110857480.5148@gentwo.org>
-References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org> <alpine.DEB.2.11.1411012313320.5308@nanos> <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
- <20141110224306.GC29741@lerouge>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Nov 2014 10:00:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <1415041531-15520-5-git-send-email-soren.brinkmann@xilinx.com>
+References: <1415041531-15520-1-git-send-email-soren.brinkmann@xilinx.com>
+	<1415041531-15520-5-git-send-email-soren.brinkmann@xilinx.com>
+Date: Tue, 11 Nov 2014 16:00:15 +0100
+Message-ID: <CACRpkdazagbSZdMvHTggQuAFm9uObn2ARoCwcyM-sspuLTXqkQ@mail.gmail.com>
+Subject: Re: [PATCH 4/7] pinctrl: zynq: Document DT binding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-rockchip@lists.infradead.org,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Nov 2014, Frederic Weisbecker wrote:
+On Mon, Nov 3, 2014 at 8:05 PM, Soren Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
 
-> Ok, I confess we moved part of that housekeeping to the syscall/exception/interrupt
-> entry path. We did that for cputime accounting and RCU. And it's possible to
-> even do that for timekeeping. But then the kernel entrypoint is going to be extremely
-> costly. It's worth CPU 0 as a sacrificial lamb.
+> Add documentation for the devicetree binding for the Zynq pincontroller.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+(...)
+> +Example:
+> +       pinctrl0: pinctrl@700 {
+> +               compatible = "xlnx,pinctrl-zynq";
+> +               reg = <0x700 0x200>;
+> +               syscon = <&slcr>;
+> +
+> +               pinctrl_uart1_default: pinctrl-uart1-default {
+> +                       common {
+> +                               groups = "uart1_10_grp";
+> +                               function = "uart1";
+> +                               slew-rate = <0>;
+> +                               io-standard = <1>;
+> +                       };
 
-Well we can redirect to the scheduler setting the task flag and handle
-costly stuff there if necessary?
+I don't really like that you mix multiplexing and config in the
+same node. I would prefer if the generic bindings say we have
+muxing nodes and config nodes, and those are disparate.
 
+Can't you just split this:
+
+common-mux {
+    groups = "uart1_10_grp";
+    function = "uart1";
+};
+
+common-config {
+    groups = "uart1_10_grp";
+    slew-rate = <0>;
+    io-standard = <1>;
+};
+
+That way we can identify nodes as mux nodes (have "function")
+or config nodes (have "groups" or "pins" but not "function") which
+I think makes things easier to read.
+
+Yours,
+Linus Walleij
