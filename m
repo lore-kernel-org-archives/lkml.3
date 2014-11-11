@@ -1,83 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaKKGB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 01:01:59 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:40617 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751398AbaKKGB5 (ORCPT
+	id S1752099AbaKKGCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 01:02:49 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:35605 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaKKGCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 01:01:57 -0500
-X-Sasl-enc: L2LAvycK4SKpAZym6fEEPHs2YFm6GsBvXuWNjdTLWwTb 1415685716
-Message-ID: <1415685712.2486.17.camel@perseus.themaw.net>
-Subject: Re: [PATCH 1/3] autofs - fix log print messages
-From: Ian Kent <raven@themaw.net>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Nov 2014 14:01:52 +0800
-In-Reply-To: <1415684989.16070.2.camel@perches.com>
-References: <20141111012954.25773.4002.stgit@perseus.themaw.net>
-	 <1415676341.16070.0.camel@perches.com>
-	 <1415684245.2486.9.camel@perseus.themaw.net>
-	 <1415684989.16070.2.camel@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Nov 2014 01:02:48 -0500
+Date: Mon, 10 Nov 2014 22:02:43 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: Re: [PATCH] dell-wmi: Update code for processing WMI events
+Message-ID: <20141111060243.GC56947@vmdeb7>
+References: <1413843324-13662-1-git-send-email-pali.rohar@gmail.com>
+ <20141021213212.GE20951@vmdeb7>
+ <201410221251.17977@pali>
+ <201411091621.35634@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201411091621.35634@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-10 at 21:49 -0800, Joe Perches wrote:
-> On Tue, 2014-11-11 at 13:37 +0800, Ian Kent wrote:
-> > On Mon, 2014-11-10 at 19:25 -0800, Joe Perches wrote:
-> > > On Tue, 2014-11-11 at 09:29 +0800, Ian Kent wrote:
-> > > > Fix some inconsistencies in log print output and ensure that
-> > > > the module name is included in all log prints.
+On Sun, Nov 09, 2014 at 04:21:33PM +0100, Pali Rohár wrote:
+> On Wednesday 22 October 2014 12:51:17 Pali Rohár wrote:
+> > On Tuesday 21 October 2014 23:32:12 Darren Hart wrote:
+> > > On Tue, Oct 21, 2014 at 12:15:24AM +0200, Pali Rohár wrote:
+
+Hi Pali,
+
+...
+> > > > @@ -158,44 +182,117 @@ static void dell_wmi_notify(u32
+> > > > value, void *context)
 > > > > 
-> > > > Signed-off-by: Ian Kent <raven@themaw.net>
-> > > > Cc: Joe Perches <joe@perches.com>
-> > > > ---
-> > > >  fs/autofs/autofs_i.h  |    6 +++---
-> > > >  fs/autofs/dev-ioctl.c |    2 +-
-> > > >  fs/autofs/inode.c     |   10 +++++-----
-> > > >  fs/autofs/waitq.c     |    4 ++--
-> > > >  4 files changed, 11 insertions(+), 11 deletions(-)
+> > > >  	}
+> > > >  	
+> > > >  	obj = (union acpi_object *)response.pointer;
+> > > > 
+> > > > +	if (!obj) {
+> > > > +		pr_info("no response\n");
+> > > > +		return;
+> > > > +	}
 > > > 
-> > > What tree are these patches made against?
+> > > If you intend to print this, it should probably be a bit
+> > > more informative. Is "info" the right level here? I would
+> > > imagine either WARN if this was a bad thing, or DEBUG if
+> > > this is more for debugging the driver.
 > > 
-> > They live in an StGit patch queue against the current Linus tree.
-> > They depend on the prior series to rename autofs4 to autofs.
-> 
-> Hey Ian.
-> 
-> Maybe you could add the git tree location to
-> the MAINTAINERS entry:
-> 
-> MAINTAINERS-KERNEL AUTOMOUNTER v4 (AUTOFS4)
-> MAINTAINERS-M:  Ian Kent <raven@themaw.net>
-> MAINTAINERS-L:  autofs@vger.kernel.org
-> MAINTAINERS-S:  Maintained
-> MAINTAINERS:F:  fs/autofs4/
-> 
-> T:	git git://somewhere_or_other...
-> 
-> and maybe you also could get Stephen Rothwell
-> to add that tree to -next
+> > So what you (or somebody else) prefer? warn or debug?
 
-Oh, you meant what public tree.
+I was leaving that up to you based on your interpretation of severity and why
+you added this. If it was just for debug purporses, the I suggest debug. If this
+will impact the user in an unexpected way, then WARN.
 
-I guess I could make a kernel.org tree but, apart from this recent
-rename autofs4 -> autofs, the number of autofs changes hasn't warranted
-maintaining a separate tree for quite a while.
+...
+> > > > +	if (!dell_new_hk_type) {
+> > > > +		if (buffer_size >= 3 && buffer_entry[1] == 0x0)
+> > > > +			dell_wmi_process_key(buffer_entry[2]);
+> > > > 
+> > > >  		else if (buffer_size >= 2)
+> > > > 
+> > > > -			reported_key = (int)buffer_entry[1] & 0xffff;
+> > > > -		else {
+> > > > +			dell_wmi_process_key(buffer_entry[1]);
+> > > 
+> > > Why can we drop the 0xffff mask now?
+> > 
+> > Because it is useless (or correct me if not!). Variable
+> > buffer_entry has type u16* so operation "AND 0xFFFF" on 16bit
+> > integer do nothing.
 
-It looks like the place holder under /pub/scm/linux/kernel/git/raven is
-no longer present so I expect I'd need to request that be setup.
+Right, of course. Thanks,
 
-That's why I just send my patches to Andrew to include them in -next.
+> > > > +		else
+> > > > 
+> > > >  			pr_info("Received unknown WMI event\n");
+> > > > 
+> > > > -			kfree(obj);
+> > > > -			return;
+> > > > +		kfree(obj);
+> > > > +		return;
+> > > > +	}
+> > > > +
+> > > > +	buffer_end = buffer_entry + buffer_size;
+> > > > +
+> > > > +	while (buffer_entry < buffer_end) {
+> > > > +
+> > > > +		len = buffer_entry[0];
+> > > > +		if (len == 0)
+> > > > +			break;
+> > > > +
+> > > > +		len++;
+> > > > +
+> > > 
+> > > Why increment len here? Are you trying to avoid a "len + 1"
+> > > in the comparisons below? If so, is using "len * 2" in the
+> > > debug message below correct? Please clarify.
+> > 
+> > in buffer_entry[0] (16 bit integer) is stored length of event
+> > (in 16bit units) without first (length) value. And "%*ph"
+> > takes size in bytes (u8). So length in bytes (u8) units is 2
+> > * length in u16 units.
 
-Andrew, thoughts?
-Ian
+Right, got it - thanks.
 
+> > > > +		if (buffer_entry+len > buffer_end) {
+> > > 
+> > > See coding style documentation on operators. Please run
+> > > patches through checkpatch.
+> > 
+> > checkpatch.pl does not show any problem for these lines.
+
+I thought we checked for that. Please see Documentation/CodingStyle 3.1: Spaces
+with regard to spacing around binary and ternary operators. (one space on each
+side of).
+
+> Darren: PING. See my comments and questions.
+
+Thanks for the ping :)
+
+So please choose a loglevel and correct the whitespace and we should be good.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
