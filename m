@@ -1,186 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbaKKIoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:44:34 -0500
-Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:61376
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751707AbaKKIob convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:44:31 -0500
-X-AuditID: ac1c210f-f79a76d000007ee0-d8-5461cc6c18e8
-From: Avi Shchislowski <Avi.Shchislowski@sandisk.com>
-To: Jaehoon Chung <jh80.chung@samsung.com>,
-        "ulf.hansson@linaro.org" <ulf.hansson@linaro.org>
-CC: "'Chris Ball'" <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Alex Lemberg <Alex.Lemberg@sandisk.com>,
-        "gwendal@google.com" <gwendal@google.com>,
-        open list <linux-kernel@vger.kernel.org>, CPGS <cpgs@samsung.com>
-Subject: RE: [PATCH 1/3] mmc: Support FFU for eMMC v5.0
-Thread-Topic: [PATCH 1/3] mmc: Support FFU for eMMC v5.0
-Thread-Index: AQHP/QnAbgQuSdsdnUWkkiHhln2R85xbRW2A///XmyA=
-Date: Tue, 11 Nov 2014 08:44:27 +0000
-Message-ID: <FDD07FEB422EF948A392FDC201AEEAE64F6B6E48@SACMBXIP02.sdcorp.global.sandisk.com>
-References: <n@samsung.com>
- <1415639632-878-1-git-send-email-avi.shchislowski@sandisk.com>
- <54617D8F.8060506@samsung.com>
-In-Reply-To: <54617D8F.8060506@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.181.8.64]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752323AbaKKIuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:50:51 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42307 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544AbaKKIuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:50:50 -0500
+Message-ID: <5461CDDF.4090209@ti.com>
+Date: Tue, 11 Nov 2014 14:20:39 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRobxn27OmcQQg5cr2S0mXN7OaPHykKbF
-	3Z0TGC1u/Gpjtbi8aw6bxZH//YwWx9eGO7B7LNhU6nHn2h42jxuvFjJ59G1ZxejxeZNcAGsU
-	l01Kak5mWWqRvl0CV8b95a9YC/7LVcxf+Ji5gfGFRBcjJ4eEgInEnfeXmCBsMYkL99azdTFy
-	cQgJHGeUeNL2ihXCOccosXPtanaQKjYBU4l135+AdYgIxEus/bUCrINZ4CejRPPu+cwgCWEB
-	c4nPy6azQRRZSLxcfp4VwraSeHqpgQXEZhFQlXixeCVYPa9AtMS7DyfAhgoJ1EocaeoEq+EU
-	0Jb49n4zWJwR6Lzvp9aA2cwC4hK3nsyHOltAYsme88wQtqjEy8f/gHZxANnyEtdP20GU60gs
-	2P2JDcLWlli28DXUWkGJkzOfsExgFJuFZOosJC2zkLTMQtKygJFlFaNYcWJycW56aoGhkV5x
-	Yl5KZnG2XnJ+7iZGcCwq8u9g3DbF/BCjAAejEg/vBZ/EECHWxLLiytxDjBIczEoivPUJQCHe
-	lMTKqtSi/Pii0pzU4kOM0hwsSuK8q9xmBQsJpCeWpGanphakFsFkmTg4pRoY1RgWJrnqt696
-	8m7luTs/mXhP+6j//7f20swpzNHvzxuYqu3f4Mj98ltO7xUr/W+v5kn+uvNtb2V4je6DQy46
-	dfIWqqohNdwzLjppVwquTJg3u1B24d3b35Zc8Y4L2pm4jYVV6Rej92232oVhCvU79bb2Cp8R
-	2uy859ujA4/U7p4XF/tSVbv4qRJLcUaioRZzUXEiAOZYgRLBAgAA
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:74.221.232.164;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(199003)(13464003)(189002)(479174003)(377454003)(51704005)(21056001)(46102003)(95666004)(81156004)(47776003)(106466001)(64706001)(106116001)(20776003)(50466002)(55846006)(33656002)(107046002)(99396003)(120916001)(4396001)(77096003)(62966003)(46406003)(77156002)(31966008)(16796002)(97736003)(97756001)(86362001)(92726001)(92566001)(2656002)(87936001)(84676001)(2501002)(19580405001)(68736004)(54356999)(69596002)(23726002)(19580395003)(44976005)(76176999)(50986999)(7099021);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB113;H:sacsmgep12.sandisk.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB113;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB113;
-X-Forefront-PRVS: 0392679D18
-Authentication-Results: spf=pass (sender IP is 74.221.232.164)
- smtp.mailfrom=Avi.Shchislowski@sandisk.com; 
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB113;
-X-OriginatorOrg: sandisk.com
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: Vivek Gautam <gautam.vivek@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        <andrew.kim@intel.com>
+Subject: Re: [PATCHv4 2/6] phy: improved lookup method
+References: <1413556756-5050-1-git-send-email-heikki.krogerus@linux.intel.com>	<1413556756-5050-3-git-send-email-heikki.krogerus@linux.intel.com>	<CAFp+6iH2oPT-HyJhFCXVCL4eUOQ0AFfxuyGsnXzPv9JTo55+VQ@mail.gmail.com>	<5461AFD3.5020302@ti.com> <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com>
+In-Reply-To: <CAFp+6iGJBSpA5+Q7WQVu0+y-mfoN-E+LmYedipVfgXFZOpr+Cw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Hi 
-I used the "git send-email..."
+On Tuesday 11 November 2014 02:07 PM, Vivek Gautam wrote:
+> On Tue, Nov 11, 2014 at 12:12 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>> Hi,
+>>
+>> On Friday 31 October 2014 06:03 PM, Vivek Gautam wrote:
+>>> Hi Heikki,
+>>>
+>>>
+>>> On Fri, Oct 17, 2014 at 8:09 PM, Heikki Krogerus
+>>> <heikki.krogerus@linux.intel.com> wrote:
+>>>> Removes the need for the phys to be aware of their users
+>>>> even when not using DT. The method is copied from clkdev.c.
+>>>>
+>>>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>>>> Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>> ---
+>>>>  Documentation/phy.txt   |  66 ++++++++---------------
+>>>>  drivers/phy/phy-core.c  | 135 +++++++++++++++++++++++++++++++++++++++++++++++-
+>>>>  include/linux/phy/phy.h |  27 ++++++++++
+>>>>  3 files changed, 183 insertions(+), 45 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/phy.txt b/Documentation/phy.txt
+>>>> index c6594af..8add515 100644
+>>>> --- a/Documentation/phy.txt
+>>>> +++ b/Documentation/phy.txt
+>>>> @@ -54,18 +54,14 @@ The PHY driver should create the PHY in order for other peripheral controllers
+>>>>  to make use of it. The PHY framework provides 2 APIs to create the PHY.
+>>>>
+>>>>  struct phy *phy_create(struct device *dev, struct device_node *node,
+>>>> -                      const struct phy_ops *ops,
+>>>> -                      struct phy_init_data *init_data);
+>>>> +                      const struct phy_ops *ops);
+>>>>  struct phy *devm_phy_create(struct device *dev, struct device_node *node,
+>>>> -                           const struct phy_ops *ops,
+>>>> -                           struct phy_init_data *init_data);
+>>>> +                           const struct phy_ops *ops);
+>>>>
+>>>>  The PHY drivers can use one of the above 2 APIs to create the PHY by passing
+>>>> -the device pointer, phy ops and init_data.
+>>>> +the device pointer and phy ops.
+>>>>  phy_ops is a set of function pointers for performing PHY operations such as
+>>>> -init, exit, power_on and power_off. *init_data* is mandatory to get a reference
+>>>> -to the PHY in the case of non-dt boot. See section *Board File Initialization*
+>>>> -on how init_data should be used.
+>>>> +init, exit, power_on and power_off.
+>>>>
+>>>>  Inorder to dereference the private data (in phy_ops), the phy provider driver
+>>>>  can use phy_set_drvdata() after creating the PHY and use phy_get_drvdata() in
+>>>> @@ -137,42 +133,24 @@ There are exported APIs like phy_pm_runtime_get, phy_pm_runtime_get_sync,
+>>>>  phy_pm_runtime_put, phy_pm_runtime_put_sync, phy_pm_runtime_allow and
+>>>>  phy_pm_runtime_forbid for performing PM operations.
+>>>>
+>>>> -8. Board File Initialization
+>>>> -
+>>>> -Certain board file initialization is necessary in order to get a reference
+>>>> -to the PHY in the case of non-dt boot.
+>>>> -Say we have a single device that implements 3 PHYs that of USB, SATA and PCIe,
+>>>> -then in the board file the following initialization should be done.
+>>>> -
+>>>> -struct phy_consumer consumers[] = {
+>>>> -       PHY_CONSUMER("dwc3.0", "usb"),
+>>>> -       PHY_CONSUMER("pcie.0", "pcie"),
+>>>> -       PHY_CONSUMER("sata.0", "sata"),
+>>>> -};
+>>>> -PHY_CONSUMER takes 2 parameters, first is the device name of the controller
+>>>> -(PHY consumer) and second is the port name.
+>>>> -
+>>>> -struct phy_init_data init_data = {
+>>>> -       .consumers = consumers,
+>>>> -       .num_consumers = ARRAY_SIZE(consumers),
+>>>> -};
+>>>> -
+>>>> -static const struct platform_device pipe3_phy_dev = {
+>>>> -       .name = "pipe3-phy",
+>>>> -       .id = -1,
+>>>> -       .dev = {
+>>>> -               .platform_data = {
+>>>> -                       .init_data = &init_data,
+>>>> -               },
+>>>> -       },
+>>>> -};
+>>>> -
+>>>> -then, while doing phy_create, the PHY driver should pass this init_data
+>>>> -       phy_create(dev, ops, pdata->init_data);
+>>>> -
+>>>> -and the controller driver (phy consumer) should pass the port name along with
+>>>> -the device to get a reference to the PHY
+>>>> -       phy_get(dev, "pcie");
+>>>> +8. PHY Mappings
+>>>> +
+>>>> +In order to get reference to a PHY without help from DeviceTree, the framework
+>>>> +offers lookups which can be compared to clkdev that allow clk structures to be
+>>>> +bound to devices. A lookup can be made statically by directly registering
+>>>> +phy_lookup structure which contains the name of the PHY device, the name of the
+>>>> +device which the PHY will be bind to and Connection ID string. Alternatively a
+>>>> +lookup can be made during runtime when a handle to the struct phy already
+>>>> +exists.
+>>>> +
+>>>> +The framework offers the following APIs for registering and unregistering the
+>>>> +lookups.
+>>>> +
+>>>> +void phy_register_lookup(struct phy_lookup *pl);
+>>>> +int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id);
+>>>> +
+>>>> +void phy_unregister_lookup(struct phy_lookup *pl);
+>>>> +void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id);
+>>>>
+>>>>  9. DeviceTree Binding
+>>>>
+>>>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+>>>> index ff5eec5..c8d0f66 100644
+>>>> --- a/drivers/phy/phy-core.c
+>>>> +++ b/drivers/phy/phy-core.c
+>>>> @@ -26,6 +26,7 @@
+>>>>  static struct class *phy_class;
+>>>>  static DEFINE_MUTEX(phy_provider_mutex);
+>>>>  static LIST_HEAD(phy_provider_list);
+>>>> +static LIST_HEAD(phys);
+>>>>  static DEFINE_IDA(phy_ida);
+>>>>
+>>>>  static void devm_phy_release(struct device *dev, void *res)
+>>>> @@ -84,6 +85,138 @@ static struct phy *phy_lookup(struct device *device, const char *port)
+>>>>         return ERR_PTR(-ENODEV);
+>>>>  }
+>>>>
+>>>> +/**
+>>>> + * phy_register_lookup() - register PHY/device association
+>>>> + * @pl: association to register
+>>>> + */
+>>>> +void phy_register_lookup(struct phy_lookup *pl)
+>>>> +{
+>>>> +       mutex_lock(&phy_provider_mutex);
+>>>> +       list_add_tail(&pl->node, &phys);
+>>>> +       mutex_unlock(&phy_provider_mutex);
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * phy_unregister_lookup() - remove PHY/device association
+>>>> + * @pl: association to be removed
+>>>> + */
+>>>> +void phy_unregister_lookup(struct phy_lookup *pl)
+>>>> +{
+>>>> +       mutex_lock(&phy_provider_mutex);
+>>>> +       list_del(&pl->node);
+>>>> +       mutex_unlock(&phy_provider_mutex);
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * phy_create_lookup() - allocate and register PHY/device association
+>>>> + * @phy: the phy of the association
+>>>> + * @con_id: connection ID string on device
+>>>> + * @dev_id: the device of the association
+>>>> + *
+>>>> + * Creates and registers phy_lookup entry.
+>>>> + */
+>>>> +int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id)
+>>>> +{
+>>>> +       struct phy_lookup *pl;
+>>>> +
+>>>> +       if (!phy || (!dev_id && !con_id))
+>>>> +               return -EINVAL;
+>>>> +
+>>>> +       pl = kzalloc(sizeof(*pl), GFP_KERNEL);
+>>>> +       if (!pl)
+>>>> +               return -ENOMEM;
+>>>> +
+>>>> +       pl->phy_name = dev_name(phy->dev.parent);
+>>>> +       pl->dev_id = dev_id;
+>>>> +       pl->con_id = con_id;
+>>>> +
+>>>> +       phy_register_lookup(pl);
+>>>> +
+>>>> +       return 0;
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(phy_create_lookup);
+>>>> +
+>>>> +/**
+>>>> + * phy_remove_lookup() - find and remove PHY/device association
+>>>> + * @phy: the phy of the association
+>>>> + * @con_id: connection ID string on device
+>>>> + * @dev_id: the device of the association
+>>>> + *
+>>>> + * Finds and unregisters phy_lookup entry that was created with
+>>>> + * phy_create_lookup().
+>>>> + */
+>>>> +void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id)
+>>>> +{
+>>>> +       struct phy_lookup *pl;
+>>>> +
+>>>> +       if (!phy || (!dev_id && !con_id))
+>>>> +               return;
+>>>> +
+>>>> +       list_for_each_entry(pl, &phys, node)
+>>>> +               if (!strcmp(pl->phy_name, dev_name(phy->dev.parent)) &&
+>>>> +                   !strcmp(pl->dev_id, dev_id) &&
+>>>> +                   !strcmp(pl->con_id, con_id)) {
+>>>> +                       phy_unregister_lookup(pl);
+>>>> +                       kfree(pl);
+>>>> +                       return;
+>>>> +               }
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(phy_remove_lookup);
+>>>> +
+>>>> +static struct phy *phy_find(struct device *dev, const char *con_id)
+>>>> +{
+>>>> +       const char *dev_id = dev ? dev_name(dev) : NULL;
+>>>> +       int match, best_found = 0, best_possible = 0;
+>>>> +       struct phy *phy = ERR_PTR(-ENODEV);
+>>>> +       struct phy_lookup *p, *pl = NULL;
+>>>> +
+>>>> +       if (dev_id)
+>>>> +               best_possible += 2;
+>>>> +       if (con_id)
+>>>> +               best_possible += 1;
+>>>> +
+>>>> +       list_for_each_entry(p, &phys, node) {
+>>>> +               match = 0;
+>>>> +               if (p->dev_id) {
+>>>> +                       if (!dev_id || strcmp(p->dev_id, dev_id))
+>>>> +                               continue;
+>>>> +                       match += 2;
+>>>> +               }
+>>>> +               if (p->con_id) {
+>>>> +                       if (!con_id || strcmp(p->con_id, con_id))
+>>>> +                               continue;
+>>>> +                       match += 1;
+>>>> +               }
+>>>> +
+>>>> +               if (match > best_found) {
+>>>> +                       pl = p;
+>>>> +                       if (match != best_possible)
+>>>> +                               best_found = match;
+>>>> +                       else
+>>>> +                               break;
+>>>> +               }
+>>>> +       }
+>>>> +
+>>>> +       if (pl) {
+>>>> +               struct class_dev_iter iter;
+>>>> +               struct device *phy_dev;
+>>>> +
+>>>> +               class_dev_iter_init(&iter, phy_class, NULL, NULL);
+>>>> +               while ((phy_dev = class_dev_iter_next(&iter))) {
+>>>
+>>> We have the case with phy-exynos5-usbdrd driver, which registers two
+>>> phys usb2-phy and usb3-phy
+>>> both being used by xhci (after dwc3 creates a lookup table).
+>>>
+>>> The phy_dev is coming same for both the PHYs, and that's the reason
+>>> when i try to get
+>>> "usb2-phy" and "usb3-phy" i end up getting only usb2-phy.
+>>> This is happening with V4 of this patch; V3 seems fine. The only
+>>> differnece i see is
+>>> we are creating the phy_lookup_table using phy_dev->parent.
+>>>
+>>> Is there something that i am missing ?
+>>
+>> looks like a genuine problem.
+>>>
+>>>> +                       if (!strcmp(dev_name(phy_dev->parent), pl->phy_name)) {
+>>
+>> here there are two phys which has the same parent and the first one that
+>> matches will be returned. Hence you always get "usb2-phy".
+>>
+>> IIUC just with device names of parent, we won't be able to get the PHY. We need
+>> another 'variable' to differentiate it's children.
+> 
+>> Or have *phy* pointer directly in the lookup table like how clk driver does?
+> 
+> We do create the lookup table with actual *phy* pointer isn't it ?
+> Like if you see Heikki's last patch in this series:
+> [PATCHv4 6/6] usb: dwc3: host: convey the PHYs to xhci
+> We do pass the usb2_phy and usb3_phy pointers to phy_create_lookup().
+
+right, but phy_create_lookup doesn't store the *phy* pointer in the lookup table.
 
 Thanks
-
-
->-----Original Message-----
->From: Jaehoon Chung [mailto:jh80.chung@samsung.com]
->Sent: Tuesday, November 11, 2014 5:08 AM
->To: Avi Shchislowski; ulf.hansson@linaro.org
->Cc: 'Chris Ball'; linux-mmc@vger.kernel.org; Alex Lemberg;
->gwendal@google.com; open list; CPGS
->Subject: Re: [PATCH 1/3] mmc: Support FFU for eMMC v5.0
->
->Hi,
->
->how did you make the patch?
->This patch didn't apply at Ulf's repository.
->
->
->On 11/11/2014 02:13 AM, Avi Shchislowski wrote:
->>
->> Add eMMC5.0 ffu ext_csd fields
->>
->> Signed-off-by: Avi Shchislowski <avi.shchislowski@sandisk.com>
->> Signed-off-by: Alex Lemberg <alex.lemberg@sandisk.com>
->>
->>
->> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index
->> 1eda8dd..3b86ed3 100644
->> --- a/drivers/mmc/core/mmc.c
->> +++ b/drivers/mmc/core/mmc.c
->> @@ -603,6 +603,15 @@ static int mmc_read_ext_csd(struct mmc_card
->*card, u8 *ext_csd)
->>  		card->ext_csd.data_sector_size = 512;
->>  	}
->>
->> +	/* eMMC v5 or later */
->> +	if (card->ext_csd.rev >= 7) {
->> +		card->ext_csd.ffu_capable =
->> +			((ext_csd[EXT_CSD_SUPPORTED_MODE] & 0x1) ==
->0x1) &&
->> +			((ext_csd[EXT_CSD_FW_CONFIG] & 0x1) == 0x0);
->
->if (ext_csd[EXT_CSD_SUPPORTED_MODE] & 0x1)
->&&  !(ext_csd[EXT_CSD_FW_CONFIG] & 0x1))
->		card->ext_csd.ffu_capable = true;
->
->> +		card->ext_csd.ffu_mode_op =
->ext_csd[EXT_CSD_FFU_FEATURES];
->> +	} else {
->> +		card->ext_csd.ffu_capable = false;
->
->Can be set to false by default before checking whether card is eMMC v5.0 or
->not.
->
->card->ext_csd.ffu_capable = false;
->
->if (card->ext_csd.rev >= 7) {
->	...
->}
->
->Best Regards,
->Jaehoon Chung
->
->> +	}
->>  out:
->>  	return err;
->>  }
->> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h index
->> d424b9d..dd01efe 100644
->> --- a/include/linux/mmc/card.h
->> +++ b/include/linux/mmc/card.h
->> @@ -81,6 +81,8 @@ struct mmc_ext_csd {
->>  	bool			hpi_en;			/* HPI
->enablebit */
->>  	bool			hpi;			/* HPI support bit */
->>  	unsigned int		hpi_cmd;		/* cmd used as HPI */
->> +	bool			ffu_capable;		/* FFU support */
->> +	bool			ffu_mode_op;		/* FFU mode
->operation */
->>  	bool			bkops;		/* background support bit */
->>  	bool			bkops_en;	/* background enable bit */
->>  	unsigned int            data_sector_size;       /* 512 bytes or 4KB */
->> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h index
->> 64ec963..787787b 100644
->> --- a/include/linux/mmc/mmc.h
->> +++ b/include/linux/mmc/mmc.h
->> @@ -272,6 +272,9 @@ struct _mmc_csd {
->>   * EXT_CSD fields
->>   */
->>
->> +#define EXT_CSD_FFU_STATUS		26	/* R */
->> +#define EXT_CSD_MODE_OPERATION_CODES	29	/* W */
->> +#define EXT_CSD_MODE_CONFIG		30	/* R/W */
->>  #define EXT_CSD_FLUSH_CACHE		32      /* W */
->>  #define EXT_CSD_CACHE_CTRL		33      /* R/W */
->>  #define EXT_CSD_POWER_OFF_NOTIFICATION	34	/* R/W */
->> @@ -290,6 +293,7 @@ struct _mmc_csd {
->>  #define EXT_CSD_SANITIZE_START		165     /* W */
->>  #define EXT_CSD_WR_REL_PARAM		166	/* RO */
->>  #define EXT_CSD_RPMB_MULT		168	/* RO */
->> +#define EXT_CSD_FW_CONFIG		169	/* R/W */
->>  #define EXT_CSD_BOOT_WP			173	/* R/W */
->>  #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
->>  #define EXT_CSD_PART_CONFIG		179	/* R/W */
->> @@ -326,6 +330,11 @@ struct _mmc_csd {
->>  #define EXT_CSD_GENERIC_CMD6_TIME	248	/* RO */
->>  #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
->>  #define EXT_CSD_PWR_CL_DDR_200_360	253	/* RO */
->> +#define EXT_CSD_NUM_OF_FW_SEC_PROG	302	/* RO, 4 bytes
->*/
->> +#define EXT_CSD_FFU_ARG			487	/* RO, 4 bytes
->*/
->> +#define EXT_CSD_OPERATION_CODE_TIMEOUT	491	/* RO */
->> +#define EXT_CSD_FFU_FEATURES		492	/* RO */
->> +#define EXT_CSD_SUPPORTED_MODE		493	/* RO */
->>  #define EXT_CSD_TAG_UNIT_SIZE		498	/* RO */
->>  #define EXT_CSD_DATA_TAG_SUPPORT	499	/* RO */
->>  #define EXT_CSD_MAX_PACKED_WRITES	500	/* RO */
->>
-
+Kishon
