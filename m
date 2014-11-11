@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaKKLNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:13:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57941 "EHLO
+	id S1754648AbaKKLNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:13:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57942 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541AbaKKLLj (ORCPT
+	with ESMTP id S1754543AbaKKLLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 06:11:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Cyril Brulebois <kibi@debian.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 163/170] PCI: Rename sysfs 'enabled' file back to 'enable'
-Date: Tue, 11 Nov 2014 11:08:42 +0000
-Message-Id: <1415704129-12709-164-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 164/170] wireless: rt2x00: add new rt2800usb device
+Date: Tue, 11 Nov 2014 11:08:43 +0000
+Message-Id: <1415704129-12709-165-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Cyril Brulebois <kibi@debian.org>
 
-commit d8e7d53a2fc14e0830ab728cb84ee19933d3ac8d upstream.
+commit 664d6a792785cc677c2091038ce10322c8d04ae1 upstream.
 
-Back in commit 5136b2da770d ("PCI: convert bus code to use dev_groups"),
-I misstyped the 'enable' sysfs filename as 'enabled', which broke the
-userspace API.  This patch fixes that issue by renaming the file back.
+0x1b75 0xa200 AirLive WN-200USB wireless 11b/g/n dongle
 
-Fixes: 5136b2da770d ("PCI: convert bus code to use dev_groups")
-Reported-by: Jeff Epler <jepler@unpythonic.net>
-Tested-by: Jeff Epler <jepler@unpythonic.net>	# on v3.14-rt
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+References: https://bugs.debian.org/766802
+Reported-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Signed-off-by: Cyril Brulebois <kibi@debian.org>
+Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci-sysfs.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 76ef7914c9aa..6d04771e4903 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -185,7 +185,7 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR_RO(modalias);
- 
--static ssize_t enabled_store(struct device *dev, struct device_attribute *attr,
-+static ssize_t enable_store(struct device *dev, struct device_attribute *attr,
- 			     const char *buf, size_t count)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -210,7 +210,7 @@ static ssize_t enabled_store(struct device *dev, struct device_attribute *attr,
- 	return result < 0 ? result : count;
- }
- 
--static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
-+static ssize_t enable_show(struct device *dev, struct device_attribute *attr,
- 			    char *buf)
- {
- 	struct pci_dev *pdev;
-@@ -218,7 +218,7 @@ static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
- 	pdev = to_pci_dev(dev);
- 	return sprintf(buf, "%u\n", atomic_read(&pdev->enable_cnt));
- }
--static DEVICE_ATTR_RW(enabled);
-+static DEVICE_ATTR_RW(enable);
- 
- #ifdef CONFIG_NUMA
- static ssize_t numa_node_show(struct device *dev, struct device_attribute *attr,
-@@ -564,7 +564,7 @@ static struct attribute *pci_dev_attrs[] = {
- #endif
- 	&dev_attr_dma_mask_bits.attr,
- 	&dev_attr_consistent_dma_mask_bits.attr,
--	&dev_attr_enabled.attr,
-+	&dev_attr_enable.attr,
- 	&dev_attr_broken_parity_status.attr,
- 	&dev_attr_msi_bus.attr,
- #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index 573897b8e878..8444313eabe2 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -1111,6 +1111,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
+ 	/* Ovislink */
+ 	{ USB_DEVICE(0x1b75, 0x3071) },
+ 	{ USB_DEVICE(0x1b75, 0x3072) },
++	{ USB_DEVICE(0x1b75, 0xa200) },
+ 	/* Para */
+ 	{ USB_DEVICE(0x20b8, 0x8888) },
+ 	/* Pegatron */
 -- 
 2.1.0
 
