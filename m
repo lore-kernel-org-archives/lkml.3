@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627AbaKKLgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:36:15 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35292 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaKKLgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:36:11 -0500
-Date: Tue, 11 Nov 2014 12:35:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Cooper <jason@lakedaemon.net>
-cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, arm@kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
-        yingjoe.chen@gmail.com, hc.yen@mediatek.com, eddie.huang@mediatek.com,
-        nathan.chung@mediatek.com, yh.chen@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v5 0/6] ARM: mediatek: Add support for interrupt
- polarity
-In-Reply-To: <20141109053820.GU3698@titan.lakedaemon.net>
-Message-ID: <alpine.DEB.2.11.1411111234220.3935@nanos>
-References: <1414576824-16143-1-git-send-email-yingjoe.chen@mediatek.com> <20141109053820.GU3698@titan.lakedaemon.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1753639AbaKKLgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:36:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55181 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513AbaKKLgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:36:20 -0500
+Date: Tue, 11 Nov 2014 19:36:08 +0800
+From: Minfei Huang <mhuang@redhat.com>
+To: Minfei Huang <mnfhuang@gmail.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/mm: Give the correct initail value to the pmd_idx
+Message-ID: <20141111113608.GA3531@dhcp-17-108.nay.redhat.com>
+References: <1415252513-6453-1-git-send-email-mnfhuang@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415252513-6453-1-git-send-email-mnfhuang@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Nov 2014, Jason Cooper wrote:
+Could someone who help me review my patch?
 
-> Thomas, Marc,
+Thanks
+Minfei
+
+On 11/06/14 at 01:41pm, Minfei Huang wrote:
+> The variable value is undefined from the stack eara. So it makes sense to
+> init the variable to run process correctly.
 > 
-> Could I get Acks for the core changes and gic changes when you have
-> a moment?
-
-this depends on the core irqdomain changes which are not yet in
-tip. I'm waiting for Jiangs latest iteration and Marcs feedback on
-those.
-
-Thanks,
-
-	tglx
+> If the variable pmd_idx inits the value more than PTRS_PER_PMD, the
+> count may be smaller than the correct value, and the allocated page may
+> be not enough for pte entry.
+> 
+> The kernel may panic cause by the undefine variable which is allocated
+> from stack.
+> 
+> Signed-off-by: Minfei Huang <mnfhuang@gmail.com>
+> ---
+>  arch/x86/mm/init_32.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index c8140e1..c23ab1e 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -137,6 +137,7 @@ page_table_range_init_count(unsigned long start, unsigned long end)
+>  
+>  	vaddr = start;
+>  	pgd_idx = pgd_index(vaddr);
+> +	pmd_idx = pmd_index(vaddr);
+>  
+>  	for ( ; (pgd_idx < PTRS_PER_PGD) && (vaddr != end); pgd_idx++) {
+>  		for (; (pmd_idx < PTRS_PER_PMD) && (vaddr != end);
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
