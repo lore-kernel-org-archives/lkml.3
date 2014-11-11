@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaKKPwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:52:38 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56147 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaKKPsW (ORCPT
+	id S1752273AbaKKPwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:52:44 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:43960 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250AbaKKPwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:48:22 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 01/15] genirq: Add a few more helper funtions to support stacked irq_chip
-Date: Tue, 11 Nov 2014 15:47:59 +0000
-Message-Id: <1415720893-13371-2-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
-References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
+	Tue, 11 Nov 2014 10:52:41 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, tiwai@suse.de, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [linux-next] sound: soc: Fix warning while make htmldocs caused by soc-jack.c
+Date: Wed, 12 Nov 2014 00:52:23 +0900
+Message-Id: <1415721143-13914-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.2.0.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To follow-up on 9e310a9 (genirq: Introduce helper functions to support
-stacked irq_chip), add a few additional helpers to deal with mask/unmask
-and eoi.
+This patch fix following errors while "make htmldocs" on
+linux-next-20141110.
 
-This is required to support the standard ARM interrupt controllers
-(GIC/GICv3).
+Warning(.//sound/soc/soc-jack.c:126): No description found for
+parameter 'zones'
+Warning(.//sound/soc/soc-jack.c:126): Excess function parameter
+'zone' description in 'snd_soc_jack_add_zones'
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- include/linux/irq.h |  6 ++++++
- kernel/irq/chip.c   | 31 +++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
+ sound/soc/soc-jack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 041edd6..aec2145 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -454,6 +454,12 @@ extern void handle_nested_irq(unsigned int irq);
- extern int irq_chip_compose_msi_msg(struct irq_data *data, struct msi_msg *msg);
- #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
- extern void irq_chip_ack_parent(struct irq_data *data);
-+extern void irq_chip_mask_parent(struct irq_data *data);
-+extern void irq_chip_unmask_parent(struct irq_data *data);
-+extern void irq_chip_eoi_parent(struct irq_data *data);
-+extern int irq_chip_set_affinity_parent(struct irq_data *data,
-+					const struct cpumask *mask_val,
-+					bool force);
- extern int irq_chip_retrigger_hierarchy(struct irq_data *data);
- #endif
- 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 8f362db..d028b34 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -858,6 +858,37 @@ void irq_chip_ack_parent(struct irq_data *data)
- 	data->chip->irq_ack(data);
- }
- 
-+void irq_chip_mask_parent(struct irq_data *data)
-+{
-+	data = data->parent_data;
-+	if (data && data->chip && data->chip->irq_mask)
-+		data->chip->irq_mask(data);
-+}
-+
-+void irq_chip_unmask_parent(struct irq_data *data)
-+{
-+	data = data->parent_data;
-+	if (data && data->chip && data->chip->irq_unmask)
-+		data->chip->irq_unmask(data);
-+}
-+
-+void irq_chip_eoi_parent(struct irq_data *data)
-+{
-+	data = data->parent_data;
-+	if (data && data->chip && data->chip->irq_eoi)
-+		data->chip->irq_eoi(data);
-+}
-+
-+int irq_chip_set_affinity_parent(struct irq_data *data,
-+				 const struct cpumask *mask_val, bool force)
-+{
-+	data = data->parent_data;
-+	if (data && data->chip && data->chip->irq_set_affinity)
-+		return data->chip->irq_set_affinity(data, mask_val, force);
-+
-+	return -EINVAL;
-+}
-+
- int irq_chip_retrigger_hierarchy(struct irq_data *data)
- {
- 	for (data = data->parent_data; data; data = data->parent_data)
+diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
+index f921d00..4380dcc 100644
+--- a/sound/soc/soc-jack.c
++++ b/sound/soc/soc-jack.c
+@@ -116,7 +116,7 @@ EXPORT_SYMBOL_GPL(snd_soc_jack_report);
+  *
+  * @jack:  ASoC jack
+  * @count: Number of zones
+- * @zone:  Array of zones
++ * @zones:  Array of zones
+  *
+  * After this function has been called the zones specified in the
+  * array will be associated with the jack.
 -- 
-2.0.4
+2.2.0.rc1
 
