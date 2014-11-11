@@ -1,173 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385AbaKKNJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:09:24 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38478 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaKKNJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:09:22 -0500
-Message-ID: <1415711354.15631.15.camel@tkhai>
-Subject: Re: [PATCH v4] sched/deadline: support dl task migration during cpu
- hotplug
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Wanpeng Li <kernellwp@gmail.com>
-CC: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@arm.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Nov 2014 16:09:14 +0300
-In-Reply-To: <546209FD.8060102@gmail.com>
-References: <1415673043-62281-1-git-send-email-wanpeng.li@linux.intel.com>
-	 <1415704209.15631.14.camel@tkhai> <546209FD.8060102@gmail.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1751877AbaKKNKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:10:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799AbaKKNKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 08:10:52 -0500
+Date: Tue, 11 Nov 2014 11:10:30 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
+        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
+        brendan.d.gregg@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [RFC] perf-cache command interface design
+Message-ID: <20141111131030.GG4468@redhat.com>
+References: <87lhnr5sbl.fsf@sejong.aot.lge.com>
+ <54588905.7040002@linux.vnet.ibm.com>
+ <5458CD15.4010101@hitachi.com>
+ <874muew2hk.fsf@sejong.aot.lge.com>
+ <5459E865.6050207@hitachi.com>
+ <545B1DDE.9000202@linux.vnet.ibm.com>
+ <545C80F4.4020905@hitachi.com>
+ <54609A8C.4050308@hitachi.com>
+ <20141110122321.GC4468@redhat.com>
+ <5461B276.50004@hitachi.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+In-Reply-To: <5461B276.50004@hitachi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вт, 11/11/2014 в 21:07 +0800, Wanpeng Li пишет:
-> Hi Kirill,
-> On 11/11/14, 7:10 PM, Kirill Tkhai wrote:
-> > В Вт, 11/11/2014 в 10:30 +0800, Wanpeng Li пишет:
-> >> I observe that dl task can't be migrated to other cpus during cpu hotplug, in
-> >> addition, task may/may not be running again if cpu is added back. The root cause
-> >> which I found is that dl task will be throtted and removed from dl rq after
-> >> comsuming all budget, which leads to stop task can't pick it up from dl rq and
-> >> migrate to other cpus during hotplug.
+Em Tue, Nov 11, 2014 at 03:53:42PM +0900, Masami Hiramatsu escreveu:
+> (2014/11/10 21:23), Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Nov 10, 2014 at 07:59:24PM +0900, Masami Hiramatsu escreveu:
+> >> Here is the second try for the probe-cache. This version simplifies
+> >> the synopsis, and unifies the SDT and probe caches.
+> >> Please give me your comments/ideas!
 > >>
-> >> The method to reproduce:
-> >> schedtool -E -t 50000:100000 -e ./test
-> >> Actually test is just a simple for loop. Then observe which cpu the test
-> >> task is on.
-> >> echo 0 > /sys/devices/system/cpu/cpuN/online
+> >> Command-line Synopsis
+> >> =====================
+
+> >> Add elf(or symbols) and probe-caches of SDT if exists in <FILES>
+> >>  perf cache --add <FILES> [--probe <SPEC>] # for user programs
+
+> > Why the --probe above? Shouldn't this be just (if you are talking about
+> > ELF files only):
+
+> > perf cache --add <FILES>
+ 
+> Yes, for the elf and sdt cache, we don't need --probe.
+> Note that "[]" means optional. If we would like to add some probe cache,
+> we need a spec of probe definition.
+
+I understand that, its just that it looked superfluous at that specific
+place, where you are explaining how to add ELF files.
+
+> >>  perf cache --kcore <FILE> [--probe <SPEC>] # for kcore ?
+
+> > Adrian, aren't kcore files easily identifiable as such and thus could be
+> > added as:
+
+> >  perf cache --add <FILES>
+
+> >>  perf cache --probe <SPEC>  # for the current kernel
+
+> > Why do we need a --probe here? Don't they always start with a character
+> > that is seldomly used in ELF file names and thus we could get away with
+> > not requiring --probe?
+
+> This is only for adding the probe cache (not elf, nor sdt), which requires
+> a probe definition. Moreover, I'd like to unify the specification of the
+> probe definition with perf-probe. In that case, --probe is more natural.
+
+What I meant was, what is wrong with replacing:
+
+ perf cache --probe <SPEC>  # for the current kernel
+
+With:
+
+ perf cache --add <PROBE-SPEC> # for the current kernel
+
+And have it figure out that what is being added is a probe and do the
+right thing?
+ 
+> >> Remove caches related to <FILES> or <BUILDIDS>
+> >>  perf cache --remove <FILES>|<BUILDIDS>
 > >>
-> >> This patch fix it by push the task to another cpu in dl_task_timer() if
-> >> rq is offline.
+> >> Show all probe caches(including SDT) or buildids
+> >>  perf cache --list [probe|buildid]
 > >>
-> >> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> > I'm still thinking we don't have to guarantee any "deadlines" during cpu hotplug...
-> > But, if speaking about this way:
-> >
-> >> ---
-> >> v3 -> v4:
-> >>   * use tsk_cpus_allowed wrapper
-> >>   * fix compile error
-> >> v2 -> v3:
-> >>   * don't get_task_struct
-> >>   * if cannot preempt any rq, fallback to pick any online cpus
-> >>   * use cpu_active_mask as original later_mask if cpu is offline
-> >> v1 -> v2:
-> >>   * push the task to another cpu in dl_task_timer() if rq is offline.
-> >>
-> >>
-> >>   kernel/sched/deadline.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++---
-> >>   1 file changed, 48 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> >> index 00324af..e0fbba4 100644
-> >> --- a/kernel/sched/deadline.c
-> >> +++ b/kernel/sched/deadline.c
-> >> @@ -487,6 +487,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
-> >>   	return hrtimer_active(&dl_se->dl_timer);
-> >>   }
-> >>   
-> >> +static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq);
-> >>   /*
-> >>    * This is the bandwidth enforcement timer callback. If here, we know
-> >>    * a task is not on its dl_rq, since the fact that the timer was running
-> >> @@ -538,6 +539,46 @@ again:
-> >>   	update_rq_clock(rq);
-> >>   	dl_se->dl_throttled = 0;
-> >>   	dl_se->dl_yielded = 0;
-> >> +
-> >> +	/*
-> >> +	 * So if we find that the rq the task was on is no longer
-> >> +	 * available, we need to select a new rq.
-> >> +	 */
-> >> +	if (!rq->online) {
-> >> +		struct rq *later_rq = NULL;
-> >> +
-> >> +		raw_spin_unlock(&rq->lock);
-> >> +
-> >> +		later_rq = find_lock_later_rq(p, rq);
-> > find_lock_later_rq() expects that rq is locked.
-> >
-> > The comment near its head confuses a reader. It locks newly found rq.
+> >> Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
+> >>  perf cache　--probe-del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+> > 
+> > Ditto, i.e. can't we just use:
+> > 
+> >  perf cache　--remove [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
+> > 
+> > And it figure out that this is a probe that is being removed?
 > 
-> Sorry for my bad, what's you think should be changed?
+> In most cases, it may be OK, but it is also possible to cause unexpected
+> result when mis-typing. I think if <FILE> is always starting at '/', it
+> is easy to identify.
 
-raw_spin_unlock(&rq->lock) is wrong here. It's not need.
+We can keep the explicit switch (--probe-del) perhaps to resolve
+ambiguities, if they happen, but make it so that it is not strictly
+required for the common case.
+ 
+- Thanks,
 
-> 
-> >
-> >> +
-> >> +		if (!later_rq) {
-> >> +			int cpu;
-> >> +
-> >> +			/*
-> >> +			 * If cannot preempt any rq, fallback to pick any
-> >> +			 * online cpu.
-> >> +			 */
-> >> +			for_each_cpu(cpu, tsk_cpus_allowed(p))
-> >> +				if (cpu_online(cpu))
-> >> +					later_rq = cpu_rq(cpu);
-> >> +			if (!later_rq) {
-> >> +				pr_warn("fail to find any online and task "
-> >> +				    "will never come back to us\n");
-> >> +				goto out;
-> >> +			}
-> >> +		}
-> >> +
-> >> +		deactivate_task(rq, p, 0);
-> >> +		set_task_cpu(p, later_rq->cpu);
-> >> +		activate_task(later_rq, p, 0);
-> >> +
-> >> +		resched_curr(later_rq);
-> >> +
-> >> +		double_unlock_balance(rq, later_rq);
-> > double_unlock_balance() unlocks later_rq only.
-> >
-> >> +
-> >> +		goto out;
-> >> +	}
-> >> +
-> >>   	if (task_on_rq_queued(p)) {
-> >>   		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
-> >>   		if (dl_task(rq->curr))
-> >> @@ -555,7 +596,7 @@ again:
-> >>   	}
-> >>   unlock:
-> >>   	raw_spin_unlock(&rq->lock);
-> >> -
-> >> +out:
-> >>   	return HRTIMER_NORESTART;
-> >>   }
-> >>   
-> >> @@ -1185,8 +1226,12 @@ static int find_later_rq(struct task_struct *task)
-> >>   	 * We have to consider system topology and task affinity
-> >>   	 * first, then we can look for a suitable cpu.
-> >>   	 */
-> >> -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> >> -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> >> +	if (likely(task_rq(task)->online)) {
-> >> +		cpumask_copy(later_mask, task_rq(task)->rd->span);
-> >> +		cpumask_and(later_mask, later_mask, cpu_active_mask);
-> >> +	} else
-> >> +		/* for offline cpus we have a singleton rd */
-> >> +		cpumask_copy(later_mask, cpu_active_mask);
-> >>   	cpumask_and(later_mask, later_mask, &task->cpus_allowed);
-> >>   	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
-> >>   			task, later_mask);
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+- Arnaldo
