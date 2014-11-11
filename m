@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaKKOwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:52:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15217 "EHLO mga02.intel.com"
+	id S1752140AbaKKOwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:52:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:5611 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015AbaKKOu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752021AbaKKOu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Nov 2014 09:50:58 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
-   d="scan'208";a="605960381"
+   d="scan'208";a="630166432"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v7 10/14] x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
-Date: Tue, 11 Nov 2014 16:48:24 +0200
-Message-Id: <1415717308-209223-11-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v7 09/14] perf: Add wakeup watermark control to AUX area
+Date: Tue, 11 Nov 2014 16:48:23 +0200
+Message-Id: <1415717308-209223-10-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -30,39 +30,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Processor Trace is an architecture extension that allows for program
-flow tracing.
+When AUX area gets a certain amount of new data, we want to wake up
+userspace to collect it. This adds a new control to specify how much
+data will cause a wakeup. This is then passed down to pmu drivers via
+output handle's "wakeup" field, so that the driver can find the nearest
+point where it can generate an interrupt.
+
+We repurpose __reserved_2 in the event attribute for this, even though
+it was never checked to be zero before, aux_watermark will only matter
+for new AUX-aware code, so the old code should still be fine.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- arch/x86/include/asm/cpufeature.h | 1 +
- arch/x86/kernel/cpu/scattered.c   | 1 +
- 2 files changed, 2 insertions(+)
+ include/uapi/linux/perf_event.h |  7 +++++--
+ kernel/events/core.c            |  3 ++-
+ kernel/events/internal.h        |  4 +++-
+ kernel/events/ring_buffer.c     | 22 +++++++++++++++++++---
+ 4 files changed, 29 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 0bb1335313..86aa081a0d 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -189,6 +189,7 @@
- #define X86_FEATURE_DTHERM	( 7*32+ 7) /* Digital Thermal Sensor */
- #define X86_FEATURE_HW_PSTATE	( 7*32+ 8) /* AMD HW-PState */
- #define X86_FEATURE_PROC_FEEDBACK ( 7*32+ 9) /* AMD ProcFeedbackInterface */
-+#define X86_FEATURE_INTEL_PT	( 7*32+10) /* Intel Processor Trace */
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index f36aac2ac5..ffd52c0861 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -238,6 +238,7 @@ enum perf_event_read_format {
+ #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+ #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
+ 					/* add: sample_stack_user */
++					/* add: aux_watermark */
  
- /* Virtualization flags: Linux defined, word 8 */
- #define X86_FEATURE_TPR_SHADOW  ( 8*32+ 0) /* Intel TPR Shadow */
-diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
-index 4a8013d559..42f5fa953f 100644
---- a/arch/x86/kernel/cpu/scattered.c
-+++ b/arch/x86/kernel/cpu/scattered.c
-@@ -36,6 +36,7 @@ void init_scattered_cpuid_features(struct cpuinfo_x86 *c)
- 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
- 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
- 		{ X86_FEATURE_PTS,		CR_EAX, 6, 0x00000006, 0 },
-+		{ X86_FEATURE_INTEL_PT,		CR_EBX,25, 0x00000007, 0 },
- 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
- 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
- 		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+@@ -332,8 +333,10 @@ struct perf_event_attr {
+ 	 */
+ 	__u32	sample_stack_user;
+ 
+-	/* Align to u64. */
+-	__u32	__reserved_2;
++	/*
++	 * Wakeup watermark for AUX area
++	 */
++	__u32	aux_watermark;
+ };
+ 
+ #define perf_flags(attr)	(*(&(attr)->read_format + 1))
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 48b8dc0d36..da2e44aedd 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4419,7 +4419,8 @@ accounting:
+ 		perf_event_init_userpage(event);
+ 		perf_event_update_userpage(event);
+ 	} else {
+-		ret = rb_alloc_aux(rb, event, vma->vm_pgoff, nr_pages, flags);
++		ret = rb_alloc_aux(rb, event, vma->vm_pgoff, nr_pages,
++				   event->attr.aux_watermark, flags);
+ 		if (!ret)
+ 			rb->aux_mmap_locked = extra;
+ 	}
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index ffd51d9f59..9f6ce9ba4a 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -27,6 +27,7 @@ struct ring_buffer {
+ 	local_t				lost;		/* nr records lost   */
+ 
+ 	long				watermark;	/* wakeup watermark  */
++	long				aux_watermark;
+ 	/* poll crap */
+ 	spinlock_t			event_lock;
+ 	struct list_head		event_list;
+@@ -38,6 +39,7 @@ struct ring_buffer {
+ 	/* AUX area */
+ 	local_t				aux_head;
+ 	local_t				aux_nest;
++	local_t				aux_wakeup;
+ 	unsigned long			aux_pgoff;
+ 	int				aux_nr_pages;
+ 	int				aux_overwrite;
+@@ -57,7 +59,7 @@ extern struct ring_buffer *
+ rb_alloc(int nr_pages, long watermark, int cpu, int flags);
+ extern void perf_event_wakeup(struct perf_event *event);
+ extern int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+-			pgoff_t pgoff, int nr_pages, int flags);
++			pgoff_t pgoff, int nr_pages, long watermark, int flags);
+ extern void rb_free_aux(struct ring_buffer *rb);
+ extern struct ring_buffer *ring_buffer_get(struct perf_event *event);
+ extern void ring_buffer_put(struct ring_buffer *rb);
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 6f8bc8e962..18334a6170 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -295,6 +295,7 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
+ 	 */
+ 	if (!rb->aux_overwrite) {
+ 		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
++		handle->wakeup = local_read(&rb->aux_wakeup) + rb->aux_watermark;
+ 		if (aux_head - aux_tail < perf_aux_size(rb))
+ 			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
+ 
+@@ -358,9 +359,12 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
+ 		perf_event_aux_event(handle->event, aux_head, size, flags);
+ 	}
+ 
+-	rb->user_page->aux_head = local_read(&rb->aux_head);
++	aux_head = rb->user_page->aux_head = local_read(&rb->aux_head);
+ 
+-	perf_output_wakeup(handle);
++	if (aux_head - local_read(&rb->aux_wakeup) >= rb->aux_watermark) {
++		perf_output_wakeup(handle);
++		local_add(rb->aux_watermark, &rb->aux_wakeup);
++	}
+ 	handle->event = NULL;
+ 
+ 	local_set(&rb->aux_nest, 0);
+@@ -382,6 +386,14 @@ int perf_aux_output_skip(struct perf_output_handle *handle, unsigned long size)
+ 
+ 	local_add(size, &rb->aux_head);
+ 
++	aux_head = rb->user_page->aux_head = local_read(&rb->aux_head);
++	if (aux_head - local_read(&rb->aux_wakeup) >= rb->aux_watermark) {
++		perf_output_wakeup(handle);
++		local_add(rb->aux_watermark, &rb->aux_wakeup);
++		handle->wakeup = local_read(&rb->aux_wakeup) +
++				 rb->aux_watermark;
++	}
++
+ 	handle->head = aux_head;
+ 	handle->size -= size;
+ 
+@@ -432,7 +444,7 @@ static void rb_free_aux_page(struct ring_buffer *rb, int idx)
+ }
+ 
+ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+-		 pgoff_t pgoff, int nr_pages, int flags)
++		 pgoff_t pgoff, int nr_pages, long watermark, int flags)
+ {
+ 	bool overwrite = !(flags & RING_BUFFER_WRITABLE);
+ 	int node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
+@@ -493,6 +505,10 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 	atomic_set(&rb->aux_refcount, 1);
+ 
+ 	rb->aux_overwrite = overwrite;
++	rb->aux_watermark = watermark;
++
++	if (!rb->aux_watermark && !rb->aux_overwrite)
++		rb->aux_watermark = nr_pages << (PAGE_SHIFT - 1);
+ 
+ out:
+ 	if (!ret)
 -- 
 2.1.1
 
