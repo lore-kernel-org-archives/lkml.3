@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaKKLIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:08:07 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:54727 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152AbaKKLID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:08:03 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: Creating a new platform_bus inside a spi_driver
-To: Arnd Bergmann <arnd@arndb.de>,
-        DATACOM - =?iso-8859-1?b?yXJpY28=?= Nunes 
-	<erico.nunes@datacom.ind.br>
-Cc: robh+dt@kernel.org, devicetree@vger.kernel.org, sameo@linux.intel.com,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org
-In-Reply-To: <2501338.EAyTJJ482M@wuerfel>
-References: <545BD3EC.6050503@datacom.ind.br>
-	<707686811.tbHdnxXMgE@wuerfel> <545CF546.8090703@datacom.ind.br>
-	<2501338.EAyTJJ482M@wuerfel>
-Date: Tue, 11 Nov 2014 11:07:57 +0000
-Message-Id: <20141111110757.3DFFAC40D48@trevor.secretlab.ca>
+	id S1753230AbaKKLHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:07:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:29961 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753176AbaKKLHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:07:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
+   d="scan'208";a="620494694"
+Message-ID: <1415704063.22887.135.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 3/4] UBIFS: Add security.* XATTR support for the UBIFS
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ben Shelton <ben.shelton@ni.com>
+Cc: linux-mtd@lists.infradead.org, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Subodh Nijsure <snijsure@grid-net.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Date: Tue, 11 Nov 2014 13:07:43 +0200
+In-Reply-To: <1414781431-2911-4-git-send-email-ben.shelton@ni.com>
+References: <1414781431-2911-1-git-send-email-ben.shelton@ni.com>
+	 <1414781431-2911-4-git-send-email-ben.shelton@ni.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Nov 2014 18:04:35 +0100
-, Arnd Bergmann <arnd@arndb.de>
- wrote:
-> On Friday 07 November 2014 14:37:26 DATACOM - Érico Nunes wrote:
-> > Hello Arnd and all,
-> > 
-> > On 11/07/2014 08:04 AM, Arnd Bergmann wrote:
-> > > On Thursday 06 November 2014 18:02:52 DATACOM - Érico Nunes wrote:
-> > >> The idea is that "fpga-spi" is a spi_driver which instantiates all of the
-> > >> "fpga-deviceN" as platform_devices, through the use of
-> > >> of_platform_populate(dev->of_node, NULL, NULL, dev).
-> > >>
-> > >> The visible problem we're facing with this approach is that, as the internal
-> > >> platform_devices have a "reg" property, of_platform_populate() eventually
-> > >> triggers an address translation which is apparently trying to translate the
-> > >> addresses of the internal platform_bus to addresses of the processor memory
-> > >> map.
-> > >> This translation is however not part of our intention, as we intend to have an
-> > >> internal bus with its own memory map.
-> > >> This fails when __of_translate_address() reaches the spi-master boundary
-> > >> because (as it seems to make sense) it isn't possible to translate them past
-> > >> that.
-> > >> A KERN_ERR rated message like
-> > >> "prom_parse: Bad cell count for /soc@f0000000/spi@2000/fpga@1"
-> > >> is thrown by __of_translate_address() and later it is not possible to obtain
-> > >> the "reg" address with platform_get_resource().
-> > >>
-> > >> On this scenario, we have a few questions and, depending on the outcome of
-> > >> these, possibly a patch.
-> > >>
-> > >> 1. Is it possible to have an internal platform_bus with a different memory map
-> > >> as we intended? Or are platform_busses and platform_devices supposed to always
-> > >> be mapped on the processor memory map?
-> > > It's inconsistent. We have some code that assumes that platform devices
-> > > are always memory mapped, and some other code that breaks this assumption.
-> > 
-> > By this I take that the platform subsystem could be made generic so it can be
-> > used in both ways (mapped to processor memory map or mapped to a private memory
-> > map). There seems to be no strict requirement enforcing it to be processor
-> > memory map.
-> > 
-> > Is this correct?
-> 
-> It could be, but I'm sure if that is a good idea or not. It might complicate
-> things elsewhere, so it would at least need careful testing and consensus
-> among a broader group of developers.
+Hi,
 
-I don't think it is a good idea. I would prefer to make the behaviour of
-of_platform_populate() generic so it could work for multiple bus
-types rather than reusing/abusing platform_device in this way.
+pushed this patch too, with amendments.
 
-If the devices on the FPGA were memory mapped, it would be a different
-situation, but being behind an SPI bus where the access to those devices
-must always be mediated by the SPI controller, it would be better to
-have a separate bus type and a separate pool of drivers for those
-devices.
+On Fri, 2014-10-31 at 13:50 -0500, Ben Shelton wrote:
+> @@ -279,6 +283,7 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+>  	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
+>  	if (err)
+>  		goto out_cancel;
+> +
+>  	mutex_unlock(&dir_ui->ui_mutex);
 
-g.
+Removed this junk newline change here and in other similar places.
+> +size_t ubifs_security_listxattr(struct dentry *d, char *list, size_t list_size,
+> +				const char *name, size_t name_len, int flags)
+
+Made this to be static, renamed to 'security_listxattr()'.
+
+> +int ubifs_security_getxattr(struct dentry *d, const char *name,
+> +			    void *buffer, size_t size, int flags)
+
+Similar: rename + static.
+
+> +int ubifs_security_setxattr(struct dentry *d, const char *name,
+> +			    const void *value, size_t size,
+> +			    int flags, int handler_flags)
+Similar: rename + static.
+
+> +struct xattr_handler ubifs_xattr_security_handler = {
+
+Renamed, made static and const too.
+
+> +static int ubifs_initxattrs(struct inode *inode,
+> +			    const struct xattr *xattr_array, void *fs_info)
+
+Renamed to just init_xattrs(), for the consistency reasons, the ones I
+explained in the review to the patch 2/4.
+
