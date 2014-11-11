@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaKKU3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:29:45 -0500
-Received: from mailout.easymail.ca ([64.68.201.169]:48150 "EHLO
+	id S1752445AbaKKUai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:30:38 -0500
+Received: from mailout.easymail.ca ([64.68.201.169]:48097 "EHLO
 	mailout.easymail.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017AbaKKU2a (ORCPT
+	with ESMTP id S1751947AbaKKU22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:28:30 -0500
-X-Quarantine-ID: <vtarkptaPYvO>
+	Tue, 11 Nov 2014 15:28:28 -0500
+X-Quarantine-ID: <kqKDghyxRXWq>
 X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
 X-Spam-Flag: NO
 X-Spam-Score: -4.399
@@ -19,9 +19,9 @@ To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v2 18/19] selftests/vm: add install target to enable installing test
-Date: Tue, 11 Nov 2014 13:27:58 -0700
-Message-Id: <86ae024c4591a8775f82975b69182fdc29f234d2.1415735831.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v2 16/19] selftests/sysctl: add install target to enable installing test
+Date: Tue, 11 Nov 2014 13:27:56 -0700
+Message-Id: <d9d5e5733e0720efbf77552fa2caf1880a3e3cf5.1415735831.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1415735831.git.shuahkh@osg.samsung.com>
 References: <cover.1415735831.git.shuahkh@osg.samsung.com>
@@ -38,40 +38,47 @@ only from top level source dir.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/vm/Makefile | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ tools/testing/selftests/sysctl/Makefile | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
-index 4c4b1f6..7fbe551 100644
---- a/tools/testing/selftests/vm/Makefile
-+++ b/tools/testing/selftests/vm/Makefile
-@@ -4,13 +4,25 @@ CC = $(CROSS_COMPILE)gcc
- CFLAGS = -Wall
- BINARIES = hugepage-mmap hugepage-shm map_hugetlb thuge-gen hugetlbfstest
- BINARIES += transhuge-stress
-+TEST_STR = /bin/sh ./run_vmtests || echo vmtests: [FAIL]
+diff --git a/tools/testing/selftests/sysctl/Makefile b/tools/testing/selftests/sysctl/Makefile
+index 0a92ada..34cca1b 100644
+--- a/tools/testing/selftests/sysctl/Makefile
++++ b/tools/testing/selftests/sysctl/Makefile
+@@ -4,12 +4,31 @@
+ # No binaries, but make sure arg-less "make" doesn't trigger "run_tests".
+ all:
  
- all: $(BINARIES)
- %: %.c
- 	$(CC) $(CFLAGS) -o $@ $^
++INSTALL_PROGS = common_tests run_numerictests run_stringtests
++NUMERIC_TEST_STR = /bin/sh ./run_numerictests
++STRING_TEST_STR = /bin/sh ./run_stringtests
++
+ # Allow specific tests to be selected.
+ test_num:
+-	@/bin/sh ./run_numerictests
++	@$(NUMERIC_TEST_STR)
  
-+install:
+ test_string:
+-	@/bin/sh ./run_stringtests
++	@$(STRING_TEST_STR)
++
++install: all
 +ifdef INSTALL_KSFT_PATH
-+	install run_vmtests $(BINARIES) $(INSTALL_KSFT_PATH)
-+	@echo echo Start vm test .... >> $(KSELFTEST)
-+	@echo "$(TEST_STR)" >> $(KSELFTEST)
-+	@echo echo End vm test .... >> $(KSELFTEST)
++	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
++	@echo echo Start sysctl numeric tests .... >> $(KSELFTEST)
++	@echo "$(NUMERIC_TEST_STR)" >> $(KSELFTEST)
++	@echo echo End sysctl numeric tests .... >> $(KSELFTEST)
++	@echo echo -------------------- >> $(KSELFTEST)
++	@echo echo Start sysctl string tests .... >> $(KSELFTEST)
++	@echo "$(STRING_TEST_STR)" >> $(KSELFTEST)
++	@echo echo End sysctl string test .... >> $(KSELFTEST)
 +	@echo echo ============================== >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
-+
- run_tests: all
--	@/bin/sh ./run_vmtests || (echo "vmtests: [FAIL]"; exit 1)
-+	@$(TEST_STR)
  
- clean:
- 	$(RM) $(BINARIES)
+ run_tests: all test_num test_string
+ 
 -- 
 1.9.1
 
