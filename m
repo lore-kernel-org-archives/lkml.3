@@ -1,125 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaKKPt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 10:49:59 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56211 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaKKPsl (ORCPT
+	id S1752070AbaKKPuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 10:50:20 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:39566 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbaKKPuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 10:48:41 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 10/15] irqchip: GICv3: ITS: device allocation and configuration
-Date: Tue, 11 Nov 2014 15:48:08 +0000
-Message-Id: <1415720893-13371-11-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
-References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com>
+	Tue, 11 Nov 2014 10:50:16 -0500
+Date: Tue, 11 Nov 2014 15:49:59 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH -next v2 21/26] pty: Don't drop pty master tty lock to
+ hangup slave
+Message-ID: <20141111154959.65f5109e@alan.etchedpixels.co.uk>
+In-Reply-To: <1415207589-15967-22-git-send-email-peter@hurleysoftware.com>
+References: <1413491125-20134-1-git-send-email-peter@hurleysoftware.com>
+	<1415207589-15967-1-git-send-email-peter@hurleysoftware.com>
+	<1415207589-15967-22-git-send-email-peter@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ITS has a notion of "device" that can write to it in order to
-generate an interrupt.
+On Wed,  5 Nov 2014 12:13:04 -0500
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-Conversly, the driver maintains a per-ITS list of devices, together
-with their configuration information, and uses this to configure
-the HW.
+> With the revised tty lock order and lockdep annotation, claiming
+> the pty slave lock is now safe while still holding the pty master lock.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/irqchip/irq-gic-v3-its.c | 74 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 74 insertions(+)
-
-diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
-index 92e0f49..8d13012 100644
---- a/drivers/irqchip/irq-gic-v3-its.c
-+++ b/drivers/irqchip/irq-gic-v3-its.c
-@@ -981,3 +981,77 @@ static void its_cpu_init_collection(void)
- 
- 	spin_unlock(&its_lock);
- }
-+
-+static struct its_device *its_find_device(struct its_node *its, u32 dev_id)
-+{
-+	struct its_device *its_dev = NULL, *tmp;
-+
-+	raw_spin_lock(&its->lock);
-+
-+	list_for_each_entry(tmp, &its->its_device_list, entry) {
-+		if (tmp->device_id == dev_id) {
-+			its_dev = tmp;
-+			break;
-+		}
-+	}
-+
-+	raw_spin_unlock(&its->lock);
-+
-+	return its_dev;
-+}
-+
-+static struct its_device *its_create_device(struct its_node *its, u32 dev_id,
-+					    int nvecs)
-+{
-+	struct its_device *dev;
-+	unsigned long *lpi_map;
-+	void *itt;
-+	int lpi_base;
-+	int nr_lpis;
-+	int cpu;
-+	int sz;
-+
-+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+	sz = nvecs * its->ite_size;
-+	sz = max(sz, ITS_ITT_ALIGN) + ITS_ITT_ALIGN - 1;
-+	itt = kmalloc(sz, GFP_KERNEL);
-+	lpi_map = its_lpi_alloc_chunks(nvecs, &lpi_base, &nr_lpis);
-+
-+	if (!dev || !itt || !lpi_map) {
-+		kfree(dev);
-+		kfree(itt);
-+		kfree(lpi_map);
-+		return NULL;
-+	}
-+
-+	dev->its = its;
-+	dev->itt = itt;
-+	dev->nr_ites = nvecs;
-+	dev->lpi_map = lpi_map;
-+	dev->lpi_base = lpi_base;
-+	dev->nr_lpis = nr_lpis;
-+	dev->device_id = dev_id;
-+	INIT_LIST_HEAD(&dev->entry);
-+
-+	raw_spin_lock(&its->lock);
-+	list_add(&dev->entry, &its->its_device_list);
-+	raw_spin_unlock(&its->lock);
-+
-+	/* Bind the device to the first possible CPU */
-+	cpu = cpumask_first(cpu_online_mask);
-+	dev->collection = &its->collections[cpu];
-+
-+	/* Map device to its ITT */
-+	its_send_mapd(dev, 1);
-+
-+	return dev;
-+}
-+
-+static void its_free_device(struct its_device *its_dev)
-+{
-+	raw_spin_lock(&its_dev->its->lock);
-+	list_del(&its_dev->entry);
-+	raw_spin_unlock(&its_dev->its->lock);
-+	kfree(its_dev->itt);
-+	kfree(its_dev);
-+}
--- 
-2.0.4
+Reviewed-by: Alan Cox <alan@linux.intel.com>
 
