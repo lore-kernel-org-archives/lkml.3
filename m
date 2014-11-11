@@ -1,148 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaKKGxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 01:53:51 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39037 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaKKGxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 01:53:50 -0500
-Message-ID: <5461B276.50004@hitachi.com>
-Date: Tue, 11 Nov 2014 15:53:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751950AbaKKG4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 01:56:05 -0500
+Received: from ozlabs.org ([103.22.144.67]:42072 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751334AbaKKG4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 01:56:01 -0500
+Date: Tue, 11 Nov 2014 17:55:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joseph Qi <joseph.qi@huawei.com>
+Subject: linux-next: manual merge of the akpm-current tree with the ext3
+ tree
+Message-ID: <20141111175553.795e7828@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
-        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com,
-        systemtap@sourceware.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi,
-        brendan.d.gregg@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [RFC] perf-cache command interface design
-References: <20141102105006.21708.28734.stgit@hemant-fedora> <20141102105557.21708.19032.stgit@hemant-fedora> <87lhnr5sbl.fsf@sejong.aot.lge.com> <54588905.7040002@linux.vnet.ibm.com> <5458CD15.4010101@hitachi.com> <874muew2hk.fsf@sejong.aot.lge.com> <5459E865.6050207@hitachi.com> <545B1DDE.9000202@linux.vnet.ibm.com> <545C80F4.4020905@hitachi.com> <54609A8C.4050308@hitachi.com> <20141110122321.GC4468@redhat.com>
-In-Reply-To: <20141110122321.GC4468@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/.4j4j_eXFv83MlwQv=4mALd"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/10 21:23), Arnaldo Carvalho de Melo wrote:
-> Em Mon, Nov 10, 2014 at 07:59:24PM +0900, Masami Hiramatsu escreveu:
->> Hello,
->>
->> Here is the second try for the probe-cache. This version simplifies
->> the synopsis, and unifies the SDT and probe caches.
->> Please give me your comments/ideas!
->>
->> Command-line Synopsis
->> =====================
->>
->> Add elf(or symbols) and probe-caches of SDT if exists in <FILES>
->>  perf cache --add <FILES> [--probe <SPEC>] # for user programs
-> 
-> Why the --probe above? Shouldn't this be just (if you are talking about
-> ELF files only):
-> 
-> perf cache --add <FILES>
+--Sig_/.4j4j_eXFv83MlwQv=4mALd
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, for the elf and sdt cache, we don't need --probe.
-Note that "[]" means optional. If we would like to add some probe cache,
-we need a spec of probe definition.
+Hi Andrew,
 
->>  perf cache --kcore <FILE> [--probe <SPEC>] # for kcore ?
-> 
-> Adrian, aren't kcore files easily identifiable as such and thus could be
-> added as:
-> 
->  perf cache --add <FILES>
->  
->>  perf cache --probe <SPEC>  # for the current kernel
-> 
-> Why do we need a --probe here? Don't they always start with a character
-> that is seldomly used in ELF file names and thus we could get away with
-> not requiring --probe?
+Today's linux-next merge of the akpm-current tree got a conflict in
+fs/ocfs2/inode.h between commit 1c92ec678f32 ("ocfs2: Convert to
+private i_dquot field") from the ext3 tree and commit eeb85794b87e
+("ocfs2: fix leftover orphan entry caused by append O_DIRECT write
+crash") from the akpm-current tree.
 
-This is only for adding the probe cache (not elf, nor sdt), which requires
-a probe definition. Moreover, I'd like to unify the specification of the
-probe definition with perf-probe. In that case, --probe is more natural.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
->> Remove caches related to <FILES> or <BUILDIDS>
->>  perf cache --remove <FILES>|<BUILDIDS>
->>
->> Show all probe caches(including SDT) or buildids
->>  perf cache --list [probe|buildid]
->>
->> Delete existing probe-cache entries for kernel, <PATH> or/and <BUILDID>.
->>  perf cache　--probe-del [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-> 
-> Ditto, i.e. can't we just use:
-> 
->  perf cache　--remove [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-> 
-> And it figure out that this is a probe that is being removed?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In most cases, it may be OK, but it is also possible to cause unexpected
-result when mis-typing. I think if <FILE> is always starting at '/', it
-is easy to identify.
+diff --cc fs/ocfs2/inode.h
+index ca3431ee7f24,1fdf4707e6d3..000000000000
+--- a/fs/ocfs2/inode.h
++++ b/fs/ocfs2/inode.h
+@@@ -81,7 -81,7 +81,9 @@@ struct ocfs2_inode_inf
+  	tid_t i_sync_tid;
+  	tid_t i_datasync_tid;
+ =20
+ +	struct dquot *i_dquot[MAXQUOTAS];
+++
++ 	wait_queue_head_t append_dio_wq;
+  };
+ =20
+  /*
 
->> Query the probe definitions.
->>  perf cache --query [<GROUP>:]<EVENT>[@<PATH>][#<BUILDID>]
-> 
-> Replace --query with --show?
+--Sig_/.4j4j_eXFv83MlwQv=4mALd
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-OK.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thank you,
+iQIcBAEBCAAGBQJUYbL/AAoJEMDTa8Ir7ZwVGyIP/ieyLJ45HXp4fe7He3/PtMR6
+N04GAsjvRMn9hl2LrArFcSps6ZG1THRegZ/MTmJvAUnzuZSNxOuojA2FCKqe+pGz
+LNcDiCYzVlapzIg0dSjTCQ7QeVLlPnz1mhY9Sba+JedFa7+gMDyv5bdnik8VmhUn
+LHDbd1EKRbOI9eWxy1+G2e3B1DbfP/WA6YxpaN52FOPe4A4K5j6jFLbLTSwwxVUW
+asstvFhsKxygbyWVIngVvXvEI+3PVfTrC5/8bDwTcmXD4Q0/6ujbupdkHf+mofaS
+XrHpsgBqWWKW6kwI5ENOMdtiGlyktBk+1X/oAIxGqgivEU4vxN5Duz7TzbnpE4Uk
+iLZ/nvDIssbIvxYvP+Ttf+rriZGPcgziYH/Uc1UAj2dkLcNQ0MY/qqYrh/K+YbMo
+ZWoNBQcLLL6b27aay+vAWiFI3FF21U/ndOgjvyVILWA22AysZ2fy8SvetnnPymoj
+FtQ228uHCX/8d/3fYzz/G4k34l5F50tCb7jSuNmSoU/fgdeuiuBI2q2t7zh2necr
+IvmXRK6BfxIT7yo3WHtdo+jFTJcrWtsCXELCj3jvgHOJQU+rXCmUUmN6JNbGgJTS
+Tg1KICBRnEIuL1x4pPpBfGo5rqtqB/1WjhvYh7YoUjqI3pfK4ICfrrPCMptEGZDB
+50ebQJaF+sNeEHFD+H4a
+=Mtcy
+-----END PGP SIGNATURE-----
 
->  
->> File Format
->> ===========
->> All the cache files are placed under ~/.debug/ by default.
->> Elf caches are ~/.debug/path/to/file/bu/ildid/elf
->> Symbols caches are ~/.debug/path/to/file/bu/ildid/syms
->> Probes(and SDT) are ~/.debug/path/to/file/bu/ildid/probes
->> And ~/.debug/path/to/file/bu/ildid/ is linked to ~/.debug/.buildid/bu/ildid
->> Optionally, we can gzip the probes file.
-> 
-> Ok!
->  
->> This probe caches contain probe-definitions as following format.
->> ----
->> #buildid:BUILDID
->> #spec:SDT
->> p:sdt_<PROVIDER>/<EVENT> PATH:OFFSET [ARGS]
->> ...
->> #spec:* $params
->> p:probe_<GROUP>/<EVENT> _text+OFFSET [ARGS]
->> ...
->> ----
->> So the #spec: line gives the information what probe spec has been given.
->> This will be used for updating.
->>
->> And all the "probe_" and "sdt_" prefix will be replaced by % in the command line,
->> e.g.
->>
->>  perf record -e %<PROVIDER>/<EVENT> -> this records sdt_PROVIDER/EVENT
->>
->> Thank you,
->>
->> -- 
->> Masami HIRAMATSU
->> Software Platform Research Dept. Linux Technology Research Center
->> Hitachi, Ltd., Yokohama Research Laboratory
->> E-mail: masami.hiramatsu.pt@hitachi.com
->>
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--Sig_/.4j4j_eXFv83MlwQv=4mALd--
