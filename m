@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaKKQ1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:27:49 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52758 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaKKQ1s convert rfc822-to-8bit (ORCPT
+	id S1751633AbaKKQaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:30:15 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58722 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaKKQaO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:27:48 -0500
-Message-ID: <546238FA.3040307@arm.com>
-Date: Tue, 11 Nov 2014 16:27:38 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 00/15] arm64: PCI/MSI: GICv3 ITS support (stacked domain
- edition)
-References: <1415720893-13371-1-git-send-email-marc.zyngier@arm.com> <546234FA.3060501@linux.intel.com>
-In-Reply-To: <546234FA.3060501@linux.intel.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 11 Nov 2014 16:27:39.0812 (UTC) FILETIME=[6941F640:01CFFDCC]
-X-MC-Unique: 114111116274305501
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 11 Nov 2014 11:30:14 -0500
+Date: Tue, 11 Nov 2014 11:30:07 -0500 (EST)
+Message-Id: <20141111.113007.194586174190893576.davem@davemloft.net>
+To: pebolle@tiscali.nl
+Cc: valentinrothberg@gmail.com, jcmvbkbc@gmail.com, dg@emlix.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: s6gmac: remove driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1415694742.16021.11.camel@x220>
+References: <CAMo8BfJ-wvDoDmm+HLHvC3VRUshdqU4eJchOGYt_YJsUktap8Q@mail.gmail.com>
+	<20141019.132801.424495087167944921.davem@davemloft.net>
+	<1415694742.16021.11.camel@x220>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 08:30:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/14 16:10, Jiang Liu wrote:
-> Hi Marc,
-> 	Sorry for the late notification. I have heavily reworked the
-> interfaces for MSI irqdomain support based on review comments.
-> Please refer to https://lkml.org/lkml/2014/11/9/88, please give your
-> comments on the new interfaces:)
+From: Paul Bolle <pebolle@tiscali.nl>
+Date: Tue, 11 Nov 2014 09:32:22 +0100
 
-Ah, I feel like I have more catch-up to do. Hopefully the changes are
-simple enough to implement. Rebase time...
+> On Sun, 2014-10-19 at 13:28 -0400, David Miller wrote:
+>> From: Max Filippov <jcmvbkbc@gmail.com>
+>> Date: Sun, 19 Oct 2014 21:26:05 +0400
+>> 
+>> > On Sun, Oct 19, 2014 at 8:45 PM, David Miller <davem@davemloft.net> wrote:
+>> >> From: Daniel Glöckner <dg@emlix.com>
+>> >> Date: Sun, 19 Oct 2014 00:49:05 +0200
+>> >>
+>> >>> The s6000 Xtensa support is removed from the kernel. There are no
+>> >>> other chips using this driver.
+>> >>
+>> >> That's not what I see in Linus's current tree:
+>> > 
+>> > David, s6000 removal is queued for 3.18.
+>> 
+>> Then there is zero reason for me to apply this to my networking
+>> tree.
+> 
+> Commit 4006e565e150 ("xtensa: remove s6000 variant and s6105 platform")
+> is included in linux-next as of next-20141111. So now we see:
+>     $ git grep XTENSA_VARIANT_S6000 next-20141111
+>     next-20141111:drivers/net/ethernet/Kconfig:     depends on XTENSA_VARIANT_S6000
+> 
+> Should Daniel resubmit, for net-next, perhaps with a commit explanation
+> that references this commit?
 
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+When the s6000 removal shows up in Linus's tree, submit it.
