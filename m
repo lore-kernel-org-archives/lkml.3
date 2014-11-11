@@ -1,69 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaKKJNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 04:13:54 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:38552 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaKKJNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 04:13:52 -0500
-Message-ID: <5461D343.60803@huawei.com>
-Date: Tue, 11 Nov 2014 17:13:39 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1752281AbaKKJTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 04:19:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544AbaKKJTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 04:19:38 -0500
+Message-ID: <5461D498.1000502@redhat.com>
+Date: Tue, 11 Nov 2014 10:19:20 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Linux MM <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <wangnan0@huawei.com>
-Subject: [PATCH] memory-hotplug: remove redundant call of page_to_pfn
-References: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com>
-In-Reply-To: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com>
-X-Forwarded-Message-Id: <1415697184-26409-1-git-send-email-zhenzhang.zhang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stephan Mueller <smueller@chronox.de>
+CC: Sandy Harris <sandyinchina@gmail.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: crypto: zeroization of sensitive data in af_alg
+References: <1979092.odOtqL46qU@tachyon.chronox.de> <CACXcFmmp=SMisc0p-Fx=M3myXE0E-kH3zN6NGrODeVzQrXUdFA@mail.gmail.com> <3021915.VU7Ypy9It6@tachyon.chronox.de>
+In-Reply-To: <3021915.VU7Ypy9It6@tachyon.chronox.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.5461D34E.0137,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 33d34fd3bdc8e32130f576a369758c89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The start_pfn can be obtained directly by
-phys_index << PFN_SECTION_SHIFT.
+On 11/11/2014 05:16 AM, Stephan Mueller wrote:
+...
+> That is a good idea.
+>
+> Herbert: I can prepare a patch that uses memzero_explicit. However, your
+> current tree does not yet implement that function as it was added to Linus'
+> tree after you pulled from it.
 
-Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
----
- drivers/base/memory.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yep, Ted took it [1] on top of the random driver fix as discussed.
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 7c5d871..85be040 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -228,8 +228,8 @@ memory_block_action(unsigned long phys_index, unsigned long action, int online_t
- 	struct page *first_page;
- 	int ret;
-
--	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
--	start_pfn = page_to_pfn(first_page);
-+	start_pfn = phys_index << PFN_SECTION_SHIFT;
-+	first_page = pfn_to_page(start_pfn);
-
- 	switch (action) {
- 		case MEM_ONLINE:
--- 
-1.8.1.4
-
-
-.
-
-
-
-
+   [1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7185ad2672a7d50bc384de0e38d90b75d99f3d82
