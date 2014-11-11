@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaKKSAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 13:00:39 -0500
-Received: from kajt.de ([5.45.108.103]:36576 "EHLO kajt.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881AbaKKSAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 13:00:37 -0500
-X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Nov 2014 13:00:36 EST
-Date: Tue, 11 Nov 2014 18:52:53 +0100
-From: Maximilian Eschenbacher <maximilian@eschenbacher.email>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        shuah.kh@samsung.com
-Subject: Re: [PATCH 00/18] usbip: Crypto and ACLs
-Message-ID: <20141111175252.GB16804@kajt.de>
-References: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
- <CABdoFFfExAS7OHxjBCDfD9V4fbXVOwL1vgfbCiSKh=iwxKvxmw@mail.gmail.com>
- <20141107174944.GA30999@kroah.com>
- <CABdoFFdPP50neyDqPeAY74_KcvXY4C7ORQp22W73D-+MRojH0A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABdoFFdPP50neyDqPeAY74_KcvXY4C7ORQp22W73D-+MRojH0A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752112AbaKKSBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 13:01:05 -0500
+Received: from resqmta-ch2-09v.sys.comcast.net ([69.252.207.41]:42312 "EHLO
+	resqmta-ch2-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751089AbaKKSBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 13:01:03 -0500
+Date: Tue, 11 Nov 2014 12:00:59 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qti.qualcomm.com>,
+        Hugh Dickins <hughd@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: Future of NOHZ full/isolation development (was Re: [NOHZ] Remove
+ scheduler_tick_max_deferment)
+In-Reply-To: <20141111173908.GY4901@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1411111159490.6018@gentwo.org>
+References: <alpine.DEB.2.11.1410311058500.32582@gentwo.org> <alpine.DEB.2.11.1411012003390.5308@nanos> <alpine.DEB.2.11.1411011646280.7732@gentwo.org> <alpine.DEB.2.11.1411012313320.5308@nanos> <alpine.DEB.2.11.1411061057470.5591@gentwo.org>
+ <CAKohpokE8pQUwTuMbnooAd3TsTgmrQWP4RtoJdwhJ5zps+O2zA@mail.gmail.com> <20141110153147.GK4901@linux.vnet.ibm.com> <alpine.DEB.2.11.1411101226310.12918@gentwo.org> <20141111171526.GC3216@lerouge> <20141111173908.GY4901@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 09, 2014 at 11:10:03PM +0200, Valentina Manea wrote:
-> On Fri, Nov 7, 2014 at 7:49 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >
-> > Any chance you got to review these?
-> >
-> > thanks,
-> >
-> > greg k-h
-> 
-> I did review the patch the implemented most stuff and suggested
-> modifications but didn't get any follow-up for a while now. Should I
-> modify it myself and resubmit?
+On Tue, 11 Nov 2014, Paul E. McKenney wrote:
 
-We are almost finished implementing the parts you pointed out and will
-resubmit in a few days.
+> I guess I should have remembered that before suggesting this to Christoph,
+> my apologies to all!
 
-Regards,
+No this is good. Do not worry. I can just throw out the one or other patch
+to ensure that the discussion continues and then we can figure out how to
+come up with a correct solution. Patches are a way to say that you are
+serious about an issue on lkml.
 
-Maximilian Eschenbacher
