@@ -1,106 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaKKLA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:00:28 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38174 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323AbaKKLA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:00:26 -0500
-Message-ID: <5461EC36.8080701@linux.vnet.ibm.com>
-Date: Tue, 11 Nov 2014 16:30:06 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752790AbaKKLBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:01:35 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47550 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751333AbaKKLBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:01:34 -0500
+From: Ajit Pal Singh <ajitpal.singh@st.com>
+To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <maxime.coquelin@st.com>
+Cc: Ajit Pal Singh <ajitpal.singh@st.com>
+Subject: [PATCH] pwm: sti: Maintain a bitmap of configured devices
+Date: Tue, 11 Nov 2014 16:07:47 +0530
+Message-ID: <1415702267-3471-1-git-send-email-ajitpal.singh@st.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <ajitpal.singh@st.com>
+References: <ajitpal.singh@st.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: rjw@rjwysocki.net, nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, lenb@kernel.org
-Subject: Re: [PATCH V3 1/6] sched: idle: Add a weak arch_cpu_idle_poll function
-References: <1415370687-18688-1-git-send-email-daniel.lezcano@linaro.org> <1415370687-18688-2-git-send-email-daniel.lezcano@linaro.org> <20141110122954.GM3337@twins.programming.kicks-ass.net> <5460C9A6.6080103@linux.vnet.ibm.com> <20141110151735.GW10501@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141110151735.GW10501@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14111111-0033-0000-0000-000001010E1C
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-11-11_03:2014-11-10,2014-11-11,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2014 08:47 PM, Peter Zijlstra wrote:
-> On Mon, Nov 10, 2014 at 07:50:22PM +0530, Preeti U Murthy wrote:
->> Hi Peter,
->>
->> On 11/10/2014 05:59 PM, Peter Zijlstra wrote:
->>> On Fri, Nov 07, 2014 at 03:31:22PM +0100, Daniel Lezcano wrote:
->>>> The poll function is called when a timer expired or if we force to poll when
->>>> the cpu_idle_force_poll option is set.
->>>>
->>>> The poll function does:
->>>>
->>>>        local_irq_enable();
->>>>        while (!tif_need_resched())
->>>>                cpu_relax();
->>>>
->>>> This default poll function suits for the x86 arch because its rep; nop;
->>>> hardware power optimization. But on other archs, this optimization does not
->>>> exists and we are not saving power. The arch specific bits may want to
->>>> optimize this loop by adding their own optimization.
->>>
->>> This doesn't make sense to me; should an arch not either implement an
->>> actual idle driver or implement cpu_relax() properly, why allow for a
->>> third weird option?
->>>
->>
->> The previous version of this patch simply invoked cpu_idle_loop() for
->> cases where latency_req was 0. This would have changed the behavior
->> on PowerPC wherein earlier the 0th idle index was returned which is also
->> a polling loop but differs from cpu_idle_loop() in two ways:
->>
->> a. It polls at a relatively lower power state than cpu_relax().
->> b. We set certain registers to indicate that the cpu is idle.
-> 
-> So I'm confused; the current code runs the generic cpu_relax idle poll
-> loop for the broadcast case. I suppose you want to retain this because
-> not doing your a-b above will indeed give you a lower latency.
-> 
-> Therefore one could argue that latency_req==0 should indeed use this,
-> and your a-b idle state should be latency_req==1 or higher.
-> 
-> Thus yes it changes behaviour, but I think it actually fixes something.
-> You cannot have a latency_req==0 state which has higher latency than the
-> actual polling loop, as you appear to have.
+This patch introduces a bitmap which is used to keep track of the
+pwm channels which have been configured in a pwm chip.
 
-Yes you are right. This is fixing the current behavior. So we should be
-good to call cpuidle_idle_loop() when latency_req=0.
+The method used earlier to find the number of configured channels,
+was to count the pwmdevices with PWMF_REQUESTED field set
+and period value configured. This was not correct and failed
+when of_pwm_get()/pwm_get() and then pwm_config() was used.
 
-> 
->> Hence for all such cases wherein the cpu is required to poll while idle
->> (only for cases such as force poll, broadcast ipi to arrive soon and
->> latency_req = 0), we should be able to call into cpuidle_idle_loop()
->> only if the cpuidle driver's 0th idle state has an exit_latency > 0.
->> (The 0th idle state is expected to be a polling loop with
->> exit_latency = 0).
->>
->> If otherwise, it would mean the driver has an optimized polling loop
->> when idle. But instead of adding in the logic of checking the
->> exit_latency, we thought it would be simpler to call into an arch
->> defined polling idle loop under the above circumstances. If that is no
->> better we could fall back to cpuidle_idle_loop().
-> 
-> That still doesn't make sense to me; suppose the implementation of this
-> special poll state differs on different uarchs for the same arch, then
-> we'll end up with another registration and selection interface parallel
-> to cpuidle.
+Signed-off-by: Ajit Pal Singh <ajitpal.singh@st.com>
+---
+ drivers/pwm/pwm-sti.c |   30 +++++++++++-------------------
+ 1 files changed, 11 insertions(+), 19 deletions(-)
 
-Yeah this will only get complicated. I was trying to see how to keep the
-current behavior unchanged but looks like it is not worth it.
-
-Thanks
-
-Regards
-Preeti U Murthy
-> 
-> 
+diff --git a/drivers/pwm/pwm-sti.c b/drivers/pwm/pwm-sti.c
+index b95115c..92abbd5 100644
+--- a/drivers/pwm/pwm-sti.c
++++ b/drivers/pwm/pwm-sti.c
+@@ -57,6 +57,7 @@ struct sti_pwm_chip {
+ 	struct regmap_field *pwm_int_en;
+ 	struct pwm_chip chip;
+ 	struct pwm_device *cur;
++	unsigned long configured;
+ 	unsigned int en_count;
+ 	struct mutex sti_pwm_lock; /* To sync between enable/disable calls */
+ 	void __iomem *mmio;
+@@ -102,24 +103,6 @@ static int sti_pwm_get_prescale(struct sti_pwm_chip *pc, unsigned long period,
+ 	return 0;
+ }
+ 
+-/* Calculate the number of PWM devices configured with a period. */
+-static unsigned int sti_pwm_count_configured(struct pwm_chip *chip)
+-{
+-	struct pwm_device *pwm;
+-	unsigned int ncfg = 0;
+-	unsigned int i;
+-
+-	for (i = 0; i < chip->npwm; i++) {
+-		pwm = &chip->pwms[i];
+-		if (test_bit(PWMF_REQUESTED, &pwm->flags)) {
+-			if (pwm_get_period(pwm))
+-				ncfg++;
+-		}
+-	}
+-
+-	return ncfg;
+-}
+-
+ /*
+  * For STiH4xx PWM IP, the PWM period is fixed to 256 local clock cycles.
+  * The only way to change the period (apart from changing the PWM input clock)
+@@ -141,7 +124,7 @@ static int sti_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	unsigned int ncfg;
+ 	bool period_same = false;
+ 
+-	ncfg = sti_pwm_count_configured(chip);
++	ncfg = hweight_long(pc->configured);
+ 	if (ncfg)
+ 		period_same = (period_ns == pwm_get_period(cur));
+ 
+@@ -197,6 +180,7 @@ static int sti_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 
+ 		ret = regmap_field_write(pc->pwm_int_en, 0);
+ 
++		set_bit(pwm->hwpwm, &pc->configured);
+ 		pc->cur = pwm;
+ 
+ 		dev_dbg(dev, "prescale:%u, period:%i, duty:%i, pwmvalx:%u\n",
+@@ -254,10 +238,18 @@ static void sti_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	mutex_unlock(&pc->sti_pwm_lock);
+ }
+ 
++static void sti_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct sti_pwm_chip *pc = to_sti_pwmchip(chip);
++
++	clear_bit(pwm->hwpwm, &pc->configured);
++}
++
+ static const struct pwm_ops sti_pwm_ops = {
+ 	.config = sti_pwm_config,
+ 	.enable = sti_pwm_enable,
+ 	.disable = sti_pwm_disable,
++	.free = sti_pwm_free,
+ 	.owner = THIS_MODULE,
+ };
+ 
+-- 
+1.7.5.4
 
