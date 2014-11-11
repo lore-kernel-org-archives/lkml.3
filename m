@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066AbaKKLL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:11:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57847 "EHLO
+	id S1754526AbaKKLLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:11:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57879 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479AbaKKLLY (ORCPT
+	with ESMTP id S1753085AbaKKLL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:11:24 -0500
+	Tue, 11 Nov 2014 06:11:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Yu Zhao <yuzhao@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, David Rientjes <rientjes@google.com>,
+        Bob Liu <lliubbo@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 150/170] ACPI / EC: Fix regression due to conflicting firmware behavior between Samsung and Acer.
-Date: Tue, 11 Nov 2014 11:08:29 +0000
-Message-Id: <1415704129-12709-151-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 152/170] mm: free compound page with correct order
+Date: Tue, 11 Nov 2014 11:08:31 +0000
+Message-Id: <1415704129-12709-153-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
 References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,92 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Yu Zhao <yuzhao@google.com>
 
-commit 79149001105f18bd2285ada109f9229ea24a7571 upstream.
+commit 5ddacbe92b806cd5b4f8f154e8e46ac267fff55c upstream.
 
-It is reported that Samsung laptops that need to poll events are broken by
-the following commit:
- Commit 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08
- Subject: ACPI / EC: Add support to disallow QR_EC to be issued when SCI_EVT isn't set
+Compound page should be freed by put_page() or free_pages() with correct
+order.  Not doing so will cause tail pages leaked.
 
-The behaviors of the 2 vendor firmwares are conflict:
- 1. Acer: OSPM shouldn't issue QR_EC unless SCI_EVT is set, firmware
-         automatically sets SCI_EVT as long as there is event queued up.
- 2. Samsung: OSPM should issue QR_EC whatever SCI_EVT is set, firmware
-            returns 0 when there is no event queued up.
+The compound order can be obtained by compound_order() or use
+HPAGE_PMD_ORDER in our case.  Some people would argue the latter is
+faster but I prefer the former which is more general.
 
-This patch is a quick fix to distinguish the behaviors to make Acer
-behavior only effective for Acer EC firmware so that the breakages on
-Samsung EC firmware can be avoided.
+This bug was observed not just on our servers (the worst case we saw is
+11G leaked on a 48G machine) but also on our workstations running Ubuntu
+based distro.
 
-Fixes: 3afcf2ece453 (ACPI / EC: Add support to disallow QR_EC to be issued ...)
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-Reported-and-tested-by: Ortwin Glück <odi@odi.ch>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-[ rjw : Subject ]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+  $ cat /proc/vmstat  | grep thp_zero_page_alloc
+  thp_zero_page_alloc 55
+  thp_zero_page_alloc_failed 0
+
+This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
+
+Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/ec.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ mm/huge_memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 9922cc46b15c..4b45f55dd6a9 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -126,6 +126,7 @@ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
- static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
- static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
- static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
-+static int EC_FLAGS_QUERY_HANDSHAKE; /* Needs QR_EC issued when SCI_EVT set */
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index c9ef81e08e4a..ee1ad7886999 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -200,7 +200,7 @@ retry:
+ 	preempt_disable();
+ 	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
+ 		preempt_enable();
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		goto retry;
+ 	}
  
- /* --------------------------------------------------------------------------
-                              Transaction Management
-@@ -210,13 +211,8 @@ static bool advance_transaction(struct acpi_ec *ec)
- 		}
- 		return wakeup;
- 	} else {
--		/*
--		 * There is firmware refusing to respond QR_EC when SCI_EVT
--		 * is not set, for which case, we complete the QR_EC
--		 * without issuing it to the firmware.
--		 * https://bugzilla.kernel.org/show_bug.cgi?id=86211
--		 */
--		if (!(status & ACPI_EC_FLAG_SCI) &&
-+		if (EC_FLAGS_QUERY_HANDSHAKE &&
-+		    !(status & ACPI_EC_FLAG_SCI) &&
- 		    (t->command == ACPI_EC_COMMAND_QUERY)) {
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 			t->rdata[t->ri++] = 0x00;
-@@ -981,6 +977,18 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
- }
- 
- /*
-+ * Acer EC firmware refuses to respond QR_EC when SCI_EVT is not set, for
-+ * which case, we complete the QR_EC without issuing it to the firmware.
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=86211
-+ */
-+static int ec_flag_query_handshake(const struct dmi_system_id *id)
-+{
-+	pr_debug("Detected the EC firmware requiring QR_EC issued when SCI_EVT set\n");
-+	EC_FLAGS_QUERY_HANDSHAKE = 1;
-+	return 0;
-+}
-+
-+/*
-  * On some hardware it is necessary to clear events accumulated by the EC during
-  * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-  * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-@@ -1050,6 +1058,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
- 	{
- 	ec_clear_on_resume, "Samsung hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
-+	{
-+	ec_flag_query_handshake, "Acer hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "Acer"), }, NULL},
- 	{},
- };
+@@ -232,7 +232,7 @@ static unsigned long shrink_huge_zero_page_scan(struct shrinker *shrink,
+ 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
+ 		struct page *zero_page = xchg(&huge_zero_page, NULL);
+ 		BUG_ON(zero_page == NULL);
+-		__free_page(zero_page);
++		__free_pages(zero_page, compound_order(zero_page));
+ 		return HPAGE_PMD_NR;
+ 	}
  
 -- 
 2.1.0
