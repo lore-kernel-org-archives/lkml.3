@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388AbaKKHsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 02:48:04 -0500
-Received: from mout.gmx.com ([74.208.4.201]:52460 "EHLO mout.gmx.com"
+	id S1752540AbaKKHuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 02:50:07 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51350 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618AbaKKHsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 02:48:02 -0500
+	id S1751686AbaKKHuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 02:50:05 -0500
+Message-ID: <5461BF75.8000808@ti.com>
+Date: Tue, 11 Nov 2014 13:19:09 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Message-ID: <trinity-bea0752a-a9ca-4dbf-8cb2-af79bc47bc29-1415692080846@3capp-mailcom-lxa04>
-From: "Chateau DuBlanc" <chateaudublanc@post.com>
-To: linux-kernel@vger.kernel.org
-Subject: Response to Erich Schubert's lies (Systemd fanboi).
-Content-Type: text/plain; charset=UTF-8
-Date: Tue, 11 Nov 2014 08:48:01 +0100
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:MXtl0TZgQ7GpDT/UC796wGq84ElsikZTjR0DDUcmS4D
- CSpj4VaiizV/O6mcnxsP6iWBhjhThFtM5uFkh8S4xXWn3uNvNx
- WC6LxVk5KDupZOkC2avD6UM2B/xTM+v/hhAUit+mfCX0/0jneI
- BGeVO7FuYfb1Cxwakq0LKnSu0OSX4ijobKYWtoRA0I3ode8Jq3
- tYkoCizDtc+HDLoAHf1Q03BAlAtQIyO/TowXe62Jnp6sdZtgvZ
- zExCQGfEq4JYNpzNBEx9caqSpC1mT81pbzf8y+7aiFT4ZYRLhx
- +0tmtFPWjZ0RCC9dljDH/aublHL
-X-UI-Out-Filterresults: notjunk:1;
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linux-api <linux-api@vger.kernel.org>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>, LDOC <linux-doc@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v3 06/10] [media] platform: Make use of media_bus_format
+ enum
+References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com> <1415369269-5064-7-git-send-email-boris.brezillon@free-electrons.com> <CA+V-a8t79gYYGcgg5wvM-eqW8H2D6WD7xM9t2Px=WHb2rf34ow@mail.gmail.com> <546193CF.8090107@ti.com>
+In-Reply-To: <546193CF.8090107@ti.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.vitavonni.de/blog/201411/2014110901-gr-vote-on-init-coupling.html
+On Tuesday 11 November 2014 10:12 AM, Sekhar Nori wrote:
+> On Saturday 08 November 2014 02:48 PM, Prabhakar Lad wrote:
+>> Hi,
+>>
+>> Thanks for the patch,
+>>
+>> On Fri, Nov 7, 2014 at 2:07 PM, Boris Brezillon
+>> <boris.brezillon@free-electrons.com> wrote:
+>>> In order to have subsytem agnostic media bus format definitions we've
+>>> moved media bus definition to include/uapi/linux/media-bus-format.h and
+>>> prefixed values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
+>>>
+>>> Reference new definitions in all platform drivers.
+>>>
+>>> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+>>> ---
+>>>  arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
+>>>  arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
+>>>  arch/arm/mach-davinci/dm355.c                      |   7 +-
+>>>  arch/arm/mach-davinci/dm365.c                      |   7 +-
+>>
+>> @Sekhar can you ack for the machine changes for davinci ?
+> 
+> Heh, I don't have 6/10 in my inbox but have rest of the series. Can you
+> forward 6/10 to me?
 
-Dear Mr Schubert;
+Based on the patch Prabhakar forwarded, for the mach-davinci changes,
+you can add:
 
-"He has not contributed anything to the open source community."
-This is a complete lie. I've contributed gigabytes of media alone.
-I've done years and years of programming work.
-I have done far more than you ever will.
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
-"His songs and "games" are not worth looking at,"
-Your subjective view. Coloured by your social views and your
-disdain for those who oppose you in that.
-
-"and I'm not aware of any project that has accepted any of his "contributions"."
-The only objectively true thing you've said: you're not aware.
-I'm glad you're unaware, I hope that trend continues.
-
-I expect this post to be censored, it is par for the course for people like you.
-
-Sincerely;
---MikeeUSA--
-.
+Thanks,
+Sekhar
