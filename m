@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaKKHwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 02:52:55 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:43695 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaKKHwy convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Tue, 11 Nov 2014 02:52:54 -0500
-Message-Id: <5461CE6302000078000464C5@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 11 Nov 2014 07:52:51 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Ingo Molnar" <mingo@kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, "Tony Jones" <tonyj@suse.de>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH, RFC] x86: also CFI-annotate certain inline asm()s
-References: <5458A9600200007800044AE5@mail.emea.novell.com>
- <20141110100117.GA15841@gmail.com>
- <CA+55aFw9MV1n8T7_k5oftfY-sOu8s1ywKYM-3k4+PF022vv9ow@mail.gmail.com>
- <CA+55aFwZYeFtuQbxtAbOoMVNFN_fQKnxGbRybdz-LYRzwMqX9w@mail.gmail.com>
-In-Reply-To: <CA+55aFwZYeFtuQbxtAbOoMVNFN_fQKnxGbRybdz-LYRzwMqX9w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752559AbaKKHyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 02:54:55 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:49113 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaKKHyy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 02:54:54 -0500
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <Larry.Finger@lwfinger.net>, <Jes.Sorensen@redhat.com>
+CC: <gregkh@linuxfoundation.org>, <linux-wireless@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH] staging:rtl8723au: core: Added missing space reported by checkpatch.
+Date: Tue, 11 Nov 2014 13:24:43 +0530
+Message-ID: <1415692483-29819-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <wrfjy4rxzk5b.fsf@redhat.com>
+References: <wrfjy4rxzk5b.fsf@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.11.14 at 19:10, <torvalds@linux-foundation.org> wrote:
-> Btw, the sane thing to do is to make your infrastructure just say "If
-> my frame walker hits a push/pop without CFI information, I'll just add
-> it myself".
-> 
-> Yes, that involved having to actuall ylook at the instruction. Tough
-> shit. Just do it right. There aren't that many push/pop patterns.
+This is a patch to the rtw_cmd.c file that fixes following
+Error.
 
-Did you think this through? Inspecting instructions while unwinding
-the stack would involve significant amounts of architecture specific
-code, whereas the unwinder is largely architecture independent.
-Apart from code to obtain machine state, only the annotations are
-(necessarily) connected to the architecture since they accompany
-machine instructions.
+ERROR: spaces required around that '>' (ctx:WxV)
 
-Did you ever write a disassembler capable of correctly dealing with
-everything a compiler may generate (i.e. including data literals in the
-middle of code)?
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+ drivers/staging/rtl8723au/core/rtw_cmd.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Anyway - I'm sure I won't convince you now or ever, this is too
-religious a topic for you afaict, and hence an objective and fair
-discussion is impossible.
-
-Jan
+diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+index 4eaa502..cd2e915 100644
+--- a/drivers/staging/rtl8723au/core/rtw_cmd.c
++++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
+@@ -957,7 +957,7 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+ 		/*  check traffic for  powersaving. */
+ 			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
+ 			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
+-			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
++			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod > 2)
+ 				bEnterPS = false;
+ 			else
+ 				bEnterPS = true;
+@@ -1152,7 +1152,7 @@ static void rtw_chk_hi_queue_hdl(struct rtw_adapter *padapter)
+ 
+ 			cnt++;
+ 
+-			if (cnt>10)
++			if (cnt > 10)
+ 				break;
+ 
+ 			val = rtl8723a_chk_hi_queue_empty(padapter);
+-- 
+1.7.11.7
 
