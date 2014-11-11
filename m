@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaKKX2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 18:28:42 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38468 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325AbaKKX2k (ORCPT
+	id S1752455AbaKKXcD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 18:32:03 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:60534 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320AbaKKXcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 18:28:40 -0500
-Date: Wed, 12 Nov 2014 00:27:28 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: Jeff Moyer <jmoyer@redhat.com>, Milosz Tanski <milosz@adfin.com>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
- only)
-In-Reply-To: <20141111224938.GA4112@thunk.org>
-Message-ID: <alpine.DEB.2.11.1411120017260.3935@nanos>
-References: <cover.1415636409.git.milosz@adfin.com> <20141111064417.GT23575@dastard> <CANP1eJHfWT0Foe+weB1SJkJ10JnOge_g=E8CXBsQNPW7i2+4NA@mail.gmail.com> <x49ioilbrfx.fsf@segfault.boston.devel.redhat.com> <20141111224938.GA4112@thunk.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 11 Nov 2014 18:32:01 -0500
+Date: Wed, 12 Nov 2014 00:31:53 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/8] perf, tools: Support handling complete branch
+ stacks as histograms
+Message-ID: <20141111233153.GK12538@two.firstfloor.org>
+References: <1411774636-6870-1-git-send-email-andi@firstfloor.org>
+ <1411774636-6870-2-git-send-email-andi@firstfloor.org>
+ <87r3y0gbk8.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r3y0gbk8.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014, Theodore Ts'o wrote:
-> On Tue, Nov 11, 2014 at 12:03:14PM -0500, Jeff Moyer wrote:
-> > 
-> > I think he's referring to xfstests.  Still, I think that's the wrong
-> > place for functional testing.  ltp would be better, imo.
+Sorry for the long delay. Just revisiting that.
+
+On Wed, Oct 22, 2014 at 10:03:51AM +0900, Namhyung Kim wrote:
+> >             |          |          f2 tcall.c:5
+> >             |          |          f1 tcall.c:12
+> >             |          |          f1 tcall.c:12
+> >             |          |          f2 tcall.c:7
+> >             |          |          f2 tcall.c:5
+> >             |          |          f1 tcall.c:11
 > 
-> I disagree; xfstests is the right place for adding these tests, because
-> these patches seem to require fs-specific support, and file system
-> developers are already using xfstests when checking for regressions.
-> Using xfstests is already part of most of the file system developers'
-> workflow; ltp is not. 
+> I think it'd be better if it just prints function names as normal
+> callchain does (and optionally srcline with a switch) and duplicates
+> removed like below:
 > 
-> So if you want to make sure we notice regressions, it really needs to
-> go into xfstests.  If you insist on putting it in ltp, then one of us
-> will then have to make a copy of the tests and put it in xfstests.
+>      54.91%  tcall.c:6  [.] f2                      tcall
+>              |
+>              |--65.53%-- f2 tcall.c:5
+>              |          |
+>              |          |--70.83%-- f1
+>              |          |          main
+>              |          |          f1
+>              |          |          f2
+>              |          |          f1
+>              |          |          f2
 
-No. LTP needs to pull in the latest changes from xfstests simply
-because LTP is a conglomerate of domain specific tests. And it never
-can become more than a conglomerate for obvious reasons.
+I considered this. For this example it doesn't make much difference
+because the functions are so small.
 
-xfstests is what the FS developers use and update. If LTP has some
-extra magic tests developed then is should send patches against
-xfstests and reintegrate the result.
+But for anything larger I really need the line numbers to make
+sense of it. 
 
-Thanks,
+So I prefer to keep them. I'll look into some easy switch
+to turn them off though.
 
-	tglx
+
+> > +		if (sort__has_parent && !*parent &&
+> > +		    symbol__match_regex(al.sym, &parent_regex))
+> > +			*parent = al.sym;
+> > +		else if (have_ignore_callees && root_al &&
+> > +		  symbol__match_regex(al.sym, &ignore_callees_regex)) {
+> > +			/* Treat this symbol as the root,
+> > +			   forgetting its callees. */
+> > +			*root_al = al;
+> > +			callchain_cursor_reset(&callchain_cursor);
+> > +		}
+> > +		if (!symbol_conf.use_callchain)
+> > +			return -EINVAL;
+> 
+> This check already went away.
+> 
+> And, to remove duplicates, I think we need to check last callchain
+> cursor node wrt the callchain_param.key here.
+
+I don't understand the comment. I'm not modifying anything
+that has been already added to the callchain. Just things
+to be added in the future. So why would I need to check
+or change the cursor?
+
+> 
+> Also, by comparing 'from' address, I'd expect you add the from address
+> alone but you add both of 'from' and 'to'.  Do we really need to do
+> that?
+
+Adding from and to makes it much clearer to the user what happens,
+especially with conditional branches, so they can follow the 
+control flow.
+
+
+> And the first address saved in normal callchain is address of the
+> function itself so it might be 'to' you need to check if sampled before
+> any branch in a function.
+
+I'm checking against the CALL, not the target.
+
+> 
+> > +			} else
+> > +				be[i] = branch->entries[branch->nr - i - 1];
+> > +		}
+> > +
+> > +		nr = remove_loops(be, nr);
+> > +
+> > +		for (i = 0; i < nr; i++) {
+> > +			err = add_callchain_ip(machine, thread, parent,
+> > +					       root_al,
+> > +					       -1, be[i].to);
+> > +			if (!err)
+> > +				err = add_callchain_ip(machine, thread,
+> > +						       parent, root_al,
+> > +						       -1, be[i].from);
+> > +			if (err == -EINVAL)
+> > +				break;
+> > +			if (err)
+> > +				return err;
+> > +		}
+> > +		chain_nr -= nr;
+> 
+> I'm not sure this line is needed.
+
+Without that i could exceed the limit.
+
+-Andi
