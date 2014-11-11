@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaKKOum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 09:50:42 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52732 "EHLO mga01.intel.com"
+	id S1751926AbaKKOuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 09:50:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:27498 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726AbaKKOuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 09:50:40 -0500
+	id S1751726AbaKKOun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 09:50:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
-   d="scan'208";a="620586370"
+   d="scan'208";a="630166289"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,125 +20,119 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v7 00/14] perf: Add infrastructure and support for Intel PT
-Date: Tue, 11 Nov 2014 16:48:14 +0200
-Message-Id: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v7 05/14] perf: Add a pmu capability for "exclusive" events
+Date: Tue, 11 Nov 2014 16:48:19 +0200
+Message-Id: <1415717308-209223-6-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1415717308-209223-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter and all,
+Usually, pmus that do, for example, instruction tracing, would only ever
+be able to have one event per task per cpu (or per perf_context). For such
+pmus it makes sense to disallow creating conflicting events early on, so
+as to provide consistent behavior for the user.
 
-[full description below the changelog]
+This patch adds a pmu capability that indicates such constraint on event
+creation.
 
-Changes since v6:
-  * replaced kref with atomic in aux refcounting this time for real,
-  * added a small comment on capabilities/"caps" attribute group in PT
-    pmu.
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ include/linux/perf_event.h |  1 +
+ kernel/events/core.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 46 insertions(+)
 
-Changes since v5:
-
-  * dropped "bypass mask", bits that a privileged user could set in
-    RTIT_CTL,
-  * merged configuring and enabling RTIT_CTL writes,
-  * fixed kernel-doc comments
-  * if LBR/BTS events are present in the system, PT event creation is
-    disallowed and vice versa,
-  * fixed a bug with high order allocation under pressure,
-  * fixed undoing vm_locked accounting in case of AUX allocation
-    failure,
-  * left out kernel counters for a separate series to keep this one
-    concise.
-
-This patchset adds support for Intel Processor Trace (PT) extension [1] of
-Intel Architecture that allows the capture of information about software
-execution flow, to the perf kernel infrastructure.
-
-The single most notable thing is that while PT outputs trace data in a
-compressed binary format, it will still generate hundreds of megabytes
-of trace data per second per core. Decoding this binary stream takes
-2-3 orders of magnitude the cpu time that it takes to generate
-it. These considerations make it impossible to carry out decoding in
-kernel space. Therefore, the trace data is exported to userspace as a
-zero-copy mapping that userspace can collect and store for later
-decoding. To address this, this patchset extends perf ring buffer with
-an "AUX space", which is allocated for hardware blocks such as PT to
-export their trace data with minimal overhead. This space can be
-configured via buffer's user page and mmapped from the same file
-descriptor with a given offset. Data can then be collected from it
-by reading the aux_head (write) pointer from the user page and updating
-aux_tail (read) pointer similarly to data_{head,tail} of the
-traditional perf buffer. There is an api between perf core and pmu
-drivers that wish to make use of this AUX space to export their data.
-
-For tracing blocks that don't support hardware scatter-gather tables,
-we provide high-order physically contiguous allocations to minimize
-the overhead needed for software double buffering and PMI pressure.
-
-This way we get a normal perf data stream that provides sideband
-information that is required to decode the trace data, such as MMAPs,
-COMMs etc, plus the actual trace in its own logical space.
-
-If the trace buffer is mapped writable, the driver will stop tracing
-when it fills up (aux_head approaches aux_tail), till data is read,
-aux_tail pointer is moved forward and an ioctl() is issued to
-re-enable tracing. If the trace buffer is mapped read only, the
-tracing will continue, overwriting older data, so that the buffer
-always contains the most recent data. Tracing can be stopped with an
-ioctl() and restarted once the data is collected.
-
-Another use case is annotating samples of other perf events: setting
-PERF_SAMPLE_AUX requests attr.aux_sample_size bytes of trace to be
-included in each event's sample.
-
-This patchset consists of necessary changes to the perf kernel
-infrastructure, and PT and BTS pmu drivers. The tooling support is not
-included in this series, however, it can be found in my github tree [2].
-
-[1] http://software.intel.com/en-us/intel-isa-extensions
-[2] http://github.com/virtuoso/linux-perf/tree/intel_pt
-
-Alexander Shishkin (13):
-  perf: Add data_{offset,size} to user_page
-  perf: Support high-order allocations for AUX space
-  perf: Add a capability for AUX_NO_SG pmus to do software double
-    buffering
-  perf: Add a pmu capability for "exclusive" events
-  perf: Add AUX record
-  perf: Add api for pmus to write to AUX area
-  perf: Support overwrite mode for AUX area
-  perf: Add wakeup watermark control to AUX area
-  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
-  x86: perf: Intel PT and LBR/BTS are mutually exclusive
-  x86: perf: intel_pt: Intel PT PMU driver
-  x86: perf: intel_bts: Add BTS PMU driver
-  perf: add ITRACE_START record to indicate that tracing has started
-
-Peter Zijlstra (1):
-  perf: Add AUX area to ring buffer for raw data streams
-
- arch/x86/include/asm/cpufeature.h          |    1 +
- arch/x86/include/uapi/asm/msr-index.h      |   18 +
- arch/x86/kernel/cpu/Makefile               |    1 +
- arch/x86/kernel/cpu/intel_pt.h             |  131 ++++
- arch/x86/kernel/cpu/perf_event.c           |   43 ++
- arch/x86/kernel/cpu/perf_event.h           |   49 ++
- arch/x86/kernel/cpu/perf_event_intel.c     |   40 +-
- arch/x86/kernel/cpu/perf_event_intel_bts.c |  525 ++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |    3 +-
- arch/x86/kernel/cpu/perf_event_intel_pt.c  | 1081 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/scattered.c            |    1 +
- include/linux/perf_event.h                 |   47 +-
- include/uapi/linux/perf_event.h            |   59 +-
- kernel/events/core.c                       |  268 ++++++-
- kernel/events/internal.h                   |   33 +
- kernel/events/ring_buffer.c                |  324 ++++++++-
- 16 files changed, 2573 insertions(+), 51 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/intel_pt.h
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index e7a15f5c3f..5c3dee021c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -173,6 +173,7 @@ struct perf_event;
+ #define PERF_PMU_CAP_NO_INTERRUPT		0x01
+ #define PERF_PMU_CAP_AUX_NO_SG			0x02
+ #define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
++#define PERF_PMU_CAP_EXCLUSIVE			0x08
+ 
+ /**
+  * struct pmu - generic performance monitoring unit
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index ac7bfb43fc..2399c12e49 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7298,6 +7298,32 @@ out:
+ 	return ret;
+ }
+ 
++static bool exclusive_event_match(struct perf_event *e1, struct perf_event *e2)
++{
++	if ((e1->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE) &&
++	    (e1->cpu == e2->cpu ||
++	     e1->cpu == -1 ||
++	     e2->cpu == -1))
++		return true;
++	return false;
++}
++
++static bool exclusive_event_ok(struct perf_event *event,
++			      struct perf_event_context *ctx)
++{
++	struct perf_event *iter_event;
++
++	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
++		return true;
++
++	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
++		if (exclusive_event_match(iter_event, event))
++			return false;
++	}
++
++	return true;
++}
++
+ /**
+  * sys_perf_event_open - open a performance event, associate it to a task/cpu
+  *
+@@ -7449,6 +7475,11 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		goto err_alloc;
+ 	}
+ 
++	if ((pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE) && group_leader) {
++		err = -EBUSY;
++		goto err_context;
++	}
++
+ 	if (task) {
+ 		put_task_struct(task);
+ 		task = NULL;
+@@ -7534,6 +7565,12 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		}
+ 	}
+ 
++	if (!exclusive_event_ok(event, ctx)) {
++		mutex_unlock(&ctx->mutex);
++		fput(event_file);
++		goto err_context;
++	}
++
+ 	perf_install_in_context(ctx, event, event->cpu);
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
+@@ -7620,6 +7657,14 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
++	if (!exclusive_event_ok(event, ctx)) {
++		mutex_unlock(&ctx->mutex);
++		perf_unpin_context(ctx);
++		put_ctx(ctx);
++		err = -EBUSY;
++		goto err_free;
++	}
++
+ 	perf_install_in_context(ctx, event, cpu);
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
 -- 
 2.1.1
 
