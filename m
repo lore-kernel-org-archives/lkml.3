@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaKKEz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 23:55:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373AbaKKEz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 23:55:28 -0500
-Date: Tue, 11 Nov 2014 13:54:09 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, santosh.shilimkar@ti.com,
-        grygorii.strashko@ti.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.co, fabf@skynet.be, nzimmer@sgi.com,
-        wangnan0@huawei.com, vdavydov@parallels.com, toshi.kani@hp.com,
-        phacht@linux.vnet.ibm.com, tj@kernel.org,
-        kirill.shutemov@linux.intel.com, riel@redhat.com, luto@amacapital.net,
-        hpa@linux.intel.com, aarcange@redhat.com, qiuxishi@huawei.com,
-        mgorman@suse.de, rientjes@google.com, hannes@cmpxchg.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, miaox@cn.fujitsu.com,
-        stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH v2 1/2] mem-hotplug: Reset node managed pages when
- hot-adding a new pgdat.
-Message-ID: <20141111045409.GA23920@kroah.com>
-References: <1415669227-10996-1-git-send-email-tangchen@cn.fujitsu.com>
- <1415669227-10996-2-git-send-email-tangchen@cn.fujitsu.com>
+	id S1751607AbaKKE4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 23:56:38 -0500
+Received: from mga03.intel.com ([134.134.136.65]:43505 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221AbaKKE4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Nov 2014 23:56:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,358,1413270000"; 
+   d="scan'208";a="605718577"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "sre@kernel.org" <sre@kernel.org>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "anton@enomsg.org" <anton@enomsg.org>, "pavel@ucw.cz" <pavel@ucw.cz>
+Subject: RE: [PATCH 2/3] power: core: Add variables related temperature to
+ power_supply_info.
+Thread-Topic: [PATCH 2/3] power: core: Add variables related temperature to
+ power_supply_info.
+Thread-Index: AQHP4h28WS6Qmn8eW0+W+Bid+M8/ppxZ6CGAgACEzQCAAJeRcA==
+Date: Tue, 11 Nov 2014 04:56:31 +0000
+Message-ID: <20ADAB092842284E95860F279283C5642EDB8431@BGSMSX104.gar.corp.intel.com>
+References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1412679518-21499-3-git-send-email-jonghwa3.lee@samsung.com>
+ <20ADAB092842284E95860F279283C5642ED9EDE3@BGSMSX104.gar.corp.intel.com>
+ <546158A0.5000707@samsung.com>
+In-Reply-To: <546158A0.5000707@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415669227-10996-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAB4uipC001227
 
-On Tue, Nov 11, 2014 at 09:27:06AM +0800, Tang Chen wrote:
-> In free_area_init_core(), zone->managed_pages is set to an approximate
-> value for lowmem, and will be adjusted when the bootmem allocator frees
-> pages into the buddy system. But free_area_init_core() is also called
-> by hotadd_new_pgdat() when hot-adding memory. As a result, zone->managed_pages
-> of the newly added node's pgdat is set to an approximate value in the
-> very beginning. Even if the memory on that node has node been onlined,
-> /sys/device/system/node/nodeXXX/meminfo has wrong value.
+> > The CC,CV and restart threshold would vary based on the battery temperature
+> > So I would suggest to have temperature zone table as part  of battery info
+> > along with other attributes.
+> >
+> > int iterm; //charge termination current (used to stop charging)
+> > int temp_zone_count; // number of temperature zone tables present
+> > struct batt_temp_mon_table temp_mon_tbl[MAX_TEMP_MON_TABLE];
+> //temperature zone table array
+> >
+> > struct  batt_temp_mon_table {
+> > 	 short int temp_max;
+> > 	 short int cc;
+> > 	 short int cv;
+> > 	 short int vbat_vchk_drop_uv;
+> > 	 short int temp_min;
+> > };
+> >
 > 
-> hot-add node2 (memory not onlined)
-> cat /sys/device/system/node/node2/meminfo
-> Node 2 MemTotal:       33554432 kB
-> Node 2 MemFree:               0 kB
-> Node 2 MemUsed:        33554432 kB
-> Node 2 Active:                0 kB
 > 
-> This patch fixes this problem by reset node managed pages to 0 after hot-adding
-> a new node.
-> 
-> 1. Move reset_managed_pages_done from reset_node_managed_pages() to reset_all_zones_managed_pages()
-> 2. Make reset_node_managed_pages() non-static
-> 3. Call reset_node_managed_pages() in hotadd_new_pgdat() after pgdat is initialized
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->  include/linux/bootmem.h | 1 +
->  mm/bootmem.c            | 9 +++++----
->  mm/memory_hotplug.c     | 9 +++++++++
->  mm/nobootmem.c          | 8 +++++---
->  4 files changed, 20 insertions(+), 7 deletions(-)
+> IMO, throttling cc/cv according the temperature can be done via thermal fw
+> interface. However voltage drop and charging termination current can be added here.
 
-<formletter>
+The CC/CV for each battery temperature zone is defined as part of battery spec. This is
+as per the JEITA/PSE standards. So IMO, this is a battery charging information
+(charging object) rather than a thermal throttling information.
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+Also the battery information may not fit into a standard format. Different standards have
+different format for charging object. So I would suggest to make it flexible enough to
+support different charging object format. For example MIPI BIF charging object format
+(https://members.mipi.org/wg/BIF/document/11518) and MIPI BIF Rule based charging algorithm
+(http://mipi.org/sites/default/files/mipi_BIF_rule-based-charging_white-paper_1.pdf)
+has different charging object format. This is why the patch  https://lkml.org/lkml/2014/8/13/355
+has option to support different charging objects and different charging algorithms.
 
-</formletter>
+-Jenny
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
