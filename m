@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaKKHuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 02:50:07 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51350 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686AbaKKHuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 02:50:05 -0500
-Message-ID: <5461BF75.8000808@ti.com>
-Date: Tue, 11 Nov 2014 13:19:09 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linux-api <linux-api@vger.kernel.org>,
-        OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>, LDOC <linux-doc@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v3 06/10] [media] platform: Make use of media_bus_format
- enum
-References: <1415369269-5064-1-git-send-email-boris.brezillon@free-electrons.com> <1415369269-5064-7-git-send-email-boris.brezillon@free-electrons.com> <CA+V-a8t79gYYGcgg5wvM-eqW8H2D6WD7xM9t2Px=WHb2rf34ow@mail.gmail.com> <546193CF.8090107@ti.com>
-In-Reply-To: <546193CF.8090107@ti.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752448AbaKKHwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 02:52:55 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:43695 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934AbaKKHwy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Tue, 11 Nov 2014 02:52:54 -0500
+Message-Id: <5461CE6302000078000464C5@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Tue, 11 Nov 2014 07:52:51 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Ingo Molnar" <mingo@kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, "Tony Jones" <tonyj@suse.de>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH, RFC] x86: also CFI-annotate certain inline asm()s
+References: <5458A9600200007800044AE5@mail.emea.novell.com>
+ <20141110100117.GA15841@gmail.com>
+ <CA+55aFw9MV1n8T7_k5oftfY-sOu8s1ywKYM-3k4+PF022vv9ow@mail.gmail.com>
+ <CA+55aFwZYeFtuQbxtAbOoMVNFN_fQKnxGbRybdz-LYRzwMqX9w@mail.gmail.com>
+In-Reply-To: <CA+55aFwZYeFtuQbxtAbOoMVNFN_fQKnxGbRybdz-LYRzwMqX9w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 November 2014 10:12 AM, Sekhar Nori wrote:
-> On Saturday 08 November 2014 02:48 PM, Prabhakar Lad wrote:
->> Hi,
->>
->> Thanks for the patch,
->>
->> On Fri, Nov 7, 2014 at 2:07 PM, Boris Brezillon
->> <boris.brezillon@free-electrons.com> wrote:
->>> In order to have subsytem agnostic media bus format definitions we've
->>> moved media bus definition to include/uapi/linux/media-bus-format.h and
->>> prefixed values with MEDIA_BUS_FMT instead of V4L2_MBUS_FMT.
->>>
->>> Reference new definitions in all platform drivers.
->>>
->>> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
->>> ---
->>>  arch/arm/mach-davinci/board-dm355-evm.c            |   2 +-
->>>  arch/arm/mach-davinci/board-dm365-evm.c            |   4 +-
->>>  arch/arm/mach-davinci/dm355.c                      |   7 +-
->>>  arch/arm/mach-davinci/dm365.c                      |   7 +-
->>
->> @Sekhar can you ack for the machine changes for davinci ?
+>>> On 10.11.14 at 19:10, <torvalds@linux-foundation.org> wrote:
+> Btw, the sane thing to do is to make your infrastructure just say "If
+> my frame walker hits a push/pop without CFI information, I'll just add
+> it myself".
 > 
-> Heh, I don't have 6/10 in my inbox but have rest of the series. Can you
-> forward 6/10 to me?
+> Yes, that involved having to actuall ylook at the instruction. Tough
+> shit. Just do it right. There aren't that many push/pop patterns.
 
-Based on the patch Prabhakar forwarded, for the mach-davinci changes,
-you can add:
+Did you think this through? Inspecting instructions while unwinding
+the stack would involve significant amounts of architecture specific
+code, whereas the unwinder is largely architecture independent.
+Apart from code to obtain machine state, only the annotations are
+(necessarily) connected to the architecture since they accompany
+machine instructions.
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+Did you ever write a disassembler capable of correctly dealing with
+everything a compiler may generate (i.e. including data literals in the
+middle of code)?
 
-Thanks,
-Sekhar
+Anyway - I'm sure I won't convince you now or ever, this is too
+religious a topic for you afaict, and hence an objective and fair
+discussion is impossible.
+
+Jan
+
