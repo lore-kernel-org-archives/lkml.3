@@ -1,153 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaKKQWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 11:22:09 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:56928 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaKKQWH (ORCPT
+	id S1751771AbaKKQXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 11:23:10 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:35183 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaKKQXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 11:22:07 -0500
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Nov 2014 11:22:06 EST
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 11 Nov 2014 17:15:26 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: David Ramos <daramos@stanford.edu>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v1a] firewire: cdev: prevent kernel stack leaking into
- ioctl arguments
-Message-ID: <20141111171526.6e2a2b18@kant>
-In-Reply-To: <20141111171356.2fc62440@kant>
-References: <55D28623-C1C7-47D2-9638-0B8FD0733C48@stanford.edu>
-	<20141111010340.3329bbd7@kant>
-	<20141111130143.2ff3d42e@kant>
-	<20141111171356.2fc62440@kant>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Nov 2014 11:23:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141111161309.GG31490@pd.tnic>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+ <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
+ <20141111114248.GD31490@pd.tnic> <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
+ <20141111161309.GG31490@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Nov 2014 08:22:45 -0800
+Message-ID: <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
+Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
+ memory errors
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found by the UC-KLEE tool:  A user could supply less input to
-firewire-cdev ioctls than write- or write/read-type ioctl handlers
-expect.  The handlers used data from uninitialized kernel stack then.
+On Tue, Nov 11, 2014 at 8:13 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Nov 11, 2014 at 07:42:48AM -0800, Andy Lutomirski wrote:
+>> The last time I looked at the MCE code, I got a bit lost in the
+>> control flow.  Is there ever a userspace-killing MCE that's delivered
+>> from kernel mode?
+>
+> Yep, so while you're executing a userspace process, you get
+> an #MC raised which reports an error for which action is
+> required, i.e. look at all those MCE_AR_SEVERITY errors in
+> arch/x86/kernel/cpu/mcheck/mce-severity.c.
+>
+> It happened within the context of current so we go and run the #MC
+> handler which decides that the process needs to be killed in order to
+> contain the error. So after we exit the handler and before we return to
+> try to sched in the process again on any core, we want to actually kill
+> it and poison all its memory.
+>
+>> By that, I mean that I think that all userspace-killing MCEs go have
+>> user_mode_vm(regs) and go through paranoid_exit.
+>
+> Yes.
+>
+>> If so, why do you need to jump through hoops at all?  You can't call
+>> do_exit, but it should be completely safe to force a fatal signal and
+>> let the scheduler and signal code take care of killing the process,
+>> right?  For that matter, you should also be able to poke at vm
+>> structures, etc.
+>
+> Well, we do that already. memory-failure.c does kill the processes when
+> it decides to.
+>
+> The only question is whether adding two new members to task_struct is
+> ok. It is nicely convenient and it all falls into place.
+>
+> In the #MC handler we do:
+>
+>                 if (worst == MCE_AR_SEVERITY) {
+>                         /* schedule action before return to userland */
+> +                       current->paddr = m.addr;
+> +                       current->restartable = !!(m.mcgstatus & MCG_STATUS_RIPV);
+>                         set_thread_flag(TIF_MCE_NOTIFY);
+>                 }
+>
+> and then before we return to userspace we do:
+>
+> +       if (!current->restartable)
+>                 flags |= MF_MUST_KILL;
+>         if (memory_failure(pfn, MCE_VECTOR, flags) < 0) {
+>
+> and the MF_MUST_KILL makes sure memory_failure() does a force_sig().
+>
+> So I think this is ok, I only think that people might oppose the two new
+> members to task_struct but it looks clean to me this way. IMHO at least.
+>
 
-This could partially leak back to the user if the kernel subsequently
-generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
-which notably would contain the _u64 closure field which many of the
-ioctl argument structures contain.
+I think it's okay-ish, but only if it's necessary, and I still don't
+see why it's necessary.
 
-The fact that the handlers would act on random garbage input is a
-lesser issue since all handlers must check their input anyway.
+Can't you just remove TIF_MCE_NOTIFY entirely and just do all the
+mce_notify_process work directly in do_machine_check?  IOW, why do you
+need to store any state per-task when it's already on the stack
+anyway.
 
-Remarks:
-  - There was never any leak from kernel stack to the ioctl output
-    buffer itself.  IOW, it was not possible to read kernel stack by a
-    read-type or write/read-type ioctl alone; the leak could at most
-    happen in combination with read()ing subsequent event data.
-  - The affected character device file interface is specified in
-    include/uapi/linux/firewire-cdev.h.  An overview is given in
-    Documentation/ABI/stable/firewire-cdev.
+Or am I missing something here?
 
-This fix uses a lookup table to verify that all ioctl input fields are
-indeed written by the user.  Else the ioctl fails with -EINVAL.
+--Andy
 
-Reported-by: David Ramos <daramos@stanford.edu>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/core-cdev.c |   33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+>> Or is there a meaningful case where mce_notify_process needs to help
+>> with recovery but the original MCE happened with !user_mode_vm(regs)?
+>
+> Well, for the !user_mode_vm(regs) case we panic anyway.
+>
+> Thanks Andy.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1609,48 +1609,81 @@ static int (* const ioctl_handlers[])(st
- 	[0x0a] = ioctl_start_iso,
- 	[0x0b] = ioctl_stop_iso,
- 	[0x0c] = ioctl_get_cycle_timer,
- 	[0x0d] = ioctl_allocate_iso_resource,
- 	[0x0e] = ioctl_deallocate_iso_resource,
- 	[0x0f] = ioctl_allocate_iso_resource_once,
- 	[0x10] = ioctl_deallocate_iso_resource_once,
- 	[0x11] = ioctl_get_speed,
- 	[0x12] = ioctl_send_broadcast_request,
- 	[0x13] = ioctl_send_stream_packet,
- 	[0x14] = ioctl_get_cycle_timer2,
- 	[0x15] = ioctl_send_phy_packet,
- 	[0x16] = ioctl_receive_phy_packets,
- 	[0x17] = ioctl_set_iso_channels,
- 	[0x18] = ioctl_flush_iso,
- };
- 
-+static const char minimum_user_input[] = {
-+	[0x00] = 32,	/* _IOWR fw_cdev_get_info			*/
-+	[0x01] = 36,	/*  _IOW fw_cdev_send_request			*/
-+	[0x02] = 20,	/* _IOWR fw_cdev_allocate			*/
-+	[0x03] =  4,	/*  _IOW fw_cdev_deallocate			*/
-+	[0x04] = 20,	/*  _IOW fw_cdev_send_response			*/
-+	[0x05] =  4,	/*  _IOW fw_cdev_initiate_bus_reset		*/
-+	[0x06] = 20,	/* _IOWR fw_cdev_add_descriptor			*/
-+	[0x07] =  4,	/*  _IOW fw_cdev_remove_descriptor		*/
-+	[0x08] = 24,	/* _IOWR fw_cdev_create_iso_context		*/
-+	[0x09] = 24,	/* _IOWR fw_cdev_queue_iso			*/
-+	[0x0a] = 16,	/*  _IOW fw_cdev_start_iso			*/
-+	[0x0b] =  4,	/*  _IOW fw_cdev_stop_iso			*/
-+	[0x0c] =  0,	/*  _IOR fw_cdev_get_cycle_timer		*/
-+	[0x0d] = 20,	/* _IOWR fw_cdev_allocate_iso_resource		*/
-+	[0x0e] =  4,	/*  _IOW fw_cdev_deallocate			*/
-+	[0x0f] = 20,	/*  _IOW fw_cdev_allocate_iso_resource		*/
-+	[0x10] = 20,	/*  _IOW fw_cdev_allocate_iso_resource		*/
-+	[0x11] =  0,	/*   _IO					*/
-+	[0x12] = 36,	/*  _IOW struct fw_cdev_send_request		*/
-+	[0x13] = 40,	/*  _IOW struct fw_cdev_send_stream_packet	*/
-+	[0x14] = 16,	/* _IOWR fw_cdev_get_cycle_timer2		*/
-+	[0x15] = 20,	/* _IOWR fw_cdev_send_phy_packet		*/
-+	[0x16] =  8,	/*  _IOW fw_cdev_receive_phy_packets		*/
-+	[0x17] = 12,	/*  _IOW fw_cdev_set_iso_channels		*/
-+	[0x18] =  4,	/*  _IOW struct fw_cdev_flush_iso		*/
-+};
-+
- static int dispatch_ioctl(struct client *client,
- 			  unsigned int cmd, void __user *arg)
- {
- 	union ioctl_arg buffer;
- 	int ret;
- 
- 	if (fw_device_is_shutdown(client->device))
- 		return -ENODEV;
- 
- 	if (_IOC_TYPE(cmd) != '#' ||
- 	    _IOC_NR(cmd) >= ARRAY_SIZE(ioctl_handlers) ||
- 	    _IOC_SIZE(cmd) > sizeof(buffer))
- 		return -ENOTTY;
- 
-+	if (minimum_user_input[_IOC_NR(cmd)])
-+		if (!(_IOC_DIR(cmd) & _IOC_WRITE) ||
-+		    _IOC_SIZE(cmd) < minimum_user_input[_IOC_NR(cmd)])
-+			return -EINVAL;
-+
- 	if (_IOC_DIR(cmd) == _IOC_READ)
- 		memset(&buffer, 0, _IOC_SIZE(cmd));
- 
- 	if (_IOC_DIR(cmd) & _IOC_WRITE)
- 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
- 			return -EFAULT;
- 
- 	ret = ioctl_handlers[_IOC_NR(cmd)](client, &buffer);
- 	if (ret < 0)
- 		return ret;
- 
- 	if (_IOC_DIR(cmd) & _IOC_READ)
- 		if (copy_to_user(arg, &buffer, _IOC_SIZE(cmd)))
- 			return -EFAULT;
- 
- 	return ret;
- }
 
 
 -- 
-Stefan Richter
--=====-====- =-== -=-==
-http://arcgraph.de/sr/
+Andy Lutomirski
+AMA Capital Management, LLC
