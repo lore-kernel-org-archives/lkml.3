@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaKKIQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:16:21 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60186 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976AbaKKIQP (ORCPT
+	id S1753065AbaKKIQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:16:28 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:64359 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031AbaKKIQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:16:15 -0500
+	Tue, 11 Nov 2014 03:16:24 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
         sassmann@kpanic.de, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v3 12/21] backports: make kconfig src_line backport / ConfigTree specific
-Date: Tue, 11 Nov 2014 00:15:03 -0800
-Message-Id: <1415693712-23743-13-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v3 14/21] backports: update dependencies map file
+Date: Tue, 11 Nov 2014 00:15:05 -0800
+Message-Id: <1415693712-23743-15-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1415693712-23743-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,80 +23,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-The kconfig source line used on a backport project is very
-project specific. For backport packaging the source line simply
-should follow the full path of the project but for integration
-this will vary depending on the backport prefix directory used.
-We'll add support for that next.
-
-$ time /home/mcgrof/backports/devel/ckmake --allyesconfig
-1   3.0.101             [  OK  ]
-2   3.1.10              [  OK  ]
-3   3.2.62              [  OK  ]
-4   3.3.8               [  OK  ]
-5   3.4.104             [  OK  ]
-6   3.5.7               [  OK  ]
-7   3.6.11              [  OK  ]
-8   3.7.10              [  OK  ]
-9   3.8.13              [  OK  ]
-10  3.9.11              [  OK  ]
-11  3.10.58             [  OK  ]
-12  3.11.10             [  OK  ]
-13  3.12.31             [  OK  ]
-14  3.13.11             [  OK  ]
-15  3.14.22             [  OK  ]
-16  3.15.10             [  OK  ]
-17  3.16.6              [  OK  ]
-18  3.17.1              [  OK  ]
-19  3.18-rc1            [  OK  ]
-
-real    43m56.439s
-user    1187m4.516s
-sys     138m53.328s
+During development of kernel integration support using CONFIG_BACKPORT
+was evaluated as a prefix over CPTCFG even for packaging backports,
+for some reason this change lifted some restrictions one some device
+drivers which was present before and as such requires some changes to
+the dependencies map file to ensure correct compilation for respective
+kernel versions.
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- lib/kconfig.py | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ dependencies | 31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/lib/kconfig.py b/lib/kconfig.py
-index f348d4a..ac96613 100644
---- a/lib/kconfig.py
-+++ b/lib/kconfig.py
-@@ -4,7 +4,6 @@
+diff --git a/dependencies b/dependencies
+index 4964aa6..64903dc 100644
+--- a/dependencies
++++ b/dependencies
+@@ -16,6 +16,8 @@ USB_GSPCA_OV534 3.5
+ # we only support on >= 3.4 give that reguatory itself depends
+ # on -EPROBE_DEFER.
+ SOC_CAMERA 3.4
++VIDEO_S5K5BAF 3.4
++VIDEO_S5K4ECGX 3.4
+ # 49920bc6 and 1003cab8 and while it seems there is a
+ # one to one map DMA_FROM_DEVICE to DMA_DEV_TO_MEM
+ # I can't verify this fully yet.
+@@ -29,16 +31,29 @@ DVB_USB_RTL28XXU 3.4
+ # missing linux/gpio/consumer.h
+ VIDEO_ADV7604 3.13
+ # missing function clk_prepare_enable(), clk_disable_unprepare() and devm_regulator_bulk_get()
+-VIDEO_MT9P031 3.3
+-VIDEO_MT9T001 3.3
+ VIDEO_MT9V032 3.3
+-VIDEO_NOON010PC30 3.3
+-VIDEO_S5K6A3 3.3
+ VIDEO_S5K6AA 3.3
+-VIDEO_S5K5BAF 3.3
+-VIDEO_S5K4ECGX 3.3
+-VIDEO_M5MOLS 3.3
+-VIDEO_S5C73M3 3.3
++
++# missing devm_regulator_bulk_get
++VIDEO_MT9T001 3.5
++VIDEO_NOON010PC30 3.5
++VIDEO_MT9P031 3.5
++
++# missing of_property_read_bool() added via fa4d34cc on v3.4-rc1~71, backport
++# that attomically and you can enable this for older kernels.
++VIDEO_ADV7343 3.4
++
++# for whoever wants to backport this: GPIOF_EXPORT was redefined via commit
++# 79a9becd on v3.13-rc1~120^2~15, before this it was redefined via commit
++# f567fde2 on v3.5-rc7~32^2~4 and finally added via commit fc3a1f04 on
++# v3.5-rc1~93^2~25. We don't address any of these changes yet so we require
++# the latest interpretation.
++VIDEO_S5K6AA 3.13
++VIDEO_S5K6A3 3.13
++
++# missing linux/sizes.h
++VIDEO_M5MOLS 3.6
++VIDEO_S5C73M3 3.6
  
- import os, re
- 
--src_line = re.compile(r'^\s*source\s+"(?P<src>[^\s"]*)"?\s*$')
- src_line_rel = re.compile(r'^\s*source\s+(?P<src>[^\s"]*)"?\s*$')
- tri_line = re.compile(r'^(?P<spc>\s+)tristate')
- bool_line = re.compile(r'^(?P<spc>\s+)bool')
-@@ -16,6 +15,7 @@ class ConfigTree(object):
-     def __init__(self, rootfile, bpid):
-         self.bpid = bpid
-         self.rootfile = os.path.basename(rootfile)
-+        self.src_line = re.compile(r'^\s*source\s+"(?P<src>[^\s"]*)"?\s*$')
- 
-     def _check_relative_source(self, f, l):
-     #
-@@ -31,7 +31,7 @@ class ConfigTree(object):
-     def _walk(self, f):
-         yield f
-         for l in open(os.path.join(self.bpid.target_dir, f), 'r'):
--            m = src_line.match(l)
-+            m = self.src_line.match(l)
-             if m and os.path.exists(os.path.join(self.bpid.target_dir, m.group('src'))):
-                 for i in self._walk(m.group('src')):
-                     yield i
-@@ -42,7 +42,7 @@ class ConfigTree(object):
-         for nf in self._walk(f):
-             out = ''
-             for l in open(os.path.join(self.bpid.target_dir, nf), 'r'):
--                m = src_line.match(l)
-+                m = self.src_line.match(l)
-                 if not m:
-                     self._check_relative_source(nf, l)
-                     out += l
+ # missing function devm_regmap_init_i2c()
+ VIDEO_LM3646 3.3
 -- 
 2.1.1
 
