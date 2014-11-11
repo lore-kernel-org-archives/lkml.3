@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaKKL2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 06:28:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56638 "EHLO mga01.intel.com"
+	id S1752687AbaKKL2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 06:28:22 -0500
+Received: from mga03.intel.com ([134.134.136.65]:48777 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848AbaKKL2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 06:28:10 -0500
+	id S1752638AbaKKL2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:28:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,360,1413270000"; 
-   d="scan'208";a="620503583"
+   d="scan'208";a="605874145"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v6 08/14] perf: Support overwrite mode for AUX area
-Date: Tue, 11 Nov 2014 13:26:54 +0200
-Message-Id: <1415705221-182873-9-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v6 10/14] x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
+Date: Tue, 11 Nov 2014 13:26:56 +0200
+Message-Id: <1415705221-182873-11-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1415705221-182873-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1415705221-182873-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -30,144 +30,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for overwrite mode in the AUX area, which means "keep
-collecting data till you're stopped", turning AUX area into a circular
-buffer, where new data overwrites old data. It does not depend on data
-buffer's overwrite mode, so that it doesn't lose sideband data that is
-instrumental for processing AUX data.
-
-Overwrite mode is enabled at mapping AUX area read only. Even though
-aux_tail in the buffer's user page might be user writable, it will be
-ignored in this mode.
-
-A PERF_RECORD_AUX with PERF_AUX_FLAG_OVERWRITE set is written to the perf
-data stream every time an event writes new data to the AUX area. The pmu
-driver might not be able to infer the exact beginning of the new data in
-each snapshot, some drivers will only provide the tail, which is
-aux_offset + aux_size in the AUX record. Consumer has to be able to tell
-the new data from the old one, for example, by means of time stamps if
-such are provided in the trace.
-
-Consumer is also responsible for disabling any events that might write
-to the AUX area (thus potentially racing with the consumer) before
-collecting the data.
+Intel Processor Trace is an architecture extension that allows for program
+flow tracing.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/uapi/linux/perf_event.h |  1 +
- kernel/events/internal.h        |  1 +
- kernel/events/ring_buffer.c     | 48 ++++++++++++++++++++++++++++-------------
- 3 files changed, 35 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/cpufeature.h | 1 +
+ arch/x86/kernel/cpu/scattered.c   | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 272258380e..f36aac2ac5 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -768,6 +768,7 @@ enum perf_callchain_context {
-  * PERF_RECORD_AUX::flags bits
-  */
- #define PERF_AUX_FLAG_TRUNCATED		0x01	/* record was truncated to fit */
-+#define PERF_AUX_FLAG_OVERWRITE		0x02	/* snapshot from overwrite mode */
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 0bb1335313..86aa081a0d 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -189,6 +189,7 @@
+ #define X86_FEATURE_DTHERM	( 7*32+ 7) /* Digital Thermal Sensor */
+ #define X86_FEATURE_HW_PSTATE	( 7*32+ 8) /* AMD HW-PState */
+ #define X86_FEATURE_PROC_FEEDBACK ( 7*32+ 9) /* AMD ProcFeedbackInterface */
++#define X86_FEATURE_INTEL_PT	( 7*32+10) /* Intel Processor Trace */
  
- #define PERF_FLAG_FD_NO_GROUP		(1UL << 0)
- #define PERF_FLAG_FD_OUTPUT		(1UL << 1)
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 68bbf86d8f..b1ed80f87d 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -40,6 +40,7 @@ struct ring_buffer {
- 	local_t				aux_nest;
- 	unsigned long			aux_pgoff;
- 	int				aux_nr_pages;
-+	int				aux_overwrite;
- 	atomic_t			aux_mmap_count;
- 	unsigned long			aux_mmap_locked;
- 	void				(*free_aux)(void *);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 6b6bd93e7d..b94fd5ad51 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -282,26 +282,33 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
- 		goto err_put;
- 
- 	aux_head = local_read(&rb->aux_head);
--	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
- 
- 	handle->rb = rb;
- 	handle->event = event;
- 	handle->head = aux_head;
--	if (aux_head - aux_tail < perf_aux_size(rb))
--		handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
--	else
--		handle->size = 0;
-+	handle->size = 0;
- 
- 	/*
--	 * handle->size computation depends on aux_tail load; this forms a
--	 * control dependency barrier separating aux_tail load from aux data
--	 * store that will be enabled on successful return
-+	 * In overwrite mode, AUX data stores do not depend on aux_tail,
-+	 * therefore (A) control dependency barrier does not exist. The
-+	 * (B) <-> (C) ordering is still observed by the pmu driver.
- 	 */
--	if (!handle->size) { /* A, matches D */
--		event->pending_disable = 1;
--		perf_output_wakeup(handle);
--		local_set(&rb->aux_nest, 0);
--		goto err_put;
-+	if (!rb->aux_overwrite) {
-+		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
-+		if (aux_head - aux_tail < perf_aux_size(rb))
-+			handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
-+
-+		/*
-+		 * handle->size computation depends on aux_tail load; this forms a
-+		 * control dependency barrier separating aux_tail load from aux data
-+		 * store that will be enabled on successful return
-+		 */
-+		if (!handle->size) { /* A, matches D */
-+			event->pending_disable = 1;
-+			perf_output_wakeup(handle);
-+			local_set(&rb->aux_nest, 0);
-+			goto err_put;
-+		}
- 	}
- 
- 	return handle->rb->aux_priv;
-@@ -326,13 +333,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
- 			 bool truncated)
- {
- 	struct ring_buffer *rb = handle->rb;
--	unsigned long aux_head = local_read(&rb->aux_head);
-+	unsigned long aux_head;
- 	u64 flags = 0;
- 
- 	if (truncated)
- 		flags |= PERF_AUX_FLAG_TRUNCATED;
- 
--	local_add(size, &rb->aux_head);
-+	/* in overwrite mode, driver provides aux_head via handle */
-+	if (rb->aux_overwrite) {
-+		flags |= PERF_AUX_FLAG_OVERWRITE;
-+
-+		aux_head = handle->head;
-+		local_set(&rb->aux_head, aux_head);
-+	} else {
-+		aux_head = local_read(&rb->aux_head);
-+		local_add(size, &rb->aux_head);
-+	}
- 
- 	if (size || flags) {
- 		/*
-@@ -476,6 +492,8 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 	 */
- 	kref_init(&rb->aux_refcount);
- 
-+	rb->aux_overwrite = overwrite;
-+
- out:
- 	if (!ret)
- 		rb->aux_pgoff = pgoff;
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  ( 8*32+ 0) /* Intel TPR Shadow */
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index 4a8013d559..42f5fa953f 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -36,6 +36,7 @@ void init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
+ 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
+ 		{ X86_FEATURE_PTS,		CR_EAX, 6, 0x00000006, 0 },
++		{ X86_FEATURE_INTEL_PT,		CR_EBX,25, 0x00000007, 0 },
+ 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+ 		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
 -- 
 2.1.1
 
