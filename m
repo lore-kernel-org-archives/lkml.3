@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaKKTSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 14:18:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60650 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaKKTSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 14:18:40 -0500
-Date: Tue, 11 Nov 2014 14:18:33 -0500 (EST)
-Message-Id: <20141111.141833.1514022968668773382.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, courmisch@gmail.com,
-        nicolas.dichtel@6wind.com
-Subject: Re: [PATCH V2 net-next] net: Convert LIMIT_NETDEBUG to
- net_dbg_ratelimited
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1415732357.16070.8.camel@perches.com>
-References: <1415560642.23530.43.camel@perches.com>
-	<20141111.133027.1109527863491750125.davem@davemloft.net>
-	<1415732357.16070.8.camel@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Nov 2014 11:18:39 -0800 (PST)
+	id S1752055AbaKKTTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 14:19:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57824 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751644AbaKKTTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 14:19:09 -0500
+Date: Tue, 11 Nov 2014 20:19:04 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ross Zwisler <ross.zwisler@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <h.peter.anvin@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/6] x86: Add support for the clwb instruction
+Message-ID: <20141111191904.GA12555@pd.tnic>
+References: <1415731396-19364-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1415731396-19364-4-git-send-email-ross.zwisler@linux.intel.com>
+ <20141111191239.GC31523@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141111191239.GC31523@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Tue, 11 Nov 2014 10:59:17 -0800
+On Tue, Nov 11, 2014 at 08:12:39PM +0100, Borislav Petkov wrote:
+> > +			 ".byte 0x66; xsaveopt %P0",
+> 
+> Huh, XSAVEOPT?!? Shouldn't that be CLWB??
 
-> Use the more common dynamic_debug capable net_dbg_ratelimited
-> and remove the LIMIT_NETDEBUG macro.
-> 
-> All messages are still ratelimited.
-> 
-> Some KERN_<LEVEL> uses are changed to KERN_DEBUG.
-> 
-> This may have some negative impact on messages that were
-> emitted at KERN_INFO that are not not enabled at all unless
-> DEBUG is defined or dynamic_debug is enabled.  Even so,
-> these messages are now _not_ emitted by default.
-> 
-> This also eliminates the use of the net_msg_warn sysctl
-> "/proc/sys/net/core/warnings".  For backward compatibility,
-> the sysctl is not removed, but it has no function.  The extern
-> declaration of net_msg_warn is removed from sock.h and made
-> static in net/core/sysctl_net_core.c
-> 
-> Miscellanea:
-> 
-> o Update the sysctl documentation
-> o Remove the embedded uses of pr_fmt
-> o Coalesce format fragments
-> o Realign arguments
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> 
-> V2: Remove the EXPORT_SYMBOL for net_msg_warn and make
->     it a static in net/core/sysctl_net_core.c
+Bah, the same opcodes, only 0x66 prefix makes it into CLWB. Could use a
+comment I guess.
 
-Applied, thanks a lot Joe.
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
