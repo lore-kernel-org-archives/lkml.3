@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaKKNUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 08:20:14 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:48048 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaKKNUM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 08:20:12 -0500
-Date: Tue, 11 Nov 2014 14:20:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
-Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
-Message-ID: <20141111132000.GM10501@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
- <20141022143241.GT12706@worktop.programming.kicks-ass.net>
- <8738a4crgg.fsf@ashishki-desk.ger.corp.intel.com>
- <20141104155734.GL12706@worktop.programming.kicks-ass.net>
- <87wq72asjo.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wq72asjo.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1751370AbaKKNXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 08:23:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22822 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750829AbaKKNXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 08:23:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,361,1413270000"; 
+   d="scan'208";a="630128641"
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: Heiko Stuebner <heiko@sntech.de>, Mark Brown <broonie@kernel.org>
+Cc: linux-rockchip@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Subject: [PATCH] spi/rockchip: remove redundant call to spi_master_put()
+Date: Tue, 11 Nov 2014 15:22:51 +0200
+Message-Id: <1415712171-20951-1-git-send-email-laurentiu.palcu@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 01:24:43PM +0200, Alexander Shishkin wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
+The call to spi_master_put() in rockchip_spi_remove() is redundant since
+the master is registered using devm_. This patch removes it.
 
-> > Now I'm not sure we want to export all the bits you're using though.
-> > Like the topa_multiple_entires, that appears an implementation detail
-> > userspace should not really care about either way.
-> 
-> Actually, userspace can make assumptions about lost data from this
-> bit.
+Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
+---
+ drivers/spi/spi-rockchip.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Do explain; it feels entirely wrong to expose something like this, esp.
-since this crappy single TOPA thing is going away.
+diff --git a/drivers/spi/spi-rockchip.c b/drivers/spi/spi-rockchip.c
+index 3afc266..e8cfe6c 100644
+--- a/drivers/spi/spi-rockchip.c
++++ b/drivers/spi/spi-rockchip.c
+@@ -724,8 +724,6 @@ static int rockchip_spi_remove(struct platform_device *pdev)
+ 	if (rs->dma_rx.ch)
+ 		dma_release_channel(rs->dma_rx.ch);
+ 
+-	spi_master_put(master);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
-> But there are others, such as encoded address length. In future
-> there will also be several "caps" with allowed values for certain bit
-> fields in RTIT_CTL, such as timing packet frequencies.
-
-No, those should not be caps, those should be in the format description.
