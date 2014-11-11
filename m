@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaKKIMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 03:12:12 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34162 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992AbaKKIMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 03:12:10 -0500
+	id S1752434AbaKKINj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 03:13:39 -0500
+Received: from mga03.intel.com ([134.134.136.65]:17312 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751949AbaKKINh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 03:13:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,359,1413270000"; 
+   d="scan'208";a="634922216"
+Date: Tue, 11 Nov 2014 10:13:31 +0200
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com
+Subject: Re: [PATCH v6 04/10] tpm: rename chip->dev to chip->pdev
+Message-ID: <20141111081331.GA7088@intel.com>
+References: <1415623794-6090-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1415623794-6090-5-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20141110174511.GA5296@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <20141111111738.1e7856ce@notabene.brown>
-References: <20141108000919.5629.55381.stgit@notabene.brown>
-	<20141108001411.5629.55298.stgit@notabene.brown>
-	<CAPDyKFrrOozTO5xR8RO=4L8xZ9hLGizH=2mxZE=5zvwMhhgD+w@mail.gmail.com>
-	<20141111111738.1e7856ce@notabene.brown>
-Date: Tue, 11 Nov 2014 09:12:09 +0100
-Message-ID: <CAPDyKFohBBEAO2cAXYQ-GCyFbpau3UMHP7p_gJwiHeMo6_7s6A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mmc: core: reset sdio card properly on resume.
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Chris Ball <chris@printf.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        GTA04 owners <gta04-owner@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141110174511.GA5296@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 November 2014 01:17, NeilBrown <neilb@suse.de> wrote:
-> On Mon, 10 Nov 2014 14:29:19 +0100 Ulf Hansson <ulf.hansson@linaro.org> wrote:
->
->> On 8 November 2014 01:14, NeilBrown <neilb@suse.de> wrote:
->> > mmc_sdio_power_restore calls
->> >         mmc_send_if_cond(host, host->ocr_avail);
->> >
->> >         ret = mmc_send_io_op_cond(host, 0, NULL);
->> >
->> > between mmc_go_idle() and  mmc_sdio_init_card().
->> > mmc_sdio_resume needs to as well, else my libertas sdio wifi
->> > device doesn't resume properly from suspend.
->> >
->> > Signed-off-by: NeilBrown <neilb@suse.de>
->> > ---
->> >  drivers/mmc/core/sdio.c |    8 ++++++--
->> >  1 file changed, 6 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->> > index e636d9e99e4a..3f069a6f448f 100644
->> > --- a/drivers/mmc/core/sdio.c
->> > +++ b/drivers/mmc/core/sdio.c
->> > @@ -981,8 +981,12 @@ static int mmc_sdio_resume(struct mmc_host *host)
->> >         if (mmc_card_is_removable(host) || !mmc_card_keep_power(host)) {
->> >                 sdio_reset(host);
->> >                 mmc_go_idle(host);
->> > -               err = mmc_sdio_init_card(host, host->card->ocr, host->card,
->> > -                                       mmc_card_keep_power(host));
->> > +               mmc_send_if_cond(host, host->ocr_avail);
->>
->> /s /host->ocr_avail /host->card->ocr
->>
->> I would expect that to work. I do realize that "host->ocr_avail" is
->> being used in the ->power_restore() callback, but I think that's wrong
->> as well. Could you maybe verify that changing to host->card->ocr works
->> in this path as well? That's would of course be a separate patch.
->
-> Hi Ulf,
->  I made the substitution in mmc_sdio_resume and mmc_sdio_power_restore
-> and my sdio device continues to work, including after resume.
->
-> The  host->card->ocr value is 0x10000, the host->ocr_avail value is 0x18000.
+On Mon, Nov 10, 2014 at 10:45:11AM -0700, Jason Gunthorpe wrote:
+> On Mon, Nov 10, 2014 at 02:49:48PM +0200, Jarkko Sakkinen wrote:
+> > Rename chip->dev to chip->pdev to make it explicit that this not the
+> > character device but actually represents the platform device.
+> 
+> I don't really have time to take a detailed look at this for a few
+> weeks, but I like this entire patch set.
 
-That makes sense.
+Excellent, thank you.
 
-The host->card->ocr mask has been negotiated at initialization between
-the host and the card.
+> > -		if (try_module_get(pos->dev->driver->owner)) {
+> > +		if (try_module_get(pos->pdev->driver->owner)) {
+> >  			chip = pos;
+> >  			break;
+> 
+> Yes, this needs to be pdev
+> 
+> >  	if (test_and_set_bit(0, &chip->is_open)) {
+> > -		dev_dbg(chip->dev, "Another process owns this TPM\n");
+> > +		dev_dbg(chip->pdev, "Another process owns this TPM\n");
+> >  		return -EBUSY;
+> 
+> This should be moved to the class dev, ie it should ultimately say
+> dev_dbg(&chip->dev,..
 
->
-> If you like I'll send the two patches formally, but it might be a day or so.
+Peter, I'll try to minimize the delta between the patch set revisions
+so that this could be pulled in the near future (maybe having odds
+to make into 3.19) and do only fixes to those issues that are blockers.
 
-Please do.
+Would you mind if I fixed dev logging stuff after the patch set has
+been pulled? 
 
-Kind regards
-Uffe
+Writing this down anyway to my backlog.
+
+> Similar comments all over the place.
+> 
+> Jason
+
+/Jarkko
