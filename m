@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbaKKUJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 15:09:59 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39959 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaKKUJ5 (ORCPT
+	id S1751759AbaKKUKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 15:10:33 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:54500 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaKKUKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 15:09:57 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2] PCI: Apply _HPX link control for all supported pcie device
-Date: Tue, 11 Nov 2014 12:09:46 -0800
-Message-Id: <1415736586-16044-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 11 Nov 2014 15:10:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrXEg61hds9g70_OB_9d=kjdsFr5+yRYH4zG2mhw7D0uHg@mail.gmail.com>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+ <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
+ <20141111114248.GD31490@pd.tnic> <CALCETrULeLC3MhqdG5yJKXp9YL6ir3gOO4e9WGt1X3kkKMXdJw@mail.gmail.com>
+ <20141111161309.GG31490@pd.tnic> <CALCETrWqGkNBCsPr5QLt4dQSH2mwDgN2tfKy7fqVG4ERZW8e2Q@mail.gmail.com>
+ <20141111163059.GH31490@pd.tnic> <CALCETrX+u-LZV0GGudi8z-VtcY0y7BD8Yk_4BgTA5C5hekVAtQ@mail.gmail.com>
+ <20141111182235.GL31490@pd.tnic> <CALCETrXEg61hds9g70_OB_9d=kjdsFr5+yRYH4zG2mhw7D0uHg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Nov 2014 12:10:10 -0800
+Message-ID: <CALCETrXKBqm6AG8eERDZjSS8oPpSu+A0tDLbCZZEMT+_7DCmPQ@mail.gmail.com>
+Subject: Re: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable
+ memory errors
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chen Gong <gong.chen@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With commit 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
-and following commits, we apply _HPX for pci devices.
+On Tue, Nov 11, 2014 at 10:34 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Nov 11, 2014 at 10:22 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Tue, Nov 11, 2014 at 09:15:18AM -0800, Andy Lutomirski wrote:
+>>> Oh -- does it need to sleep?
+>>
+>> Oh yeah, iterates over all tasks and generally async access to VM stuff.
+>> You can have a look if bored: mm/memory-failure.c
+>>
+>> :-)
+>>
+>>> I find myself wondering whether a much cleaner solution might be to
+>>> sync regs and switch stacks before invoking do_machine_check rather
+>>> than afterwards.  Then do_machine_check would really be completely
+>>> non-atomic.  It would add a few lines of asm, though.
+>>
+>> That's like wagging the dog.
+>
+> Wagging this particular dog might shake some loose fur off.  If we did
+> this for all paranoid entries, then paranoid_userspace could just be
+> deleted.  :)
 
-that is called via pci_scan_slot
-			==>pci_scan_single_device
-				==>pci_device_add
-					==>pci_configure_device
-						==>program_hpp_type2
-and dev->subordinate is not allocated yet.
+Andi is about to make this dog even messier.  I think I like my
+suggestion more and more.
 
-So that link control setup get skipped.
-
-Acoording to ACPI spec, there is no requirement that need to be set to pcie
-root port or downstream port.
-
-We could just change to pcie_cap_has_lnkctl to cover all pcie devices with
-link control cap.
-
--v2: Do not move pcie_cap_has_lnkctl() out of pci/access.c according to Bjorn.
-
-Fixes: 6cd33649fa83 ("PCI: Add pci_configure_device() during enumeration")
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- drivers/pci/access.c |    2 +-
- drivers/pci/pci.h    |    2 ++
- drivers/pci/probe.c  |    2 +-
- 3 files changed, 4 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -1323,7 +1323,7 @@ static void program_hpp_type2(struct pci
- 			~hpp->pci_exp_devctl_and, hpp->pci_exp_devctl_or);
- 
- 	/* Initialize Link Control Register */
--	if (dev->subordinate)
-+	if (pcie_cap_has_lnkctl(dev))
- 		pcie_capability_clear_and_set_word(dev, PCI_EXP_LNKCTL,
- 			~hpp->pci_exp_lnkctl_and, hpp->pci_exp_lnkctl_or);
- 
-Index: linux-2.6/drivers/pci/pci.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.h
-+++ linux-2.6/drivers/pci/pci.h
-@@ -6,6 +6,8 @@
- 
- extern const unsigned char pcie_link_speed[];
- 
-+bool pcie_cap_has_lnkctl(const struct pci_dev *dev);
-+
- /* Functions internal to the PCI core code */
- 
- int pci_create_sysfs_dev_files(struct pci_dev *pdev);
-Index: linux-2.6/drivers/pci/access.c
-===================================================================
---- linux-2.6.orig/drivers/pci/access.c
-+++ linux-2.6/drivers/pci/access.c
-@@ -444,7 +444,7 @@ static inline int pcie_cap_version(const
- 	return pcie_caps_reg(dev) & PCI_EXP_FLAGS_VERS;
- }
- 
--static inline bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
-+bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
- {
- 	int type = pci_pcie_type(dev);
- 
+--Andy
