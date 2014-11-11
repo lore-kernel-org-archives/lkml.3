@@ -1,174 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaKKB2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Nov 2014 20:28:10 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:33752 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751295AbaKKB2H (ORCPT
+	id S1751863AbaKKBaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Nov 2014 20:30:04 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:47322 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298AbaKKBaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Nov 2014 20:28:07 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="43170846"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <akpm@linux-foundation.org>, <santosh.shilimkar@ti.com>,
-        <grygorii.strashko@ti.com>, <yinghai@kernel.org>,
-        <isimatu.yasuaki@jp.fujitsu.co>, <fabf@skynet.be>, <nzimmer@sgi.com>,
-        <wangnan0@huawei.com>, <vdavydov@parallels.com>, <toshi.kani@hp.com>,
-        <phacht@linux.vnet.ibm.com>, <tj@kernel.org>,
-        <kirill.shutemov@linux.intel.com>, <riel@redhat.com>,
-        <luto@amacapital.net>, <hpa@linux.intel.com>, <aarcange@redhat.com>,
-        <qiuxishi@huawei.com>, <mgorman@suse.de>, <rientjes@google.com>,
-        <hannes@cmpxchg.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <tangchen@cn.fujitsu.com>, <miaox@cn.fujitsu.com>,
-        <stable@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [PATCH v2 1/2] mem-hotplug: Reset node managed pages when hot-adding a new pgdat.
-Date: Tue, 11 Nov 2014 09:27:06 +0800
-Message-ID: <1415669227-10996-2-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415669227-10996-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1415669227-10996-1-git-send-email-tangchen@cn.fujitsu.com>
+	Mon, 10 Nov 2014 20:30:01 -0500
+X-Sasl-enc: nWLklnN3QU3tkeQSL/p+SrngOcszAjljufhiYMOqdqsl 1415669397
+Subject: [PATCH 1/3] autofs - fix log print messages
+From: Ian Kent <raven@themaw.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Nov 2014 09:29:54 +0800
+Message-ID: <20141111012954.25773.4002.stgit@perseus.themaw.net>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.71]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In free_area_init_core(), zone->managed_pages is set to an approximate
-value for lowmem, and will be adjusted when the bootmem allocator frees
-pages into the buddy system. But free_area_init_core() is also called
-by hotadd_new_pgdat() when hot-adding memory. As a result, zone->managed_pages
-of the newly added node's pgdat is set to an approximate value in the
-very beginning. Even if the memory on that node has node been onlined,
-/sys/device/system/node/nodeXXX/meminfo has wrong value.
+Fix some inconsistencies in log print output and ensure that
+the module name is included in all log prints.
 
-hot-add node2 (memory not onlined)
-cat /sys/device/system/node/node2/meminfo
-Node 2 MemTotal:       33554432 kB
-Node 2 MemFree:               0 kB
-Node 2 MemUsed:        33554432 kB
-Node 2 Active:                0 kB
-
-This patch fixes this problem by reset node managed pages to 0 after hot-adding
-a new node.
-
-1. Move reset_managed_pages_done from reset_node_managed_pages() to reset_all_zones_managed_pages()
-2. Make reset_node_managed_pages() non-static
-3. Call reset_node_managed_pages() in hotadd_new_pgdat() after pgdat is initialized
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Ian Kent <raven@themaw.net>
+Cc: Joe Perches <joe@perches.com>
 ---
- include/linux/bootmem.h | 1 +
- mm/bootmem.c            | 9 +++++----
- mm/memory_hotplug.c     | 9 +++++++++
- mm/nobootmem.c          | 8 +++++---
- 4 files changed, 20 insertions(+), 7 deletions(-)
+ fs/autofs/autofs_i.h  |    6 +++---
+ fs/autofs/dev-ioctl.c |    2 +-
+ fs/autofs/inode.c     |   10 +++++-----
+ fs/autofs/waitq.c     |    4 ++--
+ 4 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index 4e2bd4c..0995c2d 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -46,6 +46,7 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
- extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
+diff --git a/fs/autofs/autofs_i.h b/fs/autofs/autofs_i.h
+index e99a675..fd93fdc 100644
+--- a/fs/autofs/autofs_i.h
++++ b/fs/autofs/autofs_i.h
+@@ -37,15 +37,15 @@
+ /* #define DEBUG */
  
- extern unsigned long free_all_bootmem(void);
-+extern void reset_node_managed_pages(pg_data_t *pgdat);
- extern void reset_all_zones_managed_pages(void);
+ #define DPRINTK(fmt, ...)				\
+-	pr_debug("pid %d: %s: " fmt "\n",		\
++	pr_debug(KBUILD_MODNAME ":pid:%d:%s: " fmt "\n",\
+ 		current->pid, __func__, ##__VA_ARGS__)
  
- extern void free_bootmem_node(pg_data_t *pgdat,
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 8a000ce..477be69 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -243,13 +243,10 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+ #define AUTOFS_WARN(fmt, ...)				\
+-	pr_warn("pid %d: %s: " fmt "\n",	\
++	pr_warn(KBUILD_MODNAME ":pid:%d:%s: " fmt "\n",	\
+ 		current->pid, __func__, ##__VA_ARGS__)
  
- static int reset_managed_pages_done __initdata;
+ #define AUTOFS_ERROR(fmt, ...)				\
+-	pr_err("pid %d: %s: " fmt "\n",	\
++	pr_err(KBUILD_MODNAME ":pid:%d:%s: " fmt "\n",	\
+ 		current->pid, __func__, ##__VA_ARGS__)
  
--static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
-+void reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
+ /*
+diff --git a/fs/autofs/dev-ioctl.c b/fs/autofs/dev-ioctl.c
+index 34e515b..eb16fe4 100644
+--- a/fs/autofs/dev-ioctl.c
++++ b/fs/autofs/dev-ioctl.c
+@@ -369,7 +369,7 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+ 		new_pid = get_task_pid(current, PIDTYPE_PGID);
  
--	if (reset_managed_pages_done)
--		return;
--
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
- 		z->managed_pages = 0;
- }
-@@ -258,8 +255,12 @@ void __init reset_all_zones_managed_pages(void)
- {
- 	struct pglist_data *pgdat;
+ 		if (ns_of_pid(new_pid) != ns_of_pid(sbi->oz_pgrp)) {
+-			AUTOFS_WARN("Not allowed to change PID namespace");
++			AUTOFS_WARN("not allowed to change PID namespace");
+ 			err = -EINVAL;
+ 			goto out;
+ 		}
+diff --git a/fs/autofs/inode.c b/fs/autofs/inode.c
+index 01788cc..5012f21 100644
+--- a/fs/autofs/inode.c
++++ b/fs/autofs/inode.c
+@@ -266,14 +266,14 @@ int autofs_fill_super(struct super_block *s, void *data, int silent)
+ 	if (parse_options(data, &pipefd, &root_inode->i_uid, &root_inode->i_gid,
+ 			  &pgrp, &pgrp_set, &sbi->type, &sbi->min_proto,
+ 			  &sbi->max_proto)) {
+-		AUTOFS_ERROR("autofs: called with bogus options");
++		AUTOFS_ERROR("called with bogus options");
+ 		goto fail_dput;
+ 	}
  
-+	if (reset_managed_pages_done)
-+		return;
-+
- 	for_each_online_pgdat(pgdat)
- 		reset_node_managed_pages(pgdat);
-+
- 	reset_managed_pages_done = 1;
- }
+ 	if (pgrp_set) {
+ 		sbi->oz_pgrp = find_get_pid(pgrp);
+ 		if (!sbi->oz_pgrp) {
+-			AUTOFS_ERROR("autofs: could not find process group %d",
++			AUTOFS_ERROR("could not find process group %d",
+ 				pgrp);
+ 			goto fail_dput;
+ 		}
+@@ -290,7 +290,7 @@ int autofs_fill_super(struct super_block *s, void *data, int silent)
+ 	/* Couldn't this be tested earlier? */
+ 	if (sbi->max_proto < AUTOFS_MIN_PROTO_VERSION ||
+ 	    sbi->min_proto > AUTOFS_MAX_PROTO_VERSION) {
+-		AUTOFS_ERROR("autofs: kernel does not match daemon version "
++		AUTOFS_ERROR("kernel does not match daemon version "
+ 			     "daemon (%d, %d) kernel (%d, %d)",
+ 			sbi->min_proto, sbi->max_proto,
+ 			AUTOFS_MIN_PROTO_VERSION, AUTOFS_MAX_PROTO_VERSION);
+@@ -308,7 +308,7 @@ int autofs_fill_super(struct super_block *s, void *data, int silent)
+ 	pipe = fget(pipefd);
  
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 29d8693..8aba12b 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -31,6 +31,7 @@
- #include <linux/stop_machine.h>
- #include <linux/hugetlb.h>
- #include <linux/memblock.h>
-+#include <linux/bootmem.h>
+ 	if (!pipe) {
+-		AUTOFS_ERROR("autofs: could not open pipe file descriptor");
++		AUTOFS_ERROR("could not open pipe file descriptor");
+ 		goto fail_dput;
+ 	}
+ 	ret = autofs_prepare_pipe(pipe);
+@@ -329,7 +329,7 @@ int autofs_fill_super(struct super_block *s, void *data, int silent)
+ 	 */
+ fail_fput:
+ 	AUTOFS_ERROR(
+-		"autofs: pipe file descriptor does not contain proper ops");
++		"pipe file descriptor does not contain proper ops");
+ 	fput(pipe);
+ 	/* fall through */
+ fail_dput:
+diff --git a/fs/autofs/waitq.c b/fs/autofs/waitq.c
+index ec0c60f..0fb2791 100644
+--- a/fs/autofs/waitq.c
++++ b/fs/autofs/waitq.c
+@@ -162,7 +162,7 @@ static void autofs_notify_daemon(struct autofs_sb_info *sbi,
+ 		break;
+ 	}
+ 	default:
+-		AUTOFS_WARN("autofs_notify_daemon: bad type %d!", type);
++		AUTOFS_WARN("bad type %d!", type);
+ 		mutex_unlock(&sbi->wq_mutex);
+ 		return;
+ 	}
+@@ -450,7 +450,7 @@ int autofs_wait(struct autofs_sb_info *sbi,
+ 					autofs_ptype_expire_indirect;
+ 		}
  
- #include <asm/tlbflush.h>
+-		DPRINTK("new wait id = 0x%08lx, name = %.*s, nfy=%d\n",
++		DPRINTK("new wait id = 0x%08lx, name = %.*s, nfy=%d",
+ 			(unsigned long) wq->wait_queue_token, wq->name.len,
+ 			wq->name.name, notify);
  
-@@ -1096,6 +1097,14 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
- 	build_all_zonelists(pgdat, NULL);
- 	mutex_unlock(&zonelists_mutex);
- 
-+	/*
-+	 * zone->managed_pages is set to an approximate value in
-+	 * free_area_init_core(), which will cause
-+	 * /sys/device/system/node/nodeX/meminfo has wrong data.
-+	 * So reset it to 0 before any memory is onlined.
-+	 */
-+	reset_node_managed_pages(pgdat);
-+
- 	return pgdat;
- }
- 
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 7c7ab32..90b5046 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -145,12 +145,10 @@ static unsigned long __init free_low_memory_core_early(void)
- 
- static int reset_managed_pages_done __initdata;
- 
--static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
-+void reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
- 
--	if (reset_managed_pages_done)
--		return;
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
- 		z->managed_pages = 0;
- }
-@@ -159,8 +157,12 @@ void __init reset_all_zones_managed_pages(void)
- {
- 	struct pglist_data *pgdat;
- 
-+	if (reset_managed_pages_done)
-+		return;
-+
- 	for_each_online_pgdat(pgdat)
- 		reset_node_managed_pages(pgdat);
-+
- 	reset_managed_pages_done = 1;
- }
- 
--- 
-1.8.3.1
 
