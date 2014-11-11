@@ -1,63 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaKKG40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 01:56:26 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15919 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaKKG4Y (ORCPT
+	id S1751861AbaKKHFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 02:05:41 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43672 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477AbaKKHFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 01:56:24 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 10 Nov 2014 22:56:43 -0800
-Message-ID: <5461B35A.3080604@nvidia.com>
-Date: Tue, 11 Nov 2014 08:57:30 +0200
-From: =?windows-1252?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        <linux-kernel@vger.kernel.org>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>
-Subject: Re: [PATCH 0/3] Add support for Tegra Activity Monitor
-References: <1414594232-15684-1-git-send-email-tomeu.vizoso@collabora.com>
- <545C8BCC.3090908@nvidia.com> <545CBC87.7050404@collabora.com>
- <546190BA.7050502@nvidia.com>
-In-Reply-To: <546190BA.7050502@nvidia.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Nov 2014 02:05:39 -0500
+From: Lauri Niskanen <ape@ape3000.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: Lauri Niskanen <ape@ape3000.com>
+Subject: [PATCH] usb: misc: Add driver for ALVA Nanoface
+Date: Tue, 11 Nov 2014 09:05:06 +0200
+Message-Id: <1415689506-1755-1-git-send-email-ape@ape3000.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.11.2014 06:29, Alexandre Courbot wrote:
-> I think (after a quick look at devfreq's source) that you can avoid
-> polling altogether if you set polling_ms to 0 in your
-> devfreq_dev_profile instance. Then it is up to you to call
-> update_devfreq() from your custom governor whenever it sees fit.
-> 
-> ACTMON support seems to overlap between being a governor (which reacts
-> to ACTMON interrupts and calls update_devfreq() when needed) and part of
-> a devfreq_dev_profile (get_dev_status() needs to use the actmon
-> counters). If we keep your current design where the driver simply
-> controls a clock, you could have the ACTMON driver obtain that clock,
-> register its governor, create a non-polling devfreq_dev_profile that
-> controls that clock, and just call devfreq_add_device() with both. Then
-> we will have the benefit of being able to use ACTMON as well as the
-> performance and powersave governors on EMC, and switch policies
-> dynamically.
+ALVA Nanoface is a USB audio interface device that only works after
+receiving an initialization command. This driver does not handle any
+actual audio features, but only initializes the device enabling its
+audio I/O and physical controls. There are some additional USB audio
+features on the device that are currently not supported. The support
+for these features may be added later.
 
-Another way to use it is that governor is just a governor. It takes in
-load values and generates new target frequencies, and doesn't know
-anything about HW.
+Signed-off-by: Lauri Niskanen <ape@ape3000.com>
+---
+ drivers/usb/misc/Kconfig    |  9 +++++
+ drivers/usb/misc/Makefile   |  1 +
+ drivers/usb/misc/nanoface.c | 95 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 105 insertions(+)
+ create mode 100644 drivers/usb/misc/nanoface.c
 
-Device profile is the one that enables threshold interrupts and disables
-polling. Device profile receives the interrupt, retrieves new load
-number from hardware, and calls update_devfreq().
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index 76d7720..d01d5c0 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -249,6 +249,15 @@ config USB_HSIC_USB3503
+        help
+          This option enables support for SMSC USB3503 HSIC to USB 2.0 Driver.
+ 
++config USB_NANOFACE
++	tristate "ALVA Nanoface USB driver"
++	help
++	  Say Y here if you need ALVA Nanoface device support. ALVA
++	  Nanoface is a USB audio interface device. See
++	  <http://www.alva-audio.de/nanoface/> for further information.
++	  This driver does not support USB audio features, but enables basic
++	  audio I/O connections and physical controls.
++
+ config USB_LINK_LAYER_TEST
+ 	tristate "USB Link Layer Test driver"
+ 	help
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index 65b0402..2ee5b73 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_USB_USS720)		+= uss720.o
+ obj-$(CONFIG_USB_SEVSEG)		+= usbsevseg.o
+ obj-$(CONFIG_USB_YUREX)			+= yurex.o
+ obj-$(CONFIG_USB_HSIC_USB3503)		+= usb3503.o
++obj-$(CONFIG_USB_NANOFACE)		+= nanoface.o
+ 
+ obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
+ obj-$(CONFIG_USB_LINK_LAYER_TEST)	+= lvstest.o
+diff --git a/drivers/usb/misc/nanoface.c b/drivers/usb/misc/nanoface.c
+new file mode 100644
+index 0000000..1201240
+--- /dev/null
++++ b/drivers/usb/misc/nanoface.c
+@@ -0,0 +1,95 @@
++/*
++ * Minimal driver for ALVA Nanoface USB audio interface. This driver does not
++ * support USB audio, but enables other audio I/O connections on the device.
++ *
++ * Copyright (C) 2014 Lauri Niskanen (ape@ape3000.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/usb.h>
++
++static unsigned char init_setup[] = {0x01, 0x0b, 0x00, 0x00,
++				     0x01, 0x00, 0x00, 0x00};
++static unsigned char init_data[] = {};
++
++static void init_complete_callback(struct urb *request)
++{
++	dev_info(&request->dev->dev, "ALVA Nanoface initialized\n");
++	usb_free_urb(request);
++}
++
++static int nanoface_probe(struct usb_interface *interface,
++			  const struct usb_device_id *id)
++{
++	int status;
++	struct usb_device *dev;
++	struct urb *init_request;
++
++	dev = interface_to_usbdev(interface);
++
++	init_request = usb_alloc_urb(0, 0);
++	if (init_request == 0) {
++		dev_err(&dev->dev, "ALVA Nanoface initialization failed: Cannot allocate memory for URB request\n");
++		return -ENOMEM;
++	}
++
++	dev_info(&dev->dev, "ALVA Nanoface (%04X:%04X) connected\n",
++		 id->idVendor, id->idProduct);
++
++	usb_fill_control_urb(init_request, dev,
++			     usb_sndctrlpipe(dev, 0), init_setup,
++			     init_data, sizeof(init_data),
++			     init_complete_callback, 0);
++
++	status = usb_submit_urb(init_request, 0);
++	if (status != 0) {
++		dev_err(&dev->dev, "ALVA Nanoface initialization failed: Error %d when submitting URB\n",
++		       status);
++		return status;
++	}
++
++	/* do not manage the device */
++	return -ENODEV;
++}
++
++static void nanoface_disconnect(struct usb_interface *interface)
++{
++	dev_info(&interface->dev, "ALVA Nanoface disconnected\n");
++}
++
++static struct usb_device_id nanoface_table[] = {
++	{ USB_DEVICE(0x0a4a, 0xaffe) },
++	{ /* Terminating entry */ }
++};
++
++MODULE_DEVICE_TABLE(usb, nanoface_table);
++
++static struct usb_driver nanoface_driver = {
++	.name = "nanoface",
++	.id_table = nanoface_table,
++	.probe = nanoface_probe,
++	.disconnect = nanoface_disconnect,
++};
++
++static int __init nanoface_init(void)
++{
++	return usb_register(&nanoface_driver);
++}
++
++static void __exit nanoface_exit(void)
++{
++	usb_deregister(&nanoface_driver);
++}
++
++module_init(nanoface_init);
++module_exit(nanoface_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Lauri Niskanen <ape@ape3000.com>");
++MODULE_DESCRIPTION("ALVA Nanoface USB driver");
+-- 
+2.1.3
 
-This way we keep all HW specific code in device profile, and there's
-potential to use a generic governor instead of writing your own.
