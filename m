@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124AbaKKMPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 07:15:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418AbaKKMPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 07:15:44 -0500
-Message-ID: <5461FDE1.2080302@redhat.com>
-Date: Tue, 11 Nov 2014 07:15:29 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?Um9iZXJ0IFNjaMO2bmU=?= <robert.schoene@tu-dresden.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] cpufreq, fix locking around CPUFREQ_GOV_POLICY_EXIT
- calls
-References: <1415199239-19019-1-git-send-email-prarit@redhat.com> <1415199239-19019-3-git-send-email-prarit@redhat.com> <CAKohpomZNwZWjmi8hkZ6QXUeDTaXTwzx_fPz1_byh3xmmkPNrQ@mail.gmail.com> <5460AF02.9010907@redhat.com> <CAKohpomeRivb3TwkeWALL_xsf4gOBPYOnfCNdz2oVvZSAGBP4g@mail.gmail.com>
-In-Reply-To: <CAKohpomeRivb3TwkeWALL_xsf4gOBPYOnfCNdz2oVvZSAGBP4g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755092AbaKKMPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 07:15:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57073 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835AbaKKLJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 06:09:01 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Michal Marek <mmarek@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 002/170] builddeb: put the dbg files into the correct directory
+Date: Tue, 11 Nov 2014 11:06:01 +0000
+Message-Id: <1415704129-12709-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+References: <1415704129-12709-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.16.7-ckt1 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-On 11/10/2014 10:37 PM, Viresh Kumar wrote:
-> On 10 November 2014 17:56, Prarit Bhargava <prarit@redhat.com> wrote:
-> 
->>> I still fail to understand why ? What will the _trylock() change ?
->>
->> viresh, afaict read_trylock will return 0 when busy with write:
-> 
-> Yes..
-> 
->> static inline int queue_read_trylock(struct qrwlock *lock)
->> {
->>         u32 cnts;
->>
->>         cnts = atomic_read(&lock->cnts);
->>         if (likely(!(cnts & _QW_WMASK))) {
->>
->> so the deadlock will not occur.  the show() is opened, write lock is taken, and
->> if the thread is rescheduled and takes read lock the trylock will return 0, and
->> the thread will return -EBUSY to userspace avoiding the deadlock.
-> 
-> Which deadlock? 
+From: Michal Marek <mmarek@suse.cz>
 
-the deadlock in commit 955ef4833574636819cd269cfbae12f79cbde63a
+commit 2d0871396995139b37f9ceb153c8b07589148343 upstream.
 
-[   75.471265]        CPU0                    CPU1
-[   75.476327]        ----                    ----
-[   75.481385]   lock(&policy->rwsem);
-[   75.485307]                                lock(s_active#219);
-[   75.491857]                                lock(&policy->rwsem);
-[   75.498592]   lock(s_active#219);
-[   75.502331]
-[   75.502331]  *** DEADLOCK ***
+Since the conversion of objtree to use relative pathnames (commit
+7e1c04779e, "kbuild: Use relative path for $(objtree)"), the debug
+info files have been ending up in /debian/dbgtmp/ in the regular
+linux-image package instead of the debug files package. Fix up the
+paths so that the debug files end up in the -dbg package.
 
-And also your changelog talks about accessing invalid pointers
-> without the trylock change, how can that be possible? After the read
-> lock is taken,
-> all the pointers should be valid.
+This is based on a similar patch by Darrick.
 
-consider the following very simple case:
+Reported-and-tested-by: "Darrick J. Wong" <darrick.wong@oracle.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ scripts/package/builddeb | 22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
 
-the governor is ondemand.  cpu 0 reads cpuinfo_cur_freq. cpu0 expects to get the
-current cpu freq for the ondemand governor.
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 35d5a5877d04..7c0e6e46905d 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -152,18 +152,16 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
+ 		rmdir "$tmpdir/lib/modules/$version"
+ 	fi
+ 	if [ -n "$BUILD_DEBUG" ] ; then
+-		(
+-			cd $tmpdir
+-			for module in $(find lib/modules/ -name *.ko); do
+-				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
+-				# only keep debug symbols in the debug file
+-				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
+-				# strip original module from debug symbols
+-				$OBJCOPY --strip-debug $module
+-				# then add a link to those
+-				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
+-			done
+-		)
++		for module in $(find $tmpdir/lib/modules/ -name *.ko -printf '%P\n'); do
++			module=lib/modules/$module
++			mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
++			# only keep debug symbols in the debug file
++			$OBJCOPY --only-keep-debug $tmpdir/$module $dbg_dir/usr/lib/debug/$module
++			# strip original module from debug symbols
++			$OBJCOPY --strip-debug $tmpdir/$module
++			# then add a link to those
++			$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $tmpdir/$module
++		done
+ 	fi
+ fi
+ 
+-- 
+2.1.0
 
-simultaneously, cpu1 changes the governor from ondemand to userspace.
-
-the two threads will race for the policy->mutex
-
-suppose cpu0 gets it first.  then there is no problem.  the userspace program
-for cpu0 gets exactly the data it is expecting.
-
-Now suppose cpu1 gets the lock and starts to write ... cpu0 is blocked.
-
-cpu1 completes the governor change, and cpu0 gets the mutex ... and returns
-bogus data at this point.
-
-P.
-> 
