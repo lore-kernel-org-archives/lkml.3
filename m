@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaKLBHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:07:08 -0500
-Received: from mga14.intel.com ([192.55.52.115]:11144 "EHLO mga14.intel.com"
+	id S1752724AbaKLBHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:07:22 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:44427 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105AbaKLBHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:07:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,364,1413270000"; 
-   d="scan'208";a="620879306"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: RE: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Topic: [RFC PATCH] x86, entry: Switch stacks on a paranoid entry from
- userspace
-Thread-Index: AQHP/fIL6Pup6CZwB0y4k4v+dv83WpxceVOAgAAKAgCAAAXbAIAAAfAAgAAIKwCAAAM7AP//iBaggACOCID//33YEA==
-Date: Wed, 12 Nov 2014 01:06:06 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3292A157@ORSMSX114.amr.corp.intel.com>
-References: <c2522bcacf5db9a25a819a8756502edb1d2ca10f.1415739239.git.luto@amacapital.net>
- <20141111213628.GP31490@pd.tnic>
- <CALCETrU-Uiv8zHC1_-agcH-ByLqzeN1c58EPue5AdbmaDQLpdQ@mail.gmail.com>
- <20141111223316.GQ31490@pd.tnic>
- <CALCETrW0+5FkYn-5=WH1vGc-KnRaSj5w83Ds7R9ZTqFX3hQ+5g@mail.gmail.com>
- <20141111230926.GR31490@pd.tnic>
- <CALCETrU+Sq=rW-p2OnjLiaSLqu8rTgbC9uTcqZBJ+J8JhNxa7Q@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3292A03B@ORSMSX114.amr.corp.intel.com>
- <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
-In-Reply-To: <CALCETrUU3vSLBVMpsma=8OqOZLRKUYBM19_94tkeZ7aWCEyhog@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1752105AbaKLBHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Nov 2014 20:07:15 -0500
+Message-ID: <5462B2A3.9000007@osg.samsung.com>
+Date: Tue, 11 Nov 2014 18:06:43 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+        Phong Tran <tranmanphong@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Hugh Dickins <hughd@google.com>, pranith kumar <bobby.prani@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 07/19] selftests/firmware: add install target to enable
+ installing test
+References: <cover.1415735831.git.shuahkh@osg.samsung.com> <1d2d13556ddbbbbb13989cdcb08447909bc4afaf.1415735831.git.shuahkh@osg.samsung.com> <CAGXu5j+yLqH0xj=5N90LRmK9F1xPLVWBy+cyUCzjvKJH7gE7AA@mail.gmail.com>
+In-Reply-To: <CAGXu5j+yLqH0xj=5N90LRmK9F1xPLVWBy+cyUCzjvKJH7gE7AA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAC17FEP008937
 
-> I've thought about one sneaky option.  If we can reliably determine
-> that we're an innocent bystander of a broadcast #MC, can we send an
-> IPI-to-self and return without clearing MCIP?  Then we get another
-> interrupt as soon as interrupts are enabled, and we can clear MCIP at
-> a time when we're definitely not running on the IST stack.
+On 11/11/2014 02:29 PM, Kees Cook wrote:
+> Hi,
+> 
+> Sorry, I still really don't like this approach. While it is all in one
+> place (thank you for that), I think it isn't a form that is very
+> workable for the people maintaining the self tests. How about this,
+> instead of per-Makefile customization, why not define an execution
+> framework for these tests instead.
 
-Innocent bystanders have RIPV=1, EIPV=0 in MCG_STATUS ... so they
-are quite easy to spot.  Perhaps we might look at subverting the silly
-broadcast by just having them immediately clear MCG_STATUS and iret
-(i.e. not go to do_machine_check() at all).  That would require lots of
-surgery to do_machine_check() and friends - now it wouldn't be sure
-how many processors to expect to show up.  It also opens a different
-window - once they are back running normal code they might trip another
-machine check while the victims of the first are still processing - so
-another "boom, you're dead".  The advantage of hitting everyone
-with the machine check is that it lessens the chance that another will
-happen as everyone is running looking at a few pages of kernel code
-& data.
+If I understand correctly, sounds like you don't like the way
+install target is implemented in the individual test Makefiles
+and the changes I made to run_tests targets to address the code
+duplication concern.
 
-The worrying part in that is "as soon as interrupts are enabled". Until
-we do clear MCIP we're sitting in a mode where another machine check
-means instant death no saving throw.  Nominally better than the "we'll
-mess the stack up for you" that we are trying to avoid - but the old window
-is quite short and known to be bounded. The new one might be a lot bigger.
+At the moment there is no duplicate code in this patch series
+between install and run_tests targets. This is a  first step
+towards standardizing the framework and a definite improvement
+over what we have currently. As I mentioned earlier, my goal
+is to make it easier for developers to install and run the
+existing tests and evolve the framework as we go.
 
--Tony
+Assuming my understanding is correct that:
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- install and run_tests targets in individual tests can be
+   refined and automated with a common Makefile approach you
+   proposed.
+-- the rest of the user-interface kselftest_install and kselftest
+   are good.
+
+I would like to propose that we get started with the current
+implementation and refine it based on the following ideas you
+suggested. The refinements you are recommending are confined
+to selftests and can be made after the kselftest_install
+gets added. Adding kselftest_install makes it easier to make
+the refinements as it defines overall UI.
+
+> 
+> For example, how about every test directory must have a Makefile with
+> the needed binary targets. A common makefile could be included that
+> defines the "run_tests" target that calls the script "run_tests.sh"
+> that is a shell script in the current directory. (For inspiration, see
+> how kernel modules can be built out of tree.)
+> 
+> The "run_tests.sh" scripts could all include a common shell script,
+> say "../common.sh" that provides any common variables, functions, etc
+> (e.g. things like "Start $name test ..." should be in common.sh
+> instead of repeated in every script, the installation logic can be in
+> once place instead of repeated).
+> 
+> Then along side common.sh could be "run_installed_tests.sh" or
+> something, used on the installed target, that would traverse each
+> directory, etc. From this, we can have a much more data-driven
+> framework, and a common approach to running tests.
+> 
+> As such, we should declare up front how tests should behave on
+> failure. And the top-level test runner can do things like count the
+> number of tests, failures, etc.
+> 
+> Then, instead of splitting up the patches by test directory, you can
+> split them up by logical changes (e.g. defining the common "run_tests"
+> target, and then removing the target from all the tests by including
+> the common makefile stub that defines it).
+> 
+
+These are good ideas and I am with on evolving the framework to make
+it easier to maintain individual tests. Patches are welcome.
+
+thanks,
+-- Shuah
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
