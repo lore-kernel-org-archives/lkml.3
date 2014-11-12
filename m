@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933984AbaKLBhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:37:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59873 "EHLO
+	id S934003AbaKLBho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:37:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932921AbaKLBhd (ORCPT
+	with ESMTP id S932753AbaKLBhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:37:33 -0500
+	Tue, 11 Nov 2014 20:37:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 002/203] ipv4: fix nexthop attlen check in fib_nh_match
-Date: Wed, 12 Nov 2014 10:14:32 +0900
-Message-Id: <20141112011542.797340133@linuxfoundation.org>
+Subject: [PATCH 3.14 004/203] vxlan: using pskb_may_pull as early as possible
+Date: Wed, 12 Nov 2014 10:14:34 +0900
+Message-Id: <20141112011542.883724332@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,42 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit f76936d07c4eeb36d8dbb64ebd30ab46ff85d9f7 ]
+[ Upstream commit 91269e390d062b526432f2ef1352b8df82e0e0bc ]
 
-fib_nh_match does not match nexthops correctly. Example:
+pskb_may_pull should be used to check if skb->data has enough space,
+skb->len can not ensure that.
 
-ip route add 172.16.10/24 nexthop via 192.168.122.12 dev eth0 \
-                          nexthop via 192.168.122.13 dev eth0
-ip route del 172.16.10/24 nexthop via 192.168.122.14 dev eth0 \
-                          nexthop via 192.168.122.15 dev eth0
-
-Del command is successful and route is removed. After this patch
-applied, the route is correctly matched and result is:
-RTNETLINK answers: No such process
-
-Please consider this for stable trees as well.
-
-Fixes: 4e902c57417c4 ("[IPv4]: FIB configuration using struct fib_config")
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/fib_semantics.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/vxlan.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -535,7 +535,7 @@ int fib_nh_match(struct fib_config *cfg,
- 			return 1;
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1447,9 +1447,6 @@ static int neigh_reduce(struct net_devic
+ 	if (!in6_dev)
+ 		goto out;
  
- 		attrlen = rtnh_attrlen(rtnh);
--		if (attrlen < 0) {
-+		if (attrlen > 0) {
- 			struct nlattr *nla, *attrs = rtnh_attrs(rtnh);
+-	if (!pskb_may_pull(skb, skb->len))
+-		goto out;
+-
+ 	iphdr = ipv6_hdr(skb);
+ 	saddr = &iphdr->saddr;
+ 	daddr = &iphdr->daddr;
+@@ -1979,7 +1976,8 @@ static netdev_tx_t vxlan_xmit(struct sk_
+ 			return arp_reduce(dev, skb);
+ #if IS_ENABLED(CONFIG_IPV6)
+ 		else if (ntohs(eth->h_proto) == ETH_P_IPV6 &&
+-			 skb->len >= sizeof(struct ipv6hdr) + sizeof(struct nd_msg) &&
++			 pskb_may_pull(skb, sizeof(struct ipv6hdr)
++				       + sizeof(struct nd_msg)) &&
+ 			 ipv6_hdr(skb)->nexthdr == IPPROTO_ICMPV6) {
+ 				struct nd_msg *msg;
  
- 			nla = nla_find(attrs, attrlen, RTA_GATEWAY);
 
 
