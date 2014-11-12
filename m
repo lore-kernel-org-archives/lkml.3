@@ -1,105 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaKLWOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:14:51 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:8683 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752273AbaKLWOt (ORCPT
+	id S1753204AbaKLWRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:17:11 -0500
+Received: from gproxy5-pub.mail.unifiedlayer.com ([67.222.38.55]:54512 "HELO
+	gproxy5-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752373AbaKLWRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:14:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au0NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2aHUQKBHBcBAXyEAgEBBAEjBBEeIgEQIwICBRYEBwICCQMCAQIBJxUJBg0BBwEBFogeCQ22b5R2AQEBAQEBAQMBAQEBAQEBARqBLIUIiXIRAVAHgneBVAEEi2SEBYZmiEOGO4cjgx+CEYFvgjSBYh8vgQ+BPAEBAQ
-X-IPAS-Result: Au0NAOatTlRFpamy/2dsb2JhbABcgw5UWIMGtkoGk2aHUQKBHBcBAXyEAgEBBAEjBBEeIgEQIwICBRYEBwICCQMCAQIBJxUJBg0BBwEBFogeCQ22b5R2AQEBAQEBAQMBAQEBAQEBARqBLIUIiXIRAVAHgneBVAEEi2SEBYZmiEOGO4cjgx+CEYFvgjSBYh8vgQ+BPAEBAQ
-X-IronPort-AV: E=Sophos;i="5.04,797,1406606400"; 
-   d="scan'208";a="96795868"
-Message-ID: <5463DBD5.9080303@voxpopuli.im>
-Date: Wed, 12 Nov 2014 17:14:45 -0500
-From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Trace Compass Developer Discussions 
-	<tracecompass-dev@eclipse.org>
-Subject: Support for Perf CTF traces now in master (was Re: FW: [RFC 0/5]
- perf tools: Add perf data CTF conversion)
-References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de> <545829CA.7040900@voxpopuli.im> <20141105125028.GA30087@linutronix.de> <545AEA37.601@voxpopuli.im> <5460156E.3050601@voxpopuli.im>
-In-Reply-To: <5460156E.3050601@voxpopuli.im>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Nov 2014 17:17:09 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Nov 2014 17:17:09 EST
+X-Authority-Analysis: v=2.1 cv=W5+rC3mk c=1 sm=1 tr=0
+ a=9W6Fsu4pMcyimqnCr1W0/w==:117 a=9W6Fsu4pMcyimqnCr1W0/w==:17 a=cNaOj0WVAAAA:8
+ a=f5113yIGAAAA:8 a=TBVoxVdAAAAA:8 a=QyXUC8HyAAAA:8 a=GhZ5P8ky69gA:10
+ a=noBwr2J6l1kA:10 a=zd2uoN0lAAAA:8 a=ycLgAQKt713kvb0xNp4A:9
+ a=onaNvmAnuPziQSMH:21 a=kUEfzhHZ6vsTahBm:21
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: linux-kernel@vger.kernel.org
+Cc: jroedel@suse.de, akpm@linux-foundation.org
+Subject: [PATCH 2/2] iommu/amd: use handle_mm_fault directly v2
+Date: Wed, 12 Nov 2014 14:10:28 -0800
+Message-Id: <1415830228-7844-2-git-send-email-jbarnes@virtuousgeek.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1415830228-7844-1-git-send-email-jbarnes@virtuousgeek.org>
+References: <1415830228-7844-1-git-send-email-jbarnes@virtuousgeek.org>
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This could be useful for debug in the future if we want to track
+major/minor faults more closely, and also avoids the put_page trick we
+used with gup.
 
-On 11/09/2014 08:31 PM, Alexandre Montplaisir wrote:
-> On 2014-11-05 10:25 PM, Alexandre Montplaisir wrote:
->>
->>>
->>>> But if you could for example tell me the perf equivalents of all the
->>>> strings in that file, I could hack together such wrapper. With that,
->>>> in theory, perf traces should behave exactly the same as LTTng traces
->>>> in the viewer!
->>> Oooh, that would be awesome. So I installed maven but didn't get much
->>> further. Let me gather this for you.
->>
->> Awesome, thanks!
->>
->> I am travelling this week, so I'm a bit busy, but I will try to 
->> prototype a "wrapper" for the kernel analysis, and adding support for 
->> the perf events, whenever I have a chance. I'll keep you posted.
->
-> Ok, some good news!
->
-> I managed to get the CTF traces from perf working in Trace Compass! 
-> See attached screenshots. This is showing the "ctf-out2" trace from 
-> your previous email. The other trace seems to have less events 
-> enabled, so it would only show some WAIT_FOR_CPU states in the view.
->
-> If anybody wishes to try it, you can grab the whole branch ending at 
-> https://git.eclipse.org/r/#/c/36200/ . Or run:
-> $ git fetch 
-> git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass 
-> refs/changes/00/36200/3 && git checkout FETCH_HEAD
+In order to do this, we also track the task struct in the PASID state
+structure.  This lets us update the appropriate task stats after the
+fault has been handled, and may aid with debug in the future as well.
 
-Just a quick note, this branch is now merged to master. So anyone who 
-pulls the code from the master branch at
-git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass.git
-should be able to load perf-CTF traces in the viewer. The trace type is 
-now called "Common Trace Format -> Linux Kernel Trace" and should 
-support both LTTng kernel and perf traces in CTF format (although 
-auto-detection should work in most cases).
+v2: drop task accounting; GPU activity may have been submitted by a
+    different thread than the one binding the PASID (Joerg)
 
-This was based on the most recent file format I was aware of, we will 
-update it accordingly if required.
+Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/iommu/amd_iommu_v2.c | 84 ++++++++++++++++++++++++++++----------------
+ 1 file changed, 53 insertions(+), 31 deletions(-)
 
-Testing welcome!
-
-Cheers,
-Alexandre
-
->
-> It reuses much of the code from the LTTng analysis, which is why it 
-> was relatively quick to do. For now, it looks for the domain in the 
-> CTF environment to be "kernel-perf". But this will be easy to update, 
-> if needed, once the final format is decided.
->
-> Maybe I missed it, but I couldn't find the system call names in the 
-> trace. Using the sys_enter and sys_exit events, the viewer is able to 
-> determine the kernel-mode states (in blue), but we cannot show the 
-> exact system call names like we do with LTTng.
-> There is also something weird with the arrows in the Control Flow View 
-> (disabled in the screenshot), I don't know if it's due to the 
-> particularity of the trace or to a bug in the view. We'll investigate.
->
-> Feedback is very welcome.
->
-> Cheers,
-> Alexandre
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 90d734b..9c0d6e2 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -513,45 +513,67 @@ static void finish_pri_tag(struct device_state *dev_state,
+ 	spin_unlock_irqrestore(&pasid_state->lock, flags);
+ }
+ 
++static void handle_fault_error(struct fault *fault)
++{
++	int status;
++
++	if (!fault->dev_state->inv_ppr_cb) {
++		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
++		return;
++	}
++
++	status = fault->dev_state->inv_ppr_cb(fault->dev_state->pdev,
++					      fault->pasid,
++					      fault->address,
++					      fault->flags);
++	switch (status) {
++	case AMD_IOMMU_INV_PRI_RSP_SUCCESS:
++		set_pri_tag_status(fault->state, fault->tag, PPR_SUCCESS);
++		break;
++	case AMD_IOMMU_INV_PRI_RSP_INVALID:
++		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
++		break;
++	case AMD_IOMMU_INV_PRI_RSP_FAIL:
++		set_pri_tag_status(fault->state, fault->tag, PPR_FAILURE);
++		break;
++	default:
++		BUG();
++	}
++}
++
+ static void do_fault(struct work_struct *work)
+ {
+ 	struct fault *fault = container_of(work, struct fault, work);
+-	int npages, write;
+-	struct page *page;
++	struct mm_struct *mm;
++	struct vm_area_struct *vma;
++	u64 address;
++	int ret, write;
+ 
+ 	write = !!(fault->flags & PPR_FAULT_WRITE);
+ 
+-	down_read(&fault->state->mm->mmap_sem);
+-	npages = get_user_pages(NULL, fault->state->mm,
+-				fault->address, 1, write, 0, &page, NULL);
+-	up_read(&fault->state->mm->mmap_sem);
+-
+-	if (npages == 1) {
+-		put_page(page);
+-	} else if (fault->dev_state->inv_ppr_cb) {
+-		int status;
+-
+-		status = fault->dev_state->inv_ppr_cb(fault->dev_state->pdev,
+-						      fault->pasid,
+-						      fault->address,
+-						      fault->flags);
+-		switch (status) {
+-		case AMD_IOMMU_INV_PRI_RSP_SUCCESS:
+-			set_pri_tag_status(fault->state, fault->tag, PPR_SUCCESS);
+-			break;
+-		case AMD_IOMMU_INV_PRI_RSP_INVALID:
+-			set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
+-			break;
+-		case AMD_IOMMU_INV_PRI_RSP_FAIL:
+-			set_pri_tag_status(fault->state, fault->tag, PPR_FAILURE);
+-			break;
+-		default:
+-			BUG();
+-		}
+-	} else {
+-		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
++	mm = fault->state->mm;
++	address = fault->address;
++
++	down_read(&mm->mmap_sem);
++	vma = find_extend_vma(mm, address);
++	if (!vma || address < vma->vm_start) {
++		/* failed to get a vma in the right range */
++		up_read(&mm->mmap_sem);
++		handle_fault_error(fault);
++		goto out;
++	}
++
++	ret = handle_mm_fault(mm, vma, address, write);
++	if (ret & VM_FAULT_ERROR) {
++		/* failed to service fault */
++		up_read(&mm->mmap_sem);
++		handle_fault_error(fault);
++		goto out;
+ 	}
+ 
++	up_read(&mm->mmap_sem);
++
++out:
+ 	finish_pri_tag(fault->dev_state, fault->state, fault->tag);
+ 
+ 	put_pasid_state(fault->state);
+-- 
+1.9.1
 
