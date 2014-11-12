@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaKLVAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 16:00:15 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:51317
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248AbaKLVAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 16:00:13 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next,v2] hyperv: Add processing of MTU reduced by the host
-Date: Wed, 12 Nov 2014 14:07:44 -0800
-Message-Id: <1415830064-1440-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753495AbaKLVEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 16:04:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41982 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753248AbaKLVEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 16:04:13 -0500
+Message-ID: <1415826239.3398.113.camel@decadent.org.uk>
+Subject: Re: [PATCH 3.17 023/319] drivers/net: Disable UFO through virtio
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 12 Nov 2014 21:03:59 +0000
+In-Reply-To: <20141112010956.540146480@linuxfoundation.org>
+References: <20141112010952.553519040@linuxfoundation.org>
+	 <20141112010956.540146480@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-fyS2077tLNguS60BQNW/"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the host uses packet encapsulation feature, the MTU may be reduced by the
-host due to headroom reservation for encapsulation. This patch handles this
-new MTU value.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/net/hyperv/netvsc.c       |    3 ++-
- drivers/net/hyperv/netvsc_drv.c   |    5 +++--
- drivers/net/hyperv/rndis_filter.c |    9 +++++++++
- 3 files changed, 14 insertions(+), 3 deletions(-)
+--=-fyS2077tLNguS60BQNW/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 7d76c95..6b46311 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -440,7 +440,8 @@ static int negotiate_nvsp_ver(struct hv_device *device,
- 	/* NVSPv2 only: Send NDIS config */
- 	memset(init_packet, 0, sizeof(struct nvsp_message));
- 	init_packet->hdr.msg_type = NVSP_MSG2_TYPE_SEND_NDIS_CONFIG;
--	init_packet->msg.v2_msg.send_ndis_config.mtu = net_device->ndev->mtu;
-+	init_packet->msg.v2_msg.send_ndis_config.mtu = net_device->ndev->mtu +
-+						       ETH_HLEN;
- 	init_packet->msg.v2_msg.send_ndis_config.capability.ieee8021q = 1;
- 
- 	ret = vmbus_sendpacket(device->channel, init_packet,
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 3295e4e..15d82ed 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -699,9 +699,10 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 		return -ENODEV;
- 
- 	if (nvdev->nvsp_version >= NVSP_PROTOCOL_VERSION_2)
--		limit = NETVSC_MTU;
-+		limit = NETVSC_MTU - ETH_HLEN;
- 
--	if (mtu < 68 || mtu > limit)
-+	/* Hyper-V hosts don't support MTU < ETH_DATA_LEN (1500) */
-+	if (mtu < ETH_DATA_LEN || mtu > limit)
- 		return -EINVAL;
- 
- 	nvdev->start_remove = true;
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index ccce6f2..7b2c5d1 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -998,6 +998,7 @@ int rndis_filter_device_add(struct hv_device *dev,
- 	int t;
- 	struct ndis_recv_scale_cap rsscap;
- 	u32 rsscap_size = sizeof(struct ndis_recv_scale_cap);
-+	u32 mtu, size;
- 
- 	rndis_device = get_rndis_device();
- 	if (!rndis_device)
-@@ -1029,6 +1030,14 @@ int rndis_filter_device_add(struct hv_device *dev,
- 		return ret;
- 	}
- 
-+	/* Get the MTU from the host */
-+	size = sizeof(u32);
-+	ret = rndis_filter_query_device(rndis_device,
-+					RNDIS_OID_GEN_MAXIMUM_FRAME_SIZE,
-+					&mtu, &size);
-+	if (ret == 0 && size == sizeof(u32))
-+		net_device->ndev->mtu = mtu;
-+
- 	/* Get the mac address */
- 	ret = rndis_filter_query_device_mac(rndis_device);
- 	if (ret != 0) {
--- 
-1.7.1
+On Wed, 2014-11-12 at 10:12 +0900, Greg Kroah-Hartman wrote:
+> 3.17-stable review patch.  If anyone has any objections, please let me kn=
+ow.
+>=20
+> ------------------
+>=20
+> From: Ben Hutchings <ben@decadent.org.uk>
+>=20
+> [ Upstream commit 3d0ad09412ffe00c9afa201d01effdb6023d09b4 ]
+>=20
+> IPv6 does not allow fragmentation by routers, so there is no
+> fragmentation ID in the fixed header.  UFO for IPv6 requires the ID to
+> be passed separately, but there is no provision for this in the virtio
+> net protocol.
+>=20
+> Until recently our software implementation of UFO/IPv6 generated a new
+> ID, but this was a bug.  Now we will use ID=3D0 for any UFO/IPv6 packet
+> passed through a tap, which is even worse.
+>=20
+> Unfortunately there is no distinction between UFO/IPv4 and v6
+> features, so disable UFO on taps and virtio_net completely until we
+> have a proper solution.
+[...]
 
+Please drop this patch for 3.14 and 3.17.  It causes problems for
+migration of VMs and we're probably going to revert part of this.  The
+following patch ("drivers/net, ipv6: Select IPv6 fragment idents for
+virtio UFO packets") might no longer apply, in which case you can drop
+that as well until we have this sorted out upstream.
+
+Ben.
+
+--=20
+Ben Hutchings
+Experience is directly proportional to the value of equipment destroyed.
+                                                         - Carolyn Scheppne=
+r
+
+--=-fyS2077tLNguS60BQNW/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVGPLRee/yOyVhhEJAQoD9hAAwsvLNMTBiCuL85qOB1e2QaozgvRGD/eM
+kJDnaTwgmOX0kTqIWimDN0ombPpsTYx3BkalWlAlQnqpbSsIaDokG43J/DRxG1T6
+gwIeYzF/BnuLhPIJt5Zcrao9PJHFngg4+3vyqlS8dgUg3DpA/aGkmGI2Iu1fov/n
+e26YaIkLuDuSgvzj7RoFthj/JsNA5w27xTJm8c+K4PW30WZyt6/m2PRm1lZ+Nhyk
+IQe2XM9BQ26DL3SqoJ+W6yiIJFoQHZVesMsBgdmAsZpEo8X58aIFWm/wDtS7yVNt
+PikqhkW63wLQjd5x+vMgWdrhSszMpLqCO2sJA/7n1LS0HT3na+5CRhiNm/QIGrp1
+DRmy0CbaNhMRqmOKeJcGR4TGRJ6MoE2x0LeGUzAnbNUBmpjEbY4dNZAfkp1L0LkE
++kOd/YaErkpiBJE11w3yYx9CBLk8b/nhYN28VKF6bMdZpdvgzAkMskZUmA7QRIrN
+nyXqVW/P8BavVQH12cRUL5YmL4nnjFu9L+npVHgFwytpvgz+jzO7yW+EVji6ZuwF
+OMDm2/k1qZZlnbZvNlUOXph3hHQtqvBpvE/fXa1oUU38TpIJ6S69RNDt0bLxW80g
+y0tCA1NmO6PmDasMPgqdGjl/bdGqPCgp+X6sBditdtaoW4HQF8e4SWYN7pZlcFMi
+/zPKa4wcKwE=
+=62zn
+-----END PGP SIGNATURE-----
+
+--=-fyS2077tLNguS60BQNW/--
