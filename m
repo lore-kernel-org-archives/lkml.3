@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836AbaKLDch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:32:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59364 "EHLO
+	id S1755862AbaKLDcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:32:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933096AbaKLBcB (ORCPT
+	with ESMTP id S933080AbaKLBby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:32:01 -0500
+	Tue, 11 Nov 2014 20:31:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Jingoo Han <jg1.han@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH 3.17 238/319] usb: Remove references to non-existent PLAT_S5P symbol
-Date: Wed, 12 Nov 2014 10:16:16 +0900
-Message-Id: <20141112011032.133927967@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.17 236/319] usb: Do not allow usb_alloc_streams on unconfigured devices
+Date: Wed, 12 Nov 2014 10:16:14 +0900
+Message-Id: <20141112011031.813468784@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,43 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit cd6e245a2d061a8367e37aaece32cf3fc922de80 upstream.
+commit 90a646c770c50cc206ceba0d7b50453c46c13c36 upstream.
 
-The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
-("ARM: SAMSUNG: Remove remaining legacy code"). There are still
-some references left, fix that by replacing them with ARCH_S5PV210.
+This commit fixes the following oops:
 
-Fixes: d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+[10238.622067] scsi host3: uas_eh_bus_reset_handler start
+[10240.766164] usb 3-4: reset SuperSpeed USB device number 3 using xhci_hcd
+[10245.779365] usb 3-4: device descriptor read/8, error -110
+[10245.883331] usb 3-4: reset SuperSpeed USB device number 3 using xhci_hcd
+[10250.897603] usb 3-4: device descriptor read/8, error -110
+[10251.058200] BUG: unable to handle kernel NULL pointer dereference at  0000000000000040
+[10251.058244] IP: [<ffffffff815ac6e1>] xhci_check_streams_endpoint+0x91/0x140
+<snip>
+[10251.059473] Call Trace:
+[10251.059487]  [<ffffffff815aca6c>] xhci_calculate_streams_and_bitmask+0xbc/0x130
+[10251.059520]  [<ffffffff815aeb5f>] xhci_alloc_streams+0x10f/0x5a0
+[10251.059548]  [<ffffffff810a4685>] ? check_preempt_curr+0x75/0xa0
+[10251.059575]  [<ffffffff810a46dc>] ? ttwu_do_wakeup+0x2c/0x100
+[10251.059601]  [<ffffffff810a49e6>] ? ttwu_do_activate.constprop.111+0x66/0x70
+[10251.059635]  [<ffffffff815779ab>] usb_alloc_streams+0xab/0xf0
+[10251.059662]  [<ffffffffc0616b48>] uas_configure_endpoints+0x128/0x150 [uas]
+[10251.059694]  [<ffffffffc0616bac>] uas_post_reset+0x3c/0xb0 [uas]
+[10251.059722]  [<ffffffff815727d9>] usb_reset_device+0x1b9/0x2a0
+[10251.059749]  [<ffffffffc0616f42>] uas_eh_bus_reset_handler+0xb2/0x190 [uas]
+[10251.059781]  [<ffffffff81514293>] scsi_try_bus_reset+0x53/0x110
+[10251.059808]  [<ffffffff815163b7>] scsi_eh_bus_reset+0xf7/0x270
+<snip>
+
+The problem is the following call sequence (simplified):
+
+1) usb_reset_device
+2)  usb_reset_and_verify_device
+2)   hub_port_init
+3)    hub_port_finish_reset
+3)     xhci_discover_or_reset_device
+        This frees xhci->devs[slot_id]->eps[ep_index].ring for all eps but 0
+4)    usb_get_device_descriptor
+       This fails
+5)   hub_port_init fails
+6)  usb_reset_and_verify_device fails, does not restore device config
+7)  uas_post_reset
+8)   xhci_alloc_streams
+      NULL deref on the free-ed ring
+
+This commit fixes this by not allowing usb_alloc_streams to continue if
+the device is not configured.
+
+Note that we do allow usb_free_streams to continue after a (logical)
+disconnect, as it is necessary to explicitly free the streams at the xhci
+controller level.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -220,7 +220,7 @@ config USB_EHCI_SH
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2057,6 +2057,8 @@ int usb_alloc_streams(struct usb_interfa
+ 		return -EINVAL;
+ 	if (dev->speed != USB_SPEED_SUPER)
+ 		return -EINVAL;
++	if (dev->state < USB_STATE_CONFIGURED)
++		return -ENODEV;
  
- config USB_EHCI_EXYNOS
-        tristate "EHCI support for Samsung S5P/EXYNOS SoC Series"
--       depends on PLAT_S5P || ARCH_EXYNOS
-+       depends on ARCH_S5PV210 || ARCH_EXYNOS
-        help
- 	Enable support for the Samsung Exynos SOC's on-chip EHCI controller.
- 
-@@ -527,7 +527,7 @@ config USB_OHCI_SH
- 
- config USB_OHCI_EXYNOS
- 	tristate "OHCI support for Samsung S5P/EXYNOS SoC Series"
--	depends on PLAT_S5P || ARCH_EXYNOS
-+	depends on ARCH_S5PV210 || ARCH_EXYNOS
- 	help
- 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
- 
+ 	for (i = 0; i < num_eps; i++) {
+ 		/* Streams only apply to bulk endpoints. */
 
 
