@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965059AbaKLBlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:41:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60155 "EHLO
+	id S965611AbaKLC7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:59:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965041AbaKLBlI (ORCPT
+	with ESMTP id S964999AbaKLBkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:41:08 -0500
+	Tue, 11 Nov 2014 20:40:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ulrich Eckhardt <uli@uli-eckhardt.de>,
+        Maciej Matraszek <m.matraszek@samsung.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.14 076/203] media: ds3000: fix LNB supply voltage on Tevii S480 on initialization
-Date: Wed, 12 Nov 2014 10:15:46 +0900
-Message-Id: <20141112011546.192839333@linuxfoundation.org>
+Subject: [PATCH 3.14 071/203] media: v4l2-common: fix overflow in v4l_bound_align_image()
+Date: Wed, 12 Nov 2014 10:15:41 +0900
+Message-Id: <20141112011545.959051374@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011542.686743533@linuxfoundation.org>
 References: <20141112011542.686743533@linuxfoundation.org>
@@ -29,42 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Eckhardt <uli-lirc@uli-eckhardt.de>
+From: Maciej Matraszek <m.matraszek@samsung.com>
 
-commit 8c5bcded11cb607b1bb5920de3b9c882136d27db upstream.
+commit 3bacc10cd4a85bc70bc0b6c001d3bf995c7fe04c upstream.
 
-The Tevii S480 outputs 18V on startup for the LNB supply voltage and does not
-automatically power down. This blocks other receivers connected
-to a satellite channel router (EN50494), since the receivers can not send the
-required DiSEqC sequences when the Tevii card is connected to a the same SCR.
+Fix clamp_align() used in v4l_bound_align_image() to prevent overflow
+when passed large value like UINT32_MAX.
 
-This patch switches off the LNB supply voltage on initialization of the frontend.
+ In the current implementation:
+    clamp_align(UINT32_MAX, 8, 8192, 3)
 
-[mchehab@osg.samsung.com: add a comment about why we're explicitly
- turning off voltage at device init]
-Signed-off-by: Ulrich Eckhardt <uli@uli-eckhardt.de>
+returns 8, because in line:
+
+    x = (x + (1 << (align - 1))) & mask;
+
+x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
+
+v4l_bound_align_image() is heavily used in VIDIOC_S_FMT and
+VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
+explicitly states that:
+
+"The modified format should be as close as possible to the original
+request."
+  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
+
+Thus one would expect, that passing UINT32_MAX as format width and
+height will result in setting maximum possible resolution for the
+device. Particularly, when the driver doesn't support
+VIDIOC_ENUM_FRAMESIZES ioctl, which is common in the codebase.
+
+Fixes changeset: b0d3159be9a3
+
+Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/ds3000.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/media/v4l2-core/v4l2-common.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/media/dvb-frontends/ds3000.c
-+++ b/drivers/media/dvb-frontends/ds3000.c
-@@ -864,6 +864,13 @@ struct dvb_frontend *ds3000_attach(const
- 	memcpy(&state->frontend.ops, &ds3000_ops,
- 			sizeof(struct dvb_frontend_ops));
- 	state->frontend.demodulator_priv = state;
-+
-+	/*
-+	 * Some devices like T480 starts with voltage on. Be sure
-+	 * to turn voltage off during init, as this can otherwise
-+	 * interfere with Unicable SCR systems.
-+	 */
-+	ds3000_set_voltage(&state->frontend, SEC_VOLTAGE_OFF);
- 	return &state->frontend;
+--- a/drivers/media/v4l2-core/v4l2-common.c
++++ b/drivers/media/v4l2-core/v4l2-common.c
+@@ -431,16 +431,13 @@ static unsigned int clamp_align(unsigned
+ 	/* Bits that must be zero to be aligned */
+ 	unsigned int mask = ~((1 << align) - 1);
  
- error3:
++	/* Clamp to aligned min and max */
++	x = clamp(x, (min + ~mask) & mask, max & mask);
++
+ 	/* Round to nearest aligned value */
+ 	if (align)
+ 		x = (x + (1 << (align - 1))) & mask;
+ 
+-	/* Clamp to aligned value of min and max */
+-	if (x < min)
+-		x = (min + ~mask) & mask;
+-	else if (x > max)
+-		x = max & mask;
+-
+ 	return x;
+ }
+ 
 
 
