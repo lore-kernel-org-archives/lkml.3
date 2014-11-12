@@ -1,137 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaKLWBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 17:01:45 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:32806 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaKLWBm (ORCPT
+	id S1753488AbaKLWDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 17:03:21 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:44879 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752009AbaKLWDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 17:01:42 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: linus.walleij@linaro.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <0682a366350f63145d0af4510ed78770>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
-        cf@rock-chips.com, caesar.wang@rock-chips.com,
-        Jack Dai <jack.dai@rock-chips.com>,
-        "jinkun.hong" <jinkun.hong@rock-chips.com>
-Subject: [PATCH v11 1/3] dt-bindings: add document of Rockchip power domain
-Date: Thu, 13 Nov 2014 06:01:28 +0800
-Message-Id: <1415829690-20236-2-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1415829690-20236-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1415829690-20236-1-git-send-email-caesar.wang@rock-chips.com>
+	Wed, 12 Nov 2014 17:03:20 -0500
+Date: Wed, 12 Nov 2014 17:03:18 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Sean O. Stalley" <sean.stalley@intel.com>
+cc: Stephanie Wallick <stephanie.s.wallick@intel.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <devel@driverdev.osuosl.org>
+Subject: Re: [V2 PATCH 01/10] added media agnostic (MA) USB HCD driver
+In-Reply-To: <20141112214021.GA3531@sean.stalley.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1411121656000.1676-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the power domain
-found on Rockchip Socs.
+On Wed, 12 Nov 2014, Sean O. Stalley wrote:
 
-Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
-Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> On Tue, Nov 11, 2014 at 10:54:30AM -0500, Alan Stern wrote:
+> > On Mon, 10 Nov 2014, Stephanie Wallick wrote:
+> > 
+> > > +static struct mausb_hcd mhcd;
+> > 
+> > Only one statically-allocated structure?  What if somebody wants to 
+> > have more than one of these things in their system?
+> > 
+> 
+> Our plan to support multiple MA devices is to have them all connected
+> to the same virtual host controller, so only 1 would be needed.
+> 
+> Would you prefer we have 1 host controller instance per MA device?
+> We are definitely open to suggestions on how this should be architected.
 
----
+I haven't read the MA USB spec, so I don't know how it's intended to 
+work.  Still, what happens if you create a virtual host controller 
+with, say, 16 ports, and then someone wants to connect a 17th MA 
+device?
 
-Changes in v11: None
-Changes in v10: None
-Changes in v9:
-    - add document decription
+Also, I noticed that your patch adds a new bus type for these MA host 
+controllers.  It really seems like overkill to have a whole new bus 
+type if there's only going to be one device on it.
 
-Changes in v8:
-    - document go back to v2
+> If we get rid of these locks, endpoints can't run simultaneously.
+> MA USB IN endpoints have to copy data, which could take a while.
 
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-    - DT structure has changed
+I don't know what you mean by "run simultaneously".  Certainly multiple 
+network packets can be transmitted and received concurrently even if 
+you use a single spinlock, since your locking won't affect the 
+networking subsystem.
 
-Changes in v2:
-    - move clocks to "optional"
+> Couldn't this cause a bottleneck?
 
- .../bindings/arm/rockchip/power_domain.txt         | 48 ++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+Probably not enough to matter.  After all, the other host controller
+drivers rely on a single spinlock.  And if it did matter, you could
+drop the spinlock while copying the data.
 
-diff --git a/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt b/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-new file mode 100644
-index 0000000..3e74e6d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
-@@ -0,0 +1,48 @@
-+* Rockchip Power Domains
-+
-+Rockchip processors include support for multiple power domains which can be
-+powered up/down by software based on different application scenes to save power.
-+
-+Required properties for power domain controller:
-+- compatible: should be one of the following.
-+    * rockchip,rk3288-power-controller - for rk3288 type power domain.
-+- #power-domain-cells: Number of cells in a power-domain specifier.
-+		       should be 1.
-+- rockchip,pmu: phandle referencing a syscon providing the pmu registers
-+- #address-cells: should be 1.
-+- #size-cells: should be 0.
-+
-+Required properties for power domain sub nodes:
-+- reg: index of the power domain, should use macros in:
-+    *  include/dt-bindings/power-domain/rk3288.h - for rk3288 type power domain.
-+- clocks (optional): phandles to clocks which need to be enabled while power domain
-+          switches state.
-+
-+Example:
-+
-+	power: power-controller {
-+	       compatible = "rockchip,rk3288-power-controller";
-+	       #power-domain-cells = <1>;
-+	       rockchip,pmu = <&pmu>;
-+               #address-cells = <1>;
-+               #size-cells = <0>;
-+
-+	       pd_gpu {
-+	               reg = <RK3288_PD_GPU>;
-+	               clocks = <&cru ACLK_GPU>;
-+	       };
-+	};
-+
-+Node of a device using power domains must have a power-domains property,
-+containing a phandle to the power device node and an index specifying which
-+power domain to use.
-+The index should use macros in:
-+   * include/dt-bindings/power-domain/rk3288.h - for rk3288 type power domain.
-+
-+Example of the node using power domain:
-+
-+	node {
-+		/* ... */
-+		power-domains = <&power RK3288_PD_GPU>;
-+		/* ... */
-+	};
--- 
-1.9.1
-
+Alan Stern
 
