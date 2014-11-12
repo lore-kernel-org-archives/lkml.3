@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934760AbaKLDup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 22:50:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59002 "EHLO
+	id S934790AbaKLDvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:51:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaKLB1h (ORCPT
+	with ESMTP id S1753899AbaKLB1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:27:37 -0500
+	Tue, 11 Nov 2014 20:27:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.17 158/319] ext4: Replace open coded mdata csum feature to helper function
-Date: Wed, 12 Nov 2014 10:14:56 +0900
-Message-Id: <20141112011018.808416471@linuxfoundation.org>
+        Sami Liedes <sami.liedes@iki.fi>, Jan Kara <jack@suse.cz>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.17 156/319] ext4: dont orphan or truncate the boot loader inode
+Date: Wed, 12 Nov 2014 10:14:54 +0900
+Message-Id: <20141112011018.490117837@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,442 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 9aa5d32ba269bec0e7eaba2697a986a7b0bc8528 upstream.
+commit e2bfb088fac03c0f621886a04cffc7faa2b49b1d upstream.
 
-Besides the fact that this replacement improves code readability
-it also protects from errors caused direct EXT4_S(sb)->s_es manipulation
-which may result attempt to use uninitialized  csum machinery.
+The boot loader inode (inode #5) should never be visible in the
+directory hierarchy, but it's possible if the file system is corrupted
+that there will be a directory entry that points at inode #5.  In
+order to avoid accidentally trashing it, when such a directory inode
+is opened, the inode will be marked as a bad inode, so that it's not
+possible to modify (or read) the inode from userspace.
 
-#Testcase_BEGIN
-IMG=/dev/ram0
-MNT=/mnt
-mkfs.ext4 $IMG
-mount $IMG $MNT
-#Enable feature directly on disk, on mounted fs
-tune2fs -O metadata_csum  $IMG
-# Provoke metadata update, likey result in OOPS
-touch $MNT/test
-umount $MNT
-#Testcase_END
+Unfortunately, when we unlink this (invalid/illegal) directory entry,
+we will put the bad inode on the ophan list, and then when try to
+unlink the directory, we don't actually remove the bad inode from the
+orphan list before freeing in-memory inode structure.  This means the
+in-memory orphan list is corrupted, leading to a kernel oops.
 
-# Replacement script
-@@
-expression E;
-@@
-- EXT4_HAS_RO_COMPAT_FEATURE(E, EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
-+ ext4_has_metadata_csum(E)
+In addition, avoid truncating a bad inode in ext4_destroy_inode(),
+since truncating the boot loader inode is not a smart thing to do.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=82201
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Reported-by: Sami Liedes <sami.liedes@iki.fi>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/bitmap.c  |   12 ++++--------
- fs/ext4/ext4.h    |    8 ++++++++
- fs/ext4/extents.c |    6 ++----
- fs/ext4/ialloc.c  |    3 +--
- fs/ext4/inline.c  |    3 +--
- fs/ext4/inode.c   |    9 +++------
- fs/ext4/ioctl.c   |    3 +--
- fs/ext4/mmp.c     |    6 ++----
- fs/ext4/namei.c   |   39 +++++++++++++--------------------------
- fs/ext4/resize.c  |    3 +--
- fs/ext4/super.c   |   15 +++++----------
- fs/ext4/xattr.c   |    6 ++----
- 12 files changed, 43 insertions(+), 70 deletions(-)
+ fs/ext4/inode.c |    7 +++----
+ fs/ext4/namei.c |    2 +-
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -24,8 +24,7 @@ int ext4_inode_bitmap_csum_verify(struct
- 	__u32 provided, calculated;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return 1;
- 
- 	provided = le16_to_cpu(gdp->bg_inode_bitmap_csum_lo);
-@@ -46,8 +45,7 @@ void ext4_inode_bitmap_csum_set(struct s
- 	__u32 csum;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return;
- 
- 	csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)bh->b_data, sz);
-@@ -65,8 +63,7 @@ int ext4_block_bitmap_csum_verify(struct
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 	int sz = EXT4_CLUSTERS_PER_GROUP(sb) / 8;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return 1;
- 
- 	provided = le16_to_cpu(gdp->bg_block_bitmap_csum_lo);
-@@ -91,8 +88,7 @@ void ext4_block_bitmap_csum_set(struct s
- 	__u32 csum;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return;
- 
- 	csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)bh->b_data, sz);
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2337,6 +2337,14 @@ static inline int ext4_has_group_desc_cs
- 					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
- }
- 
-+static inline int ext4_has_metadata_csum(struct super_block *sb)
-+{
-+	WARN_ON_ONCE(EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) &&
-+		     !EXT4_SB(sb)->s_chksum_driver);
-+
-+	return (EXT4_SB(sb)->s_chksum_driver != NULL);
-+}
- static inline ext4_fsblk_t ext4_blocks_count(struct ext4_super_block *es)
- {
- 	return ((ext4_fsblk_t)le32_to_cpu(es->s_blocks_count_hi) << 32) |
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -73,8 +73,7 @@ static int ext4_extent_block_csum_verify
- {
- 	struct ext4_extent_tail *et;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return 1;
- 
- 	et = find_ext4_extent_tail(eh);
-@@ -88,8 +87,7 @@ static void ext4_extent_block_csum_set(s
- {
- 	struct ext4_extent_tail *et;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return;
- 
- 	et = find_ext4_extent_tail(eh);
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1011,8 +1011,7 @@ got:
- 	spin_unlock(&sbi->s_next_gen_lock);
- 
- 	/* Precompute checksum seed for inode metadata */
--	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
--			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+	if (ext4_has_metadata_csum(sb)) {
- 		__u32 csum;
- 		__le32 inum = cpu_to_le32(inode->i_ino);
- 		__le32 gen = cpu_to_le32(inode->i_generation);
---- a/fs/ext4/inline.c
-+++ b/fs/ext4/inline.c
-@@ -1126,8 +1126,7 @@ static int ext4_finish_convert_inline_di
- 	memcpy((void *)de, buf + EXT4_INLINE_DOTDOT_SIZE,
- 		inline_size - EXT4_INLINE_DOTDOT_SIZE);
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(inode->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	inode->i_size = inode->i_sb->s_blocksize;
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -83,8 +83,7 @@ static int ext4_inode_csum_verify(struct
+@@ -224,16 +224,15 @@ void ext4_evict_inode(struct inode *inod
+ 		goto no_delete;
+ 	}
  
- 	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
- 	    cpu_to_le32(EXT4_OS_LINUX) ||
--	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	    !ext4_has_metadata_csum(inode->i_sb))
- 		return 1;
+-	if (!is_bad_inode(inode))
+-		dquot_initialize(inode);
++	if (is_bad_inode(inode))
++		goto no_delete;
++	dquot_initialize(inode);
  
- 	provided = le16_to_cpu(raw->i_checksum_lo);
-@@ -105,8 +104,7 @@ static void ext4_inode_csum_set(struct i
+ 	if (ext4_should_order_data(inode))
+ 		ext4_begin_ordered_truncate(inode, 0);
+ 	truncate_inode_pages_final(&inode->i_data);
  
- 	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
- 	    cpu_to_le32(EXT4_OS_LINUX) ||
--	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	    !ext4_has_metadata_csum(inode->i_sb))
- 		return;
+ 	WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count));
+-	if (is_bad_inode(inode))
+-		goto no_delete;
  
- 	csum = ext4_inode_csum(inode, raw, ei);
-@@ -3950,8 +3948,7 @@ struct inode *ext4_iget(struct super_blo
- 		ei->i_extra_isize = 0;
- 
- 	/* Precompute checksum seed for inode metadata */
--	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
--			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+	if (ext4_has_metadata_csum(sb)) {
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 		__u32 csum;
- 		__le32 inum = cpu_to_le32(inode->i_ino);
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -331,8 +331,7 @@ flags_out:
- 		if (!inode_owner_or_capable(inode))
- 			return -EPERM;
- 
--		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		if (ext4_has_metadata_csum(inode->i_sb)) {
- 			ext4_warning(sb, "Setting inode version is not "
- 				     "supported with metadata_csum enabled.");
- 			return -ENOTTY;
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -20,8 +20,7 @@ static __le32 ext4_mmp_csum(struct super
- 
- static int ext4_mmp_csum_verify(struct super_block *sb, struct mmp_struct *mmp)
- {
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return 1;
- 
- 	return mmp->mmp_checksum == ext4_mmp_csum(sb, mmp);
-@@ -29,8 +28,7 @@ static int ext4_mmp_csum_verify(struct s
- 
- static void ext4_mmp_csum_set(struct super_block *sb, struct mmp_struct *mmp)
- {
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return;
- 
- 	mmp->mmp_checksum = ext4_mmp_csum(sb, mmp);
+ 	/*
+ 	 * Protect us against freezing - iput() caller didn't have to have any
 --- a/fs/ext4/namei.c
 +++ b/fs/ext4/namei.c
-@@ -124,8 +124,7 @@ static struct buffer_head *__ext4_read_d
- 		       "directory leaf block found instead of index block");
- 		return ERR_PTR(-EIO);
- 	}
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) ||
-+	if (!ext4_has_metadata_csum(inode->i_sb) ||
- 	    buffer_verified(bh))
- 		return bh;
+@@ -2573,7 +2573,7 @@ int ext4_orphan_add(handle_t *handle, st
+ 	int err = 0, rc;
+ 	bool dirty = false;
  
-@@ -340,8 +339,7 @@ int ext4_dirent_csum_verify(struct inode
- {
- 	struct ext4_dir_entry_tail *t;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return 1;
- 
- 	t = get_dirent_tail(inode, dirent);
-@@ -362,8 +360,7 @@ static void ext4_dirent_csum_set(struct
- {
- 	struct ext4_dir_entry_tail *t;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return;
- 
- 	t = get_dirent_tail(inode, dirent);
-@@ -438,8 +435,7 @@ static int ext4_dx_csum_verify(struct in
- 	struct dx_tail *t;
- 	int count_offset, limit, count;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return 1;
- 
- 	c = get_dx_countlimit(inode, dirent, &count_offset);
-@@ -468,8 +464,7 @@ static void ext4_dx_csum_set(struct inod
- 	struct dx_tail *t;
- 	int count_offset, limit, count;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return;
- 
- 	c = get_dx_countlimit(inode, dirent, &count_offset);
-@@ -557,8 +552,7 @@ static inline unsigned dx_root_limit(str
- 	unsigned entry_space = dir->i_sb->s_blocksize - EXT4_DIR_REC_LEN(1) -
- 		EXT4_DIR_REC_LEN(2) - infosize;
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(dir->i_sb))
- 		entry_space -= sizeof(struct dx_tail);
- 	return entry_space / sizeof(struct dx_entry);
- }
-@@ -567,8 +561,7 @@ static inline unsigned dx_node_limit(str
- {
- 	unsigned entry_space = dir->i_sb->s_blocksize - EXT4_DIR_REC_LEN(0);
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(dir->i_sb))
- 		entry_space -= sizeof(struct dx_tail);
- 	return entry_space / sizeof(struct dx_entry);
- }
-@@ -1548,8 +1541,7 @@ static struct ext4_dir_entry_2 *do_split
- 	int	csum_size = 0;
- 	int	err = 0, i;
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(dir->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	bh2 = ext4_append(handle, dir, &newblock);
-@@ -1718,8 +1710,7 @@ static int add_dirent_to_buf(handle_t *h
- 	int		csum_size = 0;
- 	int		err;
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(inode->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	if (!de) {
-@@ -1786,8 +1777,7 @@ static int make_indexed_dir(handle_t *ha
- 	struct fake_dirent *fde;
- 	int		csum_size = 0;
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(inode->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	blocksize =  dir->i_sb->s_blocksize;
-@@ -1904,8 +1894,7 @@ static int ext4_add_entry(handle_t *hand
- 	ext4_lblk_t block, blocks;
- 	int	csum_size = 0;
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(inode->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	sb = dir->i_sb;
-@@ -2167,8 +2156,7 @@ static int ext4_delete_entry(handle_t *h
- 			return err;
- 	}
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(dir->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	BUFFER_TRACE(bh, "get_write_access");
-@@ -2387,8 +2375,7 @@ static int ext4_init_new_dir(handle_t *h
- 	int csum_size = 0;
- 	int err;
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(dir->i_sb))
- 		csum_size = sizeof(struct ext4_dir_entry_tail);
- 
- 	if (ext4_test_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA)) {
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1212,8 +1212,7 @@ static int ext4_set_bitmap_checksums(str
- {
- 	struct buffer_head *bh;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
+-	if (!sbi->s_journal)
++	if (!sbi->s_journal || is_bad_inode(inode))
  		return 0;
  
- 	bh = ext4_get_bitmap(sb, group_data->inode_bitmap);
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -141,8 +141,7 @@ static __le32 ext4_superblock_csum(struc
- static int ext4_superblock_csum_verify(struct super_block *sb,
- 				       struct ext4_super_block *es)
- {
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return 1;
- 
- 	return es->s_checksum == ext4_superblock_csum(sb, es);
-@@ -152,8 +151,7 @@ void ext4_superblock_csum_set(struct sup
- {
- 	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
- 
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(sb))
- 		return;
- 
- 	es->s_checksum = ext4_superblock_csum(sb, es);
-@@ -2009,8 +2007,7 @@ static __le16 ext4_group_desc_csum(struc
- 	__u16 crc = 0;
- 	__le32 le_group = cpu_to_le32(block_group);
- 
--	if ((sbi->s_es->s_feature_ro_compat &
--	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))) {
-+	if (ext4_has_metadata_csum(sbi->s_sb)) {
- 		/* Use new metadata_csum algorithm */
- 		__le16 save_csum;
- 		__u32 csum32;
-@@ -3172,8 +3169,7 @@ static int set_journal_csum_feature_set(
- 	int compat, incompat;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 
--	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
--				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+	if (ext4_has_metadata_csum(sb)) {
- 		/* journal checksum v3 */
- 		compat = 0;
- 		incompat = JBD2_FEATURE_INCOMPAT_CSUM_V3;
-@@ -3480,8 +3476,7 @@ static int ext4_fill_super(struct super_
- 	}
- 
- 	/* Precompute checksum seed for all metadata */
--	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
--			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (ext4_has_metadata_csum(sb))
- 		sbi->s_csum_seed = ext4_chksum(sbi, ~0, es->s_uuid,
- 					       sizeof(es->s_uuid));
- 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -142,8 +142,7 @@ static int ext4_xattr_block_csum_verify(
- 					sector_t block_nr,
- 					struct ext4_xattr_header *hdr)
- {
--	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) &&
-+	if (ext4_has_metadata_csum(inode->i_sb) &&
- 	    (hdr->h_checksum != ext4_xattr_block_csum(inode, block_nr, hdr)))
- 		return 0;
- 	return 1;
-@@ -153,8 +152,7 @@ static void ext4_xattr_block_csum_set(st
- 				      sector_t block_nr,
- 				      struct ext4_xattr_header *hdr)
- {
--	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
--		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+	if (!ext4_has_metadata_csum(inode->i_sb))
- 		return;
- 
- 	hdr->h_checksum = ext4_xattr_block_csum(inode, block_nr, hdr);
+ 	WARN_ON_ONCE(!(inode->i_state & (I_NEW | I_FREEING)) &&
 
 
