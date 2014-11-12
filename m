@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607AbaKLBfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:35:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59688 "EHLO
+	id S1755757AbaKLDUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 22:20:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59692 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641AbaKLBfH (ORCPT
+	with ESMTP id S932650AbaKLBfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:35:07 -0500
+	Tue, 11 Nov 2014 20:35:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 3.17 295/319] samsung-laptop: Add broken-acpi-video quirk for NC210/NC110
-Date: Wed, 12 Nov 2014 10:17:13 +0900
-Message-Id: <20141112011041.677057059@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.17 296/319] fix breakage in o2net_send_tcp_msg()
+Date: Wed, 12 Nov 2014 10:17:14 +0900
+Message-Id: <20141112011041.840156323@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -29,40 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 5a1426c99f9b7aa11d60c4e6b7a3211bb5321696 upstream.
+commit 7e8631e8b9d4e9f698c09c7e7309c96249180ff9 upstream.
 
-The acpi-video backlight interface on the NC210 does not work, blacklist it
-and use the samsung-laptop interface instead.
+uninitialized msghdr.  Broken in "ocfs2: don't open-code kernel_recvmsg()"
+by me ;-/
 
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=861573
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/samsung-laptop.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/ocfs2/cluster/tcp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -1561,6 +1561,16 @@ static struct dmi_system_id __initdata s
- 	},
- 	{
- 	 .callback = samsung_dmi_matched,
-+	 .ident = "NC210",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "NC210/NC110"),
-+		DMI_MATCH(DMI_BOARD_NAME, "NC210/NC110"),
-+		},
-+	 .driver_data = &samsung_broken_acpi_video,
-+	},
-+	{
-+	 .callback = samsung_dmi_matched,
- 	 .ident = "730U3E/740U3E",
- 	 .matches = {
- 		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+--- a/fs/ocfs2/cluster/tcp.c
++++ b/fs/ocfs2/cluster/tcp.c
+@@ -925,7 +925,7 @@ static int o2net_send_tcp_msg(struct soc
+ 			      size_t veclen, size_t total)
+ {
+ 	int ret;
+-	struct msghdr msg;
++	struct msghdr msg = {.msg_flags = 0,};
+ 
+ 	if (sock == NULL) {
+ 		ret = -EINVAL;
 
 
