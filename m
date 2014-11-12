@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199AbaKLCPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 21:15:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32884 "EHLO
+	id S932876AbaKLCQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 21:16:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966253AbaKLBwe (ORCPT
+	with ESMTP id S966241AbaKLBw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:52:34 -0500
+	Tue, 11 Nov 2014 20:52:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.10 059/123] ARC: Update order of registers in KGDB to match GDB 7.5
-Date: Wed, 12 Nov 2014 10:17:05 +0900
-Message-Id: <20141112011721.708314409@linuxfoundation.org>
+        Ulrich Eckhardt <uli@uli-eckhardt.de>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.10 049/123] media: ds3000: fix LNB supply voltage on Tevii S480 on initialization
+Date: Wed, 12 Nov 2014 10:16:55 +0900
+Message-Id: <20141112011721.259362232@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112011718.985171261@linuxfoundation.org>
 References: <20141112011718.985171261@linuxfoundation.org>
@@ -29,73 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Kolesov <Anton.Kolesov@synopsys.com>
+From: Ulrich Eckhardt <uli-lirc@uli-eckhardt.de>
 
-commit ebc0c74e76cec9c4dd860eb0ca1c0b39dc63c482 upstream.
+commit 8c5bcded11cb607b1bb5920de3b9c882136d27db upstream.
 
-Order of registers has changed in GDB moving from 6.8 to 7.5. This patch
-updates KGDB to work properly with GDB 7.5, though makes it incompatible
-with 6.8.
+The Tevii S480 outputs 18V on startup for the LNB supply voltage and does not
+automatically power down. This blocks other receivers connected
+to a satellite channel router (EN50494), since the receivers can not send the
+required DiSEqC sequences when the Tevii card is connected to a the same SCR.
 
-Signed-off-by: Anton Kolesov <Anton.Kolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+This patch switches off the LNB supply voltage on initialization of the frontend.
+
+[mchehab@osg.samsung.com: add a comment about why we're explicitly
+ turning off voltage at device init]
+Signed-off-by: Ulrich Eckhardt <uli@uli-eckhardt.de>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/include/asm/kgdb.h |   32 ++++++++++++++++++--------------
- 1 file changed, 18 insertions(+), 14 deletions(-)
+ drivers/media/dvb-frontends/ds3000.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/arc/include/asm/kgdb.h
-+++ b/arch/arc/include/asm/kgdb.h
-@@ -19,7 +19,7 @@
-  * register API yet */
- #undef DBG_MAX_REG_NUM
+--- a/drivers/media/dvb-frontends/ds3000.c
++++ b/drivers/media/dvb-frontends/ds3000.c
+@@ -864,6 +864,13 @@ struct dvb_frontend *ds3000_attach(const
+ 	memcpy(&state->frontend.ops, &ds3000_ops,
+ 			sizeof(struct dvb_frontend_ops));
+ 	state->frontend.demodulator_priv = state;
++
++	/*
++	 * Some devices like T480 starts with voltage on. Be sure
++	 * to turn voltage off during init, as this can otherwise
++	 * interfere with Unicable SCR systems.
++	 */
++	ds3000_set_voltage(&state->frontend, SEC_VOLTAGE_OFF);
+ 	return &state->frontend;
  
--#define GDB_MAX_REGS		39
-+#define GDB_MAX_REGS		87
- 
- #define BREAK_INSTR_SIZE	2
- #define CACHE_FLUSH_IS_SAFE	1
-@@ -33,23 +33,27 @@ static inline void arch_kgdb_breakpoint(
- 
- extern void kgdb_trap(struct pt_regs *regs, int param);
- 
--enum arc700_linux_regnums {
-+/* This is the numbering of registers according to the GDB. See GDB's
-+ * arc-tdep.h for details.
-+ *
-+ * Registers are ordered for GDB 7.5. It is incompatible with GDB 6.8. */
-+enum arc_linux_regnums {
- 	_R0		= 0,
- 	_R1, _R2, _R3, _R4, _R5, _R6, _R7, _R8, _R9, _R10, _R11, _R12, _R13,
- 	_R14, _R15, _R16, _R17, _R18, _R19, _R20, _R21, _R22, _R23, _R24,
- 	_R25, _R26,
--	_BTA		= 27,
--	_LP_START	= 28,
--	_LP_END		= 29,
--	_LP_COUNT	= 30,
--	_STATUS32	= 31,
--	_BLINK		= 32,
--	_FP		= 33,
--	__SP		= 34,
--	_EFA		= 35,
--	_RET		= 36,
--	_ORIG_R8	= 37,
--	_STOP_PC	= 38
-+	_FP		= 27,
-+	__SP		= 28,
-+	_R30		= 30,
-+	_BLINK		= 31,
-+	_LP_COUNT	= 60,
-+	_STOP_PC	= 64,
-+	_RET		= 64,
-+	_LP_START	= 65,
-+	_LP_END		= 66,
-+	_STATUS32	= 67,
-+	_ECR		= 76,
-+	_BTA		= 82,
- };
- 
- #else
+ error3:
 
 
