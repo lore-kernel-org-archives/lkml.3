@@ -1,206 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaKLOw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 09:52:29 -0500
-Received: from mga14.intel.com ([192.55.52.115]:8170 "EHLO mga14.intel.com"
+	id S1753100AbaKLOxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 09:53:16 -0500
+Received: from mga03.intel.com ([134.134.136.65]:41980 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725AbaKLOw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 09:52:27 -0500
+	id S1753000AbaKLOxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 09:53:14 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="415427646"
-From: Michael Jamet <michael.jamet@intel.com>
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amir.jer.levy@intel.com, dan.alloun@intel.com, michael.jamet@intel.com
-Subject: [PATCH] pci: support Thunderbolt requirements for I/O resources.
-Date: Thu, 13 Nov 2014 04:52:03 +0200
-Message-Id: <1415847123-15558-1-git-send-email-michael.jamet@intel.com>
-X-Mailer: git-send-email 1.9.1
+X-IronPort-AV: E=Sophos;i="5.07,369,1413270000"; 
+   d="scan'208";a="635736512"
+Message-ID: <54637449.4070302@linux.intel.com>
+Date: Wed, 12 Nov 2014 22:52:57 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <marc.zyngier@arm.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC Part4 v1 00/17] Refine support of non-PCI-compliant Message
+References: <1415545839-28263-1-git-send-email-jiang.liu@linux.intel.com> <546364FA.7010806@arm.com> <alpine.DEB.2.11.1411121512270.3935@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411121512270.3935@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every Thunderbolt-based devices or Thunderbolt-connected
-devices should not allocate PCI I/O resources
-per Thunderbolt specs.
+On 2014/11/12 22:46, Thomas Gleixner wrote:
+> On Wed, 12 Nov 2014, Marc Zyngier wrote:
+>> This patch introduces two optionnal fields to the msi_chip structure:
+>> - a pointer to an irq domain, describing the MSI domain associated
+>>   with this msi_chip. To be populated with msi_create_irq_domain.
+>> - a domain_alloc_irqs() callback that has the same purpose as
+>>   arch_setup_msi_irqs(), with the above domain as an additional
+>>   parameter.
+>>
+>> If both of these fields are non-NULL, then domain_alloc_irqs() is
+>> called, bypassing the setup_irq callback. This allows the MSI driver
+>> to use the domain stacking feature without mandating core support in
+>> the architecture.
+> 
+> I'd rather have the callback in the irqdomain itself. Along with a
+> callback to free the interrupts.
+> 
+> AFAICT is msi_chip more or less a wrapper around the actual MSI irq
+> domain. So we rather move towards assigning irqdomain to the pci bus
+> and get rid of msi_chip instead of adding another level of obscure
+> indirection through msi_chip.
+Hi Thomas and Marc,
 
-On a Thunderbolt PC, BIOS is responsible to allocate IO
-resources. Kernel shouldn't allocate the PCI I/O resources
-as it interferes with BIOS operation.
-Doing this may cause the devices in the Thunderbolt chain
-not being detected or added, or worse to stuck the
-Thunderbolt Host controller.
+I'm trying to replace all weak functions , such as
+arch_setup_msi_irqs()/arch_setup_msi_irq(), in drivers/pci/msi.c.
 
-To prevent this, we detect a chain contains a Thunderbolt
-device by checking the Thunderbolt PCI device id.
+The framework core changes are almost ready, but it does take time
+to convert current arch_setup_msi_irqs() implementations to new
+irqdomain interfaces.
 
-The validation is carried out at the pci_enable_device_flags()
-function that checks the PCI device or bridge is Thunderbolt
-chained and avoid IO resources allocation.
-
-In addition, decode_bar() and pci_bridge_check_ranges()
-function has been internally checked for Thunderbolt
-as well to ensure no IO resources are allocated.
-
-Signed-off-by: Michael Jamet <michael.jamet@intel.com>
----
- drivers/pci/pci.c       | 64 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/pci.h       |  2 ++
- drivers/pci/probe.c     |  3 ++-
- drivers/pci/setup-bus.c |  4 ++--
- include/linux/pci.h     |  2 ++
- 5 files changed, 72 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 625a4ac..41c2619 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -198,6 +198,62 @@ static int __pci_bus_find_cap_start(struct pci_bus *bus,
- }
- 
- /**
-+ * pci_is_thunderbolt_device - checks PCI device is Thunderbolt-based.
-+ * The only existing way is to check the device id is allocated to Thunderbolt.
-+ * @dev: the PCI device structure to check against
-+ *
-+ * Returns true if the PCI device is of the Thunderbolt type.
-+ */
-+bool pci_is_thunderbolt_device(struct pci_dev *dev)
-+{
-+	if ((dev->vendor == PCI_VENDOR_ID_INTEL) &&
-+			((dev->device == 0xcaca)
-+			|| (dev->device == 0x1513)
-+			|| (dev->device == 0xcbca)
-+			|| (dev->device == 0x151A)
-+			|| (dev->device == 0x151B)
-+			|| (dev->device == 0x1549)
-+			|| (dev->device == 0x1547)
-+			|| (dev->device == 0x1548)
-+			|| (dev->device == 0x1566)
-+			|| (dev->device == 0x1567)
-+			|| (dev->device == 0x1569)
-+			|| (dev->device == 0x1568)
-+			|| (dev->device == 0x156A)
-+			|| (dev->device == 0x156B)
-+			|| (dev->device == 0x156C)
-+			|| (dev->device == 0x156D)
-+			|| (dev->device == 0x1579)
-+			|| (dev->device == 0x157A)
-+			|| (dev->device == 0x157D)
-+			|| (dev->device == 0x157E)))
-+		return true;
-+
-+	return false;
-+}
-+EXPORT_SYMBOL(pci_is_thunderbolt_device);
-+
-+/**
-+ * pci_is_connected_to_thunderbolt - check if connected to a Thunderbolt chain.
-+ * @dev: the PCI device structure to check against
-+ *
-+ * Returns true if the PCI device s connected is connected to a
-+ * Thunderbolt-based in the chain.
-+ */
-+bool pci_is_connected_to_thunderbolt(struct pci_dev *dev)
-+{
-+	struct pci_dev *bridge;
-+
-+	if (pci_is_thunderbolt_device(dev))
-+		return true;
-+	bridge =  pci_upstream_bridge(dev);
-+	if (bridge)
-+		return pci_is_connected_to_thunderbolt(bridge);
-+	return false;
-+}
-+EXPORT_SYMBOL(pci_is_connected_to_thunderbolt);
-+
-+/**
-  * pci_find_capability - query for devices' capabilities
-  * @dev: PCI device to query
-  * @cap: capability code
-@@ -1285,6 +1341,14 @@ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
- 	if (atomic_inc_return(&dev->enable_cnt) > 1)
- 		return 0;		/* already enabled */
- 
-+	/*
-+	 * if IO resource have been requested, but the device is connected
-+	 * to Thunderbolt chain, don't allocate IO resource
-+	 */
-+	if ((flags & IORESOURCE_IO)
-+			&& pci_is_connected_to_thunderbolt(dev))
-+		flags &= ~IORESOURCE_IO;
-+
- 	bridge = pci_upstream_bridge(dev);
- 	if (bridge)
- 		pci_enable_bridge(bridge);
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 0601890..fb9a3b1 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -4,6 +4,8 @@
- #define PCI_CFG_SPACE_SIZE	256
- #define PCI_CFG_SPACE_EXP_SIZE	4096
- 
-+bool pci_is_thunderbolt_device(struct pci_dev *dev);
-+
- extern const unsigned char pcie_link_speed[];
- 
- /* Functions internal to the PCI core code */
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 5ed9930..d8171af 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -131,7 +131,8 @@ static inline unsigned long decode_bar(struct pci_dev *dev, u32 bar)
- 
- 	if ((bar & PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_IO) {
- 		flags = bar & ~PCI_BASE_ADDRESS_IO_MASK;
--		flags |= IORESOURCE_IO;
-+		if (!pci_is_connected_to_thunderbolt(dev))
-+			flags |= IORESOURCE_IO;
- 		return flags;
- 	}
- 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 0482235..79ac38f 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -663,12 +663,12 @@ static void pci_bridge_check_ranges(struct pci_bus *bus)
- 	b_res[1].flags |= IORESOURCE_MEM;
- 
- 	pci_read_config_word(bridge, PCI_IO_BASE, &io);
--	if (!io) {
-+	if (!io || pci_is_thunderbolt_device(bridge)) {
- 		pci_write_config_word(bridge, PCI_IO_BASE, 0xe0f0);
- 		pci_read_config_word(bridge, PCI_IO_BASE, &io);
- 		pci_write_config_word(bridge, PCI_IO_BASE, 0x0);
- 	}
--	if (io)
-+	if (io && !pci_is_thunderbolt_device(bridge))
- 		b_res[0].flags |= IORESOURCE_IO;
- 
- 	/*  DECchip 21050 pass 2 errata: the bridge may miss an address
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 2a8c405..09ddc2c 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -931,6 +931,8 @@ int __must_check pci_enable_device_io(struct pci_dev *dev);
- int __must_check pci_enable_device_mem(struct pci_dev *dev);
- int __must_check pci_reenable_device(struct pci_dev *);
- int __must_check pcim_enable_device(struct pci_dev *pdev);
-+
-+bool pci_is_connected_to_thunderbolt(struct pci_dev *dev);
- void pcim_pin_device(struct pci_dev *pdev);
- 
- static inline int pci_is_enabled(struct pci_dev *pdev)
--- 
-1.9.1
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+Not sure whether it's the right direction to go:(
+Regards!
+Gerry
+> 
+> Thanks,
+> 
+> 	tglx
+> 
