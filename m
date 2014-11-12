@@ -1,158 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446AbaKLU7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 15:59:31 -0500
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:46465 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248AbaKLU7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 15:59:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E7AC2@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
-	<201409251211.57183.marex@denx.de>
-	<A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
-	<201409261046.07132.marex@denx.de>
-	<A765B125120D1346A63912DDE6D8B6315E7AC2@NTXXIAMBX02.xacn.micron.com>
-Date: Thu, 13 Nov 2014 02:29:29 +0530
-Message-ID: <CAD6G_RQGsLP35E-ecNUvSZyGht4bta4dmnMwLdg+QbEp0bTGmg@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v3] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-From: Jagan Teki <jagannadh.teki@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753482AbaKLVAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 16:00:15 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:51317
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248AbaKLVAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 16:00:13 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next,v2] hyperv: Add processing of MTU reduced by the host
+Date: Wed, 12 Nov 2014 14:07:44 -0800
+Message-Id: <1415830064-1440-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 October 2014 05:39, bpqw <bpqw@micron.com> wrote:
-> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
->
-> For Micron SPI NOR flash, enabling or disabling quad I/O protocol is controlled
-> by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
-> When EVCR bit 7 is reset to 0, the SPI NOR flash will operate in quad I/O mode.
->
-> Signed-off-by: bean huo <beanhuo@micron.com>
-> Acked-by: Marek Vasut <marex@denx.de>
-> ---
->  v1-v2:modified to that capture wait_till_ready()
->          return value,if error,directly return its
->          the value.
->  v2-v3:directly use the reurning error value of
->          read_reg and write_reg,instead of -EINVAL.
->
->  drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/mtd/spi-nor.h   |    6 ++++++
->  2 files changed, 52 insertions(+)
->
-> diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c index b5ad6be..486b167 100644
-> --- a/drivers/mtd/spi-nor/spi-nor.c
-> +++ b/drivers/mtd/spi-nor/spi-nor.c
-> @@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
->         return 0;
->  }
->
-> +static int micron_quad_enable(struct spi_nor *nor) {
-> +       int ret, val;
-> +
-> +       ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-> +       if (ret < 0) {
-> +               dev_err(nor->dev, "error %d reading EVCR\n", ret);
-> +               return ret;
-> +       }
+If the host uses packet encapsulation feature, the MTU may be reduced by the
+host due to headroom reservation for encapsulation. This patch handles this
+new MTU value.
 
-Best to define read_evsr()
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/netvsc.c       |    3 ++-
+ drivers/net/hyperv/netvsc_drv.c   |    5 +++--
+ drivers/net/hyperv/rndis_filter.c |    9 +++++++++
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-> +
-> +       write_enable(nor);
-> +
-> +       /* set EVCR ,enable quad I/O */
-> +       nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-> +       ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-> +       if (ret < 0) {
-> +               dev_err(nor->dev,
-> +                       "error while writing EVCR register\n");
-> +               return ret;
-> +       }
-> +
-> +       ret = wait_till_ready(nor);
-> +       if (ret)
-> +               return ret;
-
-I don't think this will ready w/o wait time or something - may be use
-if (wait_till_ready(nor))
-       return 1;
-
-> +
-> +       /* read EVCR and check it */
-> +       ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-> +       if (ret < 0) {
-> +               dev_err(nor->dev, "error %d reading EVCR\n", ret);
-> +               return ret;
-> +       }
-> +       if (val & EVCR_QUAD_EN_MICRON) {
-> +               dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-> +               return -EINVAL;
-> +       }
-
-IMHO, use read_evcr() as defined above and write the finite statement code like
-        ret = read_evcr(nor);
-        if (!(ret > 0 && (ret & EVCR_QUAD_EN_MICRON))) {
-                dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-                return -EINVAL;
-        }
-
-> +
-> +       return 0;
-> +}
-> +
->  static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)  {
->         int status;
-> @@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
->                         return -EINVAL;
->                 }
->                 return status;
-> +       case CFI_MFR_ST:
-> +               status = micron_quad_enable(nor);
-> +               if (status) {
-> +                       dev_err(nor->dev, "Micron quad-read not enabled\n");
-> +                       return -EINVAL;
-> +               }
-> +               return status;
->         default:
->                 status = spansion_quad_enable(nor);
->                 if (status) {
-> diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h index 9e6294f..d71b659 100644
-> --- a/include/linux/mtd/spi-nor.h
-> +++ b/include/linux/mtd/spi-nor.h
-> @@ -56,6 +56,10 @@
->  /* Used for Spansion flashes only. */
->  #define SPINOR_OP_BRWR         0x17    /* Bank register write */
->
-> +/* Used for Micron flashes only. */
-> +#define SPINOR_OP_RD_EVCR      0x65    /* Read EVCR register */
-> +#define SPINOR_OP_WD_EVCR      0x61    /* Write EVCR register */
-> +
->  /* Status Register bits. */
->  #define SR_WIP                 1       /* Write in progress */
->  #define SR_WEL                 2       /* Write enable latch */
-> @@ -67,6 +71,8 @@
->
->  #define SR_QUAD_EN_MX          0x40    /* Macronix Quad I/O */
->
-> +#define EVCR_QUAD_EN_MICRON    0x80    /* Micron Quad I/O */
-> +
->  /* Flag Status Register bits */
->  #define FSR_READY              0x80
->
-
-thanks!
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 7d76c95..6b46311 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -440,7 +440,8 @@ static int negotiate_nvsp_ver(struct hv_device *device,
+ 	/* NVSPv2 only: Send NDIS config */
+ 	memset(init_packet, 0, sizeof(struct nvsp_message));
+ 	init_packet->hdr.msg_type = NVSP_MSG2_TYPE_SEND_NDIS_CONFIG;
+-	init_packet->msg.v2_msg.send_ndis_config.mtu = net_device->ndev->mtu;
++	init_packet->msg.v2_msg.send_ndis_config.mtu = net_device->ndev->mtu +
++						       ETH_HLEN;
+ 	init_packet->msg.v2_msg.send_ndis_config.capability.ieee8021q = 1;
+ 
+ 	ret = vmbus_sendpacket(device->channel, init_packet,
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 3295e4e..15d82ed 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -699,9 +699,10 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
+ 		return -ENODEV;
+ 
+ 	if (nvdev->nvsp_version >= NVSP_PROTOCOL_VERSION_2)
+-		limit = NETVSC_MTU;
++		limit = NETVSC_MTU - ETH_HLEN;
+ 
+-	if (mtu < 68 || mtu > limit)
++	/* Hyper-V hosts don't support MTU < ETH_DATA_LEN (1500) */
++	if (mtu < ETH_DATA_LEN || mtu > limit)
+ 		return -EINVAL;
+ 
+ 	nvdev->start_remove = true;
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index ccce6f2..7b2c5d1 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -998,6 +998,7 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 	int t;
+ 	struct ndis_recv_scale_cap rsscap;
+ 	u32 rsscap_size = sizeof(struct ndis_recv_scale_cap);
++	u32 mtu, size;
+ 
+ 	rndis_device = get_rndis_device();
+ 	if (!rndis_device)
+@@ -1029,6 +1030,14 @@ int rndis_filter_device_add(struct hv_device *dev,
+ 		return ret;
+ 	}
+ 
++	/* Get the MTU from the host */
++	size = sizeof(u32);
++	ret = rndis_filter_query_device(rndis_device,
++					RNDIS_OID_GEN_MAXIMUM_FRAME_SIZE,
++					&mtu, &size);
++	if (ret == 0 && size == sizeof(u32))
++		net_device->ndev->mtu = mtu;
++
+ 	/* Get the mac address */
+ 	ret = rndis_filter_query_device_mac(rndis_device);
+ 	if (ret != 0) {
 -- 
-Jagan.
+1.7.1
+
