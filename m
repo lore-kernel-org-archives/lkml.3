@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaKLKLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 05:11:37 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:34719 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaKLKLe (ORCPT
+	id S1752745AbaKLKMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 05:12:14 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:55376 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679AbaKLKML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 05:11:34 -0500
-Date: Wed, 12 Nov 2014 11:10:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, alexander.duyck@gmail.com,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Neuling <mikey@neuling.org>, Tony Luck <tony.luck@intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] arch: Introduce read_acquire()
-Message-ID: <20141112101052.GI29390@twins.programming.kicks-ass.net>
-References: <20141111185510.2181.75347.stgit@ahduyck-workstation.home>
- <CA+55aFwo9f3tWaRqN1Xam9UkWv1B5F4YnRP1Qx3T78E4o=8YJQ@mail.gmail.com>
- <54627563.5000400@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54627563.5000400@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 12 Nov 2014 05:12:11 -0500
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Allen Martin <amartin@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: Ensure voltages are within the allowed range
+Date: Wed, 12 Nov 2014 11:12:05 +0100
+Message-Id: <1415787125-31218-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 12:45:23PM -0800, Alexander Duyck wrote:
-> 
-> On 11/11/2014 11:40 AM, Linus Torvalds wrote:
-> >On Tue, Nov 11, 2014 at 10:57 AM,  <alexander.duyck@gmail.com> wrote:
-> >>
-> >>
-> >>On reviewing the documentation and code for smp_load_acquire() it occurred
-> >>to me that implementing something similar for CPU <-> device interaction
-> >>would be worth while.  This commit provides just the load/read side of this
-> >>in the form of read_acquire().
-> >
-> >So I don't hate the concept, but. there's a couple of reasons to think
-> >this is broken.
-> >
-> >One is just the name. Why do we have "smp_load_acquire()", but then
-> >call the non-smp version "read_acquire()"? That makes very little
-> >sense to me. Why did "load" become "read"?
-> 
-> The idea behind read vs load in the name was because smp_load_acquire is
-> using a full smp_mb() whereas this just falls back to rmb() for the cases it
-> is dealing with.  My main conern is that a full memory barrier would be more
-> expensive so I didn't want to give the idea that this is as completed as
-> smp_load_acquire().  The read_acquire() call is not strictly enforcing any
-> limitations on writes/stores, although there are a few cases where the
-> barriers used do leak that functionality over as a side-effect.
+From: Thierry Reding <treding@nvidia.com>
 
-Then I object. We should not name it acquire if it does not in fact
-provides acquire semantics.
+Unless a regulator has a fixed output voltage the core will not attempt
+to modify the output voltage. This can cause a situation where a driver
+enables the regulator but the currently configured voltage is outside
+the valid range.
 
-Memory ordering is hard enough, we don't need random weird semantics
-mixed in just because.
+Fix this by constraining the current voltage to the allowed range upon
+regulator registration.
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/regulator/core.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index bbf93c9caca3..97851f39b4c0 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -876,6 +876,7 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 		int	max_uV = INT_MIN;
+ 		int	cmin = constraints->min_uV;
+ 		int	cmax = constraints->max_uV;
++		int	value;
+ 
+ 		/* it's safe to autoconfigure fixed-voltage supplies
+ 		   and the constraints are used by list_voltage. */
+@@ -898,8 +899,6 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* initial: [cmin..cmax] valid, [min_uV..max_uV] not */
+ 		for (i = 0; i < count; i++) {
+-			int	value;
+-
+ 			value = ops->list_voltage(rdev, i);
+ 			if (value <= 0)
+ 				continue;
+@@ -930,6 +929,24 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 				 constraints->max_uV, max_uV);
+ 			constraints->max_uV = max_uV;
+ 		}
++
++		/*
++		 * Now that the voltage range has been determined, make sure
++		 * that the regulator's current voltage is within that range.
++		 */
++		value = _regulator_get_voltage(rdev);
++
++		if (value < constraints->min_uV ||
++		    value > constraints->max_uV) {
++			ret = _regulator_do_set_voltage(rdev,
++							constraints->min_uV,
++							constraints->max_uV);
++			if (ret < 0) {
++				rdev_err(rdev, "failed to set voltage to within %d-%d\n",
++					 constraints->min_uV, constraints->max_uV);
++				return ret;
++			}
++		}
+ 	}
+ 
+ 	return 0;
+-- 
+2.1.3
+
