@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152AbaKLEWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 23:22:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58386 "EHLO
+	id S1756196AbaKLEXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 23:23:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921AbaKLBUR (ORCPT
+	with ESMTP id S1752645AbaKLBUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:20:17 -0500
+	Tue, 11 Nov 2014 20:20:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.17 002/319] KVM: emulator: fix execution close to the segment limit
-Date: Wed, 12 Nov 2014 10:12:20 +0900
-Message-Id: <20141112010952.993464999@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 017/319] macvlan: fix a race on port dismantle and possible skb leaks
+Date: Wed, 12 Nov 2014 10:12:35 +0900
+Message-Id: <20141112010955.530706157@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -28,150 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit fd56e1546a5f734290cbedd2b81c518850736511 upstream.
+[ Upstream commit fe0ca7328d03d36aafecebb3af650e1bb2841c20 ]
 
-Emulation of code that is 14 bytes to the segment limit or closer
-(e.g. RIP = 0xFFFFFFF2 after reset) is broken because we try to read as
-many as 15 bytes from the beginning of the instruction, and __linearize
-fails when the passed (address, size) pair reaches out of the segment.
+We need to cancel the work queue after rcu grace period,
+otherwise it can be rescheduled by incoming packets.
 
-To fix this, let __linearize return the maximum accessible size (clamped
-to 2^32-1) for usage in __do_insn_fetch_bytes, and avoid the limit check
-by passing zero for the desired size.
+We need to purge queue if some skbs are still in it.
 
-For expand-down segments, __linearize is performing a redundant check.
-(u32)(addr.ea + size - 1) <= lim can only happen if addr.ea is close
-to 4GB; in this case, addr.ea + size - 1 will also fail the check against
-the upper bound of the segment (which is provided by the D/B bit).
-After eliminating the redundant check, it is simple to compute
-the *max_size for expand-down segments too.
+We can use __skb_queue_head_init() variant in
+macvlan_process_broadcast()
 
-Now that the limit check is done in __do_insn_fetch_bytes, we want
-to inject a general protection fault there if size < op_size (like
-__linearize would have done), instead of just aborting.
-
-This fixes booting Tiano Core from emulated flash with EPT disabled.
-
-Fixes: 719d5a9b2487e0562f178f61e323c3dc18a8b200
-Reported-by: Borislav Petkov <bp@suse.de>
-Tested-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 412ca1550cbec ("macvlan: Move broadcasts into a work queue")
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/kvm/emulate.c |   43 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 33 insertions(+), 10 deletions(-)
+ drivers/net/macvlan.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -613,7 +613,8 @@ static bool insn_aligned(struct x86_emul
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -201,7 +201,7 @@ static void macvlan_process_broadcast(st
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head list;
  
- static int __linearize(struct x86_emulate_ctxt *ctxt,
- 		     struct segmented_address addr,
--		     unsigned size, bool write, bool fetch,
-+		     unsigned *max_size, unsigned size,
-+		     bool write, bool fetch,
- 		     ulong *linear)
+-	skb_queue_head_init(&list);
++	__skb_queue_head_init(&list);
+ 
+ 	spin_lock_bh(&port->bc_queue.lock);
+ 	skb_queue_splice_tail_init(&port->bc_queue, &list);
+@@ -941,9 +941,15 @@ static void macvlan_port_destroy(struct
  {
- 	struct desc_struct desc;
-@@ -624,10 +625,15 @@ static int __linearize(struct x86_emulat
- 	unsigned cpl;
+ 	struct macvlan_port *port = macvlan_port_get_rtnl(dev);
  
- 	la = seg_base(ctxt, addr.seg) + addr.ea;
-+	*max_size = 0;
- 	switch (ctxt->mode) {
- 	case X86EMUL_MODE_PROT64:
- 		if (((signed long)la << 16) >> 16 != la)
- 			return emulate_gp(ctxt, 0);
+-	cancel_work_sync(&port->bc_work);
+ 	dev->priv_flags &= ~IFF_MACVLAN_PORT;
+ 	netdev_rx_handler_unregister(dev);
 +
-+		*max_size = min_t(u64, ~0u, (1ull << 48) - la);
-+		if (size > *max_size)
-+			goto bad;
- 		break;
- 	default:
- 		usable = ctxt->ops->get_segment(ctxt, &sel, &desc, NULL,
-@@ -645,20 +651,25 @@ static int __linearize(struct x86_emulat
- 		if ((ctxt->mode == X86EMUL_MODE_REAL) && !fetch &&
- 		    (ctxt->d & NoBigReal)) {
- 			/* la is between zero and 0xffff */
--			if (la > 0xffff || (u32)(la + size - 1) > 0xffff)
-+			if (la > 0xffff)
- 				goto bad;
-+			*max_size = 0x10000 - la;
- 		} else if ((desc.type & 8) || !(desc.type & 4)) {
- 			/* expand-up segment */
--			if (addr.ea > lim || (u32)(addr.ea + size - 1) > lim)
-+			if (addr.ea > lim)
- 				goto bad;
-+			*max_size = min_t(u64, ~0u, (u64)lim + 1 - addr.ea);
- 		} else {
- 			/* expand-down segment */
--			if (addr.ea <= lim || (u32)(addr.ea + size - 1) <= lim)
-+			if (addr.ea <= lim)
- 				goto bad;
- 			lim = desc.d ? 0xffffffff : 0xffff;
--			if (addr.ea > lim || (u32)(addr.ea + size - 1) > lim)
-+			if (addr.ea > lim)
- 				goto bad;
-+			*max_size = min_t(u64, ~0u, (u64)lim + 1 - addr.ea);
- 		}
-+		if (size > *max_size)
-+			goto bad;
- 		cpl = ctxt->ops->cpl(ctxt);
- 		if (!(desc.type & 8)) {
- 			/* data segment */
-@@ -693,7 +704,8 @@ static int linearize(struct x86_emulate_
- 		     unsigned size, bool write,
- 		     ulong *linear)
- {
--	return __linearize(ctxt, addr, size, write, false, linear);
-+	unsigned max_size;
-+	return __linearize(ctxt, addr, &max_size, size, write, false, linear);
++	/* After this point, no packet can schedule bc_work anymore,
++	 * but we need to cancel it and purge left skbs if any.
++	 */
++	cancel_work_sync(&port->bc_work);
++	__skb_queue_purge(&port->bc_queue);
++
+ 	kfree_rcu(port, rcu);
  }
  
- 
-@@ -718,17 +730,27 @@ static int segmented_read_std(struct x86
- static int __do_insn_fetch_bytes(struct x86_emulate_ctxt *ctxt, int op_size)
- {
- 	int rc;
--	unsigned size;
-+	unsigned size, max_size;
- 	unsigned long linear;
- 	int cur_size = ctxt->fetch.end - ctxt->fetch.data;
- 	struct segmented_address addr = { .seg = VCPU_SREG_CS,
- 					   .ea = ctxt->eip + cur_size };
- 
--	size = 15UL ^ cur_size;
--	rc = __linearize(ctxt, addr, size, false, true, &linear);
-+	/*
-+	 * We do not know exactly how many bytes will be needed, and
-+	 * __linearize is expensive, so fetch as much as possible.  We
-+	 * just have to avoid going beyond the 15 byte limit, the end
-+	 * of the segment, or the end of the page.
-+	 *
-+	 * __linearize is called with size 0 so that it does not do any
-+	 * boundary check itself.  Instead, we use max_size to check
-+	 * against op_size.
-+	 */
-+	rc = __linearize(ctxt, addr, &max_size, 0, false, true, &linear);
- 	if (unlikely(rc != X86EMUL_CONTINUE))
- 		return rc;
- 
-+	size = min_t(unsigned, 15UL ^ cur_size, max_size);
- 	size = min_t(unsigned, size, PAGE_SIZE - offset_in_page(linear));
- 
- 	/*
-@@ -738,7 +760,8 @@ static int __do_insn_fetch_bytes(struct
- 	 * still, we must have hit the 15-byte boundary.
- 	 */
- 	if (unlikely(size < op_size))
--		return X86EMUL_UNHANDLEABLE;
-+		return emulate_gp(ctxt, 0);
-+
- 	rc = ctxt->ops->fetch(ctxt, linear, ctxt->fetch.end,
- 			      size, &ctxt->exception);
- 	if (unlikely(rc != X86EMUL_CONTINUE))
 
 
