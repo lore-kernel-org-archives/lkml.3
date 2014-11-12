@@ -1,28 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896AbaKLBaw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Nov 2014 20:30:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59275 "EHLO
+	id S933040AbaKLBbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Nov 2014 20:31:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59340 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877AbaKLBat (ORCPT
+	with ESMTP id S932980AbaKLBbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Nov 2014 20:30:49 -0500
+	Tue, 11 Nov 2014 20:31:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.17 185/319] ACPI, irq, x86: Return IRQ instead of GSI in mp_register_gsi()
-Date: Wed, 12 Nov 2014 10:15:23 +0900
-Message-Id: <20141112011023.390168554@linuxfoundation.org>
+        Kevin Fenzi <kevin@scrye.com>, Adel Gadllah <adel.gadllah@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.17 231/319] HID: usbhid: enable always-poll quirk for Elan Touchscreen 016f
+Date: Wed, 12 Nov 2014 10:16:09 +0900
+Message-Id: <20141112011031.016656927@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141112010952.553519040@linuxfoundation.org>
 References: <20141112010952.553519040@linuxfoundation.org>
@@ -37,60 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+From: Adel Gadllah <adel.gadllah@gmail.com>
 
-commit b77e8f435337baa1cd15852fb9db3f6d26cd8eb7 upstream.
+commit 1af39588f84c7c18f8c6d88342f36513a4ce383c upstream.
 
-Function mp_register_gsi() returns blindly the GSI number for the ACPI
-SCI interrupt. That causes a regression when the GSI for ACPI SCI is
-shared with other devices.
+This device needs the quirk as well.
 
-The regression was caused by commit 84245af7297ced9e8fe "x86, irq, ACPI:
-Change __acpi_register_gsi to return IRQ number instead of GSI" and
-exposed on a SuperMicro system, which shares one GSI between ACPI SCI
-and PCI device, with following failure:
-
-http://sourceforge.net/p/linux1394/mailman/linux1394-user/?viewmonth=201410
-[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low
-level)
-[    2.699224] firewire_ohci 0000:06:00.0: failed to allocate interrupt
-20
-
-Return mp_map_gsi_to_irq(gsi, 0) instead of the GSI number.
-
-Reported-and-Tested-by: Daniel Robbins <drobbins@funtoo.org>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1414387308-27148-4-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Tested-by: Kevin Fenzi <kevin@scrye.com>
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/acpi/boot.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-ids.h           |    1 +
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -397,7 +397,7 @@ static int mp_register_gsi(struct device
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -299,6 +299,7 @@
+ #define USB_VENDOR_ID_ELAN		0x04f3
+ #define USB_DEVICE_ID_ELAN_TOUCHSCREEN	0x0089
+ #define USB_DEVICE_ID_ELAN_TOUCHSCREEN_009B	0x009b
++#define USB_DEVICE_ID_ELAN_TOUCHSCREEN_016F	0x016f
  
- 	/* Don't set up the ACPI SCI because it's already set up */
- 	if (acpi_gbl_FADT.sci_interrupt == gsi)
--		return gsi;
-+		return mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
- 
- 	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
- 	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
+ #define USB_VENDOR_ID_ELECOM		0x056e
+ #define USB_DEVICE_ID_ELECOM_BM084	0x0061
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -72,6 +72,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN, HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_009B, HID_QUIRK_ALWAYS_POLL },
++	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_016F, HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
 
 
