@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaKLHdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Nov 2014 02:33:14 -0500
-Received: from [207.46.100.98] ([207.46.100.98]:6861 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751100AbaKLHdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Nov 2014 02:33:12 -0500
-Message-ID: <54630CF3.6020409@opensource.altera.com>
-Date: Wed, 12 Nov 2014 01:32:03 -0600
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752087AbaKLHeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Nov 2014 02:34:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35466 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaKLHd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Nov 2014 02:33:59 -0500
+Date: Wed, 12 Nov 2014 16:29:51 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.17 000/319] 3.17.3-stable review
+Message-ID: <20141112072951.GA8242@kroah.com>
+References: <20141112010952.553519040@linuxfoundation.org>
+ <5462FD63.5090904@roeck-us.net>
 MIME-Version: 1.0
-To: <tthayer@opensource.altera.com>, <bp@alien8.de>,
-        <dougthompson@xmission.com>, <m.chehab@samsung.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
-Subject: Re: [PATCHv5 1/5] arm: socfpga: Enable L2 Cache ECC on startup.
-References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com> <1415751263-1830-2-git-send-email-tthayer@opensource.altera.com>
-In-Reply-To: <1415751263-1830-2-git-send-email-tthayer@opensource.altera.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [99.103.66.154]
-X-ClientProxiedBy: CO2PR11CA0003.namprd11.prod.outlook.com (10.141.242.141) To
- BN3PR0301MB1185.namprd03.prod.outlook.com (25.160.156.147)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1185;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1185;
-X-Forefront-PRVS: 03932714EB
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(51704005)(24454002)(377454003)(479174003)(42186005)(64706001)(4396001)(99136001)(50466002)(33656002)(54356999)(76176999)(87266999)(65816999)(99396003)(50986999)(120916001)(87976001)(21056001)(97736003)(31966008)(122386002)(47776003)(64126003)(92726001)(86362001)(20776003)(65956001)(66066001)(92566001)(65806001)(23756003)(59896002)(95666004)(40100003)(46102003)(101416001)(80316001)(2201001)(102836001)(106356001)(19580405001)(77096003)(77156002)(105586002)(19580395003)(107046002)(83506001)(62966003)(1121002)(921003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1185;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1185;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1251;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5462FD63.5090904@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 11, 2014 at 10:25:39PM -0800, Guenter Roeck wrote:
+> On 11/11/2014 05:12 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.17.3 release.
+> >There are 319 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Fri Nov 14 01:07:52 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 133 pass: 132 fail: 1
+> Failed builds:
+> 	avr32:atngw100mkii_evklcd101_defconfig
+> 
+> Qemu tests:
+> 	total: 30 pass: 30 fail: 0
+> 
+> The failing build is due to a link error:
+> 
+> lib/lib.a(vsprintf.o): In function `vsnprintf':
+> vsprintf.c:(.text+0x16dc): relocation truncated to fit:
+> 	R_AVR32_16N_PCREL against symbol `_ctype' defined in .text section in lib/lib.a(ctype.o)
+> 
+> which has been observed on and off for the last few releases.
+> 
+> Details are available at http://server.roeck-us.net:8010/builder.
 
+Thanks for testing, I'll not worry about avr32 as that's an odd one...
 
-On 11/11/14, 6:14 PM, tthayer@opensource.altera.com wrote:
-> From: Thor Thayer <tthayer@opensource.altera.com>
-> 
-> This patch enables the ECC for L2 cache on machine
-> startup.  The ECC has to be enabled before data is
-> is stored in memory otherwise the ECC will fail on
-> reads.
-> 
-> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
-> ---
-> v2: Split OCRAM initialization into separate patch.
-> 
-> v3/4: No change
-> 
-> v5: Remove l2cache.h, use io.h instead of clk-provider.h
->     Make copyright header inclusive. Remove MAINTAINERS entry.
-> ---
->  arch/arm/mach-socfpga/Makefile   |    1 +
->  arch/arm/mach-socfpga/core.h     |    2 ++
->  arch/arm/mach-socfpga/l2_cache.c |   41 ++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-socfpga/socfpga.c  |    4 +++-
->  4 files changed, 47 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/mach-socfpga/l2_cache.c
-> 
-
-Acked-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+greg k-h
